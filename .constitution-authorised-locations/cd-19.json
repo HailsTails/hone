@@ -51,7 +51,7 @@
         {
           "why": "Why is filesystem access confined to this file rather than spread across the readers and runners that need it?",
           "because": "Readers and runners consume FileTextPort, mostly through the file-text-port.ts re-exports, and directory results cross only DirectoryPort as plain data, so none of them imports node:fs.",
-          "evidence": "src/infrastructure/node/file-system/file-text-port.ts re-exports createDefaultFileTextPort, createFileTextPort, defaultFileSystemSurface and three types; file-system-port.ts DirectoryEntry and DirectoryPort."
+          "evidence": "src/infrastructure/node/file-system/file-text-port.ts re-exports createDefaultFileTextPort, createFileTextPort, defaultFileSystemSurface and one type; file-system-port.ts DirectoryEntry and DirectoryPort."
         },
         {
           "why": "Why would relocating the import keep the same structural need?",

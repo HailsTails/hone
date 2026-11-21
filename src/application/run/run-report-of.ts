@@ -13,7 +13,7 @@ import { checkOfFinding } from "../../domain/finding/finding-check.ts";
 import type { Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../ports/engine/engine-run.ts";
 import { engineProblemsOf, engineUnmeasuredOf, runMeasurementsOf } from "./engines/engine-states.ts";
 import { checksOfClauses, editionsOf } from "../../domain/settings/selection/selection-checks.ts";
 

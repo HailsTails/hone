@@ -13,6 +13,7 @@ import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { enginesProjectionOf, enginesRunOf } from "./engines-run.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const REPO = absolutePathSchema.parse("/repo");
 
@@ -158,6 +159,7 @@ const runOver = (request: { readonly bindings: readonly ClauseBinding[]; readonl
     installRoot: INSTALL,
     moduleExtension: ".ts",
     path: POSIX_PATH,
+    engine: createDefaultEnginePort({}),
     modules: modulesOf(request),
   });
 
@@ -173,6 +175,7 @@ describe("enginesRunOf", () => {
       installRoot: INSTALL,
       moduleExtension: ".ts",
       path: POSIX_PATH,
+      engine: createDefaultEnginePort({}),
       modules,
     });
     expect(run).toMatchObject({ outcome: "ok", value: [{ mechanism: AUDIT }, { mechanism: ESLINT }] });
@@ -253,6 +256,7 @@ const projectionOver = (request: { readonly bindings: readonly ClauseBinding[]; 
     installRoot: INSTALL,
     moduleExtension: ".ts",
     path: POSIX_PATH,
+    engine: createDefaultEnginePort({}),
     modules: modulesOf(request),
   });
 

@@ -19,10 +19,11 @@ import type { SettingsReading } from "../application/run/settings/read-settings.
 import type { TouchedSet } from "../domain/repository/touched-set.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
-import type { EngineRun } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../application/ports/engine/engine-run.ts";
 import type { StagesOver } from "../version-two-repository.ts";
 import { versionTwoAuthoriseCommandOf, versionTwoPruneDebtCommandOf, versionTwoRecordDebtCommandOf } from "./version-two-record-commands.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 
 const REPO_FOLDER = "/repo";
 
@@ -99,6 +100,7 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,

@@ -4,7 +4,7 @@ import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptio
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
-import type { EngineRun } from "../../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../../ports/engine/engine-run.ts";
 import { engineMeasurementOf, engineProblemsOf, engineUnmeasuredOf } from "./engine-states.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");

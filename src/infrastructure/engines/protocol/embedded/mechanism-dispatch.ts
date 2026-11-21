@@ -1,29 +1,15 @@
 import { z } from "zod";
 import { embeddedRunReportSchema } from "./embedded-run-report-schema.ts";
 import { type RunnerFailure, rejectedCall, runnerInvalidOutput } from "../../../../domain/runner/runner-failure.ts";
-import type { LoadedRunner, ProjectionRequest, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
+import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
+import type { MechanismProjectionRequest, MechanismRequest } from "../../../../application/ports/engine/mechanism-request.ts";
 import { projectionWriteSchema, runnerResultSchema } from "../runner-module/runner-result-schema.ts";
 import type { NativeException, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
 import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/mechanism-dispatch.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { clauseAddressText } from "../../../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { ExceptionRecord } from "../../../../domain/records/discipline-exceptions/exception-record.ts";
-
-export type MechanismRequest = {
-  readonly runner: LoadedRunner;
-  readonly mechanism: MechanismId;
-  readonly run: RunRequest;
-  readonly declaredConfigRoots: readonly RepoPath[];
-  readonly records: readonly ExceptionRecord[];
-};
-
-export type MechanismProjectionRequest = {
-  readonly runner: LoadedRunner;
-  readonly request: ProjectionRequest;
-};
 
 const reportResultSchema = runnerResultSchema({ value: embeddedRunReportSchema });
 

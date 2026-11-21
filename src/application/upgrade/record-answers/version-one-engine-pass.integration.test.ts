@@ -32,6 +32,7 @@ import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../.
 import { createAnsweringOracle } from "./answering-oracle.ts";
 import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const path = createDefaultPathPort({});
 
@@ -205,7 +206,7 @@ const repositoryOf = (request: { readonly files: Readonly<Record<string, string>
 const carvedRepository = async (): Promise<AbsolutePath> => {
   const repoRoot = repositoryOf({ files: { "disciplines.json": SELECTION, "discipline-exceptions.json": EXCEPTIONS, "eslint.config.mjs": TEAM_CONFIG } });
   const { modules, ports } = checkPortsOver({ repoRoot, tracked: [] });
-  const projected = await runProject({ ...withSingleFileRecords({ ...ports, modules }), modules });
+  const projected = await runProject({ ...withSingleFileRecords({ ...ports, modules }), modules, engine: createDefaultEnginePort({}) });
   assert(projected.outcome === "ok", "the carved repository's projection is written by hone project");
   return repoRoot;
 };
@@ -251,7 +252,7 @@ const trackedIn =(request: { readonly files: readonly RepoPath[] }): GitPort => 
 const enginePassOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked: readonly RepoPath[] }) => {
   const { modules, ports } = checkPortsOver(request);
   return createVersionOneEnginePass({
-    check: { ...withSingleFileRecords({ ...ports, modules }), modules, baseRevision: undefined, assessment: DEFAULT_ASSESSMENT, selectionRepository: createSelectionRepository(ports) },
+    check: { ...withSingleFileRecords({ ...ports, modules }), modules, engine: createDefaultEnginePort({}), baseRevision: undefined, assessment: DEFAULT_ASSESSMENT, selectionRepository: createSelectionRepository(ports) },
   });
 };
 

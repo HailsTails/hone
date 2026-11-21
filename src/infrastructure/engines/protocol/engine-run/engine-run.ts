@@ -1,37 +1,21 @@
 import { z } from "zod";
 import { runMechanism } from "./mechanism-dispatch.ts";
-import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
-import type { ClauseBinding } from "../../../../domain/settings/selection/selection.ts";
 import { checksProjectResultSchema, checksRunnerModuleSchema, checksRunResultSchema } from "../checks/checks-runner-module-schema.ts";
 import type { ChecksRunFailure, ChecksRunReport } from "../checks/checks-runner-types.ts";
-import type { ChecksRunRequest, LoadedRunner, LoadedStandaloneRunner } from "../../../../application/ports/engine/runner-module.ts";
-import type { ChecksSliceProblem, MisnamedRuleId, ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
+import type { ChecksRunRequest, LoadedStandaloneRunner } from "../../../../application/ports/engine/runner-module.ts";
+import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 import { rejectedCall, type RunnerFailure, runnerInvalidOutput } from "../../../../domain/runner/runner-failure.ts";
-import type { RunnerInvalid } from "./load-runner.ts";
+import type { RunnerInvalid, RunnerLocation } from "../../../../application/ports/engine/runner-location.ts";
+import type { EngineCall } from "../../../../application/ports/engine/engine-port.ts";
+import type { EngineRun, EngineRunRequest, LoadedEngine, ParsedChecksRunner } from "../../../../application/ports/engine/engine-run.ts";
 import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
-import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
-import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
-import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
-import type { ModuleExtension } from "../../../../application/ports/host/module-extension.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { reportedChecksRefusal } from "../../../../domain/language-layer/reported-checks.ts";
 import type { RunFailureSource } from "../../../../domain/report/run-failure.ts";
-
-type ParsedChecksRunner = z.output<typeof checksRunnerModuleSchema>;
-
-export type EngineRun = Omit<MechanismRun, "slices"> & { readonly slices: readonly ChecksSliceProblem[]; readonly misnamedRuleIds: readonly MisnamedRuleId[] };
-
-export type LoadedEngine = {
-  readonly mechanism: MechanismId;
-  readonly runner: LoadedRunner;
-  readonly checksRunner: ParsedChecksRunner | undefined;
-};
-
-export type EngineRunRequest = Omit<ChecksRunRequest, "bindings"> & { readonly bindings: readonly ClauseBinding[] };
 
 type Outcome<Value> = Result<Value, RunFailureSource>;
 
@@ -49,13 +33,7 @@ const runnerFailed = (request: { readonly mechanism: MechanismId; readonly failu
   error: { kind: "runner-failed", mechanism: request.mechanism, failure: request.failure },
 });
 
-export const loadedEngineOf = async (request: {
-  readonly mechanism: MechanismId;
-  readonly installRoot: AbsolutePath;
-  readonly moduleExtension: ModuleExtension;
-  readonly path: Pick<PathPort, "join">;
-  readonly modules: ModuleLoaderPort;
-}): Promise<Result<LoadedEngine, RunnerInvalid>> => {
+export const loadedEngineOf = async (request: RunnerLocation): Promise<Result<LoadedEngine, RunnerInvalid>> => {
   const loaded = await request.modules.load({
     path: request.path.join({
       segments: runnerModuleSegmentsOf({ installRoot: request.installRoot, mechanism: request.mechanism, moduleExtension: request.moduleExtension }),
@@ -179,7 +157,7 @@ const checksProjectionOf = async (request: ChecksCall): Promise<Outcome<readonly
   return parsed.data.outcome === "failed" ? failedChecksCall({ mechanism: request.mechanism, error: parsed.data.error }) : parsed.data;
 };
 
-export const engineRunOf = (request: { readonly engine: LoadedEngine; readonly request: EngineRunRequest }): Promise<Outcome<EngineRun>> => {
+export const engineRunOf = (request: EngineCall): Promise<Outcome<EngineRun>> => {
   const { engine } = request;
   if (engine.runner.exceptionPath === "standalone") {
     return standaloneRunOf({ runner: engine.runner, mechanism: engine.mechanism, run: request.request });
@@ -189,7 +167,7 @@ export const engineRunOf = (request: { readonly engine: LoadedEngine; readonly r
     : checksRunOf({ checksRunner: engine.checksRunner, mechanism: engine.mechanism, run: request.request });
 };
 
-export const engineProjectionOf = (request: { readonly engine: LoadedEngine; readonly request: EngineRunRequest }): Promise<Outcome<readonly ProjectedFile[]>> => {
+export const engineProjectionOf = (request: EngineCall): Promise<Outcome<readonly ProjectedFile[]>> => {
   const { engine } = request;
   if (engine.runner.exceptionPath === "standalone") {
     return Promise.resolve({ outcome: "ok", value: [] });

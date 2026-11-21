@@ -29,6 +29,7 @@ import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createWalkerRunner } from "../../../infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -207,6 +208,7 @@ const checkOf = (request: {
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText: request.ports.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.ports.runnerModules,
     path,
     git: gitTracking({ tracked: request.tracked }),
@@ -218,6 +220,7 @@ const projectOf = (request: { readonly repo: AbsolutePath; readonly ports: Obser
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
     fileText: request.ports.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.ports.runnerModules,
     path,
     git: gitTracking({ tracked: [] }),

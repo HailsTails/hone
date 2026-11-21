@@ -16,6 +16,7 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { createWalkerRunner } from "../../infrastructure/engines/audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -137,6 +138,7 @@ const pruneDebtOver = async (request: {
     process,
     path,
     fileText: request.fileText,
+    engine: createDefaultEnginePort({}),
     modules: auditRunnerOver(request.fileText),
     git: request.git,
     exceptionRepositoryOf: repositoryOf,

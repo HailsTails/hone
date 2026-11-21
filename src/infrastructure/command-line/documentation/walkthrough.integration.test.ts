@@ -11,6 +11,7 @@ import { createDefaultPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 
 type FencedBlock = { readonly language: string; readonly body: string };
 
@@ -123,6 +124,7 @@ const commandOver = (request: { readonly tracked: readonly RepoPath[]; readonly 
   process: request.process,
   path: createDefaultPathPort({}),
   fileText: createDefaultFileTextPort({}),
+  engine: createDefaultEnginePort({}),
   modules: createDefaultModuleLoaderPort({}),
   git: trackingGit({ tracked: request.tracked }),
   exceptionRepositoryOf: createDefaultExceptionRepositoryOf({}),

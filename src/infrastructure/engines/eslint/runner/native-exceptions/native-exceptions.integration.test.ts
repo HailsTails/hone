@@ -10,7 +10,7 @@ import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import type { ModuleExtension } from "../../../../../application/ports/host/module-extension.ts";
 import { runCheck } from "../../../../../application/run/check/run-check.ts";
-import { loadRunner } from "../../../protocol/engine-run/load-runner.ts";
+import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
 import type { ExceptionRepository } from "../../../../../application/ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
@@ -49,6 +49,7 @@ import {
   loadEslintToolchain,
 } from "../toolchain/eslint-toolchain.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { createDefaultEnginePort } from "../../../protocol/engine-port.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -469,6 +470,7 @@ const checkOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked:
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText,
+    engine: createDefaultEnginePort({}),
     modules: runnerModulesOn({ line: request.line, base: modules }),
     path,
     git: gitTracking({ tracked: request.tracked }),
@@ -911,7 +913,7 @@ const classSyntaxCases = (): MechanicalCases => {
 const CLASS_SYNTAX_CASES = classSyntaxCases();
 
 const coreLoadedEslintRunner = async (request: { readonly line: EslintLine }): Promise<LoadedRunner> => {
-  const loaded = await loadRunner({
+  const loaded = await loadedEngineOf({
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
     modules: runnerModulesOn({ line: request.line, base: modules }),
@@ -919,7 +921,7 @@ const coreLoadedEslintRunner = async (request: { readonly line: EslintLine }): P
     mechanism: mechanismIdSchema.parse("eslint"),
   });
   assert(loaded.outcome === "ok", "core loads the ESLint runner module");
-  return loaded.value;
+  return loaded.value.runner;
 };
 
 describe.each(ESLINT_LINES)("checkConformance over the ESLint runner as core loads it, on real %s", (line) => {

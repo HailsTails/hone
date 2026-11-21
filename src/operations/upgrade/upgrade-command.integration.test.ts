@@ -31,6 +31,7 @@ import {
 import { eslint9PieceModules, eslint9ToolchainModules } from "../../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
 import type { AuthorisedLocationEntry } from "../../domain/records/discipline-exceptions/exception-record.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const VERSION_ONE = 1;
 
@@ -241,6 +242,7 @@ const runCommandIn = async (request: {
     process: processPort,
     path: createDefaultPathPort({}),
     fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.modules,
     git: createDefaultGitPort({}),
     exceptionRepositoryOf: createDefaultExceptionRepositoryOf({}),

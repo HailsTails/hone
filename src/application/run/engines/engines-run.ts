@@ -13,7 +13,8 @@ import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import { type CheckedTree, typescriptFilesOf } from "../checked-tree-of.ts";
-import { type EngineRun, type EngineRunRequest, engineProjectionOf, engineRunOf, loadedEngineOf } from "../../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun, EngineRunRequest } from "../../ports/engine/engine-run.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
 import { type RunFailureSource, runFailureOf } from "../../../domain/report/run-failure.ts";
 
 export type EnginesRunRequest = {
@@ -26,6 +27,7 @@ export type EnginesRunRequest = {
   readonly moduleExtension: ModuleExtension;
   readonly path: Pick<PathPort, "join">;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
 };
 
 const mechanismsOf = (request: { readonly settings: SettingsReading }): readonly MechanismId[] => [
@@ -50,13 +52,13 @@ const runRequestOf = (request: EnginesRunRequest): EngineRunRequest => ({
 });
 
 const runOf = async (request: EnginesRunRequest & { readonly mechanism: MechanismId }): Promise<Result<EngineRun, RunFailureSource>> => {
-  const engine = await loadedEngineOf(request);
-  return engine.outcome === "failed" ? engine : engineRunOf({ engine: engine.value, request: runRequestOf(request) });
+  const engine = await request.engine.load(request);
+  return engine.outcome === "failed" ? engine : request.engine.run.checks({ engine: engine.value, request: runRequestOf(request) });
 };
 
 const projectionOf = async (request: EnginesRunRequest & { readonly mechanism: MechanismId }): Promise<Result<readonly ProjectedFile[], RunFailureSource>> => {
-  const engine = await loadedEngineOf(request);
-  return engine.outcome === "failed" ? engine : engineProjectionOf({ engine: engine.value, request: runRequestOf(request) });
+  const engine = await request.engine.load(request);
+  return engine.outcome === "failed" ? engine : request.engine.project.checks({ engine: engine.value, request: runRequestOf(request) });
 };
 
 export const enginesProjectionOf = async (request: EnginesRunRequest): Promise<Result<readonly ProjectedFile[], RunLoadFailure>> => {

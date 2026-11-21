@@ -4,6 +4,7 @@ import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const SETTINGS: SettingsFile = {
   exclude: [],
@@ -30,6 +31,7 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
     read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,

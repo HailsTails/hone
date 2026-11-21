@@ -2,6 +2,7 @@ import { installRootOfApiEntry } from "../../infrastructure/command-line/install
 import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
+import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { moduleExtensionOf } from "../ports/host/module-extension.ts";
@@ -15,6 +16,7 @@ export type ConformanceTestingPorts = {
   readonly fileText: FileTextPort;
   readonly path: PathPort;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
 };
 
 export type ConformanceTesting = {
@@ -39,6 +41,7 @@ export const createConformanceTesting = (ports: ConformanceTestingPorts): Confor
       fileText: ports.fileText,
       path: ports.path,
       modules: ports.modules,
+      engine: ports.engine,
       installRoot: installRoot.value,
       moduleExtension: moduleExtensionOf({ moduleUrl: ports.moduleUrl }),
     });

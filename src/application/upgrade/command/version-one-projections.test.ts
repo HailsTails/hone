@@ -12,6 +12,7 @@ import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/ass
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import { type VersionOneProject, versionOneProjectionsOfRepository } from "./version-one-projections.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -32,6 +33,7 @@ const CHECK: CheckRequest = {
   baseRevision: undefined,
   assessment: DEFAULT_ASSESSMENT,
   fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>() },
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   path,
   git: {

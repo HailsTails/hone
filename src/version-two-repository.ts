@@ -41,12 +41,13 @@ export const stagesOverRepository = (request: {
   readonly located: RepositoryLocated;
   readonly baseRevision: string | undefined;
 }): VersionTwoStages => {
-  const { path, fileText, modules, git } = request.command;
+  const { path, fileText, modules, engine, git } = request.command;
   return request.ports.stagesOver({
     ports: {
       fileText,
       path,
       modules,
+      engine,
       git,
       gitTree: request.ports.gitTree,
       directory: request.ports.directory,

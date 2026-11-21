@@ -28,6 +28,7 @@ import { loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultEnginePort } from "../engine-port.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
@@ -146,6 +147,7 @@ const checkWith = (request: { readonly fixture: string; readonly runner: unknown
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText,
+    engine: createDefaultEnginePort({}),
     modules: modulesServingRunner({ runnerSuffix: "/runner/runner.ts", runner: request.runner, base: createDefaultModuleLoaderPort({}) }),
     path,
     git: gitTracking({ tracked: request.tracked }),

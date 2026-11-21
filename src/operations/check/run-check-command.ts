@@ -90,6 +90,7 @@ const unshownCheckRunAt = async (
     assessment,
     fileText: request.fileText,
     modules: request.modules,
+    engine: request.engine,
     path: request.path,
     git: request.git,
     selectionRepository: createSelectionRepository({ ...request, moduleExtension }),

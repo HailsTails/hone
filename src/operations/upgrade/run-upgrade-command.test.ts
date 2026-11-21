@@ -5,6 +5,7 @@ import type { FileTextPort } from "../../application/ports/file-system/file-text
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import { alreadyUpgradedCommand, type UpgradePorts, upgradeCommandOf } from "./run-upgrade-command.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const notUsed = (): never => {
   throw new Error("this port is not used by the command under test");
@@ -46,6 +47,7 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,

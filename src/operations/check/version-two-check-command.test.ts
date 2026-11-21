@@ -16,10 +16,11 @@ import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "../../application/run/settings/read-settings.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../../application/ports/engine/engine-run.ts";
 import { versionTwoCheckCommandOf } from "./version-two-check-command.ts";
 import type { StagesOver } from "../../version-two-repository.ts";
 import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -249,6 +250,7 @@ const commandWith = (request: { readonly process: ProcessPort; readonly moduleUr
     read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/package.json", detail: "absent" } }),
     write: vi.fn<FileTextPort["write"]>(),
   },
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),

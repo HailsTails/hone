@@ -2,6 +2,7 @@ import type { DirectoryPort } from "./application/ports/file-system/directory-po
 import type { FileTextPort } from "./application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "./application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "./application/ports/host/module-loader-port.ts";
+import type { EnginePort } from "./application/ports/engine/engine-port.ts";
 import type { PathPort } from "./application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "./application/ports/records/records-source-of.ts";
 import { readHoneRecords } from "./application/records/read-hone-records.ts";
@@ -24,6 +25,7 @@ export type VersionTwoPorts = {
   readonly fileText: FileTextPort;
   readonly path: PathPort;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
   readonly git: GitPort;
   readonly gitTree: GitTreePort;
   readonly directory: DirectoryPort;
@@ -76,6 +78,7 @@ const enginesRequestOf = (request: StagesRequest & { readonly stage: EngineStage
   moduleExtension: request.locations.moduleExtension,
   path: request.ports.path,
   modules: request.ports.modules,
+  engine: request.ports.engine,
 });
 
 export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages => ({

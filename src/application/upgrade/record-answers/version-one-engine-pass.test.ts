@@ -16,6 +16,7 @@ import type { Result } from "../../../domain/result.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -116,6 +117,7 @@ const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
     read: ({ path }) => FILES[path].read,
     exists: ({ path }) => FILES[path].presence,
   },
+  engine: createDefaultEnginePort({}),
   modules: modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: { hits: [HIT_IN_A], nativeExceptions: [] } } }) }),
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   git: gitTracking({ trackedPaths: { outcome: "ok", value: [SRC_A] } }),

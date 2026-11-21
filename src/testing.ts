@@ -2,6 +2,7 @@ import { createConformanceTesting } from "./application/conformance/conformance-
 import type { ClauseConformanceOf, ClauseUnderTestOf, RepoPathOf } from "./application/conformance/conformance-testing-types.ts";
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
 import { mechanismIdSchema } from "./infrastructure/hone-config-file/identifiers.ts";
 
@@ -20,6 +21,7 @@ const testing = createConformanceTesting({
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
   modules: createDefaultModuleLoaderPort({}),
+  engine: createDefaultEnginePort({}),
 });
 
 export const clauseConformanceOf: ClauseConformanceOf = testing.clauseConformanceOf;

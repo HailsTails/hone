@@ -19,6 +19,7 @@ import type { VersionedHandler } from "../../infrastructure/command-line/run-pat
 import { versionTwoProjectCommandOf } from "./version-two-project-command.ts";
 import type { StagesOver } from "../../version-two-repository.ts";
 import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -221,6 +222,7 @@ const commandWith = (request: { readonly process: ProcessPort; readonly moduleUr
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),

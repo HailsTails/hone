@@ -8,6 +8,7 @@ import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 const MECHANISM = mechanismIdSchema.parse("audit");
@@ -96,6 +97,7 @@ const conformanceOver = (namespace: unknown) =>
   clauseConformanceOf({
     fileText: acmeFileText(),
     path: acmePath(),
+    engine: createDefaultEnginePort({}),
     modules: { load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: namespace }) },
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",

@@ -20,6 +20,7 @@ import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { type CheckRequest, runCheck, runReachedCheck } from "./run-check.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -313,6 +314,7 @@ const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
   baseRevision: "main",
   assessment: DEFAULT_ASSESSMENT,
   fileText: fileTextOver(INSTALL),
+  engine: createDefaultEnginePort({}),
   modules: modulesLoading({ runner: standaloneRunner({ runReturns: CLEAN_RUN }) }),
   path: POSIX_PATH,
   git: TRACKED_GIT,

@@ -8,7 +8,7 @@ import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "./settings/read-settings.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../ports/engine/engine-run.ts";
 import { type VersionTwoRequest, type VersionTwoStages, versionTwoRunOver } from "./version-two-run.ts";
 
 const FILE_A = repoPathSchema.parse("src/a.ts");

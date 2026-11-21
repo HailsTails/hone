@@ -14,6 +14,7 @@ import { absolutePathSchema } from "./infrastructure/content-files/absolute-path
 import { repoPathSchema } from "./infrastructure/hone-records-folder/repo-path.ts";
 import { createRecordsFolder } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
+import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -182,6 +183,7 @@ const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): Git
 const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   fileText: { ...NOTHING_PRESENT, write: vi.fn<FileTextPort["write"]>() },
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: request.git,
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },

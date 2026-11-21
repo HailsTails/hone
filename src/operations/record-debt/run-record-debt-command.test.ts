@@ -19,6 +19,7 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { recordDebtCommandOf } from "./run-record-debt-command.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -288,6 +289,7 @@ const recordedDebt = async (request: Run) => {
     process: processPort,
     path: TABLE_PATH,
     fileText: request.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.modules,
     git: request.git,
     exceptionRepositoryOf: singleFileRepositoriesOver({ path: TABLE_PATH, fileText: request.fileText, git: request.git }),
@@ -457,6 +459,7 @@ const recordedDebtInto = async (request: { readonly run: Run; readonly disk: Rec
     process: processPort,
     path: TABLE_PATH,
     fileText: request.run.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.run.modules,
     git: request.run.git,
     exceptionRepositoryOf: exceptionRepositoryOf(request.disk.ports),

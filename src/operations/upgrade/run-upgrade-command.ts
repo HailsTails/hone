@@ -84,6 +84,7 @@ const checkRequestOf = (request: { readonly command: VersionOneCommandRequest; r
       assessment: assessmentInEffect({ requested: { forfeiture: undefined }, configured: configured.value.assessment }),
       fileText: command.fileText,
       modules: command.modules,
+      engine: command.engine,
       path: command.path,
       git: command.git,
       selectionRepository: createSelectionRepository({ repoRoot, installRoot, moduleExtension, fileText: command.fileText, path: command.path }),

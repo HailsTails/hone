@@ -10,6 +10,7 @@ import { runHelpText } from "./operations/help/run-help.ts";
 import { helpText } from "./infrastructure/command-line/arguments/command-help.ts";
 import type { VersionOneCommandRequest } from "./application/ports/version-one-command-request.ts";
 import { type CommandHandler, type Subcommands, TOOL_SUBCOMMANDS, toolCommandOf } from "./run-tool-command.ts";
+import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -49,6 +50,7 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
@@ -143,6 +145,7 @@ const commandRequest = (request: { readonly process: ProcessPort }): VersionOneC
   process: request.process,
   path: UNUSED_PATH,
   fileText: UNUSED_FILE_TEXT,
+  engine: createDefaultEnginePort({}),
   modules: UNUSED_MODULES,
   git: UNUSED_GIT,
   exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),

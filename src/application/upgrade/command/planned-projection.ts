@@ -102,6 +102,7 @@ export const plannedProjectionOf =
       moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
       path: command.path,
       modules: command.modules,
+      engine: command.engine,
     });
     return projected.outcome === "failed"
       ? refusedBy({ failure: projected.error })

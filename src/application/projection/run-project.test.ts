@@ -14,6 +14,7 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
@@ -328,6 +329,7 @@ const projectRequest = (overrides: Partial<ProjectRequest>): ProjectRequest => {
     installRoot: absolutePathSchema.parse("/install"),
     moduleExtension: ".ts" as const,
     fileText: fileTextOver(INSTALL),
+    engine: createDefaultEnginePort({}),
     modules: modulesLoading({ runner: standaloneRunner() }),
     path: TABLE_PATH,
     git: GIT,

@@ -7,7 +7,6 @@ import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { Result } from "../../domain/result.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { CheckedTree } from "../run/checked-tree-of.ts";
-import { projectMechanism } from "../../infrastructure/engines/protocol/embedded/mechanism-dispatch.ts";
 import {
   allOk,
   type CheckRequest,
@@ -39,7 +38,7 @@ const projectionRequestOf = (request: ProjectionInputs): ProjectionRequest => ({
 });
 
 const projectionWritesOf = (request: ProjectionInputs): Promise<Result<readonly ProjectionWrite[], LoadFailure>> =>
-  projectMechanism({ runner: request.loaded.runner, request: projectionRequestOf(request) }).then(
+  request.project.engine.project.withRecords({ runner: request.loaded.runner, request: projectionRequestOf(request) }).then(
     (runnerResult) => runnerFailed({ mechanism: request.loaded.mechanism, runnerResult }),
   );
 

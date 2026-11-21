@@ -12,6 +12,7 @@ import type { VersionOneCommandRequest } from "../../application/ports/version-o
 import type { CheckRunAt } from "./run-check-command.ts";
 import { guidedCheckRunFor } from "./run-guided-check-command.ts";
 import type { SymptomGuideIn } from "../../infrastructure/printed-report/symptoms/symptom-guide.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const EMPTY_REPORT: CheckReport = {
   excluded: [],
@@ -69,6 +70,8 @@ const FILE_TEXT: FileTextPort = {
 
 const MODULES: ModuleLoaderPort = { load: vi.fn<ModuleLoaderPort["load"]>() };
 
+const ENGINE = createDefaultEnginePort({});
+
 const GIT: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
   changedSince: vi.fn<GitPort["changedSince"]>(),
@@ -90,6 +93,7 @@ const COMMAND: VersionOneCommandRequest = {
   },
   path: PATH,
   fileText: FILE_TEXT,
+  engine: ENGINE,
   modules: MODULES,
   git: GIT,
   exceptionRepositoryOf: EXCEPTION_REPOSITORY_OF,
@@ -104,6 +108,7 @@ const ABSENT_SELECTION_COMMAND: VersionOneCommandRequest = {
     exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
     write: vi.fn<FileTextPort["write"]>(),
   },
+  engine: ENGINE,
   modules: MODULES,
   git: GIT,
   exceptionRepositoryOf: EXCEPTION_REPOSITORY_OF,
@@ -139,6 +144,7 @@ describe("guidedCheckRunFor", () => {
     expect(checkRunAt).toHaveBeenCalledExactlyOnceWith({
       path: PATH,
       fileText: FILE_TEXT,
+      engine: ENGINE,
       modules: MODULES,
       git: GIT,
       exceptionRepositoryOf: EXCEPTION_REPOSITORY_OF,

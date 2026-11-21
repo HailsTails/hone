@@ -11,6 +11,7 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const FIXTURE = `${import.meta.dirname}/prune-debt`;
 
@@ -61,6 +62,7 @@ const pruning = (request: {
   process: request.process,
   path: createDefaultPathPort({}),
   fileText: createDefaultFileTextPort({}),
+  engine: createDefaultEnginePort({}),
   modules: createDefaultModuleLoaderPort({}),
   git: request.git,
   exceptionRepositoryOf: (repository) => ({ ...createDefaultExceptionRepositoryOf({})(repository), remove: request.remove }),

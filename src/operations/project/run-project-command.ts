@@ -24,6 +24,7 @@ const projectionsIn = (
     moduleExtension: moduleExtensionOf({ moduleUrl: request.moduleUrl }),
     fileText: request.fileText,
     modules: request.modules,
+    engine: request.engine,
     path: request.path,
     git: request.git,
     exceptionRepository: request.exceptionRepositoryOf({ repoRoot: request.repoRoot }),

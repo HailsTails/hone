@@ -8,6 +8,7 @@ import { createPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import type { CommandRequest } from "../../../application/ports/command-request.ts";
 import { notReadyCommandOf, settingsRequiringCommandOf, type VersionedHandler, versionChosenCommandOf } from "./version-chosen-command.ts";
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 
 type Presences = { readonly versionOne: FilePresence; readonly versionTwo: FilePresence };
 
@@ -34,6 +35,7 @@ const commandOver = (request: { readonly process: ProcessPort; readonly present:
     read: vi.fn<FileTextPort["read"]>(),
     write: vi.fn<FileTextPort["write"]>(),
   },
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),

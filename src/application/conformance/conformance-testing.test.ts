@@ -6,6 +6,7 @@ import { absolutePathSchema } from "../../infrastructure/content-files/absolute-
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { createConformanceTesting } from "./conformance-testing.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -77,7 +78,7 @@ describe("createConformanceTesting", () => {
     const path = pathFrom({
       entry: vi.fn<PathPort["fromFileUrl"]>().mockReturnValue({ outcome: "ok", value: absolutePathSchema.parse("/install/api/testing.js") }),
     });
-    const testing = createConformanceTesting({ mechanism: AUDIT, moduleUrl: BUILT_ENTRY_URL, fileText: acmeFileText(), path, modules: NO_RUNNER });
+    const testing = createConformanceTesting({ mechanism: AUDIT, moduleUrl: BUILT_ENTRY_URL, fileText: acmeFileText(), path, modules: NO_RUNNER, engine: createDefaultEnginePort({}) });
     await testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" });
     expect(path.join).toHaveBeenLastCalledWith({ segments: ["/install", "src", "infrastructure", "engines", "audit", "runner", "runner.js"] });
   });
@@ -92,6 +93,7 @@ describe("createConformanceTesting", () => {
           error: { kind: "not-a-file-url", url: "https://example.invalid/api/testing.js", detail: "the text is not a file: URL" },
         }),
       }),
+      engine: createDefaultEnginePort({}),
       modules: NO_RUNNER,
     });
     await expect(testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" })).resolves.toEqual({
@@ -108,6 +110,7 @@ describe("createConformanceTesting", () => {
       moduleUrl: BUILT_ENTRY_URL,
       fileText: unreadableFileText(),
       path: BUILT_ENTRY_PATH,
+      engine: createDefaultEnginePort({}),
       modules: NO_RUNNER,
     });
     expect(testing.clauseUnderTestOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" })).toEqual({
@@ -117,7 +120,7 @@ describe("createConformanceTesting", () => {
   });
 
   it("gives repository paths", () => {
-    const testing = createConformanceTesting({ mechanism: AUDIT, moduleUrl: BUILT_ENTRY_URL, fileText: unreadableFileText(), path: BUILT_ENTRY_PATH, modules: NO_RUNNER });
+    const testing = createConformanceTesting({ mechanism: AUDIT, moduleUrl: BUILT_ENTRY_URL, fileText: unreadableFileText(), path: BUILT_ENTRY_PATH, modules: NO_RUNNER, engine: createDefaultEnginePort({}) });
     expect(testing.repoPathOf({ file: "src/kept.ts" })).toEqual({ outcome: "ok", value: repoPathSchema.parse("src/kept.ts") });
   });
 });

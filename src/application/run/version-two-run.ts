@@ -11,7 +11,7 @@ import { type VersionTwoReportOutput, reportOutputInEffect } from "../../domain/
 import type { Result } from "../../domain/result.ts";
 import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
 import type { CheckedTree } from "./checked-tree-of.ts";
-import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../ports/engine/engine-run.ts";
 import { runReportOf } from "./run-report-of.ts";
 import type { TouchedMeasuring } from "./touched-set/touched-set-of.ts";
 

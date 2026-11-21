@@ -9,7 +9,7 @@ import type { RunReport } from "../../domain/report/run-report.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { editionSchema } from "../../infrastructure/content-files/edition.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, runReportOf } from "./run-report-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };

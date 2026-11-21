@@ -1,3 +1,4 @@
+import type { EnginePort } from "./engine/engine-port.ts";
 import type { FileTextPort } from "./file-system/file-text-port.ts";
 import type { GitPort } from "./git-port.ts";
 import type { ModuleLoaderPort } from "./host/module-loader-port.ts";
@@ -9,6 +10,7 @@ export type CommandRequest = {
   readonly path: PathPort;
   readonly fileText: FileTextPort;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
   readonly git: GitPort;
   readonly moduleUrl: string;
 };

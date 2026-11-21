@@ -15,6 +15,7 @@ import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../src/infrastructure/pr
 import type { Case, Principle, RecordKind, Rule, Symptom } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { runSelfCheck, selfCheckOutcomeOf, VERSION_TWO_GATED_SECTIONS, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
+import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -254,6 +255,7 @@ const requestOver = (request: { readonly process: ProcessPort }): VersionOneComm
     fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
   },
   fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() },
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),

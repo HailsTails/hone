@@ -22,6 +22,7 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -272,6 +273,7 @@ describe("the shipped CD-1 rule, read from rules/CD-1/discipline.json through a 
       baseRevision: undefined,
       assessment: DEFAULT_ASSESSMENT,
       fileText: createDefaultFileTextPort({}),
+      engine: createDefaultEnginePort({}),
       modules: createDefaultModuleLoaderPort({}),
       path,
       git,
@@ -327,6 +329,7 @@ const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
     baseRevision: "origin/main",
     assessment: DEFAULT_ASSESSMENT,
     fileText: createDefaultFileTextPort({}),
+    engine: createDefaultEnginePort({}),
     modules: createDefaultModuleLoaderPort({}),
     path,
     git: cascadeGit,

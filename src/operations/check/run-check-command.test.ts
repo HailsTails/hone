@@ -14,6 +14,7 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runCheckCommand } from "./run-check-command.ts";
 import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -193,6 +194,7 @@ const commandRequest = (overrides: Partial<VersionOneCommandRequest>): VersionOn
     process: processWith({ arguments: ["--repo", "/repo"] }),
     path: TABLE_PATH,
     fileText: fileTextOver(NOTHING_SELECTED),
+    engine: createDefaultEnginePort({}),
     modules: modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: { hits: [], nativeExceptions: [] } } }) }),
     git: gitTracking([]),
     moduleUrl: ENTRY_URL,

@@ -8,6 +8,7 @@ import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 const AUDIT = mechanismIdSchema.parse("audit");
@@ -95,6 +96,7 @@ const conformanceWith = (request: { readonly modules: ModuleLoaderPort }) =>
   clauseConformanceOf({
     fileText: acmeFileText(),
     path: acmePath(),
+    engine: createDefaultEnginePort({}),
     modules: request.modules,
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
@@ -167,6 +169,7 @@ describe("clauseConformanceOf", () => {
       clauseConformanceOf({
         fileText: acmeFileText(),
         path: acmePath(),
+        engine: createDefaultEnginePort({}),
         modules,
         installRoot: INSTALL_ROOT,
         moduleExtension: ".ts",

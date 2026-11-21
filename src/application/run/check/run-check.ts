@@ -17,6 +17,8 @@ import type { LoadedRunner, RunRequest } from "../../ports/engine/runner-module.
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
+import type { LoadedEngine } from "../../ports/engine/engine-run.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
@@ -41,8 +43,6 @@ import { paidDebtNotesOf } from "../../../domain/report/paid-debt-notes.ts";
 import { shownRemediesOf } from "./shown-remedies.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
-import { loadRunner } from "../../../infrastructure/engines/protocol/engine-run/load-runner.ts";
-import { runMechanismWithRecords } from "../../../infrastructure/engines/protocol/embedded/mechanism-dispatch.ts";
 
 export type CheckRequest = {
   readonly repoRoot: AbsolutePath;
@@ -52,6 +52,7 @@ export type CheckRequest = {
   readonly assessment: Assessment;
   readonly fileText: Pick<FileTextPort, "read" | "exists">;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
   readonly path: PathPort;
   readonly git: GitPort;
   readonly selectionRepository: SelectionRepository;
@@ -124,14 +125,14 @@ const clausesOf = (request: {
 const loadedMechanism = (request: {
   readonly bindings: readonly ClauseBinding[];
   readonly mechanism: MechanismId;
-  readonly runner: Result<LoadedRunner, LoadFailure>;
+  readonly engine: Result<LoadedEngine, LoadFailure>;
 }): Result<LoadedMechanism, LoadFailure> => {
-  if (request.runner.outcome === "failed") {
-    return request.runner;
+  if (request.engine.outcome === "failed") {
+    return request.engine;
   }
   return {
     outcome: "ok",
-    value: { mechanism: request.mechanism, runner: request.runner.value, clauses: clausesOf(request) },
+    value: { mechanism: request.mechanism, runner: request.engine.value.runner, clauses: clausesOf(request) },
   };
 };
 
@@ -141,8 +142,8 @@ const loadMechanisms = async (
   allOk({
     results: await Promise.all(
       distinctMechanisms(request).map((mechanism) =>
-        loadRunner({ ...request, mechanism }).then((runner) =>
-          loadedMechanism({ bindings: request.bindings, mechanism, runner }),
+        request.engine.load({ ...request, mechanism }).then((engine) =>
+          loadedMechanism({ bindings: request.bindings, mechanism, engine }),
         ),
       ),
     ),
@@ -264,7 +265,7 @@ const mechanismRunOf = (request: {
   readonly records: readonly ExceptionRecord[];
   readonly loaded: LoadedMechanism;
 }): Promise<Result<MechanismRun, LoadFailure>> =>
-  runMechanismWithRecords({
+  request.check.engine.run.withRecords({
     runner: request.loaded.runner,
     mechanism: request.loaded.mechanism,
     run: runRequestOf(request),

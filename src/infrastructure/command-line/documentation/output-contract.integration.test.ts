@@ -81,6 +81,7 @@ import type {
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../../../operations/help/run-help.ts";
 import { runToolCommand } from "../../../run-tool-command.ts";
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 
 type Fills = Readonly<Record<string, string>>;
 
@@ -2427,6 +2428,7 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,

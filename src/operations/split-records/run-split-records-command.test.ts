@@ -7,6 +7,7 @@ import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runSplitRecordsCommand } from "./run-split-records-command.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
 
 type RecordsDisk = {
   readonly repoRoot: AbsolutePath;
@@ -133,6 +134,7 @@ const commandOver = (request: { readonly disk: RecordsDisk; readonly process: Pr
   process: request.process,
   path: request.disk.ports.path,
   fileText: request.disk.ports.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn() },
   git: request.disk.ports.git,
   exceptionRepositoryOf: exceptionRepositoryOf(request.disk.ports),

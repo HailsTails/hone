@@ -14,6 +14,7 @@ import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText }
 import { installedEslintBoundary } from "../../engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { type CommandRunPort, createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 
 const installedBoundary = await installedEslintBoundary();
 
@@ -124,6 +125,7 @@ const runCommandIn = async (request: { readonly repo: string; readonly subcomman
     process: processPort,
     path: createDefaultPathPort({}),
     fileText,
+    engine: createDefaultEnginePort({}),
     modules: createDefaultModuleLoaderPort({}),
     git: createDefaultGitPort({}),
     exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),

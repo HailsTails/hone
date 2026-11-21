@@ -10,6 +10,7 @@ import { absolutePathSchema } from "./infrastructure/content-files/absolute-path
 import { createPathPort } from "./infrastructure/node/path-port.ts";
 import { type StagesOver, repoRootOf, repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";
 import type { VersionTwoStages } from "./application/run/version-two-run.ts";
+import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 
 const notUsed = (): never => {
   throw new Error("this port is not used by the command under test");
@@ -38,6 +39,7 @@ const command: VersionOneCommandRequest = {
   process: emptyProcess,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: memory.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,

@@ -34,6 +34,7 @@ import {
 } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -283,6 +284,7 @@ const checkOf = (request: {
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText: request.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.modules,
     path,
     git,

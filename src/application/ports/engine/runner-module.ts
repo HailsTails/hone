@@ -42,7 +42,7 @@ export type ChecksRunRequest = {
   readonly declaredConfigLookup: EslintConfigLookup | undefined;
 };
 
-type RunnerCall = (input: unknown) => Promise<unknown>;
+export type RunnerCall = (input: unknown) => Promise<unknown>;
 
 export type LoadedStandaloneRunner = {
   readonly exceptionPath: "standalone";
