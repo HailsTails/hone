@@ -3,18 +3,13 @@ import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { argumentsInvalid } from "../command-line/arguments/argument-problem.ts";
-import { type CheckArguments, parseCheckArguments } from "../command-line/arguments/command-arguments.ts";
-import { REPORT_OUTPUTS, type ReportOutput } from "../../domain/settings/report-output.ts";
+import { parseCheckArguments } from "../command-line/arguments/command-arguments.ts";
+import type { CheckLocations } from "../../application/ports/command/command-arguments.ts";
+import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
 import { installRootOf } from "../command-line/installation/install-root.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 
 const SELECTION_FILE_NAME = "disciplines.json";
-
-export type CheckLocations = {
-  readonly arguments: CheckArguments<ReportOutput>;
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-};
 
 export const repoRootOf = (request: {
   readonly path: PathPort;

@@ -4,7 +4,8 @@ import { type CheckRequest, runCheck } from "../../application/run/check/run-che
 import { runProject } from "../../application/projection/run-project.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { createSelectionRepository, readRunSettings } from "../../infrastructure/disciplines-file/consumer-selection.ts";
-import { type UpgradeArguments, parseUpgradeArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import { parseUpgradeArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import type { UpgradeArguments } from "../../application/ports/command/command-arguments.ts";
 import { type CommandOutcome, loadFailureOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
@@ -13,7 +14,8 @@ import type { FileCreationPort } from "../../application/ports/file-system/file-
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import type { EntryKindPort } from "../../application/ports/file-system/entry-kind-port.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
-import { type RepositoryLocated, repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../../version-two-repository.ts";
+import { repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../../version-two-repository.ts";
+import type { RepositoryLocated } from "../../application/ports/command/repository-located.ts";
 import { versionTwoRunOver } from "../../application/run/version-two-run.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";

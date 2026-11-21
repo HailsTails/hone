@@ -7,7 +7,8 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import type { Result } from "../../domain/result.ts";
-import { parsePruneDebtArguments, type PruneDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import { parsePruneDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import type { PruneDebtArguments } from "../../application/ports/command/command-arguments.ts";
 import { pruneDebtCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";
 import { installRootOf } from "../../infrastructure/command-line/installation/install-root.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";

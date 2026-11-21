@@ -8,8 +8,9 @@ import { moduleExtensionOf } from "../../application/ports/host/module-extension
 import { reportOutputInEffect, type ReportOutput } from "../../domain/settings/report-output.ts";
 import type { Result } from "../../domain/result.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";
-import { type CheckLocations, checkLocationsFor } from "../../infrastructure/printed-report/check-locations.ts";
-import type { CheckArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import { checkLocationsFor } from "../../infrastructure/printed-report/check-locations.ts";
+import type { CheckLocations } from "../../application/ports/command/command-arguments.ts";
+import type { CheckArguments } from "../../application/ports/command/command-arguments.ts";
 import { type CheckRun, checkCommandOutcome } from "../../infrastructure/command-line/outcomes/check-command-outcome.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { type PackageLink, packageLinkOf, UNLINKED } from "../../infrastructure/command-line/installation/package-link.ts";

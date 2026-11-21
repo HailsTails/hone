@@ -4,7 +4,8 @@ import { createPathPort } from "../../node/path-port.ts";
 import type { RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { type SymptomCatalogueOf, symptomGuideIn } from "./symptom-guide.ts";
+import { symptomGuideIn } from "./symptom-guide.ts";
+import type { SymptomCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 

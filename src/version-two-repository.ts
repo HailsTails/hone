@@ -7,6 +7,7 @@ import { moduleExtensionOf } from "./application/ports/host/module-extension.ts"
 import type { Result } from "./domain/result.ts";
 import { type VersionTwoLocations, type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
 import type { VersionTwoStages } from "./application/run/version-two-run.ts";
+import type { RepositoryLocated } from "./application/ports/command/repository-located.ts";
 
 export type StagesOver = (request: { readonly ports: VersionTwoPorts; readonly locations: VersionTwoLocations }) => VersionTwoStages;
 
@@ -18,8 +19,6 @@ export type VersionTwoRepositoryPorts = {
 };
 
 export const installedStagesOver: StagesOver = versionTwoStagesOver;
-
-export type RepositoryLocated = { readonly repoRoot: AbsolutePath; readonly installRoot: AbsolutePath };
 
 export const repoRootOf = (request: { readonly command: CommandRequest; readonly repo: string }): Result<AbsolutePath, LoadFailure> => {
   const resolved = request.command.path.resolve({ path: request.repo });

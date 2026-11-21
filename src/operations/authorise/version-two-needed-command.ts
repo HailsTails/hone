@@ -1,4 +1,5 @@
-import { type AuthoriseArguments, parseAuthoriseArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import { parseAuthoriseArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import type { AuthoriseArguments } from "../../application/ports/command/command-arguments.ts";
 import { loadFailureOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";
 import type { CommandRequest } from "../../application/ports/command-request.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";

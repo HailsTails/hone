@@ -16,7 +16,8 @@ import { type RunLoadFailure, runLoadFailureOf } from "../domain/report/run-load
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../domain/result.ts";
 import { runLoadFailureOutcomeOf, upgradeCommandFor } from "../infrastructure/command-line/run-path/run-load-failure-outcome.ts";
-import { type RepositoryLocated, repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../version-two-repository.ts";
+import { repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../version-two-repository.ts";
+import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import { versionTwoRunOver } from "../application/run/version-two-run.ts";
 
 export type VersionTwoRecordPorts = VersionTwoRepositoryPorts & { readonly removal: FileRemovalPort };

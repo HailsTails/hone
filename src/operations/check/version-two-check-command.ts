@@ -1,4 +1,5 @@
-import { type CheckArguments, parseCheckArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import { parseCheckArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
+import type { CheckArguments } from "../../application/ports/command/command-arguments.ts";
 import { type CommandOutcome, loadFailureOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { packageLinkOf } from "../../infrastructure/command-line/installation/package-link.ts";
@@ -13,7 +14,8 @@ import { VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../../d
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { runLoadFailureOutcomeOf, upgradeCommandFor } from "../../infrastructure/command-line/run-path/run-load-failure-outcome.ts";
-import { type RepositoryLocated, repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../../version-two-repository.ts";
+import { repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../../version-two-repository.ts";
+import type { RepositoryLocated } from "../../application/ports/command/repository-located.ts";
 import { type VersionTwoRun, versionTwoRunOver } from "../../application/run/version-two-run.ts";
 
 const SYMPTOM_PAGE_SEGMENTS: readonly string[] = ["rules", "typescript", "symptoms.md"];

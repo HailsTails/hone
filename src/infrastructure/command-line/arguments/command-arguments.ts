@@ -1,6 +1,6 @@
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import { FORFEITURE_ASSESSMENTS, type ForfeitureAssessment, WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
+import { FORFEITURE_ASSESSMENTS, WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
@@ -21,33 +21,15 @@ import {
   VERSION_FLAG,
 } from "./command-line.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-
-export type CheckArguments<Output extends string> = {
-  readonly repo: string;
-  readonly baseRevision: string | undefined;
-  readonly reportOutput: Output | undefined;
-  readonly forfeiture: ForfeitureAssessment | undefined;
-};
-
-export type PruneDebtArguments = {
-  readonly repo: string;
-  readonly baseRevision: string | undefined;
-  readonly forfeiture: ForfeitureAssessment | undefined;
-};
-
-export type ProjectArguments = {
-  readonly repo: string;
-};
-
-export type SplitRecordsArguments = {
-  readonly repo: string;
-};
-
-export type RecordDebtArguments = {
-  readonly repo: string;
-  readonly baseRevision: string;
-  readonly leave: readonly RepoPath[];
-};
+import type {
+  AuthoriseArguments,
+  CheckArguments,
+  ProjectArguments,
+  PruneDebtArguments,
+  RecordDebtArguments,
+  SplitRecordsArguments,
+  UpgradeArguments,
+} from "../../../application/ports/command/command-arguments.ts";
 
 export type Invocation =
   | { readonly kind: "run"; readonly subcommand: Subcommand; readonly arguments: readonly string[] }
@@ -246,10 +228,6 @@ export const parseSplitRecordsArguments = (request: {
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
 };
 
-export type UpgradeArguments = {
-  readonly repo: string;
-};
-
 export const parseUpgradeArguments = (request: {
   readonly arguments: readonly string[];
 }): Result<UpgradeArguments, LoadFailure> => {
@@ -259,11 +237,6 @@ export const parseUpgradeArguments = (request: {
   }
   const repo = requiredRepo({ subcommand: "upgrade", values: values.value });
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
-};
-
-export type AuthoriseArguments = {
-  readonly repo: string;
-  readonly values: ReadonlyMap<string, readonly string[]>;
 };
 
 export const parseAuthoriseArguments = (request: {

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";
-import { type ProofRunSources, proofRunsOf } from "./proof-runs.ts";
+import { proofRunsOf } from "./proof-runs.ts";
+import type { ProofRunSources } from "../../application/ports/upgrade/proof-runs.ts";
 
 const BEFORE: CheckReport = {
   excluded: [],
