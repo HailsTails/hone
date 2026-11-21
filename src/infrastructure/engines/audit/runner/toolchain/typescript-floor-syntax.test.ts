@@ -13,7 +13,7 @@ declare global {
 const shippedSources = import.meta.glob(
   [
     "./src/**/*.ts",
-    "!./**/*.test.ts",
+    "!./src/**/*.test.ts",
     "!./src/audit.ts",
     "!./src/eslint-plugin.ts",
     "!./src/rule-set.ts",
