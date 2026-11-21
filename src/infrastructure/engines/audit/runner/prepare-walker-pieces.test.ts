@@ -6,21 +6,26 @@ import { clauseAddressSchema } from "../../../discipline-exceptions-folder/claus
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { prepareWalkerPieces } from "./prepare-walker-pieces.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, WalkerPiece, WalkerRepository } from "./pieces/walker-piece.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { EMPTY_DISK } from "../../../../../tests/empty-walker-disk.ts";
+import { textsDisk } from "./pieces/walker-disk.ts";
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
 const FIRST_MODULE = "/install/mechanisms/audit/XX-1/first.ts";
 const SECOND_MODULE = "/install/mechanisms/audit/XX-1/second.ts";
 const ALPHA = repoPathSchema.parse("src/alpha.ts");
 const BETA = repoPathSchema.parse("src/beta.ts");
-const SYNTAX_API = defaultParsePort.syntaxApi;
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const SYNTAX_API = loadedParsePort.value.syntaxApi;
 
 const REPOSITORY: WalkerRepository = {
   files: [ALPHA, BETA],
-  exists: () => "present", disk: EMPTY_DISK,
+  exists: () => "present", disk: textsDisk({ root: "/repo", texts: {} }),
 };
 
 const FIRST_CLAUSE: RunnerClause = {

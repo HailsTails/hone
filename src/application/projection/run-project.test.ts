@@ -1,14 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
-import { recordsDisk, singleFileRepositoryOver } from "../../../tests/records-disk.ts";
-import { createExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import { requiredEntry } from "../../../tests/required-entry.ts";
-import { LEGACY_WHY_CHAIN } from "../../../tests/causal-why-chain.ts";
+import { assert, describe, expect, it, vi } from "vitest";
+import { createExceptionRepository, type ExceptionLayoutPorts } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { LegacyWhyChain } from "../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
 import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { DirectoryEntry } from "../../infrastructure/node/file-system/file-system-port.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "../../infrastructure/git/git-port.ts";
 import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import { createPathPort, type PathPort } from "../../infrastructure/node/path-port.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
@@ -220,6 +220,106 @@ const GIT: GitPort = {
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 };
 
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
+
+const LEGACY_WHY = {
+  why: "why is the exception taken",
+  because: "the matcher cannot express the tracker id",
+  evidence: "tools/why-chain-check.ts:9",
+};
+
+const LEGACY_WHY_CHAIN: LegacyWhyChain = {
+  whys: [LEGACY_WHY, LEGACY_WHY, LEGACY_WHY, LEGACY_WHY, LEGACY_WHY],
+  rootCause: "the audit's matcher predates the tracker id format",
+  owner: "capture 01a0b421",
+};
+
+const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+
+const SPLIT_FOLDER_NAME = "discipline-exceptions";
+
+const singleFileRepositoryOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepository =>
+  createExceptionRepository({
+    ...request,
+    fileText: {
+      ...request.fileText,
+      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+    },
+    directory: {
+      list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
+      create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+    },
+    fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
+    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
+  });
+
+const SPLIT_LAYOUT_ROOT = "/repo";
+
+const splitLayoutPortsHolding = (request: { readonly files: Readonly<Record<string, string>> }): ExceptionLayoutPorts => {
+  const files = new Map(Object.entries(request.files).map(([file, text]) => [`${SPLIT_LAYOUT_ROOT}/${file}`, text]));
+  const folders = new Set<string>();
+  const childEntryOf = (entry: { readonly path: string; readonly folder: string }): DirectoryEntry => {
+    const [name, ...rest] = entry.path.slice(entry.folder.length + 1).split("/");
+    return { name, kind: rest.length === 0 ? "file" : "directory" };
+  };
+  return {
+    path: createPathPort({ flavour: "posix", workingDirectory: () => SPLIT_LAYOUT_ROOT }),
+    fileText: {
+      read: ({ path }) => {
+        const text = files.get(path);
+        return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } } : { outcome: "ok", value: text };
+      },
+      exists: ({ path }) =>
+        files.has(path) || [...files.keys(), ...[...folders].map((folder) => `${folder}/`)].some((candidate) => candidate.startsWith(`${path}/`))
+          ? "present"
+          : "absent",
+      write: ({ path, text }) => {
+        files.set(path, text);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    directory: {
+      list: ({ path }) => {
+        const children = [...files.keys()].filter((candidate) => candidate.startsWith(`${path}/`)).map((candidate) => childEntryOf({ path: candidate, folder: path }));
+        return {
+          outcome: "ok",
+          value: [...new Map(children.map((child) => [child.name, child])).values()].toSorted((left, right) => (left.name < right.name ? -1 : 1)),
+        };
+      },
+      create: ({ path }) => {
+        folders.add(path);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    fileRemoval: {
+      remove: ({ path }) => {
+        files.delete(path);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    git: {
+      trackedPaths: () => ({ outcome: "ok", value: [] }),
+      changedSince: () => ({ outcome: "ok", value: [] }),
+      contentInBase: () => ({ outcome: "ok", value: "absent-from-base" }),
+      textInBase: () => ({ outcome: "ok", value: { presence: "absent-from-base" } }),
+      renamedSince: () => ({ outcome: "ok", value: new Map() }),
+    },
+    gitTree: { pathsAt: () => ({ outcome: "ok", value: [] }) },
+  };
+};
+
 const projectRequest = (overrides: Partial<ProjectRequest>): ProjectRequest => {
   const ports = {
     repoRoot: absolutePathSchema.parse("/repo"),
@@ -355,13 +455,13 @@ describe("runProject with an embedded runner", () => {
       conform: vi.fn<(request: unknown) => Promise<unknown>>().mockResolvedValue({ outcome: "ok", value: [] }),
       project: vi.fn<(request: unknown) => Promise<unknown>>().mockResolvedValue({ outcome: "ok", value: [] }),
     };
-    const disk = recordsDisk({ working: { "discipline-exceptions/authorised-locations/cd-14.json": SPLIT_WALKER_LOCATIONS }, base: {} });
+    const splitLayoutPorts = splitLayoutPortsHolding({ files: { "discipline-exceptions/authorised-locations/cd-14.json": SPLIT_WALKER_LOCATIONS } });
 
     await runProject(
       projectRequest({
         fileText: fileTextOver(TWO_MECHANISM_INSTALL),
         modules: modulesByPath({ [RUNNER_PATH]: { runner }, [LINT_RUNNER_PATH]: { runner: standaloneRunner() } }),
-        exceptionRepository: createExceptionRepository({ ...disk.ports, repoRoot: disk.repoRoot }),
+        exceptionRepository: createExceptionRepository({ ...splitLayoutPorts, repoRoot: absolutePathSchema.parse(SPLIT_LAYOUT_ROOT) }),
       }),
     );
 

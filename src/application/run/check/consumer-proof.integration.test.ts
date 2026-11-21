@@ -1,22 +1,89 @@
 import { assert, describe, expect, it, type MockInstance, vi } from "vitest";
-import { withSingleFileRecords, } from "../../../../tests/records-disk.ts";
 import { runCheck } from "./run-check.ts";
+import type { CheckReport } from "../../../domain/report/check-report.ts";
+import type { Result } from "../../../domain/result.ts";
+import { checkCommandOutcome } from "../../../infrastructure/command-line/outcomes/check-command-outcome.ts";
+import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { EntryKindPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
+import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
+import type { ExitCode } from "../../../infrastructure/node/process/process-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createEslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { runProject } from "../../projection/run-project.ts";
 import { createDefaultFileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
+import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { defaultEslintPort } from "../../../../tests/eslint-toolchains.ts";
 import { createWalkerRunner } from "../../../infrastructure/engines/audit/runner/create-walker-runner.ts";
-import { defaultParsePort } from "../../../../tests/typescript-parse-port.ts";
-import { type PathCallsOutside, pathCallsOutside } from "../../../../tests/confinement.ts";
-import { fullReportExitCode } from "../../../../tests/full-report-exit-code.ts";
-import { ABSENT_ENTRY_KIND } from "../../../../tests/empty-walker-disk.ts";
+
+const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+
+const SPLIT_FOLDER_NAME = "discipline-exceptions";
+
+type DiskRequest = {
+  readonly repoRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
+  readonly moduleExtension: ModuleExtension;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+};
+
+const singleFileRepositoryOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepository =>
+  createExceptionRepository({
+    ...request,
+    fileText: {
+      ...request.fileText,
+      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+    },
+    directory: {
+      list: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path: folder, detail: "the single-file fake holds no folders" } }),
+      create: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path: folder, detail: "the single-file fake holds no folders" } }),
+    },
+    fileRemoval: { remove: ({ path: file }) => ({ outcome: "failed", error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" } }) },
+    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
+  });
+
+const withSingleFileRecords = <Request extends DiskRequest>(
+  request: Request,
+): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+  ...request,
+  selectionRepository: createSelectionRepository(request),
+  exceptionRepository: singleFileRepositoryOver(request),
+});
+
+const PROJECT_COMMAND = "node src/hone.ts project --repo .";
+
+const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
+
+const fullReportExitCode = (request: { readonly checked: Result<CheckReport, LoadFailure> }): ExitCode =>
+  checkCommandOutcome({
+    result:
+      request.checked.outcome === "failed"
+        ? request.checked
+        : { outcome: "ok", value: { report: request.checked.value, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },
+  }).code;
+
+const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
+
+type PathCallsOutside = {
+  readonly called: "at least once" | "never";
+  readonly outside: readonly string[];
+};
 
 const path = createDefaultPathPort({});
 
@@ -28,7 +95,19 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
 
 const INSTALL_ROOT = resolvedPath({ path: `${import.meta.dirname}/../../../..` });
 
-const WALKER_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/../../../../delivery/install-proof/consumer-proof/audit` });
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: INSTALL_ROOT, installForm: "source" }) });
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+
+const defaultParsePort = loadedParsePort.value;
+
+const loadedEslintToolchain = await loadEslintToolchain({ peers: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }) });
+assert(loadedEslintToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+assert(/^10\./.test(loadedEslintToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedEslintToolchain.value.eslintVersion}`);
+
+const defaultEslintPort = createEslintPort({ toolchain: loadedEslintToolchain.value });
+
+const WALKER_CONSUMER =resolvedPath({ path: `${import.meta.dirname}/../../../../delivery/install-proof/consumer-proof/audit` });
 
 const ESLINT_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/../../../../delivery/install-proof/consumer-proof/eslint` });
 
@@ -53,7 +132,15 @@ const NO_HARNESS_SEGMENT = /^(?!(?:.*\/)?\.(?:claude|kiro|codex|cursor|aidlc|ope
 const installCallsOutside = (request: {
   readonly calls: readonly (readonly [{ readonly path: string }])[];
   readonly paths: RegExp;
-}): PathCallsOutside => pathCallsOutside({ path, root: INSTALL_ROOT, calls: request.calls, paths: request.paths });
+}): PathCallsOutside => ({
+  called: request.calls.length === 0 ? "never" : "at least once",
+  outside: request.calls
+    .map(([call]) => call.path)
+    .filter((observed) => {
+      const location = path.relative({ from: INSTALL_ROOT, to: observed });
+      return !(location.relation === "within-root" && request.paths.test(location.path));
+    }),
+});
 
 const EVERY_CALL_WITHIN: PathCallsOutside = { called: "at least once", outside: [] };
 
@@ -202,6 +289,25 @@ const CLEAN_REPORT = {
   assessment: [],
   readFirst: [],
 };
+
+describe("installCallsOutside over written-out calls, so the path confinement can fail", () => {
+  it("reports at least one call and lists the observed paths outside the install path list or carrying a harness segment", () => {
+    expect({
+      installList: installCallsOutside({
+        calls: [[{ path: `${INSTALL_ROOT}/src/domain/a.ts` }], [{ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/b.ts` }]],
+        paths: WALKER_INSTALL_LIST,
+      }),
+      harness: installCallsOutside({ calls: [[{ path: `${INSTALL_ROOT}/src/domain/a.ts` }], [{ path: `${INSTALL_ROOT}/.claude/c.ts` }]], paths: NO_HARNESS_SEGMENT }),
+    }).toEqual({
+      installList: { called: "at least once", outside: [`${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/b.ts`] },
+      harness: { called: "at least once", outside: [`${INSTALL_ROOT}/.claude/c.ts`] },
+    });
+  });
+
+  it("reports never when no call was made", () => {
+    expect(installCallsOutside({ calls: [], paths: WALKER_INSTALL_LIST })).toEqual({ called: "never", outside: [] });
+  });
+});
 
 describe("a consumer with no harness directory selecting CD-23 through the audit, run against the install", () => {
   it("passes when every tracked unit has its test sibling, exiting 0", async () => {

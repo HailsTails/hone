@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { systemErrorOf } from "../../../../tests/system-error.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createFileCreationPort, type FileCreationSurface } from "./file-creation-port.ts";
 
 const FILE = absolutePathSchema.parse("/repo/hone.eslint.mjs");
 
-const NAME_TAKEN = systemErrorOf({ code: "EEXIST", message: "EEXIST: file already exists" });
+const NAME_TAKEN = Object.assign(new Error("EEXIST: file already exists"), { code: "EEXIST" });
 
 describe("createFileCreationPort", () => {
   it("creates the file through the surface, which refuses a name already taken", () => {

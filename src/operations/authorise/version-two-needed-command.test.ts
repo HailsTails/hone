@@ -1,11 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { commandOver, memoryRepositoryOf, recordedProcessWith } from "../../../tests/command-harness.ts";
+import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
+import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createPathPort } from "../../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import { versionTwoNeededCommandOf } from "./version-two-needed-command.ts";
 
+const notUsed = (): never => {
+  throw new Error("this port is not used by the command under test");
+};
+
+const memoryFileTextOf = (request: { readonly files: Readonly<Record<string, string>> }): FileTextPort => {
+  const held = new Map<string, string>(Object.entries(request.files).map(([file, text]) => [`/repo/${file}`, text]));
+  const holdsUnder = (path: string): boolean => [...held.keys()].some((key) => key.startsWith(`${path}/`));
+  return {
+    exists: ({ path }) => (held.has(path) || holdsUnder(path) ? "present" : "absent"),
+    read: ({ path }) => {
+      const text = held.get(path);
+      return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } } : { outcome: "ok", value: text };
+    },
+    write: ({ path, text }) => {
+      held.set(path, text);
+      return { outcome: "ok", value: undefined };
+    },
+  };
+};
+
+const commandOver = (request: { readonly process: ProcessPort; readonly fileText: FileTextPort }): VersionOneCommandRequest => ({
+  process: request.process,
+  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  fileText: request.fileText,
+  modules: { load: notUsed },
+  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
+  exceptionRepositoryOf: notUsed,
+  moduleUrl: "file:///install/src/hone.ts",
+});
+
 const ranOver = async (request: { readonly files: Readonly<Record<string, string>>; readonly arguments: readonly string[] }) => {
-  const recorded = recordedProcessWith({ arguments: request.arguments });
-  await versionTwoNeededCommandOf(commandOver({ process: recorded.port, fileText: memoryRepositoryOf({ files: request.files }).fileText }));
-  return { writes: recorded.writes, exits: recorded.exits };
+  const writes: Parameters<ProcessPort["writeOut"]>[] = [];
+  const exits: Parameters<ProcessPort["exitWith"]>[] = [];
+  const processPort: ProcessPort = {
+    arguments: request.arguments,
+    writeOut: (written) => writes.push([written]),
+    writeError: () => undefined,
+    exitWith: (exit) => exits.push([exit]),
+  };
+  await versionTwoNeededCommandOf(commandOver({ process: processPort, fileText: memoryFileTextOf({ files: request.files }) }));
+  return { writes, exits };
 };
 
 describe("versionTwoNeededCommandOf", () => {

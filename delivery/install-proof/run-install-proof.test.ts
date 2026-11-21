@@ -1,15 +1,23 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
 import type { Result } from "../../src/domain/result.ts";
-import { requiredEntry } from "../../tests/required-entry.ts";
 import type { ProofCase, StepRun } from "./install-proof-plan.ts";
 import type { CommandRunPort, EffectFailure, ListedEntry, ScratchFilesPort } from "./install-proof-ports.ts";
 import type { TarballPackerPort } from "../packaging/packing/package-commands.ts";
 import { type InstallProofRequest, runInstallProof } from "./run-install-proof.ts";
 
-const ENTRY_URL = "file:///package/delivery/install-proof/install-proof.ts";
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
+
+const ENTRY_URL ="file:///package/delivery/install-proof/install-proof.ts";
 
 const PACKAGE_MANIFEST =
   '{ "packageManager": "pnpm@10.34.9", "dependencies": { "zod": "^4.4.3" }, "peerDependencies": { "typescript": ">=4.8.4 <7.0.0" }, "devDependencies": { "typescript-floor": "npm:typescript@4.8.4" } }';

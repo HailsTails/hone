@@ -1,6 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { withSingleFileRecords, } from "../../../../tests/records-disk.ts";
 import { runCheck } from "./run-check.ts";
+import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { EntryKindPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
+import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
 import {
   toolchainBoundEmbeddedRunner,
   toolchainBoundStandaloneRunner,
@@ -16,7 +20,7 @@ import {
   type ModuleLoaderPort,
 } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import type { PackageLocationPort } from "../../../infrastructure/node/modules/package-location-port.ts";
-import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
+import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { installFormOf } from "../../../infrastructure/node/modules/install-layout.ts";
@@ -31,10 +35,79 @@ import {
   ESLINT_PROJECTED_KINDS,
 } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { eslintPeersOn, modulesServingRunner } from "../../../../tests/eslint-toolchains.ts";
-import { overlaidFileText } from "../../../../tests/overlaid-file-text.ts";
-import { ABSENT_ENTRY_KIND } from "../../../../tests/empty-walker-disk.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+
+const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+
+const SPLIT_FOLDER_NAME = "discipline-exceptions";
+
+type DiskRequest = {
+  readonly repoRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
+  readonly moduleExtension: ModuleExtension;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+};
+
+const singleFileRepositoryOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepository =>
+  createExceptionRepository({
+    ...request,
+    fileText: {
+      ...request.fileText,
+      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+    },
+    directory: {
+      list: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path: folder, detail: "the single-file fake holds no folders" } }),
+      create: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path: folder, detail: "the single-file fake holds no folders" } }),
+    },
+    fileRemoval: { remove: ({ path: file }) => ({ outcome: "failed", error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" } }) },
+    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
+  });
+
+const withSingleFileRecords = <Request extends DiskRequest>(
+  request: Request,
+): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+  ...request,
+  selectionRepository: createSelectionRepository(request),
+  exceptionRepository: singleFileRepositoryOver(request),
+});
+
+const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
+
+const slashed = (text: string): string => text.replaceAll("\\", "/");
+
+const overlaidFileText = (request: {
+  readonly base: FileTextPort;
+  readonly files: Readonly<Record<string, string>>;
+}): FileTextPort => {
+  const overlaid = (requested: string): string | undefined =>
+    Object.entries(request.files).find(([name]) => slashed(name) === slashed(requested))?.[1];
+  return {
+    ...request.base,
+    read: (reading) => {
+      const text = overlaid(reading.path);
+      return text === undefined ? request.base.read(reading) : { outcome: "ok", value: text };
+    },
+    exists: (probing) => (overlaid(probing.path) === undefined ? request.base.exists(probing) : "present"),
+  };
+};
+
+const modulesServingRunner = (request: {
+  readonly runnerSuffix: string;
+  readonly runner: unknown;
+  readonly base: ModuleLoaderPort;
+}): ModuleLoaderPort => ({
+  load: (load) =>
+    load.path.replaceAll("\\", "/").endsWith(request.runnerSuffix)
+      ? Promise.resolve({ outcome: "ok", value: { runner: request.runner } })
+      : request.base.load(load),
+});
 
 const path = createDefaultPathPort({});
 
@@ -140,7 +213,7 @@ const eslintRunnerWithoutPeersOver = (request: {
   toolchainBoundEmbeddedRunner({
     toolchain: loadEslintToolchain({
       peers: {
-        ...eslintPeersOn({ line: "eslint-10" }),
+        modules: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }).modules,
         location: eslintNotInstalled,
       },
     }),

@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { defaultEslintPort } from "../../../../../../tests/eslint-toolchains.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import cd7Plugin from "./cd7.eslint-plugin.ts";
 
@@ -10,7 +11,13 @@ const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: cd7Plugin }).default;
 
-const eslint = defaultEslintPort;
+const loadedToolchain = await loadEslintToolchain({
+  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+});
+assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+
+const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
 const flagCases: readonly SourceCase[] = [
   {

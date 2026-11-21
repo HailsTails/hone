@@ -13,11 +13,86 @@ import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts";
 import { projectedChecksOf } from "./projected-checks.ts";
 import { resolvedConfigSchema } from "../toolchain/eslint-config-schema.ts";
-import { projectionText } from "./projection-text.ts";
+import { type ProjectedPiece, projectionText } from "./projection-text.ts";
 import { createDefaultScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import { repositoryRootOf } from "../../../../../../tests/allowed-forms-proof.ts";
-import { ESLINT_LINES, type EslintLine, eslintClassOn } from "../../../../../../tests/eslint-toolchains.ts";
-import { inCheckRuleIds, type SpecifierOf, versionOnePiecesOf } from "../../../../../../tests/projection-pair.ts";
+import { checksOf } from "../../../../../domain/language-layer/check-address.ts";
+import type { SymptomCatalogue } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
+import type { PathPort } from "../../../../node/path-port.ts";
+import { checkRuleIdOf, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
+import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
+import type { EslintClass } from "../toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../toolchain/eslint-toolchain.ts";
+import { eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
+
+type EslintLine = "eslint-10" | "eslint-9";
+
+const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+
+const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+
+const ESLINT_MODULES: Readonly<Record<EslintLine, EslintToolchainModules>> = {
+  "eslint-10": DEVELOPMENT_PEERS.modules,
+  "eslint-9": eslint9ToolchainModules,
+};
+
+const eslintClassOn = (request: { readonly line: EslintLine }): Promise<EslintClass> =>
+  ESLINT_MODULES[request.line].eslint().then((eslintModule) => eslintModule.ESLint);
+
+type SpecifierOf = (request: { readonly modulePath: string }) => string;
+
+type SettledBinding = { readonly binding: ClauseBinding; readonly settings: EslintPieceSettings };
+
+const ESLINT_MECHANISM = "eslint";
+
+const settledBindingsOf = (request: { readonly bindings: readonly ClauseBinding[] }): readonly SettledBinding[] =>
+  request.bindings
+    .filter((binding) => binding.mechanism === ESLINT_MECHANISM)
+    .flatMap((binding) => {
+      const settings = eslintPieceSettingsSchema.safeParse(binding.clause.settings);
+      return settings.success ? [{ binding, settings: settings.data }] : [];
+    });
+
+const versionOneRuleIdOf = (request: { readonly settings: EslintPieceSettings }): string => `${request.settings.pluginNamespace}/${request.settings.rule}`;
+
+const versionOnePiecesOf = (request: {
+  readonly bindings: readonly ClauseBinding[];
+  readonly path: PathPort;
+  readonly specifierOf: SpecifierOf;
+}): readonly ProjectedPiece[] => {
+  const settledBindings = settledBindingsOf(request);
+  return settledBindings
+    .filter((settled, index) => settledBindings.findIndex((other) => other.settings.pluginNamespace === settled.settings.pluginNamespace) === index)
+    .map((leader) => ({
+      pluginNamespace: leader.settings.pluginNamespace,
+      pluginImport: request.specifierOf({ modulePath: request.path.join({ segments: [leader.binding.clause.pieceRoot, leader.settings.pluginModule] }) }),
+      clauses: settledBindings
+        .filter((settled) => settled.settings.pluginNamespace === leader.settings.pluginNamespace)
+        .map((settled) => ({
+          address: settled.binding.clause.address,
+          ruleId: versionOneRuleIdOf({ settings: settled.settings }),
+          options: ruleOptionsOf({ settings: settled.settings }),
+        })),
+    }));
+};
+
+const checkRuleIdsOfBinding = (request: { readonly catalogue: Pick<SymptomCatalogue, "checks">; readonly settled: SettledBinding }): readonly string[] =>
+  checksOf({ catalogue: request.catalogue, clause: request.settled.binding.clause.address })
+    .filter((check) => runsOnEslint({ check }) === "eslint")
+    .map((check) => checkRuleIdOf({ check }));
+
+const inCheckRuleIds = <Entry>(request: {
+  readonly catalogue: Pick<SymptomCatalogue, "checks">;
+  readonly bindings: readonly ClauseBinding[];
+  readonly rules: Readonly<Record<string, Entry>>;
+}): Readonly<Record<string, Entry>> => {
+  const renames = new Map(
+    settledBindingsOf(request).flatMap((settled) =>
+      checkRuleIdsOfBinding({ catalogue: request.catalogue, settled }).map((ruleId): readonly [string, string] => [versionOneRuleIdOf(settled), ruleId]),
+    ),
+  );
+  return Object.fromEntries(Object.entries(request.rules).map(([ruleId, entry]) => [renames.get(ruleId) ?? ruleId, entry]));
+};
 
 const path = createDefaultPathPort({});
 
@@ -31,7 +106,7 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: repositoryRootOf({ testFolder: `${import.meta.dirname}/../../../../../../tests` }) });
+const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "..", "..", "..", "..", ".."] }) });
 
 const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "projection-pair", "before"] }) });
 

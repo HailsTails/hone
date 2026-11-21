@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
 import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
@@ -7,10 +7,16 @@ import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import { check } from "./class-syntax.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { ABSENT_ENTRY_KIND } from "../../../../../tests/empty-walker-disk.ts";
+
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const defaultParsePort = loadedParsePort.value;
 
 const CLASS_ON_LINE_THREE = "const a = 1;\n\n  class Alpha {}\n";
 const ADDRESS = clauseAddressSchema.parse("CD-14#class-syntax");
@@ -39,7 +45,7 @@ const walkerRunner = createWalkerRunner({
   modules: loadingThisPiece,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
   parse: defaultParsePort,
-  entryKind: ABSENT_ENTRY_KIND,
+  entryKind: { kindOf: () => "absent" },
 });
 
 describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {

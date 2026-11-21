@@ -9,9 +9,16 @@ import { clauseAddressSchema } from "../../../discipline-exceptions-folder/claus
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import { CASE_ROOT } from "./pieces/walker-disk.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
 import type { PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
+
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const defaultParsePort = loadedParsePort.value;
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
 const ALPHA = repoPathSchema.parse("src/alpha.ts");

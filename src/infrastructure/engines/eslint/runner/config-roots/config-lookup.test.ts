@@ -3,11 +3,28 @@ import type { FileTextPort } from "../../../../node/file-system/file-text-port.t
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { overlaidFileText } from "../../../../../../tests/overlaid-file-text.ts";
 import type { EslintConfigLookup } from "../../eslint-config-lookup.ts";
 import { configLookupDeclaring, teamConfigLookupFor } from "./config-lookup.ts";
 
 const REPO = absolutePathSchema.parse("/repo");
+
+const slashed = (text: string): string => text.replaceAll("\\", "/");
+
+const overlaidFileText = (request: {
+  readonly base: FileTextPort;
+  readonly files: Readonly<Record<string, string>>;
+}): FileTextPort => {
+  const overlaid = (requested: string): string | undefined =>
+    Object.entries(request.files).find(([name]) => slashed(name) === slashed(requested))?.[1];
+  return {
+    ...request.base,
+    read: (reading) => {
+      const text = overlaid(reading.path);
+      return text === undefined ? request.base.read(reading) : { outcome: "ok", value: text };
+    },
+    exists: (probing) => (overlaid(probing.path) === undefined ? request.base.exists(probing) : "present"),
+  };
+};
 
 const path = createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" });
 

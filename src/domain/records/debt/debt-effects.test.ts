@@ -1,8 +1,104 @@
 import { describe, expect, it } from "vitest";
-import { CAST_CHECK, CLAIMED_TYPE, CLOCK_CHECK, DATE_USED_DIRECTLY, WHOLE_SYMPTOM } from "../../../../tests/report-catalogue.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type DebtEffectsRequest, debtOutcomesOf } from "./debt-effects.ts";
-import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom } from "../../language-layer/symptom-catalogue.ts";
+
+const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
+
+const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+
+const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
+
+const AT_A_BOUNDARY: Principle = { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" };
+
+const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
+
+const PORTS_DECLARED_INSIDE: Rule = { name: "ports-declared-inside", title: "Ports declared inside", principle: AT_A_BOUNDARY, standing: "accepted" };
+
+const WRITTEN_OUT_ANSWERS: Rule = { name: "written-out-answers", title: "Written-out answers", principle: TESTS_ARE_OURS, standing: "accepted" };
+
+const DOER_OR_ORCHESTRATOR: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+
+const DECLARED_NOT_ASSERTED: Rule = { name: "declared-not-asserted", title: "Declared, not asserted", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+
+const NEEDS_THE_CURRENT_TIME: Case = {
+  name: "needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering",
+  title: "Needs the current time, a random value, a new id or an outside ordering",
+  standing: "accepted",
+  owes: [{ kind: "principle", principle: AT_A_BOUNDARY }],
+};
+
+const DOES_ONE_JOB: Case = { name: "does-one-job", title: "Does one job", standing: "accepted", owes: [{ kind: "principle", principle: ONE_PLACE_DECIDES }] };
+
+const OWED_DECLARED_NOT_ASSERTED: Pointed = { kind: "rule", rule: DECLARED_NOT_ASSERTED };
+
+const GIVES_A_VALUE_ITS_TYPE: Case = {
+  name: "gives-a-value-its-type",
+  title: "Gives a value its type",
+  standing: "accepted",
+  owes: [OWED_DECLARED_NOT_ASSERTED],
+};
+
+const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  name: "world-values-through-a-port",
+  title: "World values through a port",
+  standing: "accepted",
+  reason: { text: "the world reaches a unit through a port", standing: "accepted" },
+};
+
+const BOUNDARY_RECORD: RecordKind = { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "authorised-location" };
+
+const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
+
+const DATE_USED_DIRECTLY: Symptom = {
+  name: "date-used-directly",
+  title: "Date used directly",
+  seen: "Any use of `Date` outside the places that handle dates.",
+  mayIndicate: [
+    {
+      case: NEEDS_THE_CURRENT_TIME,
+      points: [
+        { kind: "rule", rule: PORTS_DECLARED_INSIDE },
+        { kind: "rule", rule: WRITTEN_OUT_ANSWERS },
+      ],
+    },
+    { case: DOES_ONE_JOB, points: [{ kind: "rule", rule: DOER_OR_ORCHESTRATOR }] },
+  ],
+  breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
+  recipes: [WORLD_VALUES_THROUGH_A_PORT],
+  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD, at: "on the clock adapter" }],
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [{ case: GIVES_A_VALUE_ITS_TYPE, situation: "or needs it narrower", points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }] }],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+};
+
+const CLOCK_CHECK: Check = {
+  name: "clock-sources",
+  symptom: DATE_USED_DIRECTLY,
+  clause: clauseAddressSchema.parse("CD-17#clock-sources"),
+  engines: [WALKER],
+  forms: [],
+};
+
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  clause: clauseAddressSchema.parse("CD-2#cast-expressions"),
+  engines: [ESLINT_ENGINE],
+  forms: [],
+};
 
 const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
 

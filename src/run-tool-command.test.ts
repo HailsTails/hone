@@ -1,6 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
-import { authoriseArgumentsFor, commandOver, memoryRepositoryOf } from "../tests/command-harness.ts";
-import { requiredEntry } from "../tests/required-entry.ts";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "./infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { FileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "./infrastructure/git/git-port.ts";
@@ -13,6 +11,99 @@ import type { VersionOneCommandRequest } from "./application/ports/version-one-c
 import { type CommandHandler, type Subcommands, TOOL_SUBCOMMANDS, toolCommandOf } from "./run-tool-command.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
+
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
+
+const notUsed = (): never => {
+  throw new Error("this port is not used by the command under test");
+};
+
+const memoryFileTextOf = (request: {
+  readonly files: Readonly<Record<string, string>>;
+  readonly outsideFiles?: Readonly<Record<string, string>>;
+}): FileTextPort => {
+  const held = new Map([...Object.entries(request.files).map(([file, text]) => [`/repo/${file}`, text] as const), ...Object.entries({ ...request.outsideFiles })]);
+  const holdsUnder = (path: string): boolean => [...held.keys()].some((key) => key.startsWith(`${path}/`));
+  return {
+    exists: ({ path }) => (held.has(path) || holdsUnder(path) ? "present" : "absent"),
+    read: ({ path }) => {
+      const text = held.get(path);
+      return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } } : { outcome: "ok", value: text };
+    },
+    write: ({ path, text }) => {
+      held.set(path, text);
+      return { outcome: "ok", value: undefined };
+    },
+  };
+};
+
+const commandOver = (request: { readonly process: ProcessPort; readonly fileText: FileTextPort }): VersionOneCommandRequest => ({
+  process: request.process,
+  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  fileText: request.fileText,
+  modules: { load: notUsed },
+  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
+  exceptionRepositoryOf: notUsed,
+  moduleUrl: ENTRY_URL,
+});
+
+const AUTHORISE_ARGUMENTS: readonly string[] = [
+  "--repo",
+  "/repo",
+  "--answers",
+  "claimed-type",
+  "--file",
+  "src/a.ts",
+  "--case",
+  "gives-a-value-its-type",
+  "--owes",
+  "declared-not-asserted",
+  "--why",
+  "Why does the audit refuse tracker ids in carve-out names?",
+  "--because",
+  "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+  "--evidence",
+  "tools/audit/name-matcher.ts:14",
+  "--why",
+  "Why does the name matcher accept only lowercase slugs?",
+  "--because",
+  "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+  "--evidence",
+  "tools/git/branch-name.ts:8",
+  "--why",
+  "Why was the matcher copied from the branch-name validator?",
+  "--because",
+  "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+  "--evidence",
+  "PR #212, merged 2026-07-02",
+  "--why",
+  "Why did no shared slug type exist when the audit landed?",
+  "--because",
+  "The values package that now holds RepoPath was split out two months after the audit.",
+  "--evidence",
+  "packages/values/package.json:3",
+  "--why",
+  "Why was the values package split out after the audit?",
+  "--because",
+  "The split waited on the monorepo move, which left older tools on their own patterns.",
+  "--evidence",
+  "docs/decisions/0007-monorepo.md:21",
+  "--root-cause",
+  "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  "--root-evidence",
+  "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  "--readback",
+  "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
+  "--owner",
+  "capture 01a0b421",
+];
 
 const UNUSED_PATH: PathPort = {
   join: vi.fn<PathPort["join"]>(),
@@ -169,7 +260,7 @@ describe("toolCommandOf refusing an invocation it cannot read", () => {
 const helpRequest = (request: { readonly process: ProcessPort; readonly files: Readonly<Record<string, string>> }): VersionOneCommandRequest => ({
   ...commandRequest({ process: request.process }),
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-  fileText: memoryRepositoryOf({ files: request.files }).fileText,
+  fileText: memoryFileTextOf({ files: request.files }),
 });
 
 const VERSION_ONE_FILES = { "disciplines.json": "{}" };
@@ -323,7 +414,7 @@ describe("TOOL_SUBCOMMANDS authorise, which has no version 1 form", () => {
   it.each(AUTHORISE_CASES)("prints one load failure line naming what is wrong, and exits 2, given $case", async ({ files, path, arguments: given, line }) => {
     const processPort = processWith({ arguments: given });
 
-    await TOOL_SUBCOMMANDS.authorise({ ...commandOver({ process: processPort, fileText: memoryRepositoryOf({ files }).fileText }), path });
+    await TOOL_SUBCOMMANDS.authorise({ ...commandOver({ process: processPort, fileText: memoryFileTextOf({ files }) }), path });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: line }]], exits: [[{ code: 2 }]] });
   });
@@ -355,10 +446,10 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
     { subcommand: "prune-debt", given: ["--repo", "/repo", "--base-revision", "main"] },
     { subcommand: "upgrade", given: ["--repo", "/repo"] },
     { subcommand: "split-records", given: ["--repo", "/repo"] },
-    { subcommand: "authorise", given: authoriseArgumentsFor({ repo: "/repo", rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types." }) },
+    { subcommand: "authorise", given: AUTHORISE_ARGUMENTS },
   ] as const)("prints the config-absent line and exits 2, given $subcommand", async ({ subcommand, given }) => {
     const processPort = processWith({ arguments: given });
-    const command = commandOver({ process: processPort, fileText: memoryRepositoryOf({ files: {}, outsideFiles: { [CATALOGUE_PATH]: SHIPPED_CATALOGUE } }).fileText });
+    const command = commandOver({ process: processPort, fileText: memoryFileTextOf({ files: {}, outsideFiles: { [CATALOGUE_PATH]: SHIPPED_CATALOGUE } }) });
 
     await TOOL_SUBCOMMANDS[subcommand](command);
 

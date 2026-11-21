@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { ESLINT_LINES, type EslintLine, loadedEslintToolchain } from "../../../../../../tests/eslint-toolchains.ts";
+import { defaultEslintToolchainPeers, type EslintToolchainModules, type EslintToolchainPeers, loadEslintToolchain } from "./eslint-toolchain.ts";
 import {
   type CreateEslint,
   createEslintPort,
@@ -13,6 +13,33 @@ import {
   type LintedFile,
 } from "./eslint-instance.ts";
 import { eslintPluginModuleSchema } from "../pieces/eslint-plugin-schema.ts";
+import { eslint9ToolchainModules } from "./eslint-9/eslint-9-engine.ts";
+
+type EslintLine = "eslint-10" | "eslint-9";
+
+const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+
+type LineDefinition = {
+  readonly eslintVersion: RegExp;
+  readonly modules: EslintToolchainModules;
+};
+
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+
+const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
+  "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules },
+  "eslint-9": { eslintVersion: /^9\./, modules: eslint9ToolchainModules },
+};
+
+const loadedEslintToolchain = async (request: { readonly line: EslintLine }): Promise<EslintToolchain> => {
+  const loaded = await loadEslintToolchain({ peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules } });
+  assert(loaded.outcome === "ok", `the ${request.line} toolchain loads from the development install`);
+  assert(
+    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
+    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
+  );
+  return loaded.value;
+};
 
 type ReportingContext = {
   readonly report: (descriptor: { readonly node: unknown; readonly messageId: string }) => void;

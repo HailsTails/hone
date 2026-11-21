@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { defaultParsePort } from "../../../../../../tests/typescript-parse-port.ts";
+import { assert, describe, expect, it } from "vitest";
+import { defaultTypeScriptPeers, loadParsePort } from "./typescript-toolchain.ts";
 
-const port = defaultParsePort;
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const port = loadedParsePort.value;
 const TWO_STATEMENTS = "const a = 1;\nconst b = 2;\n";
 
 describe("the parse port loaded from the development install's typescript", () => {

@@ -1,8 +1,56 @@
 import { describe, expect, it, vi } from "vitest";
-import { commandOver, memoryRepositoryOf, recordedProcessWith } from "../../../tests/command-harness.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import type { GitPort } from "../../infrastructure/git/git-port.ts";
+import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createPathPort } from "../../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import { alreadyUpgradedCommand, type UpgradePorts, upgradeCommandOf } from "./run-upgrade-command.ts";
+
+const notUsed = (): never => {
+  throw new Error("this port is not used by the command under test");
+};
+
+const memoryFileTextOf = (request: { readonly files: Readonly<Record<string, string>> }): FileTextPort => {
+  const held = new Map<string, string>(Object.entries(request.files).map(([file, text]) => [`/repo/${file}`, text]));
+  const holdsUnder = (path: string): boolean => [...held.keys()].some((key) => key.startsWith(`${path}/`));
+  return {
+    exists: ({ path }) => (held.has(path) || holdsUnder(path) ? "present" : "absent"),
+    read: ({ path }) => {
+      const text = held.get(path);
+      return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } } : { outcome: "ok", value: text };
+    },
+    write: ({ path, text }) => {
+      held.set(path, text);
+      return { outcome: "ok", value: undefined };
+    },
+  };
+};
+
+type Writes = Parameters<ProcessPort["writeOut"]>[];
+
+type Exits = Parameters<ProcessPort["exitWith"]>[];
+
+const recordedProcessWith = (request: { readonly arguments: readonly string[] }) => {
+  const writes: Writes = [];
+  const exits: Exits = [];
+  const port: ProcessPort = {
+    arguments: request.arguments,
+    writeOut: (written) => writes.push([written]),
+    writeError: () => undefined,
+    exitWith: (exit) => exits.push([exit]),
+  };
+  return { port, writes, exits };
+};
+
+const commandOver = (request: { readonly process: ProcessPort; readonly fileText: FileTextPort }): VersionOneCommandRequest => ({
+  process: request.process,
+  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  fileText: request.fileText,
+  modules: { load: notUsed },
+  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
+  exceptionRepositoryOf: notUsed,
+  moduleUrl: "file:///install/src/hone.ts",
+});
 
 const PORTS: UpgradePorts = {
   gitTree: { pathsAt: vi.fn() },
@@ -25,7 +73,7 @@ const gitFailing = (): GitPort => ({
 
 const commandWith = (request: { readonly arguments: readonly string[]; readonly files: Readonly<Record<string, string>>; readonly git: GitPort }) => {
   const recorded = recordedProcessWith({ arguments: request.arguments });
-  const base = commandOver({ process: recorded.port, fileText: memoryRepositoryOf({ files: request.files }).fileText });
+  const base = commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) });
   const command: VersionOneCommandRequest = { ...base, git: request.git, exceptionRepositoryOf: vi.fn() };
   return { command, recorded };
 };

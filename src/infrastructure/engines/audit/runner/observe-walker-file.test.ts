@@ -9,13 +9,18 @@ import type {
   PreparedWalkerPiece,
 } from "./prepare-walker-pieces.ts";
 import type { CommentRange, SyntaxNode, SyntaxTree, TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 import type { PieceHit, SourceObservers, WalkerFile } from "./pieces/walker-piece.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
 
 const FILE = repoPathSchema.parse("src/example.tsx");
 const SOURCE = "{ { /* note */ } }\n";
-const SYNTAX_API = defaultParsePort.syntaxApi;
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const SYNTAX_API = loadedParsePort.value.syntaxApi;
 const TREE = SYNTAX_API.createSourceFile(FILE, SOURCE, SYNTAX_API.ScriptTarget.Latest, true);
 const OUTER_BLOCK = TREE.getChildAt(0, TREE).getChildAt(0, TREE);
 const INNER_BLOCK = OUTER_BLOCK.getChildAt(1, TREE).getChildAt(0, TREE);

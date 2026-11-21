@@ -1,7 +1,7 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import type { Finding } from "../../infrastructure/command-line/governance.ts";
 import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import { answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
@@ -14,15 +14,103 @@ import { absolutePathSchema } from "../../infrastructure/content-files/absolute-
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
-import { repositoryRootOf } from "../../../tests/allowed-forms-proof.ts";
-import { recipeReasonIn, recordsRepositoryIn } from "../../../tests/hone-records-scratch.ts";
+import type { Recipe } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { Result } from "../../domain/result.ts";
+import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
+import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import {
+  type CommandRunPort,
+  createDefaultCommandRunPort,
+  createDefaultScratchFilesPort,
+  type ScratchFilesPort,
+} from "../../../delivery/install-proof/install-proof-ports.ts";
 
-const REPO_ROOT = absolutePathSchema.parse(repositoryRootOf({ testFolder: `${import.meta.dirname}/../..` }));
+type ScratchRecordsFile = { readonly folder: string; readonly name: string; readonly records: readonly ReadonlyJsonValue[] };
+
+type RecordsRepository = { readonly base: readonly ScratchRecordsFile[]; readonly working: readonly ScratchRecordsFile[] };
+
+type ScratchPorts = {
+  readonly scratch: Pick<ScratchFilesPort, "createTemporaryDirectory" | "makeDirectory">;
+  readonly files: Pick<FileTextPort, "write">;
+  readonly commands: CommandRunPort;
+  readonly path: Pick<PathPort, "join">;
+};
+
+type ScratchFailure = { readonly kind: "scratch-failed"; readonly step: string; readonly detail: string };
+
+type Step = Result<null, ScratchFailure>;
+
+const SCRATCH_PREFIX = "hone-records-";
+
+const RECORDS_VERSION = 2;
+
+const JSON_INDENT = 2;
+
+const GIT_IDENTITY: readonly string[] = ["-c", "user.name=hone-records", "-c", "user.email=hone-records@invalid", "-c", "commit.gpgsign=false"];
+
+const DONE: Step = { outcome: "ok", value: null };
+
+const failedAt = (request: { readonly step: string; readonly detail: string }): Result<never, ScratchFailure> => ({
+  outcome: "failed",
+  error: { kind: "scratch-failed", ...request },
+});
+
+const gitRun = (request: { readonly ports: ScratchPorts; readonly root: string; readonly gitArguments: readonly string[] }): Step => {
+  const step = `git ${request.gitArguments.join(" ")}`;
+  const run = request.ports.commands.run({ command: "git", arguments: request.gitArguments, directory: request.root });
+  if (run.outcome === "not-exited") {
+    return failedAt({ step, detail: run.detail });
+  }
+  return run.exitCode === 0 ? DONE : failedAt({ step, detail: run.output });
+};
+
+const documentTextOf = (request: { readonly file: ScratchRecordsFile }): string =>
+  `${JSON.stringify({ version: RECORDS_VERSION, records: request.file.records }, null, JSON_INDENT)}\n`;
+
+const writtenFile = (request: { readonly ports: ScratchPorts; readonly root: string; readonly file: ScratchRecordsFile }): Step => {
+  const folder = request.ports.path.join({ segments: [request.root, request.file.folder] });
+  const made = request.ports.scratch.makeDirectory({ path: folder });
+  if (made.outcome === "failed") {
+    return failedAt({ step: `make ${folder}`, detail: made.error.detail });
+  }
+  const path = request.ports.path.join({ segments: [request.root, request.file.folder, request.file.name] });
+  const written = request.ports.files.write({ path, text: documentTextOf(request) });
+  return written.outcome === "failed" ? failedAt({ step: `write ${path}`, detail: written.error.detail }) : DONE;
+};
+
+const writtenAll = (request: { readonly ports: ScratchPorts; readonly root: string; readonly files: readonly ScratchRecordsFile[] }): Step =>
+  request.files.reduce<Step>((sofar, file) => (sofar.outcome === "failed" ? sofar : writtenFile({ ports: request.ports, root: request.root, file })), DONE);
+
+const recipeReasonIn = (request: { readonly recipes: readonly Recipe[]; readonly recipe: string }): Result<string, ScratchFailure> => {
+  const found = request.recipes.find((candidate) => candidate.name === request.recipe);
+  return found === undefined
+    ? { outcome: "failed", error: { kind: "scratch-failed", step: `find the recipe ${request.recipe}`, detail: "the catalogue holds no such recipe" } }
+    : { outcome: "ok", value: found.reason.text };
+};
+
+const recordsRepositoryIn = (request: { readonly ports: ScratchPorts; readonly repository: RecordsRepository }): Result<string, ScratchFailure> => {
+  const { ports, repository } = request;
+  const made = ports.scratch.createTemporaryDirectory({ prefix: SCRATCH_PREFIX });
+  if (made.outcome === "failed") {
+    return failedAt({ step: "make the temporary directory", detail: made.error.detail });
+  }
+  const root = made.value;
+  const steps: readonly (() => Step)[] = [
+    () => gitRun({ ports, root, gitArguments: ["init", "-q"] }),
+    () => writtenAll({ ports, root, files: repository.base }),
+    () => gitRun({ ports, root, gitArguments: ["add", "-A"] }),
+    () => gitRun({ ports, root, gitArguments: [...GIT_IDENTITY, "commit", "-q", "-m", "base"] }),
+    () => writtenAll({ ports, root, files: repository.working }),
+  ];
+  const settled = steps.reduce<Step>((sofar, step) => (sofar.outcome === "failed" ? sofar : step()), DONE);
+  return settled.outcome === "failed" ? failedAt(settled.error) : { outcome: "ok", value: root };
+};
 
 const fileText = createDefaultFileTextPort({});
 
 const path = createDefaultPathPort({});
+
+const REPO_ROOT = absolutePathSchema.parse(path.join({ segments: [`${import.meta.dirname}/../..`, ".."] }));
 
 const scratch = createDefaultScratchFilesPort({});
 

@@ -8,12 +8,68 @@ import { createDefaultGitPort } from "../../git/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../node/process/process-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../../engines/eslint/runner/projection/checks-projection.ts";
-import { INSTALLED_DECLARATION_TEXT as DECLARATION_TEXT } from "../../../../tests/installed-declaration-text.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
-import { scratchRepositoriesUnder } from "../../../../tests/scratch-repositories.ts";
-import { trackedRepositoryWith } from "../../../../tests/tracked-scratch-repository.ts";
+import { installedEslintBoundary } from "../../engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { type CommandRunPort, createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
+import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+
+const installedBoundary = await installedEslintBoundary();
+
+if (installedBoundary.outcome === "failed") {
+  throw new Error(installedBoundary.error);
+}
+
+const DECLARATION_TEXT: string = installedBoundary.value.declarationText;
+
+type ScratchRepositories = {
+  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly removeAll: () => void;
+};
+
+const scratchRepositoriesUnder = (request: {
+  readonly parent: string;
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+}): ScratchRepositories => {
+  const made: AbsolutePath[] = [];
+  return {
+    repositoryWith: (repository) => {
+      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const directory = request.scratch.makeDirectory({ path: folder });
+      if (directory.outcome !== "ok") {
+        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+      }
+      made.push(folder);
+      Object.entries(repository.files).forEach(([name, text]) => {
+        request.fileText.write({ path: `${folder}/${name}`, text });
+      });
+      return folder;
+    },
+    removeAll: () => {
+      made.forEach((folder) => {
+        request.scratch.removeTree({ path: folder });
+      });
+    },
+  };
+};
+
+const GIT_STEPS: readonly (readonly string[])[] = [["init"], ["add", "."]];
+
+const trackedRepositoryWith = (request: {
+  readonly repositories: ScratchRepositories;
+  readonly commands: CommandRunPort;
+  readonly files: Readonly<Record<string, string>>;
+}): string => {
+  const repo = request.repositories.repositoryWith({ files: request.files });
+  GIT_STEPS.forEach((gitArguments) => {
+    const run = request.commands.run({ command: "git", arguments: gitArguments, directory: repo });
+    if (run.outcome !== "exited" || run.exitCode !== 0) {
+      throw new Error(`git ${gitArguments.join(" ")} failed in ${repo}`);
+    }
+  });
+  return repo;
+};
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../..`);
 
