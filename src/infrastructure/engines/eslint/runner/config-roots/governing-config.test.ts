@@ -4,8 +4,8 @@ import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { SILENT_BOUNDARY } from "../../../../../../tests/eslint-major-boundary-stub.ts";
 import type { ConfigFileSearch, EslintPort, IgnoredState, QueryInstance } from "../toolchain/eslint-instance.ts";
+import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import {
   brokenConfigVerdict,
   cachedGoverningIgnores,
@@ -13,6 +13,12 @@ import {
   type GoverningLookup,
   governingConfigIgnores,
 } from "./governing-config.ts";
+
+const SILENT_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => undefined,
+  declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
+};
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const PACKAGE_FOLDER = absolutePathSchema.parse("/repo/packages/a");

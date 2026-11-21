@@ -1,6 +1,5 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import { callSequenceOf } from "../../../../tests/call-sequence.ts";
-import { LOOP_KEYWORD_LOOPS, LOOPS_CLAUSE, SETTINGS_CATALOGUE } from "../../../../tests/settings-catalogue.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
 import type { Finding } from "../../../infrastructure/command-line/governance.ts";
 import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
@@ -11,7 +10,7 @@ import { createPathPort, type PathPort } from "../../../infrastructure/node/path
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema, TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
@@ -22,9 +21,102 @@ import type { ProjectionFilesOf, VersionOneReading } from "./upgrade-plan.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
 
-const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: TOOL_RULE_SET, catalogue: { ...SETTINGS_CATALOGUE, checks: [LOOP_KEYWORD_LOOPS] } }];
+type RecordedMock = {
+  readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
+};
+
+type RecordedCall = { readonly port: string; readonly arguments: readonly unknown[] };
+
+type OrderedCall = RecordedCall & { readonly order: number };
+
+const orderedCallsOf = (request: { readonly port: string; readonly mock: RecordedMock }): readonly OrderedCall[] =>
+  request.mock.mock.calls.map((callArguments, index) => ({ port: request.port, arguments: callArguments, order: request.mock.mock.invocationCallOrder[index] }));
+
+const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, RecordedMock>> }): readonly RecordedCall[] =>
+  Object.entries(request.mocks)
+    .flatMap(([port, mock]) => orderedCallsOf({ port, mock }))
+    .toSorted((left, right) => left.order - right.order)
+    .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
 const AUDIT = mechanismIdSchema.parse("audit");
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
+
+const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION_KIND: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+
+const LOOP_KEYWORD: Symptom = {
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const REBINDING: Symptom = {
+  name: "rebinding",
+  title: "Rebinding",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+
+const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+
+const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+
+const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+
+const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+
+const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+
+const SETTINGS_CATALOGUE: SymptomCatalogue = {
+  principles: [NO_HIDDEN_EFFECTS],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
+  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
+  engines: [WALKER, ESLINT_ENGINE],
+  symptoms: [LOOP_KEYWORD, REBINDING],
+  clauses: [
+    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: TEST_BODY_CLAUSE,
+      sight: {
+        kind: "symptom-by-form",
+        forms: [
+          { section: "a-for-loop", symptom: LOOP_KEYWORD },
+          { section: "a-let", symptom: REBINDING },
+        ],
+      },
+    },
+    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+  ],
+  checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
+  namedBans: [],
+};
+
+const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: TOOL_RULE_SET, catalogue: { ...SETTINGS_CATALOGUE, checks: [LOOP_KEYWORD_LOOPS] } }];
 
 const SRC_A = repoPathSchema.parse("src/a.ts");
 

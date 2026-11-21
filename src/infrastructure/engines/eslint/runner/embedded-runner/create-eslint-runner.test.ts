@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { VERSION_ONE_CAUSAL_WHY_CHAIN } from "../../../../../../tests/version-one-causal-why-chain.ts";
+import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
 import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
@@ -17,7 +17,7 @@ import type { Result } from "../../../../../domain/result.ts";
 import type { ConfigLookup } from "../config-roots/config-lookup.ts";
 import { type EslintRunnerPorts, eslintRunnerOver } from "./create-eslint-runner.ts";
 import type { EslintRepository } from "./eslint-repository.ts";
-import { SILENT_BOUNDARY } from "../../../../../../tests/eslint-major-boundary-stub.ts";
+import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";
 import type {
   ConfigFileSearch,
@@ -33,6 +33,47 @@ import type { PackageScripts } from "../native-exceptions/package-script-scanner
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
 import type { ProjectionStates } from "../projection/projection-states.ts";
 import type { SuppressionsFile } from "../native-exceptions/suppressions-scanner.ts";
+
+const SILENT_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => undefined,
+  declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
+};
+
+const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
+  whys: [
+    {
+      why: "Why does the audit refuse tracker ids in carve-out names?",
+      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      evidence: "tools/audit/name-matcher.ts:14",
+    },
+    {
+      why: "Why does the name matcher accept only lowercase slugs?",
+      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      evidence: "tools/git/branch-name.ts:8",
+    },
+    {
+      why: "Why was the matcher copied from the branch-name validator?",
+      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      evidence: "PR #212, merged 2026-07-02",
+    },
+    {
+      why: "Why did no shared slug type exist when the audit landed?",
+      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      evidence: "packages/values/package.json:3",
+    },
+    {
+      why: "Why was the values package split out after the audit?",
+      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      evidence: "docs/decisions/0007-monorepo.md:21",
+    },
+  ],
+  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  readback:
+    "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
+  owner: "capture 01a0b421",
+};
 
 type EslintFakeParts = {
   readonly query: QueryInstance;

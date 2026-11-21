@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { syntaxErrorsOn } from "../../../../../../tests/typescript-parse-port.ts";
+import { assert, describe, expect, it } from "vitest";
+import { loadParsePort, typeScriptPeersNamed } from "./typescript-toolchain.ts";
+
+const floorPeers = typeScriptPeersNamed({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source", packageName: "typescript-floor" });
 
 declare global {
   interface ImportMeta {
@@ -35,6 +37,17 @@ describe("core's shipped source under the oldest supported TypeScript, read as b
   });
 
   it("parses every shipped file without a syntax error, since a repository whose ESLint lints the install parses it with its own TypeScript", async () => {
-    expect(await syntaxErrorsOn({ line: "typescript-floor", sources: shippedSources })).toEqual([]);
+    const loaded = await loadParsePort({ peers: floorPeers });
+    assert(loaded.outcome === "ok", "the typescript-floor line loads from the development install");
+    const syntaxApi = loaded.value.syntaxApi;
+    assert(/^4\.8\.4$/.test(syntaxApi.version), `the typescript-floor line runs TypeScript ${syntaxApi.version}`);
+
+    const syntaxErrors = Object.entries(shippedSources).flatMap(([fileName, source]) =>
+      (syntaxApi.transpileModule(source, { fileName, reportDiagnostics: true }).diagnostics ?? []).map(
+        (diagnostic) => `${fileName}: ${syntaxApi.flattenDiagnosticMessageText(diagnostic.messageText, " ")}`,
+      ),
+    );
+
+    expect(syntaxErrors).toEqual([]);
   });
 });

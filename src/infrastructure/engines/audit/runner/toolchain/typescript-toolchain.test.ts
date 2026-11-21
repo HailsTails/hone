@@ -1,10 +1,20 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { PackageLocationPort } from "../../../../node/modules/package-location-port.ts";
-import { parsePortOn, TYPESCRIPT_LINES } from "../../../../../../tests/typescript-parse-port.ts";
 import { defaultTypeScriptModules, type TypeScriptModules } from "./typescript-parse.ts";
-import { loadParsePort } from "./typescript-toolchain.ts";
+import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers, typeScriptPeersNamed } from "./typescript-toolchain.ts";
 
 const INSTALL_ROOT = "/repo/tools/hone";
+
+const DEVELOPMENT_ROOT = `${import.meta.dirname}/../../../../../..`;
+
+const DEVELOPMENT_PEERS = defaultTypeScriptPeers({ installRoot: DEVELOPMENT_ROOT, installForm: "source" });
+
+const FLOOR_PEERS: TypeScriptPeers = typeScriptPeersNamed({ installRoot: DEVELOPMENT_ROOT, installForm: "source", packageName: "typescript-floor" });
+
+const SUPPORTED_LINES: readonly { readonly line: string; readonly peers: TypeScriptPeers; readonly version: RegExp }[] = [
+  { line: "typescript", peers: DEVELOPMENT_PEERS, version: /^6\./ },
+  { line: "typescript-floor", peers: FLOOR_PEERS, version: /^4\.8\.4$/ },
+];
 
 const TWO_STATEMENTS = "const a = 1;\nconst b = 2;\n";
 
@@ -20,9 +30,11 @@ const locatedAt = (request: { readonly location: string }): PackageLocationPort 
 });
 
 describe("loadParsePort over each supported TypeScript line in the development install", () => {
-  it.each(TYPESCRIPT_LINES)("parses with the %s line", async (line) => {
-    const linePort = await parsePortOn({ line });
-    expect(linePort.parse({ fileName: "src/a.ts", source: TWO_STATEMENTS }).statements).toHaveLength(2);
+  it.each(SUPPORTED_LINES)("parses with the $line line", async ({ line, peers, version }) => {
+    const loaded = await loadParsePort({ peers });
+    assert(loaded.outcome === "ok", `the ${line} line loads from the development install`);
+    assert(version.test(loaded.value.syntaxApi.version), `the ${line} line runs TypeScript ${loaded.value.syntaxApi.version}`);
+    expect(loaded.value.parse({ fileName: "src/a.ts", source: TWO_STATEMENTS }).statements).toHaveLength(2);
   });
 });
 
@@ -44,5 +56,14 @@ describe("loadParsePort when typescript is missing, unsupported or shadowed", ()
       }),
     ).resolves.toMatchObject({ outcome: "failed", error: { kind: "toolchain-shadowed", packageName: "typescript" } });
     expect(typescript).not.toHaveBeenCalled();
+  });
+
+  it("names typescript unloadable when the package it is loaded from by name is not TypeScript", async () => {
+    await expect(
+      loadParsePort({ peers: typeScriptPeersNamed({ installRoot: DEVELOPMENT_ROOT, installForm: "source", packageName: "zod" }) }),
+    ).resolves.toMatchObject({
+      outcome: "failed",
+      error: { kind: "toolchain-unavailable", peers: [{ packageName: "typescript", found: expect.stringMatching(/^unloadable: /) }] },
+    });
   });
 });

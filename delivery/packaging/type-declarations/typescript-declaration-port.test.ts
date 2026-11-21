@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
-import { defaultParsePort } from "../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultTypeScriptDeclarationPort, publishedDeclarationText } from "./typescript-declaration-port.ts";
 
 const REPO_ROOT = `${import.meta.dirname}/../../..`;
@@ -79,7 +79,11 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
   });
 });
 
-const syntaxApi = defaultParsePort.syntaxApi;
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: REPO_ROOT, installForm: "source" }) });
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+
+const syntaxApi = loadedParsePort.value.syntaxApi;
 
 const ONLY_TYPES = "a shipped declaration may hold only type declarations, type-only imports and type-only exports";
 

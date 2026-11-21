@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import { withSingleFileRecords, } from "../../../../tests/records-disk.ts";
+import { assert, describe, expect, it, vi } from "vitest";
+import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
+import { createExceptionRepository } from "../../discipline-exceptions-folder/exception-layout.ts";
+import type { EntryKindPort } from "../../node/file-system/file-system-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { runCheck } from "../../../application/run/check/run-check.ts";
 import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { GitPort } from "../../git/git-port.ts";
@@ -11,12 +14,17 @@ import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import * as exportTestSibling from "../../engines/audit/CD-23/export-test-sibling.ts";
 import cd23Piece from "../../engines/audit/CD-23/piece.json" with { type: "json" };
 import { createWalkerRunner } from "../../engines/audit/runner/create-walker-runner.ts";
-import { defaultParsePort } from "../../../../tests/typescript-parse-port.ts";
 import cd23Discipline from "../../../../rules/CD-23/discipline.json" with { type: "json" };
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
 import probePiece from "./probe-rule-set/mechanisms/audit/PD-1/piece.json" with { type: "json" };
 import probeDiscipline from "./probe-rule-set/rules/PD-1/discipline.json" with { type: "json" };
-import { ABSENT_ENTRY_KIND } from "../../../../tests/empty-walker-disk.ts";
+
+const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
+
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../..`, installForm: "source" }) });
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const DEFAULT_PARSE_PORT = loadedParsePort.value;
 
 const TEMPORARY_SOURCE = "const scratch = 1;\n";
 const UNSIBLINGED_SOURCE = "export const kept = 1;\n";
@@ -104,10 +112,10 @@ const PROBE_ADDRESS = { ruleSet: { name: "probe" }, discipline: "PD-1", clause: 
 const EXPORT_TEST_SIBLING_ADDRESS = { ruleSet: "hone", discipline: "CD-23", clause: "export-test-sibling" };
 
 const probeCheck = () => {
-  const parse = { ...defaultParsePort };
+  const parse = { ...DEFAULT_PARSE_PORT };
   const parseCalls = vi.spyOn(parse, "parse");
   const runnerModule = { runner: createWalkerRunner({ fileText, modules: pieceModules, path, parse, entryKind: ABSENT_ENTRY_KIND }) };
-  const report = runCheck(withSingleFileRecords({
+  const records = {
     repoRoot: absolutePathSchema.parse("/repo"),
     installRoot: absolutePathSchema.parse("/install"),
     moduleExtension: ".ts",
@@ -119,7 +127,24 @@ const probeCheck = () => {
     },
     path,
     git,
-  }));
+  } as const;
+  const report = runCheck({
+    ...records,
+    selectionRepository: createSelectionRepository(records),
+    exceptionRepository: createExceptionRepository({
+      ...records,
+      fileText: {
+        ...records.fileText,
+        exists: (query) => (query.path.endsWith("discipline-exceptions") ? "absent" : records.fileText.exists(query)),
+      },
+      directory: {
+        list: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path: folder, detail: "the single-file fake holds no folders" } }),
+        create: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path: folder, detail: "the single-file fake holds no folders" } }),
+      },
+      fileRemoval: { remove: ({ path: file }) => ({ outcome: "failed", error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" } }) },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
+    }),
+  });
   return { report, parseCalls };
 };
 

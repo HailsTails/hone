@@ -1,13 +1,66 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { repositoryRootOf } from "../../tests/allowed-forms-proof.ts";
-import { scratchRepositoriesUnder } from "../../tests/scratch-repositories.ts";
-import { repositoryWithSubfolder } from "../../tests/subfolder-scratch-repository.ts";
-import { settingsTextOf } from "../../tests/version-two-files.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "../install-proof/install-proof-ports.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse(repositoryRootOf({ testFolder: `${import.meta.dirname}/..` }));
+type ScratchRepositories = {
+  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly removeAll: () => void;
+};
+
+const scratchRepositoriesUnder = (request: {
+  readonly parent: string;
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+}): ScratchRepositories => {
+  const made: AbsolutePath[] = [];
+  return {
+    repositoryWith: (repository) => {
+      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const directory = request.scratch.makeDirectory({ path: folder });
+      if (directory.outcome !== "ok") {
+        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+      }
+      made.push(folder);
+      Object.entries(repository.files).forEach(([name, text]) => {
+        request.fileText.write({ path: `${folder}/${name}`, text });
+      });
+      return folder;
+    },
+    removeAll: () => {
+      made.forEach((folder) => {
+        request.scratch.removeTree({ path: folder });
+      });
+    },
+  };
+};
+
+const repositoryWithSubfolder = (request: {
+  readonly repositories: ScratchRepositories;
+  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
+  readonly fileText: Pick<FileTextPort, "write">;
+  readonly files: Readonly<Record<string, string>>;
+  readonly subfolder: string;
+  readonly subfolderFiles: Readonly<Record<string, string>>;
+}): AbsolutePath => {
+  const repo = request.repositories.repositoryWith({ files: request.files });
+  const folder = `${repo}/${request.subfolder}`;
+  const made = request.scratch.makeDirectory({ path: folder });
+  if (made.outcome !== "ok") {
+    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
+  }
+  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
+    const written = request.fileText.write({ path: `${folder}/${name}`, text });
+    if (written.outcome !== "ok") {
+      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+    }
+  });
+  return repo;
+};
+
+const INSTALL_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }));
 
 const SELF_CHECK_FILE = `${INSTALL_ROOT}/delivery/self-check/self-check.ts`;
 
@@ -25,16 +78,19 @@ afterAll(() => {
 
 const commands = createDefaultCommandRunPort({});
 
-const CONFIG = settingsTextOf({
-  checks: {
+const CONFIG = `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
     "authored-class-or-this#class-keyword": "eslint",
     "authored-class-or-this#static-members-only": "not-adopted",
     "claimed-type#cast-to-any": "walker",
     "claimed-type#unlisted-cast-site": "not-adopted",
-    "claimed-type#non-null-assertions": "not-adopted",
+    "claimed-type#non-null-assertions": "not-adopted"
   },
-  exclude: [],
-});
+  "exclude": []
+}
+`;
 
 const ESLINT_CONFIG = `import hone from "./hone.eslint.mjs";
 export default [...hone];

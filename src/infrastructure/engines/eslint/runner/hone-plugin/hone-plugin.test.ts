@@ -3,10 +3,34 @@ import type { FileTextPort } from "../../../../node/file-system/file-text-port.t
 import type { ModuleLoad, ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { SKIPPED_TESTS_CHECK } from "../../../../../../tests/checks-plugin-catalogue.ts";
-import { SILENT_BOUNDARY } from "../../../../../../tests/eslint-major-boundary-stub.ts";
+import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import cd27Plugin from "../../CD-27/cd27/cd27.eslint-plugin.ts";
 import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./hone-plugin.ts";
+
+const SILENT_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => undefined,
+  declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
+};
+
+const SKIPPED_TESTS_CHECK: Check = {
+  name: "skipped-tests",
+  symptom: {
+    name: "test-switched-off",
+    title: "Test switched off",
+    seen: "a site",
+    mayIndicate: [],
+    breachUsuallySits: "in the unit",
+    recipes: [],
+    correctUses: [],
+  },
+  clause: clauseAddressSchema.parse("CD-27#skipped-tests"),
+  engines: [{ name: "eslint", mechanism: mechanismIdSchema.parse("eslint") }],
+  forms: [],
+};
 
 const PIECE_FILE = "/install/src/infrastructure/engines/eslint/CD-27/piece.json";
 

@@ -1,13 +1,155 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
-import { ENTRY_DECLARATIONS, emittingDeclarations } from "../../../tests/emitting-declarations.ts";
-import { inMemoryFiles } from "../../../tests/in-memory-files.ts";
-import { recordingBundler } from "../../../tests/recording-bundler.ts";
-import type { Bundle, BundledOutput, BundleFailure, BundlerPort } from "./esbuild-bundler-port.ts";
+import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { EntryDisposition } from "../../install-proof/install-proof-plan.ts";
+import type { CopiedEntry, ListedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
+import type { DeclarationPort, EmittedDeclaration } from "../type-declarations/package-declarations.ts";
+import type { Bundle, BundledOutput, BundleFailure, BundleRequest, BundlerPort } from "./esbuild-bundler-port.ts";
 import { buildPackage } from "./package-build.ts";
 
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/" });
+
+const ENTRY_DECLARATIONS: readonly EmittedDeclaration[] = [
+  { path: "src/audit.d.ts", text: 'export type { Result } from "./domain/result.js";\n', specifiers: ["./domain/result.js"], refusals: [] },
+  { path: "src/eslint-plugin.d.ts", text: "export type ChecksPlugin = 1;\n", specifiers: [], refusals: [] },
+  { path: "src/rule-set.d.ts", text: "export type RuleSet = 1;\n", specifiers: [], refusals: [] },
+  { path: "src/testing.d.ts", text: "export declare const repoPathOf: 1;\n", specifiers: [], refusals: [] },
+  { path: "src/domain/result.d.ts", text: "export type Result = 1;\n", specifiers: [], refusals: [] },
+];
+
+const emittingDeclarations = (request: { readonly declarations: readonly EmittedDeclaration[] }): DeclarationPort => ({
+  emit: () => Promise.resolve({ outcome: "ok", value: { declarations: request.declarations, diagnostics: [] } }),
+});
+
+type InMemoryFiles = {
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+  readonly texts: () => Readonly<Record<string, string>>;
+  readonly pathsUnder: (request: { readonly folder: string }) => readonly string[];
+  readonly textsUnder: (request: { readonly folder: string }) => Readonly<Record<string, string>>;
+};
+
+type Placement = "inside" | "outside";
+
+const placementOf = (request: { readonly path: string; readonly folder: string }): Placement =>
+  request.path === request.folder || request.path.startsWith(`${request.folder}/`) ? "inside" : "outside";
+
+const copyDispositionOf = (request: {
+  readonly relative: string;
+  readonly disposition: (entry: CopiedEntry) => EntryDisposition;
+}): EntryDisposition => {
+  const segments = request.relative.split("/");
+  return segments.every(
+    (name, index) => request.disposition({ name, entryKind: index === segments.length - 1 ? "file" : "folder" }) === "kept",
+  )
+    ? "kept"
+    : "left-out";
+};
+
+const copiedInto = (request: {
+  readonly files: ReadonlyMap<string, string>;
+  readonly from: string;
+  readonly to: string;
+  readonly disposition: (entry: CopiedEntry) => EntryDisposition;
+}): readonly (readonly [string, string])[] =>
+  [...request.files.entries()]
+    .filter(
+      ([candidate]) =>
+        placementOf({ path: candidate, folder: request.from }) === "inside" &&
+        copyDispositionOf({ relative: candidate.slice(request.from.length + 1), disposition: request.disposition }) === "kept",
+    )
+    .map(([path, text]): readonly [string, string] => [`${request.to}${path.slice(request.from.length)}`, text]);
+
+const listedUnder = (request: { readonly files: ReadonlyMap<string, string>; readonly folder: string }): readonly ListedEntry[] =>
+  [...request.files.keys()]
+    .filter((path) => path.startsWith(`${request.folder}/`))
+    .sort()
+    .map((path) => ({
+      path: path.slice(request.folder.length + 1),
+      name: path.slice(path.lastIndexOf("/") + 1),
+      entryKind: "file",
+    }));
+
+const inMemoryFiles = (request: { readonly initial: Readonly<Record<string, string>> }): InMemoryFiles => {
+  const files = new Map(Object.entries(request.initial));
+  const temporaryRoots = { created: 0 };
+  return {
+    texts: () => Object.fromEntries(files),
+    pathsUnder: ({ folder }) => listedUnder({ files, folder }).map((entry) => entry.path),
+    textsUnder: ({ folder }) => Object.fromEntries([...files.entries()].filter(([path]) => path.startsWith(`${folder}/`))),
+    fileText: {
+      read: ({ path }) => {
+        const text = files.get(path);
+        return text === undefined
+          ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
+          : { outcome: "ok", value: text };
+      },
+      exists: ({ path }) => (files.has(path) ? "present" : "absent"),
+      write: ({ path, text }) => {
+        files.set(path, text);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    scratch: {
+      createTemporaryDirectory: ({ prefix }) => {
+        temporaryRoots.created += 1;
+        return { outcome: "ok", value: `/tmp/${prefix}${temporaryRoots.created}` };
+      },
+      removeTree: ({ path }) => {
+        [...files.keys()]
+          .filter((candidate) => placementOf({ path: candidate, folder: path }) === "inside")
+          .forEach((key) => {
+            files.delete(key);
+          });
+        return { outcome: "ok", value: null };
+      },
+      makeDirectory: () => ({ outcome: "ok", value: null }),
+      copyTree: ({ from, to, disposition }) => {
+        copiedInto({ files, from, to, disposition }).forEach(([path, text]) => {
+          files.set(path, text);
+        });
+        return { outcome: "ok", value: null };
+      },
+      listTree: ({ path }) => ({ outcome: "ok", value: listedUnder({ files, folder: path }) }),
+      digestOf: ({ path }) => {
+        const text = files.get(path);
+        return text === undefined
+          ? { outcome: "failed", error: { kind: "effect-failed", detail: `ENOENT ${path}` } }
+          : { outcome: "ok", value: `digest of ${text}` };
+      },
+      realPathOf: ({ path }) =>
+        [...files.keys()].some((candidate) => placementOf({ path: candidate, folder: path }) === "inside")
+          ? { outcome: "ok", value: path }
+          : { outcome: "failed", error: { kind: "effect-failed", detail: `ENOENT ${path}` } },
+    },
+  };
+};
+
+type RecordingBundler = {
+  readonly bundler: BundlerPort;
+  readonly requests: () => readonly BundleRequest[];
+  readonly stagedWhenBundled: () => readonly string[];
+};
+
+const recordingBundler = (request: {
+  readonly files: InMemoryFiles;
+  readonly stage: string;
+  readonly bundle: Result<Bundle, BundleFailure>;
+}): RecordingBundler => {
+  const recorded: { requests: readonly BundleRequest[]; staged: readonly string[] } = { requests: [], staged: [] };
+  return {
+    requests: () => recorded.requests,
+    stagedWhenBundled: () => recorded.staged,
+    bundler: {
+      bundle: (bundleRequest) => {
+        recorded.requests = [...recorded.requests, bundleRequest];
+        recorded.staged = request.files.pathsUnder({ folder: request.stage });
+        return Promise.resolve(request.bundle);
+      },
+    },
+  };
+};
 
 const STAGE_SOURCE = "/tmp/hailstails-hone-package-stage-1/source";
 

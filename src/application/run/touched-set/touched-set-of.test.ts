@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { CLAIMED_TYPE, WHOLE_SYMPTOM } from "../../../../tests/report-catalogue.ts";
+import type { Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { touchedSetOf } from "./touched-set-of.ts";
@@ -9,6 +9,41 @@ import { touchedSetOf } from "./touched-set-of.ts";
 const REPO = absolutePathSchema.parse("/repo");
 
 const FILE_A = repoPathSchema.parse("src/a.ts");
+
+const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
+
+const DECLARED_NOT_ASSERTED: Rule = {
+  name: "declared-not-asserted",
+  title: "Declared, not asserted",
+  principle: { name: "one-place-decides", title: "One place decides" },
+  standing: "accepted",
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [
+    {
+      case: {
+        name: "gives-a-value-its-type",
+        title: "Gives a value its type",
+        standing: "accepted",
+        owes: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+      },
+      situation: "or needs it narrower",
+      points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+    },
+  ],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
+    },
+  ],
+};
 
 const DEBT: PlacedRecord = {
   place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },

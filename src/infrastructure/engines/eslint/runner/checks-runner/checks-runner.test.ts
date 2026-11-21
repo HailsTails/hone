@@ -14,11 +14,37 @@ import type { ChecksRepository } from "./checks-repository.ts";
 import type { ChecksRunRequest } from "./checks-run-types.ts";
 import { checksRunnerOver } from "./checks-runner.ts";
 import type { ChecksRunnerPorts } from "./checks-ports.ts";
-import { countedReadsOver } from "../../../../../../tests/counted-reads.ts";
-import { SILENT_BOUNDARY, STUB_DECLARATION_TEXT } from "../../../../../../tests/eslint-major-boundary-stub.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";
 import type { EslintPort, GovernanceInstance, QueryInstance } from "../toolchain/eslint-instance.ts";
+import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
+
+const DECLARATION_TEXT = "declare const projection: readonly unknown[];\nexport default projection;\n";
+
+const SILENT_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => undefined,
+  declarationText: DECLARATION_TEXT,
+};
+
+type CountedReads = {
+  readonly fileText: FileTextPort;
+  readonly readsOf: (request: { readonly path: string }) => number;
+};
+
+const countedReadsOver = (request: { readonly fileText: FileTextPort }): CountedReads => {
+  const counts = new Map<string, number>();
+  return {
+    fileText: {
+      ...request.fileText,
+      read: (asked) => {
+        counts.set(asked.path, (counts.get(asked.path) ?? 0) + 1);
+        return request.fileText.read(asked);
+      },
+    },
+    readsOf: ({ path }) => counts.get(path) ?? 0,
+  };
+};
 
 const eslint: EslintPort = {
   boundary: SILENT_BOUNDARY,
@@ -131,8 +157,6 @@ const PROJECTION_WRITTEN_AS_PROJECT_WOULD: CurrentProjection = { presence: "pres
 const PROJECTION_THAT_DIFFERS: CurrentProjection = { presence: "present", text: `${CURRENT_PROJECTION_TEXT}\n` };
 
 const PROJECTION_NOT_WRITTEN: CurrentProjection = { presence: "absent" };
-
-const DECLARATION_TEXT = STUB_DECLARATION_TEXT;
 
 const DECLARATION_PRESENT: CurrentProjection = { presence: "present", text: DECLARATION_TEXT };
 

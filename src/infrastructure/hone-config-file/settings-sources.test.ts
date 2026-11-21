@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inMemoryFiles } from "../../../tests/in-memory-files.ts";
+import type { FileTextPort } from "../node/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
@@ -62,12 +62,29 @@ const INSTALL_FILES: Readonly<Record<string, string>> = {
   "/install/src/infrastructure/engines/audit/runner/runner.ts": RUNNER_TEXT,
 };
 
+const inMemoryFileText = (request: { readonly files: Readonly<Record<string, string>> }): FileTextPort => {
+  const files = new Map(Object.entries(request.files));
+  return {
+    read: ({ path }) => {
+      const text = files.get(path);
+      return text === undefined
+        ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
+        : { outcome: "ok", value: text };
+    },
+    exists: ({ path }) => (files.has(path) ? "present" : "absent"),
+    write: ({ path, text }) => {
+      files.set(path, text);
+      return { outcome: "ok", value: undefined };
+    },
+  };
+};
+
 const sourcesOver = (request: { readonly files: Readonly<Record<string, string>> }) =>
   createSettingsSources({
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
-    fileText: inMemoryFiles({ initial: request.files }).fileText,
+    fileText: inMemoryFileText({ files: request.files }),
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   });
 

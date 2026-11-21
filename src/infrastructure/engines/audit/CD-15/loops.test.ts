@@ -3,11 +3,19 @@ import type { RunnerFailure } from "../../../../application/ports/runner-failure
 import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../runner/pieces/walker-piece.ts";
 import { check } from "./loops.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { EMPTY_DISK } from "../../../../../tests/empty-walker-disk.ts";
+import { textsDisk } from "../runner/pieces/walker-disk.ts";
+
+const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathSchema.parse("src/items.ts");
 const ADDRESS = clauseAddressSchema.parse("CD-15#loops");

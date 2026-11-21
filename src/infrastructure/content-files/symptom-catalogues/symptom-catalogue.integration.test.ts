@@ -4,33 +4,370 @@ import { createDefaultPathPort } from "../../node/path-port.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { TEST_BODY_SECTIONS } from "../../engines/audit/CD-27/test-body-logic.ts";
-import { repositoryRootOf } from "../../../../tests/allowed-forms-proof.ts";
-import {
-  caseNamesOffTheirTitles,
-  casesOfCatalogue,
-  casesOnCasesPage,
-  missingLinkSentencesOn,
-  owesOfCatalogue,
-  owesOnPages,
-  type ProseLink,
-  proposedReasonsOf,
-  reasonMismatchesOf,
-  recipeReasonsOnPage,
-  unlinkedCaseSentencesOn,
-  unlistedCaseNamesOn,
-  unservedCaseNamesOn,
-  unowedPointersOf,
-} from "../../../../tests/catalogue-pages.ts";
-import { foldersUnder } from "../../../../tests/conformance-rows.ts";
-import {
-  catalogueCoverageOf,
-  checkAddressTableOf,
-  checkCoverageOf,
-  correctUseNotesOf,
-  formSectionsOf,
-  symptomNamesOf,
-  unresolvedAddressesOf,
-} from "../../../../tests/symptom-catalogue-coverage.ts";
+import type { LoadFailure } from "../../command-line/load-failure.ts";
+import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { PathPort } from "../../node/path-port.ts";
+import { type DisciplineFile, readDisciplineFile } from "../rule-sets/rule-set-reader.ts";
+import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
+import type { Case, Check, Indication, Pointed, Recipe, RecipeReason, Standing, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
+import type { AbsolutePath } from "../absolute-path.ts";
+import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
+import type { Result } from "../../../domain/result.ts";
+
+type CatalogueCoverage = {
+  readonly uncatalogued: readonly string[];
+  readonly unknown: readonly string[];
+  readonly unreadable: readonly LoadFailure[];
+};
+
+type CheckCoverage = {
+  readonly unchecked: readonly string[];
+  readonly unmechanical: readonly string[];
+  readonly engineMismatches: readonly string[];
+};
+
+type CheckAddressRow = { readonly address: string; readonly clause: string };
+
+type DisciplineSource = {
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly ruleSetRoot: AbsolutePath;
+};
+
+const disciplineFileIn = (request: DisciplineSource & { readonly folder: string }): Result<DisciplineFile, LoadFailure> => {
+  const discipline = disciplineIdSchema.safeParse(request.folder);
+  return discipline.success
+    ? readDisciplineFile({ ...request, discipline: discipline.data })
+    : { outcome: "failed", error: { kind: "unknown-discipline", address: request.folder } };
+};
+
+const definedClausesOf = (request: { readonly discipline: DisciplineFile }): readonly string[] =>
+  request.discipline.clauses.map((clause) => `${request.discipline.id}#${clause.id}`);
+
+type MechanicalClause = { readonly clause: string; readonly mechanisms: readonly string[] };
+
+const mechanicalClausesOf = (request: { readonly discipline: DisciplineFile }): readonly MechanicalClause[] =>
+  request.discipline.clauses.flatMap((clause) =>
+    clause.kind === "mechanical" ? [{ clause: `${request.discipline.id}#${clause.id}`, mechanisms: clause.mechanisms } satisfies MechanicalClause] : [],
+  );
+
+const mechanismSetText = (request: { readonly mechanisms: readonly string[] }): string => [...request.mechanisms].sort().join(" ");
+
+const engineFitOf = (request: { readonly check: Check; readonly mechanical: MechanicalClause }): "fits" | "differs" =>
+  mechanismSetText({ mechanisms: request.check.engines.map((engine) => engine.mechanism) }) === mechanismSetText(request.mechanical)
+    ? "fits"
+    : "differs";
+
+const checkCoverageOf = (
+  request: DisciplineSource & { readonly catalogue: SymptomCatalogue; readonly disciplines: readonly string[] },
+): CheckCoverage => {
+  const mechanical = request.disciplines.flatMap((folder) => {
+    const reading = disciplineFileIn({ ...request, folder });
+    return reading.outcome === "ok" ? mechanicalClausesOf({ discipline: reading.value }) : [];
+  });
+  const { checks } = request.catalogue;
+  const clauseOf = (check: Check): string => clauseAddressText({ address: check.clause });
+  return {
+    unchecked: mechanical.filter((entry) => !checks.some((check) => clauseOf(check) === entry.clause)).map((entry) => entry.clause),
+    unmechanical: checks.filter((check) => !mechanical.some((entry) => entry.clause === clauseOf(check))).map((check) => checkAddressOf({ check })),
+    engineMismatches: checks
+      .filter((check) => mechanical.some((entry) => entry.clause === clauseOf(check) && engineFitOf({ check, mechanical: entry }) === "differs"))
+      .map((check) => checkAddressOf({ check })),
+  };
+};
+
+const checkAddressTableOf = (request: { readonly catalogue: SymptomCatalogue }): readonly CheckAddressRow[] =>
+  request.catalogue.checks.map((check) => ({ address: checkAddressOf({ check }), clause: clauseAddressText({ address: check.clause }) }));
+
+const resolutionOf = (request: { readonly catalogue: SymptomCatalogue; readonly check: Check }): "resolves" | "elsewhere" => {
+  const atAddress = checkAt({ catalogue: request.catalogue, address: checkAddressOf({ check: request.check }) });
+  return atAddress.found === "check" && atAddress.check === request.check ? "resolves" : "elsewhere";
+};
+
+const unresolvedAddressesOf = (request: { readonly catalogue: SymptomCatalogue }): readonly string[] => {
+  const { catalogue } = request;
+  const fromChecks = catalogue.checks.filter((check) => resolutionOf({ catalogue, check }) === "elsewhere");
+  const fromClauses = catalogue.clauses.flatMap(({ clause }) =>
+    checksOf({ catalogue, clause }).filter((check) => resolutionOf({ catalogue, check }) === "elsewhere"),
+  );
+  return [...new Set([...fromChecks, ...fromClauses].map((check) => checkAddressOf({ check })))];
+};
+
+const catalogueCoverageOf = (
+  request: DisciplineSource & { readonly catalogue: SymptomCatalogue; readonly disciplines: readonly string[] },
+): CatalogueCoverage => {
+  const readings = request.disciplines.map((folder) => disciplineFileIn({ ...request, folder }));
+  const defined = readings.flatMap((reading) => (reading.outcome === "ok" ? definedClausesOf({ discipline: reading.value }) : []));
+  const catalogued = request.catalogue.clauses.map(({ clause }) => clauseAddressText({ address: clause }));
+  return {
+    uncatalogued: defined.filter((address) => !catalogued.includes(address)),
+    unknown: catalogued.filter((address) => !defined.includes(address)),
+    unreadable: readings.flatMap((reading) => (reading.outcome === "failed" ? [reading.error] : [])),
+  };
+};
+
+const formSectionsOf = (request: { readonly catalogue: SymptomCatalogue; readonly clause: string }): readonly string[] =>
+  request.catalogue.clauses
+    .filter(({ clause }) => clauseAddressText({ address: clause }) === request.clause)
+    .flatMap(({ sight }) => (sight.kind === "symptom-by-form" ? sight.forms.map((form) => form.section) : []));
+
+const symptomNamesOf = (request: { readonly catalogue: SymptomCatalogue }): readonly string[] =>
+  request.catalogue.symptoms.map((symptom) => symptom.name);
+
+const correctUseNotesOf = (request: { readonly guide: CatalogueGuide }): readonly string[] =>
+  request.guide.catalogue.symptoms
+    .filter((symptom) => symptom.correctUses.length > 0)
+    .map((symptom) => symptomNoteLineOf({ ...request.guide, symptom }));
+
+const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
+
+const foldersUnder = (request: { readonly table: Readonly<Record<string, string>>; readonly prefix: string }): readonly string[] =>
+  [
+    ...new Set(
+      Object.keys(request.table)
+        .filter((key) => key.startsWith(request.prefix))
+        .map((key) => folderOf({ key })),
+    ),
+  ].sort();
+
+type PageCase = { readonly title: string; readonly standing: Standing };
+
+type PageReason = { readonly title: string; readonly reason: RecipeReason };
+
+const CASE_ROW = /^\| (.+?) \| .+? \| .* \|$/;
+
+const NOT_A_CASE_TITLE = new Set(["Case", "---"]);
+
+type CaseReading = { readonly standing: Standing; readonly within: "cases" | "outside"; readonly cases: readonly PageCase[] };
+
+const caseReadingAfter = (reading: CaseReading, line: string): CaseReading => {
+  if (reading.within === "outside" || line.startsWith("## Outside the cases")) {
+    return { ...reading, within: "outside" };
+  }
+  if (line.startsWith("### Proposed cases")) {
+    return { ...reading, standing: "proposed" };
+  }
+  const title = CASE_ROW.exec(line)?.[1];
+  return title === undefined || NOT_A_CASE_TITLE.has(title) ? reading : { ...reading, cases: [...reading.cases, { title, standing: reading.standing }] };
+};
+
+const casesOnCasesPage = (request: { readonly text: string }): readonly PageCase[] =>
+  request.text.split("\n").reduce<CaseReading>(caseReadingAfter, { standing: "accepted", within: "cases", cases: [] }).cases;
+
+const casesOfCatalogue = (request: { readonly catalogue: Pick<SymptomCatalogue, "cases"> }): readonly PageCase[] =>
+  request.catalogue.cases.map((entry) => ({ title: entry.title, standing: entry.standing }));
+
+const INDICATION_LINE = /^- \*\*May indicate:\*\* (.+)$/;
+
+const TEST_QUALIFIER = "In a test: ";
+
+const SITUATION_SEPARATOR = ": ";
+
+const caseSpellingsBefore = (request: { readonly indications: string }): readonly string[] =>
+  request.indications
+    .split(" → ")
+    .slice(0, -1)
+    .map((before) => before.split(/\. |; /).at(-1) ?? before)
+    .map((spelling) => (spelling.startsWith(TEST_QUALIFIER) ? spelling.slice(TEST_QUALIFIER.length) : spelling))
+    .map((spelling) => spelling.split(SITUATION_SEPARATOR)[0] ?? spelling);
+
+const pageSpellingsOf = (request: { readonly cases: readonly PageCase[] }): readonly string[] =>
+  request.cases
+    .map((entry) => (entry.standing === "proposed" ? `${entry.title} (proposed)` : entry.title))
+    .toSorted((left, right) => right.length - left.length);
+
+const unlistedRestOf = (request: { readonly rest: string; readonly spellings: readonly string[] }): string => {
+  if (request.rest === "") {
+    return "";
+  }
+  const known = request.spellings.find((spelling) => request.rest === spelling || request.rest.startsWith(`${spelling}, `));
+  return known === undefined ? request.rest : unlistedRestOf({ ...request, rest: request.rest.slice(known.length).replace(/^, /, "") });
+};
+
+const unlistedCaseNamesOn = (request: { readonly symptomsPage: string; readonly cases: readonly PageCase[] }): readonly string[] => {
+  const spellings = pageSpellingsOf(request);
+  return request.symptomsPage
+    .split("\n")
+    .flatMap((line) => {
+      const indications = INDICATION_LINE.exec(line)?.[1];
+      return indications === undefined ? [] : caseSpellingsBefore({ indications });
+    })
+    .filter((spelling) => unlistedRestOf({ rest: spelling, spellings }) !== "");
+};
+
+const SERVED_LINE = /^- \*\*Cases served:\*\* (.+)\.$/;
+
+const WOULD_SERVE_LINE = /^- \*\*Case it would serve:\*\* \[(.+?)\]/;
+
+const servedSpellingsOn = (request: { readonly line: string }): readonly string[] => {
+  const served = SERVED_LINE.exec(request.line)?.[1];
+  const wouldServe = WOULD_SERVE_LINE.exec(request.line)?.[1];
+  return [...(served === undefined ? [] : served.split("; ")), ...(wouldServe === undefined ? [] : [wouldServe])];
+};
+
+const unservedCaseNamesOn = (request: { readonly rulesPage: string; readonly cases: readonly PageCase[] }): readonly string[] => {
+  const titles = request.cases.map((entry) => entry.title);
+  return request.rulesPage
+    .split("\n")
+    .flatMap((line) => servedSpellingsOn({ line }))
+    .filter((spelling) => !titles.includes(spelling));
+};
+
+const RECIPE_HEADING = /^#{3,4} (.+)$/;
+
+const REASON_LINE = /^- \*\*Chosen because( \(proposed\))?:\*\* (.+)$/;
+
+type ReasonReading = { readonly title: string | undefined; readonly reasons: readonly PageReason[] };
+
+const reasonReadingAfter = (reading: ReasonReading, line: string): ReasonReading => {
+  const heading = RECIPE_HEADING.exec(line)?.[1];
+  if (heading !== undefined) {
+    return { ...reading, title: heading.trim() };
+  }
+  const reason = REASON_LINE.exec(line);
+  const text = reason?.[2];
+  if (reading.title === undefined || reason === null || text === undefined) {
+    return reading;
+  }
+  const standing: Standing = reason[1] === undefined ? "accepted" : "proposed";
+  return { title: undefined, reasons: [...reading.reasons, { title: reading.title, reason: { text, standing } }] };
+};
+
+const recipeReasonsOnPage = (request: { readonly text: string }): readonly PageReason[] =>
+  request.text.split("\n").reduce<ReasonReading>(reasonReadingAfter, { title: undefined, reasons: [] }).reasons;
+
+const reasonFitOf = (request: { readonly recipe: Recipe; readonly page: readonly PageReason[] }): "fits" | "differs" => {
+  const onPage = request.page.find((entry) => entry.title === request.recipe.title);
+  return onPage !== undefined && onPage.reason.text === request.recipe.reason.text && onPage.reason.standing === request.recipe.reason.standing
+    ? "fits"
+    : "differs";
+};
+
+const proposedReasonsOf = (request: { readonly recipes: readonly Recipe[] }): readonly string[] =>
+  request.recipes.filter((recipe) => recipe.reason.standing === "proposed").map((recipe) => recipe.name);
+
+const reasonMismatchesOf = (request: { readonly recipes: readonly Recipe[]; readonly page: readonly PageReason[] }): readonly string[] =>
+  request.recipes.filter((recipe) => reasonFitOf({ recipe, page: request.page }) === "differs").map((recipe) => recipe.name);
+
+type PageOwes = { readonly title: string; readonly principles: readonly string[]; readonly rules: readonly string[] };
+
+type ProseLink = { readonly sentence: string; readonly cases: readonly string[] };
+
+const SHORT_NAME = /([A-Z][A-Za-z ]*?) \(\[[^\]]+\]\(principles\.md#([a-z-]+)\)\)/g;
+
+const OWES_ROW = /^\| (.+?) \| (.+?) \| .* \|$/;
+
+const OUTSIDE_THE_CASES = "## Outside the cases";
+
+const RULE_HEADING = /^### (.+)$/;
+
+const CASE_SENTENCE = " a case";
+
+const shortNamesOn = (request: { readonly casesPage: string }): ReadonlyMap<string, string> =>
+  new Map([...request.casesPage.matchAll(SHORT_NAME)].flatMap((match) => (match[1] === undefined || match[2] === undefined ? [] : [[match[1], match[2]] as const])));
+
+const ruleTitlesOn = (request: { readonly pages: readonly string[] }): readonly string[] =>
+  request.pages.flatMap((page) => page.split("\n").flatMap((line) => RULE_HEADING.exec(line)?.slice(1, 2) ?? []));
+
+type Serving = { readonly rule: string; readonly case: string };
+
+type ServingReading = { readonly rule: string | undefined; readonly servings: readonly Serving[] };
+
+const servingReadingAfter = (reading: ServingReading, line: string): ServingReading => {
+  const heading = RULE_HEADING.exec(line)?.[1];
+  if (heading !== undefined) {
+    return { ...reading, rule: heading };
+  }
+  const rule = reading.rule;
+  return rule === undefined ? reading : { ...reading, servings: [...reading.servings, ...servedSpellingsOn({ line }).map((served) => ({ rule, case: served }))] };
+};
+
+const servingsOnRulesPage = (request: { readonly rulesPage: string }): readonly Serving[] =>
+  request.rulesPage.split("\n").reduce<ServingReading>(servingReadingAfter, { rule: undefined, servings: [] }).servings;
+
+const linkedServings = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly Serving[] => {
+  const titles = ruleTitlesOn(request);
+  return request.links
+    .filter((link) => request.pages.some((page) => page.includes(link.sentence)))
+    .flatMap((link) => titles.filter((title) => link.sentence.includes(title)).flatMap((rule) => link.cases.map((served) => ({ rule, case: served }))));
+};
+
+const owedRows = (request: { readonly casesPage: string }): readonly (readonly [string, string])[] =>
+  (request.casesPage.split(OUTSIDE_THE_CASES)[0] ?? "").split("\n").flatMap((line) => {
+    const row = OWES_ROW.exec(line);
+    const title = row?.[1];
+    const owes = row?.[2];
+    return title === undefined || owes === undefined || NOT_A_CASE_TITLE.has(title) ? [] : [[title, owes] as const];
+  });
+
+const owesOnPages = (request: { readonly casesPage: string; readonly rulesPage: string; readonly links: readonly ProseLink[] }): readonly PageOwes[] => {
+  const shortNames = shortNamesOn(request);
+  const pages = [request.rulesPage, request.casesPage];
+  const servings = [...servingsOnRulesPage(request), ...linkedServings({ pages, links: request.links })];
+  const titles = ruleTitlesOn({ pages: [request.rulesPage] });
+  return owedRows(request).map(([title, owes]) => ({
+    title,
+    principles: owes.split(/; |, /).map((short) => shortNames.get(short) ?? `unknown short name ${short}`),
+    rules: titles.filter((rule) => servings.some((serving) => serving.rule === rule && serving.case === title)),
+  }));
+};
+
+const lineKindOf = (request: { readonly line: string }): "prose" | "other" => (/^[A-Za-z"]/.test(request.line) ? "prose" : "other");
+
+const SENTENCE_BREAK = /(?<=\.) (?!That is a case\.)/;
+
+const sentencesOf = (request: { readonly paragraph: string }): readonly string[] => request.paragraph.split(SENTENCE_BREAK);
+
+const unlinkedCaseSentencesOn = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly string[] => {
+  const titles = ruleTitlesOn(request);
+  return request.pages
+    .flatMap((page) => page.split("\n").filter((line) => lineKindOf({ line }) === "prose"))
+    .flatMap((paragraph) => sentencesOf({ paragraph }))
+    .filter((sentence) => sentence.includes(CASE_SENTENCE) && titles.some((title) => sentence.includes(title)))
+    .filter((sentence) => !request.links.some((link) => link.sentence === sentence));
+};
+
+const missingLinkSentencesOn = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly string[] =>
+  request.links.filter((link) => !request.pages.some((page) => page.includes(link.sentence))).map((link) => link.sentence);
+
+const owesOfCatalogue = (request: { readonly catalogue: Pick<SymptomCatalogue, "cases"> }): readonly PageOwes[] =>
+  request.catalogue.cases.map((entry) => ({
+    title: entry.title,
+    principles: entry.owes.flatMap((point) => (point.kind === "principle" ? [point.principle.name] : [])),
+    rules: entry.owes.flatMap((point) => (point.kind === "rule" ? [point.rule.title] : [])),
+  }));
+
+type UnowedPointer = { readonly symptom: string; readonly case: string; readonly pointer: string };
+
+const pointedName = (request: { readonly point: Pointed }): string =>
+  request.point.kind === "principle" ? request.point.principle.title : request.point.rule.title;
+
+type IndicatingSymptom = Pick<Symptom, "name" | "mayIndicate">;
+
+const unowedOf = (request: { readonly symptom: IndicatingSymptom; readonly indication: Indication }): readonly UnowedPointer[] => {
+  const owed = request.indication.case.owes.map((point) => pointedName({ point }));
+  return request.indication.points
+    .map((point) => pointedName({ point }))
+    .filter((pointer) => !owed.includes(pointer))
+    .map((pointer) => ({ symptom: request.symptom.name, case: request.indication.case.name, pointer }));
+};
+
+const unowedPointersOf = (request: { readonly catalogue: { readonly symptoms: readonly IndicatingSymptom[] } }): readonly UnowedPointer[] =>
+  request.catalogue.symptoms.flatMap((symptom) => symptom.mayIndicate.flatMap((indication) => unowedOf({ symptom, indication })));
+
+const PARENTHETICAL = /\s*\([^)]*\)/g;
+
+const caseNameOfTitle = (request: { readonly title: string }): string =>
+  request.title
+    .replace(PARENTHETICAL, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+const caseNamesOffTheirTitles = (request: { readonly cases: readonly Pick<Case, "name" | "title">[] }): readonly string[] =>
+  request.cases.filter((entry) => entry.name !== caseNameOfTitle({ title: entry.title })).map((entry) => entry.name);
 
 declare global {
   interface ImportMeta {
@@ -41,7 +378,7 @@ declare global {
   }
 }
 
-const REPO_ROOT = absolutePathSchema.parse(repositoryRootOf({ testFolder: `${import.meta.dirname}/../../..` }));
+const REPO_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }));
 
 const disciplineTexts = import.meta.glob(["./rules/*/discipline.json"], { base: "../../../../", query: "?raw", import: "default", eager: true });
 

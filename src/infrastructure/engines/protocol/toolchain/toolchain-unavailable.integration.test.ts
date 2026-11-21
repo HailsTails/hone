@@ -1,15 +1,19 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { withSingleFileRecords, } from "../../../../../tests/records-disk.ts";
 import { runCheck } from "../../../../application/run/check/run-check.ts";
+import { createSelectionRepository, type SelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
+import { createExceptionRepository } from "../../../discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../../discipline-exceptions-folder/exception-records.ts";
+import type { EntryKindPort } from "../../../node/file-system/file-system-port.ts";
+import type { ModuleExtension } from "../../../node/modules/install-layout.ts";
 import { loadFailureText } from "../../../printed-report/load-failures/load-failure-text.ts";
 import { toolchainBoundEmbeddedRunner, toolchainBoundStandaloneRunner } from "./toolchain-bound-runner.ts";
 import { createDefaultFileRemovalPort } from "../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { GitPort } from "../../../git/git-port.ts";
 import type { PackageLocationPort } from "../../../node/modules/package-location-port.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
+import { createDefaultPathPort, type PathPort } from "../../../node/path-port.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../hone-config-file/assessment.ts";
 import { type RepoPath, repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
@@ -17,11 +21,65 @@ import { defaultTypeScriptModules } from "../../audit/runner/toolchain/typescrip
 import { loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
-import { loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
-import { eslintPeersOn, modulesServingRunner } from "../../../../../tests/eslint-toolchains.ts";
-import { ABSENT_ENTRY_KIND } from "../../../../../tests/empty-walker-disk.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
+
+const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
+
+const DEVELOPMENT_ESLINT_MODULES = defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }).modules;
+
+const modulesServingRunner = (request: {
+  readonly runnerSuffix: string;
+  readonly runner: unknown;
+  readonly base: ModuleLoaderPort;
+}): ModuleLoaderPort => ({
+  load: (load) =>
+    load.path.replaceAll("\\", "/").endsWith(request.runnerSuffix)
+      ? Promise.resolve({ outcome: "ok", value: { runner: request.runner } })
+      : request.base.load(load),
+});
+
+const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
+
+const SPLIT_FOLDER_NAME = "discipline-exceptions";
+
+const singleFileRepositoryOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepository =>
+  createExceptionRepository({
+    ...request,
+    fileText: {
+      ...request.fileText,
+      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+    },
+    directory: {
+      list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
+      create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+    },
+    fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
+    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE] }) },
+  });
+
+type DiskRequest = {
+  readonly repoRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
+  readonly moduleExtension: ModuleExtension;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+};
+
+const withSingleFileRecords = <Request extends DiskRequest>(
+  request: Request,
+): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+  ...request,
+  selectionRepository: createSelectionRepository(request),
+  exceptionRepository: singleFileRepositoryOver(request),
+});
 
 const fileText = createDefaultFileTextPort({});
 
@@ -62,7 +120,7 @@ const shadowedEslint: PackageLocationPort = {
 
 const eslintRunnerLocatingBy = (request: { readonly pieces: ModuleLoaderPort; readonly location: PackageLocationPort }) =>
   toolchainBoundEmbeddedRunner({
-    toolchain: loadEslintToolchain({ peers: { ...eslintPeersOn({ line: "eslint-10" }), location: request.location } }),
+    toolchain: loadEslintToolchain({ peers: { modules: DEVELOPMENT_ESLINT_MODULES, location: request.location } }),
     projectedKinds: ESLINT_PROJECTED_KINDS,
     runnerOf: (toolchain) =>
       createEslintRunner({ fileText, fileRemoval: createDefaultFileRemovalPort({}), modules: request.pieces, path, eslint: createEslintPort({ toolchain }), moduleExtension: ".ts" }),

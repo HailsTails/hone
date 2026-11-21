@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { REPORT_CATALOGUE } from "../../../tests/report-catalogue.ts";
+import type { RecordKind, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { ProjectedFile } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
 import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
@@ -11,6 +11,29 @@ import { versionTwoProjectionOver } from "./version-two-projection.ts";
 import type { VersionTwoStages } from "../run/version-two-run.ts";
 
 const FILE_A = repoPathSchema.parse("src/a.ts");
+
+const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const REPORT_CATALOGUE: SymptomCatalogue = {
+  principles: [],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
+  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
+  engines: [],
+  symptoms: [],
+  clauses: [],
+  checks: [],
+  namedBans: [],
+};
 
 const SETTINGS: SettingsReading = {
   selection: {

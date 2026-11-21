@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { ESLINT_ENGINE, WALKER } from "../../../../tests/report-catalogue.ts";
+import type { Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsDocumentRefusal } from "../../hone-records-folder/hone-record.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { runLoadFailureLine } from "./load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
+
+const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
 
 type LineRow = { readonly failure: RunLoadFailure; readonly line: string };
 

@@ -1,11 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { defaultEslintPort } from "../../../../../../tests/eslint-toolchains.ts";
-import type { Rule } from "../toolchain/eslint-instance.ts";
+import { createEslintPort, type EslintPort, type Rule } from "../toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "./eslint-plugin-schema.ts";
 import { type FunctionSite, functionSiteOf, type RuleMeta, type SiteObservers, siteRule } from "./rule-sites.ts";
+
+const loadedToolchain = await loadEslintToolchain({
+  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+});
+
+assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+
+assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+
+const defaultEslintPort: EslintPort = createEslintPort({ toolchain: loadedToolchain.value });
 
 const RUNNER_ROOT = absolutePathSchema.parse(import.meta.dirname);
 

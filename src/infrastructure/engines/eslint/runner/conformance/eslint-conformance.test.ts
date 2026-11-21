@@ -1,10 +1,173 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
+import { editionRunsOf } from "../../../../../application/conformance/edition-runs.ts";
+import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
+import type { Result } from "../../../../../domain/result.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
-import { runnerModuleSchema } from "../../../protocol/runner-module/runner-module-schema.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { conformanceRows, foldersUnder } from "../../../../../../tests/conformance-rows.ts";
-import { ESLINT_LINES, eslintRunnerOn } from "../../../../../../tests/eslint-toolchains.ts";
+import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
+import { type RunnerClause, runnerModuleSchema } from "../../../protocol/runner-module/runner-module-schema.ts";
+import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
+import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
+import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { type DisciplineFile, readDisciplineFile, readPieceFile, type SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import { disciplineIdSchema, type MechanismId, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  type EslintToolchainModules,
+  type EslintToolchainPeers,
+  loadEslintToolchain,
+} from "../toolchain/eslint-toolchain.ts";
 import * as eslintRunnerModule from "../runner.ts";
+
+type EslintLine = "eslint-10" | "eslint-9";
+
+const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+
+type LineDefinition = {
+  readonly eslintVersion: RegExp;
+  readonly modules: EslintToolchainModules;
+  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
+};
+
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+
+const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
+  "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules, pieceModules: (request) => request.base },
+  "eslint-9": { eslintVersion: /^9\./, modules: eslint9ToolchainModules, pieceModules: eslint9PieceModules },
+};
+
+const loadedEslintToolchain = async (request: { readonly line: EslintLine }): Promise<EslintToolchain> => {
+  const loaded = await loadEslintToolchain({ peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules } });
+  assert(loaded.outcome === "ok", `the ${request.line} toolchain loads from the development install`);
+  assert(
+    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
+    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
+  );
+  return loaded.value;
+};
+
+const pieceModulesOn = (request: { readonly line: EslintLine; readonly base: ModuleLoaderPort }): ModuleLoaderPort =>
+  LINES[request.line].pieceModules({ base: request.base });
+
+const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner =>
+  toolchainBoundEmbeddedRunner({
+    toolchain: loadedEslintToolchain(request).then((toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain })),
+    projectedKinds: ESLINT_PROJECTED_KINDS,
+    runnerOf: (toolchain) =>
+      createEslintRunner({
+        fileText: createDefaultFileTextPort({}),
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
+        path: createDefaultPathPort({}),
+        eslint: createEslintPort({ toolchain }),
+        moduleExtension: ".ts",
+      }),
+  });
+
+type RawTable = Readonly<Record<string, string>>;
+
+type ConformanceRow = {
+  readonly name: string;
+  readonly clause: RunnerClause;
+  readonly cases: readonly SourceCase[];
+};
+
+const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+
+const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
+
+const foldersUnder = (request: { readonly table: RawTable; readonly prefix: string }): readonly string[] =>
+  [
+    ...new Set(
+      Object.keys(request.table)
+        .filter((key) => key.startsWith(request.prefix))
+        .map((key) => folderOf({ key })),
+    ),
+  ].sort();
+
+const requiredEntry = (request: { readonly table: RawTable; readonly key: string }): string => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
+
+const tableFileText = (request: { readonly table: RawTable }): FileTextPort => ({
+  read: ({ path }) => ({
+    outcome: "ok",
+    value: requiredEntry({ table: request.table, key: path.replace("/install/", "./") }),
+  }),
+  exists: () => "present",
+  write: vi.fn<FileTextPort["write"]>(),
+});
+
+const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
+  const discipline = readDisciplineFile({
+    fileText: request.fileText,
+    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    ruleSetRoot: RULE_SET_ROOT,
+    discipline: disciplineIdSchema.parse(request.discipline),
+  });
+  assert(discipline.outcome === "ok", `${request.discipline} discipline.json reads through the rule-set reader`);
+  return discipline.value;
+};
+
+const rowsOf = (request: {
+  readonly fileText: FileTextPort;
+  readonly discipline: string;
+  readonly mechanism: MechanismId;
+  readonly mechanismRoot: string;
+}): readonly ConformanceRow[] => {
+  const discipline = disciplineOf(request);
+  const piece = readPieceFile({
+    fileText: request.fileText,
+    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
+    mechanism: request.mechanism,
+    discipline,
+  });
+  assert(piece.outcome === "ok", `${request.discipline} ${request.mechanism} piece.json reads through the rule-set reader`);
+  return piece.value.clauses.flatMap((entry) => {
+    const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
+    assert(definition?.kind === "mechanical", `${request.discipline}#${entry.clause} is a mechanical clause`);
+    const runs = editionRunsOf({
+      clause: {
+        address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
+        anchor: definition.anchor,
+        pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
+        settings: entry.settings,
+        clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
+        edition: entry.editions.default,
+      },
+      cases: [...definition.cases.flag, ...definition.cases.allow],
+    });
+    return runs.map((run) => ({
+      name: run.clause.edition === entry.editions.default
+        ? `${request.discipline}#${entry.clause}`
+        : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
+      ...run,
+    }));
+  });
+};
+
+const conformanceRows = (request: {
+  readonly table: RawTable;
+  readonly disciplines: readonly string[];
+  readonly mechanism: MechanismId;
+  readonly mechanismRoot: string;
+}): readonly ConformanceRow[] => {
+  const fileText = tableFileText({ table: request.table });
+  return request.disciplines.flatMap((discipline) =>
+    rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
+  );
+};
 
 declare global {
   interface ImportMeta {

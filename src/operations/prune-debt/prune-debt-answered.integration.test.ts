@@ -2,7 +2,7 @@ import { assert, describe, expect, it, vi } from "vitest";
 import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
 import { exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import type { FileRemovalPort } from "../../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultDirectoryPort, type EntryKindPort } from "../../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
@@ -11,10 +11,50 @@ import type { ProcessPort } from "../../infrastructure/node/process/process-port
 import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../../infrastructure/engines/audit/runner/create-walker-runner.ts";
-import { ABSENT_ENTRY_KIND } from "../../../tests/empty-walker-disk.ts";
-import { modulesServingRunner } from "../../../tests/eslint-toolchains.ts";
-import { inMemoryOverlay } from "../../../tests/overlaid-file-text.ts";
-import { defaultParsePort } from "../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+
+const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
+
+const modulesServingRunner = (request: {
+  readonly runnerSuffix: string;
+  readonly runner: unknown;
+  readonly base: ModuleLoaderPort;
+}): ModuleLoaderPort => ({
+  load: (load) =>
+    load.path.replaceAll("\\", "/").endsWith(request.runnerSuffix)
+      ? Promise.resolve({ outcome: "ok", value: { runner: request.runner } })
+      : request.base.load(load),
+});
+
+const slashed = (text: string): string => text.replaceAll("\\", "/");
+
+const OVERLAY_ONLY = "the in-memory overlay writes only the files it overlays";
+
+const inMemoryOverlay = (request: {
+  readonly base: FileTextPort;
+  readonly files: Readonly<Record<string, string>>;
+}): FileTextPort => {
+  const files = new Map(Object.entries(request.files).map(([name, text]) => [slashed(name), text]));
+  return {
+    read: (reading) => {
+      const text = files.get(slashed(reading.path));
+      return text === undefined ? request.base.read(reading) : { outcome: "ok", value: text };
+    },
+    exists: (probing) => (files.has(slashed(probing.path)) ? "present" : request.base.exists(probing)),
+    write: (writing) => {
+      if (!files.has(slashed(writing.path))) {
+        return { outcome: "failed", error: { kind: "unwritable", path: writing.path, detail: OVERLAY_ONLY } };
+      }
+      files.set(slashed(writing.path), writing.text);
+      return { outcome: "ok", value: undefined };
+    },
+  };
+};
+
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../..`, installForm: "source" }) });
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const defaultParsePort = loadedParsePort.value;
 
 const path = createDefaultPathPort({});
 

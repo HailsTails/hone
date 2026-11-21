@@ -1,13 +1,107 @@
 import { describe, expect, it } from "vitest";
-import { CHECKS_PLUGIN_CATALOGUE, SKIPPED_TESTS_CHECK } from "../../../../../../tests/checks-plugin-catalogue.ts";
+import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import cd2Plugin from "../../CD-2/cd2/cd2.eslint-plugin.ts";
 import CD_2_PIECE from "../../CD-2/piece.json" with { type: "json" };
 import cd27Plugin from "../../CD-27/cd27/cd27.eslint-plugin.ts";
 import CD_27_PIECE from "../../CD-27/piece.json" with { type: "json" };
 import cd40Plugin from "../../CD-40/cd40/cd40.eslint-plugin.ts";
 import CD_40_PIECE from "../../CD-40/piece.json" with { type: "json" };
-import { boundaryReporting, SILENT_BOUNDARY } from "../../../../../../tests/eslint-major-boundary-stub.ts";
 import { checksPluginOf, inSymptomWords, reportInSymptomWords } from "./checks-plugin.ts";
+
+const DECLARATION_TEXT = "declare const projection: readonly unknown[];\nexport default projection;\n";
+
+const SILENT_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => undefined,
+  declarationText: DECLARATION_TEXT,
+};
+
+const NON_NULL_REPORTING_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => ({ message: "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead." }),
+  declarationText: DECLARATION_TEXT,
+};
+
+const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+
+const TEST_SWITCHED_OFF: Symptom = {
+  name: "test-switched-off",
+  title: "Test switched off",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const POSITIONAL_PARAMETERS: Symptom = {
+  name: "positional-parameters",
+  title: "Positional parameters",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const REBINDING: Symptom = {
+  name: "rebinding",
+  title: "Rebinding",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const SKIPPED_TESTS_CHECK: Check = {
+  name: "skipped-tests",
+  symptom: TEST_SWITCHED_OFF,
+  clause: clauseAddressSchema.parse("CD-27#skipped-tests"),
+  engines: [ESLINT],
+  forms: [],
+};
+
+const NON_NULL_ASSERTIONS_CHECK: Check = {
+  name: "non-null-assertions",
+  symptom: CLAIMED_TYPE,
+  clause: clauseAddressSchema.parse("CD-2#non-null-assertions"),
+  engines: [ESLINT],
+  forms: [],
+};
+
+const PARAMETER_COUNT_CHECK: Check = {
+  name: "parameter-count",
+  symptom: POSITIONAL_PARAMETERS,
+  clause: clauseAddressSchema.parse("CD-40#parameter-count"),
+  engines: [ESLINT],
+  forms: [],
+};
+
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  engines: [WALKER],
+  forms: ["a-let"],
+};
+
+const PLUGIN_CHECKS: readonly Check[] = [SKIPPED_TESTS_CHECK, NON_NULL_ASSERTIONS_CHECK, PARAMETER_COUNT_CHECK, REBINDING_TEST_BODY];
 
 const CD_2_SOURCE = { pieceFile: "/install/mechanisms/eslint/CD-2/piece.json", pluginModule: "cd2/cd2.eslint-plugin.ts", piece: CD_2_PIECE, plugin: cd2Plugin };
 
@@ -15,7 +109,7 @@ const CD_27_SOURCE = { pieceFile: "/install/mechanisms/eslint/CD-27/piece.json",
 
 const CD_40_SOURCE = { pieceFile: "/install/mechanisms/eslint/CD-40/piece.json", pluginModule: "cd40/cd40.eslint-plugin.ts", piece: CD_40_PIECE, plugin: cd40Plugin };
 
-const PLUGIN = checksPluginOf({ checks: CHECKS_PLUGIN_CATALOGUE.checks, sources: [CD_2_SOURCE, CD_27_SOURCE, CD_40_SOURCE], boundary: SILENT_BOUNDARY });
+const PLUGIN = checksPluginOf({ checks: PLUGIN_CHECKS, sources: [CD_2_SOURCE, CD_27_SOURCE, CD_40_SOURCE], boundary: SILENT_BOUNDARY });
 
 describe("checksPluginOf", () => {
   it("names itself as the package's one plugin export", () => {
@@ -50,7 +144,7 @@ describe("checksPluginOf", () => {
   });
 
   it("fails naming the rule id of an ESLint check whose piece is not among its sources", () => {
-    expect(checksPluginOf({ checks: CHECKS_PLUGIN_CATALOGUE.checks, sources: [CD_27_SOURCE], boundary: SILENT_BOUNDARY })).toEqual({
+    expect(checksPluginOf({ checks: PLUGIN_CHECKS, sources: [CD_27_SOURCE], boundary: SILENT_BOUNDARY })).toEqual({
       outcome: "failed",
       error: { kind: "check-rule-missing", ruleId: "hone/claimed-type#non-null-assertions" },
     });
@@ -86,9 +180,7 @@ describe("reportInSymptomWords", () => {
           messageId: "restrictedSyntax",
           data: { message: "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead." },
         },
-        boundary: boundaryReporting({
-          data: { message: "CD-2: a non-null assertion claims a value the compiler cannot see; narrow it with a check instead." },
-        }),
+        boundary: NON_NULL_REPORTING_BOUNDARY,
       }),
     ).toEqual({
       loc: { line: 1, column: 0 },

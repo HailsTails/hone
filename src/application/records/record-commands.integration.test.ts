@@ -1,7 +1,7 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import type { Finding } from "../../infrastructure/command-line/governance.ts";
 import { createDefaultDirectoryPort, createDefaultFileRemovalPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import { answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
@@ -15,16 +15,131 @@ import { absolutePathSchema } from "../../infrastructure/content-files/absolute-
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
-import { repositoryRootOf } from "../../../tests/allowed-forms-proof.ts";
-import { CAUSAL_WHY_CHAIN } from "../../../tests/causal-why-chain.ts";
-import { recordsRepositoryIn } from "../../../tests/hone-records-scratch.ts";
+import type { Result } from "../../domain/result.ts";
+import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
+import type { WhyChain } from "../../infrastructure/hone-records-folder/why-chain.ts";
+import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import {
+  type CommandRunPort,
+  createDefaultCommandRunPort,
+  createDefaultScratchFilesPort,
+  type ScratchFilesPort,
+} from "../../../delivery/install-proof/install-proof-ports.ts";
 
-const SHIPPED_ROOT = absolutePathSchema.parse(repositoryRootOf({ testFolder: `${import.meta.dirname}/../..` }));
+const CAUSAL_WHY_CHAIN: WhyChain = {
+  whys: [
+    {
+      why: "Why does the audit refuse tracker ids in carve-out names?",
+      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      evidence: "tools/audit/name-matcher.ts:14",
+    },
+    {
+      why: "Why does the name matcher accept only lowercase slugs?",
+      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      evidence: "tools/git/branch-name.ts:8",
+    },
+    {
+      why: "Why was the matcher copied from the branch-name validator?",
+      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      evidence: "PR #212, merged 2026-07-02",
+    },
+    {
+      why: "Why did no shared slug type exist when the audit landed?",
+      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      evidence: "packages/values/package.json:3",
+    },
+    {
+      why: "Why was the values package split out after the audit?",
+      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      evidence: "docs/decisions/0007-monorepo.md:21",
+    },
+  ],
+  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootEvidence: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  readback:
+    "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
+  owner: "capture 01a0b421",
+};
+
+type ScratchRecordsFile = { readonly folder: string; readonly name: string; readonly records: readonly ReadonlyJsonValue[] };
+
+type RecordsRepository = { readonly base: readonly ScratchRecordsFile[]; readonly working: readonly ScratchRecordsFile[] };
+
+type ScratchPorts = {
+  readonly scratch: Pick<ScratchFilesPort, "createTemporaryDirectory" | "makeDirectory">;
+  readonly files: Pick<FileTextPort, "write">;
+  readonly commands: CommandRunPort;
+  readonly path: Pick<PathPort, "join">;
+};
+
+type ScratchFailure = { readonly kind: "scratch-failed"; readonly step: string; readonly detail: string };
+
+type Step = Result<null, ScratchFailure>;
+
+const SCRATCH_PREFIX = "hone-records-";
+
+const RECORDS_VERSION = 2;
+
+const JSON_INDENT = 2;
+
+const GIT_IDENTITY: readonly string[] = ["-c", "user.name=hone-records", "-c", "user.email=hone-records@invalid", "-c", "commit.gpgsign=false"];
+
+const DONE: Step = { outcome: "ok", value: null };
+
+const failedAt = (request: { readonly step: string; readonly detail: string }): Result<never, ScratchFailure> => ({
+  outcome: "failed",
+  error: { kind: "scratch-failed", ...request },
+});
+
+const gitRun = (request: { readonly ports: ScratchPorts; readonly root: string; readonly gitArguments: readonly string[] }): Step => {
+  const step = `git ${request.gitArguments.join(" ")}`;
+  const run = request.ports.commands.run({ command: "git", arguments: request.gitArguments, directory: request.root });
+  if (run.outcome === "not-exited") {
+    return failedAt({ step, detail: run.detail });
+  }
+  return run.exitCode === 0 ? DONE : failedAt({ step, detail: run.output });
+};
+
+const documentTextOf = (request: { readonly file: ScratchRecordsFile }): string =>
+  `${JSON.stringify({ version: RECORDS_VERSION, records: request.file.records }, null, JSON_INDENT)}\n`;
+
+const writtenFile = (request: { readonly ports: ScratchPorts; readonly root: string; readonly file: ScratchRecordsFile }): Step => {
+  const folder = request.ports.path.join({ segments: [request.root, request.file.folder] });
+  const made = request.ports.scratch.makeDirectory({ path: folder });
+  if (made.outcome === "failed") {
+    return failedAt({ step: `make ${folder}`, detail: made.error.detail });
+  }
+  const path = request.ports.path.join({ segments: [request.root, request.file.folder, request.file.name] });
+  const written = request.ports.files.write({ path, text: documentTextOf(request) });
+  return written.outcome === "failed" ? failedAt({ step: `write ${path}`, detail: written.error.detail }) : DONE;
+};
+
+const writtenAll = (request: { readonly ports: ScratchPorts; readonly root: string; readonly files: readonly ScratchRecordsFile[] }): Step =>
+  request.files.reduce<Step>((sofar, file) => (sofar.outcome === "failed" ? sofar : writtenFile({ ports: request.ports, root: request.root, file })), DONE);
+
+const recordsRepositoryIn = (request: { readonly ports: ScratchPorts; readonly repository: RecordsRepository }): Result<string, ScratchFailure> => {
+  const { ports, repository } = request;
+  const made = ports.scratch.createTemporaryDirectory({ prefix: SCRATCH_PREFIX });
+  if (made.outcome === "failed") {
+    return failedAt({ step: "make the temporary directory", detail: made.error.detail });
+  }
+  const root = made.value;
+  const steps: readonly (() => Step)[] = [
+    () => gitRun({ ports, root, gitArguments: ["init", "-q"] }),
+    () => writtenAll({ ports, root, files: repository.base }),
+    () => gitRun({ ports, root, gitArguments: ["add", "-A"] }),
+    () => gitRun({ ports, root, gitArguments: [...GIT_IDENTITY, "commit", "-q", "-m", "base"] }),
+    () => writtenAll({ ports, root, files: repository.working }),
+  ];
+  const settled = steps.reduce<Step>((sofar, step) => (sofar.outcome === "failed" ? sofar : step()), DONE);
+  return settled.outcome === "failed" ? failedAt(settled.error) : { outcome: "ok", value: root };
+};
 
 const fileText = createDefaultFileTextPort({});
 
 const path = createDefaultPathPort({});
+
+const SHIPPED_ROOT = absolutePathSchema.parse(path.join({ segments: [`${import.meta.dirname}/../..`, ".."] }));
 
 const scratch = createDefaultScratchFilesPort({});
 

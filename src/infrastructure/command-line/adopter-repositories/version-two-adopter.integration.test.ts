@@ -1,16 +1,66 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { projectCommandOf, pruneCommandOf } from "../arguments/tool-invocations.ts";
-import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
-import { repositoryRootOf } from "../../../../tests/allowed-forms-proof.ts";
-import { CAUSAL_WHY_CHAIN } from "../../../../tests/causal-why-chain.ts";
-import { scratchRepositoriesUnder } from "../../../../tests/scratch-repositories.ts";
-import { repositoryWithSubfolder } from "../../../../tests/subfolder-scratch-repository.ts";
-import { settingsTextOf } from "../../../../tests/version-two-files.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
+import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse(repositoryRootOf({ testFolder: `${import.meta.dirname}/../../..` }));
+type ScratchRepositories = {
+  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly removeAll: () => void;
+};
+
+const scratchRepositoriesUnder = (request: {
+  readonly parent: string;
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+}): ScratchRepositories => {
+  const made: AbsolutePath[] = [];
+  return {
+    repositoryWith: (repository) => {
+      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const directory = request.scratch.makeDirectory({ path: folder });
+      if (directory.outcome !== "ok") {
+        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+      }
+      made.push(folder);
+      Object.entries(repository.files).forEach(([name, text]) => {
+        request.fileText.write({ path: `${folder}/${name}`, text });
+      });
+      return folder;
+    },
+    removeAll: () => {
+      made.forEach((folder) => {
+        request.scratch.removeTree({ path: folder });
+      });
+    },
+  };
+};
+
+const repositoryWithSubfolder = (request: {
+  readonly repositories: ScratchRepositories;
+  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
+  readonly fileText: Pick<FileTextPort, "write">;
+  readonly files: Readonly<Record<string, string>>;
+  readonly subfolder: string;
+  readonly subfolderFiles: Readonly<Record<string, string>>;
+}): AbsolutePath => {
+  const repo = request.repositories.repositoryWith({ files: request.files });
+  const folder = `${repo}/${request.subfolder}`;
+  const made = request.scratch.makeDirectory({ path: folder });
+  if (made.outcome !== "ok") {
+    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
+  }
+  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
+    const written = request.fileText.write({ path: `${folder}/${name}`, text });
+    if (written.outcome !== "ok") {
+      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+    }
+  });
+  return repo;
+};
+
+const INSTALL_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }));
 
 const TOOL_COMMAND_FILE = `${INSTALL_ROOT}/src/hone.ts`;
 
@@ -30,36 +80,62 @@ afterAll(() => {
 
 const commands = createDefaultCommandRunPort({});
 
-const CHECKS = {
-  "authored-class-or-this#class-keyword": "eslint",
-  "authored-class-or-this#static-members-only": "not-adopted",
-  "claimed-type#cast-to-any": "walker",
-  "claimed-type#unlisted-cast-site": "not-adopted",
-  "claimed-type#non-null-assertions": "not-adopted",
-};
+const CONFIG = `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint",
+    "authored-class-or-this#static-members-only": "not-adopted",
+    "claimed-type#cast-to-any": "walker",
+    "claimed-type#unlisted-cast-site": "not-adopted",
+    "claimed-type#non-null-assertions": "not-adopted"
+  },
+  "exclude": []
+}
+`;
 
-const CHECKS_WITH_UNKNOWN_ENGINE = {
-  "authored-class-or-this#class-keyword": "eslint",
-  "authored-class-or-this#static-members-only": "not-adopted",
-  "claimed-type#cast-to-any": "nope",
-  "claimed-type#unlisted-cast-site": "not-adopted",
-  "claimed-type#non-null-assertions": "not-adopted",
-};
+const CONFIG_EXCLUDING_GENERATED = `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint",
+    "authored-class-or-this#static-members-only": "not-adopted",
+    "claimed-type#cast-to-any": "walker",
+    "claimed-type#unlisted-cast-site": "not-adopted",
+    "claimed-type#non-null-assertions": "not-adopted"
+  },
+  "exclude": [
+    "src/generated"
+  ]
+}
+`;
 
-const CHECKS_LEAVING_A_CHECK_UNLISTED = {
-  "authored-class-or-this#class-keyword": "eslint",
-  "authored-class-or-this#static-members-only": "not-adopted",
-  "claimed-type#cast-to-any": "walker",
-  "claimed-type#non-null-assertions": "not-adopted",
-};
+const CONFIG_WITH_UNKNOWN_ENGINE = `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint",
+    "authored-class-or-this#static-members-only": "not-adopted",
+    "claimed-type#cast-to-any": "nope",
+    "claimed-type#unlisted-cast-site": "not-adopted",
+    "claimed-type#non-null-assertions": "not-adopted"
+  },
+  "exclude": []
+}
+`;
 
-const CONFIG = settingsTextOf({ checks: CHECKS, exclude: [] });
-
-const CONFIG_EXCLUDING_GENERATED = settingsTextOf({ checks: CHECKS, exclude: ["src/generated"] });
-
-const CONFIG_WITH_UNKNOWN_ENGINE = settingsTextOf({ checks: CHECKS_WITH_UNKNOWN_ENGINE, exclude: [] });
-
-const CONFIG_LEAVING_A_CHECK_UNLISTED = settingsTextOf({ checks: CHECKS_LEAVING_A_CHECK_UNLISTED, exclude: [] });
+const CONFIG_LEAVING_A_CHECK_UNLISTED = `{
+  "version": 2,
+  "ruleSets": {},
+  "checks": {
+    "authored-class-or-this#class-keyword": "eslint",
+    "authored-class-or-this#static-members-only": "not-adopted",
+    "claimed-type#cast-to-any": "walker",
+    "claimed-type#non-null-assertions": "not-adopted"
+  },
+  "exclude": []
+}
+`;
 
 const ESLINT_CONFIG = `import hone from "./hone.eslint.mjs";
 export default [...hone];
@@ -122,13 +198,13 @@ const AUTHORISE_OPTIONS = [
   "--evidence",
   "docs/decisions/0007-monorepo.md:21",
   "--root-cause",
-  CAUSAL_WHY_CHAIN.rootCause,
+  "Older tools still carry patterns written before the monorepo move gave them shared value types.",
   "--root-evidence",
-  CAUSAL_WHY_CHAIN.rootEvidence,
+  "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   "--readback",
-  CAUSAL_WHY_CHAIN.readback,
+  "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   "--owner",
-  CAUSAL_WHY_CHAIN.owner,
+  "capture 01a0b421",
 ];
 
 const NOT_ADOPTED = "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#unlisted-cast-site\nclaimed-type#non-null-assertions\n";

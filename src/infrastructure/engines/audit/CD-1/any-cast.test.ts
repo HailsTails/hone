@@ -4,15 +4,21 @@ import type { Anchor } from "../../../../domain/finding/anchor.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { SyntaxTree } from "../runner/toolchain/typescript-parse.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
+import { textsDisk } from "../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, SourceObservers, WalkerRepository } from "../runner/pieces/walker-piece.ts";
 import { check } from "./any-cast.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { EMPTY_DISK } from "../../../../../tests/empty-walker-disk.ts";
+
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }) });
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+
+const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 
 const FILE = repoPathSchema.parse("src/casts.ts");
 const ADDRESS = clauseAddressSchema.parse("CD-1#any-cast");
-const SYNTAX_API = defaultParsePort.syntaxApi;
+const SYNTAX_API = loadedParsePort.value.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
   anchor: { kind: "file" },
