@@ -1,26 +1,149 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
+import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { Result } from "../../../../../domain/result.ts";
+import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
+import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { symptomCatalogueOf } from "../../../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  type EslintToolchainModules,
+  type EslintToolchainPeers,
+  installedEslintBoundary,
+  loadEslintToolchain,
+} from "../toolchain/eslint-toolchain.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import SYMPTOMS from "../../../../../../rules/typescript/symptoms.json" with { type: "json" };
-import { ESLINT_LINES, type EslintLine, eslintPortOn, eslintRunnerOn, pieceModulesOn } from "../../../../../../tests/eslint-toolchains.ts";
-import { createDefaultScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import { scratchRepositoriesUnder } from "../../../../../../tests/scratch-repositories.ts";
-import { repositoryWithSubfolder } from "../../../../../../tests/subfolder-scratch-repository.ts";
+import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
 import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../projection/checks-projection.ts";
-import { INSTALLED_DECLARATION_TEXT as DECLARATION_TEXT } from "../../../../../../tests/installed-declaration-text.ts";
 import type { ChecksRunRequest } from "./checks-run-types.ts";
 import { createChecksRunner } from "./checks-runner.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
+
+const installedBoundary = await installedEslintBoundary();
+
+if (installedBoundary.outcome === "failed") {
+  throw new Error(installedBoundary.error);
+}
+
+const DECLARATION_TEXT: string = installedBoundary.value.declarationText;
+
+type ScratchRepositories = {
+  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly removeAll: () => void;
+};
+
+const scratchRepositoriesUnder = (request: {
+  readonly parent: string;
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+}): ScratchRepositories => {
+  const made: AbsolutePath[] = [];
+  return {
+    repositoryWith: (repository) => {
+      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const directory = request.scratch.makeDirectory({ path: folder });
+      if (directory.outcome !== "ok") {
+        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+      }
+      made.push(folder);
+      Object.entries(repository.files).forEach(([name, text]) => {
+        request.fileText.write({ path: `${folder}/${name}`, text });
+      });
+      return folder;
+    },
+    removeAll: () => {
+      made.forEach((folder) => {
+        request.scratch.removeTree({ path: folder });
+      });
+    },
+  };
+};
+
+const repositoryWithSubfolder = (request: {
+  readonly repositories: ScratchRepositories;
+  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
+  readonly fileText: Pick<FileTextPort, "write">;
+  readonly files: Readonly<Record<string, string>>;
+  readonly subfolder: string;
+  readonly subfolderFiles: Readonly<Record<string, string>>;
+}): AbsolutePath => {
+  const repo = request.repositories.repositoryWith({ files: request.files });
+  const folder = `${repo}/${request.subfolder}`;
+  const made = request.scratch.makeDirectory({ path: folder });
+  if (made.outcome !== "ok") {
+    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
+  }
+  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
+    const written = request.fileText.write({ path: `${folder}/${name}`, text });
+    if (written.outcome !== "ok") {
+      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+    }
+  });
+  return repo;
+};
+
+type EslintLine = "eslint-10" | "eslint-9";
+
+const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+
+type LineDefinition = {
+  readonly eslintVersion: RegExp;
+  readonly modules: EslintToolchainModules;
+  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
+};
+
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" });
+
+const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
+  "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules, pieceModules: (request) => request.base },
+  "eslint-9": { eslintVersion: /^9\./, modules: eslint9ToolchainModules, pieceModules: eslint9PieceModules },
+};
+
+const loadedEslintToolchain = async (request: { readonly line: EslintLine }): Promise<EslintToolchain> => {
+  const loaded = await loadEslintToolchain({
+    peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules },
+  });
+  assert(loaded.outcome === "ok", `the ${request.line} toolchain loads from the development install`);
+  assert(
+    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
+    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
+  );
+  return loaded.value;
+};
+
+const eslintPortOn = async (request: { readonly line: EslintLine }): Promise<EslintPort> =>
+  createEslintPort({ toolchain: await loadedEslintToolchain(request) });
+
+const pieceModulesOn = (request: { readonly line: EslintLine; readonly base: ModuleLoaderPort }): ModuleLoaderPort =>
+  LINES[request.line].pieceModules({ base: request.base });
+
+const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner =>
+  toolchainBoundEmbeddedRunner({
+    toolchain: loadedEslintToolchain(request).then((toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain })),
+    projectedKinds: ESLINT_PROJECTED_KINDS,
+    runnerOf: (toolchain) =>
+      createEslintRunner({
+        fileText: createDefaultFileTextPort({}),
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
+        path: createDefaultPathPort({}),
+        eslint: createEslintPort({ toolchain }),
+        moduleExtension: ".ts",
+      }),
+  });
 
 const CATALOGUE = symptomCatalogueOf({ document: SYMPTOMS });
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { CommitRecord, GitHistoryPort } from "../../src/infrastructure/git/git-port.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
-import { inMemoryFiles } from "../../tests/in-memory-files.ts";
+import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { runReleasePullRequest } from "./release-pull-request.ts";
 
 const MODULE_URL = "file:///repo/delivery/release/release-pull-request-command.ts";
@@ -45,10 +45,23 @@ const runWith = (request: {
   readonly unwritablePaths?: readonly string[];
 }) => {
   const processPort = processWith({ arguments: request.arguments ?? [] });
-  const files = inMemoryFiles({
-    initial: request.files ?? { "/repo/CHANGELOG.md": CHANGELOG, "/repo/package.json": MANIFEST },
-    unwritablePaths: request.unwritablePaths,
-  });
+  const files = new Map(Object.entries(request.files ?? { "/repo/CHANGELOG.md": CHANGELOG, "/repo/package.json": MANIFEST }));
+  const fileText: FileTextPort = {
+    read: ({ path }) => {
+      const text = files.get(path);
+      return text === undefined
+        ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
+        : { outcome: "ok", value: text };
+    },
+    exists: ({ path }) => (files.has(path) ? "present" : "absent"),
+    write: ({ path, text }) => {
+      if (request.unwritablePaths?.includes(path) === true) {
+        return { outcome: "failed", error: { kind: "unwritable", path, detail: "EACCES" } };
+      }
+      files.set(path, text);
+      return { outcome: "ok", value: undefined };
+    },
+  };
   const commits = request.commits ?? { outcome: "ok", value: COMMITS };
   const history = historyWith({
     tags: request.tags ?? { outcome: "ok", value: TAGS },
@@ -58,13 +71,13 @@ const runWith = (request: {
   runReleasePullRequest({
     process: processPort,
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" }),
-    fileText: files.fileText,
+    fileText,
     history,
     moduleUrl: MODULE_URL,
   });
   return {
     history,
-    texts: files.texts(),
+    texts: Object.fromEntries(files),
     writes: vi.mocked(processPort.writeOut).mock.calls,
     errors: vi.mocked(processPort.writeError).mock.calls,
     exits: vi.mocked(processPort.exitWith).mock.calls,

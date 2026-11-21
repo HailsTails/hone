@@ -2,10 +2,17 @@ import { assert, describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../../../../engines/protocol/runner-module/runner-module-schema.ts";
 import { clauseAddressSchema } from "../../../../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../../../../hone-records-folder/repo-path.ts";
-import { defaultParsePort } from "../../../../../../../../tests/typescript-parse-port.ts";
+import { textsDisk } from "../../../../../../engines/audit/runner/pieces/walker-disk.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../../../../engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { check } from "./no-tmp-files.ts";
 import { FIRST_EDITION } from "../../../../../edition.ts";
-import { EMPTY_DISK } from "../../../../../../../../tests/empty-walker-disk.ts";
+
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../../../..`, installForm: "source" }) });
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const SYNTAX_API = loadedParsePort.value.syntaxApi;
+
+const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 
 const ADDRESS = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
 const CLAUSE: RunnerClause = {
@@ -22,7 +29,7 @@ const fileCheckOf = (request: { readonly file: string }) => {
   const prepared = check.prepare({
     clauses: [CLAUSE],
     repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
-    syntaxApi: defaultParsePort.syntaxApi,
+    syntaxApi: SYNTAX_API,
   });
   assert(prepared.outcome === "ok");
   return prepared.value.prepareFile({ file, readText: vi.fn() });

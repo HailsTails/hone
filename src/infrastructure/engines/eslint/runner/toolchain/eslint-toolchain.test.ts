@@ -1,7 +1,33 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackageLocationPort } from "../../../../node/modules/package-location-port.ts";
-import { ESLINT_LINES, eslintClassOn, eslintPeersOn } from "../../../../../../tests/eslint-toolchains.ts";
-import { type EslintToolchainModules, type EslintToolchainPeers, eslintBoundaryFor, loadEslintToolchain } from "./eslint-toolchain.ts";
+import type { EslintClass } from "./eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  type EslintToolchainModules,
+  type EslintToolchainPeers,
+  eslintBoundaryFor,
+  loadEslintToolchain,
+} from "./eslint-toolchain.ts";
+import { eslint9ToolchainModules } from "./eslint-9/eslint-9-engine.ts";
+
+type EslintLine = "eslint-10" | "eslint-9";
+
+const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+
+const LINE_MODULES: Readonly<Record<EslintLine, EslintToolchainModules>> = {
+  "eslint-10": DEVELOPMENT_PEERS.modules,
+  "eslint-9": eslint9ToolchainModules,
+};
+
+const eslintPeersOn = (request: { readonly line: EslintLine }): EslintToolchainPeers => ({
+  location: DEVELOPMENT_PEERS.location,
+  modules: LINE_MODULES[request.line],
+});
+
+const eslintClassOn = (request: { readonly line: EslintLine }): Promise<EslintClass> =>
+  LINE_MODULES[request.line].eslint().then((eslintModule) => eslintModule.ESLint);
 
 const REAL_10 = eslintPeersOn({ line: "eslint-10" });
 

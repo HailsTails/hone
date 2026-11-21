@@ -1,12 +1,33 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { parsePortOn } from "../../../../../tests/typescript-parse-port.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
+import type { SyntaxApi } from "../runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers, typeScriptPeersNamed } from "../runner/toolchain/typescript-toolchain.ts";
 import type { OptionSettings, ResolvedConfig } from "./compiler-options-resolution.ts";
 import { typeScriptCompilerOptionsOf } from "./typescript-compiler-options.ts";
 
-const CURRENT = (await parsePortOn({ line: "typescript" })).syntaxApi;
-const FLOOR = (await parsePortOn({ line: "typescript-floor" })).syntaxApi;
+const DEVELOPMENT_ROOT = `${import.meta.dirname}/../../../../..`;
+
+const CURRENT_PEERS = defaultTypeScriptPeers({ installRoot: DEVELOPMENT_ROOT, installForm: "source" });
+
+const FLOOR_PEERS: TypeScriptPeers = typeScriptPeersNamed({ installRoot: DEVELOPMENT_ROOT, installForm: "source", packageName: "typescript-floor" });
+
+const syntaxApiOn = async (request: {
+  readonly peers: TypeScriptPeers;
+  readonly line: string;
+  readonly version: RegExp;
+}): Promise<SyntaxApi> => {
+  const loaded = await loadParsePort({ peers: request.peers });
+  assert(loaded.outcome === "ok", `the ${request.line} line loads from the development install`);
+  assert(
+    request.version.test(loaded.value.syntaxApi.version),
+    `the ${request.line} line runs TypeScript ${loaded.value.syntaxApi.version}`,
+  );
+  return loaded.value.syntaxApi;
+};
+
+const CURRENT = await syntaxApiOn({ peers: CURRENT_PEERS, line: "typescript", version: /^6\./ });
+const FLOOR = await syntaxApiOn({ peers: FLOOR_PEERS, line: "typescript-floor", version: /^4\.8\.4$/ });
 
 const LEAF = repoPathSchema.parse("packages/a/tsconfig.json");
 

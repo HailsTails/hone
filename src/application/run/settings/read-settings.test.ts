@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { LOOPS_CLAUSE, SETTINGS_CATALOGUE, TEST_BODY_CLAUSE } from "../../../../tests/settings-catalogue.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { type ClauseAddress, clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
@@ -11,6 +12,72 @@ const INSTALL_ROOT = absolutePathSchema.parse("/install");
 const SETTINGS_PATH = "/repo/hone.config.json";
 
 const AUDIT = mechanismIdSchema.parse("audit");
+
+const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
+
+const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+
+const LOOP_KEYWORD: Symptom = {
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
+
+const LOOPS_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-15#loops");
+
+const TEST_BODY_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-27#test-body-logic");
+
+const LAYERING_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-13#layering");
+
+const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+
+const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+
+const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+
+const SETTINGS_CATALOGUE: SymptomCatalogue = {
+  principles: [NO_HIDDEN_EFFECTS],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
+  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
+  engines: [WALKER, ESLINT_ENGINE],
+  symptoms: [LOOP_KEYWORD, REBINDING],
+  clauses: [
+    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: TEST_BODY_CLAUSE,
+      sight: {
+        kind: "symptom-by-form",
+        forms: [
+          { section: "a-for-loop", symptom: LOOP_KEYWORD },
+          { section: "a-let", symptom: REBINDING },
+        ],
+      },
+    },
+    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+  ],
+  checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
+  namedBans: [],
+};
 
 const FIRST = editionSchema.parse("1");
 

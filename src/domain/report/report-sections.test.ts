@@ -1,9 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { CLAIMED_TYPE } from "../../../tests/report-catalogue.ts";
 import type { PlacedRecord } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { RUN_SECTION_NAMES, type RunSectionName, type RunSectionRole, runSectionRoleOf, runVerdictOf } from "./report-sections.ts";
 import type { RunReport } from "./run-report.ts";
+import type { Symptom } from "../language-layer/symptom-catalogue.ts";
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [
+    {
+      case: {
+        name: "gives-a-value-its-type",
+        title: "Gives a value its type",
+        standing: "accepted",
+        owes: [
+          {
+            kind: "rule",
+            rule: {
+              name: "declared-not-asserted",
+              title: "Declared, not asserted",
+              principle: { name: "one-place-decides", title: "One place decides" },
+              standing: "accepted",
+            },
+          },
+        ],
+      },
+      situation: "or needs it narrower",
+      points: [
+        {
+          kind: "rule",
+          rule: {
+            name: "declared-not-asserted",
+            title: "Declared, not asserted",
+            principle: { name: "one-place-decides", title: "One place decides" },
+            standing: "accepted",
+          },
+        },
+      ],
+    },
+  ],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
+    },
+  ],
+};
 
 const EMPTY_REPORT: RunReport = {
   excluded: [],

@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { type RecordsDisk, recordsDisk, singleFileRepositoriesOver } from "../../../tests/records-disk.ts";
-import { exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import { ABSENT_FILE, type FakeFile, presentFile, presentJsonFile } from "../../../tests/fake-file.ts";
-import { requiredEntry } from "../../../tests/required-entry.ts";
+import { assert, describe, expect, it, vi } from "vitest";
+import { createExceptionRepository, type ExceptionLayoutPorts, exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { DirectoryEntry } from "../../infrastructure/node/file-system/file-system-port.ts";
 import type { EmbeddedRunReport, UnprojectedFolderReport } from "../../infrastructure/engines/protocol/embedded/embedded-run-report-schema.ts";
 import type { EmbeddedRunner } from "../../infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
 import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
@@ -12,12 +11,128 @@ import type { GitPort, GitTreePort } from "../../infrastructure/git/git-port.ts"
 import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort, type PathPort, type RelativeLocation } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { recordDebtCommandOf } from "./run-record-debt-command.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
+
+type JsonValue = string | number | boolean | null | readonly JsonValue[] | { readonly [key: string]: JsonValue };
+
+type FakeFile = {
+  readonly read: ReturnType<FileTextPort["read"]>;
+  readonly presence: ReturnType<FileTextPort["exists"]>;
+};
+
+const presentFile = (request: { readonly text: string }): FakeFile => ({
+  read: { outcome: "ok", value: request.text },
+  presence: "present",
+});
+
+const presentJsonFile = (request: { readonly document: JsonValue }): FakeFile => presentFile({ text: JSON.stringify(request.document) });
+
+const ABSENT_FILE: FakeFile = {
+  read: { outcome: "failed", error: { kind: "unreadable", path: "", detail: "ENOENT" } },
+  presence: "absent",
+};
+
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
+
+const singleFileRepositoriesOver = (request: {
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepositoryOf =>
+  ({ repoRoot }) =>
+    createExceptionRepository({
+      ...request,
+      repoRoot,
+      fileText: {
+        ...request.fileText,
+        exists: (query) => (query.path.endsWith("discipline-exceptions") ? "absent" : request.fileText.exists(query)),
+      },
+      directory: {
+        list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
+        create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+      },
+      fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
+    });
+
+type RecordsDisk = {
+  readonly repoRoot: AbsolutePath;
+  readonly ports: ExceptionLayoutPorts;
+  readonly texts: () => Readonly<Record<string, string>>;
+};
+
+const ROOT = "/repo";
+
+const absoluteKey = (request: { readonly file: string }): string => `${ROOT}/${request.file}`;
+
+const childEntryOf = (request: { readonly path: string; readonly folder: string }): DirectoryEntry => {
+  const [name, ...rest] = request.path.slice(request.folder.length + 1).split("/");
+  return { name, kind: rest.length === 0 ? "file" : "directory" };
+};
+
+const childrenOf = (request: { readonly paths: readonly string[]; readonly folder: string }): readonly DirectoryEntry[] => {
+  const children = request.paths
+    .filter((path) => path.startsWith(`${request.folder}/`))
+    .map((path) => childEntryOf({ path, folder: request.folder }));
+  return [...new Map(children.map((child) => [child.name, child])).values()];
+};
+
+const recordsDisk = (request: { readonly working: Readonly<Record<string, string>> }): RecordsDisk => {
+  const files = new Map(Object.entries(request.working).map(([file, text]) => [absoluteKey({ file }), text]));
+  const folders = new Set<string>();
+  const occupied = (): readonly string[] => [...files.keys(), ...[...folders].map((folder) => `${folder}/`)];
+  return {
+    repoRoot: absolutePathSchema.parse(ROOT),
+    texts: () => Object.fromEntries([...files.entries()].map(([path, text]) => [path.slice(ROOT.length + 1), text])),
+    ports: {
+      path: createPathPort({ flavour: "posix", workingDirectory: () => ROOT }),
+      fileText: {
+        read: ({ path }) => {
+          const text = files.get(path);
+          return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } } : { outcome: "ok", value: text };
+        },
+        exists: ({ path }) => (files.has(path) || occupied().some((candidate) => candidate.startsWith(`${path}/`)) ? "present" : "absent"),
+        write: ({ path, text }) => {
+          files.set(path, text);
+          return { outcome: "ok", value: undefined };
+        },
+      },
+      directory: {
+        list: ({ path }) => ({ outcome: "ok", value: childrenOf({ paths: [...files.keys()], folder: path }).toSorted((left, right) => (left.name < right.name ? -1 : 1)) }),
+        create: ({ path }) => {
+          folders.add(path);
+          return { outcome: "ok", value: undefined };
+        },
+      },
+      fileRemoval: {
+        remove: ({ path }) => {
+          files.delete(path);
+          return { outcome: "ok", value: undefined };
+        },
+      },
+      git: {
+        trackedPaths: () => ({ outcome: "ok", value: [] }),
+        changedSince: () => ({ outcome: "ok", value: [] }),
+        contentInBase: () => ({ outcome: "ok", value: "absent-from-base" }),
+        textInBase: () => ({ outcome: "ok", value: { presence: "absent-from-base" } }),
+        renamedSince: () => ({ outcome: "ok", value: new Map() }),
+      },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [] }) },
+    },
+  };
+};
 
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
 
@@ -365,7 +480,7 @@ const AUTHORISED_ELSEWHERE = `{
 
 describe("recordDebtCommandOf in the split layout", () => {
   it("appends the record to the file that keeps that rule's file carve-outs", async () => {
-    const disk = recordsDisk({ working: { "discipline-exceptions/file-carve-outs/cd-14.json": EMPTY_EXCEPTIONS }, base: {} });
+    const disk = recordsDisk({ working: { "discipline-exceptions/file-carve-outs/cd-14.json": EMPTY_EXCEPTIONS } });
 
     expect(await recordedDebtInto({ run: adoptionRun(), disk })).toEqual({
       writes: [[{ text: "CD-14#class-syntax recorded src/a.ts\n" }]],
@@ -375,7 +490,7 @@ describe("recordDebtCommandOf in the split layout", () => {
   });
 
   it("writes a new file for that rule's file carve-outs beside its other kinds' files", async () => {
-    const disk = recordsDisk({ working: { "discipline-exceptions/authorised-locations/cd-14.json": AUTHORISED_ELSEWHERE }, base: {} });
+    const disk = recordsDisk({ working: { "discipline-exceptions/authorised-locations/cd-14.json": AUTHORISED_ELSEWHERE } });
 
     expect((await recordedDebtInto({ run: adoptionRun(), disk })).texts).toEqual({
       "discipline-exceptions/authorised-locations/cd-14.json": AUTHORISED_ELSEWHERE,

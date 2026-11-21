@@ -1,15 +1,48 @@
 import { describe, expect, it, vi } from "vitest";
-import { commandOver, gitTreeStub, memoryRepositoryOf, recordedProcessWith } from "../tests/command-harness.ts";
+import type { VersionOneCommandRequest } from "./application/ports/version-one-command-request.ts";
+import type { GitTreePort } from "./infrastructure/git/git-port.ts";
+import type { DirectoryPort } from "./infrastructure/node/file-system/file-system-port.ts";
+import type { FileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "./infrastructure/node/path-port.ts";
+import type { ProcessPort } from "./infrastructure/node/process/process-port.ts";
 import type { RecordsSourceOf } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { absolutePathSchema } from "./infrastructure/content-files/absolute-path.ts";
 import { createPathPort } from "./infrastructure/node/path-port.ts";
 import { type StagesOver, repoRootOf, repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";
 import type { VersionTwoStages } from "./application/run/version-two-run.ts";
 
-const memory = memoryRepositoryOf({ files: {} });
+const notUsed = (): never => {
+  throw new Error("this port is not used by the command under test");
+};
 
-const command = commandOver({ process: recordedProcessWith({ arguments: [] }).port, fileText: memory.fileText });
+const memory: { readonly fileText: FileTextPort; readonly directory: DirectoryPort } = {
+  fileText: {
+    exists: () => "absent",
+    read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } }),
+    write: () => ({ outcome: "ok", value: undefined }),
+  },
+  directory: {
+    list: () => ({ outcome: "ok", value: [] }),
+    create: () => ({ outcome: "ok", value: undefined }),
+  },
+};
+
+const emptyProcess: ProcessPort = {
+  arguments: [],
+  writeOut: () => undefined,
+  writeError: () => undefined,
+  exitWith: () => undefined,
+};
+
+const command: VersionOneCommandRequest = {
+  process: emptyProcess,
+  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  fileText: memory.fileText,
+  modules: { load: notUsed },
+  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
+  exceptionRepositoryOf: notUsed,
+  moduleUrl: "file:///install/src/hone.ts",
+};
 
 const UNRESOLVABLE_PATH: PathPort = {
   ...createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
@@ -54,7 +87,7 @@ describe("stagesOverRepository", () => {
       touched: vi.fn<VersionTwoStages["touched"]>(),
     };
     const stagesOver = vi.fn<StagesOver>().mockReturnValue(stages);
-    const gitTree = gitTreeStub();
+    const gitTree: GitTreePort = { pathsAt: () => ({ outcome: "ok", value: [] }) };
     const recordsSourceOf = vi.fn<RecordsSourceOf>();
     const built = stagesOverRepository({
       ports: { gitTree, directory: memory.directory, recordsSourceOf, stagesOver },

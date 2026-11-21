@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
-import { requiredEntry, requiredSegmentsEntry } from "../../../../tests/required-entry.ts";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../../node/path-port.ts";
 import { pieceImportFindings } from "./piece-import-rules.ts";
+
+const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
 
 declare global {
   interface ImportMeta {
@@ -228,7 +233,7 @@ const REPOSITORY_DIRECTORIES: Readonly<Record<string, string>> = {
 const TABLE_PATH: PathPort = {
   join: vi.fn<PathPort["join"]>(),
   relative: vi.fn<PathPort["relative"]>(),
-  joinRepository: ({ segments }) => requiredSegmentsEntry({ table: JOINED_REPOSITORY_PATHS, segments }),
+  joinRepository: ({ segments }) => requiredEntry({ table: JOINED_REPOSITORY_PATHS, key: JSON.stringify(segments) }),
   directoryOf: vi.fn<PathPort["directoryOf"]>(),
   repositoryDirectoryOf: ({ path }) => requiredEntry({ table: REPOSITORY_DIRECTORIES, key: path }),
   resolve: vi.fn<PathPort["resolve"]>(),

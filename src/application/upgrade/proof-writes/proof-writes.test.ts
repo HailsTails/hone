@@ -1,5 +1,4 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import { callSequenceOf } from "../../../../tests/call-sequence.ts";
 import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
 import type { FileCreationPort } from "../../../infrastructure/node/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
@@ -7,6 +6,23 @@ import type { DirectoryPort, EntryKindPort, FileTextPort } from "../../../infras
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { type PlannedFile, type ProofWritePorts, type ProofWrites, rolledBackProofWrites, writeProofFiles } from "./proof-writes.ts";
+
+type RecordedMock = {
+  readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
+};
+
+type RecordedCall = { readonly port: string; readonly arguments: readonly unknown[] };
+
+type OrderedCall = RecordedCall & { readonly order: number };
+
+const orderedCallsOf = (request: { readonly port: string; readonly mock: RecordedMock }): readonly OrderedCall[] =>
+  request.mock.mock.calls.map((callArguments, index) => ({ port: request.port, arguments: callArguments, order: request.mock.mock.invocationCallOrder[index] }));
+
+const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, RecordedMock>> }): readonly RecordedCall[] =>
+  Object.entries(request.mocks)
+    .flatMap(([port, mock]) => orderedCallsOf({ port, mock }))
+    .toSorted((left, right) => left.order - right.order)
+    .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
 const REPO = absolutePathSchema.parse("/repo");
 

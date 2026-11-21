@@ -6,7 +6,6 @@ import { createSettingsRepository } from "./read-settings.ts";
 import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repositoryRootOf } from "../../../../tests/allowed-forms-proof.ts";
 
 const path = createDefaultPathPort({});
 
@@ -18,7 +17,7 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: repositoryRootOf({ testFolder: `${import.meta.dirname}/../../..` }) });
+const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [`${import.meta.dirname}/../../..`, ".."] }) });
 
 const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "settings-pair", "before"] }) });
 

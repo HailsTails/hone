@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../node/path-port.ts";
 import {
@@ -11,7 +11,6 @@ import {
   disciplineIdSchema,
   mechanismIdSchema,
 } from "../../../hone-config-file/identifiers.ts";
-import { requiredEntry } from "../../../../../tests/required-entry.ts";
 import { walkerPieceSettingsSchema } from "../runner/pieces/walker-check-schema.ts";
 import piece from "./piece.json" with { type: "json" };
 
@@ -27,7 +26,11 @@ const JOINED_PATHS: Readonly<Record<string, string>> = {
 };
 
 const TABLE_PATH: PathPort = {
-  join: ({ segments }) => requiredEntry({ table: JOINED_PATHS, key: JSON.stringify(segments) }),
+  join: ({ segments }) => {
+    const joined = JOINED_PATHS[JSON.stringify(segments)];
+    assert(joined !== undefined, `the fake table holds no entry for ${JSON.stringify(segments)}`);
+    return joined;
+  },
   relative: vi.fn<PathPort["relative"]>(),
   joinRepository: vi.fn<PathPort["joinRepository"]>(),
   directoryOf: vi.fn<PathPort["directoryOf"]>(),

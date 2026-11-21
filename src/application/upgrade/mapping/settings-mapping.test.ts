@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { LOOP_KEYWORD_LOOPS, LOOPS_CLAUSE, SETTINGS_CATALOGUE, TEST_BODY_CLAUSE } from "../../../../tests/settings-catalogue.ts";
 import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { SettingsFile } from "../../../infrastructure/hone-config-file/settings-file.ts";
-import type { Check, Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema, ruleSetNameSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
@@ -47,9 +46,81 @@ const BASE_SETTINGS: SettingsFile = {
   conventions: { conventions: { generated: [], layers: [] }, declared: [] },
 };
 
-const CROSS_DISCIPLINE_CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: SETTINGS_CATALOGUE }];
+const ESLINT = mechanismIdSchema.parse("eslint");
 
-const [, TEST_BODY_LOOP_KEYWORD_CHECK, TEST_BODY_REBINDING_CHECK] = SETTINGS_CATALOGUE.checks;
+const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+
+const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+
+const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
+
+const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION_KIND: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+
+const LOOP_KEYWORD: Symptom = {
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const REBINDING: Symptom = {
+  name: "rebinding",
+  title: "Rebinding",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+
+const TEST_BODY_LOOP_KEYWORD_CHECK: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+
+const TEST_BODY_REBINDING_CHECK: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+
+const SETTINGS_CATALOGUE: SymptomCatalogue = {
+  principles: [NO_HIDDEN_EFFECTS],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
+  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
+  engines: [WALKER, ESLINT_ENGINE],
+  symptoms: [LOOP_KEYWORD, REBINDING],
+  clauses: [
+    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+    {
+      clause: TEST_BODY_CLAUSE,
+      sight: {
+        kind: "symptom-by-form",
+        forms: [
+          { section: "a-for-loop", symptom: LOOP_KEYWORD },
+          { section: "a-let", symptom: REBINDING },
+        ],
+      },
+    },
+    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+  ],
+  checks: [LOOP_KEYWORD_LOOPS, TEST_BODY_LOOP_KEYWORD_CHECK, TEST_BODY_REBINDING_CHECK],
+  namedBans: [],
+};
+
+const CROSS_DISCIPLINE_CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: SETTINGS_CATALOGUE }];
 
 const OWN_SYMPTOM_LOOPS_CHECK: Check = {
   ...LOOP_KEYWORD_LOOPS,
@@ -65,8 +136,6 @@ const BASE_REQUEST: SettingsMappingRequest = {
     },
   ],
 };
-
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
 const OTHER_WALKER: Engine = { name: "second-walker", mechanism: AUDIT };
 

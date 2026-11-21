@@ -2,13 +2,26 @@ import * as typescriptParser from "@typescript-eslint/parser";
 import { ESLint } from "eslint-9";
 import { builtinRules } from "eslint-9/use-at-your-own-risk";
 import { z } from "zod";
+import type { RunnerClause } from "../../../../protocol/runner-module/runner-module-schema.ts";
 import type { SourceCase } from "../../../../../content-files/rule-sets/rule-set-reader.ts";
 import { eslintPieceSettingsSchema } from "../../pieces/eslint-piece-settings-schema.ts";
 import { type LoadedEslintPlugin, eslintPluginModuleSchema } from "../../pieces/eslint-plugin-schema.ts";
 import { defaultNativeRuleSources, type NativeRuleSources } from "../../pieces/native-rules.ts";
-import type { ConformanceRow } from "../../../../../../../tests/conformance-rows.ts";
+import type { ModuleLoaderPort } from "../../../../../node/modules/module-loader-port.ts";
+import { defaultEslintToolchainModules, type EslintToolchainModules } from "../eslint-toolchain.ts";
 
 export const ESLINT_9_VERSION = ESLint.version;
+
+export const eslint9ToolchainModules: EslintToolchainModules = {
+  ...defaultEslintToolchainModules,
+  eslint: () => Promise.resolve({ ESLint }),
+};
+
+type ConformanceRow = {
+  readonly name: string;
+  readonly clause: RunnerClause;
+  readonly cases: readonly SourceCase[];
+};
 
 export type CaseMismatch = {
   readonly name: string;
@@ -24,12 +37,21 @@ const nativeRulePieceSchema = z.object({
 
 const distinctSorted = (lines: readonly number[]): readonly number[] => [...new Set(lines)].sort((left, right) => left - right);
 
+const pieceModuleUnderEslint9 = (request: { readonly pieceModule: unknown }): unknown => {
+  const injected = nativeRulePieceSchema.safeParse(request.pieceModule);
+  return injected.success ? { default: injected.data.createPlugin(ESLINT_9_SOURCES) } : request.pieceModule;
+};
+
+export const eslint9PieceModules = (request: { readonly base: ModuleLoaderPort }): ModuleLoaderPort => ({
+  load: (load) =>
+    request.base
+      .load(load)
+      .then((loaded) => (loaded.outcome === "failed" ? loaded : { outcome: "ok", value: pieceModuleUnderEslint9({ pieceModule: loaded.value }) })),
+});
+
 const pluginUnderEslint9 = async (request: { readonly modulePath: string }): Promise<LoadedEslintPlugin> => {
   const pieceModule: unknown = await import(request.modulePath);
-  const injected = nativeRulePieceSchema.safeParse(pieceModule);
-  return eslintPluginModuleSchema.parse(
-    injected.success ? { default: injected.data.createPlugin(ESLINT_9_SOURCES) } : pieceModule,
-  ).default;
+  return eslintPluginModuleSchema.parse(pieceModuleUnderEslint9({ pieceModule })).default;
 };
 
 const linesFlagged = async (request: {

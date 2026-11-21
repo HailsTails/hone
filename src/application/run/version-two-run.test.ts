@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { CAST_EXPRESSIONS, CLAIMED_TYPE, ESLINT, REPORT_CATALOGUE } from "../../../tests/report-catalogue.ts";
+import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { Hit } from "../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
 import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
@@ -10,6 +12,65 @@ import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run
 import { type VersionTwoRequest, type VersionTwoStages, versionTwoRunOver } from "./version-two-run.ts";
 
 const FILE_A = repoPathSchema.parse("src/a.ts");
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+
+const DECLARED_NOT_ASSERTED: Rule = {
+  name: "declared-not-asserted",
+  title: "Declared, not asserted",
+  principle: { name: "one-place-decides", title: "One place decides" },
+  standing: "accepted",
+};
+
+const AUTHORISED_LOCATION: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [
+    {
+      case: {
+        name: "gives-a-value-its-type",
+        title: "Gives a value its type",
+        standing: "accepted",
+        owes: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+      },
+      situation: "or needs it narrower",
+      points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+    },
+  ],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
+};
+
+const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: CAST_EXPRESSIONS, engines: [ESLINT_ENGINE], forms: [] };
+
+const REPORT_CATALOGUE: SymptomCatalogue = {
+  principles: [{ name: "one-place-decides", title: "One place decides" }],
+  rules: [DECLARED_NOT_ASSERTED],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
+  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
+  engines: [ESLINT_ENGINE],
+  symptoms: [CLAIMED_TYPE],
+  clauses: [{ clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } }],
+  checks: [CAST_CHECK],
+  namedBans: [],
+};
 
 const SETTINGS: SettingsReading = {
   selection: {

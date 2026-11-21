@@ -10,7 +10,8 @@ import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import discipline from "../../../../../../rules/CD-14/discipline.json" with { type: "json" };
-import { defaultEslintPort } from "../../../../../../tests/eslint-toolchains.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import classAuthoringPlugin, { classDisposition, containerMode } from "./cd14.eslint-plugin.ts";
 
@@ -61,7 +62,13 @@ const keywordAfterNodeStartCases: readonly SourceCase[] = [
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: classAuthoringPlugin }).default;
 
-const eslint = defaultEslintPort;
+const loadedToolchain = await loadEslintToolchain({
+  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+});
+assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+
+const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
 test("runtime class declarations are reported", () => {
   expect(
