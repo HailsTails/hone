@@ -6,7 +6,7 @@ import { absolutePathSchema } from "../../../infrastructure/content-files/absolu
 import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import { type SettingsReading, readSettings, settingsNoteText } from "./read-settings.ts";
+import { type SettingsReading, readSettings } from "./read-settings.ts";
 import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
@@ -214,14 +214,5 @@ describe("readSettings", () => {
         sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } } }),
       }),
     ).toEqual({ outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } });
-  });
-});
-
-describe("settingsNoteText", () => {
-  it.each<{ readonly key: "generated" | "layers"; readonly text: string }>([
-    { key: "generated", text: "generated is declared; no check reads it yet" },
-    { key: "layers", text: "layers is declared; no check reads it yet" },
-  ])("writes $text", ({ key, text }) => {
-    expect(settingsNoteText({ note: { kind: "declared-not-read", key } })).toBe(text);
   });
 });

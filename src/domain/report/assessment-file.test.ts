@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "./assessment-file.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 
 describe("ASSESSMENT_FILE_NAME", () => {
   it("is the file beside disciplines.json", () => {

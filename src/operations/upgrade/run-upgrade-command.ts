@@ -21,7 +21,7 @@ import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import type { Result } from "../../domain/result.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
-import { createVersionOneEnginePass } from "../../infrastructure/engines/protocol/engine-run/version-one-engine-pass.ts";
+import { createVersionOneEnginePass } from "../../application/upgrade/record-answers/version-one-engine-pass.ts";
 import { type UpgradeProofRequest, upgradeProof } from "../../application/upgrade/proof/upgrade-proof.ts";
 import { foundTreeCheckReachOf, foundTreeRunReachOf } from "../../application/upgrade/found-tree/found-tree-reach.ts";
 import { plannedProjectionOf } from "../../application/upgrade/command/planned-projection.ts";

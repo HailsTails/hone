@@ -1,4 +1,5 @@
-import { readSelection, selectionRepositoryHolding } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { readSelection } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { selectionRepositoryHolding } from "../../application/run/settings/selection-holding.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";

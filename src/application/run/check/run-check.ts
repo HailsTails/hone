@@ -32,11 +32,13 @@ import type {
   ProjectionProblem,
   Unmeasured,
 } from "../../../domain/report/check-report.ts";
-import { clauseReadingsOf } from "../../../infrastructure/printed-report/findings/clause-readings.ts";
+import { clauseReadingsOf } from "./clause-readings.ts";
 import { exceptionBaselineOf, partialAssessmentsOf, touchedSetFor, unmeasuredOf } from "./measurement.ts";
 import { packageLinkOf } from "../../../infrastructure/command-line/installation/package-link.ts";
+import { shownPathOf } from "../../../infrastructure/command-line/installation/shown-path.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { paidDebtNotesOf } from "../../../domain/report/paid-debt-notes.ts";
-import { shownRemediesOf } from "../../../infrastructure/printed-report/findings/shown-remedies.ts";
+import { shownRemediesOf } from "./shown-remedies.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import { loadRunner } from "../../../infrastructure/engines/protocol/engine-run/load-runner.ts";
@@ -286,6 +288,11 @@ export const mechanismRuns = async (request: {
 export const findingsOf = (request: { readonly runs: readonly MechanismRun[] }): readonly Finding[] =>
   request.runs.flatMap((run) => run.hits.map((hit) => ({ ...hit, mechanism: run.mechanism })));
 
+const shownPathsOf = (request: { readonly check: CheckRequest }): ShownPathOf => {
+  const link = packageLinkOf(request.check);
+  return ({ target }) => shownPathOf({ path: request.check.path, repoRoot: request.check.repoRoot, link, target });
+};
+
 const remediedFindingsOf = (request: {
   readonly check: CheckRequest;
   readonly inputs: LoadedInputs;
@@ -295,8 +302,7 @@ const remediedFindingsOf = (request: {
   if (!findings.some((finding) => finding.remedy !== undefined)) {
     return findings;
   }
-  const link = packageLinkOf(request.check);
-  return shownRemediesOf({ ...request.check, link, clauseRoots: request.inputs.clauseRoots, findings });
+  return shownRemediesOf({ ...request.check, shownPathOf: shownPathsOf(request), clauseRoots: request.inputs.clauseRoots, findings });
 };
 
 const absentFilesOf = (request: {
@@ -355,7 +361,7 @@ const checkReportOf = (request: {
     ],
     assessment: partialAssessmentsOf({ assessment: request.assessment, records: request.inputs.records }),
     readFirst: [
-      ...clauseReadingsOf({ ...request.check, findings: governed.findings, clauseRoots: request.inputs.clauseRoots }),
+      ...clauseReadingsOf({ ...request.check, shownPathOf: shownPathsOf(request), findings: governed.findings, clauseRoots: request.inputs.clauseRoots }),
       ...paidDebtNotesOf({ governed, paid: paidDebt, runs: request.runs }),
     ],
   };

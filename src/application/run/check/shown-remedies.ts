@@ -1,15 +1,12 @@
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import type { PackageLink } from "../../command-line/installation/package-link.ts";
-import { shownPathOf } from "../../command-line/installation/shown-path.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 
 type ShownRemedyRequest = {
   readonly path: PathPort;
-  readonly repoRoot: AbsolutePath;
-  readonly link: PackageLink;
+  readonly shownPathOf: ShownPathOf;
   readonly clauseRoots: readonly ClauseRoot[];
 };
 
@@ -28,7 +25,7 @@ const shownRemedyOf = (request: ShownRemedyRequest & { readonly finding: Finding
   if (ruleFolder === undefined) {
     return located;
   }
-  const page = shownPathOf({ ...request, target: request.path.join({ segments: [ruleFolder, remedy.page] }) });
+  const page = request.shownPathOf({ target: request.path.join({ segments: [ruleFolder, remedy.page] }) });
   return { ...located, remedy: { ...remedy, page } };
 };
 

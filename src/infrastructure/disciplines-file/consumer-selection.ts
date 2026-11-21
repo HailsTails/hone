@@ -36,10 +36,6 @@ export const createSelectionRepository = (options: {
   read: (_request) => readSelection(options),
 });
 
-export const selectionRepositoryHolding = (request: { readonly reading: SelectionReading }): SelectionRepository => ({
-  read: (_request) => ({ outcome: "ok", value: request.reading }),
-});
-
 export const createDefaultSelectionRepository = (options: {
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;

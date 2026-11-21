@@ -8,7 +8,7 @@ import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSetCatalogue, sameRuleSet } from "../../../domain/settings/check-choices.ts";
 import { settledCheckSettings } from "../../../domain/settings/clause-settings/check-settings.ts";
-import type { ConventionKey, Conventions } from "../../../domain/settings/conventions.ts";
+import type { Conventions } from "../../../domain/settings/conventions.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
 import { settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
@@ -36,14 +36,6 @@ export const settingsRepositoryHolding = (request: { readonly reading: SettingsR
 export const createSettingsRepository = (options: { readonly sources: SettingsSources }): SettingsRepository => ({
   read: (_request) => readSettings(options),
 });
-
-const NOTE_KEY_TEXTS: Readonly<Record<ConventionKey, string>> = {
-  generated: "generated",
-  layers: "layers",
-};
-
-export const settingsNoteText = (request: { readonly note: SettingsNote }): string =>
-  `${NOTE_KEY_TEXTS[request.note.key]} is declared; no check reads it yet`;
 
 type BoundClause = {
   readonly selected: SelectedClause;

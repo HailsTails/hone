@@ -9,7 +9,7 @@ import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
-import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../command-line/assessment-file.ts";
+import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../../domain/report/assessment-file.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import type {
   AssessmentFileNote,

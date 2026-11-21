@@ -1,12 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { packageLinkOf } from "../../../infrastructure/command-line/installation/package-link.ts";
+import { shownPathOf } from "../../../infrastructure/command-line/installation/shown-path.ts";
 import { clauseReadingsOf } from "./clause-readings.ts";
 
 type FakeFile = {
@@ -37,6 +42,21 @@ const filesOver = (files: Readonly<Record<string, FakeFile>>): FileTextPort => (
   exists: ({ path }) => fileOf({ files, path }).presence,
   write: vi.fn<FileTextPort["write"]>(),
 });
+
+type LinkedRequest = {
+  readonly path: PathPort;
+  readonly fileText: Pick<FileTextPort, "read" | "exists">;
+  readonly repoRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
+};
+
+const shownThroughLinkOf =
+  (request: LinkedRequest): ShownPathOf =>
+  ({ target }) =>
+    shownPathOf({ path: request.path, repoRoot: request.repoRoot, link: packageLinkOf(request), target });
+
+const readingsThroughLinkOf = (request: Omit<Parameters<typeof clauseReadingsOf>[0], "shownPathOf">) =>
+  clauseReadingsOf({ ...request, shownPathOf: shownThroughLinkOf(request) });
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -76,7 +96,7 @@ const SHIPPED_PAGES: Readonly<Record<string, FakeFile>> = {
 const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
 
 const readingsOver = (request: { readonly files: FileTextPort; readonly findings: readonly Finding[] }) =>
-  clauseReadingsOf({
+  readingsThroughLinkOf({
     findings: request.findings,
     clauseRoots: CLAUSE_ROOTS,
     repoRoot: REPO_ROOT,
@@ -197,7 +217,7 @@ describe("clauseReadingsOf pointing at the rule page", () => {
 
   it("names the page and the guide by their absolute paths, with forward slashes, when they are on another root than the repository", () => {
     expect(
-      clauseReadingsOf({
+      readingsThroughLinkOf({
         findings: ONE_LOOPS_FINDING,
         clauseRoots: [{ clause: LOOPS, ruleSetRoot: absolutePathSchema.parse("D:\\hone") }],
         repoRoot: absolutePathSchema.parse("C:\\repo"),
@@ -220,7 +240,7 @@ describe("clauseReadingsOf when pnpm runs the package from its store", () => {
     [`${storeRoot}/package.json`]: manifest,
   };
   const storedReadings = (request: { readonly files: Readonly<Record<string, FakeFile>> }) =>
-    clauseReadingsOf({
+    readingsThroughLinkOf({
       findings: ONE_LOOPS_FINDING,
       clauseRoots: [{ clause: LOOPS, ruleSetRoot: storeRoot }],
       repoRoot: REPO_ROOT,

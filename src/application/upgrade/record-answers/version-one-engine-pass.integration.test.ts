@@ -1,43 +1,43 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../../../application/ports/selection/selection-repository.ts";
-import { createExceptionRepository } from "../../../discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../../../application/ports/records/exception-repository.ts";
-import { createDefaultFileRemovalPort } from "../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../../../application/ports/git-port.ts";
-import type { ModuleExtension } from "../../../../application/ports/host/module-extension.ts";
-import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../node/path-port.ts";
-import type { PathPort } from "../../../../application/ports/host/path-port.ts";
-import type { Finding } from "../../../../domain/finding/governance.ts";
-import { createSymptomCatalogueRepository } from "../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
-import type { RuleSetCatalogue } from "../../../../domain/settings/check-choices.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../../hone-config-file/assessment.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
-import { runProject } from "../../../../application/projection/run-project.ts";
-import { createEslintRunner } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createEslintPort, type EslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../../delivery/install-proof/install-proof-ports.ts";
-import { createAnsweringOracle } from "../../../../application/upgrade/record-answers/answering-oracle.ts";
-import type { FileCarveOutRecord } from "../../../../application/ports/upgrade/record-answer-oracle.ts";
+import { createSelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
+import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import { createDefaultFileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
+import { createDefaultModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
+import { createSymptomCatalogueRepository } from "../../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
+import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { runProject } from "../../projection/run-project.ts";
+import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createEslintPort, type EslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
+import { createAnsweringOracle } from "./answering-oracle.ts";
+import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
 
 const path = createDefaultPathPort({});
 
 const fileText = createDefaultFileTextPort({});
 
-const INSTALL_ROOT = absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", "..", "..", "..", ".."] }));
+const INSTALL_ROOT = absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", "..", "..", ".."] }));
 
 const loadedEslintToolchain = await loadEslintToolchain({
   peers: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }),
