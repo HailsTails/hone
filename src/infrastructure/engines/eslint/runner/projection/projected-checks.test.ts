@@ -1,13 +1,90 @@
 import { describe, expect, it } from "vitest";
 import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { CHECKS_PLUGIN_CATALOGUE, SKIPPED_TESTS_CHECK } from "../../../../../../tests/checks-plugin-catalogue.ts";
 import { checksPluginImportOf, projectedChecksOf } from "./projected-checks.ts";
+
+const WALKER_ENGINE: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+
+const TEST_SWITCHED_OFF: Symptom = {
+  name: "test-switched-off",
+  title: "Test switched off",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const POSITIONAL_PARAMETERS: Symptom = {
+  name: "positional-parameters",
+  title: "Positional parameters",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const REBINDING: Symptom = {
+  name: "rebinding",
+  title: "Rebinding",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const SKIPPED_TESTS_CHECK: Check = {
+  name: "skipped-tests",
+  symptom: TEST_SWITCHED_OFF,
+  clause: clauseAddressSchema.parse("CD-27#skipped-tests"),
+  engines: [ESLINT_ENGINE],
+  forms: [],
+};
+
+const NON_NULL_ASSERTIONS_CHECK: Check = {
+  name: "non-null-assertions",
+  symptom: CLAIMED_TYPE,
+  clause: clauseAddressSchema.parse("CD-2#non-null-assertions"),
+  engines: [ESLINT_ENGINE],
+  forms: [],
+};
+
+const PARAMETER_COUNT_CHECK: Check = {
+  name: "parameter-count",
+  symptom: POSITIONAL_PARAMETERS,
+  clause: clauseAddressSchema.parse("CD-40#parameter-count"),
+  engines: [ESLINT_ENGINE],
+  forms: [],
+};
+
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  engines: [WALKER_ENGINE],
+  forms: ["a-let"],
+};
+
+const PLUGIN_CHECKS: readonly Check[] = [SKIPPED_TESTS_CHECK, NON_NULL_ASSERTIONS_CHECK, PARAMETER_COUNT_CHECK, REBINDING_TEST_BODY];
 
 const ESLINT = mechanismIdSchema.parse("eslint");
 
@@ -56,7 +133,7 @@ const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" 
 describe("projectedChecksOf", () => {
   it("projects each ESLint binding's check under its rule id, with the piece's options, and no binding of another engine", () => {
     expect(
-      projectedChecksOf({ checks: CHECKS_PLUGIN_CATALOGUE.checks, bindings: [SKIPPED_TESTS_BINDING, WALKER_BINDING, PARAMETER_COUNT_BINDING] }),
+      projectedChecksOf({ checks: PLUGIN_CHECKS, bindings: [SKIPPED_TESTS_BINDING, WALKER_BINDING, PARAMETER_COUNT_BINDING] }),
     ).toEqual({
       outcome: "ok",
       value: [
@@ -69,7 +146,7 @@ describe("projectedChecksOf", () => {
   it("refuses an ESLint binding whose settings are not an ESLint piece's, naming its piece", () => {
     expect(
       projectedChecksOf({
-        checks: CHECKS_PLUGIN_CATALOGUE.checks,
+        checks: PLUGIN_CHECKS,
         bindings: [{ mechanism: ESLINT, clause: { ...SKIPPED_TESTS_BINDING.clause, settings: { module: "skipped-tests.ts" } } }],
       }),
     ).toMatchObject({ outcome: "failed", error: { kind: "piece-invalid", pieceRoot: "/install/mechanisms/eslint/CD-27" } });
@@ -78,7 +155,7 @@ describe("projectedChecksOf", () => {
   it("refuses an ESLint binding whose clause no check runs on ESLint, naming its clause", () => {
     expect(
       projectedChecksOf({
-        checks: CHECKS_PLUGIN_CATALOGUE.checks,
+        checks: PLUGIN_CHECKS,
         bindings: [{ mechanism: ESLINT, clause: { ...SKIPPED_TESTS_BINDING.clause, address: clauseAddressSchema.parse("CD-27#focused-tests") } }],
       }),
     ).toEqual({ outcome: "failed", error: { kind: "check-unknown", address: "CD-27#focused-tests" } });

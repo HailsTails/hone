@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { VERSION_ONE_CAUSAL_WHY_CHAIN } from "../../../../tests/version-one-causal-why-chain.ts";
 import type { Finding } from "../../../infrastructure/command-line/governance.ts";
 import type { NativeException } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
 import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
@@ -7,7 +6,43 @@ import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptio
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
 import { applyGovernance, type GovernanceRequest } from "./governance.ts";
+
+const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
+  whys: [
+    {
+      why: "Why does the audit refuse tracker ids in carve-out names?",
+      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      evidence: "tools/audit/name-matcher.ts:14",
+    },
+    {
+      why: "Why does the name matcher accept only lowercase slugs?",
+      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      evidence: "tools/git/branch-name.ts:8",
+    },
+    {
+      why: "Why was the matcher copied from the branch-name validator?",
+      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      evidence: "PR #212, merged 2026-07-02",
+    },
+    {
+      why: "Why did no shared slug type exist when the audit landed?",
+      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      evidence: "packages/values/package.json:3",
+    },
+    {
+      why: "Why was the values package split out after the audit?",
+      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      evidence: "docs/decisions/0007-monorepo.md:21",
+    },
+  ],
+  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  readback:
+    "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
+  owner: "capture 01a0b421",
+};
 
 const noClass = clauseAddressSchema.parse("CD-14#no-class-syntax");
 const noForOf = clauseAddressSchema.parse("CD-15#no-for-of");

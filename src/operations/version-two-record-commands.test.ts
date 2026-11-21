@@ -1,10 +1,16 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { CAUSAL_WHY_CHAIN } from "../../tests/causal-why-chain.ts";
-import { authoriseArgumentsFor, commandOver, gitTreeStub, memoryRepositoryOf, recordedProcessWith } from "../../tests/command-harness.ts";
-import { CAST_EXPRESSIONS, CLAIMED_TYPE, ESLINT, REPORT_CATALOGUE, WHOLE_SYMPTOM } from "../../tests/report-catalogue.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { GitTreePort } from "../infrastructure/git/git-port.ts";
+import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
+import type { DirectoryEntry, DirectoryPort, FileRemovalPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import type { FileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../infrastructure/node/process/process-port.ts";
 import type { ChecksSliceProblem } from "../infrastructure/engines/protocol/checks/checks-runner-types.ts";
 import type { Hit, NativeException } from "../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
-import type { PlacedRecord, RecordsReading } from "../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord, RecordsReading, SymptomReach } from "../infrastructure/hone-records-folder/hone-record.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../infrastructure/hone-config-file/conventions.ts";
@@ -16,6 +22,287 @@ import type { EngineRun } from "../infrastructure/engines/protocol/engine-run/en
 import type { StagesOver } from "../version-two-repository.ts";
 import { versionTwoAuthoriseCommandOf, versionTwoPruneDebtCommandOf, versionTwoRecordDebtCommandOf } from "./version-two-record-commands.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
+
+const REPO_FOLDER = "/repo";
+
+const SEPARATOR = "/";
+
+type MemoryRepository = {
+  readonly fileText: FileTextPort;
+  readonly directory: DirectoryPort;
+  readonly removal: FileRemovalPort;
+  readonly textOf: (request: { readonly file: string }) => string | undefined;
+  readonly filesHeld: () => readonly string[];
+};
+
+const absoluteOf = (request: { readonly file: string }): string => `${REPO_FOLDER}${SEPARATOR}${request.file}`;
+
+const memoryRepositoryOf = (request: { readonly files: Readonly<Record<string, string>> }): MemoryRepository => {
+  const held = new Map(Object.entries(request.files).map(([file, text]) => [absoluteOf({ file }), text] as const));
+  const keysUnder = (folder: string): readonly string[] => [...held.keys()].filter((key) => key.startsWith(`${folder}${SEPARATOR}`));
+  const entriesIn = (folder: string): readonly DirectoryEntry[] => {
+    const names = keysUnder(folder).map((key) => key.slice(folder.length + 1));
+    return [...new Set(names.map((name) => name.split(SEPARATOR)[0] ?? name))].map((name) => ({
+      name,
+      kind: names.some((deeper) => deeper.startsWith(`${name}${SEPARATOR}`)) ? "directory" : "file",
+    }));
+  };
+  return {
+    fileText: {
+      exists: ({ path }) => (held.has(path) || keysUnder(path).length > 0 ? "present" : "absent"),
+      read: ({ path }) => {
+        const text = held.get(path);
+        return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } } : { outcome: "ok", value: text };
+      },
+      write: ({ path, text }) => {
+        held.set(path, text);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    directory: {
+      list: ({ path }) => ({ outcome: "ok", value: entriesIn(path) }),
+      create: () => ({ outcome: "ok", value: undefined }),
+    },
+    removal: {
+      remove: ({ path }) => {
+        held.delete(path);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    textOf: ({ file }) => held.get(absoluteOf({ file })),
+    filesHeld: () => [...held.keys()].map((key) => key.slice(REPO_FOLDER.length + 1)).toSorted(),
+  };
+};
+
+type Writes = Parameters<ProcessPort["writeOut"]>[];
+
+type Exits = Parameters<ProcessPort["exitWith"]>[];
+
+const recordedProcessWith = (request: { readonly arguments: readonly string[] }) => {
+  const writes: Writes = [];
+  const exits: Exits = [];
+  const port: ProcessPort = {
+    arguments: request.arguments,
+    writeOut: (written) => writes.push([written]),
+    writeError: () => undefined,
+    exitWith: (exit) => exits.push([exit]),
+  };
+  return { port, writes, exits };
+};
+
+const notUsed = (): never => {
+  throw new Error("this port is not used by the command under test");
+};
+
+const commandOver = (request: { readonly process: ProcessPort; readonly fileText: FileTextPort }): VersionOneCommandRequest => ({
+  process: request.process,
+  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  fileText: request.fileText,
+  modules: { load: notUsed },
+  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
+  exceptionRepositoryOf: notUsed,
+  moduleUrl: "file:///install/src/hone.ts",
+});
+
+const gitTreeStub = (): GitTreePort => ({ pathsAt: () => ({ outcome: "ok", value: [] }) });
+
+const authoriseArgumentsFor = (request: { readonly repo: string; readonly rootCause: string }): readonly string[] => [
+  "--repo",
+  request.repo,
+  "--answers",
+  "claimed-type",
+  "--file",
+  "src/a.ts",
+  "--case",
+  "gives-a-value-its-type",
+  "--owes",
+  "declared-not-asserted",
+  "--why",
+  "Why does the audit refuse tracker ids in carve-out names?",
+  "--because",
+  "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+  "--evidence",
+  "tools/audit/name-matcher.ts:14",
+  "--why",
+  "Why does the name matcher accept only lowercase slugs?",
+  "--because",
+  "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+  "--evidence",
+  "tools/git/branch-name.ts:8",
+  "--why",
+  "Why was the matcher copied from the branch-name validator?",
+  "--because",
+  "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+  "--evidence",
+  "PR #212, merged 2026-07-02",
+  "--why",
+  "Why did no shared slug type exist when the audit landed?",
+  "--because",
+  "The values package that now holds RepoPath was split out two months after the audit.",
+  "--evidence",
+  "packages/values/package.json:3",
+  "--why",
+  "Why was the values package split out after the audit?",
+  "--because",
+  "The split waited on the monorepo move, which left older tools on their own patterns.",
+  "--evidence",
+  "docs/decisions/0007-monorepo.md:21",
+  "--root-cause",
+  request.rootCause,
+  "--root-evidence",
+  "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  "--readback",
+  "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
+  "--owner",
+  "capture 01a0b421",
+];
+
+const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
+
+const AUDIT = mechanismIdSchema.parse("audit");
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+
+const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
+
+const AT_A_BOUNDARY: Principle = { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" };
+
+const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
+
+const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
+
+const PORTS_DECLARED_INSIDE: Rule = { name: "ports-declared-inside", title: "Ports declared inside", principle: AT_A_BOUNDARY, standing: "accepted" };
+
+const WRITTEN_OUT_ANSWERS: Rule = { name: "written-out-answers", title: "Written-out answers", principle: TESTS_ARE_OURS, standing: "accepted" };
+
+const DOER_OR_ORCHESTRATOR: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+
+const STRAIGHT_THROUGH_TESTS: Rule = { name: "straight-through-tests", title: "Straight-through tests", principle: TESTS_ARE_OURS, standing: "accepted" };
+
+const DECLARED_NOT_ASSERTED: Rule = { name: "declared-not-asserted", title: "Declared, not asserted", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+
+const NEEDS_THE_CURRENT_TIME: Case = {
+  name: "needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering",
+  title: "Needs the current time, a random value, a new id or an outside ordering",
+  standing: "accepted",
+  owes: [{ kind: "principle", principle: AT_A_BOUNDARY }],
+};
+
+const DOES_ONE_JOB: Case = { name: "does-one-job", title: "Does one job", standing: "accepted", owes: [{ kind: "principle", principle: ONE_PLACE_DECIDES }] };
+
+const CHECKS_A_VALUE: Case = {
+  name: "checks-a-value-that-may-be-one-of-several-outcomes",
+  title: "Checks a value that may be one of several outcomes",
+  standing: "accepted",
+  owes: [{ kind: "principle", principle: TESTS_ARE_OURS }],
+};
+
+const OWED_DECLARED_NOT_ASSERTED: Pointed = { kind: "rule", rule: DECLARED_NOT_ASSERTED };
+
+const GIVES_A_VALUE_ITS_TYPE: Case = {
+  name: "gives-a-value-its-type",
+  title: "Gives a value its type",
+  standing: "accepted",
+  owes: [OWED_DECLARED_NOT_ASSERTED],
+};
+
+const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  name: "world-values-through-a-port",
+  title: "World values through a port",
+  standing: "accepted",
+  reason: { text: "the world reaches a unit through a port", standing: "accepted" },
+};
+
+const ASSERT_TO_NARROW: Recipe = { name: "assert-to-narrow", title: "Assert to narrow", standing: "accepted", reason: { text: "it narrows the type", standing: "accepted" } };
+
+const ITEACH_OVER_TYPED_ROWS: Recipe = { name: "iteach-over-typed-rows", title: "it.each over typed rows", standing: "accepted", reason: { text: "each row is a case", standing: "accepted" } };
+
+const BOUNDARY_RECORD_KIND: RecordKind = { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "authorised-location" };
+
+const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
+
+const DATE_USED_DIRECTLY: Symptom = {
+  name: "date-used-directly",
+  title: "Date used directly",
+  seen: "Any use of `Date` outside the places that handle dates.",
+  mayIndicate: [
+    {
+      case: NEEDS_THE_CURRENT_TIME,
+      points: [
+        { kind: "rule", rule: PORTS_DECLARED_INSIDE },
+        { kind: "rule", rule: WRITTEN_OUT_ANSWERS },
+      ],
+    },
+    { case: DOES_ONE_JOB, points: [{ kind: "rule", rule: DOER_OR_ORCHESTRATOR }] },
+  ],
+  breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
+  recipes: [WORLD_VALUES_THROUGH_A_PORT],
+  correctUses: [{ situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" }],
+};
+
+const BRANCH_IN_A_TEST: Symptom = {
+  name: "branch-in-a-test",
+  title: "Branch in a test",
+  seen: "`if` in a test file.",
+  mayIndicate: [
+    {
+      case: CHECKS_A_VALUE,
+      points: [
+        { kind: "rule", rule: STRAIGHT_THROUGH_TESTS },
+        { kind: "principle", principle: NO_HIDDEN_EFFECTS },
+      ],
+    },
+  ],
+  breachUsuallySits: "in the unit's output type, where optional or loose shapes force the test to branch",
+  recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  correctUses: [],
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [{ case: GIVES_A_VALUE_ITS_TYPE, situation: "or needs it narrower", points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }] }],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+};
+
+const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+
+const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+
+const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+
+const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
+
+const TEST_BODY_CHECK: Check = { name: "test-body", symptom: BRANCH_IN_A_TEST, clause: TEST_BODY_LOGIC, engines: [WALKER], forms: ["branching-with-if"] };
+
+const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: CAST_EXPRESSIONS, engines: [ESLINT_ENGINE], forms: [] };
+
+const REPORT_CATALOGUE: SymptomCatalogue = {
+  principles: [TESTS_ARE_OURS, AT_A_BOUNDARY, ONE_PLACE_DECIDES, NO_HIDDEN_EFFECTS],
+  rules: [PORTS_DECLARED_INSIDE, WRITTEN_OUT_ANSWERS, DOER_OR_ORCHESTRATOR, STRAIGHT_THROUGH_TESTS, DECLARED_NOT_ASSERTED],
+  cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
+  recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
+  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
+  engines: [WALKER, ESLINT_ENGINE],
+  symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
+  clauses: [
+    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    { clause: TEST_BODY_LOGIC, sight: { kind: "symptom-by-form", forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }] } },
+    { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
+  ],
+  checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
+  namedBans: [{ outsideDependency: "lodash" }],
+};
 
 const FILE_A = repoPathSchema.parse("src/a.ts");
 
@@ -416,7 +703,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
   });
 });
 
-const ACCEPTED_ARGUMENTS = authoriseArgumentsFor({ repo: "/repo", rootCause: CAUSAL_WHY_CHAIN.rootCause });
+const ACCEPTED_ARGUMENTS = authoriseArgumentsFor({ repo: "/repo", rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types." });
 
 const REFUSED_ARGUMENTS = authoriseArgumentsFor({ repo: "/repo", rootCause: "no" });
 

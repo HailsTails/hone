@@ -1,10 +1,35 @@
 import { assert, describe, expect, it } from "vitest";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
-import type { SyntaxNode } from "../runner/toolchain/typescript-parse.ts";
-import { syntaxNodeOf } from "../../../../../tests/syntax-node-of.ts";
+import type { SyntaxApi, SyntaxNode } from "../runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import { TEST_BODY_REMEDIES, TEST_BODY_SECTIONS, testBodyFormOf } from "./test-body-logic.ts";
 
-const SYNTAX_API = defaultParsePort.syntaxApi;
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const SYNTAX_API = loadedParsePort.value.syntaxApi;
+
+type NodeSearch = {
+  readonly syntaxApi: SyntaxApi;
+  readonly start: number;
+  readonly kind: number;
+};
+
+const outermostAt = (request: NodeSearch & { readonly node: SyntaxNode }): SyntaxNode | undefined => {
+  if (request.node.kind === request.kind && request.node.getStart() === request.start) return request.node;
+  return request.syntaxApi.forEachChild(request.node, (child) => outermostAt({ ...request, node: child }));
+};
+
+const syntaxNodeOf = (request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly source: string;
+  readonly text: string;
+  readonly kind: number;
+}): SyntaxNode | undefined => {
+  const tree = request.syntaxApi.createSourceFile("node.test.ts", request.source, request.syntaxApi.ScriptTarget.Latest, true);
+  return outermostAt({ syntaxApi: request.syntaxApi, start: request.source.indexOf(request.text), kind: request.kind, node: tree });
+};
 
 const firstStatementOf = (request: { readonly source: string }): SyntaxNode =>
   SYNTAX_API.createSourceFile("form.test.ts", request.source, SYNTAX_API.ScriptTarget.Latest, true)

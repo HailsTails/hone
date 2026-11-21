@@ -1,13 +1,17 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
+import { createSelectionRepository, type SelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
+import { createExceptionRepository } from "../../../discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../../discipline-exceptions-folder/exception-records.ts";
 import { createDefaultFileRemovalPort } from "../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { GitPort } from "../../../git/git-port.ts";
+import type { ModuleExtension } from "../../../node/modules/install-layout.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../node/path-port.ts";
+import { createDefaultPathPort, type PathPort } from "../../../node/path-port.ts";
 import type { Finding } from "../../../command-line/governance.ts";
 import { createSymptomCatalogueRepository } from "../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
+import type { RuleSetCatalogue } from "../../../../domain/settings/check-choices.ts";
 import { type AbsolutePath, absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../hone-config-file/assessment.ts";
 import { clauseAddressSchema, TOOL_RULE_SET } from "../../../discipline-exceptions-folder/clause-address.ts";
@@ -15,13 +19,9 @@ import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { type RepoPath, repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { runProject } from "../../../../application/projection/run-project.ts";
 import { createEslintRunner } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { repositoryRootOf } from "../../../../../tests/allowed-forms-proof.ts";
-import { defaultEslintPort } from "../../../../../tests/eslint-toolchains.ts";
-import { withSingleFileRecords } from "../../../../../tests/records-disk.ts";
-import { createDefaultScratchFilesPort } from "../../../../../delivery/install-proof/install-proof-ports.ts";
-import { shippedCheckOf } from "../../../../../tests/shipped-check.ts";
-import { repositoryWithSubfolder } from "../../../../../tests/subfolder-scratch-repository.ts";
-import { scratchRepositoriesUnder } from "../../../../../tests/scratch-repositories.ts";
+import { createEslintPort, type EslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../../delivery/install-proof/install-proof-ports.ts";
 import { createAnsweringOracle } from "../../../../application/upgrade/record-answers/answering-oracle.ts";
 import type { FileCarveOutRecord } from "../../../../application/upgrade/record-answers/record-answer-oracle.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
@@ -30,7 +30,123 @@ const path = createDefaultPathPort({});
 
 const fileText = createDefaultFileTextPort({});
 
-const INSTALL_ROOT = absolutePathSchema.parse(repositoryRootOf({ testFolder: `${import.meta.dirname}/../../../../../tests` }));
+const INSTALL_ROOT = absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", "..", "..", "..", ".."] }));
+
+const loadedEslintToolchain = await loadEslintToolchain({
+  peers: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }),
+});
+
+assert(loadedEslintToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+
+assert(/^10\./.test(loadedEslintToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedEslintToolchain.value.eslintVersion}`);
+
+const defaultEslintPort: EslintPort = createEslintPort({ toolchain: loadedEslintToolchain.value });
+
+type ScratchRepositories = {
+  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly removeAll: () => void;
+};
+
+const scratchRepositoriesUnder = (request: {
+  readonly parent: string;
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+}): ScratchRepositories => {
+  const made: AbsolutePath[] = [];
+  return {
+    repositoryWith: (repository) => {
+      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const directory = request.scratch.makeDirectory({ path: folder });
+      if (directory.outcome !== "ok") {
+        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+      }
+      made.push(folder);
+      Object.entries(repository.files).forEach(([name, text]) => {
+        request.fileText.write({ path: `${folder}/${name}`, text });
+      });
+      return folder;
+    },
+    removeAll: () => {
+      made.forEach((folder) => {
+        request.scratch.removeTree({ path: folder });
+      });
+    },
+  };
+};
+
+const repositoryWithSubfolder = (request: {
+  readonly repositories: ScratchRepositories;
+  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
+  readonly fileText: Pick<FileTextPort, "write">;
+  readonly files: Readonly<Record<string, string>>;
+  readonly subfolder: string;
+  readonly subfolderFiles: Readonly<Record<string, string>>;
+}): AbsolutePath => {
+  const repo = request.repositories.repositoryWith({ files: request.files });
+  const folder = `${repo}/${request.subfolder}`;
+  const made = request.scratch.makeDirectory({ path: folder });
+  if (made.outcome !== "ok") {
+    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
+  }
+  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
+    const written = request.fileText.write({ path: `${folder}/${name}`, text });
+    if (written.outcome !== "ok") {
+      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+    }
+  });
+  return repo;
+};
+
+const shippedCheckOf = (request: { readonly catalogues: readonly RuleSetCatalogue[]; readonly discipline: string; readonly name: string }): Check => {
+  const [only, ...others] = request.catalogues.flatMap(({ catalogue }) =>
+    catalogue.checks.filter((check) => check.name === request.name && check.clause.discipline === request.discipline),
+  );
+  if (only === undefined || others.length > 0) {
+    throw new Error(`the shipped catalogue does not hold exactly one ${request.name} check of ${request.discipline}`);
+  }
+  return only;
+};
+
+const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
+
+const SPLIT_FOLDER_NAME = "discipline-exceptions";
+
+const singleFileRepositoryOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepository =>
+  createExceptionRepository({
+    ...request,
+    fileText: {
+      ...request.fileText,
+      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+    },
+    directory: {
+      list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
+      create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+    },
+    fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
+    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE] }) },
+  });
+
+type DiskRequest = {
+  readonly repoRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
+  readonly moduleExtension: ModuleExtension;
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+};
+
+const withSingleFileRecords = <Request extends DiskRequest>(
+  request: Request,
+): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+  ...request,
+  selectionRepository: createSelectionRepository(request),
+  exceptionRepository: singleFileRepositoryOver(request),
+});
 
 const SCRATCH = createDefaultScratchFilesPort({});
 

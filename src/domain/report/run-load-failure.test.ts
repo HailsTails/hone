@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { AUDIT, ESLINT, ESLINT_ENGINE, WALKER } from "../../../tests/report-catalogue.ts";
 import type { RecordsDocumentRefusal } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
@@ -7,6 +6,14 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import { type RunLoadFailure, type RunLoadFailureSource, runLoadFailureOf } from "./run-load-failure.ts";
 
 type MappedRow = { readonly name: string; readonly source: RunLoadFailureSource; readonly failure: RunLoadFailure };
+
+const AUDIT = mechanismIdSchema.parse("audit");
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
 
 const ENGINES: readonly Engine[] = [WALKER, ESLINT_ENGINE];
 

@@ -1,13 +1,55 @@
 import { assert, describe, expect, it } from "vitest";
-import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { Result } from "../../../../domain/result.ts";
+import type { RunnerClause, StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
+import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { auditRunnerOn } from "../../../../../tests/typescript-parse-port.ts";
+import { createWalkerRunner } from "../runner/create-walker-runner.ts";
+import type { TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers, typeScriptPeersNamed } from "../runner/toolchain/typescript-toolchain.ts";
 
 const path = createDefaultPathPort({});
+
+type TypeScriptLine = "typescript" | "typescript-floor";
+
+const LINE_VERSIONS: Readonly<Record<TypeScriptLine, RegExp>> = { typescript: /^6\./, "typescript-floor": /^4\.8\.4$/ };
+
+const DEVELOPMENT_ROOT = `${import.meta.dirname}/../../../../..`;
+
+const PEERS_ON: Readonly<Record<TypeScriptLine, TypeScriptPeers>> = {
+  typescript: defaultTypeScriptPeers({ installRoot: DEVELOPMENT_ROOT, installForm: "source" }),
+  "typescript-floor": typeScriptPeersNamed({ installRoot: DEVELOPMENT_ROOT, installForm: "source", packageName: "typescript-floor" }),
+};
+
+const parsePortOn = async (request: { readonly line: TypeScriptLine }): Promise<TypeScriptParsePort> => {
+  const loaded = await loadParsePort({ peers: PEERS_ON[request.line] });
+  assert(loaded.outcome === "ok", `the ${request.line} line loads from the development install`);
+  assert(
+    LINE_VERSIONS[request.line].test(loaded.value.syntaxApi.version),
+    `the ${request.line} line runs TypeScript ${loaded.value.syntaxApi.version}`,
+  );
+  return loaded.value;
+};
+
+const auditRunnerOn = (request: { readonly line: TypeScriptLine }): StandaloneRunner =>
+  toolchainBoundStandaloneRunner({
+    toolchain: parsePortOn(request).then((parse): Result<TypeScriptParsePort, RunnerFailure> => ({ outcome: "ok", value: parse })),
+    runnerOf: (parse) =>
+      createWalkerRunner({
+        fileText: createDefaultFileTextPort({}),
+        modules: createDefaultModuleLoaderPort({}),
+        path,
+        parse,
+        entryKind: createDefaultEntryKindPort({}),
+      }),
+  });
 
 const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   const resolved = path.resolve(request);

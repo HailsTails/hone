@@ -1,20 +1,75 @@
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, assert, describe, expect, it, vi } from "vitest";
 import { TOOL_SUBCOMMANDS } from "../../run-tool-command.ts";
 import { createDefaultExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import type { Subcommand } from "../../infrastructure/command-line/arguments/command-line.ts";
-import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultFileRemovalPort } from "../../infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultGitPort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
-import { listedPathsOf, treeOf } from "../../../tests/repository-tree.ts";
-import { checkModulesOn, ESLINT_LINES, type EslintLine } from "../../../tests/eslint-toolchains.ts";
-import { scratchRepositoriesUnder } from "../../../tests/scratch-repositories.ts";
-import { repositoryWithSubfolder } from "../../../tests/subfolder-scratch-repository.ts";
+import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import type { RunnerFailure } from "../../application/ports/runner-failure.ts";
+import type { Result } from "../../domain/result.ts";
+import type { ExceptionsFile } from "../../domain/records/discipline-exceptions/exception-record.ts";
+import type { EmbeddedRunner } from "../../infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
+import type { LoadedChecksRunner } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner } from "../../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { createChecksRunner } from "../../infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createEslintPort, type EslintToolchain } from "../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  type EslintToolchainModules,
+  type EslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
 import type { AuthorisedLocationEntry } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import { exceptionsTextOf, selectionTextOf } from "../../../tests/version-one-files.ts";
+
+const VERSION_ONE = 1;
+
+const JSON_INDENT = 2;
+
+const selectionTextOf = (request: { readonly clauses: Readonly<Record<string, string>> }): string =>
+  `${JSON.stringify({ version: VERSION_ONE, ruleSets: {}, clauses: request.clauses }, null, JSON_INDENT)}\n`;
+
+const exceptionsTextOf = (request: { readonly exceptions: ExceptionsFile["exceptions"] }): string =>
+  `${JSON.stringify({ version: VERSION_ONE, exceptions: request.exceptions }, null, JSON_INDENT)}\n`;
+
+type ScratchRepositories = {
+  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly removeAll: () => void;
+};
+
+const scratchRepositoriesUnder = (request: {
+  readonly parent: string;
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+}): ScratchRepositories => {
+  const made: AbsolutePath[] = [];
+  return {
+    repositoryWith: (repository) => {
+      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const directory = request.scratch.makeDirectory({ path: folder });
+      if (directory.outcome !== "ok") {
+        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+      }
+      made.push(folder);
+      Object.entries(repository.files).forEach(([name, text]) => {
+        request.fileText.write({ path: `${folder}/${name}`, text });
+      });
+      return folder;
+    },
+    removeAll: () => {
+      made.forEach((folder) => {
+        request.scratch.removeTree({ path: folder });
+      });
+    },
+  };
+};
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../..`);
 
@@ -31,6 +86,127 @@ afterAll(() => {
 });
 
 const commands = createDefaultCommandRunPort({});
+
+const repositoryWithSubfolder = (request: {
+  readonly files: Readonly<Record<string, string>>;
+  readonly subfolder: string;
+  readonly subfolderFiles: Readonly<Record<string, string>>;
+}): AbsolutePath => {
+  const repo = repositories.repositoryWith({ files: request.files });
+  const folder = `${repo}/${request.subfolder}`;
+  const made = scratch.makeDirectory({ path: folder });
+  if (made.outcome !== "ok") {
+    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
+  }
+  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
+    const written = fileText.write({ path: `${folder}/${name}`, text });
+    if (written.outcome !== "ok") {
+      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+    }
+  });
+  return repo;
+};
+
+const directoryPort = createDefaultDirectoryPort({});
+
+const GIT_FOLDER = ".git";
+
+const FOLDER_MARK = "<folder>";
+
+const pathsUnder = (request: { readonly folder: string; readonly prefix: string }): readonly string[] => {
+  const listed = directoryPort.list({ path: absolutePathSchema.parse(request.folder) });
+  if (listed.outcome !== "ok") {
+    throw new Error(`${request.folder} could not be listed: ${listed.error.detail}`);
+  }
+  return listed.value
+    .filter(({ name }) => name !== GIT_FOLDER)
+    .flatMap(({ name, kind }) => {
+      const shown = `${request.prefix}${name}`;
+      return kind === "directory" ? [`${shown}/`, ...pathsUnder({ folder: `${request.folder}/${name}`, prefix: `${shown}/` })] : [shown];
+    });
+};
+
+const listedPathsOf = (request: { readonly repo: string }): readonly string[] => pathsUnder({ folder: request.repo, prefix: "" }).toSorted();
+
+const textAt = (request: { readonly repo: string; readonly shown: string }): string => {
+  const read = fileText.read({ path: `${request.repo}/${request.shown}` });
+  return read.outcome === "ok" ? read.value : "<unreadable>";
+};
+
+const treeOf = (request: { readonly repo: string }): Readonly<Record<string, string>> =>
+  Object.fromEntries(listedPathsOf(request).map((shown) => [shown, shown.endsWith("/") ? FOLDER_MARK : textAt({ repo: request.repo, shown })]));
+
+type EslintLine = "eslint-10" | "eslint-9";
+
+const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
+
+type LineDefinition = {
+  readonly eslintVersion: RegExp;
+  readonly modules: EslintToolchainModules;
+  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
+};
+
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" });
+
+const RUNNER_MODULE_SUFFIX = "src/infrastructure/engines/eslint/runner/runner.ts";
+
+const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
+  "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules, pieceModules: (request) => request.base },
+  "eslint-9": { eslintVersion: /^9\./, modules: eslint9ToolchainModules, pieceModules: eslint9PieceModules },
+};
+
+const loadedEslintToolchain = async (request: { readonly line: EslintLine }): Promise<EslintToolchain> => {
+  const loaded = await loadEslintToolchain({ peers: { location: DEVELOPMENT_PEERS.location, modules: LINES[request.line].modules } });
+  assert(loaded.outcome === "ok", `the ${request.line} toolchain loads from the development install`);
+  assert(
+    LINES[request.line].eslintVersion.test(loaded.value.eslintVersion),
+    `the ${request.line} toolchain runs ESLint ${loaded.value.eslintVersion}`,
+  );
+  return loaded.value;
+};
+
+const pieceModulesOn = (request: { readonly line: EslintLine; readonly base: ModuleLoaderPort }): ModuleLoaderPort =>
+  LINES[request.line].pieceModules({ base: request.base });
+
+const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner =>
+  toolchainBoundEmbeddedRunner({
+    toolchain: loadedEslintToolchain(request).then((toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain })),
+    projectedKinds: ESLINT_PROJECTED_KINDS,
+    runnerOf: (toolchain) =>
+      createEslintRunner({
+        fileText: createDefaultFileTextPort({}),
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
+        path: createDefaultPathPort({}),
+        eslint: createEslintPort({ toolchain }),
+        moduleExtension: ".ts",
+      }),
+  });
+
+const eslintChecksRunnerOn = (request: { readonly line: EslintLine }): LoadedChecksRunner =>
+  toolchainBoundChecksRunner({
+    toolchain: loadedEslintToolchain(request).then((toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain })),
+    projectedKinds: ESLINT_PROJECTED_KINDS,
+    runnerOf: (toolchain) =>
+      createChecksRunner({
+        fileText: createDefaultFileTextPort({}),
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
+        path: createDefaultPathPort({}),
+        eslint: createEslintPort({ toolchain }),
+        moduleExtension: ".ts",
+      }),
+  });
+
+const checkModulesOn = (request: { readonly line: EslintLine }): ModuleLoaderPort => {
+  const pieces = pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) });
+  return {
+    load: (load) =>
+      load.path.replaceAll("\\", "/").endsWith(RUNNER_MODULE_SUFFIX)
+        ? Promise.resolve({ outcome: "ok", value: { runner: eslintRunnerOn(request), checksRunner: eslintChecksRunnerOn(request) } })
+        : pieces.load(load),
+  };
+};
 
 const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
 
@@ -82,9 +258,6 @@ type VersionOneRepositoryRequest = { readonly selection: string; readonly except
 
 const versionOneRepositoryOf = async (request: VersionOneRepositoryRequest): Promise<string> => {
   const repo = repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
     files: { ...VERSION_ONE_FILES, "disciplines.json": request.selection, "discipline-exceptions.json": request.exceptions },
     subfolder: "src",
     subfolderFiles: request.sources,
@@ -279,9 +452,6 @@ const packageRepository = async (request: {
   readonly packageFiles: Readonly<Record<string, string>>;
 }): Promise<string> => {
   const repo = repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
     files: request.files,
     subfolder: "packages/a",
     subfolderFiles: request.packageFiles,

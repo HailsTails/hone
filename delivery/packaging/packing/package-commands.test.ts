@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../../src/infrastructure/node/process/process-port.ts";
-import { ENTRY_DECLARATIONS, emittingDeclarations } from "../../../tests/emitting-declarations.ts";
-import { type InMemoryFiles, inMemoryFiles } from "../../../tests/in-memory-files.ts";
-import { type NpmPacking, npmPacking } from "../../../tests/npm-packing.ts";
+import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
 import type { Bundle, BundledOutput, BundlerPort } from "../building/esbuild-bundler-port.ts";
-import type { CommandRunPort } from "../../install-proof/install-proof-ports.ts";
+import type { EntryDisposition, StepRun } from "../../install-proof/install-proof-plan.ts";
+import type { CommandRunPort, CopiedEntry, ListedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
+import type { DeclarationPort, EmittedDeclaration } from "../type-declarations/package-declarations.ts";
 import {
   createTarballPacker,
   type PackageCommandRequest,
@@ -15,6 +15,159 @@ import {
 } from "./package-commands.ts";
 
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/" });
+
+const ENTRY_DECLARATIONS: readonly EmittedDeclaration[] = [
+  { path: "src/audit.d.ts", text: 'export type { Result } from "./domain/result.js";\n', specifiers: ["./domain/result.js"], refusals: [] },
+  { path: "src/eslint-plugin.d.ts", text: "export type ChecksPlugin = 1;\n", specifiers: [], refusals: [] },
+  { path: "src/rule-set.d.ts", text: "export type RuleSet = 1;\n", specifiers: [], refusals: [] },
+  { path: "src/testing.d.ts", text: "export declare const repoPathOf: 1;\n", specifiers: [], refusals: [] },
+  { path: "src/domain/result.d.ts", text: "export type Result = 1;\n", specifiers: [], refusals: [] },
+];
+
+const emittingDeclarations = (request: { readonly declarations: readonly EmittedDeclaration[] }): DeclarationPort => ({
+  emit: () => Promise.resolve({ outcome: "ok", value: { declarations: request.declarations, diagnostics: [] } }),
+});
+
+type InMemoryFiles = {
+  readonly fileText: FileTextPort;
+  readonly scratch: ScratchFilesPort;
+  readonly texts: () => Readonly<Record<string, string>>;
+  readonly pathsUnder: (request: { readonly folder: string }) => readonly string[];
+};
+
+type Placement = "inside" | "outside";
+
+const placementOf = (request: { readonly path: string; readonly folder: string }): Placement =>
+  request.path === request.folder || request.path.startsWith(`${request.folder}/`) ? "inside" : "outside";
+
+const copyDispositionOf = (request: {
+  readonly relative: string;
+  readonly disposition: (entry: CopiedEntry) => EntryDisposition;
+}): EntryDisposition => {
+  const segments = request.relative.split("/");
+  return segments.every(
+    (name, index) => request.disposition({ name, entryKind: index === segments.length - 1 ? "file" : "folder" }) === "kept",
+  )
+    ? "kept"
+    : "left-out";
+};
+
+const copiedInto = (request: {
+  readonly files: ReadonlyMap<string, string>;
+  readonly from: string;
+  readonly to: string;
+  readonly disposition: (entry: CopiedEntry) => EntryDisposition;
+}): readonly (readonly [string, string])[] =>
+  [...request.files.entries()]
+    .filter(
+      ([candidate]) =>
+        placementOf({ path: candidate, folder: request.from }) === "inside" &&
+        copyDispositionOf({ relative: candidate.slice(request.from.length + 1), disposition: request.disposition }) === "kept",
+    )
+    .map(([path, text]): readonly [string, string] => [`${request.to}${path.slice(request.from.length)}`, text]);
+
+const listedUnder = (request: { readonly files: ReadonlyMap<string, string>; readonly folder: string }): readonly ListedEntry[] =>
+  [...request.files.keys()]
+    .filter((path) => path.startsWith(`${request.folder}/`))
+    .sort()
+    .map((path) => ({
+      path: path.slice(request.folder.length + 1),
+      name: path.slice(path.lastIndexOf("/") + 1),
+      entryKind: "file",
+    }));
+
+const inMemoryFiles = (request: { readonly initial: Readonly<Record<string, string>> }): InMemoryFiles => {
+  const files = new Map(Object.entries(request.initial));
+  const temporaryRoots = { created: 0 };
+  return {
+    texts: () => Object.fromEntries(files),
+    pathsUnder: ({ folder }) => listedUnder({ files, folder }).map((entry) => entry.path),
+    fileText: {
+      read: ({ path }) => {
+        const text = files.get(path);
+        return text === undefined
+          ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
+          : { outcome: "ok", value: text };
+      },
+      exists: ({ path }) => (files.has(path) ? "present" : "absent"),
+      write: ({ path, text }) => {
+        files.set(path, text);
+        return { outcome: "ok", value: undefined };
+      },
+    },
+    scratch: {
+      createTemporaryDirectory: ({ prefix }) => {
+        temporaryRoots.created += 1;
+        return { outcome: "ok", value: `/tmp/${prefix}${temporaryRoots.created}` };
+      },
+      removeTree: ({ path }) => {
+        [...files.keys()]
+          .filter((candidate) => placementOf({ path: candidate, folder: path }) === "inside")
+          .forEach((key) => {
+            files.delete(key);
+          });
+        return { outcome: "ok", value: null };
+      },
+      makeDirectory: () => ({ outcome: "ok", value: null }),
+      copyTree: ({ from, to, disposition }) => {
+        copiedInto({ files, from, to, disposition }).forEach(([path, text]) => {
+          files.set(path, text);
+        });
+        return { outcome: "ok", value: null };
+      },
+      listTree: ({ path }) => ({ outcome: "ok", value: listedUnder({ files, folder: path }) }),
+      digestOf: ({ path }) => {
+        const text = files.get(path);
+        return text === undefined
+          ? { outcome: "failed", error: { kind: "effect-failed", detail: `ENOENT ${path}` } }
+          : { outcome: "ok", value: `digest of ${text}` };
+      },
+      realPathOf: ({ path }) =>
+        [...files.keys()].some((candidate) => placementOf({ path: candidate, folder: path }) === "inside")
+          ? { outcome: "ok", value: path }
+          : { outcome: "failed", error: { kind: "effect-failed", detail: `ENOENT ${path}` } },
+    },
+  };
+};
+
+type CommandRun = Parameters<CommandRunPort["run"]>[0];
+
+type NpmPacking = {
+  readonly commands: CommandRunPort;
+  readonly runs: () => readonly CommandRun[];
+};
+
+const PACK_DESTINATION_FLAG = "--pack-destination";
+
+const EXITED: StepRun = { outcome: "exited", exitCode: 0, output: "" };
+
+const packDestinationOf = (request: { readonly run: CommandRun }): string | undefined =>
+  request.run.arguments[0] === "pack" ? request.run.arguments[request.run.arguments.indexOf(PACK_DESTINATION_FLAG) + 1] : undefined;
+
+const npmPacking = (request: {
+  readonly files: InMemoryFiles;
+  readonly tarballName: string;
+  readonly tarballText: (request: { readonly packCount: number }) => string;
+}): NpmPacking => {
+  const recorded: { runs: readonly CommandRun[]; packCount: number } = { runs: [], packCount: 0 };
+  return {
+    runs: () => recorded.runs,
+    commands: {
+      run: (run) => {
+        recorded.runs = [...recorded.runs, run];
+        const destination = packDestinationOf({ run });
+        if (destination !== undefined) {
+          recorded.packCount += 1;
+          request.files.fileText.write({
+            path: `${destination}/${request.tarballName}`,
+            text: request.tarballText({ packCount: recorded.packCount }),
+          });
+        }
+        return EXITED;
+      },
+    },
+  };
+};
 
 const SOURCE_WITHOUT_LOCK: Readonly<Record<string, string>> = {
   "/package/package.json":

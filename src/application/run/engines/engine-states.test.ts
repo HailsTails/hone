@@ -1,11 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { AUDIT, ESLINT, ESLINT_ENGINE, REPORT_CATALOGUE } from "../../../../tests/report-catalogue.ts";
+import type { Engine, RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import type { EngineRun } from "../../../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import { engineMeasurementOf, engineProblemsOf, engineUnmeasuredOf } from "./engine-states.ts";
+
+const AUDIT = mechanismIdSchema.parse("audit");
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+
+const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const REPORT_CATALOGUE: SymptomCatalogue = {
+  principles: [],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
+  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
+  engines: [WALKER, ESLINT_ENGINE],
+  symptoms: [],
+  clauses: [],
+  checks: [],
+  namedBans: [],
+};
 
 const runWith = (request: { readonly mechanism: EngineRun["mechanism"]; readonly projection: EngineRun["projection"] }): EngineRun => ({
   mechanism: request.mechanism,

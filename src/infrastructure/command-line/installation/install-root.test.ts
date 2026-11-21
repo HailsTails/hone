@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
-import { requiredEntry } from "../../../../tests/required-entry.ts";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../../node/path-port.ts";
 import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import { installRootOf, installRootOfApiEntry } from "./install-root.ts";
+
+const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 const API_ENTRY_URL = "file:///install/api/testing.js";

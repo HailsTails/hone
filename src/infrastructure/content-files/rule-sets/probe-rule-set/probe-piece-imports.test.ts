@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import { pieceImportFindings } from "../../import-boundaries/piece-import-rules.ts";
 import type { PathPort } from "../../../node/path-port.ts";
-import { requiredEntry } from "../../../../../tests/required-entry.ts";
+
+const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
 
 declare global {
   interface ImportMeta {

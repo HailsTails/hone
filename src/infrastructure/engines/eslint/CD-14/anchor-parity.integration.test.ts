@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
 import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
@@ -9,12 +9,12 @@ import { clauseAddressSchema } from "../../../discipline-exceptions-folder/claus
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { check } from "../../audit/CD-14/class-syntax.ts";
 import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
-import { defaultParsePort } from "../../../../../tests/typescript-parse-port.ts";
-import { defaultEslintPort } from "../../../../../tests/eslint-toolchains.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
+import { createEslintPort } from "../runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../runner/pieces/eslint-plugin-schema.ts";
 import classAuthoringPlugin from "./cd14/cd14.eslint-plugin.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { ABSENT_ENTRY_KIND } from "../../../../../tests/empty-walker-disk.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(import.meta.dirname);
 
@@ -35,7 +35,21 @@ const keywordAfterNodeStartCases: readonly SourceCase[] = [
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: classAuthoringPlugin }).default;
 
-const eslint = defaultEslintPort;
+const DEVELOPMENT_INSTALL_ROOT = `${import.meta.dirname}/../../../../..`;
+
+const loadedToolchain = await loadEslintToolchain({
+  peers: defaultEslintToolchainPeers({ installRoot: DEVELOPMENT_INSTALL_ROOT, installForm: "source" }),
+});
+assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+
+const eslint = createEslintPort({ toolchain: loadedToolchain.value });
+
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: DEVELOPMENT_INSTALL_ROOT, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 
 const noFileText: FileTextPort = {
   read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "not used" } }),
@@ -51,8 +65,8 @@ const walkerRunner = createWalkerRunner({
   fileText: noFileText,
   modules: loadingWalkerPiece,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
-  parse: defaultParsePort,
-  entryKind: ABSENT_ENTRY_KIND,
+  parse: loadedParsePort.value,
+  entryKind: { kindOf: () => "absent" },
 });
 
 const WALKER_CLAUSE: RunnerClause = {

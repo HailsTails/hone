@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { AUDIT, CAST_EXPRESSIONS, CLAIMED_TYPE, ESLINT, ESLINT_ENGINE, REPORT_CATALOGUE, WHOLE_SYMPTOM } from "../../../../tests/report-catalogue.ts";
+import type { Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
 import type { ChecksRunRequest } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
 import type { ModuleLoad, ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsReading } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_CONVENTIONS } from "../../../infrastructure/hone-config-file/conventions.ts";
@@ -17,6 +19,69 @@ const REPO = absolutePathSchema.parse("/repo");
 const INSTALL = absolutePathSchema.parse("/install");
 
 const A = repoPathSchema.parse("src/a.ts");
+
+const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
+
+const AUDIT = mechanismIdSchema.parse("audit");
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+
+const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+
+const DECLARED_NOT_ASSERTED: Rule = {
+  name: "declared-not-asserted",
+  title: "Declared, not asserted",
+  principle: { name: "one-place-decides", title: "One place decides" },
+  standing: "accepted",
+};
+
+const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+const AUTHORISED_LOCATION: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [
+    {
+      case: {
+        name: "gives-a-value-its-type",
+        title: "Gives a value its type",
+        standing: "accepted",
+        owes: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+      },
+      situation: "or needs it narrower",
+      points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+    },
+  ],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
+};
+
+const REPORT_CATALOGUE: SymptomCatalogue = {
+  principles: [{ name: "one-place-decides", title: "One place decides" }],
+  rules: [DECLARED_NOT_ASSERTED],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION, DEBT],
+  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
+  engines: [WALKER, ESLINT_ENGINE],
+  symptoms: [CLAIMED_TYPE],
+  clauses: [{ clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } }],
+  checks: [{ name: "cast-expressions", symptom: CLAIMED_TYPE, clause: CAST_EXPRESSIONS, engines: [ESLINT_ENGINE], forms: [] }],
+  namedBans: [],
+};
 
 const README = repoPathSchema.parse("README.md");
 

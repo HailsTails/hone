@@ -1,9 +1,106 @@
 import { describe, expect, it } from "vitest";
 import { checkAddressOf } from "../../../../../domain/language-layer/check-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { CHECKS_PLUGIN_CATALOGUE } from "../../../../../../tests/checks-plugin-catalogue.ts";
-import { LOOP_KEYWORD_LOOPS, SETTINGS_CATALOGUE } from "../../../../../../tests/settings-catalogue.ts";
+import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { CHECKS_PLUGIN_NAMESPACE, checkOfRuleId, checkRuleIdOf, checkRuleNameOf, eslintRuleIdsOf, runsOnEslint } from "./check-rule-id.ts";
+
+const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+
+const LOOP_KEYWORD: Symptom = {
+  name: "loop-keyword",
+  title: "Loop keyword",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const SETTINGS_REBINDING: Symptom = {
+  name: "rebinding",
+  title: "Rebinding",
+  seen: "`for` or `while`.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: clauseAddressSchema.parse("CD-15#loops"),
+  engines: [WALKER, ESLINT],
+  forms: [],
+};
+
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
+
+const SETTINGS_REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: SETTINGS_REBINDING,
+  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  engines: [WALKER],
+  forms: ["a-let"],
+};
+
+const SETTINGS_CHECKS: readonly Check[] = [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, SETTINGS_REBINDING_TEST_BODY];
+
+const TEST_SWITCHED_OFF: Symptom = {
+  name: "test-switched-off",
+  title: "Test switched off",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const POSITIONAL_PARAMETERS: Symptom = {
+  name: "positional-parameters",
+  title: "Positional parameters",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const PLUGIN_REBINDING: Symptom = {
+  name: "rebinding",
+  title: "Rebinding",
+  seen: "a site",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const PLUGIN_CHECKS: readonly Check[] = [
+  { name: "skipped-tests", symptom: TEST_SWITCHED_OFF, clause: clauseAddressSchema.parse("CD-27#skipped-tests"), engines: [ESLINT], forms: [] },
+  { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#non-null-assertions"), engines: [ESLINT], forms: [] },
+  { name: "parameter-count", symptom: POSITIONAL_PARAMETERS, clause: clauseAddressSchema.parse("CD-40#parameter-count"), engines: [ESLINT], forms: [] },
+  { name: "test-body", symptom: PLUGIN_REBINDING, clause: clauseAddressSchema.parse("CD-27#test-body-logic"), engines: [WALKER], forms: ["a-let"] },
+];
 
 describe("checkRuleIdOf", () => {
   it("names a check's rule hone/<symptom>#<check>", () => {
@@ -39,7 +136,7 @@ describe("CHECKS_PLUGIN_NAMESPACE", () => {
 
 describe("checkOfRuleId", () => {
   it("resolves a rule id to the ESLint check at its address", () => {
-    expect(checkOfRuleId({ checks: SETTINGS_CATALOGUE.checks, ruleId: "hone/loop-keyword#loops" })).toEqual({ found: "check", check: LOOP_KEYWORD_LOOPS });
+    expect(checkOfRuleId({ checks: SETTINGS_CHECKS, ruleId: "hone/loop-keyword#loops" })).toEqual({ found: "check", check: LOOP_KEYWORD_LOOPS });
   });
 
   it.each<{ readonly name: string; readonly ruleId: string }>([
@@ -49,13 +146,13 @@ describe("checkOfRuleId", () => {
     { name: "a rule id that splits the address with a slash", ruleId: "hone/loop-keyword/loops" },
     { name: "a rule id with no check", ruleId: "hone/loop-keyword" },
   ])("resolves $name to none", ({ ruleId }) => {
-    expect(checkOfRuleId({ checks: SETTINGS_CATALOGUE.checks, ruleId })).toEqual({ found: "none" });
+    expect(checkOfRuleId({ checks: SETTINGS_CHECKS, ruleId })).toEqual({ found: "none" });
   });
 });
 
 describe("eslintRuleIdsOf", () => {
   it("names the rule of every check on ESLint, in catalogue order", () => {
-    expect(eslintRuleIdsOf({ checks: CHECKS_PLUGIN_CATALOGUE.checks })).toEqual([
+    expect(eslintRuleIdsOf({ checks: PLUGIN_CHECKS })).toEqual([
       "hone/test-switched-off#skipped-tests",
       "hone/claimed-type#non-null-assertions",
       "hone/positional-parameters#parameter-count",

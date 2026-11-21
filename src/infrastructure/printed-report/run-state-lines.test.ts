@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { ESLINT_ENGINE, WALKER } from "../../../tests/report-catalogue.ts";
 import type { ConventionKey } from "../hone-config-file/conventions.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
+import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
+import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
 import { assessmentLine, projectionProblemLine, settingsNoteLine, unmeasuredLine } from "./run-state-lines.ts";
+
+const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
 
 const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 

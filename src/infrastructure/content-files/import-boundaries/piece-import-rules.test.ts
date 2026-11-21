@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
-import { requiredEntry } from "../../../../tests/required-entry.ts";
+import { assert, describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../../node/path-port.ts";
 import {
   type PieceLocation,
@@ -7,6 +6,12 @@ import {
   pieceImportFindings,
   pieceImportRefusals,
 } from "./piece-import-rules.ts";
+
+const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
 
 const INSTALL_ROOT = "packages/hone";
 const PROBE_ROOT = "packages/hone/tests/probe-rule-set";

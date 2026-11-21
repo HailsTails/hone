@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { singleFileRepositoriesOver } from "../../../tests/records-disk.ts";
-import { ABSENT_FILE, type FakeFile, presentFile, presentJsonFile } from "../../../tests/fake-file.ts";
-import { requiredEntry } from "../../../tests/required-entry.ts";
+import { assert, describe, expect, it, vi } from "vitest";
+import { createExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "../../infrastructure/git/git-port.ts";
@@ -15,6 +14,55 @@ import type { VersionOneCommandRequest } from "../../application/ports/version-o
 import { runProjectCommand } from "./run-project-command.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
+
+type JsonValue = string | number | boolean | null | readonly JsonValue[] | { readonly [key: string]: JsonValue };
+
+type FakeFile = {
+  readonly read: ReturnType<FileTextPort["read"]>;
+  readonly presence: ReturnType<FileTextPort["exists"]>;
+};
+
+const presentFile = (request: { readonly text: string }): FakeFile => ({
+  read: { outcome: "ok", value: request.text },
+  presence: "present",
+});
+
+const presentJsonFile = (request: { readonly document: JsonValue }): FakeFile => presentFile({ text: JSON.stringify(request.document) });
+
+const ABSENT_FILE: FakeFile = {
+  read: { outcome: "failed", error: { kind: "unreadable", path: "", detail: "ENOENT" } },
+  presence: "absent",
+};
+
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
+  const entry = request.table[request.key];
+  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
+  return entry;
+};
+
+const singleFileRepositoriesOver = (request: {
+  readonly fileText: FileTextPort;
+  readonly path: PathPort;
+  readonly git: GitPort;
+}): ExceptionRepositoryOf =>
+  ({ repoRoot }) =>
+    createExceptionRepository({
+      ...request,
+      repoRoot,
+      fileText: {
+        ...request.fileText,
+        exists: (query) => (query.path.endsWith("discipline-exceptions") ? "absent" : request.fileText.exists(query)),
+      },
+      directory: {
+        list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
+        create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+      },
+      fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
+    });
 const NOT_A_FILE_URL = "https://example.invalid/src/hone.ts";
 
 const CLASS_SYNTAX_DEFINITION = {

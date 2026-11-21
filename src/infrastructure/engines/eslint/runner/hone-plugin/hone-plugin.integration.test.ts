@@ -6,8 +6,14 @@ import { createDefaultFileTextPort } from "../../../../node/file-system/file-tex
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { SILENT_BOUNDARY } from "../../../../../../tests/eslint-major-boundary-stub.ts";
+import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import { honePluginAt } from "./hone-plugin.ts";
+
+const SILENT_BOUNDARY: EslintMajorBoundary = {
+  nearestLookup: { flags: [] },
+  reportDataOf: () => undefined,
+  declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
+};
 
 const CATALOGUE = symptomCatalogueOf({ document: SYMPTOMS });
 

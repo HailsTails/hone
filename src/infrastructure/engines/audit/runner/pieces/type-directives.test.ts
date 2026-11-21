@@ -1,9 +1,14 @@
 import { assert, describe, expect, it } from "vitest";
-import { defaultParsePort } from "../../../../../../tests/typescript-parse-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../toolchain/typescript-toolchain.ts";
 import { TYPE_DIRECTIVES, type TypeDirective, typeDirectiveReaderFor } from "./type-directives.ts";
 import type { Diagnostic } from "../toolchain/typescript-parse.ts";
 
-const SYNTAX_API = defaultParsePort.syntaxApi;
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+});
+assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
+assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+const SYNTAX_API = loadedParsePort.value.syntaxApi;
 const TYPE_EXPECTATION = "@ts-expect-" + "error";
 const TYPE_IGNORE = "@ts-" + "ignore";
 const TYPE_NOCHECK = "@ts-" + "nocheck";

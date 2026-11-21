@@ -1,9 +1,94 @@
 import { describe, expect, it } from "vitest";
-import { CAUSAL_WHY_CHAIN } from "../../../../tests/causal-why-chain.ts";
-import { CAST_CHECK, CLAIMED_TYPE, GIVES_A_VALUE_ITS_TYPE, OWED_DECLARED_NOT_ASSERTED, WORLD_VALUES_THROUGH_A_PORT, WHOLE_SYMPTOM } from "../../../../tests/report-catalogue.ts";
+import type { Case, Check, Pointed, Recipe, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import type { CatalogueNote, HoneRecord, RecordRefusal } from "../../hone-records-folder/hone-record.ts";
+import type { CatalogueNote, HoneRecord, RecordRefusal, SymptomReach } from "../../hone-records-folder/hone-record.ts";
+import type { WhyChain } from "../../hone-records-folder/why-chain.ts";
 import { carriedLine, recordNoteLine, recordPlaceText, recordReferenceText, recordSubjectText, refusedLines } from "./record-lines.ts";
+
+const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
+
+const DECLARED_NOT_ASSERTED: Rule = {
+  name: "declared-not-asserted",
+  title: "Declared, not asserted",
+  principle: { name: "one-place-decides", title: "One place decides" },
+  standing: "accepted",
+};
+
+const OWED_DECLARED_NOT_ASSERTED: Pointed = { kind: "rule", rule: DECLARED_NOT_ASSERTED };
+
+const GIVES_A_VALUE_ITS_TYPE: Case = {
+  name: "gives-a-value-its-type",
+  title: "Gives a value its type",
+  standing: "accepted",
+  owes: [OWED_DECLARED_NOT_ASSERTED],
+};
+
+const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  name: "world-values-through-a-port",
+  title: "World values through a port",
+  standing: "accepted",
+  reason: { text: "the world reaches a unit through a port", standing: "accepted" },
+};
+
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [{ case: GIVES_A_VALUE_ITS_TYPE, situation: "or needs it narrower", points: [OWED_DECLARED_NOT_ASSERTED] }],
+  breachUsuallySits: "at the producer",
+  recipes: [],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
+    },
+  ],
+};
+
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  clause: clauseAddressSchema.parse("CD-2#cast-expressions"),
+  engines: [{ name: "eslint", mechanism: mechanismIdSchema.parse("eslint") }],
+  forms: [],
+};
+
+const CAUSAL_WHY_CHAIN: WhyChain = {
+  whys: [
+    {
+      why: "Why does the audit refuse tracker ids in carve-out names?",
+      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      evidence: "tools/audit/name-matcher.ts:14",
+    },
+    {
+      why: "Why does the name matcher accept only lowercase slugs?",
+      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      evidence: "tools/git/branch-name.ts:8",
+    },
+    {
+      why: "Why was the matcher copied from the branch-name validator?",
+      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      evidence: "PR #212, merged 2026-07-02",
+    },
+    {
+      why: "Why did no shared slug type exist when the audit landed?",
+      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      evidence: "packages/values/package.json:3",
+    },
+    {
+      why: "Why was the values package split out after the audit?",
+      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      evidence: "docs/decisions/0007-monorepo.md:21",
+    },
+  ],
+  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootEvidence: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  readback:
+    "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
+  owner: "capture 01a0b421",
+};
 
 const FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
 

@@ -1,10 +1,83 @@
 import { describe, expect, it } from "vitest";
-import { DATE_USED_DIRECTLY, WHOLE_SYMPTOM } from "../../../../tests/report-catalogue.ts";
 import type { Authorising } from "../../../application/records/authorising.ts";
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
-import type { Debt } from "../../hone-records-folder/hone-record.ts";
+import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Debt, SymptomReach } from "../../hone-records-folder/hone-record.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "./record-command-lines.ts";
+
+const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
+
+const DATE_USED_DIRECTLY: Symptom = {
+  name: "date-used-directly",
+  title: "Date used directly",
+  seen: "Any use of `Date` outside the places that handle dates.",
+  mayIndicate: [
+    {
+      case: {
+        name: "needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering",
+        title: "Needs the current time, a random value, a new id or an outside ordering",
+        standing: "accepted",
+        owes: [{ kind: "principle", principle: { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" } }],
+      },
+      points: [
+        {
+          kind: "rule",
+          rule: {
+            name: "ports-declared-inside",
+            title: "Ports declared inside",
+            principle: { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" },
+            standing: "accepted",
+          },
+        },
+        {
+          kind: "rule",
+          rule: {
+            name: "written-out-answers",
+            title: "Written-out answers",
+            principle: { name: "tests-are-ours", title: "Tests are ours" },
+            standing: "accepted",
+          },
+        },
+      ],
+    },
+    {
+      case: {
+        name: "does-one-job",
+        title: "Does one job",
+        standing: "accepted",
+        owes: [{ kind: "principle", principle: { name: "one-place-decides", title: "One place decides" } }],
+      },
+      points: [
+        {
+          kind: "rule",
+          rule: {
+            name: "doer-or-orchestrator",
+            title: "Doer or orchestrator",
+            principle: { name: "one-place-decides", title: "One place decides" },
+            standing: "accepted",
+          },
+        },
+      ],
+    },
+  ],
+  breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
+  recipes: [
+    {
+      name: "world-values-through-a-port",
+      title: "World values through a port",
+      standing: "accepted",
+      reason: { text: "the world reaches a unit through a port", standing: "accepted" },
+    },
+  ],
+  correctUses: [
+    {
+      situation: "correct use",
+      kind: { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "authorised-location" },
+      at: "on the clock adapter",
+    },
+  ],
+};
 
 const FILE = repoPathSchema.parse("src/orders/charge-order.ts");
 
