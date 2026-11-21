@@ -1,7 +1,7 @@
-import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
-import type { SymptomReach } from "../core/records/hone-record.ts";
+import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import type { SymptomReach } from "../src/infrastructure/hone-records-folder/hone-record.ts";
 
 export const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 

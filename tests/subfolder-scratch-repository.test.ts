@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../core/platform-ports/file-system-port.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import type { ScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import type { ScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 import type { ScratchRepositories } from "./scratch-repositories.ts";
 import { repositoryWithSubfolder } from "./subfolder-scratch-repository.ts";
 

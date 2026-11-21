@@ -1,4 +1,4 @@
-import type { SettingsWire } from "../core/settings/settings-file.ts";
+import type { SettingsWire } from "../src/infrastructure/hone-config-file/settings-file.ts";
 
 const VERSION_TWO = 2;
 

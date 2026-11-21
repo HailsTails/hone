@@ -41,7 +41,7 @@ jobs:
           git fetch --no-tags --depth=1 origin "$PREVIOUS_REVISION"
           previous_manifest="$(git show "$PREVIOUS_REVISION:package.json")"
           remote_tags="$(git ls-remote --tags --refs origin 'refs/tags/v*')"
-          node scripts/release-state-command.ts "$GITHUB_SHA" "$(cat package.json)" "$previous_manifest" "$remote_tags" >> "$GITHUB_OUTPUT"
+          node delivery/release/release-state-command.ts "$GITHUB_SHA" "$(cat package.json)" "$previous_manifest" "$remote_tags" >> "$GITHUB_OUTPUT"
 
   release:
     name: Release the package tarball
@@ -88,7 +88,7 @@ jobs:
       - name: Choose the dist-tag
         id: dist-tag
         run: |
-          dist_tag="$(node scripts/release-text-command.ts dist-tag "$RELEASE_TAG")"
+          dist_tag="$(node delivery/release/release-text-command.ts dist-tag "$RELEASE_TAG")"
           echo "value=$dist_tag" >> "$GITHUB_OUTPUT"
       - name: Tag the merged commit with a release holding the tarball
         env:
@@ -98,13 +98,13 @@ jobs:
         run: |
           prerelease=()
           case "$DIST_TAG" in next) prerelease=(--prerelease) ;; esac
-          title="$(node scripts/release-text-command.ts title "$RELEASE_TAG")"
-          notes="$(node scripts/release-text-command.ts notes "$RELEASE_TAG")"
+          title="$(node delivery/release/release-text-command.ts title "$RELEASE_TAG")"
+          notes="$(node delivery/release/release-text-command.ts notes "$RELEASE_TAG")"
           gh release create "$RELEASE_TAG" "artefacts/$TARBALL_NAME" --target "$GITHUB_SHA" --title "$title" --notes "$notes" "${prerelease[@]}"
       - name: Refuse a release whose tag names another commit
         run: |
           remote_tags="$(git ls-remote --tags --refs origin "refs/tags/$RELEASE_TAG")"
-          node scripts/release-tag-command.ts "$RELEASE_TAG" "$GITHUB_SHA" "$remote_tags"
+          node delivery/release/release-tag-command.ts "$RELEASE_TAG" "$GITHUB_SHA" "$remote_tags"
 
   publish-npm:
     name: Stage the released tarball on npm

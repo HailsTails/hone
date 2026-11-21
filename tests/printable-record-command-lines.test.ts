@@ -36,8 +36,8 @@ const RECORD_DEBT_EFFECT_LINES: readonly PrintedLine[] = [
 
 const PROJECT_NEXT_LINE: PrintedLine = {
   label: "record-debt",
-  text: "run node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js project --repo /work/shop to put the recorded debt into effect",
-  fills: { "project command": "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js project --repo /work/shop" },
+  text: "run node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop to put the recorded debt into effect",
+  fills: { "project command": "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop" },
 };
 
 const UNRECORDABLE_LINES: readonly PrintedLine[] = [

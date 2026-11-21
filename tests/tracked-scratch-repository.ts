@@ -1,4 +1,4 @@
-import type { CommandRunPort } from "../scripts/install-proof-ports.ts";
+import type { CommandRunPort } from "../delivery/install-proof/install-proof-ports.ts";
 import type { ScratchRepositories } from "./scratch-repositories.ts";
 
 const GIT_STEPS: readonly (readonly string[])[] = [["init"], ["add", "."]];

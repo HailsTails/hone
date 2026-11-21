@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
-import type { Case, Principle, RecordKind, Rule, Symptom } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import type { CheckReport } from "../core/verdict/check-report.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../core/verdict/symptom-notes.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
+import type { Case, Principle, RecordKind, Rule, Symptom } from "../src/domain/language-layer/symptom-catalogue.ts";
+import type { CheckReport } from "../src/domain/report/check-report.ts";
+import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
 import { contractGaps, contractPartsOf, documentedLinesIn, documentedRolesIn, type EntryFills, filledTemplate, reportLinesOf } from "./output-contract.ts";
 
 const DOC =

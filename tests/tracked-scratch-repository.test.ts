@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import type { CommandRunPort } from "../scripts/install-proof-ports.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import type { CommandRunPort } from "../delivery/install-proof/install-proof-ports.ts";
 import type { ScratchRepositories } from "./scratch-repositories.ts";
 import { trackedRepositoryWith } from "./tracked-scratch-repository.ts";
 

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ClauseBinding } from "../core/settings/selection.ts";
-import { createPathPort } from "../core/platform-ports/path-port.ts";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { FIRST_EDITION } from "../core/values/edition.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
+import type { ClauseBinding } from "../src/domain/settings/selection/selection.ts";
+import { createPathPort } from "../src/infrastructure/node/path-port.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { FIRST_EDITION } from "../src/infrastructure/content-files/edition.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
 import { CHECKS_PLUGIN_CATALOGUE } from "./checks-plugin-catalogue.ts";
 import { inCheckRuleIds, type SpecifierOf, versionOnePiecesOf } from "./projection-pair.ts";
 

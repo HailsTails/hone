@@ -2,7 +2,7 @@
 /CHANGELOG.md @HailsTails
 /.github/workflows/ @HailsTails
 /.github/CODEOWNERS @HailsTails
-/scripts/release-* @HailsTails
-/scripts/published-manifest.ts @HailsTails
-/core/values/tool-identity.ts @HailsTails
+/delivery/release/release-* @HailsTails
+/delivery/packaging/published-manifest/published-manifest.ts @HailsTails
+/src/domain/rule-set/tool-identity.ts @HailsTails
 /pnpm-workspace.yaml @HailsTails

@@ -1,7 +1,7 @@
-import type { FileTextPort } from "../core/platform-ports/file-system-port.ts";
-import type { PathPort } from "../core/platform-ports/path-port.ts";
-import type { AbsolutePath } from "../core/values/absolute-path.ts";
-import type { ListedEntry, ScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import type { PathPort } from "../src/infrastructure/node/path-port.ts";
+import type { AbsolutePath } from "../src/infrastructure/content-files/absolute-path.ts";
+import type { ListedEntry, ScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 import type { ScratchRepositories } from "./scratch-repositories.ts";
 
 export const STORED_LINT_CONFIG_NAME = "lint-config.fixture";

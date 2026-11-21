@@ -19,7 +19,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - A bare annotation such as `let value: any` is not flagged by this clause; `CD-1#explicit-any` covers it.
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-1/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-1/README.md).
 - `hone-cd1/no-explicit-any` is typescript-eslint's `no-explicit-any` with default options. It flags every `any` type: annotations, type arguments such as `Map<string, any>`, and `as any`.
 - `hone-cd1/implicit-any-let` flags a `let` or `var` declaration in a `.ts` or `.tsx` file that has neither a type annotation nor an initialiser, one report per declaration at its first such binding. Declaration files (`.d.ts`), `const`, and `for-in` and `for-of` heads are not flagged.
 - Allowed: `unknown`, `let total = 0` and `let total: number`.

@@ -1,11 +1,11 @@
-import type { VersionTwoLoadFailure } from "../core/command-line/load-failure.ts";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createDefaultPathPort } from "../core/platform-ports/path-port.ts";
-import { createSymptomCatalogueRepository } from "../core/symptom-catalogue/read-symptom-catalogue.ts";
-import type { CatalogueHolding, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { clauseAddressText } from "../core/values/clause-address.ts";
-import type { Result } from "../core/values/result.ts";
+import type { VersionTwoLoadFailure } from "../src/infrastructure/command-line/load-failure.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../src/infrastructure/node/path-port.ts";
+import { createSymptomCatalogueRepository } from "../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import type { CatalogueHolding, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { clauseAddressText } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { Result } from "../src/domain/result.ts";
 import { repositoryRootOf } from "./allowed-forms-proof.ts";
 import { contractTextAt } from "./output-contract.ts";
 
@@ -27,7 +27,7 @@ const NEXT_HEADING = "\n## ";
 
 const INSTALLED_RULES = "node_modules/@hailstails/hone/rules/";
 
-const SOURCE_RULES = "../../../../rules/";
+const SOURCE_RULES = "../../../../../../rules/";
 
 const REPOSITORY_ROOT = repositoryRootOf({ testFolder: import.meta.dirname });
 

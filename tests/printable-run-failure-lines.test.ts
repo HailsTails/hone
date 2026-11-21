@@ -40,7 +40,7 @@ describe("RUN_FAILURE_LINES", () => {
       text: "load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: vendor/lib, vendor/tool; move them out of this repository, and run each on its own with --repo",
     },
     { label: "upgrade-needed", text: "load failure: upgrade-needed disciplines.json: this is a version 1 file; run hone upgrade, which rewrites every version 1 file as version 2, and commit what it writes" },
-    { label: "upgrade-needed", text: "load failure: upgrade-needed disciplines.json: this is a version 1 file; run node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js upgrade --repo /work/shop, which rewrites every version 1 file as version 2, and commit what it writes" },
+    { label: "upgrade-needed", text: "load failure: upgrade-needed disciplines.json: this is a version 1 file; run node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop, which rewrites every version 1 file as version 2, and commit what it writes" },
   ])("includes the $label line $text", (line) => {
     expect(RUN_FAILURE_LINES).toContainEqual(expect.objectContaining(line));
   });

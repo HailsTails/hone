@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { EntryDisposition } from "../scripts/install-proof-plan.ts";
-import type { CopiedEntry } from "../scripts/install-proof-ports.ts";
+import type { EntryDisposition } from "../delivery/install-proof/install-proof-plan.ts";
+import type { CopiedEntry } from "../delivery/install-proof/install-proof-ports.ts";
 import { inMemoryFiles } from "./in-memory-files.ts";
 
 const LEFT_OUT_NAMES: Readonly<Record<string, EntryDisposition>> = { secrets: "left-out" };

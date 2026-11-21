@@ -1,4 +1,4 @@
-import type { EslintMajorBoundary, ReportData } from "../mechanisms/eslint/runner/eslint-major-boundary.ts";
+import type { EslintMajorBoundary, ReportData } from "../src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts";
 
 export const STUB_DECLARATION_TEXT = "declare const projection: readonly unknown[];\nexport default projection;\n";
 

@@ -23,13 +23,13 @@
     "lint": "biome check --error-on-warnings --config-path=lint.biome.json .",
     "test": "vitest run --config vitest.config.ts",
     "check": "pnpm run typecheck && biome check --error-on-warnings --config-path=lint.biome.json . && vitest run --config vitest.config.ts",
-    "self-check": "node scripts/self-check.ts check --repo .",
-    "install-proof": "node scripts/install-proof.ts",
-    "build-package": "node scripts/build-package.ts",
-    "pack-package": "node scripts/pack-package.ts",
-    "package-determinism": "node scripts/check-package-determinism.ts",
-    "pull-request-title": "node scripts/pull-request-title-command.ts",
-    "release-pull-request": "node scripts/release-pull-request-command.ts"
+    "self-check": "node delivery/self-check/self-check.ts check --repo .",
+    "install-proof": "node delivery/install-proof/install-proof.ts",
+    "build-package": "node delivery/packaging/building/build-package.ts",
+    "pack-package": "node delivery/packaging/packing/pack-package.ts",
+    "package-determinism": "node delivery/packaging/packing/check-package-determinism.ts",
+    "pull-request-title": "node delivery/pull-request-title/pull-request-title-command.ts",
+    "release-pull-request": "node delivery/release/release-pull-request-command.ts"
   },
   "dependencies": {
     "@eslint/plugin-kit": "^0.7.3",

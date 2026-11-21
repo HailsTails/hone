@@ -18,7 +18,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - Allowed: `account-types.ts`, `Types.ts` and `types.tsx`, which are not exact matches.
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-7/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-7/README.md).
 - `hone-cd7/filename-case` checks the file name before its first dot, after trimming edge `_`: it must be kebab-case or PascalCase. Each later dot segment must be kebab-case, PascalCase or lowercase.
 - One leading `.`, `+` or `$` is ignored.
 - Route names such as `[slug].ts` and `(group).ts` pass.

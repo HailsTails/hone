@@ -1,4 +1,4 @@
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
 
 export type JsonValue = string | number | boolean | null | readonly JsonValue[] | { readonly [key: string]: JsonValue };
 

@@ -4,17 +4,17 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-5#comments-directives",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/disable-file.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/disable-file.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-5#comments-directives",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/enable.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/enable.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-5#comments-directives",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/other-rule.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/other-rule.ts"
     }
   ]
 }

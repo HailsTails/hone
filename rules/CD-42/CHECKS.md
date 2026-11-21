@@ -11,7 +11,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 | `CD-42#useless-else` | eslint | an `else` after an `if` branch that always exits |
 
 ## What the check flags
-- The ESLint piece lints whatever files the team's ESLint run includes. It needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-42/README.md).
+- The ESLint piece lints whatever files the team's ESLint run includes. It needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-42/README.md).
 - Rule `hone-cd42/useless-else`: an `else` after an `if` branch that always exits is reported at the `else` keyword.
 - A branch always exits when it ends in `return`, `throw`, `continue`, or `break` outside a switch. A nested `if` exits when both of its branches do. A `switch` exits when every non-empty case does.
 - Along an `else if` chain whose earlier branches all exit, every `else` is reported.

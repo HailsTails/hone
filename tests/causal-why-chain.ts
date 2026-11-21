@@ -1,5 +1,5 @@
-import type { LegacyWhyChain } from "../core/upgrade/version-one-records/version-one-why-chain.ts";
-import type { WhyChain } from "../core/values/why-chain.ts";
+import type { LegacyWhyChain } from "../src/infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import type { WhyChain } from "../src/infrastructure/hone-records-folder/why-chain.ts";
 
 export const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { causalProblemsOf } from "../core/values/why-chain.ts";
-import { versionOneWhyChainSchema, whyChainFormOf } from "../core/upgrade/version-one-records/version-one-why-chain.ts";
+import { causalProblemsOf } from "../src/infrastructure/hone-records-folder/why-chain.ts";
+import { versionOneWhyChainSchema, whyChainFormOf } from "../src/infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
 import { VERSION_ONE_CAUSAL_WHY_CHAIN } from "./version-one-causal-why-chain.ts";
 
 describe("VERSION_ONE_CAUSAL_WHY_CHAIN is a chain the version 1 causal contract accepts", () => {

@@ -1,5 +1,5 @@
-import type { Result } from "../core/values/result.ts";
-import type { Bundle, BundleFailure, BundleRequest, BundlerPort } from "../scripts/esbuild-bundler-port.ts";
+import type { Result } from "../src/domain/result.ts";
+import type { Bundle, BundleFailure, BundleRequest, BundlerPort } from "../delivery/packaging/building/esbuild-bundler-port.ts";
 import type { InMemoryFiles } from "./in-memory-files.ts";
 
 export type RecordingBundler = {

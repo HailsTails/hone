@@ -1,10 +1,10 @@
-import type { ClauseBinding } from "../core/settings/selection.ts";
-import type { PathPort } from "../core/platform-ports/path-port.ts";
-import { checksOf } from "../core/symptom-catalogue/check-address.ts";
-import type { SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { checkRuleIdOf, runsOnEslint } from "../mechanisms/eslint/runner/check-rule-id.ts";
-import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../mechanisms/eslint/runner/eslint-piece-settings-schema.ts";
-import type { ProjectedPiece } from "../mechanisms/eslint/runner/projection-text.ts";
+import type { ClauseBinding } from "../src/domain/settings/selection/selection.ts";
+import type { PathPort } from "../src/infrastructure/node/path-port.ts";
+import { checksOf } from "../src/domain/language-layer/check-address.ts";
+import type { SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { checkRuleIdOf, runsOnEslint } from "../src/infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
+import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../src/infrastructure/engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
+import type { ProjectedPiece } from "../src/infrastructure/engines/eslint/runner/projection/projection-text.ts";
 
 export type SpecifierOf = (request: { readonly modulePath: string }) => string;
 

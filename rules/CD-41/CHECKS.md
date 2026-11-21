@@ -13,7 +13,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 | `CD-41#orchestration-only` | review | an orchestrator only composes helper calls and assembles their results |
 
 ## What the check flags
-- The ESLint piece lints whatever files the team's ESLint run includes. It needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-41/README.md).
+- The ESLint piece lints whatever files the team's ESLint run includes. It needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-41/README.md).
 - `hone-cd41/cognitive-complexity`: each function's cognitive complexity must be at most 15.
   - An `if`, `else if`, `switch`, ternary, `catch` and each loop adds 1 plus the current nesting depth.
   - An `else`, a `finally`, a labelled `break` or `continue`, and each run of the same logical operator add 1.

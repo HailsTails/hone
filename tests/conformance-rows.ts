@@ -1,19 +1,19 @@
 import { assert, vi } from "vitest";
-import { defaultClauseSettings } from "../core/settings/default-clause-settings.ts";
-import type { RunnerClause } from "../core/mechanism-port/runner-module-schema.ts";
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createPathPort } from "../core/platform-ports/path-port.ts";
+import { defaultClauseSettings } from "../src/domain/settings/clause-settings/default-clause-settings.ts";
+import type { RunnerClause } from "../src/infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createPathPort } from "../src/infrastructure/node/path-port.ts";
 import {
   type DisciplineFile,
   readDisciplineFile,
   readPieceFile,
   type SourceCase,
-} from "../core/rule-set-reader/rule-set-reader.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { disciplineIdSchema, type MechanismId } from "../core/values/identifiers.ts";
+} from "../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { disciplineIdSchema, type MechanismId } from "../src/infrastructure/hone-config-file/identifiers.ts";
 import { requiredEntry } from "./required-entry.ts";
-import { editionRunsOf } from "../core/conformance/edition-runs.ts";
+import { editionRunsOf } from "../src/application/conformance/edition-runs.ts";
 
 export type RawTable = Readonly<Record<string, string>>;
 
@@ -67,6 +67,7 @@ const rowsOf = (request: {
     fileText: request.fileText,
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
     ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
     mechanism: request.mechanism,
     discipline,
   });

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { PathPort } from "../core/platform-ports/path-port.ts";
-import type { Check, Engine, RecordKind, Symptom, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { PathPort } from "../src/infrastructure/node/path-port.ts";
+import type { Check, Engine, RecordKind, Symptom, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
 import {
   catalogueCoverageOf,
   checkAddressTableOf,

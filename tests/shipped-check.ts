@@ -1,5 +1,5 @@
-import type { RuleSetCatalogue } from "../core/settings/check-choices.ts";
-import type { Check } from "../core/symptom-catalogue/symptom-catalogue.ts";
+import type { RuleSetCatalogue } from "../src/domain/settings/check-choices.ts";
+import type { Check } from "../src/domain/language-layer/symptom-catalogue.ts";
 
 export const shippedCheckOf = (request: { readonly catalogues: readonly RuleSetCatalogue[]; readonly discipline: string; readonly name: string }): Check => {
   const [only, ...others] = request.catalogues.flatMap(({ catalogue }) =>

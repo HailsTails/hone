@@ -1,4 +1,4 @@
-import type { Case, Indication, Pointed, Recipe, RecipeReason, Standing, Symptom, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
+import type { Case, Indication, Pointed, Recipe, RecipeReason, Standing, Symptom, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
 
 export type PageCase = { readonly title: string; readonly standing: Standing };
 

@@ -1,5 +1,5 @@
-import type { StepRun } from "../scripts/install-proof-plan.ts";
-import type { CommandRunPort } from "../scripts/install-proof-ports.ts";
+import type { StepRun } from "../delivery/install-proof/install-proof-plan.ts";
+import type { CommandRunPort } from "../delivery/install-proof/install-proof-ports.ts";
 import type { InMemoryFiles } from "./in-memory-files.ts";
 
 export type CommandRun = Parameters<CommandRunPort["run"]>[0];

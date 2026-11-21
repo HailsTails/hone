@@ -29,4 +29,4 @@ jobs:
       - name: Check the title is a conventional commit subject
         env:
           PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
-        run: node scripts/pull-request-title-command.ts "$PULL_REQUEST_TITLE"
+        run: node delivery/pull-request-title/pull-request-title-command.ts "$PULL_REQUEST_TITLE"

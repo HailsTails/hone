@@ -1,6 +1,6 @@
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { type ClauseAddress, clauseAddressSchema } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { type ClauseAddress, clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

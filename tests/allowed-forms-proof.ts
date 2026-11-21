@@ -1,14 +1,14 @@
-import type { StandaloneRunner } from "../core/mechanism-port/runner-module-schema.ts";
-import type { RunnerClause } from "../core/mechanism-port/runner-module-types.ts";
-import { createDefaultEntryKindPort } from "../core/platform-ports/file-system-port.ts";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../core/platform-ports/module-loader-port.ts";
-import { createDefaultPathPort } from "../core/platform-ports/path-port.ts";
-import type { SourceCase } from "../core/rule-set-reader/rule-set-reader.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
-import { createWalkerRunner } from "../mechanisms/audit/runner/create-walker-runner.ts";
-import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../mechanisms/audit/runner/typescript-parse.ts";
+import type { StandaloneRunner } from "../src/infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../src/application/ports/runner-module-types.ts";
+import { createDefaultEntryKindPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../src/infrastructure/node/path-port.ts";
+import type { SourceCase } from "../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
+import { createWalkerRunner } from "../src/infrastructure/engines/audit/runner/create-walker-runner.ts";
+import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
 import type { AllowedFormSection } from "./allowed-forms-page.ts";
 import { overlaidFileText } from "./overlaid-file-text.ts";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPathPort } from "../core/platform-ports/path-port.ts";
+import { createPathPort } from "../src/infrastructure/node/path-port.ts";
 import {
   computedModuleLoad,
   dynamicLoadMatching,

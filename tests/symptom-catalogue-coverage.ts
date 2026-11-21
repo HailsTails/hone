@@ -1,15 +1,15 @@
-import type { LoadFailure } from "../core/command-line/load-failure.ts";
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { PathPort } from "../core/platform-ports/path-port.ts";
-import { IMPORTED_PARTY_SYMPTOMS, RUNTIME_REACH } from "../core/records/record-reach.ts";
-import { type DisciplineFile, readDisciplineFile } from "../core/rule-set-reader/rule-set-reader.ts";
-import { checkAddressOf, checkAt, checksOf } from "../core/symptom-catalogue/check-address.ts";
-import type { Check, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { type CatalogueGuide, symptomNoteLineOf } from "../core/verdict/symptom-notes.ts";
-import type { AbsolutePath } from "../core/values/absolute-path.ts";
-import { clauseAddressText } from "../core/values/clause-address.ts";
-import { disciplineIdSchema } from "../core/values/identifiers.ts";
-import type { Result } from "../core/values/result.ts";
+import type { LoadFailure } from "../src/infrastructure/command-line/load-failure.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { PathPort } from "../src/infrastructure/node/path-port.ts";
+import { IMPORTED_PARTY_SYMPTOMS, RUNTIME_REACH } from "../src/domain/records/answering/record-reach.ts";
+import { type DisciplineFile, readDisciplineFile } from "../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { checkAddressOf, checkAt, checksOf } from "../src/domain/language-layer/check-address.ts";
+import type { Check, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { type CatalogueGuide, symptomNoteLineOf } from "../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
+import type { AbsolutePath } from "../src/infrastructure/content-files/absolute-path.ts";
+import { clauseAddressText } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { disciplineIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import type { Result } from "../src/domain/result.ts";
 
 export type CatalogueCoverage = {
   readonly uncatalogued: readonly string[];

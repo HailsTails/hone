@@ -1,4 +1,4 @@
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
 
 export type CountedReads = {
   readonly fileText: FileTextPort;

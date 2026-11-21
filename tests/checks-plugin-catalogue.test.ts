@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkAt } from "../core/symptom-catalogue/check-address.ts";
+import { checkAt } from "../src/domain/language-layer/check-address.ts";
 import { CHECKS_PLUGIN_CATALOGUE } from "./checks-plugin-catalogue.ts";
 
 describe("CHECKS_PLUGIN_CATALOGUE", () => {

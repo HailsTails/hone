@@ -1,6 +1,6 @@
-import type { Check, Engine, Symptom, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
+import type { Check, Engine, Symptom, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
 import { SETTINGS_CATALOGUE } from "./settings-catalogue.ts";
 
 const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };

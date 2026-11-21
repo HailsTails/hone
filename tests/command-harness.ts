@@ -1,14 +1,14 @@
-import type { VersionOneCommandRequest } from "../core/upgrade/version-one-records/version-one-command-request.ts";
+import type { VersionOneCommandRequest } from "../src/application/ports/version-one-command-request.ts";
 import { CAUSAL_WHY_CHAIN } from "./causal-why-chain.ts";
-import type { DirectoryEntry, DirectoryPort, FileRemovalPort } from "../core/platform-ports/file-system-port.ts";
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { GitTreePort } from "../core/platform-ports/git-port.ts";
-import { createPathPort } from "../core/platform-ports/path-port.ts";
-import type { ProcessPort } from "../core/platform-ports/process-port.ts";
+import type { DirectoryEntry, DirectoryPort, FileRemovalPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { GitTreePort } from "../src/infrastructure/git/git-port.ts";
+import { createPathPort } from "../src/infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../src/infrastructure/node/process/process-port.ts";
 
 export const REPO_FOLDER = "/repo";
 
-export const ENTRY_URL = "file:///install/core/check/tool-command.ts";
+export const ENTRY_URL = "file:///install/src/hone.ts";
 
 const SEPARATOR = "/";
 
@@ -92,7 +92,7 @@ export const commandOver = (request: { readonly process: ProcessPort; readonly f
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
   modules: { load: notUsed },
-  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed },
+  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
   moduleUrl: ENTRY_URL,
 });

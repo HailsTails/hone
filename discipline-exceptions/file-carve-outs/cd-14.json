@@ -4,147 +4,147 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/abstract.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/abstract.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/anon.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/anon.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/decl.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/decl.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/default.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/default.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/expr.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/expr.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/nested.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/nested.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fr3-anchors/src/space.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors/src/space.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/fragment-not-projection/src/owned.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/fragment-not-projection/src/owned.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/global-ignore/gen/g.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/global-ignore/gen/g.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/disable-file.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/disable-file.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/enable.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/enable.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/global.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/global.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/inline-forms/i/other-rule.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/inline-forms/i/other-rule.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/monorepo-package-config/packages/a/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/monorepo-package-config/packages/a/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/monorepo-root-config/packages/a/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/monorepo-root-config/packages/a/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/override-after/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/override-after/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/projection-hand-edited/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projection-hand-edited/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/projection-missing/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projection-missing/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/projection-not-imported/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projection-not-imported/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/re-enabled-record/src/owned.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/re-enabled-record/src/owned.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/route-brackets/route/[id].ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/route-brackets/route/[id].ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/route-brackets/route/i.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/route-brackets/route/i.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/severity-zero/x.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/severity-zero/x.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/suppression-default/supp/a.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/suppression-default/supp/a.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/suppression-nested/packages/a/src/n.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/suppression-nested/packages/a/src/n.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "mechanisms/eslint/runner/test-fixtures/suppression-scripted/supp/b.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/suppression-scripted/supp/b.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "tests/test-fixtures/walkthrough/after/generated/schema.ts"
+      "file": "src/infrastructure/command-line/documentation/walkthrough/after/generated/schema.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "tests/test-fixtures/walkthrough/before/generated/schema.ts"
+      "file": "src/infrastructure/command-line/documentation/walkthrough/before/generated/schema.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-14#class-syntax",
-      "file": "tests/test-fixtures/walkthrough/before/src/basket.ts"
+      "file": "src/infrastructure/command-line/documentation/walkthrough/before/src/basket.ts"
     }
   ]
 }

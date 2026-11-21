@@ -1,4 +1,4 @@
-import type { SyntaxApi, SyntaxNode } from "../mechanisms/audit/runner/typescript-parse.ts";
+import type { SyntaxApi, SyntaxNode } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
 
 type NodeSearch = {
   readonly syntaxApi: SyntaxApi;

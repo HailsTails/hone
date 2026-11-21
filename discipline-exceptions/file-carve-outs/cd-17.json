@@ -4,12 +4,12 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-17#clock-sources",
-      "file": "tests/test-fixtures/walkthrough/after/src/clock.ts"
+      "file": "src/infrastructure/command-line/documentation/walkthrough/after/src/clock.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-17#clock-sources",
-      "file": "tests/test-fixtures/walkthrough/before/src/basket.ts"
+      "file": "src/infrastructure/command-line/documentation/walkthrough/before/src/basket.ts"
     }
   ]
 }

@@ -1,9 +1,9 @@
-import { type AuthoriseRequest, type Authorising, authorisingOf } from "../core/records/authorising.ts";
-import type { DebtOutcome } from "../core/records/debt-effects.ts";
-import type { Debt, RecordRefusal } from "../core/records/hone-record.ts";
-import type { PrunedReason } from "../core/records/prunable-debt.ts";
-import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../core/report/record-command-lines.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
+import { type AuthoriseRequest, type Authorising, authorisingOf } from "../src/application/records/authorising.ts";
+import type { DebtOutcome } from "../src/domain/records/debt/debt-effects.ts";
+import type { Debt, RecordRefusal } from "../src/infrastructure/hone-records-folder/hone-record.ts";
+import type { PrunedReason } from "../src/domain/records/debt/prunable-debt.ts";
+import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../src/infrastructure/printed-report/records/record-command-lines.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { PrintedLine } from "./output-contract.ts";
 import { CAUSAL_WHY_CHAIN } from "./causal-why-chain.ts";
 import { DATE_USED_DIRECTLY, REPORT_CATALOGUE, WHOLE_SYMPTOM } from "./report-catalogue.ts";
@@ -77,7 +77,7 @@ const formRefusalSample = (): readonly (readonly [RecordRefusal, Readonly<Record
   );
 };
 
-const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js project --repo /work/shop";
+const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
 export const RECORD_COMMAND_LINES: readonly PrintedLine[] = [
   ...OUTCOMES.map(([outcome, fills]): PrintedLine => ({ label: "record-debt", text: debtOutcomeLine({ outcome }), fills: { file: FILE, address: ADDRESS, ...fills } })),

@@ -4,7 +4,7 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-7#categorical-paths",
-      "file": "tests/test-fixtures/walkthrough/before/src/utils/format.ts"
+      "file": "src/infrastructure/command-line/documentation/walkthrough/before/src/utils/format.ts"
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Bundle, BundleRequest } from "../scripts/esbuild-bundler-port.ts";
+import type { Bundle, BundleRequest } from "../delivery/packaging/building/esbuild-bundler-port.ts";
 import { inMemoryFiles } from "./in-memory-files.ts";
 import { recordingBundler } from "./recording-bundler.ts";
 

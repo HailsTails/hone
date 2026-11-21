@@ -1,14 +1,14 @@
-import piece0 from "./mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
-import piece1 from "./mechanisms/eslint/CD-1/cd1/cd1.eslint-plugin.ts";
-import piece2 from "./mechanisms/eslint/CD-10/cd10/cd10.eslint-plugin.ts";
-import piece3 from "./mechanisms/eslint/CD-2/cd2/cd2.eslint-plugin.ts";
-import piece4 from "./mechanisms/eslint/CD-27/cd27/cd27.eslint-plugin.ts";
-import piece5 from "./mechanisms/eslint/CD-40/cd40/cd40.eslint-plugin.ts";
-import piece6 from "./mechanisms/eslint/CD-41/cd41/cd41.eslint-plugin.ts";
-import piece7 from "./mechanisms/eslint/CD-42/cd42/cd42.eslint-plugin.ts";
-import piece8 from "./mechanisms/eslint/CD-44/cd44/cd44.eslint-plugin.ts";
-import piece9 from "./mechanisms/eslint/CD-6/cd6/cd6.eslint-plugin.ts";
-import piece10 from "./mechanisms/eslint/CD-7/cd7/cd7.eslint-plugin.ts";
+import piece0 from "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
+import piece1 from "./src/infrastructure/engines/eslint/CD-1/cd1/cd1.eslint-plugin.ts";
+import piece2 from "./src/infrastructure/engines/eslint/CD-10/cd10/cd10.eslint-plugin.ts";
+import piece3 from "./src/infrastructure/engines/eslint/CD-2/cd2/cd2.eslint-plugin.ts";
+import piece4 from "./src/infrastructure/engines/eslint/CD-27/cd27/cd27.eslint-plugin.ts";
+import piece5 from "./src/infrastructure/engines/eslint/CD-40/cd40/cd40.eslint-plugin.ts";
+import piece6 from "./src/infrastructure/engines/eslint/CD-41/cd41/cd41.eslint-plugin.ts";
+import piece7 from "./src/infrastructure/engines/eslint/CD-42/cd42/cd42.eslint-plugin.ts";
+import piece8 from "./src/infrastructure/engines/eslint/CD-44/cd44/cd44.eslint-plugin.ts";
+import piece9 from "./src/infrastructure/engines/eslint/CD-6/cd6/cd6.eslint-plugin.ts";
+import piece10 from "./src/infrastructure/engines/eslint/CD-7/cd7/cd7.eslint-plugin.ts";
 
 export default [
   {
@@ -80,43 +80,43 @@ export default [
   {
     name: "hone-core/file-records/CD-1#explicit-any",
     files: [
-      "tests/test-fixtures/cd1-exempted/src/fresh.ts",
-      "tests/test-fixtures/cd1-exempted/src/parse.ts",
+      "src/application/run/check/cd1-exempted/src/fresh.ts",
+      "src/application/run/check/cd1-exempted/src/parse.ts",
     ],
     rules: { "hone-cd1/no-explicit-any": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#cognitive-complexity",
     files: [
-      "mechanisms/audit/CD-43/boolean-signatures.ts",
+      "src/infrastructure/engines/audit/CD-43/boolean-signatures.ts",
     ],
     rules: { "hone-cd41/cognitive-complexity": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#cognitive-complexity, CD-41#function-length",
     files: [
-      "mechanisms/audit/CD-6/identifier-names.ts",
+      "src/infrastructure/engines/audit/CD-6/identifier-names.ts",
     ],
     rules: { "hone-cd41/cognitive-complexity": "off", "hone-cd41/function-length": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#function-length",
     files: [
-      "mechanisms/audit/runner/observe-walker-file.test.ts",
-      "mechanisms/audit/runner/prepare-walker-pieces.test.ts",
-      "mechanisms/eslint/CD-6/cd6/cd6.eslint-plugin.test.ts",
+      "src/infrastructure/engines/audit/runner/observe-walker-file.test.ts",
+      "src/infrastructure/engines/audit/runner/prepare-walker-pieces.test.ts",
+      "src/infrastructure/engines/eslint/CD-6/cd6/cd6.eslint-plugin.test.ts",
     ],
     rules: { "hone-cd41/function-length": "off" },
   },
   {
     name: "hone-core/file-records/CD-6#naming-convention",
     files: [
-      "core/platform-ports/execution-port.test.ts",
-      "core/platform-ports/git-port.test.ts",
-      "mechanisms/eslint/runner/eslint-plugin-schema.test.ts",
-      "mechanisms/eslint/runner/rule-sites.ts",
-      "scripts/install-proof-plan.test.ts",
-      "scripts/install-proof-ports.test.ts",
+      "delivery/install-proof/install-proof-plan.test.ts",
+      "delivery/install-proof/install-proof-ports.test.ts",
+      "src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.test.ts",
+      "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts",
+      "src/infrastructure/git/git-port.test.ts",
+      "src/infrastructure/node/process/execution-port.test.ts",
     ],
     rules: { "hone-cd6/naming-convention": "off" },
   },

@@ -12,5 +12,5 @@
     "types": ["node"]
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "tests/test-fixtures/consumer-proof"]
+  "exclude": ["node_modules", "delivery/install-proof/consumer-proof"]
 }

@@ -18,7 +18,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - The source rule also confines throwing in production code to a closed list of contexts. The check does not look at production files; that part is left to review.
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-10/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-10/README.md).
 - `hone-cd10/throw-only-error` flags a `throw` of a literal, an object literal, a binary expression, a template or tagged template, or `undefined`. It follows the thrown value through `a ? b : c`, `a || b`, assignment and sequence expressions.
 - Allowed: `new Error(...)`, identifiers, calls and member access.
 - This clause applies to every file the ESLint run includes, not only tests.

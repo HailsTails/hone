@@ -1,16 +1,16 @@
 import { assert } from "vitest";
 import { z } from "zod";
-import { toolchainBoundStandaloneRunner } from "../core/mechanism-port/toolchain-bound-runner.ts";
-import type { RunnerFailure } from "../core/mechanism-port/runner-failure.ts";
-import type { StandaloneRunner } from "../core/mechanism-port/runner-module-schema.ts";
-import { createDefaultEntryKindPort } from "../core/platform-ports/file-system-port.ts";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../core/platform-ports/module-loader-port.ts";
-import { createDefaultPathPort } from "../core/platform-ports/path-port.ts";
-import type { Result } from "../core/values/result.ts";
-import { createWalkerRunner } from "../mechanisms/audit/runner/create-walker-runner.ts";
-import type { SyntaxApi, TypeScriptParsePort } from "../mechanisms/audit/runner/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers } from "../mechanisms/audit/runner/typescript-toolchain.ts";
+import { toolchainBoundStandaloneRunner } from "../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import type { RunnerFailure } from "../src/application/ports/runner-failure.ts";
+import type { StandaloneRunner } from "../src/infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import { createDefaultEntryKindPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../src/infrastructure/node/path-port.ts";
+import type { Result } from "../src/domain/result.ts";
+import { createWalkerRunner } from "../src/infrastructure/engines/audit/runner/create-walker-runner.ts";
+import type { SyntaxApi, TypeScriptParsePort } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
 
 export type TypeScriptLine = "typescript" | "typescript-floor";
 
