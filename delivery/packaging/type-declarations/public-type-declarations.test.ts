@@ -144,6 +144,71 @@ const reach = publicTypeReachOf({
   requiredPeers: ["typescript"],
 });
 
+describe("publicTypeReachOf over a written-out emit, so the reach can fail", () => {
+  const syntaxApi = loadedParsePort.value.syntaxApi;
+
+  const EMIT: DeclarationEmit = {
+    diagnostics: [],
+    declarations: [
+      { path: "api/audit.d.ts", text: 'export type { Tree } from "../core/tree.js";\n', specifiers: ["../core/tree.js"], refusals: [] },
+      { path: "api/rule-set.d.ts", text: "export declare const ruleSet: 1;\n", specifiers: [], refusals: [] },
+      { path: "core/tree.d.ts", text: 'import type typescript from "typescript";\nexport type Tree = typescript.Node;\nexport declare const tree: Tree;\n', specifiers: ["typescript"], refusals: [] },
+      { path: "core/schema.d.ts", text: 'import { z } from "zod";\n', specifiers: ["zod"], refusals: [] },
+    ],
+  };
+
+  it("names each entry's reached declarations and the packages they import, the values each entry declares, and the other shipped declarations that claim a value", () => {
+    expect(
+      publicTypeReachOf({
+        syntaxApi,
+        emitted: { outcome: "ok", value: EMIT },
+        entries: [
+          { subpath: "audit", source: "api/audit.ts" },
+          { subpath: "rule-set", source: "api/rule-set.ts" },
+        ],
+        requiredPeers: ["typescript"],
+      }),
+    ).toEqual({
+      problems: [],
+      entries: {
+        audit: { reached: ["api/audit.d.ts", "core/tree.d.ts"], packageImports: ["typescript"] },
+        "rule-set": { reached: ["api/rule-set.d.ts"], packageImports: [] },
+      },
+      valueDeclaring: ["core/tree.d.ts: tree"],
+      entryValues: { audit: [], "rule-set": ["ruleSet"] },
+      zodMentioning: [],
+    });
+  });
+
+  it("names a shipped declaration that mentions zod", () => {
+    expect(
+      publicTypeReachOf({
+        syntaxApi,
+        emitted: {
+          outcome: "ok",
+          value: { diagnostics: [], declarations: [{ path: "api/audit.d.ts", text: "export type Schema = 'zod';\n", specifiers: [], refusals: [] }] },
+        },
+        entries: [{ subpath: "audit", source: "api/audit.ts" }],
+        requiredPeers: [],
+      }).zodMentioning,
+    ).toEqual(["api/audit.d.ts"]);
+  });
+
+  it("names the publication problems when a reached declaration imports a package that is not a required peer", () => {
+    expect(
+      publicTypeReachOf({
+        syntaxApi,
+        emitted: { outcome: "ok", value: EMIT },
+        entries: [
+          { subpath: "audit", source: "api/audit.ts" },
+          { subpath: "rule-set", source: "api/rule-set.ts" },
+        ],
+        requiredPeers: [],
+      }).problems,
+    ).toEqual(["core/tree.d.ts imports typescript, which is neither shipped nor a required peer"]);
+  });
+});
+
 describe("the declarations the public type entries ship, emitted in memory by the package build's own port (CD-47: nothing is spawned or written)", () => {
   it("emit every entry with no diagnostic and publish every declaration they reach", () => {
     expect(reach.problems).toEqual([]);

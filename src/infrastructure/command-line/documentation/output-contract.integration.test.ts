@@ -2457,6 +2457,48 @@ const CONTRACT_PARTS = contractPartsOf({ text: CONTRACT_TEXT });
 
 const README_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../../../README.md` });
 
+describe("contractGaps over written-out lines, so the contract reading can fail", () => {
+  const FINDING_TEMPLATE: DocumentedLine = { label: "findings", template: "<clause> <mechanism> <file>:<line>:<column> <snippet>" };
+
+  const FINDING_FILLS: Fills = { clause: "CD-15#loops", mechanism: "audit", file: "src/a.ts", line: "2", column: "0", snippet: "const total = 0;" };
+
+  it("refuses a printed line whose fields come in another order than the template's", () => {
+    expect(
+      contractGaps({
+        documented: [FINDING_TEMPLATE],
+        printed: [{ label: "findings", text: "audit CD-15#loops src/a.ts:2:0 const total = 0;", fills: FINDING_FILLS }],
+      }),
+    ).toEqual({
+      undocumented: [{ label: "findings", text: "audit CD-15#loops src/a.ts:2:0 const total = 0;", fills: FINDING_FILLS }],
+      unprinted: [FINDING_TEMPLATE],
+    });
+  });
+
+  it("refuses a printed line whose separators differ from the template's", () => {
+    expect(
+      contractGaps({
+        documented: [FINDING_TEMPLATE],
+        printed: [{ label: "findings", text: "CD-15#loops -- audit src/a.ts:2:0 const total = 0;", fills: FINDING_FILLS }],
+      }),
+    ).toEqual({
+      undocumented: [{ label: "findings", text: "CD-15#loops -- audit src/a.ts:2:0 const total = 0;", fills: FINDING_FILLS }],
+      unprinted: [FINDING_TEMPLATE],
+    });
+  });
+
+  it("names a printed line no template fits and a template no printed line fits", () => {
+    expect(
+      contractGaps({
+        documented: [{ label: "verdict", template: "verdict: pass (partial assessment)" }],
+        printed: [{ label: "verdict", text: "verdict: pass", fills: {} }],
+      }),
+    ).toEqual({
+      undocumented: [{ label: "verdict", text: "verdict: pass", fills: {} }],
+      unprinted: [{ label: "verdict", template: "verdict: pass (partial assessment)" }],
+    });
+  });
+});
+
 describe("docs/output-contract.md, read against every line the command can print (CD-47: the shipped contract page is the assertion's subject; nothing is spawned)", () => {
   it("documents every printed line as its template filled with that line's own sample values, and every documented line is one the command prints", () => {
     expect(contractGaps({ documented: documentedLinesIn({ text: CONTRACT_PARTS.versionOne }), printed: PRINTABLE_LINES })).toEqual({

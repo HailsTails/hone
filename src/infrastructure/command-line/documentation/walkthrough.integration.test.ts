@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import { runToolCommand } from "../../../run-tool-command.ts";
 import { createDefaultExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-layout.ts";
+import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { GitPort } from "../../git/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
@@ -156,6 +158,31 @@ const AFTER_REPORT = { writes: [{ text: `${GUIDE.afterReport.body}
 ` }], exits: [[{ code: 0 }]] };
 
 const FOUR_BLOCKS = 4;
+
+const directory = createDefaultDirectoryPort({});
+
+const filesUnder = (request: { readonly folder: string; readonly prefix: string }): readonly string[] => {
+  const listed = directory.list({ path: absolutePathSchema.parse(request.folder) });
+  return listed.outcome === "ok"
+    ? listed.value.flatMap((entry) =>
+        entry.kind === "file" ? [`${request.prefix}${entry.name}`] : filesUnder({ folder: `${request.folder}/${entry.name}`, prefix: `${request.prefix}${entry.name}/` }),
+      )
+    : [];
+};
+
+const fixtureFilesOf = (request: { readonly folder: string }): readonly string[] => filesUnder({ folder: request.folder, prefix: "" }).toSorted();
+
+describe("workedExampleOf over a written-out section, so the block count can fail", () => {
+  it("counts the blocks it found, so a missing or extra block is seen", () => {
+    expect(workedExampleOf({ text: "## Worked example\n\nno blocks\n" }).blocks).toBe(0);
+  });
+});
+
+describe("the walkthrough repositories", () => {
+  it("track exactly the files the fixed and unfixed fixture folders hold, since git is the only port stubbed", () => {
+    expect({ before: fixtureFilesOf({ folder: BEFORE }), after: fixtureFilesOf({ folder: AFTER }) }).toEqual({ before: [...BEFORE_TRACKED], after: [...AFTER_TRACKED] });
+  });
+});
 
 describe("the adopting guide's worked example, run on version 2 through the shipped engines (CD-47: the shipped pieces and the fixture's own files are the assertion's subject; nothing is spawned or written)", () => {
   it("shows exactly the four blocks the test reads: the settings, the two reports and the record", () => {

@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { createExceptionRepository, type ExceptionLayoutPorts } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { LegacyWhyChain } from "../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
 import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
 import type { DirectoryEntry } from "../../infrastructure/node/file-system/file-system-port.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
@@ -234,7 +235,7 @@ const LEGACY_WHY = {
   evidence: "tools/why-chain-check.ts:9",
 };
 
-const LEGACY_WHY_CHAIN = {
+const LEGACY_WHY_CHAIN: LegacyWhyChain = {
   whys: [LEGACY_WHY, LEGACY_WHY, LEGACY_WHY, LEGACY_WHY, LEGACY_WHY],
   rootCause: "the audit's matcher predates the tracker id format",
   owner: "capture 01a0b421",

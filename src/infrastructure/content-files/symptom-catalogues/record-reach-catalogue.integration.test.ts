@@ -20,6 +20,42 @@ const REPO_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segm
 
 const reading = createSymptomCatalogueRepository({ fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), ruleSetRoot: REPO_ROOT }).read({});
 
+describe("symptomsNamedByRecordReachButNotCatalogued over a written-out catalogue, so the guard can fail", () => {
+  it("lists every symptom a record's reach names when the catalogue holds none", () => {
+    expect(
+      symptomsNamedByRecordReachButNotCatalogued({
+        catalogue: {
+          principles: [],
+          rules: [],
+          cases: [],
+          recipes: [],
+          recordKinds: [
+            { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
+            { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" },
+          ],
+          alwaysRecordable: {
+            debt: { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" },
+            authorisedLocation: { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
+          },
+          engines: [],
+          symptoms: [],
+          clauses: [],
+          checks: [],
+          namedBans: [],
+        },
+      }),
+    ).toEqual([
+      "outside-import-past-a-boundary",
+      "library-class-built-in-place",
+      "outside-type-in-a-signature",
+      "date-used-directly",
+      "ambient-randomness",
+      "process-global-used-in-place",
+      "text-past-its-reader",
+    ]);
+  });
+});
+
 describe("the symptoms a record's reach names", () => {
   it("are all symptoms of the catalogue the tool ships", () => {
     assert(reading.outcome === "ok");
