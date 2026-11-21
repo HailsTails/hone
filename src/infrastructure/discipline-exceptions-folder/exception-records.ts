@@ -298,7 +298,7 @@ const REGULAR_EXPRESSION_SYNTAX = /[.*+?^${}()|[\]\\]/g;
 
 const PATH_CHARACTER_BESIDES_DOT = "[\\p{L}\\p{N}\\p{M}_\\/\\-+~@＿／－＋～＠．]";
 
-const PATH_CHARACTER = "[\\p{L}\\p{N}\\p{M}_.\\/\\-+~@＿／－＋～＠．]";
+const PATH_CHARACTER = `(?:${PATH_CHARACTER_BESIDES_DOT}|\\.)`;
 
 const NOT_INSIDE_A_LONGER_PATH_BEFORE = `(?<!${PATH_CHARACTER})`;
 
