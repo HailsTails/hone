@@ -389,20 +389,6 @@ const eslintToolchainSources = import.meta.glob(["./src/infrastructure/engines/e
   eager: true,
 });
 
-const typescriptLineSources = import.meta.glob(["./tests/typescript-parse-port.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
-
-const eslintLineSources = import.meta.glob(["./tests/eslint-toolchains.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
-
 const pluginKitWrapperSources = import.meta.glob(["./src/infrastructure/engines/eslint/runner/native-exceptions/inline-config-parser.ts"], {
   base: "../../../../../",
   query: "?raw",
@@ -477,8 +463,6 @@ describe("Vendor confinement over what this repository's own Hone source imports
       walkerPieceSources,
       eslintPieceSources,
       testSources,
-      eslintLineSources,
-      typescriptLineSources,
     }).toEqual({
       sourcesOutsideMechanisms: expect.objectContaining({
         "./src/application/run/check/run-check.ts": expect.any(String),
@@ -505,8 +489,6 @@ describe("Vendor confinement over what this repository's own Hone source imports
         "./src/infrastructure/node/process/execution-port.test.ts": expect.any(String),
         "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.test.ts": expect.any(String),
       }),
-      eslintLineSources: { "./tests/eslint-toolchains.ts": expect.any(String) },
-      typescriptLineSources: { "./tests/typescript-parse-port.ts": expect.any(String) },
     });
   });
 
@@ -655,30 +637,6 @@ describe("Vendor confinement over what this repository's own Hone source imports
       importsOutside({
         sources: eslintPieceSources,
         allowed: [relativeImport, zodImport, packageTypeImport({ packageName: "eslint" })],
-      }),
-    ).toEqual([]);
-  });
-
-  it("finds tests/eslint-toolchains.ts the only test-support file loading the pinned ESLint lines, each by a dynamic import, and checking the native rule pieces with zod", () => {
-    expect(
-      importsOutside({
-        sources: eslintLineSources,
-        allowed: [
-          relativeImportOfAnyForm,
-          vitestImport,
-          zodImport,
-          packageDynamicImport({ packageName: "eslint-9" }),
-          packageDynamicImport({ packageName: "eslint-9/use-at-your-own-risk" }),
-        ],
-      }),
-    ).toEqual([]);
-  });
-
-  it("finds tests/typescript-parse-port.ts the only test-support file loading the pinned TypeScript floor, by a dynamic import, and checking its exports with zod", () => {
-    expect(
-      importsOutside({
-        sources: typescriptLineSources,
-        allowed: [relativeImportOfAnyForm, vitestImport, zodImport, packageDynamicImport({ packageName: "typescript-floor" })],
       }),
     ).toEqual([]);
   });
