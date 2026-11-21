@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AttributedNativeException, Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";

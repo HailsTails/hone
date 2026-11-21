@@ -1,9 +1,9 @@
-import type { LoadFailure } from "../../command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../node/path-port.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { createSymptomCatalogueRepository, SYMPTOM_CATALOGUE_SEGMENTS } from "./read-symptom-catalogue.ts";
-import type { AbsolutePath } from "../absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { TOOL_RULE_SET } from "../../discipline-exceptions-folder/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
 

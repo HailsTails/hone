@@ -1,20 +1,19 @@
-import type { VersionTwoLoadFailure } from "../command-line/load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../node/file-system/file-text-port.ts";
 import type { PathPort } from "../node/path-port.ts";
-import { type DisciplineFile, disciplineFilePath, pieceFilePath, pieceFolderSegmentsOf, readDisciplineFile, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
+import { disciplineFilePath, pieceFilePath, readDisciplineFile, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
+import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { createSymptomCatalogueRepository } from "../content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type ClauseAddress, clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "./identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { type ModuleExtension, runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import type { Result } from "../../domain/result.ts";
 import type { PieceClause, SettingsDocument, SettingsSources } from "../../application/run/settings/read-settings.ts";
 import { ruleSetRootOf } from "./rule-set-root.ts";
-
-export const SETTINGS_FILE_NAME = "hone.config.json";
-
-export const VERSION_ONE_SETTINGS_FILE_NAME = "disciplines.json";
+import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 
 type SourcesOptions = {
   readonly fileText: FileTextPort;

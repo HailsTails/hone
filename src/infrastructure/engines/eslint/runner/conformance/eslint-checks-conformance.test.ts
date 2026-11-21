@@ -14,9 +14,11 @@ import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../.
 import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
 import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { type DisciplineFile, readDisciplineFile, readPieceFile, type SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, type MechanismId, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { createChecksRunner } from "../checks-runner/checks-runner.ts";
 import { ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";

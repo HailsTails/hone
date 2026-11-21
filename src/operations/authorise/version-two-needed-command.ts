@@ -3,7 +3,7 @@ import { loadFailureOutcome } from "../../infrastructure/command-line/outcomes/c
 import type { CommandRequest } from "../../application/ports/command-request.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
 import type { FilePresence } from "../../domain/repository/file-presence.ts";
-import { VERSION_ONE_SETTINGS_FILE_NAME } from "../../infrastructure/hone-config-file/settings-sources.ts";
+import { VERSION_ONE_SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import { printFailure, type VersionedHandler } from "../../infrastructure/command-line/run-path/version-chosen-command.ts";
 import { repoRootOf } from "../../version-two-repository.ts";
 

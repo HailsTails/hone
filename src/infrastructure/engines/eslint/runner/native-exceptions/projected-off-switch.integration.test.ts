@@ -10,7 +10,8 @@ import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/e
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";

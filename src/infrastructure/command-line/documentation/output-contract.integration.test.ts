@@ -5,7 +5,7 @@ import { FORFEITURE_OPTION, type HelpTopic, LEAVE_OPTION, REPO_OPTION, SUBCOMMAN
 import { projectCommandOutcome, versionCommandOutcome } from "../outcomes/command-outcome.ts";
 import { pruneDebtCommandOutcome, recordDebtCommandOutcome, splitRecordsCommandOutcome } from "../outcomes/record-command-outcomes.ts";
 import { installedVersionOf } from "../installation/installed-version.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { loadFailureDetail, loadFailureText } from "../../printed-report/load-failures/load-failure-text.ts";
 import { runLoadFailureLine } from "../../printed-report/load-failures/load-failure-lines.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
@@ -16,7 +16,7 @@ import type {
   InvalidRecord,
   RecordsSplit,
 } from "../../discipline-exceptions-folder/exception-records.ts";
-import type { AttributedNativeException, Finding } from "../governance.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
@@ -24,16 +24,17 @@ import { createDefaultFileTextPort, type FileTextPort } from "../../node/file-sy
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../node/process/process-port.ts";
-import { WAIVED_CLAUSES_REPLACEMENT } from "../../hone-config-file/assessment.ts";
+import { WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
 import { clauseAddressSchema, TOOL_RULE_SET } from "../../discipline-exceptions-folder/clause-address.ts";
-import { type ClauseEditionReading, editionSchema } from "../../content-files/edition.ts";
+import { editionSchema } from "../../content-files/edition.ts";
+import type { ClauseEditionReading } from "../../../domain/rule-set/edition-types.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../../hone-records-folder/why-chain.ts";
 import type { VersionOneWhyChain } from "../../discipline-exceptions-folder/version-one-why-chain.ts";
-import { type ReportOutput, reportOutputSchema, type VersionTwoReportOutput, versionTwoReportOutputSchema } from "../../hone-config-file/report-output.ts";
+import { REPORT_OUTPUTS, type ReportOutput, VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type {
   AssessmentFileNote,
   AssessmentSection,
@@ -62,7 +63,7 @@ import type { VersionOneCommandRequest } from "../../../application/ports/versio
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
 import type { RecordsUnmeasured } from "../../../domain/records/measurement/records-unmeasured.ts";
-import type { ConventionKey } from "../../hone-config-file/conventions.ts";
+import type { ConventionKey } from "../../../domain/settings/conventions.ts";
 import type {
   AuthorisedLocation,
   AuthorisedReach,
@@ -1051,7 +1052,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     fail: { whole: { ...EMPTY_REPORT, findings: [FINDING] }, partial: { ...EMPTY_REPORT, findings: [FINDING], assessment: [ONE_CARVE_OUT_ELSEWHERE] } },
   };
 
-  const EVERY_OUTPUT: readonly ReportOutput[] = reportOutputSchema.options;
+  const EVERY_OUTPUT: readonly ReportOutput[] = REPORT_OUTPUTS;
 
   const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
@@ -2133,7 +2134,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
   ];
 
   const RUN_PRINTABLE_LINES: readonly PrintedLine[] = [
-    ...versionTwoReportOutputSchema.options.flatMap((output) => linesOfReport({ report: EVERY_ENTRY, output })),
+    ...VERSION_TWO_REPORT_OUTPUTS.flatMap((output) => linesOfReport({ report: EVERY_ENTRY, output })),
     ...linesOfReport({ report: UNSLICED_REPORT, output: "full" }),
     ...VERDICT_REPORTS.flatMap((report) => linesOfReport({ report, output: "verdict-only" })),
     ...RECORD_PART_LINES,

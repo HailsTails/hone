@@ -3,9 +3,9 @@ import type { FileTextPort } from "../../../../node/file-system/file-text-port.t
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import { pieceFilePath } from "../../../../content-files/rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
-import type { DisciplineId } from "../../../../hone-config-file/identifiers.ts";
+import type { DisciplineId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { parsedJson } from "../../../../content-files/parsed-json.ts";
 import type { Result } from "../../../../../domain/result.ts";

@@ -1,21 +1,22 @@
-import type { VersionTwoLoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
-import type { VersionTwoReportOutput } from "../../../infrastructure/hone-config-file/report-output.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
+import type { VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type { RunSettings } from "../../../domain/settings/run-settings.ts";
 import type { ClauseBinding, ClauseEditionReading, ClauseRoot, SelectedClause, SelectionReading } from "../../../domain/settings/selection/selection.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseExceptions, ClauseSettingDeclarations } from "../../../domain/rule-set/rule-set-types.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { AnchorKind } from "../../../domain/finding/anchor.ts";
 import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { ClauseEditions } from "../../../infrastructure/content-files/edition.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSetCatalogue, sameRuleSet } from "../../../domain/settings/check-choices.ts";
 import { settledCheckSettings } from "../../../domain/settings/clause-settings/check-settings.ts";
-import type { ConventionKey, Conventions } from "../../../infrastructure/hone-config-file/conventions.ts";
+import type { ConventionKey, Conventions } from "../../../domain/settings/conventions.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
-import { type DeclaredRuleSet, type EslintConfigLookupChoice, type SettingsFile, settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import { settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { DeclaredRuleSet, EslintConfigLookupChoice, SettingsFile } from "../../../domain/settings/settings-file.ts";
 
 export type SettingsDocument = { readonly path: string; readonly document: unknown };
 

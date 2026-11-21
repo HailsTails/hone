@@ -1,4 +1,4 @@
-import type { AttributedNativeException, Finding } from "../../command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { InlineReach, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import type { AnsweredFinding } from "../../../domain/records/answering/answering.ts";
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";

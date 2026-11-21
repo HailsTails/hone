@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { type ExceptionLayoutPorts, exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { DirectoryEntry } from "../../infrastructure/node/file-system/file-system-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";

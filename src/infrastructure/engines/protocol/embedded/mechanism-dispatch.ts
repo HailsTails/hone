@@ -8,7 +8,7 @@ import type { NativeException, ProjectionWrite } from "../../../../domain/runner
 import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/mechanism-dispatch.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { clauseAddressText } from "../../../discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { ExceptionRecord } from "../../../discipline-exceptions-folder/exception-records.ts";

@@ -6,7 +6,7 @@ import type { Hit, MeasuredPair, NativeException, ProjectionWrite } from "../../
 import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";

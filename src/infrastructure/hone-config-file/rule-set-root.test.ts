@@ -5,7 +5,7 @@ import { TOOL_RULE_SET } from "../discipline-exceptions-folder/clause-address.ts
 import { ruleSetNameSchema } from "./identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { ruleSetRootOf } from "./rule-set-root.ts";
-import type { DeclaredRuleSet } from "./settings-file.ts";
+import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 

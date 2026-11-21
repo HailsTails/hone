@@ -2,7 +2,7 @@ import { createSymptomCatalogueRepository } from "../../infrastructure/content-f
 import type { Result } from "../../domain/result.ts";
 import { checkLocationsFor } from "../../infrastructure/printed-report/check-locations.ts";
 import { type GuidedCheckRun, guidedCheckCommandOutcome } from "../../infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { type CheckRunAt, checkRunAt } from "./run-check-command.ts";

@@ -7,7 +7,7 @@ import {
 import type { LoadedRunner, RunnerClause } from "./runner-module/runner-module-schema.ts";
 import { caseVerdictSchema, runnerResultSchema } from "./runner-module/runner-result-schema.ts";
 import type { CaseVerdict } from "../../../domain/runner/runner-result-types.ts";
-import type { SourceCase } from "../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ConformanceFailure } from "../../../domain/runner/conformance-types.ts";
 

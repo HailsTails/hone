@@ -1,7 +1,7 @@
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
 import type { PackageLink } from "../../command-line/installation/package-link.ts";
 import { shownPathOf } from "../../command-line/installation/shown-path.ts";

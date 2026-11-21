@@ -4,7 +4,7 @@ import { type ClauseAddress, clauseAddressSchema } from "../../../infrastructure
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { DEFAULT_CONVENTIONS } from "../../../infrastructure/hone-config-file/conventions.ts";
+import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { type PieceClause, type SettingsReading, type SettingsSources, readSettings, settingsNoteText } from "./read-settings.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");

@@ -1,6 +1,6 @@
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";

@@ -2,7 +2,7 @@ import type { ChecksSliceProblem, MisnamedRuleId } from "../../../../../domain/r
 import type { Hit, MeasuredPair, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
 import type { AnsweredFile } from "../projection/checks-projection.ts";

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { SourceCase } from "../../../content-files/rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
+import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { Equal } from "./type-equality.ts";

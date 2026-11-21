@@ -12,7 +12,8 @@ import type { GitPort, GitTreePort } from "../../infrastructure/git/git-port.ts"
 import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort, type PathPort, type RelativeLocation } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { recordDebtCommandOf } from "./run-record-debt-command.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";

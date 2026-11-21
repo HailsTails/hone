@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../node/path-port.ts";
-import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
-import type { MechanismId } from "../../../hone-config-file/identifiers.ts";
+import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
+import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { type ModuleExtension, runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { type LoadedRunner, runnerModuleSchema } from "../runner-module/runner-module-schema.ts";

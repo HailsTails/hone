@@ -7,14 +7,11 @@ import { checkConformance } from "../../protocol/conformance.ts";
 import { type RunnerClause, runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import {
-  type DisciplineFile,
-  readDisciplineFile,
-  readPieceFile,
-  type SourceCase,
-} from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, type MechanismId, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";

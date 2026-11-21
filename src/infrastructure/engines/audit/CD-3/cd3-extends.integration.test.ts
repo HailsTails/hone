@@ -7,7 +7,7 @@ import { createDefaultEntryKindPort } from "../../../node/file-system/file-syste
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";

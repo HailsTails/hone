@@ -4,7 +4,7 @@ import type { NativeException } from "../../../../../domain/runner/runner-result
 import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";

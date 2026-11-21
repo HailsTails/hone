@@ -1,7 +1,7 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
 import type { FileCreationPort } from "../../../infrastructure/node/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";

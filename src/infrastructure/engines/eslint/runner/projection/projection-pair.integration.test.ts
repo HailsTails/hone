@@ -6,7 +6,7 @@ import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { createSettingsRepository } from "../../../../../application/run/settings/read-settings.ts";
 import { createSettingsSources } from "../../../../hone-config-file/settings-sources.ts";
 import { createSymptomCatalogueRepository } from "../../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";

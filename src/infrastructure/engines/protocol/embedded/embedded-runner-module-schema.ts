@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { ExceptionRecord } from "../../../discipline-exceptions-folder/exception-records.ts";
-import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { Equal } from "../runner-module/type-equality.ts";

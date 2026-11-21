@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ClauseSettingDeclarations } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseSettingDeclarations } from "../../rule-set/rule-set-types.ts";
 import { defaultClauseSettings } from "./default-clause-settings.ts";
 
 const DECLARATIONS: ClauseSettingDeclarations = {

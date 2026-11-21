@@ -1,12 +1,12 @@
 import type { FileTextPort } from "../node/file-system/file-text-port.ts";
 import type { PathPort } from "../node/path-port.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { argumentsInvalid } from "../command-line/arguments/argument-problem.ts";
 import { type CheckArguments, parseCheckArguments } from "../command-line/arguments/command-arguments.ts";
-import { reportOutputSchema, type ReportOutput } from "../hone-config-file/report-output.ts";
+import { REPORT_OUTPUTS, type ReportOutput } from "../../domain/settings/report-output.ts";
 import { installRootOf } from "../command-line/installation/install-root.ts";
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 
 const SELECTION_FILE_NAME = "disciplines.json";
 
@@ -37,7 +37,7 @@ export const checkLocationsFor = (request: {
   readonly fileText: Pick<FileTextPort, "exists">;
   readonly moduleUrl: string;
 }): Result<CheckLocations, LoadFailure> => {
-  const parsed = parseCheckArguments({ arguments: request.arguments, reportOutputs: reportOutputSchema.options });
+  const parsed = parseCheckArguments({ arguments: request.arguments, reportOutputs: REPORT_OUTPUTS });
   if (parsed.outcome === "failed") {
     return parsed;
   }

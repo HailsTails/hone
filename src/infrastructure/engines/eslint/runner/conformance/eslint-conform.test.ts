@@ -4,7 +4,7 @@ import type { RunnerClause } from "../../../protocol/runner-module/runner-module
 import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";

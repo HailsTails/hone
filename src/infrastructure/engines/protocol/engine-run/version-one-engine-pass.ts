@@ -1,8 +1,8 @@
 import { type CheckRequest, findingsOf, loadInputs, mechanismRuns, projectionOutcome, sliceProblemsOf, treeOf } from "../../../../application/run/check/run-check.ts";
-import type { MechanismId } from "../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { type RepoPath, repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { loadFailureDetail } from "../../../printed-report/load-failures/load-failure-text.ts";
-import type { LoadFailure } from "../../../command-line/load-failure.ts";
+import type { LoadFailure } from "../../../../domain/report/load-failure.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineFindings, EnginePass, EnginePassFailure } from "../../../../application/upgrade/record-answers/answering-oracle.ts";

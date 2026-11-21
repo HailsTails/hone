@@ -5,10 +5,10 @@ import type { RecordsReading } from "../../../infrastructure/hone-records-folder
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
 import type { Result } from "../../../domain/result.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";

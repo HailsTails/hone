@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import type { SettingsFile } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema, ruleSetNameSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";

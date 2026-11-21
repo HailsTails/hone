@@ -3,7 +3,8 @@ import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
@@ -82,8 +83,8 @@ type Placed = {
 const unplaceable = (request: { readonly file: RepoPath }): ProofRefusal => ({ kind: "unplaceable-path", file: request.file, removedByVersionOne: [] });
 
 const absoluteOf = (request: { readonly ports: ProofWritePorts; readonly repoRoot: AbsolutePath; readonly file: RepoPath }): Result<AbsolutePath, ProofRefusal> => {
-  const parsed = absolutePathSchema.safeParse(request.ports.path.join({ segments: [request.repoRoot, request.file] }));
-  return parsed.success ? { outcome: "ok", value: parsed.data } : { outcome: "failed", error: unplaceable({ file: request.file }) };
+  const joined = request.ports.path.join({ segments: [request.repoRoot, request.file] });
+  return isAbsolutePath(joined) ? { outcome: "ok", value: joined } : { outcome: "failed", error: unplaceable({ file: request.file }) };
 };
 
 const plannedFileOf = (request: { readonly ports: ProofWritePorts; readonly repoRoot: AbsolutePath; readonly planned: PlannedRepoFile }): Result<PlannedFile, ProofRefusal> => {

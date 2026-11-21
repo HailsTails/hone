@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../finding/governance.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";

@@ -4,7 +4,7 @@ import type { ProjectionRequest } from "../../infrastructure/engines/protocol/em
 import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { Result } from "../../domain/result.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { CheckedTree } from "../run/checked-tree-of.ts";
 import { projectMechanism } from "../../infrastructure/engines/protocol/embedded/mechanism-dispatch.ts";
 import {

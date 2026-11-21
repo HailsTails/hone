@@ -1,5 +1,5 @@
-import type { Hit, NativeException } from "../../domain/runner/runner-result-types.ts";
-import type { MechanismId } from "../hone-config-file/identifiers.ts";
+import type { Hit, NativeException } from "../runner/runner-result-types.ts";
+import type { MechanismId } from "../rule-set/identifier-types.ts";
 
 export type Finding = Hit & { readonly mechanism: MechanismId };
 

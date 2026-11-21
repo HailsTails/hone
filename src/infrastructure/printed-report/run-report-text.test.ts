@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Finding } from "../command-line/governance.ts";
+import type { Finding } from "../../domain/finding/governance.ts";
 import type { PlacedRecord, SymptomReach } from "../hone-records-folder/hone-record.ts";
 import type { WhyChain } from "../hone-records-folder/why-chain.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../content-files/edition.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { VersionTwoReportOutput } from "../hone-config-file/report-output.ts";
+import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import { renderRunReportText } from "./run-report-text.ts";

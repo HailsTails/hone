@@ -18,8 +18,10 @@ import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/f
 import type { GitPort } from "../../../../git/git-port.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, type PathPort } from "../../../../node/path-port.ts";
-import { type ClauseDefinition, readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
+import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../../hone-config-file/assessment.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";

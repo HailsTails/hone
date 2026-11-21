@@ -1,5 +1,5 @@
 import { loadFailureDetail } from "../printed-report/load-failures/load-failure-text.ts";
-import type { LoadFailure } from "./load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { runLoadFailureLine } from "../printed-report/load-failures/load-failure-lines.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";

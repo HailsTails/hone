@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";

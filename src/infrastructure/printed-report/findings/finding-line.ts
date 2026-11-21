@@ -1,4 +1,4 @@
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import { indicatedNamesOf, type SymptomReading } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
 

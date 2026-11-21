@@ -1,13 +1,13 @@
 import { type ExceptionRecord, type InvalidRecord, type RecordPlace, recordImportOf } from "../discipline-exceptions-folder/exception-records.ts";
-import type { AttributedNativeException } from "../command-line/governance.ts";
+import type { AttributedNativeException } from "../../domain/finding/governance.ts";
 import type { ExemptedFinding } from "../../domain/records/discipline-exceptions/governance.ts";
 import type { InlineReach, ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { PRUNE_DEBT_SUBCOMMAND } from "../command-line/arguments/subcommand-names.ts";
 import { clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../hone-records-folder/repo-path.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
-import type { ReportOutput } from "../hone-config-file/report-output.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../command-line/assessment-file.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import type {

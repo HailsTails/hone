@@ -1,11 +1,11 @@
 import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { ProjectRequest } from "../../projection/run-project.ts";
 import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import { teamConfigsOf } from "../proof/team-config-finder.ts";

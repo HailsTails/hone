@@ -1,20 +1,16 @@
 import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../infrastructure/node/path-port.ts";
-import {
-  type ClauseDefinition,
-  pieceFolderSegmentsOf,
-  readDisciplineFile,
-  readPieceFile,
-  type SourceCase,
-} from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { readDisciplineFile, readPieceFile } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
+import type { ClauseDefinition, SourceCase } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ClauseRequest, ClauseUnderTest, ConformanceSetupFailure } from "./conformance-testing-types.ts";
 

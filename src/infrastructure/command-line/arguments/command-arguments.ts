@@ -1,5 +1,5 @@
 import { type RepoPath, repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { type ForfeitureAssessment, forfeitureAssessmentSchema, WAIVED_CLAUSES_REPLACEMENT } from "../../hone-config-file/assessment.ts";
+import { FORFEITURE_ASSESSMENTS, type ForfeitureAssessment, WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
@@ -19,7 +19,7 @@ import {
   subcommandOf,
   VERSION_FLAG,
 } from "./command-line.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 
 export type CheckArguments<Output extends string> = {
   readonly repo: string;
@@ -175,7 +175,7 @@ const checkArgumentsOf = <Output extends string>(request: {
   if (reportOutput.outcome === "failed") {
     return reportOutput;
   }
-  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: forfeitureAssessmentSchema.options, values: request.values });
+  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: FORFEITURE_ASSESSMENTS, values: request.values });
   if (forfeiture.outcome === "failed") {
     return forfeiture;
   }
@@ -203,7 +203,7 @@ const pruneDebtArgumentsOf = (request: { readonly values: OptionValues }): Resul
   if (repo.outcome === "failed") {
     return repo;
   }
-  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: forfeitureAssessmentSchema.options, values: request.values });
+  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: FORFEITURE_ASSESSMENTS, values: request.values });
   return forfeiture.outcome === "failed"
     ? forfeiture
     : {

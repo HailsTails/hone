@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
-import type { ClauseSettingDeclarations } from "../content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { clauseSettingsSchema, settledClauseSettings } from "./clause-settings.ts";
 

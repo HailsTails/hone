@@ -4,7 +4,7 @@ import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requir
 import type { RecordsDocumentRefusal } from "../../hone-records-folder/hone-record.ts";
 import { NAMED_FOLDER_KINDS, RECORDS_FILE_EXTENSION, RECORDS_FOLDER, SINGLE_FILE_KINDS } from "../../hone-records-folder/folder-layout/records-layout.ts";
 import type { CheckSettingsListing } from "../../../domain/settings/check-choices.ts";
-import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../hone-config-file/settings-sources.ts";
+import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import { onOneLine, quoted } from "../printed-text.ts";
 import { recordsFileText } from "../records/record-lines.ts";

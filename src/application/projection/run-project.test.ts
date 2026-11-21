@@ -8,7 +8,8 @@ import type { FileTextPort } from "../../infrastructure/node/file-system/file-te
 import type { GitPort } from "../../infrastructure/git/git-port.ts";
 import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort, type PathPort } from "../../infrastructure/node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";

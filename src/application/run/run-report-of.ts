@@ -1,5 +1,5 @@
 import type { Selection } from "../../domain/settings/selection/selection.ts";
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../domain/finding/governance.ts";
 import { type Answering, answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
 import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import { carriedListingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";

@@ -4,7 +4,7 @@ import type { PathPort } from "../../node/path-port.ts";
 import type { Result } from "../../../domain/result.ts";
 import { parsedJson } from "../../content-files/parsed-json.ts";
 import { installRootOf } from "./install-root.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { UNLINKED } from "./package-link.ts";
 import { shownFailureOf } from "./shown-path.ts";
 

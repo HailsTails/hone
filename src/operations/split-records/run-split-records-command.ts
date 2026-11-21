@@ -3,7 +3,7 @@ import type { Result } from "../../domain/result.ts";
 import { parseSplitRecordsArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { splitRecordsCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";
 import { installRootOf } from "../../infrastructure/command-line/installation/install-root.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { repoRootOf } from "../../infrastructure/printed-report/check-locations.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";

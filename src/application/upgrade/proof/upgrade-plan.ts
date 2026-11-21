@@ -2,8 +2,9 @@ import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-
 import { recordsTextOf } from "../../../infrastructure/hone-records-folder/writing/records-edit.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { SETTINGS_FILE_NAME } from "../../../infrastructure/hone-config-file/settings-sources.ts";
-import { type SettingsFile, settingsTextOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import { settingsTextOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RecordAnswered } from "../record-answers/record-answer-oracle.ts";

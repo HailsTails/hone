@@ -1,7 +1,7 @@
 import type { MeasuredPair } from "../../runner/runner-result-types.ts";
 import type { Check } from "../../language-layer/symptom-catalogue.ts";
 import { type ClauseAddress, sameClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { placeCovers, type ReachedPlace } from "../answering/record-reach.ts";
 

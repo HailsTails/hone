@@ -1,5 +1,5 @@
 import { accessSync, mkdirSync, readFileSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from "node:fs";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { failureDetailOf as failureDetail } from "../../../domain/failure-detail.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";

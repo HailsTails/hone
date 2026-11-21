@@ -1,17 +1,17 @@
 import { z } from "zod";
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
 import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import {
   type ClauseAddress,
   clauseAddressSchema,
   sameClauseAddress,
 } from "./clause-address.ts";
-import type { FileExceptionWhyChains } from "../hone-config-file/file-exception-why-chains.ts";
-import type { MechanismId } from "../hone-config-file/identifiers.ts";
+import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";

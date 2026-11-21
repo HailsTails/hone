@@ -10,7 +10,7 @@ import type { Hit, MeasuredPair, NativeException } from "../../../../domain/runn
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { standaloneRunReportSchema } from "../runner-module/standalone-run-report-schema.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 

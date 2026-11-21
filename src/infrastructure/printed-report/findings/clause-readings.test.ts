@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";

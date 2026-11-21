@@ -1,4 +1,4 @@
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import {
   type CorrectUse,
   type Indication,

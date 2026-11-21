@@ -1,5 +1,5 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { VersionTwoReportOutput } from "../hone-config-file/report-output.ts";
+import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import { forfeitedLine, type PruneCommand, paidLine, staleLine } from "./records/debt-lines.ts";
 import { answeredLine, checkLine, editionLine, findingLine, notRunLine, unrecordedLines } from "./findings/finding-lines.ts";
 import { misnamedLine } from "./misnamed-lines.ts";

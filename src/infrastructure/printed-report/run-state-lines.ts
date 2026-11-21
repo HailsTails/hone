@@ -2,7 +2,7 @@ import { RECORDS_FOLDER } from "../hone-records-folder/folder-layout/records-lay
 import type { RecordsUnmeasured } from "../../domain/records/measurement/records-unmeasured.ts";
 import { settingsNoteText } from "../../application/run/settings/read-settings.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
-import { SETTINGS_FILE_NAME } from "../hone-config-file/settings-sources.ts";
+import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../hone-records-folder/repo-path.ts";

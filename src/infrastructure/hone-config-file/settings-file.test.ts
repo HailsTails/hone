@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ruleSetNameSchema } from "./identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import { DEFAULT_CONVENTIONS } from "./conventions.ts";
-import { type SettingsFile, type SettingsFileFault, settingsFileOf, settingsTextOf, settingsWireOf } from "./settings-file.ts";
+import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
+import { settingsFileOf, settingsTextOf, settingsWireOf } from "./settings-file.ts";
+import type { SettingsFile, SettingsFileFault } from "../../domain/settings/settings-file.ts";
 
 const SMALLEST_DOCUMENT = { version: 2, ruleSets: {}, checks: {} };
 

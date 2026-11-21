@@ -1,9 +1,9 @@
-import type { VersionTwoLoadFailure } from "../command-line/load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { PathPort } from "../node/path-port.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type ClauseAddress, TOOL_RULE_SET } from "../discipline-exceptions-folder/clause-address.ts";
 import type { Result } from "../../domain/result.ts";
-import type { DeclaredRuleSet } from "./settings-file.ts";
+import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 
 export const ruleSetRootOf = (request: {
   readonly ruleSet: ClauseAddress["ruleSet"];

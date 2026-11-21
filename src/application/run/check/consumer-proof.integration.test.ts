@@ -3,7 +3,7 @@ import { runCheck } from "./run-check.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { Result } from "../../../domain/result.ts";
 import { checkCommandOutcome } from "../../../infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
@@ -19,7 +19,7 @@ import { createDefaultFileTextPort, type FileTextPort } from "../../../infrastru
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";

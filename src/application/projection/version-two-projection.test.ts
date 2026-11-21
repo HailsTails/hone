@@ -3,7 +3,7 @@ import type { RecordKind, SymptomCatalogue } from "../../domain/language-layer/s
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
-import { DEFAULT_CONVENTIONS } from "../../infrastructure/hone-config-file/conventions.ts";
+import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "../run/settings/read-settings.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckedTree } from "../run/checked-tree-of.ts";

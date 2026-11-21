@@ -3,7 +3,7 @@ import { type ClauseAddress, clauseAddressSchema } from "../../infrastructure/di
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
 import { mechanismIdSchema, ruleSetNameSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { type CheckChoiceRefusal, type CheckChoices, checkChoicesOf, type RuleSetCatalogue } from "./check-choices.ts";
-import type { GivenCheckSettings, ListedCheck } from "../../infrastructure/hone-config-file/settings-file.ts";
+import type { GivenCheckSettings, ListedCheck } from "./settings-file.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

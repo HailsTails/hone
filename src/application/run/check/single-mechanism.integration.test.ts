@@ -21,7 +21,7 @@ import {
 } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import type { PackageLocationPort } from "../../../infrastructure/node/modules/package-location-port.ts";
 import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { installFormOf } from "../../../infrastructure/node/modules/install-layout.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ConventionKey } from "../hone-config-file/conventions.ts";
+import type { ConventionKey } from "../../domain/settings/conventions.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";

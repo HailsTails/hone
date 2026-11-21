@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { createDefaultFileRemovalPort, type FileRemovalPort } from "../node/file-system/file-removal-port.ts";
 import { createDefaultDirectoryPort, type DirectoryEntry, type DirectoryPort } from "../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../node/file-system/file-text-port.ts";
@@ -7,7 +7,8 @@ import { createDefaultGitPort, createDefaultGitTreePort, type GitPort, type GitT
 import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import { createDefaultPathPort, type PathPort } from "../node/path-port.ts";
 import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import { type AbsolutePath, absolutePathSchema } from "../content-files/absolute-path.ts";
+import { absolutePathSchema } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema, TOOL_RULE_SET } from "./clause-address.ts";
 import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";

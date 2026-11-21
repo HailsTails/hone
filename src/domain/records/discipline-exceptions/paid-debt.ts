@@ -1,4 +1,4 @@
-import type { AttributedNativeException, Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
 import type { ExemptedFinding } from "./governance.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs } from "./debt-pair.ts";

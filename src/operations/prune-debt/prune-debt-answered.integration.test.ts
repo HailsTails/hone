@@ -8,7 +8,7 @@ import type { GitPort, GitTreePort } from "../../infrastructure/git/git-port.ts"
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../../infrastructure/engines/audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";

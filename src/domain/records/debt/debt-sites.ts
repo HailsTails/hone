@@ -1,4 +1,4 @@
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../finding/governance.ts";
 import { checkAddressOf } from "../../language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";

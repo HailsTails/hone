@@ -1,6 +1,6 @@
 import { type SpawnSyncOptionsWithStringEncoding, type SpawnSyncReturns, spawnSync } from "node:child_process";
 import { z } from "zod";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type ExecutionEnvironment = Readonly<Record<string, string | undefined>>;

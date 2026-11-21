@@ -12,9 +12,11 @@ import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/f
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { type DisciplineFile, readDisciplineFile, readPieceFile, type SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, type MechanismId, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { createEslintPort, type EslintToolchain } from "./eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainPeers, loadEslintToolchain } from "./eslint-toolchain.ts";

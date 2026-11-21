@@ -2,8 +2,8 @@ import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { PathPort } from "../../node/path-port.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../hone-config-file/settings-sources.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type RunPath = "version-1" | "version-2" | "no-settings";

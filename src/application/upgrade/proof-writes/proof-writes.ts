@@ -3,7 +3,8 @@ import type { FileCreationPort } from "../../../infrastructure/node/file-system/
 import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
 import type { DirectoryPort, EntryKindPort, FileTextPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type PlannedFile = { readonly path: AbsolutePath; readonly text: string };
@@ -48,8 +49,10 @@ type Step =
   | { readonly kind: "file"; readonly file: PlannedFile }
   | { readonly kind: "replacement"; readonly file: PlannedFile; readonly original: string };
 
-const parentOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): AbsolutePath =>
-  absolutePathSchema.parse(request.ports.path.directoryOf({ path: request.path }));
+const parentOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): AbsolutePath => {
+  const parent = request.ports.path.directoryOf({ path: request.path });
+  return isAbsolutePath(parent) ? parent : request.path;
+};
 
 const missingDirectoriesOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): readonly AbsolutePath[] => {
   const parent = parentOf(request);

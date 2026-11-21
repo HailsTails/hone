@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AttributedNativeException, Finding } from "../../command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { PlacedRecord, SymptomReach } from "../../hone-records-folder/hone-record.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";

@@ -2,7 +2,7 @@ import type { Subcommand } from "../arguments/command-line.ts";
 import type { CommandRequest } from "../../../application/ports/command-request.ts";
 import { printOutcome } from "../outcomes/print-outcome.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { commandRunPathOf } from "./command-run-path.ts";
 import { runLoadFailureOutcomeOf, upgradeCommandFor } from "./run-load-failure-outcome.ts";
 

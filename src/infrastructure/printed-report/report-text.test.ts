@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneWhyChain } from "../discipline-exceptions-folder/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../discipline-exceptions-folder/exception-records.ts";
-import type { Finding } from "../command-line/governance.ts";
+import type { Finding } from "../../domain/finding/governance.ts";
 import type { ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../content-files/edition.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import { reportOutputSchema } from "../hone-config-file/report-output.ts";
 import type { CheckReport, ClauseReading, PartialAssessment, ProjectionProblem, Unmeasured } from "../../domain/report/check-report.ts";
 import type { Case, Principle, Recipe, RecordKind, Rule, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
 import { renderGuidedReportText, renderReportText } from "./report-text.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "./symptoms/symptom-notes.ts";
+import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -841,11 +841,11 @@ describe("renderReportText outputs", () => {
     ).toBe("verdict: pass\n");
   });
 
-  it.each(reportOutputSchema.options)("ends the %s output of a failing report with the fail verdict", (output) => {
+  it.each(REPORT_OUTPUTS)("ends the %s output of a failing report with the fail verdict", (output) => {
     expect(renderReportText({ projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, output, report: mixedReport })).toMatch(/(?:^|\n)verdict: fail\n$/);
   });
 
-  it.each(reportOutputSchema.options)("ends the %s output of a passing report with the pass verdict", (output) => {
+  it.each(REPORT_OUTPUTS)("ends the %s output of a passing report with the pass verdict", (output) => {
     expect(renderReportText({ projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, output, report: { ...emptyReport, exempted: [{ finding, by: [carved] }] } })).toMatch(
       /(?:^|\n)verdict: pass\n$/,
     );
@@ -922,13 +922,13 @@ describe("renderReportText assessment outputs", () => {
     ).toBe("verdict: pass (partial assessment)\n");
   });
 
-  it.each(reportOutputSchema.options)("never prints a bare verdict for the %s output of a partial assessment", (output) => {
+  it.each(REPORT_OUTPUTS)("never prints a bare verdict for the %s output of a partial assessment", (output) => {
     expect(
       renderReportText({ projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, output, report: { ...mixedReport, assessment: [forfeitureElsewhere({ fileCarveOuts: 2 })] } }),
     ).toMatch(/(?:^|\n)verdict: fail \(partial assessment\)\n$/);
   });
 
-  it.each(reportOutputSchema.options)("prints the bare verdict for the %s output of a full assessment", (output) => {
+  it.each(REPORT_OUTPUTS)("prints the bare verdict for the %s output of a full assessment", (output) => {
     expect(renderReportText({ projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, output, report: mixedReport })).toMatch(/(?:^|\n)verdict: fail\n$/);
   });
 });

@@ -1,11 +1,11 @@
-import type { AttributedNativeException, Finding } from "../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../finding/governance.ts";
 import type { MisnamedRuleId } from "../runner/checks-run-report.ts";
 import type { AnsweredFinding, PaidDebt, StaleRecord } from "../records/answering/answering.ts";
 import type { CarriedListing, PlacedRecord, RecordNote, RefusedRecord } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { RecordsUnmeasured } from "../records/measurement/records-unmeasured.ts";
 import type { SettingsNote } from "../settings/settings-note.ts";
 import type { Check, Engine, Symptom } from "../language-layer/symptom-catalogue.ts";
-import type { Edition } from "../../infrastructure/content-files/edition.ts";
+import type { Edition } from "../rule-set/edition-types.ts";
 import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
 
 export type CheckEdition = { readonly check: Check; readonly engine: Engine; readonly edition: Edition; readonly latest: Edition };

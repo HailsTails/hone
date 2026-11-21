@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { SettingsFile } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
 

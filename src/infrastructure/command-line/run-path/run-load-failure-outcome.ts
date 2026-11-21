@@ -3,7 +3,7 @@ import type { CommandOutcome } from "../outcomes/command-outcome.ts";
 import type { PathPort } from "../../node/path-port.ts";
 import { runLoadFailureLine } from "../../printed-report/load-failures/load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 
 const LOAD_FAILURE_CODE = 2;
 

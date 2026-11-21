@@ -8,17 +8,17 @@ import {
   reachedDebtOf,
 } from "../../domain/records/discipline-exceptions/inherited-debt.ts";
 import type { GitTreePort } from "../../infrastructure/git/git-port.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
-import type { Assessment } from "../../infrastructure/hone-config-file/assessment.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { Assessment } from "../../domain/settings/assessment.ts";
 import { clauseAddressText } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
 import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { parseRecordDebtArguments, type RecordDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { recordDebtCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";
 import { installRootOf } from "../../infrastructure/command-line/installation/install-root.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { repoRootOf } from "../../infrastructure/printed-report/check-locations.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";

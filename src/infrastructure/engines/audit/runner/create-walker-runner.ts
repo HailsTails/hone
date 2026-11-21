@@ -12,7 +12,7 @@ import type { EntryKindPort } from "../../../node/file-system/file-system-port.t
 import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../node/path-port.ts";
-import type { SourceCase } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { sameClauseAddress } from "../../../discipline-exceptions-folder/clause-address.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import { gatheredOutcomes } from "../../../../domain/gathered-outcomes.ts";

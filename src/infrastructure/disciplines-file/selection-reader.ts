@@ -1,8 +1,8 @@
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../node/file-system/file-text-port.ts";
 import type { PathPort } from "../node/path-port.ts";
 import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { type ConsumerSelectionFile, selectionFileOf } from "./selection-file.ts";
 

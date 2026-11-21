@@ -1,6 +1,6 @@
 import { type CheckArguments, parseCheckArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { type CommandOutcome, loadFailureOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { packageLinkOf } from "../../infrastructure/command-line/installation/package-link.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
 import { shownPathOf } from "../../infrastructure/command-line/installation/shown-path.ts";
@@ -9,8 +9,8 @@ import type { CommandRequest } from "../../application/ports/command-request.ts"
 import type { RunReport } from "../../domain/report/run-report.ts";
 import { renderRunReportText } from "../../infrastructure/printed-report/run-report-text.ts";
 import { runVerdictOf } from "../../domain/report/report-sections.ts";
-import { type VersionTwoReportOutput, versionTwoReportOutputSchema } from "../../infrastructure/hone-config-file/report-output.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
+import { VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { runLoadFailureOutcomeOf, upgradeCommandFor } from "../../infrastructure/command-line/run-path/run-load-failure-outcome.ts";
 import { type RepositoryLocated, repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../../version-two-repository.ts";
@@ -38,7 +38,7 @@ const commandsOf = (request: { readonly command: CommandRequest; readonly argume
 
 const locatedOf = (request: { readonly command: CommandRequest }): Result<Located, LoadFailure> => {
   const { command } = request;
-  const parsed = parseCheckArguments({ arguments: command.process.arguments, reportOutputs: versionTwoReportOutputSchema.options });
+  const parsed = parseCheckArguments({ arguments: command.process.arguments, reportOutputs: VERSION_TWO_REPORT_OUTPUTS });
   if (parsed.outcome === "failed") {
     return parsed;
   }

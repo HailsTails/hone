@@ -1,10 +1,10 @@
-import type { VersionTwoLoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../infrastructure/node/path-port.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { createSymptomCatalogueRepository, SYMPTOM_CATALOGUE_SEGMENTS } from "../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 
 const unreadDetailOf = (request: { readonly error: VersionTwoLoadFailure }): string => {

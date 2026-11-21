@@ -1,7 +1,7 @@
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { PackageLink } from "./package-link.ts";
 
 type ShownRequest = {

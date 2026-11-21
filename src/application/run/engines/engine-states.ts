@@ -2,7 +2,7 @@ import type { RunMeasurement, RunMeasurements } from "../../../domain/records/me
 import type { EngineNotRun, RunProjectionProblem } from "../../../domain/report/run-report.ts";
 import type { Engine, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SelectedClause } from "../../../domain/settings/selection/selection.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { typescriptFilesOf } from "../checked-tree-of.ts";
 import type { EngineRun } from "../../../infrastructure/engines/protocol/engine-run/engine-run.ts";

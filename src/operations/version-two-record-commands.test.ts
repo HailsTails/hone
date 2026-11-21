@@ -13,10 +13,10 @@ import type { Hit, NativeException } from "../domain/runner/runner-result-types.
 import type { PlacedRecord, RecordsReading, SymptomReach } from "../infrastructure/hone-records-folder/hone-record.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
-import { DEFAULT_CONVENTIONS } from "../infrastructure/hone-config-file/conventions.ts";
+import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import type { SettingsReading } from "../application/run/settings/read-settings.ts";
 import type { TouchedSet } from "../domain/repository/touched-set.ts";
-import type { ForfeitureAssessment } from "../infrastructure/hone-config-file/assessment.ts";
+import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import type { StagesOver } from "../version-two-repository.ts";

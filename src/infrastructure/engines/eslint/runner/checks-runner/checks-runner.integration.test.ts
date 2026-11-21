@@ -9,7 +9,8 @@ import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/f
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { symptomCatalogueOf } from "../../../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";

@@ -1,6 +1,6 @@
-import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
-import type { MechanismId } from "../hone-config-file/identifiers.ts";
-import type { RepoPath } from "../hone-records-folder/repo-path.ts";
+import type { RunnerFailure } from "../runner/runner-failure.ts";
+import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { RepoPath } from "../repository/repo-path-types.ts";
 
 export type LoadFailure =
   | { readonly kind: "arguments-invalid"; readonly detail: string }

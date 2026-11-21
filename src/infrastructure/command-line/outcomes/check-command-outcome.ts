@@ -1,6 +1,6 @@
 import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
-import type { LoadFailure } from "../load-failure.ts";
-import type { ReportOutput } from "../../hone-config-file/report-output.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { ReportOutput } from "../../../domain/settings/report-output.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import { renderGuidedReportText } from "../../printed-report/report-text.ts";

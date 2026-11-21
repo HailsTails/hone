@@ -1,18 +1,18 @@
 import { z } from "zod";
-import { NOT_ADOPTED, NOT_RUN } from "./identifiers.ts";
+import {
+  type Assessment,
+  FORFEITURE_ASSESSMENTS,
+  type ForfeitureAssessment,
+  removedText,
+  WAIVED_CLAUSES_REPLACEMENT,
+} from "../../domain/settings/assessment.ts";
+import type { DeepReadonly, Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
-export const forfeitureAssessmentSchema = z.enum(["this-run", "elsewhere"]);
-
-export type ForfeitureAssessment = z.infer<typeof forfeitureAssessmentSchema>;
+export const forfeitureAssessmentSchema = z.enum(FORFEITURE_ASSESSMENTS);
 
 const ASSESSMENT_CONCERNS = {
   forfeiture: forfeitureAssessmentSchema.default("this-run"),
 };
-
-export const WAIVED_CLAUSES_REPLACEMENT = `in clauses, mark a clause "${NOT_RUN}" when its mechanism does not run, or "${NOT_ADOPTED}" when its rule does not apply; see MIGRATING.md section 12`;
-
-export const removedText = (request: { readonly removed: string; readonly instead: string }): string =>
-  `removed: ${JSON.stringify(request.removed)}; ${request.instead}`;
 
 const REMOVED_CONCERNS: ReadonlyMap<string, string> = new Map([["waivedClauses", WAIVED_CLAUSES_REPLACEMENT]]);
 
@@ -39,17 +39,7 @@ export const assessmentSchema = z.strictObject(ASSESSMENT_CONCERNS, {
       : undefined,
 });
 
-export type Assessment = z.infer<typeof assessmentSchema>;
-
-export type AssessmentRequest = {
-  readonly [Concern in keyof Assessment]: Assessment[Concern] | undefined;
-};
-
 export const DEFAULT_ASSESSMENT: Assessment = assessmentSchema.parse({});
 
-export const assessmentInEffect = (request: {
-  readonly requested: AssessmentRequest;
-  readonly configured: Assessment;
-}): Assessment => ({
-  forfeiture: request.requested.forfeiture ?? request.configured.forfeiture,
-});
+export const isForfeitureAssessmentSchemaEqual: Equal<z.output<typeof forfeitureAssessmentSchema>, ForfeitureAssessment> = true;
+export const isAssessmentSchemaEqual: Equal<DeepReadonly<z.output<typeof assessmentSchema>>, Assessment> = true;

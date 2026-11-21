@@ -1,4 +1,4 @@
-import type { AttributedNativeException, Finding, GovernedRun } from "../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding, GovernedRun } from "../../domain/finding/governance.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";

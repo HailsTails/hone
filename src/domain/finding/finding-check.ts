@@ -1,4 +1,4 @@
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
+import type { Finding } from "./governance.ts";
 import { checkNamedAt, checksOf } from "../language-layer/check-address.ts";
 import { type Check, type Engine, type Symptom, type SymptomCatalogue, symptomReadingOf } from "../language-layer/symptom-catalogue.ts";
 

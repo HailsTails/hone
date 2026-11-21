@@ -1,10 +1,10 @@
-import type { AttributedNativeException, Finding, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding, GovernedRun } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import { checkNamedAt, checksOf } from "../../language-layer/check-address.ts";
 import { checkOfFinding } from "../../finding/finding-check.ts";
 import type { Check, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";

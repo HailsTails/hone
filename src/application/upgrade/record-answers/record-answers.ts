@@ -1,4 +1,4 @@
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import { sitesOfFinding } from "../../../domain/records/debt/debt-sites.ts";
 import { catalogueOf, type RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";

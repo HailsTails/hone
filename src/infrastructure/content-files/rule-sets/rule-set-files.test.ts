@@ -2,7 +2,8 @@ import { assert, describe, expect, it } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
-import { clauseIdSchema, disciplineIdSchema, type MechanismId, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
 
 const PATH = createDefaultPathPort({});

@@ -1,16 +1,11 @@
 import { z } from "zod";
-import type { VersionTwoLoadFailure } from "../../command-line/load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseEditionsSchema, editionSchema } from "../edition.ts";
-import {
-  clauseIdSchema,
-  type DisciplineId,
-  disciplineIdSchema,
-  type MechanismId,
-  mechanismIdSchema,
-} from "../../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { parsedJson } from "../parsed-json.ts";
@@ -18,16 +13,8 @@ import type { Result } from "../../../domain/result.ts";
 import type { DeepReadonly, Equal } from "../../engines/protocol/runner-module/type-equality.ts";
 import type { AuthoredDisciplineFile, AuthoredPieceFile, AuthoredSourceCase } from "../../../domain/rule-set/authored-rule-set-types.ts";
 import type { DisciplineFile, PieceFile, SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
-
-export type {
-  ClauseDefinition,
-  ClauseExceptions,
-  ClauseSettingDeclaration,
-  ClauseSettingDeclarations,
-  DisciplineFile,
-  PieceFile,
-  SourceCase,
-} from "../../../domain/rule-set/rule-set-types.ts";
+import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
+import { RESERVED_EDITION_SETTING } from "../../../domain/settings/clause-settings/reserved-edition-setting.ts";
 
 const SUPPORTED_VERSION = 1;
 
@@ -148,8 +135,6 @@ const clauseSettingDeclarationSchema = z
     }
   });
 
-export const RESERVED_EDITION_SETTING = "edition";
-
 const pieceFileSchema = z.object({
   version: z.literal(SUPPORTED_VERSION),
   discipline: disciplineIdSchema,
@@ -215,19 +200,6 @@ export const disciplineFilePath = (request: {
   request.path.join({
     segments: [request.ruleSetRoot, "rules", request.discipline, "discipline.json"],
   });
-
-export const enginesFolderSegmentsOf = (request: {
-  readonly ruleSetRoot: string;
-  readonly installRoot: string;
-}): readonly string[] =>
-  request.ruleSetRoot === request.installRoot ? ["src", "infrastructure", "engines"] : ["mechanisms"];
-
-export const pieceFolderSegmentsOf = (request: {
-  readonly ruleSetRoot: string;
-  readonly installRoot: string;
-  readonly mechanism: string;
-  readonly discipline: string;
-}): readonly string[] => [request.ruleSetRoot, ...enginesFolderSegmentsOf(request), request.mechanism, request.discipline];
 
 export const pieceFilePath = (request: {
   readonly path: PathPort;

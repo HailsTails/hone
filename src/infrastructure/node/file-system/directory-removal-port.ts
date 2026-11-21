@@ -1,4 +1,4 @@
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import { removeEmptyDirectory } from "./file-system-port.ts";

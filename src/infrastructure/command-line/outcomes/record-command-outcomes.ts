@@ -1,6 +1,6 @@
 import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
 import { LEAVE_OPTION } from "../arguments/command-line.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { RECORD_DEBT_SUBCOMMAND } from "../arguments/subcommand-names.ts";
 import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";

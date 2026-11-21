@@ -1,8 +1,8 @@
 import { argumentsInvalid } from "./infrastructure/command-line/arguments/argument-problem.ts";
 import { installRootOf } from "./infrastructure/command-line/installation/install-root.ts";
-import type { LoadFailure } from "./infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "./domain/report/load-failure.ts";
 import type { CommandRequest } from "./application/ports/command-request.ts";
-import type { AbsolutePath } from "./infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import { moduleExtensionOf } from "./infrastructure/node/modules/install-layout.ts";
 import type { Result } from "./domain/result.ts";
 import { type VersionTwoLocations, type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";

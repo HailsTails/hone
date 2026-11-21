@@ -1,5 +1,5 @@
 import { createDefaultExecutionPort, type ExecutionPolicy } from "../node/process/execution-port.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { GitFailure } from "../../domain/repository/git-failure.ts";

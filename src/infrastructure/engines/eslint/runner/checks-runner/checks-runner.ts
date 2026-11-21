@@ -26,7 +26,7 @@ import type { QueryInstance } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import { answeredWithin, type ChecksSlice, type ChecksSlices, declarationPathOf, slicesOf } from "../config-roots/checks-slices.ts";
 import type { ChecksSliceProblem } from "../../../../../domain/runner/checks-run-report.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { conformedCases, loadedPieceClauseOf } from "../conformance/eslint-conform.ts";
 import { honePluginAt, honePluginFailureText } from "../hone-plugin/hone-plugin.ts";

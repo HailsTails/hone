@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
-import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import { type ClauseAddress, clauseAddressSchema, clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../../domain/settings/json-values/json-kind.ts";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
-import type { FileExceptionWhyChains } from "../hone-config-file/file-exception-why-chains.ts";
+import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
 import type { Result } from "../../domain/result.ts";
 import {
   type ExceptionBaseline,

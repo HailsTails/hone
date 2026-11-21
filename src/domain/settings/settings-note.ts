@@ -1,3 +1,3 @@
-import type { ConventionKey } from "../../infrastructure/hone-config-file/conventions.ts";
+import type { ConventionKey } from "./conventions.ts";
 
 export type SettingsNote = { readonly kind: "declared-not-read"; readonly key: ConventionKey };

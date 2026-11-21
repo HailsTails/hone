@@ -1,9 +1,9 @@
 import { AUTHORISE_COMMAND_OPTIONS, COMMANDS, type CommandOption, type CommandSpec, HELP_FLAGS, UPGRADE_SUBCOMMAND, VERSION_FLAG } from "../../infrastructure/command-line/arguments/command-line.ts";
 import { RECORDS_FOLDER } from "../../infrastructure/hone-records-folder/folder-layout/records-layout.ts";
-import { SETTINGS_FILE_NAME } from "../../infrastructure/hone-config-file/settings-sources.ts";
-import { forfeitureAssessmentSchema } from "../../infrastructure/hone-config-file/assessment.ts";
-import { versionTwoReportOutputSchema } from "../../infrastructure/hone-config-file/report-output.ts";
+import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
+import { FORFEITURE_ASSESSMENTS } from "../../domain/settings/assessment.ts";
+import { VERSION_TWO_REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
 
 export type RunSubcommand = "check" | "project" | "record-debt" | "prune-debt" | "authorise" | "upgrade";
 
@@ -47,7 +47,7 @@ const BASE_REVISION_OPTION: CommandOption = {
 
 const REPORT_OUTPUT_OPTION: CommandOption = {
   name: "--report-output",
-  value: choiceValue({ choices: versionTwoReportOutputSchema.options }),
+  value: choiceValue({ choices: VERSION_TWO_REPORT_OUTPUTS }),
   need: "optional",
   occurrence: "once",
   summary: `how much of the report to print, over reportOutput in ${SETTINGS_FILE_NAME}; full when neither is set`,
@@ -55,7 +55,7 @@ const REPORT_OUTPUT_OPTION: CommandOption = {
 
 const FORFEITURE_OPTION: CommandOption = {
   name: "--forfeiture",
-  value: choiceValue({ choices: forfeitureAssessmentSchema.options }),
+  value: choiceValue({ choices: FORFEITURE_ASSESSMENTS }),
   need: "optional",
   occurrence: "once",
   summary: `check debt for forfeiture in this run or leave it to another, over forfeiture in ${SETTINGS_FILE_NAME}; this-run when neither is set`,

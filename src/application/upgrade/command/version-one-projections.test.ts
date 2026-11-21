@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";

@@ -14,7 +14,7 @@ import type { ConfigImportRefusal } from "../../../application/upgrade/writing/c
 import type { OracleFailure } from "../../../application/upgrade/record-answers/record-answer-oracle.ts";
 import type { PairingRefusal } from "../../../application/upgrade/proof/projection-replacements.ts";
 import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../hone-records-folder/repo-path.ts";
 import type { TeamConfigRefusal } from "../../../application/upgrade/proof/team-config-finder.ts";
 import type { VersionOneReadFailure } from "../../disciplines-file/version-one-reading.ts";

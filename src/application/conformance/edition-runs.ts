@@ -1,6 +1,6 @@
 import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
-import type { SourceCase } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import type { Edition } from "../../infrastructure/content-files/edition.ts";
+import type { SourceCase } from "../../domain/rule-set/rule-set-types.ts";
+import type { Edition } from "../../domain/rule-set/edition-types.ts";
 
 export type EditionRun = { readonly clause: RunnerClause; readonly cases: readonly SourceCase[] };
 

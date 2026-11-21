@@ -1,4 +1,4 @@
-import type { Finding, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding, GovernedRun } from "../../../domain/finding/governance.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { Result } from "../../../domain/result.ts";
 import { applyGovernance } from "../../../domain/records/discipline-exceptions/governance.ts";

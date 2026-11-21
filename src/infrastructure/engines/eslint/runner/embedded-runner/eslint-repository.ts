@@ -2,7 +2,7 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { FileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";

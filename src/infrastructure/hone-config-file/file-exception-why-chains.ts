@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { FILE_EXCEPTION_WHY_CHAINS, type FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
+import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
-export const fileExceptionWhyChainsSchema = z.enum(["required", "optional"]);
+export const fileExceptionWhyChainsSchema = z.enum(FILE_EXCEPTION_WHY_CHAINS);
 
-export type FileExceptionWhyChains = z.infer<typeof fileExceptionWhyChainsSchema>;
+export const isFileExceptionWhyChainsSchemaEqual: Equal<z.output<typeof fileExceptionWhyChainsSchema>, FileExceptionWhyChains> = true;

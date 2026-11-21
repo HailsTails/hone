@@ -1,4 +1,4 @@
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 
 export type UnansweredCredit = "nothing" | "suppression-only";

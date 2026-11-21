@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { assessmentSchema, DEFAULT_ASSESSMENT } from "../hone-config-file/assessment.ts";
 import { checkEditionsSchema } from "../hone-config-file/check-editions.ts";
 import {
@@ -11,8 +11,11 @@ import {
 } from "../discipline-exceptions-folder/clause-address.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
 import { fileExceptionWhyChainsSchema } from "../hone-config-file/file-exception-why-chains.ts";
-import { type MechanismId, mechanismIdSchema, NOT_ADOPTED, NOT_RUN, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
-import { type ReportOutput, reportOutputSchema } from "../hone-config-file/report-output.ts";
+import { mechanismIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
+import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import { reportOutputSchema } from "../hone-config-file/report-output.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import { brandedRepoPathSchema, type RepoPath, repoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RunSettings } from "../../domain/settings/run-settings.ts";

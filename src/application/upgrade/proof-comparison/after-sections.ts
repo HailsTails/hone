@@ -1,4 +1,4 @@
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
 import { runVerdictOf } from "../../../domain/report/report-sections.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";

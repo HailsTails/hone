@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../domain/finding/governance.ts";
 import { answerFindings } from "../../domain/records/answering/answering.ts";
 import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";

@@ -6,7 +6,7 @@ import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-pat
 import { createSelectionRepository, readRunSettings } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import { type UpgradeArguments, parseUpgradeArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { type CommandOutcome, loadFailureOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
 import type { DirectoryRemovalPort } from "../../infrastructure/node/file-system/directory-removal-port.ts";
 import type { FileCreationPort } from "../../infrastructure/node/file-system/file-creation-port.ts";
@@ -15,7 +15,7 @@ import type { EntryKindPort } from "../../infrastructure/node/file-system/file-s
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { type RepositoryLocated, repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "../../version-two-repository.ts";
 import { versionTwoRunOver } from "../../application/run/version-two-run.ts";
-import { assessmentInEffect } from "../../infrastructure/hone-config-file/assessment.ts";
+import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
 import type { Result } from "../../domain/result.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";

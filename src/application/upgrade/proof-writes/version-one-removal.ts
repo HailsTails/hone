@@ -3,7 +3,8 @@ import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
 import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type VersionOneRemovalPorts = {
@@ -49,10 +50,7 @@ export const recordsOutsideRoot = (request: { readonly ports: VersionOneRemovalP
 };
 
 const absolutePathsOf = (request: { readonly texts: readonly string[] }): readonly AbsolutePath[] =>
-  request.texts.flatMap((text) => {
-    const parsed = absolutePathSchema.safeParse(text);
-    return parsed.success ? [parsed.data] : [];
-  });
+  request.texts.filter(isAbsolutePath);
 
 const foldersOfFile = (request: { readonly ports: VersionOneRemovalPorts; readonly root: RecordsRoot; readonly file: AbsolutePath }): readonly AbsolutePath[] => {
   const segments = segmentsBelowRoot({ ports: request.ports, root: request.root.path, file: request.file }) ?? [];

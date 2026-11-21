@@ -5,7 +5,8 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { DirectoryEntry } from "../node/file-system/file-system-port.ts";
 import { createPathPort } from "../node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../content-files/absolute-path.ts";
+import { absolutePathSchema } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 
 type RecordsDisk = {
   readonly repoRoot: AbsolutePath;

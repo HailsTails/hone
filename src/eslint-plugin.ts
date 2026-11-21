@@ -4,7 +4,7 @@ import { createDefaultFileTextPort } from "./infrastructure/node/file-system/fil
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
 import { createSymptomCatalogueRepository, SYMPTOM_CATALOGUE_SEGMENTS } from "./infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { AbsolutePath } from "./infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { Result } from "./domain/result.ts";
 import { TOOL_IDENTITY } from "./domain/rule-set/tool-identity.ts";
 import { installedEslintBoundary } from "./infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";

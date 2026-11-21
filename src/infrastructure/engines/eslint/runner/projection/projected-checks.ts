@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { type ClauseAddress, clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { Result } from "../../../../../domain/result.ts";

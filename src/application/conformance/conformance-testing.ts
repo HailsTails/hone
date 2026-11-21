@@ -3,7 +3,7 @@ import { loadFailureDetail } from "../../infrastructure/printed-report/load-fail
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import type { PathPort } from "../../infrastructure/node/path-port.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
 import { clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";

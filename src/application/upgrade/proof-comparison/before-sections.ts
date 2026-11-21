@@ -1,4 +1,4 @@
-import type { AttributedNativeException, Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import { verdictOf } from "../../../domain/report/verdict.ts";

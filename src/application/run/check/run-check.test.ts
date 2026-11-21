@@ -16,7 +16,7 @@ import { editionSchema, FIRST_EDITION } from "../../../infrastructure/content-fi
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { type CheckRequest, runCheck, runReachedCheck } from "./run-check.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");

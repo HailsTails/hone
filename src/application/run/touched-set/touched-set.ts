@@ -1,6 +1,6 @@
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 

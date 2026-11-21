@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Finding, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding, GovernedRun } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { Check, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";

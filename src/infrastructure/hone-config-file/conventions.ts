@@ -1,24 +1,17 @@
 import { z } from "zod";
-import { brandedRepoPathSchema, type RepoPath, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
+import { brandedRepoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
+import {
+  type ConventionKey,
+  type ConventionsReading,
+  DEFAULT_CONVENTIONS,
+  type GeneratedFiles,
+  LAYER_NAMES,
+  type LayerFolders,
+  type LayerName,
+} from "../../domain/settings/conventions.ts";
 import type { Result } from "../../domain/result.ts";
 
-export type GeneratedFiles = { readonly files: readonly string[]; readonly outsideParty: string };
-
-export const LAYER_NAMES = ["domain", "application", "adapters"] as const;
-
-export type LayerName = (typeof LAYER_NAMES)[number];
-
-export type LayerFolders = { readonly layer: LayerName; readonly folders: readonly RepoPath[] };
-
-export type Conventions = { readonly generated: readonly GeneratedFiles[]; readonly layers: readonly LayerFolders[] };
-
-export type ConventionKey = "generated" | "layers";
-
 const CONVENTION_KEYS: readonly ConventionKey[] = ["generated", "layers"];
-
-export type ConventionsReading = { readonly conventions: Conventions; readonly declared: readonly ConventionKey[] };
-
-export const DEFAULT_CONVENTIONS: Conventions = { generated: [], layers: [] };
 
 const UNDER_A_NAMED_FOLDER = /^(?!\.\.?\/)[^*?[\]{}!/]+\//;
 

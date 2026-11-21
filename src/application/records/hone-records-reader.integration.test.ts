@@ -1,5 +1,5 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../domain/finding/governance.ts";
 import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../../infrastructure/git/git-port.ts";

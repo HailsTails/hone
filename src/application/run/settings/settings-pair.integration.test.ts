@@ -4,7 +4,7 @@ import { createDefaultFileTextPort } from "../../../infrastructure/node/file-sys
 import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
 import { createSettingsRepository } from "./read-settings.ts";
 import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 
 const path = createDefaultPathPort({});

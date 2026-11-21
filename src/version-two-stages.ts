@@ -10,7 +10,7 @@ import type { RunLoadFailure } from "./domain/report/run-load-failure.ts";
 import { createSettingsRepository, type SettingsReading } from "./application/run/settings/read-settings.ts";
 import { createSettingsSources } from "./infrastructure/hone-config-file/settings-sources.ts";
 import type { SymptomCatalogue } from "./domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "./infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { ModuleExtension } from "./infrastructure/node/modules/install-layout.ts";
 import type { Result } from "./domain/result.ts";
 import { type CheckedTree, checkedTreeOf } from "./application/run/checked-tree-of.ts";

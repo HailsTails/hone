@@ -1,7 +1,7 @@
 import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
-import { listedAddressText } from "../../hone-config-file/listed-address.ts";
+import { listedAddressText } from "../../../domain/settings/listed-address.ts";
 import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { ProofCarriedOver } from "../../../application/upgrade/proof/upgrade-proof.ts";
 import type { MarkedNotAdopted } from "../../../application/upgrade/mapping/settings-mapping.ts";
 

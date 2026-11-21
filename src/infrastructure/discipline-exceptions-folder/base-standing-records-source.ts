@@ -4,7 +4,7 @@ import type { RecordsSourceOf } from "../hone-records-folder/folder-layout/recor
 import type { RecordsSource } from "../../application/ports/records-source.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { clauseAddressSchema, TOOL_RULE_SET } from "./clause-address.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "./exception-records.ts";
 import { type RecordInput, mappedRecords } from "../hone-records-folder/records-mapping.ts";

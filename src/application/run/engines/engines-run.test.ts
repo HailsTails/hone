@@ -9,7 +9,7 @@ import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import type { RecordsReading, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { DEFAULT_CONVENTIONS } from "../../../infrastructure/hone-config-file/conventions.ts";
+import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { enginesProjectionOf, enginesRunOf } from "./engines-run.ts";

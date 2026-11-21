@@ -1,9 +1,9 @@
 import type { SelectionRepository } from "./consumer-selection.ts";
 import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../node/file-system/file-text-port.ts";
 import type { PathPort } from "../node/path-port.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { type HeadRecordsRefusal, headRecordsOf } from "../discipline-exceptions-folder/head-records.ts";

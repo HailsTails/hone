@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
-import type { Finding } from "../../src/infrastructure/command-line/governance.ts";
+import type { Finding } from "../../src/domain/finding/governance.ts";
 import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "../../src/infrastructure/git/git-port.ts";
 import type { ModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";

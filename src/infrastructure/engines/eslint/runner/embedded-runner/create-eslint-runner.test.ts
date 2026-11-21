@@ -8,7 +8,7 @@ import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-po
 import {
   createPathPort,
 } from "../../../../node/path-port.ts";
-import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";

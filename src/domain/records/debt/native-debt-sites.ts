@@ -1,4 +1,4 @@
-import type { AttributedNativeException, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, GovernedRun } from "../../finding/governance.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";

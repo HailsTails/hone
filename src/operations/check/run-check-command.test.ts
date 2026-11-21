@@ -9,9 +9,9 @@ import { createPathPort, type PathPort } from "../../infrastructure/node/path-po
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import { reportOutputSchema } from "../../infrastructure/hone-config-file/report-output.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runCheckCommand } from "./run-check-command.ts";
+import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -317,7 +317,7 @@ describe("runCheckCommand report output", () => {
     ).toEqual({ writes: [[{ text: FAILING_FULL_REPORT }]], exits: [[{ code: 1 }]] });
   });
 
-  it.each(reportOutputSchema.options)("exits 1 for a failing run requested as %s", async (output) => {
+  it.each(REPORT_OUTPUTS)("exits 1 for a failing run requested as %s", async (output) => {
     expect((await checkedWith({ arguments: ["--repo", "/repo", "--report-output", output], settings: PLAIN_SETTINGS })).exits).toEqual(
       [[{ code: 1 }]],
     );
@@ -327,7 +327,7 @@ describe("runCheckCommand report output", () => {
     expect((await checkedWith({ arguments: ["--repo", "/repo"], settings })).exits).toEqual([[{ code: 1 }]]);
   });
 
-  it.each(reportOutputSchema.options)("exits 0 printing the pass verdict for a clean run requested as %s", async (output) => {
+  it.each(REPORT_OUTPUTS)("exits 0 printing the pass verdict for a clean run requested as %s", async (output) => {
     const processPort = processWith({ arguments: ["--repo", "/repo", "--report-output", output] });
 
     await runCheckCommand(commandRequest({ process: processPort }));

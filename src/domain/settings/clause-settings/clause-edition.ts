@@ -1,7 +1,7 @@
-import { RESERVED_EDITION_SETTING } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import type { CheckEditions } from "../../../infrastructure/hone-config-file/check-editions.ts";
+import { RESERVED_EDITION_SETTING } from "./reserved-edition-setting.ts";
+import type { CheckEditions } from "./check-editions.ts";
 import { type ClauseAddress, clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { ClauseEditions, Edition } from "../../../infrastructure/content-files/edition.ts";
+import type { ClauseEditions, Edition } from "../../rule-set/edition-types.ts";
 import type { ReadonlyJsonValue } from "../json-values/json-value.ts";
 import type { Result } from "../../result.ts";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { VersionTwoLoadFailure } from "../load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { createSymptomCatalogueRepository } from "../../content-files/symptom-catalogues/read-symptom-catalogue.ts";

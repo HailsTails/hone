@@ -1,8 +1,8 @@
-import type { VersionTwoLoadFailure } from "../../command-line/load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../node/path-port.ts";
 import { readVersionOneJson } from "../rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";

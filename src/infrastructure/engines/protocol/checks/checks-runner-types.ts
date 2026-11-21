@@ -1,5 +1,5 @@
 import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import type { EslintConfigLookup } from "../../../../domain/settings/eslint-config-lookup.ts";
 import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";

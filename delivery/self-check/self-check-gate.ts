@@ -1,6 +1,6 @@
 import { type GuidedCheckRun, guidedCheckCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
 import type { CommandOutcome } from "../../src/infrastructure/command-line/outcomes/command-outcome.ts";
-import type { LoadFailure } from "../../src/infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
 import { installedVersionTwoCheckedOf, TOOL_SUBCOMMANDS, toolCommandOf } from "../../src/run-tool-command.ts";
 import type { CommandHandler } from "../../src/run-tool-command.ts";
 import { printOutcome } from "../../src/infrastructure/command-line/outcomes/print-outcome.ts";

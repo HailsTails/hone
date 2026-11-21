@@ -2,13 +2,13 @@ import type {
   ExceptionRecord,
   InvalidRecord,
 } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { AttributedNativeException, Finding } from "../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../finding/governance.ts";
 import type { DoublyHeld, ExemptedFinding } from "../records/discipline-exceptions/governance.ts";
 import type { FilePresence } from "../repository/file-presence.ts";
 import type { BaseRevisionAvailability } from "../repository/base-revision-availability.ts";
 import type { ClauseAddress } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { ClauseEditionReading } from "../../infrastructure/content-files/edition.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
+import type { ClauseEditionReading } from "../rule-set/edition-types.ts";
+import type { MechanismId } from "../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
 
 export type Unmeasured =

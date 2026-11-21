@@ -1,7 +1,9 @@
 import type { PieceHit, WalkerPiece } from "../runner/pieces/walker-piece.ts";
 import { folderScope } from "../runner/pieces/source-scope.ts";
 import type { CallExpression, PropertyAccessExpression, SyntaxApi, SyntaxNode } from "../runner/toolchain/typescript-parse.ts";
-import { type Edition, editionReaches, editionSchema, FIRST_EDITION } from "../../../content-files/edition.ts";
+import { editionSchema, FIRST_EDITION } from "../../../content-files/edition.ts";
+import { editionReaches } from "../../../../domain/rule-set/edition-reach.ts";
+import type { Edition } from "../../../../domain/rule-set/edition-types.ts";
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
   if (folderScope({ file: request.file }) === "generated") return "skipped";
