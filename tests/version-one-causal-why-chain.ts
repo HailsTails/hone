@@ -1,4 +1,4 @@
-import type { VersionOneWhyChain } from "../core/upgrade/version-one-records/version-one-why-chain.ts";
+import type { VersionOneWhyChain } from "../src/infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
 
 export const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [

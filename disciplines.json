@@ -43,7 +43,8 @@
     "CD-42#useless-else": "eslint",
     "CD-44#parameter-reassignment": "eslint"
   },
-  "exclude": ["tests/test-fixtures/consumer-proof"],
+  "assessment": { "forfeiture": "elsewhere" },
+  "exclude": ["delivery/install-proof/consumer-proof"],
   "clauseSettings": {
     "CD-19#import-boundaries": { "confinedPackages": ["eslint"] },
     "CD-27#test-body-logic": { "edition": "2" },

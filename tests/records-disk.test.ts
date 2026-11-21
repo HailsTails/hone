@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
 import { recordsDisk } from "./records-disk.ts";
 
 const FOLDER = absolutePathSchema.parse("/repo/records");

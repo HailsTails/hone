@@ -1,35 +1,35 @@
-import { type ArgumentProblem, argumentsInvalid } from "../core/command-line/argument-problem.ts";
-import { helpText, SYNOPSIS } from "../core/check/command-help.ts";
-import { FORFEITURE_OPTION, type HelpTopic, LEAVE_OPTION, REPO_OPTION, SUBCOMMANDS } from "../core/command-line/command-line.ts";
-import { projectCommandOutcome, versionCommandOutcome } from "../core/command-line/command-outcome.ts";
+import { type ArgumentProblem, argumentsInvalid } from "../src/infrastructure/command-line/arguments/argument-problem.ts";
+import { helpText, SYNOPSIS } from "../src/infrastructure/command-line/arguments/command-help.ts";
+import { FORFEITURE_OPTION, type HelpTopic, LEAVE_OPTION, REPO_OPTION, SUBCOMMANDS } from "../src/infrastructure/command-line/arguments/command-line.ts";
+import { projectCommandOutcome, versionCommandOutcome } from "../src/infrastructure/command-line/outcomes/command-outcome.ts";
 import {
   pruneDebtCommandOutcome,
   recordDebtCommandOutcome,
   splitRecordsCommandOutcome,
-} from "../core/upgrade/version-one-records/record-command-outcomes.ts";
-import { installedVersionOf } from "../core/check/installed-version.ts";
-import type { LoadFailure } from "../core/command-line/load-failure.ts";
-import { loadFailureText } from "../core/command-line/load-failure-text.ts";
-import type { ExceptionRecord } from "../core/upgrade/version-one-records/exception-record.ts";
-import type { InheritedDebtOutcome } from "../core/upgrade/version-one-records/inherited-debt.ts";
+} from "../src/infrastructure/command-line/outcomes/record-command-outcomes.ts";
+import { installedVersionOf } from "../src/infrastructure/command-line/installation/installed-version.ts";
+import type { LoadFailure } from "../src/infrastructure/command-line/load-failure.ts";
+import { loadFailureText } from "../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { ExceptionRecord } from "../src/domain/records/discipline-exceptions/exception-record.ts";
+import type { InheritedDebtOutcome } from "../src/domain/records/discipline-exceptions/inherited-debt.ts";
 import type {
   ExistingAuthorisationProvenance,
   InheritedDebtProvenance,
   InvalidRecord,
   RecordsSplit,
-} from "../core/upgrade/version-one-records/exception-records.ts";
-import type { AttributedNativeException, Finding } from "../core/governance/governance.ts";
-import type { RunnerFailure } from "../core/mechanism-port/runner-failure.ts";
-import type { ProjectionWrite } from "../core/mechanism-port/runner-result-schema.ts";
-import type { FilePresence, FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createPathPort } from "../core/platform-ports/path-port.ts";
-import { WAIVED_CLAUSES_REPLACEMENT } from "../core/values/assessment.ts";
-import type { BaseRevisionAvailability } from "../core/values/base-revision-availability.ts";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { type ClauseEditionReading, editionSchema } from "../core/values/edition.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
-import { type ReportOutput, reportOutputSchema } from "../core/values/report-output.ts";
+} from "../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { AttributedNativeException, Finding } from "../src/infrastructure/command-line/governance.ts";
+import type { RunnerFailure } from "../src/application/ports/runner-failure.ts";
+import type { ProjectionWrite } from "../src/infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { FilePresence, FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createPathPort } from "../src/infrastructure/node/path-port.ts";
+import { WAIVED_CLAUSES_REPLACEMENT } from "../src/infrastructure/hone-config-file/assessment.ts";
+import type { BaseRevisionAvailability } from "../src/domain/repository/base-revision-availability.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { type ClauseEditionReading, editionSchema } from "../src/infrastructure/content-files/edition.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
+import { type ReportOutput, reportOutputSchema } from "../src/infrastructure/hone-config-file/report-output.ts";
 import type {
   AssessmentFileNote,
   AssessmentSection,
@@ -39,11 +39,11 @@ import type {
   PartialAssessment,
   ProjectionProblem,
   Unmeasured,
-} from "../core/verdict/check-report.ts";
-import { SECTION_NAMES, type SectionName, sectionRoleOf } from "../core/verdict/section-roles.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide, type UnreadableGuide } from "../core/verdict/symptom-notes.ts";
-import type { Case, Principle, Recipe, RecordKind, Rule, Symptom } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import type { Verdict } from "../core/verdict/verdict.ts";
+} from "../src/domain/report/check-report.ts";
+import { SECTION_NAMES, type SectionName, sectionRoleOf } from "../src/domain/report/section-roles.ts";
+import { NO_SYMPTOM_GUIDE, type SymptomGuide, type UnreadableGuide } from "../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
+import type { Case, Principle, Recipe, RecordKind, Rule, Symptom } from "../src/domain/language-layer/symptom-catalogue.ts";
+import type { Verdict } from "../src/domain/report/verdict.ts";
 import { VERSION_ONE_CAUSAL_WHY_CHAIN } from "./version-one-causal-why-chain.ts";
 import { type DocumentedRole, type EntryFills, type Fills, type PrintedLine, reportLinesOf } from "./output-contract.ts";
 import { UPGRADE_LINES } from "./printable-upgrade-lines.ts";
@@ -67,9 +67,9 @@ const FILE = repoPathSchema.parse("src/basket.ts");
 const RULE_PAGE = "node_modules/@hailstails/hone/rules/CD-15/README.md";
 const ADOPTION_GUIDE = "node_modules/@hailstails/hone/ADOPTING.md";
 
-const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js project --repo /work/shop";
+const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
-const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js prune-debt --repo /work/shop --base-revision origin/main";
+const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop --base-revision origin/main";
 
 const SHARED_FILLS: Fills = {
   clause: "CD-15#loops",
@@ -950,7 +950,7 @@ const VERSION_LINES: readonly PrintedLine[] = linesOf({
     result: installedVersionOf({
       fileText: VERSION_MANIFEST,
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-      moduleUrl: "file:///install/core/check/tool-command.ts",
+      moduleUrl: "file:///install/src/hone.ts",
     }),
   }).text,
   fills: { version: "1.0.0" },

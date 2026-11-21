@@ -4,32 +4,32 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-6#naming-convention",
-      "file": "core/platform-ports/execution-port.test.ts"
+      "file": "src/infrastructure/node/process/execution-port.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-6#naming-convention",
-      "file": "core/platform-ports/git-port.test.ts"
+      "file": "src/infrastructure/git/git-port.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-6#naming-convention",
-      "file": "mechanisms/eslint/runner/eslint-plugin-schema.test.ts"
+      "file": "src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-6#naming-convention",
-      "file": "scripts/install-proof-ports.test.ts"
+      "file": "delivery/install-proof/install-proof-ports.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-6#identifier-names",
-      "file": "tests/test-fixtures/cd1-cascade/src/legacy.ts"
+      "file": "src/application/run/check/cd1-cascade/src/legacy.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-6#identifier-names",
-      "file": "tests/test-fixtures/eslint-9/eslint-9-engine.ts"
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
     }
   ]
 }

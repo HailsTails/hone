@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkAt, checksOf } from "../core/symptom-catalogue/check-address.ts";
-import { symptomReadingOf } from "../core/symptom-catalogue/symptom-catalogue.ts";
+import { checkAt, checksOf } from "../src/domain/language-layer/check-address.ts";
+import { symptomReadingOf } from "../src/domain/language-layer/symptom-catalogue.ts";
 import { BRANCH_IN_A_TEST, CAST_CHECK, CAST_EXPRESSIONS, CHECKS_PAGE, CLOCK_CHECK, CLOCK_SOURCES, REPORT_CATALOGUE, TEST_BODY_CHECK, TEST_BODY_LOGIC } from "./report-catalogue.ts";
 
 describe("REPORT_CATALOGUE is a catalogue its own checks resolve in", () => {

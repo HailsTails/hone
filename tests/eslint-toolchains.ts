@@ -1,29 +1,29 @@
 import { assert } from "vitest";
 import { z } from "zod";
-import type { EmbeddedRunner } from "../core/mechanism-port/embedded-runner-module-schema.ts";
-import type { RunnerFailure } from "../core/mechanism-port/runner-failure.ts";
-import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner } from "../core/mechanism-port/toolchain-bound-runner.ts";
-import type { LoadedChecksRunner } from "../core/mechanism-port/checks-runner-types.ts";
-import { createDefaultFileRemovalPort } from "../core/platform-ports/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../core/platform-ports/module-loader-port.ts";
-import { createDefaultPathPort } from "../core/platform-ports/path-port.ts";
-import type { Result } from "../core/values/result.ts";
-import { createChecksRunner } from "../mechanisms/eslint/runner/checks-runner.ts";
-import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../mechanisms/eslint/runner/create-eslint-runner.ts";
+import type { EmbeddedRunner } from "../src/infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
+import type { RunnerFailure } from "../src/application/ports/runner-failure.ts";
+import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner } from "../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import type { LoadedChecksRunner } from "../src/infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import { createDefaultFileRemovalPort } from "../src/infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../src/infrastructure/node/path-port.ts";
+import type { Result } from "../src/domain/result.ts";
+import { createChecksRunner } from "../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import {
   createEslintPort,
   type EslintClass,
   type EslintPort,
   type EslintToolchain,
-} from "../mechanisms/eslint/runner/eslint-instance.ts";
+} from "../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
   type EslintToolchainPeers,
   loadEslintToolchain,
-} from "../mechanisms/eslint/runner/eslint-toolchain.ts";
-import { defaultNativeRuleSources, type NativeRuleSources } from "../mechanisms/eslint/runner/native-rules.ts";
+} from "../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { defaultNativeRuleSources, type NativeRuleSources } from "../src/infrastructure/engines/eslint/runner/pieces/native-rules.ts";
 
 export type EslintLine = "eslint-10" | "eslint-9";
 
@@ -37,7 +37,7 @@ type LineDefinition = {
 
 const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/..`, installForm: "source" });
 
-const RUNNER_MODULE_SUFFIX = "mechanisms/eslint/runner/runner.ts";
+const RUNNER_MODULE_SUFFIX = "src/infrastructure/engines/eslint/runner/runner.ts";
 
 const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
   "eslint-10": {

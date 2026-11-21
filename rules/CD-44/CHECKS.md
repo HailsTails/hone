@@ -20,7 +20,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - Not detected: reassigning the parameter, `+=` and `++`, `Map.set`, and mutation through an alias (`const copy = input; copy.x = 1`).
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-44/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-44/README.md).
 - `hone-cd44/no-param-reassign` is ESLint's `no-param-reassign` with `{ "props": false }`.
 - It flags assigning to a parameter, incrementing or decrementing it, and destructuring-assigning into it.
 - A parameter's fields are not checked here; the audit's `parameter-mutation` clause covers them.

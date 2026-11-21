@@ -18,7 +18,7 @@
   },
   "exclude": [
     "node_modules",
-    "tests/test-fixtures/consumer-proof",
-    "mechanisms/eslint/runner/eslint-10"
+    "delivery/install-proof/consumer-proof",
+    "src/infrastructure/engines/eslint/runner/toolchain/eslint-10"
   ]
 }

@@ -1,6 +1,6 @@
-import type { FileTextPort } from "../core/platform-ports/file-system-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../core/values/absolute-path.ts";
-import type { ScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import { type AbsolutePath, absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import type { ScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 
 export type ScratchRepositories = {
   readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;

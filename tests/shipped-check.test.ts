@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOOL_RULE_SET } from "../core/values/clause-address.ts";
+import { TOOL_RULE_SET } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { shippedCheckOf } from "./shipped-check.ts";
 import { CAST_CHECK, CLOCK_CHECK, REPORT_CATALOGUE } from "./report-catalogue.ts";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Case, Principle, Recipe, Rule, SymptomCatalogue } from "../core/symptom-catalogue/symptom-catalogue.ts";
+import type { Case, Principle, Recipe, Rule, SymptomCatalogue } from "../src/domain/language-layer/symptom-catalogue.ts";
 import {
   casesOfCatalogue,
   caseNamesOffTheirTitles,

@@ -1,4 +1,4 @@
-import { installedEslintBoundary } from "../mechanisms/eslint/runner/eslint-toolchain.ts";
+import { installedEslintBoundary } from "../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 
 const installed = await installedEslintBoundary();
 

@@ -21,7 +21,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - There are no settings: a boundary that forces a cast is an exception record, as below.
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-2/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-2/README.md).
 - `hone-cd2/no-restricted-syntax` is ESLint's `no-restricted-syntax` with two selectors, one per form.
 - `TSNonNullExpression` flags every non-null assertion, `x!`, wherever it sits: a read such as `user.name!`, a call such as `totals.get(key)!.toFixed(2)`, an assignment target such as `basket.total! = 0`. It is the same node typescript-eslint's `no-non-null-assertion` reports.
 - `[definite=true]` flags every definite assignment assertion: `let total!: number` and a class field `balance!: number`.

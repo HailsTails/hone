@@ -4,157 +4,157 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/check/clause-readings.test.ts"
+      "file": "src/infrastructure/printed-report/findings/clause-readings.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/check/installed-version.test.ts"
+      "file": "src/infrastructure/command-line/installation/installed-version.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/check/piece-import-rules.test.ts"
+      "file": "src/infrastructure/content-files/import-boundaries/piece-import-rules.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/check/run-project.test.ts"
+      "file": "src/application/projection/run-project.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/conformance/clause-conformance.test.ts"
+      "file": "src/application/conformance/clause-conformance.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/conformance/clause-under-test.test.ts"
+      "file": "src/application/conformance/clause-under-test.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/conformance/conformance-testing.test.ts"
+      "file": "src/application/conformance/conformance-testing.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/mechanism-port/toolchain-requirement.test.ts"
+      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-requirement.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/platform-ports/execution-port.test.ts"
+      "file": "src/infrastructure/node/process/execution-port.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/platform-ports/file-text-port.test.ts"
+      "file": "src/infrastructure/node/file-system/file-text-port.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "core/rule-set-reader/rule-set-reader.test.ts"
+      "file": "src/infrastructure/content-files/rule-sets/rule-set-reader.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-1/any-cast.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-1/any-cast.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-10/throws-in-tests.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-10/throws-in-tests.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-14/piece.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-14/piece.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-2/cast-expressions.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-2/cast-expressions.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-25/dependency-isolation.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-25/dependency-isolation.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-26/module-mocking.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-26/module-mocking.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-3/compiler-overrides.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-3/compiler-overrides.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-43/boolean-signatures.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-43/boolean-signatures.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-44/parameter-mutation.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-44/parameter-mutation.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-5/comments-directives.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-5/comments-directives.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/CD-6/identifier-names.test.ts"
+      "file": "src/infrastructure/engines/audit/CD-6/identifier-names.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/runner/cast-shape.test.ts"
+      "file": "src/infrastructure/engines/audit/runner/pieces/cast-shape.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/runner/observe-walker-file.test.ts"
+      "file": "src/infrastructure/engines/audit/runner/observe-walker-file.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/audit/runner/type-directives.test.ts"
+      "file": "src/infrastructure/engines/audit/runner/pieces/type-directives.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.test.ts"
+      "file": "src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/CD-14/piece.test.ts"
+      "file": "src/infrastructure/engines/eslint/CD-14/piece.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/runner/eslint-config-schema.test.ts"
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/runner/package-script-scanner.test.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/package-script-scanner.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/runner/script-option-effect.test.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/script-option-effect.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/runner/suppressions-scanner.test.ts"
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/suppressions-scanner.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -164,27 +164,27 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "scripts/package-guards.test.ts"
+      "file": "delivery/packaging/building/package-guards.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "scripts/published-manifest.test.ts"
+      "file": "delivery/packaging/published-manifest/published-manifest.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "scripts/release-pull-request.test.ts"
+      "file": "delivery/release/release-pull-request.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "scripts/release-state.test.ts"
+      "file": "delivery/release/release-state.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "scripts/run-install-proof.test.ts"
+      "file": "delivery/install-proof/run-install-proof.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -199,22 +199,22 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "tests/peer-manifest.test.ts"
+      "file": "delivery/packaging/published-manifest/peer-manifest.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "tests/probe-check.integration.test.ts"
+      "file": "src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "tests/probe-rule-set/probe-piece-imports.test.ts"
+      "file": "src/infrastructure/content-files/rule-sets/probe-rule-set/probe-piece-imports.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "tests/single-mechanism.integration.test.ts"
+      "file": "src/application/run/check/single-mechanism.integration.test.ts"
     },
     {
       "kind": "file-carve-out",

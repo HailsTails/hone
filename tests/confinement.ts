@@ -1,4 +1,4 @@
-import { createPathPort, type PathPort } from "../core/platform-ports/path-port.ts";
+import { createPathPort, type PathPort } from "../src/infrastructure/node/path-port.ts";
 import { type ImportFactsIn, type ImportStatementIn, importFactsIn, importsIn, importStatementsIn, type ModuleImport } from "./module-imports.ts";
 
 export type ConfinementVerdict = "allowed" | "outside";

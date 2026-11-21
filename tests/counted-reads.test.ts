@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
 import { countedReadsOver } from "./counted-reads.ts";
 
 const underlying = (): FileTextPort => ({

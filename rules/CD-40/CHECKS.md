@@ -12,7 +12,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 | `CD-40#named-object-argument` | review | the single argument is an object with named fields, not a positional scalar |
 
 ## What the check flags
-- The ESLint piece lints whatever files the team's ESLint run includes. It needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-40/README.md).
+- The ESLint piece lints whatever files the team's ESLint run includes. It needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-40/README.md).
 - Rule `hone-cd40/max-params`, which is typescript-eslint's `max-params` with `{ "max": 2, "countVoidThis": true }`.
 - A function declaration, function expression, arrow function, method or constructor with more than two parameters. A `this` parameter counts.
 - Not flagged by the check: functions with two or fewer parameters. The rule asks for one named object; a function with two parameters is left to review, where the function-first lens treats every authored function with two or more parameters as a candidate.

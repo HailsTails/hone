@@ -1,13 +1,13 @@
-import type { LoadFailure } from "../core/command-line/load-failure.ts";
-import { loadFailureDetail } from "../core/command-line/load-failure-text.ts";
-import { createPathPort } from "../core/platform-ports/path-port.ts";
-import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../core/upgrade/command/upgrade-success-text.ts";
-import { type UpgradeFailure, UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../core/upgrade/command/upgrade-refusal-text.ts";
-import type { PlanRefusal } from "../core/upgrade/proof/upgrade-plan.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
+import type { LoadFailure } from "../src/infrastructure/command-line/load-failure.ts";
+import { loadFailureDetail } from "../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
+import { createPathPort } from "../src/infrastructure/node/path-port.ts";
+import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../src/infrastructure/printed-report/upgrade/upgrade-success-text.ts";
+import { type UpgradeFailure, UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../src/infrastructure/printed-report/upgrade/upgrade-refusal-text.ts";
+import type { PlanRefusal } from "../src/application/upgrade/proof/upgrade-plan.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { clauseAddressSchema, TOOL_RULE_SET } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { Fills, PrintedLine } from "./output-contract.ts";
 
 const REPO = absolutePathSchema.parse("/repo");

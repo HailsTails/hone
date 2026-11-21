@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+
+declare global {
+  interface ImportMeta {
+    readonly glob: (
+      patterns: readonly string[],
+      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
+    ) => Readonly<Record<string, string>>;
+  }
+}
+
+const entrySource = import.meta.glob(["./install-proof.ts"], {
+  base: "./",
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+
+const WIRING = `import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { createDefaultProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import { createEsbuildBundlerPort } from "../packaging/building/esbuild-bundler-port.ts";
+import { PROOF_CASES } from "./install-proof-plan.ts";
+import { createDefaultCommandRunPort, createDefaultScratchFilesPort } from "./install-proof-ports.ts";
+import { createTarballPacker } from "../packaging/packing/package-commands.ts";
+import { runInstallProof } from "./run-install-proof.ts";
+import { createDefaultTypeScriptDeclarationPort } from "../packaging/type-declarations/typescript-declaration-port.ts";
+
+await runInstallProof({
+  process: createDefaultProcessPort({}),
+  path: createDefaultPathPort({}),
+  fileText: createDefaultFileTextPort({}),
+  scratch: createDefaultScratchFilesPort({}),
+  commands: createDefaultCommandRunPort({}),
+  packer: createTarballPacker({
+    ports: {
+      path: createDefaultPathPort({}),
+      fileText: createDefaultFileTextPort({}),
+      scratch: createDefaultScratchFilesPort({}),
+      bundler: createEsbuildBundlerPort({ path: createDefaultPathPort({}) }),
+      declarations: createDefaultTypeScriptDeclarationPort({}),
+    },
+    commands: createDefaultCommandRunPort({}),
+  }),
+  moduleUrl: import.meta.url,
+  proofCases: PROOF_CASES,
+});
+`;
+
+describe("install-proof.ts, read as a build-time raw module (CD-47: the entry's own source is the assertion's subject; importing it would run the proof, and nothing is spawned)", () => {
+  it("only awaits runInstallProof with the default port factories, a tarball packer over them, its own module URL and the plan's proof cases", () => {
+    expect(entrySource).toEqual({ "./install-proof.ts": WIRING });
+  });
+});

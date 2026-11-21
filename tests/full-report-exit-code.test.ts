@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../core/values/clause-address.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
-import type { CheckReport } from "../core/verdict/check-report.ts";
+import { clauseAddressSchema } from "../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
+import type { CheckReport } from "../src/domain/report/check-report.ts";
 import { fullReportExitCode } from "./full-report-exit-code.ts";
 
 const EMPTY_REPORT: CheckReport = {

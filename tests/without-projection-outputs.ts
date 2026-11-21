@@ -1,4 +1,4 @@
-import { projectionOutputNamesOf, projectionOutputsOf } from "../core/values/projection-outputs.ts";
+import { projectionOutputNamesOf, projectionOutputsOf } from "../src/infrastructure/engines/protocol/projection-outputs.ts";
 
 const ESLINT_ENGINE_NAME = "eslint";
 

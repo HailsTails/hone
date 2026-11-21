@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
 import { authoriseArgumentsFor, memoryRepositoryOf, recordedProcessWith } from "./command-harness.ts";
 
 describe("memoryRepositoryOf", () => {

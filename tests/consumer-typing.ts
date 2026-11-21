@@ -1,5 +1,5 @@
-import { createDefaultTypeScriptDeclarationPort } from "../scripts/typescript-declaration-port.ts";
-import type { CompilerOptions, Diagnostic } from "../mechanisms/audit/runner/typescript-parse.ts";
+import { createDefaultTypeScriptDeclarationPort } from "../delivery/packaging/type-declarations/typescript-declaration-port.ts";
+import type { CompilerOptions, Diagnostic } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
 import { defaultParsePort } from "./typescript-parse-port.ts";
 
 export type EslintLine = "eslint" | "eslint-9";
@@ -34,11 +34,11 @@ const INSTALLED_ESLINT = `${MODULES}/eslint`;
 
 const INSTALLED_HONE = `${MODULES}/@hailstails/hone`;
 
-const PLUGIN_ENTRY = "api/eslint-plugin.ts";
+const PLUGIN_ENTRY = "src/eslint-plugin.ts";
 
 const CONSUMER_PACKAGE = JSON.stringify({ name: "consumer", type: "module" });
 
-const HONE_PACKAGE = JSON.stringify({ name: "@hailstails/hone", type: "module", exports: { "./eslint-plugin": { types: "./api/eslint-plugin.d.ts" } } });
+const HONE_PACKAGE = JSON.stringify({ name: "@hailstails/hone", type: "module", exports: { "./eslint-plugin": { types: "./src/eslint-plugin.d.ts" } } });
 
 const emitted = await createDefaultTypeScriptDeclarationPort({}).emit({ sourceRoot: ROOT, entryPoints: [PLUGIN_ENTRY] });
 

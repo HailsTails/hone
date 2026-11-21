@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../core/platform-ports/file-text-port.ts";
-import type { PathPort } from "../../core/platform-ports/path-port.ts";
-import { readDisciplineFile } from "../../core/rule-set-reader/rule-set-reader.ts";
-import { absolutePathSchema } from "../../core/values/absolute-path.ts";
-import { disciplineIdSchema } from "../../core/values/identifiers.ts";
+import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { PathPort } from "../../src/infrastructure/node/path-port.ts";
+import { readDisciplineFile } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { disciplineIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { requiredEntry } from "../../tests/required-entry.ts";
 import discipline from "./discipline.json" with { type: "json" };
 

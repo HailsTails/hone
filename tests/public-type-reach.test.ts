@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeclarationEmit } from "../scripts/package-declarations.ts";
+import type { DeclarationEmit } from "../delivery/packaging/type-declarations/package-declarations.ts";
 import { publicTypeReachOf, valueClaimsIn } from "./public-type-reach.ts";
 import { defaultParsePort } from "./typescript-parse-port.ts";
 

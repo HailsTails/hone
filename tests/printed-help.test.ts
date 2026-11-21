@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runHelpText } from "../core/report/run-help.ts";
+import { runHelpText } from "../src/operations/help/run-help.ts";
 import { helpBlocksIn, printedHelpBlockOf, printedHelpBlocksOf } from "./printed-help.ts";
 
 const VERSION_TWO_REPOSITORY = { "hone.config.json": "{}" };

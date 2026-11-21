@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../core/platform-ports/file-system-port.ts";
-import type { PathPort } from "../core/platform-ports/path-port.ts";
-import type { Recipe } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import type { CommandRunPort, ScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import type { PathPort } from "../src/infrastructure/node/path-port.ts";
+import type { Recipe } from "../src/domain/language-layer/symptom-catalogue.ts";
+import type { CommandRunPort, ScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 import { type RecordsRepository, recipeReasonIn, recordsRepositoryIn, type ScratchPorts } from "./hone-records-scratch.ts";
 
 const ROOT = "/tmp/hone-records-1";

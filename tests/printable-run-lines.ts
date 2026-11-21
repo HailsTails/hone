@@ -1,6 +1,6 @@
-import type { AttributedNativeException } from "../core/governance/governance.ts";
-import type { MisnamedRuleId } from "../core/mechanism-port/checks-runner-types.ts";
-import type { InlineReach, ScriptOptionCause } from "../core/mechanism-port/runner-result-schema.ts";
+import type { AttributedNativeException } from "../src/infrastructure/command-line/governance.ts";
+import type { MisnamedRuleId } from "../src/infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { InlineReach, ScriptOptionCause } from "../src/infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
 import type {
   AuthorisedLocation,
   AuthorisedReach,
@@ -15,17 +15,17 @@ import type {
   RecordPlace,
   RecordRefusal,
   SymptomReach,
-} from "../core/records/hone-record.ts";
-import type { RecordsUnmeasured } from "../core/records/records-unmeasured.ts";
-import { recordReferenceText, recordSubjectText } from "../core/report/record-lines.ts";
-import { RUN_SECTION_NAMES, type RunSectionName, runSectionRoleOf } from "../core/report/report-sections.ts";
-import type { EngineNotRun, RunProjectionProblem, RunReport, RunUnmeasured } from "../core/report/run-report.ts";
-import { renderRunReportText } from "../core/report/run-report-text.ts";
-import type { ConventionKey } from "../core/settings/conventions.ts";
-import type { BaseRevisionAvailability } from "../core/values/base-revision-availability.ts";
-import { editionSchema } from "../core/values/edition.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
-import { type VersionTwoReportOutput, versionTwoReportOutputSchema } from "../core/values/report-output.ts";
+} from "../src/infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsUnmeasured } from "../src/domain/records/measurement/records-unmeasured.ts";
+import { recordReferenceText, recordSubjectText } from "../src/infrastructure/printed-report/records/record-lines.ts";
+import { RUN_SECTION_NAMES, type RunSectionName, runSectionRoleOf } from "../src/domain/report/report-sections.ts";
+import type { EngineNotRun, RunProjectionProblem, RunReport, RunUnmeasured } from "../src/domain/report/run-report.ts";
+import { renderRunReportText } from "../src/infrastructure/printed-report/run-report-text.ts";
+import type { ConventionKey } from "../src/infrastructure/hone-config-file/conventions.ts";
+import type { BaseRevisionAvailability } from "../src/domain/repository/base-revision-availability.ts";
+import { editionSchema } from "../src/infrastructure/content-files/edition.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
+import { type VersionTwoReportOutput, versionTwoReportOutputSchema } from "../src/infrastructure/hone-config-file/report-output.ts";
 import { CAUSAL_WHY_CHAIN } from "./causal-why-chain.ts";
 import { type DocumentedRole, type EntryFills, type Fills, type PrintedLine, sectionedLinesOf } from "./output-contract.ts";
 import {
@@ -56,7 +56,7 @@ type Filled<Entry> = { readonly entry: Entry; readonly fills: Fills };
 
 type SectionSamples = { readonly [Section in RunSectionName]: readonly Filled<RunReport[Section][number]>[] };
 
-const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js project --repo /work/shop";
+const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
 const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
 
@@ -78,7 +78,7 @@ const DEPENDENCIES_FILE = repoPathSchema.parse("hone-records/dependency-records.
 
 const SLICE = repoPathSchema.parse("packages/web/hone.eslint.mjs");
 
-const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js prune-debt --repo /work/shop";
+const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop";
 
 const SHARED_FILLS: Fills = { "project command": PROJECT_COMMAND, "prune command": PRUNE_COMMAND, "symptom page": SYMPTOM_PAGE };
 

@@ -1,9 +1,9 @@
-import type { FileTextPort } from "../core/platform-ports/file-system-port.ts";
-import type { PathPort } from "../core/platform-ports/path-port.ts";
-import type { Recipe } from "../core/symptom-catalogue/symptom-catalogue.ts";
-import type { ReadonlyJsonValue } from "../core/values/json-value.ts";
-import type { Result } from "../core/values/result.ts";
-import type { CommandRunPort, ScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import type { PathPort } from "../src/infrastructure/node/path-port.ts";
+import type { Recipe } from "../src/domain/language-layer/symptom-catalogue.ts";
+import type { ReadonlyJsonValue } from "../src/domain/settings/json-values/json-value.ts";
+import type { Result } from "../src/domain/result.ts";
+import type { CommandRunPort, ScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 
 export type ScratchRecordsFile = { readonly folder: string; readonly name: string; readonly records: readonly ReadonlyJsonValue[] };
 

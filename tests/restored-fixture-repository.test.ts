@@ -1,8 +1,8 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { createDefaultPathPort } from "../core/platform-ports/path-port.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { createDefaultScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../src/infrastructure/node/path-port.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { createDefaultScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 import { listedPathsOf } from "./repository-tree.ts";
 import { NO_TEXT_FILES, rehomedImports, restoredFixtureRepositoriesOver, STORED_LINT_CONFIG_NAME } from "./restored-fixture-repository.ts";
 import { scratchRepositoriesUnder } from "./scratch-repositories.ts";

@@ -1,5 +1,5 @@
-import type { Result } from "../core/values/result.ts";
-import type { ExportDeclaration, ImportDeclaration, Statement, SyntaxApi } from "../mechanisms/audit/runner/typescript-parse.ts";
+import type { Result } from "../src/domain/result.ts";
+import type { ExportDeclaration, ImportDeclaration, Statement, SyntaxApi } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
 import {
   type DeclarationEmit,
   type DeclarationFailure,
@@ -8,7 +8,7 @@ import {
   publishedDeclarationsOf,
   reachableDeclarations,
   typedExportOf,
-} from "../scripts/package-declarations.ts";
+} from "../delivery/packaging/type-declarations/package-declarations.ts";
 
 export type EntryReach = { readonly reached: readonly string[]; readonly packageImports: readonly string[] };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { legacyWhyChainSchema, whyChainFormOf } from "../core/upgrade/version-one-records/version-one-why-chain.ts";
-import { causalProblemsOf, whyChainSchema } from "../core/values/why-chain.ts";
+import { legacyWhyChainSchema, whyChainFormOf } from "../src/infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import { causalProblemsOf, whyChainSchema } from "../src/infrastructure/hone-records-folder/why-chain.ts";
 import { CAUSAL_WHY_CHAIN, LEGACY_WHY_CHAIN } from "./causal-why-chain.ts";
 
 describe("CAUSAL_WHY_CHAIN is a chain the causal contract accepts", () => {

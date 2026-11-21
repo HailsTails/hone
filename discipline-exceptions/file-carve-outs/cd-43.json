@@ -4,7 +4,7 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-43#boolean-signatures",
-      "file": "tests/test-fixtures/eslint-9/eslint-9-engine.ts"
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
     }
   ]
 }

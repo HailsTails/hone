@@ -1,4 +1,4 @@
-import { runToolCommand } from "../core/check/run-tool-command.ts";
+import { runToolCommand } from "../src/run-tool-command.ts";
 import { commandOver, memoryRepositoryOf, recordedProcessWith } from "./command-harness.ts";
 
 const FENCE = "```";

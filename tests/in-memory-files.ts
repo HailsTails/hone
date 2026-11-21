@@ -1,6 +1,6 @@
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { EntryDisposition } from "../scripts/install-proof-plan.ts";
-import type { CopiedEntry, ListedEntry, ScratchFilesPort } from "../scripts/install-proof-ports.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { EntryDisposition } from "../delivery/install-proof/install-proof-plan.ts";
+import type { CopiedEntry, ListedEntry, ScratchFilesPort } from "../delivery/install-proof/install-proof-ports.ts";
 
 export type InMemoryFiles = {
   readonly fileText: FileTextPort;

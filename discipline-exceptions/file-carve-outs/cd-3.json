@@ -4,72 +4,72 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-3#exact-optional-property-types",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-fallthrough-cases-in-switch",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-implicit-override",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-property-access-from-index-signature",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-unchecked-indexed-access",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#strict",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#use-unknown-in-catch-variables",
-      "file": "tests/test-fixtures/cd3-extends/packages/broken/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/broken/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-implicit-override",
-      "file": "tests/test-fixtures/cd3-extends/packages/layered/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/layered/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-unchecked-indexed-access",
-      "file": "tests/test-fixtures/cd3-extends/packages/loosened/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/loosened/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#exact-optional-property-types",
-      "file": "tests/test-fixtures/cd3-extends/packages/unset/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/unset/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-fallthrough-cases-in-switch",
-      "file": "tests/test-fixtures/cd3-extends/packages/unset/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/unset/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-implicit-override",
-      "file": "tests/test-fixtures/cd3-extends/packages/unset/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/unset/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-property-access-from-index-signature",
-      "file": "tests/test-fixtures/cd3-extends/packages/unset/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/unset/tsconfig.json"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-3#no-unchecked-indexed-access",
-      "file": "tests/test-fixtures/cd3-extends/packages/unset/tsconfig.json"
+      "file": "src/infrastructure/engines/audit/CD-3/cd3-extends/packages/unset/tsconfig.json"
     },
     {
       "kind": "file-carve-out",

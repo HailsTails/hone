@@ -1,9 +1,9 @@
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { ReportOutput } from "../core/values/report-output.ts";
-import type { CheckReport } from "../core/verdict/check-report.ts";
-import { renderGuidedReportText } from "../core/verdict/report-text.ts";
-import { SECTION_NAMES, type SectionName } from "../core/verdict/section-roles.ts";
-import type { SymptomGuide } from "../core/verdict/symptom-notes.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { ReportOutput } from "../src/infrastructure/hone-config-file/report-output.ts";
+import type { CheckReport } from "../src/domain/report/check-report.ts";
+import { renderGuidedReportText } from "../src/infrastructure/printed-report/report-text.ts";
+import { SECTION_NAMES, type SectionName } from "../src/domain/report/section-roles.ts";
+import type { SymptomGuide } from "../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
 
 export type Fills = Readonly<Record<string, string>>;
 

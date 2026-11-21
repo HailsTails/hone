@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ModuleLoaderPort } from "../core/platform-ports/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../src/infrastructure/node/modules/module-loader-port.ts";
 import {
   ESLINT_LINES,
   eslintClassOn,

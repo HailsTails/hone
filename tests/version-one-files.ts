@@ -1,4 +1,4 @@
-import type { ExceptionsFile } from "../core/upgrade/version-one-records/exception-record.ts";
+import type { ExceptionsFile } from "../src/domain/records/discipline-exceptions/exception-record.ts";
 
 const VERSION_ONE = 1;
 

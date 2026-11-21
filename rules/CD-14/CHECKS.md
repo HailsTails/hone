@@ -20,7 +20,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - Other generated code can be left out of the audit mechanism's scope with `exclude` in disciplines.json. Hand-written classes are not out of scope.
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-14/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-14/README.md).
 - `hone/no-extraneous-class` is typescript-eslint's `no-extraneous-class` with `allowConstructorOnly: true`, `allowEmpty: true`, `allowStaticOnly: false` and `allowWithDecorator: true`.
 - It flags a class whose members are all static.
 - Allowed: empty classes, decorated classes and classes that extend another class.

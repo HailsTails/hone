@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkAt, checksOf } from "../core/symptom-catalogue/check-address.ts";
+import { checkAt, checksOf } from "../src/domain/language-layer/check-address.ts";
 import { LOOPS_CLAUSE, SETTINGS_CATALOGUE, TEST_BODY_CLAUSE } from "./settings-catalogue.ts";
 
 describe("SETTINGS_CATALOGUE", () => {

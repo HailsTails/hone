@@ -1,4 +1,4 @@
-import type { ExportDeclaration, ImportDeclaration, SyntaxNode, SyntaxTree } from "../mechanisms/audit/runner/typescript-parse.ts";
+import type { ExportDeclaration, ImportDeclaration, SyntaxNode, SyntaxTree } from "../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
 import { defaultParsePort } from "./typescript-parse-port.ts";
 
 export type ImportForm = "type-only" | "value" | "dynamic";

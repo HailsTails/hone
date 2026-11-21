@@ -1,9 +1,9 @@
-import type { RecordsDocumentRefusal } from "../core/records/hone-record.ts";
-import { runLoadFailureLine } from "../core/report/load-failure-lines.ts";
-import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../core/report/run-help.ts";
-import type { RunLoadFailure } from "../core/report/run-load-failure.ts";
-import { mechanismIdSchema } from "../core/values/identifiers.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
+import type { RecordsDocumentRefusal } from "../src/infrastructure/hone-records-folder/hone-record.ts";
+import { runLoadFailureLine } from "../src/infrastructure/printed-report/load-failures/load-failure-lines.ts";
+import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../src/operations/help/run-help.ts";
+import type { RunLoadFailure } from "../src/domain/report/run-load-failure.ts";
+import { mechanismIdSchema } from "../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { Fills, PrintedLine } from "./output-contract.ts";
 import { RUNNER_FAILURE_SAMPLES } from "./printable-lines.ts";
 import { ESLINT_ENGINE, WALKER } from "./report-catalogue.ts";
@@ -12,7 +12,7 @@ type Filled<Entry> = { readonly entry: Entry; readonly fills: Fills };
 
 type FailureSamples = { readonly [Kind in RunLoadFailure["kind"]]: readonly Filled<Extract<RunLoadFailure, { readonly kind: Kind }>>[] };
 
-const UPGRADE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/core/check/tool-command.js upgrade --repo /work/shop";
+const UPGRADE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop";
 
 const CATALOGUE_PATH = "node_modules/@hailstails/hone/rules/typescript/symptoms.json";
 

@@ -4,19 +4,19 @@
     {
       "kind": "authorised-location",
       "clause": "CD-6#naming-convention",
-      "file": "mechanisms/eslint/runner/rule-sites.ts",
+      "file": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts",
       "reason": "Structural CD-6 location: rule-sites.ts is the single boundary between Hone's ESLint pieces and ESLint's rule contract. Its everyListener maps the seven sites the pieces observe (file, functions, classes, calls, throws, ifs and variable declarations) onto the listener keys ESLint calls, which are ESTree node type names such as Program and FunctionDeclaration. No piece writes those names as keys. This record authorises this one mapping and grants no tolerated debt or any other location.",
       "whyChain": {
         "whys": [
           {
             "why": "Why does rule-sites.ts have object keys named Program, FunctionDeclaration and the other ESTree node types?",
             "because": "ESLint calls a rule's listeners by looking up keys named after ESTree node types on the object the rule's create returns, so a listener has to use those exact names as its keys.",
-            "evidence": "mechanisms/eslint/runner/rule-sites.ts everyListener; node_modules/eslint/lib/types/index.d.ts:663 declares NodeListener keyed by Node['type'], with Program at line 669, on eslint 10.11.0."
+            "evidence": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts everyListener; node_modules/eslint/lib/types/index.d.ts:663 declares NodeListener keyed by Node['type'], with Program at line 669, on eslint 10.11.0."
           },
           {
             "why": "Why must Hone's ESLint pieces hand ESLint a listener object at all?",
             "because": "Hone's ESLint mechanism runs each clause as a rule inside the team's own ESLint run through the projection, so every piece is an ESLint plugin whose rules ESLint loads and calls.",
-            "evidence": "mechanisms/eslint/CD-41/piece.json names pluginModule cd41/cd41.eslint-plugin.ts; disciplines.eslint.mjs imports each piece's plugin; mechanisms/eslint/runner/README.md."
+            "evidence": "src/infrastructure/engines/eslint/CD-41/piece.json names pluginModule cd41/cd41.eslint-plugin.ts; disciplines.eslint.mjs imports each piece's plugin; src/infrastructure/engines/eslint/runner/README.md."
           },
           {
             "why": "Why are the node type names written as keys in rule-sites.ts rather than in each plugin?",
@@ -26,7 +26,7 @@
           {
             "why": "Why can the boundary not spell those keys in camelCase like the rest of Hone's names?",
             "because": "ESLint looks each key up by its exact string, so a renamed key is never called, and writing them as one literal object is what lets the official Rule.RuleListener type check every handler against its node type.",
-            "evidence": "mechanisms/eslint/runner/rule-sites.test.ts, test \"calls the $rule observers at exactly their sites and no others\"; node_modules/eslint/lib/types/index.d.ts NodeListener."
+            "evidence": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.test.ts, test \"calls the $rule observers at exactly their sites and no others\"; node_modules/eslint/lib/types/index.d.ts NodeListener."
           },
           {
             "why": "Why are those exact strings fixed outside Hone?",
@@ -43,24 +43,24 @@
     {
       "kind": "authorised-location",
       "clause": "CD-6#naming-convention",
-      "file": "scripts/install-proof-plan.test.ts",
+      "file": "delivery/install-proof/install-proof-plan.test.ts",
       "reason": "Structural CD-6 location: the environmentWithoutGit test hands the unit an environment named by the variables git and the shell read, GIT_DIR, GIT_INDEX_FILE, PATH and HOME, and asserts which names survive. Those names are the subject of the test, fixed outside Hone, so they cannot be camelCased. This record authorises those environment-variable keys in this one file and grants no tolerated debt or any other location.",
       "whyChain": {
         "whys": [
           {
             "why": "Why does install-proof-plan.test.ts have object keys named GIT_DIR, GIT_INDEX_FILE, PATH and HOME?",
             "because": "The test of environmentWithoutGit hands the unit an environment holding those variables and expects back one without the GIT_ ones, so the keys are the unit's input and its expected output.",
-            "evidence": "scripts/install-proof-plan.test.ts:335-337, describe \"environmentWithoutGit\", test \"removes every GIT_ variable and keeps the rest\"."
+            "evidence": "delivery/install-proof/install-proof-plan.test.ts:335-337, describe \"environmentWithoutGit\", test \"removes every GIT_ variable and keeps the rest\"."
           },
           {
             "why": "Why is environmentWithoutGit handed an environment and expected to return one without the GIT_ variables?",
             "because": "createCommandRunPort passes the ambient process environment through environmentWithoutGit and spawns every proof command, git included, with what remains, so the unit decides which inherited variables reach each child process.",
-            "evidence": "scripts/install-proof-ports.ts:131 applies environmentWithoutGit to ambientEnvironment; scripts/install-proof-ports.ts:201 passes process.env as ambientEnvironment; scripts/install-proof-plan.ts:348 filters on name.startsWith(\"GIT_\")."
+            "evidence": "delivery/install-proof/install-proof-ports.ts:131 applies environmentWithoutGit to ambientEnvironment; delivery/install-proof/install-proof-ports.ts:201 passes process.env as ambientEnvironment; delivery/install-proof/install-proof-plan.ts:348 filters on name.startsWith(\"GIT_\")."
           },
           {
             "why": "Why must inherited GIT_ variables not reach the git the proof spawns?",
             "because": "The proof runs git init, add and commit in a scratch consumer repository, and git obeys GIT_DIR and GIT_INDEX_FILE over its working directory, so inherited values would point those commands at the outer repository instead.",
-            "evidence": "scripts/run-install-proof.ts:541 runs git init -q in the consumer; scripts/run-install-proof.ts:127-128 run git add -A and git commit; https://git-scm.com/docs/git#_environment_variables defines GIT_DIR and GIT_INDEX_FILE."
+            "evidence": "delivery/install-proof/run-install-proof.ts:541 runs git init -q in the consumer; delivery/install-proof/run-install-proof.ts:127-128 run git add -A and git commit; https://git-scm.com/docs/git#_environment_variables defines GIT_DIR and GIT_INDEX_FILE."
           },
           {
             "why": "Why would git obey a GIT_DIR pointing at the outer repository when the proof runs?",
@@ -74,7 +74,7 @@
           }
         ],
         "rootCause": "Git's documented contract fixes GIT_DIR and GIT_INDEX_FILE as the names that locate a repository and its index, and POSIX fixes PATH and HOME, so the names are an outside contract the install proof can meet only by those exact strings.",
-        "rootCheck": "On 2026-11-20, scripts/install-proof-plan.ts:348 still filters on name.startsWith(\"GIT_\") and scripts/install-proof-ports.ts:131 still applies environmentWithoutGit to every command the proof spawns.",
+        "rootCheck": "On 2026-11-20, delivery/install-proof/install-proof-plan.ts:348 still filters on name.startsWith(\"GIT_\") and delivery/install-proof/install-proof-ports.ts:131 still applies environmentWithoutGit to every command the proof spawns.",
         "readback": "Git's contract fixes GIT_DIR and GIT_INDEX_FILE and exports them to hooks, therefore a proof started from a hook inherits them, therefore environmentWithoutGit removes the GIT_ variables before git runs in the scratch repository, therefore its test in install-proof-plan.test.ts has object keys named GIT_DIR, GIT_INDEX_FILE, PATH and HOME.",
         "owner": "owner decision on HailsTails/hone#204"
       }

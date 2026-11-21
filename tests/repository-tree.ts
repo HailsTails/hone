@@ -1,6 +1,6 @@
-import { createDefaultDirectoryPort } from "../core/platform-ports/file-system-port.ts";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
+import { createDefaultDirectoryPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
 
 const directory = createDefaultDirectoryPort({});
 

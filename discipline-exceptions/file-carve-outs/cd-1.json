@@ -4,27 +4,27 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-1#any-cast",
-      "file": "tests/test-fixtures/cd1-cascade/src/legacy.ts"
+      "file": "src/application/run/check/cd1-cascade/src/legacy.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-1#any-cast",
-      "file": "tests/test-fixtures/cd1-exempted/src/fresh.ts"
+      "file": "src/application/run/check/cd1-exempted/src/fresh.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-1#explicit-any",
-      "file": "tests/test-fixtures/cd1-exempted/src/fresh.ts"
+      "file": "src/application/run/check/cd1-exempted/src/fresh.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-1#any-cast",
-      "file": "tests/test-fixtures/cd1-exempted/src/parse.ts"
+      "file": "src/application/run/check/cd1-exempted/src/parse.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-1#explicit-any",
-      "file": "tests/test-fixtures/cd1-exempted/src/parse.ts"
+      "file": "src/application/run/check/cd1-exempted/src/parse.ts"
     }
   ]
 }

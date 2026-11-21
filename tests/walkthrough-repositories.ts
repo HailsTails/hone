@@ -1,25 +1,25 @@
-import type { VersionOneCommandRequest } from "../core/upgrade/version-one-records/version-one-command-request.ts";
-import { runToolCommand } from "../core/check/run-tool-command.ts";
-import { createDefaultExceptionRepositoryOf } from "../core/exception-records/exception-layout.ts";
-import { createDefaultDirectoryPort } from "../core/platform-ports/file-system-port.ts";
-import { createDefaultFileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { GitPort } from "../core/platform-ports/git-port.ts";
-import { createDefaultModuleLoaderPort } from "../core/platform-ports/module-loader-port.ts";
-import { createDefaultPathPort } from "../core/platform-ports/path-port.ts";
-import type { ProcessPort } from "../core/platform-ports/process-port.ts";
-import { absolutePathSchema } from "../core/values/absolute-path.ts";
-import { type RepoPath, repoPathSchema } from "../core/values/repo-path.ts";
+import type { VersionOneCommandRequest } from "../src/application/ports/version-one-command-request.ts";
+import { runToolCommand } from "../src/run-tool-command.ts";
+import { createDefaultExceptionRepositoryOf } from "../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import { createDefaultDirectoryPort } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { GitPort } from "../src/infrastructure/git/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../src/infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../src/infrastructure/node/process/process-port.ts";
+import { absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import { type RepoPath, repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
 import { ADOPTING_GUIDE_TEXT, reportAsInstalled, workedExampleOf } from "./adopting-guide.ts";
 import { recordedProcessWith } from "./command-harness.ts";
 import { contractTextAt } from "./output-contract.ts";
 
-const WALKTHROUGH = `${import.meta.dirname}/test-fixtures/walkthrough`;
+const WALKTHROUGH = `${import.meta.dirname}/../src/infrastructure/command-line/documentation/walkthrough`;
 
 export const BEFORE = `${WALKTHROUGH}/before`;
 
 export const AFTER = `${WALKTHROUGH}/after`;
 
-const ENTRY_URL = new URL("../core/check/tool-command.ts", import.meta.url).href;
+const ENTRY_URL = new URL("../src/hone.ts", import.meta.url).href;
 
 export const BEFORE_TRACKED: readonly RepoPath[] = [
   repoPathSchema.parse("generated/schema.ts"),
@@ -50,6 +50,7 @@ const trackingGit = (request: { readonly tracked: readonly RepoPath[] }): GitPor
   changedSince: notUsed,
   contentInBase: notUsed,
   textInBase: notUsed,
+  renamedSince: notUsed,
 });
 
 const commandOver = (request: { readonly tracked: readonly RepoPath[]; readonly process: ProcessPort }): VersionOneCommandRequest => ({

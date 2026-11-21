@@ -20,7 +20,7 @@ Read [the verdict and the named pages it points at](README.md) first. This page 
 - Other poor names (`manager`, `handler`, vague nouns) are left to review.
 
 ## What the ESLint check flags
-Needs ESLint adopted through the projection; see [the ESLint piece](../../mechanisms/eslint/CD-6/README.md).
+Needs ESLint adopted through the projection; see [the ESLint piece](../../src/infrastructure/engines/eslint/CD-6/README.md).
 - `hone-cd6/naming-convention` is typescript-eslint's `naming-convention` with the option list in the piece's `piece.json`.
 - Enum members are CONSTANT_CASE. `const` bindings are CONSTANT_CASE, camelCase or PascalCase.
 - Object literal properties are camelCase. Type properties are camelCase or PascalCase.

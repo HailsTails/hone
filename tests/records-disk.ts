@@ -1,13 +1,13 @@
-import { createSelectionRepository, type SelectionRepository } from "../core/consumer-selection/consumer-selection.ts";
-import { createExceptionRepository, type ExceptionLayoutPorts } from "../core/exception-records/exception-layout.ts";
-import type { ExceptionRepository, ExceptionRepositoryOf } from "../core/upgrade/version-one-records/exception-records.ts";
-import type { DirectoryEntry } from "../core/platform-ports/file-system-port.ts";
-import type { FileTextPort } from "../core/platform-ports/file-text-port.ts";
-import type { GitPort } from "../core/platform-ports/git-port.ts";
-import { createPathPort, type PathPort } from "../core/platform-ports/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../core/values/absolute-path.ts";
-import type { ModuleExtension } from "../core/values/install-layout.ts";
-import { repoPathSchema } from "../core/values/repo-path.ts";
+import { createSelectionRepository, type SelectionRepository } from "../src/infrastructure/disciplines-file/consumer-selection.ts";
+import { createExceptionRepository, type ExceptionLayoutPorts } from "../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository, ExceptionRepositoryOf } from "../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { DirectoryEntry } from "../src/infrastructure/node/file-system/file-system-port.ts";
+import type { FileTextPort } from "../src/infrastructure/node/file-system/file-text-port.ts";
+import type { GitPort } from "../src/infrastructure/git/git-port.ts";
+import { createPathPort, type PathPort } from "../src/infrastructure/node/path-port.ts";
+import { type AbsolutePath, absolutePathSchema } from "../src/infrastructure/content-files/absolute-path.ts";
+import type { ModuleExtension } from "../src/infrastructure/node/modules/install-layout.ts";
+import { repoPathSchema } from "../src/infrastructure/hone-records-folder/repo-path.ts";
 
 export type RecordsDisk = {
   readonly repoRoot: AbsolutePath;
@@ -81,6 +81,7 @@ export const recordsDisk = (request: {
           const text = request.base[file];
           return { outcome: "ok", value: text === undefined ? { presence: "absent-from-base" } : { presence: "present-in-base", text } };
         },
+        renamedSince: () => ({ outcome: "ok", value: new Map() }),
       },
       gitTree: {
         pathsAt: () => ({ outcome: "ok", value: Object.keys(request.base).map((file) => repoPathSchema.parse(file)) }),

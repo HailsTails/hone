@@ -4,29 +4,29 @@
     {
       "kind": "authorised-location",
       "clause": "CD-27#test-body-logic",
-      "file": "mechanisms/eslint/runner/native-exceptions.integration.test.ts",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts",
       "reason": "Text past its reader, at one test site: this integration test writes two package.json files into its own scratch monorepo, the boundary that uses JSON. eslintVersion serialises node_modules/eslint/package.json for the ESLint line under test, and lintScript serialises the root package.json for the lint command under test; each is JSON.stringify of a written-out object, the form preferred over hand-written JSON text. This record authorises those two writes for this symptom alone and grants no other test-body logic in the file.",
       "whyChain": {
         "whys": [
           {
             "why": "Why does native-exceptions.integration.test.ts call JSON.stringify?",
             "because": "monorepoRun overlays two package.json files onto a fixture repository through overlaidFileText, and a package.json file is JSON text on disk, so each object the test writes must be serialised there.",
-            "evidence": "mechanisms/eslint/runner/native-exceptions.integration.test.ts:537 eslintVersion and :539 lintScript; monorepoRun's overlaidFileText files map writes ${repo}/node_modules/eslint/package.json and ${repo}/package.json."
+            "evidence": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts:537 eslintVersion and :539 lintScript; monorepoRun's overlaidFileText files map writes ${repo}/node_modules/eslint/package.json and ${repo}/package.json."
           },
           {
             "why": "Why does monorepoRun overlay package.json files onto the fixture repository?",
             "because": "The ESLint runner under test reads the installed eslint version and each lint script from package.json files, and the test proves its native-exception reports for each ESLint line and each lint command, so the values vary per case and belong to the test's subject.",
-            "evidence": "mechanisms/eslint/runner/create-eslint-runner.ts packageJsonExceptions and scannedPackageExceptions; the monorepoRun cases in the same test file pass version and lintCommand per row."
+            "evidence": "src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts packageJsonExceptions and scannedPackageExceptions; the monorepoRun cases in the same test file pass version and lintCommand per row."
           },
           {
             "why": "Why does the ESLint runner read the eslint version and the lint scripts from package.json files?",
             "because": "ESLint's installed major decides how the runner finds the config and reads its flags, and npm installs that version in node_modules/eslint/package.json and keeps each lint command in a package's scripts, so package.json is where both facts live.",
-            "evidence": "mechanisms/eslint/runner/config-lookup.ts:53 installedEslintMajor reads node_modules/eslint/package.json through eslintVersionFileSchema; :73 scriptsOf reads a package.json's scripts through packageJsonSchema."
+            "evidence": "src/infrastructure/engines/eslint/runner/config-roots/config-lookup.ts:53 installedEslintMajor reads node_modules/eslint/package.json through eslintVersionFileSchema; :73 scriptsOf reads a package.json's scripts through packageJsonSchema."
           },
           {
             "why": "Why does ESLint's installed major decide how the runner finds the config and reads its flags?",
             "because": "ESLint 9 resolves one eslint.config file from the repository root unless a lint script passes the v10_config_lookup_from_file flag, while other majors resolve the nearest config to each linted file, so the runner must match that lookup to judge which config applies to each file.",
-            "evidence": "mechanisms/eslint/runner/config-lookup.ts:18 ROOT_LOOKUP_MAJOR is 9, :30 NEAREST_LOOKUP_FLAGS, :116 detectedLookup chooses nearest-to-file or repository-root."
+            "evidence": "src/infrastructure/engines/eslint/runner/config-roots/config-lookup.ts:18 ROOT_LOOKUP_MAJOR is 9, :30 NEAREST_LOOKUP_FLAGS, :116 detectedLookup chooses nearest-to-file or repository-root."
           },
           {
             "why": "Why must the runner judge which config applies to each linted file?",
