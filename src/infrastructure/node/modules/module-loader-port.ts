@@ -1,18 +1,5 @@
 import { pathToFileURL } from "node:url";
-import type { Result } from "../../../domain/result.ts";
-
-export type ModuleLoad = Result<
-  unknown,
-  {
-    readonly kind: "module-unloadable";
-    readonly path: string;
-    readonly detail: string;
-  }
->;
-
-export type ModuleLoaderPort = {
-  readonly load: (request: { readonly path: string }) => Promise<ModuleLoad>;
-};
+import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
 
 export type ImportModule = (request: { readonly path: string }) => Promise<unknown>;
 

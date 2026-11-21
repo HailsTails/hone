@@ -1,7 +1,7 @@
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";

@@ -1,4 +1,4 @@
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { CHANGE_TYPES, type ConventionalSubject, conventionalSubjectOf, type SubjectRejection } from "../commit-subject/conventional-subject.ts";
 
 const USAGE = "usage: pull-request-title <title>\n";

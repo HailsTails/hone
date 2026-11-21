@@ -3,7 +3,7 @@ import { installRootOf } from "./infrastructure/command-line/installation/instal
 import type { LoadFailure } from "./domain/report/load-failure.ts";
 import type { CommandRequest } from "./application/ports/command-request.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
-import { moduleExtensionOf } from "./infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "./application/ports/host/module-extension.ts";
 import type { Result } from "./domain/result.ts";
 import { type VersionTwoLocations, type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
 import type { VersionTwoStages } from "./application/run/version-two-run.ts";

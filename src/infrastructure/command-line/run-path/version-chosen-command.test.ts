@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-records.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
-import type { GitPort } from "../../git/git-port.ts";
-import type { ModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
+import type { GitPort } from "../../../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../node/process/process-port.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import type { CommandRequest } from "../../../application/ports/command-request.ts";
 import { notReadyCommandOf, settingsRequiringCommandOf, type VersionedHandler, versionChosenCommandOf } from "./version-chosen-command.ts";
 

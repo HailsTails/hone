@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../../node/path-port.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile } from "../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";

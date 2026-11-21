@@ -1,7 +1,8 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import type { Finding } from "../../domain/finding/governance.ts";
 import { createDefaultDirectoryPort, createDefaultFileRemovalPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import { answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
@@ -18,7 +19,7 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { Result } from "../../domain/result.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import {
   type CommandRunPort,
   createDefaultCommandRunPort,

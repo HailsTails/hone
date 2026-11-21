@@ -4,7 +4,8 @@ import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts"
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
-import { type RunnerClause, runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
+import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
@@ -13,7 +14,8 @@ import { clauseAddressSchema } from "../../../discipline-exceptions-folder/claus
 import { disciplineIdSchema, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../../node/path-port.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";

@@ -1,7 +1,9 @@
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../node/file-system/file-text-port.ts";
-import { createDefaultPathPort, type PathPort } from "../node/path-port.ts";
+import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../node/path-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { ClauseExceptions, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
 import { settledClauseEdition } from "../../domain/settings/clause-settings/clause-edition.ts";
@@ -16,7 +18,7 @@ import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.t
 import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import type { ModuleExtension } from "../node/modules/install-layout.ts";
+import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import type { Result } from "../../domain/result.ts";
 import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
 import { runSettingsOf } from "./selection-file.ts";

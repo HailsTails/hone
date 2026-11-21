@@ -1,4 +1,4 @@
-import { moduleFileForm } from "../../../../node/modules/install-layout.ts";
+import { moduleFileForm } from "../../../../../application/ports/host/module-extension.ts";
 import { isRepoPathText } from "../../../../../domain/repository/repo-path.ts";
 import { z } from "zod";
 import { TYPE_DIRECTIVES } from "./type-directives.ts";

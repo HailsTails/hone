@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";

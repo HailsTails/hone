@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProcessPort } from "../../node/process/process-port.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import { printOutcome } from "./print-outcome.ts";
 
 const processWith = (): ProcessPort => ({

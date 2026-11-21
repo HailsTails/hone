@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { pieceFilePath } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";

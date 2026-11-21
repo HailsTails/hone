@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { parsedJson } from "../../content-files/parsed-json.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";

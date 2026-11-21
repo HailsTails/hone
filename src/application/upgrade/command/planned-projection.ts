@@ -14,11 +14,12 @@ import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
 import type { Engine, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { moduleExtensionOf } from "../../../infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../../ports/host/module-extension.ts";
 import { projectionOutputsOf } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { MappedRecordsDocument } from "../../../domain/records/upgrade/records-mapping.ts";
-import type { ProjectionFailure, ProjectionFilesOf } from "../proof/upgrade-plan.ts";
+import type { ProjectionFilesOf } from "../proof/upgrade-plan.ts";
+import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 
 const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 

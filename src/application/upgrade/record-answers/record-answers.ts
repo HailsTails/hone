@@ -6,7 +6,7 @@ import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/c
 import type { Result } from "../../../domain/result.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { AuthorisedLocationRecord, CarveOutAnswered, FileCarveOutRecord, LocationAnswered, OracleFailure, RecordAnswered } from "./record-answer-oracle.ts";
+import type { AuthorisedLocationRecord, CarveOutAnswered, FileCarveOutRecord, LocationAnswered, OracleFailure, RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
 
 export type RecordAnswersRequest = {
   readonly records: readonly ExceptionRecord[];

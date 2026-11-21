@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LoadedRunner, RunnerClause, RunRequest } from "../runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";

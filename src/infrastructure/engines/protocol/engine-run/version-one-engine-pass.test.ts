@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CheckRequest } from "../../../../application/run/check/run-check.ts";
 import type { SelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
-import type { LoadedRunner } from "../runner-module/runner-module-schema.ts";
-import type { GitPort } from "../../../git/git-port.ts";
-import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
+import type { LoadedRunner } from "../../../../application/ports/engine/runner-module.ts";
+import type { GitPort } from "../../../../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import type { SelectionReading } from "../../../../domain/settings/selection/selection.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";

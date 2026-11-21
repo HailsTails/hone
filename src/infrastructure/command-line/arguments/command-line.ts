@@ -1,4 +1,4 @@
-import type { ExitCode } from "../../node/process/process-port.ts";
+import type { ExitCode } from "../../../application/ports/host/process-port.ts";
 import { PRUNE_DEBT_SUBCOMMAND, RECORD_DEBT_SUBCOMMAND } from "./subcommand-names.ts";
 import { FORFEITURE_ASSESSMENTS } from "../../../domain/settings/assessment.ts";
 import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";

@@ -12,16 +12,11 @@ import type { Result } from "../../../domain/result.ts";
 import type { ClauseChoice, ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { checksOfClause } from "../../../domain/language-layer/clause-checks.ts";
 import type { UpgradeDrop, UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
+import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;
   readonly catalogues: readonly RuleSetCatalogue[];
-};
-
-export type MarkedNotAdopted = {
-  readonly check: ListedAddress;
-  readonly clause: ClauseAddress;
-  readonly reason: "discipline-not-selected";
 };
 
 export type MappedSettings = {

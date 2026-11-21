@@ -1,6 +1,6 @@
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../infrastructure/git/git-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../ports/git-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";

@@ -2,8 +2,8 @@ import { loadFailureDetail } from "../../infrastructure/printed-report/load-fail
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import { readDisciplineFile, readPieceFile } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { ClauseDefinition, SourceCase } from "../../domain/rule-set/rule-set-types.ts";

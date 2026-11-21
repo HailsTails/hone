@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { loadRunner, type RunnerLocation } from "./load-runner.ts";
-import type { LoadedRunner } from "../runner-module/runner-module-schema.ts";
+import type { LoadedRunner } from "../../../../application/ports/engine/runner-module.ts";
 
 const RUNNER_PATH = "/install/src/infrastructure/engines/audit/runner/runner.ts";
 

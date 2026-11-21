@@ -3,8 +3,8 @@ import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } 
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
-import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import type { GitPort, GitTreePort } from "../../../infrastructure/git/git-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
+import type { GitPort, GitTreePort } from "../../ports/git-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSourceOf } from "../../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";

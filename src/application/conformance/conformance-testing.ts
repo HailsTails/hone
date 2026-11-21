@@ -1,10 +1,10 @@
 import { installRootOfApiEntry } from "../../infrastructure/command-line/installation/install-root.ts";
 import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../ports/host/module-extension.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
 import { clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";
 import type { ClauseConformanceOf, ClauseUnderTestOf, RepoPathOf } from "./conformance-testing-types.ts";

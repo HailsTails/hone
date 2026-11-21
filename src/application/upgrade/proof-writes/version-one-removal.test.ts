@@ -1,7 +1,7 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
-import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
+import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
+import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { removedVersionOneFiles, type VersionOneRemoval, type VersionOneRemovalPorts } from "./version-one-removal.ts";

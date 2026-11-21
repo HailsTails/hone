@@ -1,11 +1,12 @@
-import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
+import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
-import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import type { PathPort } from "../../../infrastructure/node/path-port.ts";
+import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { OutsideRoot, RemovalFailure, Removed } from "../../ports/upgrade/proof-outcome.ts";
 
 export type VersionOneRemovalPorts = {
   readonly fileRemoval: FileRemovalPort;
@@ -23,14 +24,6 @@ export type VersionOneRemoval = {
   readonly projections: readonly AbsolutePath[];
   readonly settings: AbsolutePath;
 };
-
-export type Removed = { readonly files: readonly AbsolutePath[]; readonly folders: readonly AbsolutePath[] };
-
-export type OutsideRoot = { readonly kind: "records-file-outside-root"; readonly path: AbsolutePath; readonly root: AbsolutePath };
-
-export type RemovalFailure =
-  | OutsideRoot
-  | { readonly kind: "unremovable"; readonly path: AbsolutePath; readonly detail: string; readonly removed: Removed };
 
 const PATH_SEPARATOR = /[\\/]/;
 

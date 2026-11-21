@@ -4,7 +4,7 @@ import {
   rejectedCall,
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
-import type { LoadedStandaloneRunner, RunRequest } from "../runner-module/runner-module-schema.ts";
+import type { LoadedStandaloneRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import { runnerResultSchema } from "../runner-module/runner-result-schema.ts";
 import type { Hit, MeasuredPair, NativeException } from "../../../../domain/runner/runner-result-types.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";

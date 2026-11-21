@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { LoadedRunner } from "../ports/engine/runner-module.ts";
 import type { LoadedEngine } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { conformingRunnerOf } from "./conforming-runner.ts";

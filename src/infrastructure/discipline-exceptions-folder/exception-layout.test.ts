@@ -3,7 +3,7 @@ import { type ExceptionLayoutPorts, createExceptionRepository, placementOf } fro
 import type { ExceptionRepository } from "./exception-records.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { DirectoryEntry } from "../node/file-system/file-system-port.ts";
+import type { DirectoryEntry } from "../../application/ports/file-system/directory-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";

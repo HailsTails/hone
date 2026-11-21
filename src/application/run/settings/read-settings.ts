@@ -2,10 +2,6 @@ import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.
 import type { VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type { RunSettings } from "../../../domain/settings/run-settings.ts";
 import type { ClauseBinding, ClauseEditionReading, ClauseRoot, SelectedClause, SelectionReading } from "../../../domain/settings/selection/selection.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations } from "../../../domain/rule-set/rule-set-types.ts";
-import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { AnchorKind } from "../../../domain/finding/anchor.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
@@ -16,32 +12,8 @@ import type { ConventionKey, Conventions } from "../../../domain/settings/conven
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
 import { settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
-import type { DeclaredRuleSet, EslintConfigLookupChoice, SettingsFile } from "../../../domain/settings/settings-file.ts";
-
-export type SettingsDocument = { readonly path: string; readonly document: unknown };
-
-export type PieceClause = {
-  readonly exceptions: ClauseExceptions;
-  readonly anchor: AnchorKind;
-  readonly pieceRoot: string;
-  readonly settings: unknown;
-  readonly declarations: ClauseSettingDeclarations;
-  readonly editions: ClauseEditions;
-};
-
-export type SettingsSources = {
-  readonly settingsFile: (request: Record<string, never>) => Result<SettingsDocument, VersionTwoLoadFailure>;
-  readonly ruleSetRoot: (request: {
-    readonly ruleSet: ClauseAddress["ruleSet"];
-    readonly ruleSets: readonly DeclaredRuleSet[];
-  }) => Result<AbsolutePath, VersionTwoLoadFailure>;
-  readonly catalogue: (request: { readonly ruleSetRoot: AbsolutePath }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
-  readonly pieceClause: (request: {
-    readonly ruleSetRoot: AbsolutePath;
-    readonly clause: ClauseAddress;
-    readonly mechanism: MechanismId;
-  }) => Result<PieceClause, VersionTwoLoadFailure>;
-};
+import type { EslintConfigLookupChoice, SettingsFile } from "../../../domain/settings/settings-file.ts";
+import type { SettingsDocument, SettingsSources } from "../../ports/settings-sources.ts";
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 

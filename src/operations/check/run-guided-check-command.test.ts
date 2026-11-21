@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";
 import type { SymptomGuide } from "../../infrastructure/printed-report/symptoms/symptom-notes.ts";

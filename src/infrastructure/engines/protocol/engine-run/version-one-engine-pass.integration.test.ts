@@ -3,11 +3,14 @@ import { createSelectionRepository, type SelectionRepository } from "../../../di
 import { createExceptionRepository } from "../../../discipline-exceptions-folder/exception-layout.ts";
 import type { ExceptionRepository } from "../../../discipline-exceptions-folder/exception-records.ts";
 import { createDefaultFileRemovalPort } from "../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../git/git-port.ts";
-import type { ModuleExtension } from "../../../node/modules/install-layout.ts";
-import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort, type PathPort } from "../../../node/path-port.ts";
+import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../../../application/ports/git-port.ts";
+import type { ModuleExtension } from "../../../../application/ports/host/module-extension.ts";
+import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../../../node/path-port.ts";
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import type { Finding } from "../../../../domain/finding/governance.ts";
 import { createSymptomCatalogueRepository } from "../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
@@ -26,7 +29,7 @@ import { createEslintPort, type EslintPort } from "../../eslint/runner/toolchain
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../../delivery/install-proof/install-proof-ports.ts";
 import { createAnsweringOracle } from "../../../../application/upgrade/record-answers/answering-oracle.ts";
-import type { FileCarveOutRecord } from "../../../../application/upgrade/record-answers/record-answer-oracle.ts";
+import type { FileCarveOutRecord } from "../../../../application/ports/upgrade/record-answer-oracle.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
 
 const path = createDefaultPathPort({});

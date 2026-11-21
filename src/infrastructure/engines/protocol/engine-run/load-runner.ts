@@ -1,11 +1,13 @@
 import { z } from "zod";
-import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../node/path-port.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
-import { type ModuleExtension, runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
+import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
+import type { ModuleExtension } from "../../../../application/ports/host/module-extension.ts";
 import type { Result } from "../../../../domain/result.ts";
-import { type LoadedRunner, runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
+import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
+import type { LoadedRunner } from "../../../../application/ports/engine/runner-module.ts";
 
 export type RunnerLocation = {
   readonly installRoot: AbsolutePath;

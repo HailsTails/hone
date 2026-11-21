@@ -4,7 +4,7 @@ import type { ExceptionRepository } from "../../../infrastructure/discipline-exc
 import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";

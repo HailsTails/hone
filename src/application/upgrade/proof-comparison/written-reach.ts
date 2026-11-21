@@ -4,8 +4,7 @@ import { checkAt } from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import type { RecordInput, WrittenRecord } from "../../../domain/records/upgrade/records-mapping.ts";
-
-export type ReachBeyondEntries = { readonly symptom: string; readonly file: string };
+import type { ReachBeyondEntries } from "../../ports/upgrade/plan-refusal.ts";
 
 type Reach = "within-an-entry" | "beyond-the-entries";
 

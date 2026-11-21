@@ -3,24 +3,21 @@ import { runCheck } from "./run-check.ts";
 import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
-import type { EntryKindPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
+import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import {
   toolchainBoundEmbeddedRunner,
   toolchainBoundStandaloneRunner,
 } from "../../../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
 import { createDefaultFileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import {
-  createDefaultFileTextPort,
-  type FileTextPort,
-} from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import {
-  createDefaultModuleLoaderPort,
-  type ModuleLoaderPort,
-} from "../../../infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PackageLocationPort } from "../../../infrastructure/node/modules/package-location-port.ts";
-import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
+import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { installFormOf } from "../../../infrastructure/node/modules/install-layout.ts";

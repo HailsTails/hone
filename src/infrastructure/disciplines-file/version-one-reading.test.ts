@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { SelectionRepository } from "./consumer-selection.ts";
-import type { FileTextPort } from "../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";

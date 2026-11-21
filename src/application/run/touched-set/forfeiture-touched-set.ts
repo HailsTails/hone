@@ -1,4 +1,4 @@
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { ForfeitureAssessment } from "../../../domain/settings/assessment.ts";
 import { computeTouchedSet } from "./touched-set.ts";

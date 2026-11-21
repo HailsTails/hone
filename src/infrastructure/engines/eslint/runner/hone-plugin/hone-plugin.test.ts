@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { ModuleLoad, ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";

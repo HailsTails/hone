@@ -1,39 +1,22 @@
-import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
-import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
-import type { RecordAnswerOracle, OracleFailure } from "../record-answers/record-answer-oracle.ts";
-import { type ProofDifference, proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
-import { type PlannedFile, type ProofWriteRefusal, type ProofWritePorts, type ProofWrites, rolledBackProofWrites, type Unrestored, writeProofFiles } from "../proof-writes/proof-writes.ts";
-import { type OutsideRoot, type Removed, type RemovalFailure, type RecordsRoot, filesStillPresentOf, recordsOutsideRoot, removedVersionOneFiles, type VersionOneRemoval } from "../proof-writes/version-one-removal.ts";
-import type { MarkedNotAdopted } from "../mapping/settings-mapping.ts";
+import type { RecordAnswerOracle } from "../../ports/upgrade/record-answer-oracle.ts";
+import type { AfterWriting, ProofCarriedOver, ProofRefusal, Unrestored } from "../../ports/upgrade/proof-outcome.ts";
+import type { ProofRuns } from "../../ports/upgrade/proof-runs.ts";
+import type { VersionOneFiles, VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
+import { proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
+import { type PlannedFile, type ProofWritePorts, type ProofWrites, rolledBackProofWrites, writeProofFiles } from "../proof-writes/proof-writes.ts";
+import { type RecordsRoot, filesStillPresentOf, recordsOutsideRoot, removedVersionOneFiles, type VersionOneRemoval } from "../proof-writes/version-one-removal.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 import { replacementsOf } from "./projection-replacements.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
-import { type PlanRefusal, type ProjectionFilesOf, type UpgradePlan, upgradePlanOf, type VersionOneReading } from "./upgrade-plan.ts";
+import { type ProjectionFilesOf, type UpgradePlan, upgradePlanOf } from "./upgrade-plan.ts";
 import type { ProjectionsRefusal, VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
-
-export type ProofRunFailure = { readonly kind: "run-failed"; readonly detail: string };
-
-export type ProofRuns = {
-  readonly versionOne: () => Promise<Result<CheckReport, ProofRunFailure>>;
-  readonly versionTwo: () => Promise<Result<RunReport, ProofRunFailure>>;
-};
-
-export type VersionOneRecordsRoot = { readonly kind: "repository" } | { readonly kind: "folder"; readonly folder: RepoPath };
-
-export type VersionOneFiles = {
-  readonly recordsFiles: readonly RepoPath[];
-  readonly recordsFolders: readonly RepoPath[];
-  readonly recordsRoot: VersionOneRecordsRoot;
-  readonly settings: RepoPath;
-};
 
 export type UpgradeProofRequest = {
   readonly ports: ProofWritePorts;
@@ -46,32 +29,6 @@ export type UpgradeProofRequest = {
   readonly projectionFilesOf: ProjectionFilesOf;
   readonly versionOneProjectionsOf: VersionOneProjectionsOf;
 };
-
-export type ProofCarriedOver = {
-  readonly markedNotAdopted: readonly MarkedNotAdopted[];
-  readonly written: readonly RepoPath[];
-  readonly replaced: readonly RepoPath[];
-  readonly removed: Removed;
-};
-
-export type AfterWriting = { readonly written: readonly RepoPath[]; readonly replaced: readonly RepoPath[] };
-
-type AfterVersionOneProject = { readonly removedByVersionOne: readonly RepoPath[] };
-
-export type ProofRefusal =
-  | { readonly kind: "oracle-failed"; readonly failure: OracleFailure }
-  | ({ readonly kind: "plan-refused"; readonly refusal: PlanRefusal } & AfterVersionOneProject)
-  | ({ readonly kind: "version-one-run-failed"; readonly failure: ProofRunFailure } & AfterVersionOneProject)
-  | ({ readonly kind: "version-one-uncovered"; readonly clauses: readonly ClauseAddress[] } & AfterVersionOneProject)
-  | ({ readonly kind: "version-one-project-failed"; readonly detail: string } & AfterVersionOneProject)
-  | ({ readonly kind: "version-one-project-rewrote"; readonly files: readonly RepoPath[] } & AfterVersionOneProject)
-  | ({ readonly kind: "unplaceable-path"; readonly file: RepoPath } & AfterVersionOneProject)
-  | ({ readonly kind: "removal-refused"; readonly failure: OutsideRoot } & AfterVersionOneProject)
-  | ({ readonly kind: "write-refused"; readonly refusal: ProofWriteRefusal } & AfterVersionOneProject)
-  | ({ readonly kind: "version-two-run-failed"; readonly failure: ProofRunFailure; readonly unrestored: readonly Unrestored[] } & AfterVersionOneProject)
-  | ({ readonly kind: "directives-name-no-check"; readonly directives: readonly MisnamedRuleId[]; readonly unrestored: readonly Unrestored[] } & AfterVersionOneProject)
-  | ({ readonly kind: "differences"; readonly differences: readonly ProofDifference[]; readonly unrestored: readonly Unrestored[] } & AfterVersionOneProject)
-  | ({ readonly kind: "removal-failed"; readonly failure: RemovalFailure; readonly remaining: readonly AbsolutePath[] } & AfterWriting);
 
 type Placed = {
   readonly files: readonly PlannedFile[];

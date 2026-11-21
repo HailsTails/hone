@@ -1,6 +1,6 @@
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { PackageLink } from "../../command-line/installation/package-link.ts";

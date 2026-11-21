@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { type ExceptionLayoutPorts, exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { DirectoryEntry } from "../../infrastructure/node/file-system/file-system-port.ts";
+import type { DirectoryEntry } from "../../application/ports/file-system/directory-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runSplitRecordsCommand } from "./run-split-records-command.ts";
 

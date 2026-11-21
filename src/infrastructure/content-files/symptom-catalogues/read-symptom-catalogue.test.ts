@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";

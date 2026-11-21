@@ -18,7 +18,7 @@ import { createDefaultScratchFilesPort } from "../../../../../../delivery/instal
 import { checksOf } from "../../../../../domain/language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { checkRuleIdOf, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
 import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
 import type { EslintClass } from "../toolchain/eslint-instance.ts";

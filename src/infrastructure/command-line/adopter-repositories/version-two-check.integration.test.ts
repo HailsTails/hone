@@ -7,13 +7,13 @@ import { createDefaultFileTextPort } from "../../node/file-system/file-text-port
 import { createDefaultGitPort } from "../../git/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../node/process/process-port.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../../engines/eslint/runner/projection/checks-projection.ts";
 import { installedEslintBoundary } from "../../engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { type CommandRunPort, createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 
 const installedBoundary = await installedEslintBoundary();
 

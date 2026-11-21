@@ -6,7 +6,7 @@ import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/iden
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { FileCarveOutRecord } from "./record-answer-oracle.ts";
+import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import { recordInputsOf } from "./record-inputs.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");

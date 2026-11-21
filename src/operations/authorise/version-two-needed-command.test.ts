@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import { versionTwoNeededCommandOf } from "./version-two-needed-command.ts";
 
 const notUsed = (): never => {

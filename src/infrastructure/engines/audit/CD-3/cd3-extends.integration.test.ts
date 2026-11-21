@@ -1,7 +1,8 @@
 import { assert, describe, expect, it } from "vitest";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { RunnerClause, StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";

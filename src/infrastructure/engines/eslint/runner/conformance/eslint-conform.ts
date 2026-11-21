@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { ModuleLoad, ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";

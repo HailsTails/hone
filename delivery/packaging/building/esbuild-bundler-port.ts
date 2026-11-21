@@ -1,5 +1,5 @@
 import { build, type Metafile, type OutputFile } from "esbuild";
-import type { PathPort } from "../../../src/infrastructure/node/path-port.ts";
+import type { PathPort } from "../../../src/application/ports/host/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
 
 export type BundleRequest = {

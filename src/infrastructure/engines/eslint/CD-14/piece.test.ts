@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile } from "../../../../domain/rule-set/rule-set-types.ts";

@@ -1,11 +1,12 @@
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { disciplineFilePath, pieceFilePath, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
 import type { DisciplineFile, PieceFile } from "../../../domain/rule-set/rule-set-types.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
-import { type ModuleExtension, runnerModuleSegmentsOf } from "../../node/modules/install-layout.ts";
+import { runnerModuleSegmentsOf } from "../../node/modules/install-layout.ts";
+import type { ModuleExtension } from "../../../application/ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type Held<File> = { readonly held: "absent" } | { readonly held: "present"; readonly file: File };

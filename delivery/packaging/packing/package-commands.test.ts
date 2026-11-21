@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../../src/infrastructure/node/process/process-port.ts";
-import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { ProcessPort } from "../../../src/application/ports/host/process-port.ts";
+import type { FileTextPort } from "../../../src/application/ports/file-system/file-text-port.ts";
 import type { Bundle, BundledOutput, BundlerPort } from "../building/esbuild-bundler-port.ts";
 import type { EntryDisposition, StepRun } from "../../install-proof/install-proof-plan.ts";
 import type { CommandRunPort, CopiedEntry, ListedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";

@@ -2,17 +2,11 @@ import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
-import type { MarkedNotAdopted } from "../mapping/settings-mapping.ts";
+import { type MarkedNotAdopted, PROOF_SECTIONS, type ProofDifference, type ProofSection } from "../../ports/upgrade/proof-outcome.ts";
 import { afterSectionsOf } from "./after-sections.ts";
 import { beforeSectionsOf } from "./before-sections.ts";
 import { multisetRemainderOf } from "./multiset-difference.ts";
-import { PROOF_SECTIONS, type ProofSection, type SectionKeys, uniqueKeys } from "./section-keys.ts";
-
-export type ProofDifference = {
-  readonly section: ProofSection;
-  readonly onlyBefore: readonly string[];
-  readonly onlyAfter: readonly string[];
-};
+import { type SectionKeys, uniqueKeys } from "./section-keys.ts";
 
 const differenceIn = (request: { readonly section: ProofSection; readonly before: SectionKeys; readonly after: SectionKeys }): readonly ProofDifference[] => {
   const onlyBefore = multisetRemainderOf({ from: request.before[request.section], taking: request.after[request.section] });

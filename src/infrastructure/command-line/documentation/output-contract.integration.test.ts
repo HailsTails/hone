@@ -15,10 +15,11 @@ import type { AttributedNativeException, Finding } from "../../../domain/finding
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../node/process/process-port.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import { WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
@@ -53,8 +54,9 @@ import { recordReferenceText, recordSubjectText } from "../../printed-report/rec
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../../printed-report/records/record-command-lines.ts";
 import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../../printed-report/upgrade/upgrade-success-text.ts";
 import { type UpgradeFailure, UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../../printed-report/upgrade/upgrade-refusal-text.ts";
-import type { PlanRefusal } from "../../../application/upgrade/proof/upgrade-plan.ts";
-import { type AuthoriseRequest, type Authorising, authorisingOf } from "../../../application/records/authorising.ts";
+import type { PlanRefusal } from "../../../application/ports/upgrade/plan-refusal.ts";
+import { authorisingOf } from "../../../application/records/authorising.ts";
+import type { AuthoriseRequest, Authorising } from "../../../application/ports/authorising.ts";
 import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";

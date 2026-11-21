@@ -3,9 +3,9 @@ import { type CommandOutcome, loadFailureOutcome } from "../infrastructure/comma
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import type { CommandRequest } from "../application/ports/command-request.ts";
 import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
-import type { FileRemovalPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import { authoriseRequestOf } from "../infrastructure/command-line/arguments/authorise-options.ts";
-import type { AuthoriseRequest } from "../application/records/authorising.ts";
+import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import { authoriseOf, pruneDebtOf, type RecordCommandFailure, recordDebtOf } from "../application/records/record-commands.ts";
 import type { RecordsSource } from "../application/ports/records-source.ts";
 import type { RecordsStore } from "../infrastructure/hone-records-folder/writing/records-store.ts";

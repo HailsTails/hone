@@ -5,10 +5,10 @@ import { createDefaultExceptionRepositoryOf } from "../../discipline-exceptions-
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../git/git-port.ts";
+import type { GitPort } from "../../../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../node/process/process-port.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 

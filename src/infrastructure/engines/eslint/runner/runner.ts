@@ -4,7 +4,8 @@ import { createDefaultFileTextPort } from "../../../node/file-system/file-text-p
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { installRootOfRunnerEntry } from "../../../node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import { installFormOf, moduleExtensionOf } from "../../../node/modules/install-layout.ts";
+import { installFormOf } from "../../../node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../../../../application/ports/host/module-extension.ts";
 import { createChecksRunner } from "./checks-runner/checks-runner.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "./embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "./toolchain/eslint-instance.ts";

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CommitRecord, GitHistoryPort } from "../../src/infrastructure/git/git-port.ts";
+import type { CommitRecord, GitHistoryPort } from "../../src/application/ports/git-port.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
-import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import { runReleasePullRequest } from "./release-pull-request.ts";
 
 const MODULE_URL = "file:///repo/delivery/release/release-pull-request-command.ts";

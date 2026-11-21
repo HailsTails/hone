@@ -1,5 +1,5 @@
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LoadedRunner, RunnerClause } from "./runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";

@@ -1,11 +1,12 @@
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { EmbeddedRunReport, ReturnedEmbeddedRunReport } from "../../../protocol/embedded/embedded-run-report-schema.ts";
-import type { EmbeddedRunner, EmbeddedRunRequest, ProjectionRequest } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
+import type { EmbeddedRunner, EmbeddedRunRequest } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
+import type { ProjectionRequest } from "../../../../../application/ports/engine/runner-module.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { Hit, MeasuredPair, NativeException, ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
-import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";

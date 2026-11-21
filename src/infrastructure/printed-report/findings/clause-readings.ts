@@ -1,7 +1,7 @@
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../../command-line/assessment-file.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";

@@ -5,7 +5,7 @@ import type { DebtPair } from "../../domain/records/discipline-exceptions/debt-p
 import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
-import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import type { Result } from "../../domain/result.ts";
 import { parsePruneDebtArguments, type PruneDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { pruneDebtCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";

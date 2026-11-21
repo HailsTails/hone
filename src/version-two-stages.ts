@@ -1,8 +1,8 @@
-import type { DirectoryPort } from "./infrastructure/node/file-system/file-system-port.ts";
-import type { FileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "./infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "./infrastructure/node/path-port.ts";
+import type { DirectoryPort } from "./application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "./application/ports/file-system/file-text-port.ts";
+import type { GitPort, GitTreePort } from "./application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "./application/ports/host/module-loader-port.ts";
+import type { PathPort } from "./application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { readHoneRecords } from "./application/records/read-hone-records.ts";
 import type { RecordsReading } from "./domain/records/hone-records/hone-record.ts";
@@ -11,7 +11,7 @@ import { createSettingsRepository, type SettingsReading } from "./application/ru
 import { createSettingsSources } from "./infrastructure/hone-config-file/settings-sources.ts";
 import type { SymptomCatalogue } from "./domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
-import type { ModuleExtension } from "./infrastructure/node/modules/install-layout.ts";
+import type { ModuleExtension } from "./application/ports/host/module-extension.ts";
 import type { Result } from "./domain/result.ts";
 import { type CheckedTree, checkedTreeOf } from "./application/run/checked-tree-of.ts";
 import { type EnginesRunRequest, enginesProjectionOf, enginesRunOf } from "./application/run/engines/engines-run.ts";

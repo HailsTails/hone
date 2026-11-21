@@ -1,25 +1,14 @@
 import { z } from "zod";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
-import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { Equal } from "./type-equality.ts";
+import type { DeepReadonly, Equal } from "./type-equality.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { nativeExceptionKindSchema } from "./runner-result-schema.ts";
 import type { CaseVerdict, NativeException } from "../../../../domain/runner/runner-result-types.ts";
 import { nativeExceptionKindSchema as projectedKindSchema } from "./runner-result-schema.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner, LoadedStandaloneRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import type { StandaloneRunReport } from "./standalone-run-report-schema.ts";
-
-export type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
-
-export type RunRequest = {
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-  readonly files: readonly RepoPath[];
-  readonly trackedPaths: readonly RepoPath[];
-  readonly clauses: readonly RunnerClause[];
-};
 
 export type StandaloneRunner = {
   readonly exceptionPath: "standalone";
@@ -54,9 +43,12 @@ export const runnerModuleSchema = z.discriminatedUnion("exceptionPath", [
   embeddedRunnerModuleSchema,
 ]);
 
-export type LoadedRunner = z.infer<typeof runnerModuleSchema>;
+export const isLoadedRunnerSchemaEqual: Equal<DeepReadonly<z.output<typeof runnerModuleSchema>>, LoadedRunner> = true;
 
-export type LoadedStandaloneRunner = z.infer<typeof standaloneRunnerModuleSchema>;
+export const isLoadedStandaloneRunnerSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof standaloneRunnerModuleSchema>>,
+  LoadedStandaloneRunner
+> = true;
 
 export const isStandaloneKeySetEqual: Equal<
   keyof StandaloneRunner,

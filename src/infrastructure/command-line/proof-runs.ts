@@ -5,7 +5,7 @@ import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { Result } from "../../domain/result.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";
-import type { ProofRunFailure, ProofRuns } from "../../application/upgrade/proof/upgrade-proof.ts";
+import type { ProofRunFailure, ProofRuns } from "../../application/ports/upgrade/proof-runs.ts";
 
 export type ProofRunSources = {
   readonly versionOne: () => Promise<Result<CheckReport, LoadFailure>>;

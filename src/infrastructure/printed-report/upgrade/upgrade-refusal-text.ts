@@ -7,17 +7,13 @@ import type { ClauseAddress } from "../../../domain/rule-set/clause-address-type
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { PlanRefusal } from "../../../application/upgrade/proof/upgrade-plan.ts";
-import type { ProofRefusal } from "../../../application/upgrade/proof/upgrade-proof.ts";
-import type { ProofWriteFailure, Unrestored } from "../../../application/upgrade/proof-writes/proof-writes.ts";
+import type { ConfigImportRefusal, PairingRefusal, PlanRefusal, TeamConfigRefusal } from "../../../application/ports/upgrade/plan-refusal.ts";
+import type { ProofRefusal, ProofWriteFailure, Unrestored } from "../../../application/ports/upgrade/proof-outcome.ts";
 import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
-import type { ConfigImportRefusal } from "../../../application/upgrade/writing/config-import-rewrite.ts";
-import type { OracleFailure } from "../../../application/upgrade/record-answers/record-answer-oracle.ts";
-import type { PairingRefusal } from "../../../application/upgrade/proof/projection-replacements.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { TeamConfigRefusal } from "../../../application/upgrade/proof/team-config-finder.ts";
 import type { VersionOneReadFailure } from "../../disciplines-file/version-one-reading.ts";
 
 export const UPGRADE_ISSUES_URL = `${TOOL_IDENTITY.repository}/issues`;

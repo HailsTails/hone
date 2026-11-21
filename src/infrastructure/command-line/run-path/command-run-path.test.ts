@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
-import { createPathPort, type PathPort } from "../../node/path-port.ts";
+import { createPathPort } from "../../node/path-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { commandRunPathOf } from "./command-run-path.ts";
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });

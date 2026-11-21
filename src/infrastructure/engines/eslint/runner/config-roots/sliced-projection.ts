@@ -2,7 +2,7 @@ import type { ExceptionRecord } from "../../../../../domain/records/discipline-e
 import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";

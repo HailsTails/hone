@@ -1,19 +1,12 @@
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { directoryOf } from "../writing/relative-specifier.ts";
-import { type ConfigImportRefusal, rewrittenConfigOf } from "../writing/config-import-rewrite.ts";
+import { rewrittenConfigOf } from "../writing/config-import-rewrite.ts";
+import type { ReplacementRefusal } from "../../ports/upgrade/plan-refusal.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 
 const PATH_SEPARATOR = "/";
-
-export type PairingRefusal =
-  | { readonly kind: "version-one-projection-unpaired"; readonly projection: RepoPath; readonly config: RepoPath; readonly folder: string }
-  | { readonly kind: "version-two-projection-unpaired"; readonly file: RepoPath; readonly folder: string };
-
-export type ReplacementRefusal =
-  | { readonly kind: "projections-unpaired"; readonly refusal: PairingRefusal }
-  | { readonly kind: "config-import-refused"; readonly refusal: ConfigImportRefusal };
 
 type Pair = { readonly version: VersionOneProjection; readonly projected: PlannedRepoFile };
 

@@ -1,10 +1,10 @@
 import { createSelectionRepository, readRunSettings } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
-import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import { reportOutputInEffect, type ReportOutput } from "../../domain/settings/report-output.ts";
 import type { Result } from "../../domain/result.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";

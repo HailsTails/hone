@@ -8,9 +8,10 @@ import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/iden
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
-import type { FileCarveOutRecord } from "../record-answers/record-answer-oracle.ts";
+import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import type { RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
-import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf, type VersionOneReading } from "./upgrade-plan.ts";
+import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf } from "./upgrade-plan.ts";
+import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 

@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { embeddedRunReportSchema } from "./embedded-run-report-schema.ts";
 import { type RunnerFailure, rejectedCall, runnerInvalidOutput } from "../../../../domain/runner/runner-failure.ts";
-import type { ProjectionRequest } from "./embedded-runner-module-schema.ts";
-import type { LoadedRunner, RunRequest } from "../runner-module/runner-module-schema.ts";
+import type { LoadedRunner, ProjectionRequest, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import { projectionWriteSchema, runnerResultSchema } from "../runner-module/runner-result-schema.ts";
 import type { NativeException, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
 import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/mechanism-dispatch.ts";

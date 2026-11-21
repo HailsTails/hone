@@ -1,5 +1,6 @@
 import { assert, describe, expect, it } from "vitest";
-import { createPathPort, type PathPort } from "../../../node/path-port.ts";
+import { createPathPort } from "../../../node/path-port.ts";
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import type { SyntaxNode, SyntaxTree } from "../../audit/runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
 import { installedEslintBoundary } from "../../eslint/runner/toolchain/eslint-toolchain.ts";

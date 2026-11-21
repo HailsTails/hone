@@ -1,4 +1,4 @@
-import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { LoadedRunner } from "../ports/engine/runner-module.ts";
 import type { LoadedEngine } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ConformanceSetupFailure } from "./conformance-testing-types.ts";

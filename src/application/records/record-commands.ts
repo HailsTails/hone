@@ -6,7 +6,8 @@ import type { BaseRevisionAvailability } from "../../domain/repository/base-revi
 import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import { type AuthoriseRequest, type Authorising, authorisingOf } from "./authorising.ts";
+import { authorisingOf } from "./authorising.ts";
+import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 import { type DebtOutcome, debtOutcomesOf } from "../../domain/records/debt/debt-effects.ts";
 import { debtSitesOf, inSiteOrder, unrecordableSitesOf } from "../../domain/records/debt/debt-sites.ts";
 import { nativeDebtSitesOf } from "../../domain/records/debt/native-debt-sites.ts";

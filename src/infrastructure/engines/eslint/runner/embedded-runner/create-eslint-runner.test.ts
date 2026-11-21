@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { CaseVerdict, ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
-import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import {
   createPathPort,
 } from "../../../../node/path-port.ts";

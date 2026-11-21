@@ -4,7 +4,8 @@ import {
   rejectedCall,
   runnerInvalidOutput,
 } from "../../../domain/runner/runner-failure.ts";
-import type { LoadedRunner, RunnerClause } from "./runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
 import { caseVerdictSchema, runnerResultSchema } from "./runner-module/runner-result-schema.ts";
 import type { CaseVerdict } from "../../../domain/runner/runner-result-types.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";

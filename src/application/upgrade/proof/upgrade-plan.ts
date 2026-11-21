@@ -1,32 +1,21 @@
-import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
-import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import { settingsTextOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { fixedRepoPath } from "../../../domain/repository/repo-path.ts";
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { RecordAnswered } from "../record-answers/record-answer-oracle.ts";
-import { recordInputsOf, type Unanswered } from "../record-answers/record-inputs.ts";
-import { reachBeyondEntriesOf, type ReachBeyondEntries } from "../proof-comparison/written-reach.ts";
-import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
+import type { RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
+import { recordInputsOf } from "../record-answers/record-inputs.ts";
+import { reachBeyondEntriesOf } from "../proof-comparison/written-reach.ts";
 import { mappedRecords, type MappedRecordsDocument, type RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
-import { type MarkedNotAdopted, mappedSettings } from "../mapping/settings-mapping.ts";
-import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
+import { mappedSettings } from "../mapping/settings-mapping.ts";
+import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
+import type { PlanRefusal, ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
+import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
-import type { ReplacementRefusal } from "./projection-replacements.ts";
-import type { TeamConfigRefusal } from "./team-config-finder.ts";
 
 const SETTINGS_FILE = fixedRepoPath(SETTINGS_FILE_NAME);
-
-export type VersionOneReading = {
-  readonly selection: ConsumerSelectionFile;
-  readonly heads: readonly HeadRecord[];
-};
-
-export type ProjectionFailure = { readonly kind: "projection-failed"; readonly failure: RunLoadFailure };
 
 export type PlannedProjection = { readonly files: readonly PlannedRepoFile[]; readonly projections: readonly PlannedRepoFile[] };
 
@@ -41,15 +30,6 @@ export type UpgradePlan = {
   readonly files: readonly PlannedRepoFile[];
   readonly projected: readonly PlannedRepoFile[];
 };
-
-export type PlanRefusal =
-  | Unanswered
-  | ProjectionFailure
-  | ReplacementRefusal
-  | { readonly kind: "mapping-refused"; readonly refusals: readonly UpgradeRefusal[] }
-  | { readonly kind: "reach-beyond-entries"; readonly records: readonly ReachBeyondEntries[] }
-  | { readonly kind: "team-config-refused"; readonly refusal: TeamConfigRefusal }
-  | { readonly kind: "slice-left-in-place"; readonly files: readonly RepoPath[] };
 
 export type UpgradePlanRequest = {
   readonly reading: VersionOneReading;

@@ -1,7 +1,8 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
-import { createDefaultPathPort, createPathPort, type PathPort } from "../node/path-port.ts";
+import { createDefaultPathPort, createPathPort } from "../node/path-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseEditionsSchema } from "../content-files/edition.ts";

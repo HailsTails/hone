@@ -5,10 +5,12 @@ import { defaultClauseSettings } from "../../../../../domain/settings/clause-set
 import type { Result } from "../../../../../domain/result.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import { type RunnerClause, runnerModuleSchema } from "../../../protocol/runner-module/runner-module-schema.ts";
+import { runnerModuleSchema } from "../../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";

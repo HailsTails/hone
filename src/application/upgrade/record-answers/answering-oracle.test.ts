@@ -8,7 +8,8 @@ import type { Finding, GovernedRun } from "../../../domain/finding/governance.ts
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import { createAnsweringOracle, type EngineFindings, type EnginePass, type EnginePassFailure } from "./answering-oracle.ts";
+import { createAnsweringOracle } from "./answering-oracle.ts";
+import type { EngineFindings, EnginePass, EnginePassFailure } from "../../ports/upgrade/engine-pass.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 

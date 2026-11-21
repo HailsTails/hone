@@ -1,8 +1,8 @@
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
+import type { FileTextPort } from "./file-system/file-text-port.ts";
+import type { GitPort } from "./git-port.ts";
+import type { ModuleLoaderPort } from "./host/module-loader-port.ts";
+import type { PathPort } from "./host/path-port.ts";
+import type { ProcessPort } from "./host/process-port.ts";
 
 export type CommandRequest = {
   readonly process: ProcessPort;

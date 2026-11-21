@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandRequest } from "./application/ports/version-one-command-request.ts";
-import type { GitTreePort } from "./infrastructure/git/git-port.ts";
-import type { DirectoryPort } from "./infrastructure/node/file-system/file-system-port.ts";
-import type { FileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
-import type { PathPort } from "./infrastructure/node/path-port.ts";
-import type { ProcessPort } from "./infrastructure/node/process/process-port.ts";
+import type { GitTreePort } from "./application/ports/git-port.ts";
+import type { DirectoryPort } from "./application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "./application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "./application/ports/host/path-port.ts";
+import type { ProcessPort } from "./application/ports/host/process-port.ts";
 import type { RecordsSourceOf } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { absolutePathSchema } from "./infrastructure/content-files/absolute-path.ts";
 import { createPathPort } from "./infrastructure/node/path-port.ts";

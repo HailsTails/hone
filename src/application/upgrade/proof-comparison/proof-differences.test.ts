@@ -10,7 +10,7 @@ import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/iden
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { MarkedNotAdopted } from "../mapping/settings-mapping.ts";
+import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 import { proofDifferencesOf } from "./proof-differences.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");

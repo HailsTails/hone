@@ -6,7 +6,7 @@ import { loadFailureDetail } from "../../../printed-report/load-failures/load-fa
 import type { LoadFailure } from "../../../../domain/report/load-failure.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { EngineFindings, EnginePass, EnginePassFailure } from "../../../../application/upgrade/record-answers/answering-oracle.ts";
+import type { EngineFindings, EnginePass, EnginePassFailure } from "../../../../application/ports/upgrade/engine-pass.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 
 const failureOf = (request: { readonly failure: LoadFailure }): Result<EngineFindings, EnginePassFailure> => ({

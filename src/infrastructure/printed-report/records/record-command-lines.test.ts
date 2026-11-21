@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Authorising } from "../../../application/records/authorising.ts";
+import type { Authorising } from "../../../application/ports/authorising.ts";
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Debt, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";

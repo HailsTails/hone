@@ -4,7 +4,8 @@ import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
-import { type AuthoriseRequest, authorisingOf } from "./authorising.ts";
+import { authorisingOf } from "./authorising.ts";
+import type { AuthoriseRequest } from "../ports/authorising.ts";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {

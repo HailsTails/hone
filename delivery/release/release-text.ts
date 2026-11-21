@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import type { ToolIdentity } from "../../src/domain/rule-set/tool-identity.ts";
 
 const releaseTextArgumentsSchema = z.tuple([z.enum(["title", "notes", "dist-tag"]), z.string().min(1)]);

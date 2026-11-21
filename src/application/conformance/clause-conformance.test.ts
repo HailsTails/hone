@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { LoadedRunner } from "../ports/engine/runner-module.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";

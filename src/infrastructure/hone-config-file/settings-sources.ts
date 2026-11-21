@@ -1,6 +1,6 @@
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
-import type { FileTextPort } from "../node/file-system/file-text-port.ts";
-import type { PathPort } from "../node/path-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { disciplineFilePath, pieceFilePath, readDisciplineFile, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
@@ -9,10 +9,11 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import { type ModuleExtension, runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
+import { runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
+import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import type { Result } from "../../domain/result.ts";
-import type { PieceClause, SettingsDocument, SettingsSources } from "../../application/run/settings/read-settings.ts";
+import type { PieceClause, SettingsDocument, SettingsSources } from "../../application/ports/settings-sources.ts";
 import { ruleSetRootOf } from "./rule-set-root.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 

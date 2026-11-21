@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";

@@ -2,12 +2,12 @@ import * as typescriptParser from "@typescript-eslint/parser";
 import { ESLint } from "eslint-9";
 import { builtinRules } from "eslint-9/use-at-your-own-risk";
 import { z } from "zod";
-import type { RunnerClause } from "../../../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../../../domain/runner/runner-module-types.ts";
 import type { SourceCase } from "../../../../../../domain/rule-set/rule-set-types.ts";
 import { eslintPieceSettingsSchema } from "../../pieces/eslint-piece-settings-schema.ts";
 import { type LoadedEslintPlugin, eslintPluginModuleSchema } from "../../pieces/eslint-plugin-schema.ts";
 import { defaultNativeRuleSources, type NativeRuleSources } from "../../pieces/native-rules.ts";
-import type { ModuleLoaderPort } from "../../../../../node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../../../../../application/ports/host/module-loader-port.ts";
 import { defaultEslintToolchainModules, type EslintToolchainModules } from "../eslint-toolchain.ts";
 
 export const ESLINT_9_VERSION = ESLint.version;

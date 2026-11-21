@@ -3,8 +3,8 @@ import type { Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
-import type { ChecksRunRequest } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { ChecksRunRequest } from "../../ports/engine/runner-module.ts";
+import type { ModuleLoad, ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import type { RecordsReading, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";

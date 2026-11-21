@@ -8,12 +8,12 @@ import {
   inheritedDebtOf,
   reachedDebtOf,
 } from "../../domain/records/discipline-exceptions/inherited-debt.ts";
-import type { GitTreePort } from "../../infrastructure/git/git-port.ts";
+import type { GitTreePort } from "../../application/ports/git-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Assessment } from "../../domain/settings/assessment.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { parseRecordDebtArguments, type RecordDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";

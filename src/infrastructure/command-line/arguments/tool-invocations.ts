@@ -1,5 +1,5 @@
 import { PRUNE_DEBT_SUBCOMMAND } from "./subcommand-names.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { ForfeitureAssessment } from "../../../domain/settings/assessment.ts";
 import type { Result } from "../../../domain/result.ts";

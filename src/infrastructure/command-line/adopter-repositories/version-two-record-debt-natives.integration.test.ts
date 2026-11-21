@@ -1,6 +1,7 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { projectCommandOf, pruneCommandOf } from "../arguments/tool-invocations.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";

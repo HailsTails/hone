@@ -6,7 +6,8 @@ import { absolutePathSchema } from "../../../infrastructure/content-files/absolu
 import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import { type PieceClause, type SettingsReading, type SettingsSources, readSettings, settingsNoteText } from "./read-settings.ts";
+import { type SettingsReading, readSettings, settingsNoteText } from "./read-settings.ts";
+import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 

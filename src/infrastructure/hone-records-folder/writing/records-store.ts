@@ -1,5 +1,7 @@
-import type { DirectoryPort, FileRemovalPort, FileTextPort } from "../../node/file-system/file-system-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
+import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";

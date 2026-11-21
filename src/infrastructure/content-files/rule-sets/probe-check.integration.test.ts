@@ -1,12 +1,12 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
 import { createExceptionRepository } from "../../discipline-exceptions-folder/exception-layout.ts";
-import type { EntryKindPort } from "../../node/file-system/file-system-port.ts";
+import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { runCheck } from "../../../application/run/check/run-check.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../git/git-port.ts";
-import type { ModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../hone-config-file/assessment.ts";

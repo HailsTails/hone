@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PathPort } from "../node/path-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { ruleSetNameSchema } from "./identifiers.ts";

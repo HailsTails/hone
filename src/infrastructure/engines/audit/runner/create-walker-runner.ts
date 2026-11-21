@@ -1,17 +1,15 @@
 import { z } from "zod";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type {
-  RunnerClause,
-  RunRequest,
-  StandaloneRunner,
-} from "../../protocol/runner-module/runner-module-schema.ts";
+import type { StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import { hitSchema, runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
 import type { CaseVerdict, Hit, MeasuredPair } from "../../../../domain/runner/runner-result-types.ts";
 import type { StandaloneRunReport } from "../../protocol/runner-module/standalone-run-report-schema.ts";
-import type { EntryKindPort } from "../../../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../node/path-port.ts";
+import type { EntryKindPort } from "../../../../application/ports/file-system/entry-kind-port.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";

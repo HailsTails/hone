@@ -1,7 +1,7 @@
-import type { DirectoryEntry, DirectoryPort } from "../../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "../../git/git-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { DirectoryEntry, DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { GitPort, GitTreePort } from "../../../application/ports/git-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";

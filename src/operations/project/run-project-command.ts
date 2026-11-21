@@ -3,7 +3,7 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import type { Result } from "../../domain/result.ts";
 import { parseProjectArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { projectCommandOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";
-import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
+import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import { installRootOf } from "../../infrastructure/command-line/installation/install-root.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { repoRootOf } from "../../infrastructure/printed-report/check-locations.ts";

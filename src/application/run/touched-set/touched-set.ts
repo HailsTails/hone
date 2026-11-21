@@ -1,4 +1,4 @@
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";

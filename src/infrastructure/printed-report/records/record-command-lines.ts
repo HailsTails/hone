@@ -1,4 +1,4 @@
-import type { Authorising } from "../../../application/records/authorising.ts";
+import type { Authorising } from "../../../application/ports/authorising.ts";
 import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { type DebtEffect, type DebtOutcome, debtAddressOf } from "../../../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt, PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";

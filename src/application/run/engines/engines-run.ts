@@ -1,6 +1,6 @@
 import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
-import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../infrastructure/node/path-port.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import type { RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
@@ -9,7 +9,7 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
-import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import { type CheckedTree, typescriptFilesOf } from "../checked-tree-of.ts";

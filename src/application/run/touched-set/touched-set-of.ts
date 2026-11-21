@@ -1,5 +1,5 @@
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
 import { touchedSetUnder } from "./forfeiture-touched-set.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";

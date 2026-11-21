@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import type { RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";

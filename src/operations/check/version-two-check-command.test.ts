@@ -4,12 +4,12 @@ import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { CommandRequest } from "../../application/ports/command-request.ts";
 import type { ExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { DirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
+import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { GitPort, GitTreePort } from "../../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSourceOf } from "../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";

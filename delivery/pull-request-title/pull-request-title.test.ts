@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { runPullRequestTitleCheck } from "./pull-request-title.ts";
 
 const processWith = (request: { readonly arguments: readonly string[] }): ProcessPort => ({

@@ -2,7 +2,7 @@ import { type ExceptionRepository, importedEntriesIn, importSourcesOf } from "..
 import { type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { legacyChainsIn, recordImportOf, type StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import { baseRevisionAvailabilityOf, computeTouchedSet } from "../touched-set/touched-set.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
