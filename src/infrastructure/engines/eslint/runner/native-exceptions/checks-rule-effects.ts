@@ -1,4 +1,4 @@
-import type { NativeException } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";

@@ -1,7 +1,7 @@
 import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import type { SliceProblem } from "../../../protocol/embedded/embedded-run-report-schema.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { ProjectionWrite } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import { type AbsolutePath, absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";

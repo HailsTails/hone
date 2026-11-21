@@ -9,7 +9,8 @@ import { type RepoPath, repoPathSchema } from "../repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RecordsDocument } from "../hone-record.ts";
 import { RECORDS_FOLDER, recordsFileStandingOf } from "./records-layout.ts";
-import type { RecordsFolderFailure, RecordsSource } from "../../../application/ports/records-source.ts";
+import type { RecordsSource } from "../../../application/ports/records-source.ts";
+import type { RecordsFolderFailure } from "../../../domain/records/records-folder-failure.ts";
 
 export type RecordsFolderPorts = {
   readonly fileText: Pick<FileTextPort, "exists" | "read">;

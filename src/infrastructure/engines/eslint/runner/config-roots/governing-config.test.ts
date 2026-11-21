@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";

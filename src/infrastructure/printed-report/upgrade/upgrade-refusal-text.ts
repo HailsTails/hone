@@ -1,5 +1,5 @@
 import { loadFailureDetail } from "../load-failures/load-failure-text.ts";
-import type { MisnamedRuleId } from "../../engines/protocol/checks/checks-runner-types.ts";
+import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import { replacementText } from "../misnamed-lines.ts";
 import { runLoadFailureLine } from "../load-failures/load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";

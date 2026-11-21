@@ -1,5 +1,5 @@
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { RunnerClause } from "../../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../runner/runner-module-types.ts";
 import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseEditionReading } from "../../rule-set/edition-types.ts";
 import type { FileExceptionWhyChains } from "../../../infrastructure/hone-config-file/file-exception-why-chains.ts";

@@ -1,4 +1,4 @@
-import type { NativeException, ScriptOptionCause } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { NativeException, ScriptOptionCause } from "../../runner/runner-result-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 
 export type UnrecordableBecause =

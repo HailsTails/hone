@@ -2,7 +2,7 @@ import { assert, describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../infrastructure/command-line/governance.ts";
 import { answerFindings } from "../../domain/records/answering/answering.ts";
 import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";

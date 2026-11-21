@@ -1,5 +1,6 @@
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { BaseFileText, GitContentQuery, GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { BaseFileText, GitContentQuery, GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { Result } from "../../../domain/result.ts";
 

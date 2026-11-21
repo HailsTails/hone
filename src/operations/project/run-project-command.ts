@@ -1,4 +1,4 @@
-import type { ProjectionWrite } from "../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
 import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { parseProjectArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { DeepReadonly, DeepReadonlyKeepingTuples, Equal } from "../runner-module/type-equality.ts";
-import type { ChecksRunReport, ChecksSliceProblem, LoadedChecksRunner, MisnamedRuleId, NotReadyYetFailure, ProjectedFile } from "./checks-runner-types.ts";
+import type { ChecksRunReport, LoadedChecksRunner } from "./checks-runner-types.ts";
+import type { ChecksSliceProblem, MisnamedRuleId, NotReadyYetFailure, ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 import { nativeExceptionSchema } from "../embedded/embedded-run-report-schema.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 import { hitSchema, measuredPairSchema, nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";

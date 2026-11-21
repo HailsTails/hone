@@ -10,7 +10,7 @@ import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../infr
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import type { RunnerFailure } from "../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ExceptionsFile } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { EmbeddedRunner } from "../../infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";

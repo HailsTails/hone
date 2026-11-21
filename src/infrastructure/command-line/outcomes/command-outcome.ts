@@ -1,4 +1,4 @@
-import type { ProjectionWrite } from "../../engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import type { ExitCode } from "../../node/process/process-port.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { LoadFailure } from "../load-failure.ts";

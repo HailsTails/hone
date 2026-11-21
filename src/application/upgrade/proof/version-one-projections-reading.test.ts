@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProjectionWrite } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import { type VersionOneProjectionSources, versionOneProjectionsOver } from "./version-one-projections-reading.ts";

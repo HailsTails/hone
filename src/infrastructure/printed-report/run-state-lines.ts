@@ -1,9 +1,10 @@
 import { RECORDS_FOLDER } from "../hone-records-folder/folder-layout/records-layout.ts";
 import type { RecordsUnmeasured } from "../../domain/records/measurement/records-unmeasured.ts";
-import { type SettingsNote, settingsNoteText } from "../../application/run/settings/read-settings.ts";
+import { settingsNoteText } from "../../application/run/settings/read-settings.ts";
+import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import { SETTINGS_FILE_NAME } from "../hone-config-file/settings-sources.ts";
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
-import { projectionOutputsOf } from "../engines/protocol/projection-outputs.ts";
+import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../hone-records-folder/repo-path.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import { counted, quoted } from "./printed-text.ts";

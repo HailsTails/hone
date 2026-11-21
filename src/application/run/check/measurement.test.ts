@@ -6,8 +6,9 @@ import type {
   ExceptionRepository,
   StructuralExceptionEntry,
 } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { TouchedSet } from "../touched-set/touched-set.ts";
+import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";

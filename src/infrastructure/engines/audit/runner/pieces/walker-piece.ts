@@ -1,6 +1,6 @@
-import type { PieceFailure } from "../../../../../application/ports/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../application/ports/runner-module-types.ts";
-import type { Hit } from "../../../../../application/ports/runner-result-types.ts";
+import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { Hit } from "../../../../../domain/runner/runner-result-types.ts";
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";

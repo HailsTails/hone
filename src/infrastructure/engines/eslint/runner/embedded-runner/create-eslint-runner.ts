@@ -2,13 +2,8 @@ import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/e
 import type { EmbeddedRunReport, ReturnedEmbeddedRunReport } from "../../../protocol/embedded/embedded-run-report-schema.ts";
 import type { EmbeddedRunner, EmbeddedRunRequest, ProjectionRequest } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
-import type {
-  Hit,
-  MeasuredPair,
-  NativeException,
-  ProjectionWrite,
-} from "../../../protocol/runner-module/runner-result-schema.ts";
-import type { SliceProblem } from "../../../protocol/embedded/embedded-run-report-schema.ts";
+import type { Hit, MeasuredPair, NativeException, ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
+import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";

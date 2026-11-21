@@ -1,13 +1,10 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
-import type { RecordsAtBase, RecordsDocumentRefusal, RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
-import type { RecordsFolderFailure, RecordsSource } from "../ports/records-source.ts";
+import type { RecordsAtBase, RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsSource } from "../ports/records-source.ts";
+import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-
-export type HoneRecordsFailure =
-  | { readonly kind: "records-folder"; readonly failure: RecordsFolderFailure }
-  | { readonly kind: "records-documents"; readonly refusals: readonly RecordsDocumentRefusal[] };
 
 const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly baseRevision: string | undefined }): Result<RecordsAtBase, HoneRecordsFailure> => {
   if (request.baseRevision === undefined) {

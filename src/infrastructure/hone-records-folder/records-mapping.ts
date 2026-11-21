@@ -11,7 +11,7 @@ import type { RepoPath } from "./repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { DeepReadonly } from "../engines/protocol/runner-module/type-equality.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import { checksOfClause } from "../../application/upgrade/mapping/clause-checks.ts";
+import { checksOfClause } from "../../domain/language-layer/clause-checks.ts";
 import type { UnansweredCredit, UpgradeRefusal } from "../../application/upgrade/mapping/upgrade-refusal.ts";
 
 export type CarriedEntry = { readonly [key: string]: ReadonlyJsonValue };

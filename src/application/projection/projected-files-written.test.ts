@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProjectedFile } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";

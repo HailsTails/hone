@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ChecksRunReport, ChecksRunner } from "../checks/checks-runner-types.ts";
-import type { NativeException } from "../runner-module/runner-result-schema.ts";
+import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
 import type { LoadedRunner } from "../runner-module/runner-module-schema.ts";
 import type { ClauseBinding } from "../../../../domain/settings/selection/selection.ts";
 import type { ModuleLoad, ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";

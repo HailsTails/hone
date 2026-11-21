@@ -1,34 +1,18 @@
 import { z } from "zod";
-import type { SliceProblem, UnprojectedFolderReport } from "../embedded/embedded-run-report-schema.ts";
 import {
   type RunnerFailure,
   rejectedCall,
   runnerInvalidOutput,
-} from "../../../../application/ports/runner-failure.ts";
+} from "../../../../domain/runner/runner-failure.ts";
 import type { LoadedStandaloneRunner, RunRequest } from "../runner-module/runner-module-schema.ts";
-import {
-  type Hit,
-  type MeasuredPair,
-  type NativeException,
-  type ProjectionState,
-  runnerResultSchema,
-} from "../runner-module/runner-result-schema.ts";
+import { runnerResultSchema } from "../runner-module/runner-result-schema.ts";
+import type { Hit, MeasuredPair, NativeException } from "../../../../domain/runner/runner-result-types.ts";
+import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { standaloneRunReportSchema } from "../runner-module/standalone-run-report-schema.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../discipline-exceptions-folder/clause-address.ts";
 import type { MechanismId } from "../../../hone-config-file/identifiers.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
-
-export type MechanismRun = {
-  readonly mechanism: MechanismId;
-  readonly hits: readonly Hit[];
-  readonly nativeExceptions: readonly NativeException[];
-  readonly coverableKinds: readonly NativeException["kind"][];
-  readonly projection: "none" | ProjectionState;
-  readonly slices: readonly SliceProblem[];
-  readonly unprojectedFolders: readonly UnprojectedFolderReport[];
-  readonly measured: readonly MeasuredPair[];
-};
 
 const STANDALONE_COVERABLE_KINDS: readonly NativeException["kind"][] = ["inline-disable"];
 

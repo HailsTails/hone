@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PieceFailure } from "../../../../../application/ports/piece-failure-types.ts";
+import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
 import { type ClauseAddress, clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../../../discipline-exceptions-folder/clause-address.ts";

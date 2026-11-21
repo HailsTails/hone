@@ -1,7 +1,7 @@
 import { type ExceptionRecord, type InvalidRecord, type RecordPlace, recordImportOf } from "../discipline-exceptions-folder/exception-records.ts";
 import type { AttributedNativeException } from "../command-line/governance.ts";
 import type { ExemptedFinding } from "../../domain/records/discipline-exceptions/governance.ts";
-import type { InlineReach, ScriptOptionCause } from "../engines/protocol/runner-module/runner-result-schema.ts";
+import type { InlineReach, ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { PRUNE_DEBT_SUBCOMMAND } from "../command-line/arguments/subcommand-names.ts";
 import { clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
 import type { MechanismId } from "../hone-config-file/identifiers.ts";

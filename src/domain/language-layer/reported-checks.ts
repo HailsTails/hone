@@ -1,4 +1,4 @@
-import type { RunnerFailure } from "../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../runner/runner-failure.ts";
 import { type ClauseAddress, clauseAddressText } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { Result } from "../result.ts";
 import { checkNamedAt } from "./check-address.ts";

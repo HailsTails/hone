@@ -1,9 +1,9 @@
 import type { AttributedNativeException, Finding, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
-import type { NativeException } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { NativeException } from "../../runner/runner-result-types.ts";
 import { checkNamedAt, checksOf } from "../../language-layer/check-address.ts";
 import { checkOfFinding } from "../../finding/finding-check.ts";
 import type { Check, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";

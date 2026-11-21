@@ -1,9 +1,10 @@
 import { z } from "zod";
-import type { ClauseSettingValues } from "../../application/ports/runner-module-types.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
 import { type ForfeitureAssessment, forfeitureAssessmentSchema } from "./assessment.ts";
 import { type CheckEditions, checkEditionsSchema } from "./check-editions.ts";
 import { TOOL_RULE_SET } from "../discipline-exceptions-folder/clause-address.ts";
-import { type EslintConfigLookup, eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
+import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
+import type { EslintConfigLookup } from "../../domain/settings/eslint-config-lookup.ts";
 import { NOT_ADOPTED, NOT_RUN, type RuleSetName, ruleSetNameSchema } from "./identifiers.ts";
 import { brandedRepoPathSchema, type RepoPath, repoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
 import { type VersionTwoReportOutput, versionTwoReportOutputSchema } from "./report-output.ts";

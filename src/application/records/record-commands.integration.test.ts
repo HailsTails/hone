@@ -10,7 +10,7 @@ import { readHoneRecords } from "./read-hone-records.ts";
 import { createRecordsFolder } from "../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createRecordsStore } from "../../infrastructure/hone-records-folder/writing/records-store.ts";
 import { createSymptomCatalogueRepository } from "../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { TouchedSet } from "../run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";

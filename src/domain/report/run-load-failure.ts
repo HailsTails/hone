@@ -1,9 +1,9 @@
 import type { LoadFailure, VersionTwoLoadFailure } from "../../infrastructure/command-line/load-failure.ts";
-import type { NotReadyYetFailure } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import type { RunnerFailure } from "../../application/ports/runner-failure.ts";
+import type { NotReadyYetFailure } from "../runner/checks-run-report.ts";
+import type { RunnerFailure } from "../runner/runner-failure.ts";
 import type { RecordsDocumentRefusal } from "../../infrastructure/hone-records-folder/hone-record.ts";
-import type { HoneRecordsFailure } from "../../application/records/read-hone-records.ts";
-import type { RecordsFolderFailure } from "../../application/ports/records-source.ts";
+import type { HoneRecordsFailure } from "../records/hone-records-failure.ts";
+import type { RecordsFolderFailure } from "../records/records-folder-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";

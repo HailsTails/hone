@@ -1,9 +1,11 @@
 import { z } from "zod";
-import { runMechanism, type MechanismRun } from "./mechanism-dispatch.ts";
+import { runMechanism } from "./mechanism-dispatch.ts";
+import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import type { ClauseBinding } from "../../../../domain/settings/selection/selection.ts";
 import { checksProjectResultSchema, checksRunnerModuleSchema, checksRunResultSchema } from "../checks/checks-runner-module-schema.ts";
-import type { ChecksRunFailure, ChecksRunReport, ChecksRunRequest, ChecksSliceProblem, MisnamedRuleId, ProjectedFile } from "../checks/checks-runner-types.ts";
-import { rejectedCall, type RunnerFailure, runnerInvalidOutput } from "../../../../application/ports/runner-failure.ts";
+import type { ChecksRunFailure, ChecksRunReport, ChecksRunRequest } from "../checks/checks-runner-types.ts";
+import type { ChecksSliceProblem, MisnamedRuleId, ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
+import { rejectedCall, type RunnerFailure, runnerInvalidOutput } from "../../../../domain/runner/runner-failure.ts";
 import type { RunnerInvalid } from "./load-runner.ts";
 import { type LoadedRunner, type LoadedStandaloneRunner, runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
 import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";

@@ -1,7 +1,7 @@
 import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
-import type { RunnerClause } from "../ports/runner-module-types.ts";
+import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../infrastructure/node/path-port.ts";
 import {

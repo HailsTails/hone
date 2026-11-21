@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
-import type { ClauseSettingValues } from "../../../../application/ports/runner-module-types.ts";
+import type { ClauseSettingValues } from "../../../../domain/runner/runner-module-types.ts";
 import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";

@@ -1,5 +1,5 @@
 import type { Finding } from "../../infrastructure/command-line/governance.ts";
-import type { NativeException } from "../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { NativeException } from "../runner/runner-result-types.ts";
 import { checkAddressOf, checkNamedAt, checksOf } from "../language-layer/check-address.ts";
 import type { NamedCheck } from "../language-layer/check-address.ts";
 import { type FindingCheck, checkOfFinding } from "./finding-check.ts";

@@ -1,4 +1,4 @@
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { RepoPath } from "../repository/repo-path-types.ts";
 
 export type PieceFailure =
   | { readonly kind: "piece-invalid"; readonly pieceRoot: string; readonly detail: string }

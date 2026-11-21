@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ChecksRunRequest, ChecksRunner } from "../checks/checks-runner-types.ts";
 import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { ProjectionRequest } from "../embedded/embedded-runner-module-schema.ts";
 import type { RunRequest, RunnerClause, StandaloneRunner } from "../runner-module/runner-module-schema.ts";
 import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner, toolchainBoundStandaloneRunner } from "./toolchain-bound-runner.ts";

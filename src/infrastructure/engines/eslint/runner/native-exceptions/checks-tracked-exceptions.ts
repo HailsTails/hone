@@ -1,5 +1,5 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { NativeException, ScriptOptionCause } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { NativeException, ScriptOptionCause } from "../../../../../domain/runner/runner-result-types.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";

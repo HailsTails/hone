@@ -1,4 +1,4 @@
-import type { ProjectedFile } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import { type VersionTwoStages, versionTwoInputsOf } from "../run/version-two-run.ts";

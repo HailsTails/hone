@@ -1,4 +1,4 @@
-import type { MeasuredPair } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { MeasuredPair } from "../../runner/runner-result-types.ts";
 import type { Check } from "../../language-layer/symptom-catalogue.ts";
 import { type ClauseAddress, sameClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";

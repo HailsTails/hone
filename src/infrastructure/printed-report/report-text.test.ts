@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VersionOneWhyChain } from "../discipline-exceptions-folder/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../discipline-exceptions-folder/exception-records.ts";
 import type { Finding } from "../command-line/governance.ts";
-import type { ScriptOptionCause } from "../engines/protocol/runner-module/runner-result-schema.ts";
+import type { ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../content-files/edition.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";

@@ -4,8 +4,9 @@ import type { SelectionRepository } from "../../../infrastructure/disciplines-fi
 import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
 import type { ExceptionRepository, PlacedEntry, StructuralExceptionEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { LoadedRunner } from "../../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
-import type { MeasuredPair } from "../../ports/runner-result-types.ts";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { MeasuredPair } from "../../../domain/runner/runner-result-types.ts";
+import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";

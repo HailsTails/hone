@@ -4,7 +4,7 @@ import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/f
 import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, type PathPort } from "../../../../node/path-port.ts";
 import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";

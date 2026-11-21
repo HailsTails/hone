@@ -1,5 +1,5 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { ProjectionWrite } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { FileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";

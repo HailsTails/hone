@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";
+import type { RuleSetCatalogue } from "../settings/check-choices.ts";
+import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { checksOfClause } from "./clause-checks.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");

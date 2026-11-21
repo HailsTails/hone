@@ -1,4 +1,4 @@
-import type { RunnerClause } from "../ports/runner-module-types.ts";
+import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
 import type { SourceCase } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
 import type { Edition } from "../../infrastructure/content-files/edition.ts";
 

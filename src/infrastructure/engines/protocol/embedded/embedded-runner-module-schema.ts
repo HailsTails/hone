@@ -5,9 +5,9 @@ import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { Equal } from "../runner-module/type-equality.ts";
 import type { ReturnedEmbeddedRunReport } from "./embedded-run-report-schema.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { embeddedRunnerModuleSchema, RunnerClause, RunRequest, StandaloneRunner } from "../runner-module/runner-module-schema.ts";
-import type { NativeException, ProjectionWrite } from "../runner-module/runner-result-schema.ts";
+import type { NativeException, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
 
 export type ProjectionRequest = {
   readonly repoRoot: AbsolutePath;

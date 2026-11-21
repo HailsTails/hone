@@ -9,8 +9,10 @@ import {
   type StructuralExceptionEntry,
   UNMEASURED_EXCEPTION_BASELINE,
 } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
-import { baseRevisionAvailabilityOf, computeTouchedSet, type TouchedSet } from "../touched-set/touched-set.ts";
+import type { GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import { baseRevisionAvailabilityOf, computeTouchedSet } from "../touched-set/touched-set.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
 import type { Assessment } from "../../../infrastructure/hone-config-file/assessment.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";

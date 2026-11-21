@@ -1,4 +1,5 @@
-import type { FilePresence, FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { PathPort } from "../../node/path-port.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../hone-config-file/settings-sources.ts";

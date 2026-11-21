@@ -4,17 +4,14 @@ import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
 import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { Equal } from "./type-equality.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
-import type {
-  CaseVerdict,
-  NativeException,
-  nativeExceptionKindSchema,
-} from "./runner-result-schema.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import type { nativeExceptionKindSchema } from "./runner-result-schema.ts";
+import type { CaseVerdict, NativeException } from "../../../../domain/runner/runner-result-types.ts";
 import { nativeExceptionKindSchema as projectedKindSchema } from "./runner-result-schema.ts";
-import type { RunnerClause } from "../../../../application/ports/runner-module-types.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { StandaloneRunReport } from "./standalone-run-report-schema.ts";
 
-export type { RunnerClause } from "../../../../application/ports/runner-module-types.ts";
+export type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 
 export type RunRequest = {
   readonly repoRoot: AbsolutePath;

@@ -1,9 +1,8 @@
 import { accessSync, mkdirSync, readFileSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from "node:fs";
 import type { AbsolutePath } from "../../content-files/absolute-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import { failureDetailOf as failureDetail } from "./failure-detail.ts";
-
-export type FilePresence = "present" | "absent";
+import { failureDetailOf as failureDetail } from "../../../domain/failure-detail.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 
 export type FileTextPort = {
   readonly read: (request: {

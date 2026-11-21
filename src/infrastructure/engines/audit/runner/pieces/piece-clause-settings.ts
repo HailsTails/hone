@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { PieceFailure } from "../../../../../application/ports/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../application/ports/runner-module-types.ts";
+import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { clauseAddressText } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { Result } from "../../../../../domain/result.ts";
 

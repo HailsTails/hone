@@ -1,15 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Result } from "../../../../domain/result.ts";
 import type { Equal } from "./type-equality.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
-import {
-  type CaseVerdict,
-  caseVerdictSchema,
-  hitSchema,
-  type ProjectionWrite,
-  projectionWriteSchema,
-  runnerResultSchema,
-} from "./runner-result-schema.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import { caseVerdictSchema, hitSchema, projectionWriteSchema, runnerResultSchema } from "./runner-result-schema.ts";
+import type { CaseVerdict, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
 
 const sharedClause = {
   ruleSet: "hone",

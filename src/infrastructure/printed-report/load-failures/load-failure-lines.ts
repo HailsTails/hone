@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../application/ports/runner-failure.ts";
+import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../domain/runner/runner-failure.ts";
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 import type { RecordsDocumentRefusal } from "../../hone-records-folder/hone-record.ts";
 import { NAMED_FOLDER_KINDS, RECORDS_FILE_EXTENSION, RECORDS_FOLDER, SINGLE_FILE_KINDS } from "../../hone-records-folder/folder-layout/records-layout.ts";

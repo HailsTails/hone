@@ -2,12 +2,7 @@ import { createDefaultExecutionPort, type ExecutionPolicy } from "../node/proces
 import type { AbsolutePath } from "../content-files/absolute-path.ts";
 import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
-
-export type GitFailure = {
-  readonly kind: "git-failed";
-  readonly command: string;
-  readonly detail: string;
-};
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
 
 export type BaseContentMembership = "present-in-base" | "absent-from-base";
 

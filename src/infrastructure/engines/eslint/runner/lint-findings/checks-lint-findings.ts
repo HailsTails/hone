@@ -1,5 +1,5 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { Hit, MeasuredPair, NativeException } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { Hit, MeasuredPair, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
 import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";

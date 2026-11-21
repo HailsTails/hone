@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
-import type { CaseVerdict, ProjectionWrite } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { CaseVerdict, ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import {
   createPathPort,

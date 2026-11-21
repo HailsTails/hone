@@ -1,5 +1,5 @@
 import type { LoadFailure } from "../command-line/load-failure.ts";
-import type { ClauseSettingValues } from "../../application/ports/runner-module-types.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../node/file-system/file-text-port.ts";
 import { createDefaultPathPort, type PathPort } from "../node/path-port.ts";
 import {

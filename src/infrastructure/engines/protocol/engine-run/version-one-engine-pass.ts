@@ -3,7 +3,7 @@ import type { MechanismId } from "../../../hone-config-file/identifiers.ts";
 import { type RepoPath, repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { loadFailureDetail } from "../../../printed-report/load-failures/load-failure-text.ts";
 import type { LoadFailure } from "../../../command-line/load-failure.ts";
-import type { MechanismRun } from "./mechanism-dispatch.ts";
+import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineFindings, EnginePass, EnginePassFailure } from "../../../../application/upgrade/record-answers/answering-oracle.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../discipline-exceptions-folder/exception-records.ts";

@@ -2,7 +2,7 @@ import type { AttributedNativeException, Finding } from "../../../infrastructure
 import { type ClauseAddress, clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { UnprojectedFolder } from "../../../application/run/check/unprojected-folder.ts";
+import type { UnprojectedFolder } from "../../runner/unprojected-folder.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs, entryPairKey } from "./debt-pair.ts";
 import type { FileCarveOutEntry } from "./exception-record.ts";
 import type { PlacedEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";

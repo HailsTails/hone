@@ -8,14 +8,14 @@ import type { DirectoryEntry, DirectoryPort, FileRemovalPort } from "../infrastr
 import type { FileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../infrastructure/node/process/process-port.ts";
-import type { ChecksSliceProblem } from "../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import type { Hit, NativeException } from "../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ChecksSliceProblem } from "../domain/runner/checks-run-report.ts";
+import type { Hit, NativeException } from "../domain/runner/runner-result-types.ts";
 import type { PlacedRecord, RecordsReading, SymptomReach } from "../infrastructure/hone-records-folder/hone-record.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../infrastructure/hone-config-file/conventions.ts";
 import type { SettingsReading } from "../application/run/settings/read-settings.ts";
-import type { TouchedSet } from "../application/run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../domain/repository/touched-set.ts";
 import type { ForfeitureAssessment } from "../infrastructure/hone-config-file/assessment.ts";
 import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";

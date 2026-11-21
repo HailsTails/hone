@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FilePresence, FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { runPathOf } from "./run-path.ts";

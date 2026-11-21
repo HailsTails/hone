@@ -1,4 +1,4 @@
-import type { MisnamedRuleId, NonEmptyRuleIds } from "../engines/protocol/checks/checks-runner-types.ts";
+import type { MisnamedRuleId, NonEmptyRuleIds } from "../../domain/runner/checks-run-report.ts";
 import { onOneLine } from "./printed-text.ts";
 
 const ONLY_REPLACEMENT_COUNT = 1;

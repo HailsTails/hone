@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-records.ts";
-import type { FilePresence, FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { GitPort } from "../../git/git-port.ts";
 import type { ModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
 import { createPathPort } from "../../node/path-port.ts";

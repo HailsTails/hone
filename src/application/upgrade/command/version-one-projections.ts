@@ -2,7 +2,7 @@ import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { ProjectRequest } from "../../projection/run-project.ts";
 import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
-import type { ProjectionWrite } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";

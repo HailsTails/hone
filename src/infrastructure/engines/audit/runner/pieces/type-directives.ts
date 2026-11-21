@@ -1,4 +1,4 @@
-import type { InlineDisable } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { InlineDisable } from "../../../../../domain/runner/runner-result-types.ts";
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import { type ClauseAddress, sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";

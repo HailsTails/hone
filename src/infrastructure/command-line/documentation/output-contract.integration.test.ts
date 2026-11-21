@@ -17,10 +17,11 @@ import type {
   RecordsSplit,
 } from "../../discipline-exceptions-folder/exception-records.ts";
 import type { AttributedNativeException, Finding } from "../governance.ts";
-import type { RunnerFailure } from "../../../application/ports/runner-failure.ts";
-import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../engines/protocol/runner-module/runner-result-schema.ts";
-import type { MisnamedRuleId } from "../../engines/protocol/checks/checks-runner-types.ts";
-import { createDefaultFileTextPort, type FilePresence, type FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
+import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
+import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
+import { createDefaultFileTextPort, type FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../node/process/process-port.ts";
 import { WAIVED_CLAUSES_REPLACEMENT } from "../../hone-config-file/assessment.ts";

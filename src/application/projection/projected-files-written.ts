@@ -1,5 +1,5 @@
-import type { ProjectedFile } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import type { ProjectionWrite } from "../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
+import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../infrastructure/node/path-port.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";

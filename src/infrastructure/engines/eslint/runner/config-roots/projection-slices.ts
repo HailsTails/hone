@@ -1,6 +1,6 @@
 import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import type { UnprojectedFolderReport } from "../../../protocol/embedded/embedded-run-report-schema.ts";
-import type { EslintConfigLookup } from "../../eslint-config-lookup.ts";
+import type { UnprojectedFolderReport } from "../../../../../domain/runner/mechanism-run.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { configuredDirectoriesOf } from "./checks-config-roots.ts";
 import { directoryOf, fileNameOf } from "./checks-paths.ts";

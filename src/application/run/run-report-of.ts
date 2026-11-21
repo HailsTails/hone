@@ -7,11 +7,11 @@ import type { PartyReport } from "../../domain/records/answering/record-reach.ts
 import { carriedJudgementOf, recordsUnmeasuredOf } from "../../domain/records/measurement/records-unmeasured.ts";
 import { findingSiteOf } from "../../domain/finding/check-site.ts";
 import type { AssessmentLeftElsewhere, RunReport } from "../../domain/report/run-report.ts";
-import type { SettingsNote } from "./settings/read-settings.ts";
+import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
 import { checkOfFinding } from "../../domain/finding/finding-check.ts";
 import type { Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { baseJudgementOf, type TouchedSet } from "./touched-set/touched-set.ts";
+import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import { engineProblemsOf, engineUnmeasuredOf, runMeasurementsOf } from "./engines/engine-states.ts";

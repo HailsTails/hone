@@ -1,9 +1,9 @@
 import type { Result } from "../../../../domain/result.ts";
 import type { ChecksRunner, LoadedChecksRunner } from "../checks/checks-runner-types.ts";
 import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
-import type { NativeException } from "../runner-module/runner-result-schema.ts";
+import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
 
 type ToolchainLoad<Loaded> = Promise<Result<Loaded, RunnerFailure>>;
 

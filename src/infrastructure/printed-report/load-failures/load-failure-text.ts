@@ -1,4 +1,4 @@
-import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../application/ports/runner-failure.ts";
+import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../domain/runner/runner-failure.ts";
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type { LoadFailure } from "../../command-line/load-failure.ts";

@@ -1,5 +1,5 @@
 import type { Finding } from "../../infrastructure/command-line/governance.ts";
-import type { Remedy } from "../../application/ports/runner-result-types.ts";
+import type { Remedy } from "../runner/runner-result-types.ts";
 import { type ClauseAddress, sameClauseAddress } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
 

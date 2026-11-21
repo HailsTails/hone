@@ -1,5 +1,5 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { Hit, InlineReach, NativeException } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { Hit, InlineReach, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";

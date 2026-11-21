@@ -1,5 +1,5 @@
-import type { PieceFailure } from "../../../../application/ports/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../application/ports/runner-module-types.ts";
+import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
 import { type Edition, editionReaches, editionSchema } from "../../../content-files/edition.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";

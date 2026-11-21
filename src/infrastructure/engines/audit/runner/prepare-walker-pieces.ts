@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
 import { runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
 import type { ModuleLoad, ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";

@@ -3,7 +3,7 @@ import type { FileTextPort } from "../../../../node/file-system/file-text-port.t
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { EslintConfigLookup } from "../../eslint-config-lookup.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { configLookupDeclaring, teamConfigLookupFor } from "./config-lookup.ts";
 
 const REPO = absolutePathSchema.parse("/repo");

@@ -9,7 +9,7 @@ const port = createDefaultTypeScriptDeclarationPort({});
 const emitted = (request: { readonly entryPoints: readonly string[] }) => port.emit({ sourceRoot: REPO_ROOT, entryPoints: request.entryPoints });
 
 const ENTRIES_EMITTED_TOGETHER = emitted({
-  entryPoints: ["src/application/ports/piece-failure-types.ts", "src/domain/repository/repo-path-types.ts", "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts", "src/domain/repository/branded.ts"],
+  entryPoints: ["src/domain/runner/piece-failure-types.ts", "src/domain/repository/repo-path-types.ts", "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts", "src/domain/repository/branded.ts"],
 });
 
 describe("the TypeScript declaration port, emitting in memory with the repository's own TypeScript and tsconfig (CD-47: nothing is spawned or written)", () => {
@@ -19,9 +19,9 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
 
     expect(entriesEmit.value.diagnostics).toEqual([]);
     expect(entriesEmit.value.declarations).toMatchObject([
-      { path: "src/application/ports/piece-failure-types.d.ts", specifiers: ["../../domain/repository/repo-path-types.js"], refusals: [] },
       { path: "src/domain/repository/branded.d.ts", specifiers: [], refusals: [] },
       { path: "src/domain/repository/repo-path-types.d.ts", specifiers: ["./branded.js"], refusals: [] },
+      { path: "src/domain/runner/piece-failure-types.d.ts", specifiers: ["../repository/repo-path-types.js"], refusals: [] },
       { path: "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.d.ts", specifiers: ["typescript"], refusals: [] },
     ]);
   });

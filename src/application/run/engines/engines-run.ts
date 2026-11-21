@@ -1,4 +1,4 @@
-import type { ProjectedFile } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
 import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { RecordsReading } from "../../../infrastructure/hone-records-folder/hone-record.ts";
@@ -6,7 +6,7 @@ import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts"
 import type { SettingsReading } from "../settings/read-settings.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { EslintConfigLookup } from "../../../infrastructure/engines/eslint/eslint-config-lookup.ts";
+import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
 import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";

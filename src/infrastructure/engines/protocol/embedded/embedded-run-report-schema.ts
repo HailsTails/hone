@@ -2,7 +2,9 @@ import { z } from "zod";
 import { clauseAddressObjectSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
-import { hitSchema, type InlineReach, type NativeException, measuredSchema, type ProjectionState, reportedCheckSchema, type ScriptOptionCause } from "../runner-module/runner-result-schema.ts";
+import { hitSchema, measuredSchema, reportedCheckSchema } from "../runner-module/runner-result-schema.ts";
+import type { InlineReach, NativeException, ProjectionState, ScriptOptionCause } from "../../../../domain/runner/runner-result-types.ts";
+import type { SliceProblem, UnprojectedFolderReport } from "../../../../domain/runner/mechanism-run.ts";
 
 const namedCheck = { check: reportedCheckSchema.optional() };
 
@@ -79,16 +81,12 @@ export const sliceProblemSchema = z
   })
   .readonly();
 
-export type SliceProblem = z.infer<typeof sliceProblemSchema>;
-
 export const unprojectedFolderSchema = z
   .object({
     folder: repoPathSchema,
     selectionFolder: repoPathSchema,
   })
   .readonly();
-
-export type UnprojectedFolderReport = z.infer<typeof unprojectedFolderSchema>;
 
 export const embeddedRunReportSchema = z
   .object({
@@ -114,3 +112,7 @@ export const isProjectionStateEqual: Equal<EmbeddedRunReport["projection"], Proj
   true;
 
 export const isNativeExceptionSchemaEqual: Equal<DeepReadonly<z.output<typeof nativeExceptionSchema>>, NativeException> = true;
+
+export const isSliceProblemSchemaEqual: Equal<DeepReadonly<z.output<typeof sliceProblemSchema>>, SliceProblem> = true;
+
+export const isUnprojectedFolderSchemaEqual: Equal<DeepReadonly<z.output<typeof unprojectedFolderSchema>>, UnprojectedFolderReport> = true;

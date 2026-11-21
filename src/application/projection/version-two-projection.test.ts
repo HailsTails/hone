@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RecordKind, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { ProjectedFile } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../infrastructure/hone-config-file/conventions.ts";

@@ -7,7 +7,7 @@ import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
 import type { Check } from "../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import { checksOfClause } from "../../application/upgrade/mapping/clause-checks.ts";
+import { checksOfClause } from "../../domain/language-layer/clause-checks.ts";
 import type { VersionOneEntry } from "./version-one-entries.ts";
 
 const carveOutEntrySchema = z.looseObject({ kind: z.literal("file-carve-out"), clause: clauseAddressSchema, file: repoPathSchema });

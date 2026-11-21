@@ -1,7 +1,7 @@
 import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import { type ExceptionRecord, UNMEASURED_EXCEPTION_BASELINE } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { ProjectionRequest } from "../../infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
-import type { ProjectionWrite } from "../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
 import type { Result } from "../../domain/result.ts";
 import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";

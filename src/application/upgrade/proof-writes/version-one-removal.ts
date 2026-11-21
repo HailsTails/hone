@@ -1,5 +1,5 @@
 import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
-import { failureDetailOf } from "../../../infrastructure/node/file-system/failure-detail.ts";
+import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
 import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";

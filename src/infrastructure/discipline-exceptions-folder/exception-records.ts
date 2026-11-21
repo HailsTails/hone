@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { LoadFailure } from "../command-line/load-failure.ts";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
-import type { GitFailure } from "../git/git-port.ts";
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../content-files/absolute-path.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";

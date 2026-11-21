@@ -1,4 +1,4 @@
-import type { RunnerFailure } from "../../../src/application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../src/domain/runner/runner-failure.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import type {
   CompilerOptions,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
 

@@ -4,7 +4,7 @@ import type {
 } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { AttributedNativeException, Finding } from "../../infrastructure/command-line/governance.ts";
 import type { DoublyHeld, ExemptedFinding } from "../records/discipline-exceptions/governance.ts";
-import type { FilePresence } from "../../infrastructure/node/file-system/file-text-port.ts";
+import type { FilePresence } from "../repository/file-presence.ts";
 import type { BaseRevisionAvailability } from "../repository/base-revision-availability.ts";
 import type { ClauseAddress } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseEditionReading } from "../../infrastructure/content-files/edition.ts";

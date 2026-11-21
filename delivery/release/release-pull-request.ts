@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import type { CommitRecord, GitFailure, GitHistoryPort } from "../../src/infrastructure/git/git-port.ts";
+import type { CommitRecord, GitHistoryPort } from "../../src/infrastructure/git/git-port.ts";
+import type { GitFailure } from "../../src/domain/repository/git-failure.ts";
 import type { PathPort } from "../../src/infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
 import type { AbsolutePath } from "../../src/infrastructure/content-files/absolute-path.ts";

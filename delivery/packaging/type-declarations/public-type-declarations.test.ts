@@ -232,7 +232,7 @@ describe("the declarations the public type entries ship, emitted in memory by th
       audit: {
         reached: expect.not.arrayContaining([
           expect.stringMatching(
-            /^src\/(?:infrastructure\/engines\/protocol\/toolchain\/toolchain-requirement|application\/ports\/runner-failure(?:-types)?|infrastructure\/node\/modules\/package-location-port|infrastructure\/node\/modules\/install-layout|domain\/rule-set\/tool-identity)\.d\.ts$/,
+            /^src\/(?:infrastructure\/engines\/protocol\/toolchain\/toolchain-requirement|domain\/runner\/runner-failure(?:-types)?|infrastructure\/node\/modules\/package-location-port|infrastructure\/node\/modules\/install-layout|domain\/rule-set\/tool-identity)\.d\.ts$/,
           ),
         ]),
       },

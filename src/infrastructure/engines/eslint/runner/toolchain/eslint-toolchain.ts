@@ -1,6 +1,6 @@
 import type typescriptEslintPlugin from "@typescript-eslint/eslint-plugin";
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { gatheredPeerFailure, installedPeer, loadedPeer, type PeerToolchain, type ToolchainRequirement } from "../../../protocol/toolchain/toolchain-requirement.ts";
 import { createDefaultPackageLocationPort } from "../../../../node/modules/package-location-port.ts";
 import type { InstallForm } from "../../../../node/modules/install-layout.ts";

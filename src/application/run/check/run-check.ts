@@ -14,17 +14,17 @@ import type { DebtPair } from "../../../domain/records/discipline-exceptions/deb
 import { paidDebtOf } from "../../../domain/records/discipline-exceptions/paid-debt.ts";
 import type { Finding } from "../../../infrastructure/command-line/governance.ts";
 import { applyGovernance, type GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
-import type { RunnerFailure } from "../../ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { LoadedRunner, RunnerClause, RunRequest } from "../../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
 import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { TouchedSet } from "../touched-set/touched-set.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
 import type { Assessment } from "../../../infrastructure/hone-config-file/assessment.ts";
 import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { UnprojectedFolder } from "./unprojected-folder.ts";
+import type { UnprojectedFolder } from "../../../domain/runner/unprojected-folder.ts";
 import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
 import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -39,7 +39,7 @@ import { packageLinkOf } from "../../../infrastructure/command-line/installation
 import { paidDebtNotesOf } from "../../../domain/report/paid-debt-notes.ts";
 import { shownRemediesOf } from "../../../infrastructure/printed-report/findings/shown-remedies.ts";
 import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
-import type { MechanismRun } from "../../../infrastructure/engines/protocol/engine-run/mechanism-dispatch.ts";
+import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import { loadRunner } from "../../../infrastructure/engines/protocol/engine-run/load-runner.ts";
 import { runMechanismWithRecords } from "../../../infrastructure/engines/protocol/embedded/mechanism-dispatch.ts";
 

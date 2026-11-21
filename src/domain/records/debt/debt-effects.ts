@@ -1,5 +1,5 @@
 import { checkAddressOf } from "../../language-layer/check-address.ts";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import { type DebtOrigin, type DebtSite, inSiteOrder, type SitePlace } from "./debt-sites.ts";

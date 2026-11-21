@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { PieceFailure } from "../../../../application/ports/piece-failure-types.ts";
+import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
 import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
 import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";

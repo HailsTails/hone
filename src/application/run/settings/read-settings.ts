@@ -14,6 +14,7 @@ import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSe
 import { settledCheckSettings } from "../../../domain/settings/clause-settings/check-settings.ts";
 import type { ConventionKey, Conventions } from "../../../infrastructure/hone-config-file/conventions.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
+import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
 import { type DeclaredRuleSet, type EslintConfigLookupChoice, type SettingsFile, settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 export type SettingsDocument = { readonly path: string; readonly document: unknown };
@@ -40,8 +41,6 @@ export type SettingsSources = {
     readonly mechanism: MechanismId;
   }) => Result<PieceClause, VersionTwoLoadFailure>;
 };
-
-export type SettingsNote = { readonly kind: "declared-not-read"; readonly key: ConventionKey };
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 

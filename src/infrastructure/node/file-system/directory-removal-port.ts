@@ -1,6 +1,6 @@
 import type { AbsolutePath } from "../../content-files/absolute-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import { failureDetailOf } from "./failure-detail.ts";
+import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import { removeEmptyDirectory } from "./file-system-port.ts";
 
 export type DirectoryRemovalFailure = {

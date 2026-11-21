@@ -1,4 +1,4 @@
-import type { RunnerFailure } from "../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
 import type { MechanismId } from "../hone-config-file/identifiers.ts";
 import type { RepoPath } from "../hone-records-folder/repo-path.ts";
 

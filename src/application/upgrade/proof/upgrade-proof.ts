@@ -1,5 +1,5 @@
-import type { MisnamedRuleId } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import { failureDetailOf } from "../../../infrastructure/node/file-system/failure-detail.ts";
+import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
+import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";

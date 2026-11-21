@@ -1,6 +1,7 @@
 import type { LoadFailure } from "../command-line/load-failure.ts";
 import type { DirectoryEntry, DirectoryPort } from "../node/file-system/file-system-port.ts";
-import type { FilePresence, FileTextPort } from "../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../node/file-system/file-text-port.ts";
+import type { FilePresence } from "../../domain/repository/file-presence.ts";
 import type { PathPort } from "../node/path-port.ts";
 import { type AbsolutePath, absolutePathSchema } from "../content-files/absolute-path.ts";
 import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";

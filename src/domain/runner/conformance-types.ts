@@ -1,4 +1,4 @@
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 
 export type ConformanceFailure = {
   readonly clause: ClauseAddress;

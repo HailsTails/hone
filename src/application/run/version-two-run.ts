@@ -1,11 +1,11 @@
 import type { GovernedRun } from "../../infrastructure/command-line/governance.ts";
-import type { ProjectedFile } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { SettingsReading } from "./settings/read-settings.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "./touched-set/touched-set.ts";
+import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { type Assessment, assessmentInEffect } from "../../infrastructure/hone-config-file/assessment.ts";
 import { type VersionTwoReportOutput, reportOutputInEffect } from "../../infrastructure/hone-config-file/report-output.ts";
 import type { Result } from "../../domain/result.ts";

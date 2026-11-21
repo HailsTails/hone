@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { RunnerClause, StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { parsedJson } from "../../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import type { PeerKind } from "../../../src/application/ports/runner-failure.ts";
+import type { PeerKind } from "../../../src/domain/runner/runner-failure.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import type { ToolIdentity } from "../../../src/domain/rule-set/tool-identity.ts";
 

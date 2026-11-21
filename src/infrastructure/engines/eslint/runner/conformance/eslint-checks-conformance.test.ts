@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { editionRunsOf } from "../../../../../application/conformance/edition-runs.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";

@@ -1,4 +1,4 @@
-import type { ClauseSettingValues } from "../../../application/ports/runner-module-types.ts";
+import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
 import type { ClauseSettingDeclarations } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
 
 export const defaultClauseSettings = (request: { readonly declarations: ClauseSettingDeclarations }): ClauseSettingValues =>

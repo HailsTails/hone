@@ -1,6 +1,6 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
 import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { createExceptionRepository } from "../../../../discipline-exceptions-folder/exception-layout.ts";
 import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";

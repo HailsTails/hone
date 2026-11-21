@@ -1,5 +1,5 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";

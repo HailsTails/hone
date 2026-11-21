@@ -1,7 +1,7 @@
 import type { AttributedNativeException, Finding, GovernedRun } from "../../infrastructure/command-line/governance.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
@@ -11,7 +11,7 @@ import { debtSitesOf, inSiteOrder, unrecordableSitesOf } from "../../domain/reco
 import { nativeDebtSitesOf } from "../../domain/records/debt/native-debt-sites.ts";
 import type { RecordsAtBase, RecordsDocument, RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
 import { type PrunableDebt, prunableDebtOf } from "../../domain/records/debt/prunable-debt.ts";
-import type { HoneRecordsFailure } from "./read-hone-records.ts";
+import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import { documentsWithAdded, documentsWithRemoved, type RecordAddition } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
 import { namedRecordsFileOf } from "../../infrastructure/hone-records-folder/folder-layout/records-layout.ts";

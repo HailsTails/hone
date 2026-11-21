@@ -1,4 +1,4 @@
-import type { ProjectionWrite } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { TeamConfigRefusal, VersionOneProjection } from "./team-config-finder.ts";

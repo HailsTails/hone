@@ -1,17 +1,12 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type {
   RunnerClause,
   RunRequest,
   StandaloneRunner,
 } from "../../protocol/runner-module/runner-module-schema.ts";
-import {
-  type CaseVerdict,
-  type Hit,
-  hitSchema,
-  type MeasuredPair,
-  runnerResultSchema,
-} from "../../protocol/runner-module/runner-result-schema.ts";
+import { hitSchema, runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
+import type { CaseVerdict, Hit, MeasuredPair } from "../../../../domain/runner/runner-result-types.ts";
 import type { StandaloneRunReport } from "../../protocol/runner-module/standalone-run-report-schema.ts";
 import type { EntryKindPort } from "../../../node/file-system/file-system-port.ts";
 import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";

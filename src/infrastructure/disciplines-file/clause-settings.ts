@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ClauseSettingValues } from "../../application/ports/runner-module-types.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
 import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../content-files/rule-sets/rule-set-reader.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import { type ClauseAddress, clauseAddressSchema, clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";

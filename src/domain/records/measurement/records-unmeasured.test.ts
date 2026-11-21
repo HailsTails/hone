@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
 import { carriedJudgementOf, recordsUnmeasuredOf } from "./records-unmeasured.ts";

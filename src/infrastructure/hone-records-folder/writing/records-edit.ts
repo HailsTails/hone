@@ -2,7 +2,7 @@ import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/jso
 import type { RepoPath } from "../repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RecordPlace, RecordsDocument } from "../hone-record.ts";
-import type { HoneRecordsFailure } from "../../../application/records/read-hone-records.ts";
+import type { HoneRecordsFailure } from "../../../domain/records/hone-records-failure.ts";
 import { RECORDS_VERSION, recordsDocumentSchema } from "../records-wire.ts";
 
 export type RecordsEditFailure = Extract<HoneRecordsFailure, { readonly kind: "records-documents" }>;

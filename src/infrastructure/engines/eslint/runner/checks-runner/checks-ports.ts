@@ -1,4 +1,4 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { FileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";

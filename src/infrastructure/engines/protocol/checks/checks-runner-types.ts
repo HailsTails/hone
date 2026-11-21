@@ -1,16 +1,13 @@
 import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../content-files/absolute-path.ts";
-import type { EslintConfigLookup } from "../../eslint/eslint-config-lookup.ts";
+import type { EslintConfigLookup } from "../../../../domain/settings/eslint-config-lookup.ts";
 import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
-import type { Hit, MeasuredPair, NativeException, ProjectionState } from "../runner-module/runner-result-schema.ts";
-
-export type ProjectedFile = { readonly file: RepoPath; readonly text: string };
-
-export type AnsweredFile = { readonly symptom: string; readonly check?: string; readonly file: RepoPath };
+import type { Hit, MeasuredPair, NativeException, ProjectionState } from "../../../../domain/runner/runner-result-types.ts";
+import type { AnsweredFile, ChecksSliceProblem, MisnamedRuleId, NotReadyYetFailure, ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 
 export type ChecksBinding = {
   readonly mechanism: string;
@@ -29,29 +26,6 @@ export type ChecksRunRequest = {
   readonly declaredConfigLookup: EslintConfigLookup | undefined;
 };
 
-export type NonEmptyRuleIds = readonly [string, ...string[]];
-
-export type MisnamedRuleId =
-  | {
-      readonly kind: "names-no-check";
-      readonly ruleId: string;
-      readonly file: RepoPath;
-      readonly line: number;
-      readonly text: string;
-    }
-  | {
-      readonly kind: "version-1-id";
-      readonly ruleId: string;
-      readonly file: RepoPath;
-      readonly line: number;
-      readonly text: string;
-      readonly replacedBy: NonEmptyRuleIds;
-    };
-
-export type MisnamedRuleIdKind = MisnamedRuleId["kind"];
-
-export type ChecksSliceProblem = { readonly slice: RepoPath; readonly state: "missing" | "out-of-date" | "unconfigured" };
-
 export type ChecksRunReport = {
   readonly hits: readonly Hit[];
   readonly nativeExceptions: readonly NativeException[];
@@ -59,11 +33,6 @@ export type ChecksRunReport = {
   readonly projection: ProjectionState;
   readonly slices: readonly ChecksSliceProblem[];
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
-};
-
-export type NotReadyYetFailure = {
-  readonly kind: "not-ready-yet";
-  readonly what: { readonly thing: "eslint-config-roots"; readonly paths: readonly string[] };
 };
 
 export type ChecksRunFailure = RunnerFailure | NotReadyYetFailure;

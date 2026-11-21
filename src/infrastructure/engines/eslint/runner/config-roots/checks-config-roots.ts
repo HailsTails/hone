@@ -1,4 +1,4 @@
-import type { EslintConfigLookup } from "../../eslint-config-lookup.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
 import { directoryOf, fileNameOf } from "./checks-paths.ts";
 import { CONFIG_FILE_NAMES } from "./config-lookup.ts";
