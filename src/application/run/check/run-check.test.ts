@@ -21,6 +21,8 @@ import type { Result } from "../../../domain/result.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { type CheckRequest, runCheck, runReachedCheck } from "./run-check.ts";
 import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -307,21 +309,26 @@ const TRACKED_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: TRACKED
 
 const FACTORY_ONLY_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: [repoPathSchema.parse("src/factory.ts")] } });
 
-const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
-  repoRoot: REPO_ROOT,
-  installRoot: INSTALL_ROOT,
-  moduleExtension: ".ts",
-  baseRevision: "main",
-  assessment: DEFAULT_ASSESSMENT,
-  fileText: fileTextOver(INSTALL),
-  engine: createDefaultEnginePort({}),
-  modules: modulesLoading({ runner: standaloneRunner({ runReturns: CLEAN_RUN }) }),
-  path: POSIX_PATH,
-  git: TRACKED_GIT,
-  selectionRepository: selectionRepositoryReading(SELECTION_READING),
-  exceptionRepository: NO_RECORDS,
-  ...overrides,
-});
+const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => {
+  const fileText = overrides.fileText ?? fileTextOver(INSTALL);
+  return {
+    repoRoot: REPO_ROOT,
+    installRoot: INSTALL_ROOT,
+    moduleExtension: ".ts",
+    baseRevision: "main",
+    assessment: DEFAULT_ASSESSMENT,
+    fileText,
+    engine: createDefaultEnginePort({}),
+    modules: modulesLoading({ runner: standaloneRunner({ runReturns: CLEAN_RUN }) }),
+    path: POSIX_PATH,
+    git: TRACKED_GIT,
+    selectionRepository: selectionRepositoryReading(SELECTION_READING),
+    exceptionRepository: NO_RECORDS,
+    exceptionEntryParser,
+    shownPathOf: shownPathOfRepository({ path: POSIX_PATH, fileText, repoRoot: REPO_ROOT, installRoot: INSTALL_ROOT }),
+    ...overrides,
+  };
+};
 
 const AUTHORISED_FACTORY_RECORD = {
   kind: "authorised-location",

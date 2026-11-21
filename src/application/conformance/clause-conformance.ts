@@ -1,4 +1,3 @@
-import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import type { RunnerLocation } from "../ports/engine/runner-location.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { Result } from "../../domain/result.ts";
@@ -19,7 +18,7 @@ export const clauseConformanceOf = async (
   }
   const engine = await request.engine.load(request);
   if (engine.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "runner-unloadable", detail: loadFailureDetail({ failure: engine.error }) } };
+    return { outcome: "failed", error: { kind: "runner-unloadable", detail: request.loadFailureDetail({ failure: engine.error }) } };
   }
   const runner = conformingRunnerOf({ engine: engine.value });
   if (runner.outcome === "failed") {
@@ -35,7 +34,7 @@ export const clauseConformanceOf = async (
         outcome: "failed",
         error: {
           kind: "runner-refused",
-          detail: loadFailureDetail({ failure: { kind: "runner-failed", mechanism: request.mechanism, failure: conformance.error } }),
+          detail: request.loadFailureDetail({ failure: { kind: "runner-failed", mechanism: request.mechanism, failure: conformance.error } }),
         },
       }
     : conformance;

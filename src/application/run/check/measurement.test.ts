@@ -20,6 +20,7 @@ import {
   touchedSetFor,
   unmeasuredOf,
 } from "./measurement.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -385,21 +386,21 @@ describe("partialAssessmentsOf", () => {
 
 describe("baselineNeedOf", () => {
   it("settles on unmeasured when no base revision is given", () => {
-    expect(baselineNeedOf({ baseRevision: undefined, entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: undefined, entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY] })).toEqual({
       kind: "settled",
       baseline: UNMEASURED_NOT_GIVEN,
     });
   });
 
   it("settles on unmeasured when no entry is imported or holds a legacy chain", () => {
-    expect(baselineNeedOf({ baseRevision: "main", entries: [CARVE_OUT_ENTRY, REASON_ONLY_LOCATION_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [CARVE_OUT_ENTRY, REASON_ONLY_LOCATION_ENTRY] })).toEqual({
       kind: "settled",
       baseline: UNMEASURED_NOT_GIVEN,
     });
   });
 
   it("needs the records at the base and only the imported entries' sources", () => {
-    expect(baselineNeedOf({ baseRevision: "main", entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] })).toEqual({
       kind: "read-at-base",
       baseRevision: "main",
       sources: [LEGACY_SOURCE_FILE],
@@ -407,7 +408,7 @@ describe("baselineNeedOf", () => {
   });
 
   it("needs the records at the base and no source for a legacy chain", () => {
-    expect(baselineNeedOf({ baseRevision: "main", entries: [LEGACY_CHAIN_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [LEGACY_CHAIN_ENTRY] })).toEqual({
       kind: "read-at-base",
       baseRevision: "main",
       sources: [],
@@ -541,6 +542,7 @@ describe("exceptionBaselineOf", () => {
           baseRevision: "main",
           git: baseGitAnswering({ text: { outcome: "ok", value: { presence: "present-in-base", text: "[]" } }, renames: NO_RENAMES }),
           exceptionRepository: exceptionRepositoryAnswering({ outcome: "ok", value: [] }),
+          exceptionEntryParser,
         },
         entries: [IMPORTED_LOCATION_ENTRY],
       }),
@@ -550,7 +552,7 @@ describe("exceptionBaselineOf", () => {
   it("is the settled baseline when none is needed", () => {
     expect(
       exceptionBaselineOf({
-        check: { repoRoot: REPO_ROOT, baseRevision: undefined, git: UNASKED_BASE_GIT, exceptionRepository: UNASKED_REPOSITORY },
+        check: { repoRoot: REPO_ROOT, baseRevision: undefined, git: UNASKED_BASE_GIT, exceptionRepository: UNASKED_REPOSITORY, exceptionEntryParser },
         entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY],
       }),
     ).toEqual(UNMEASURED_NOT_GIVEN);

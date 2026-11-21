@@ -19,6 +19,8 @@ import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files
 import probePiece from "./probe-rule-set/mechanisms/audit/PD-1/piece.json" with { type: "json" };
 import probeDiscipline from "./probe-rule-set/rules/PD-1/discipline.json" with { type: "json" };
 import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../command-line/installation/shown-path.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -133,6 +135,8 @@ const probeCheck = () => {
   const report = runCheck({
     ...records,
     selectionRepository: createSelectionRepository(records),
+    exceptionEntryParser,
+    shownPathOf: shownPathOfRepository(records),
     exceptionRepository: createExceptionRepository({
       ...records,
       fileText: {

@@ -11,6 +11,6 @@ export type SymptomCatalogueRepository = {
 
 export type SymptomCatalogueOf = (request: {
   readonly fileText: FileTextPort;
-  readonly path: PathPort;
+  readonly path: Pick<PathPort, "join">;
   readonly ruleSetRoot: AbsolutePath;
 }) => SymptomCatalogueRepository;

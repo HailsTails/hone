@@ -63,6 +63,7 @@ const pruneDebtPortsOver = (
         assessment,
         selectionRepository: createSelectionRepository({ ...request, moduleExtension }),
         exceptionRepository: request.exceptionRepositoryOf({ repoRoot: request.repoRoot }),
+        shownPathOf: request.shownPathOfRepository(request),
       }),
     exceptionRepository: request.exceptionRepositoryOf({ repoRoot: request.repoRoot }),
   };

@@ -20,6 +20,9 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { recordDebtCommandOf } from "./run-record-debt-command.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -293,6 +296,9 @@ const recordedDebt = async (request: Run) => {
     modules: request.modules,
     git: request.git,
     exceptionRepositoryOf: singleFileRepositoriesOver({ path: TABLE_PATH, fileText: request.fileText, git: request.git }),
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
     moduleUrl: ENTRY_URL,
   };
   await recordDebtCommandOf({ gitTree: request.tree })(command);
@@ -463,6 +469,9 @@ const recordedDebtInto = async (request: { readonly run: Run; readonly disk: Rec
     modules: request.run.modules,
     git: request.run.git,
     exceptionRepositoryOf: exceptionRepositoryOf(request.disk.ports),
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
     moduleUrl: ENTRY_URL,
   });
   return {

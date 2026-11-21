@@ -11,6 +11,9 @@ import { helpText } from "./infrastructure/command-line/arguments/command-help.t
 import type { VersionOneCommandRequest } from "./application/ports/version-one-command-request.ts";
 import { type CommandHandler, type Subcommands, TOOL_SUBCOMMANDS, toolCommandOf } from "./run-tool-command.ts";
 import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
+import type { ExceptionEntryParser } from "./application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "./application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "./application/ports/installation/shown-path-of.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -54,6 +57,9 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: ENTRY_URL,
 });
 
@@ -149,6 +155,13 @@ const commandRequest = (request: { readonly process: ProcessPort }): VersionOneC
   modules: UNUSED_MODULES,
   git: UNUSED_GIT,
   exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),
+  exceptionEntryParser: {
+    parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+    importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+    importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
+  },
+  selectionRepositoryOf: vi.fn<SelectionRepositoryOf>(),
+  shownPathOfRepository: vi.fn<ShownPathOfRepository>(),
   moduleUrl: ENTRY_URL,
 });
 

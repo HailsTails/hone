@@ -15,12 +15,13 @@ export type GuidedCheckRequest = {
 };
 
 export const guidedCheckRunFor = async (request: GuidedCheckRequest): Promise<Result<GuidedCheckRun, LoadFailure>> => {
-  const { path, fileText, modules, engine, git, exceptionRepositoryOf, moduleUrl, process } = request.command;
+  const { process, ...ports } = request.command;
+  const { path, fileText, moduleUrl } = ports;
   const locations = checkLocationsFor({ arguments: process.arguments, path, fileText, moduleUrl });
   if (locations.outcome === "failed") {
     return locations;
   }
-  const run = await request.checkRunAt({ path, fileText, modules, engine, git, exceptionRepositoryOf, moduleUrl, locations: locations.value });
+  const run = await request.checkRunAt({ ...ports, locations: locations.value });
   if (run.outcome === "failed") {
     return run;
   }

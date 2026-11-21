@@ -1,10 +1,9 @@
-import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
-import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import { readDisciplineFile, readPieceFile } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
+import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { ClauseDefinition, SourceCase } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressOf } from "../../domain/rule-set/clause-address.ts";
@@ -16,7 +15,8 @@ import type { Result } from "../../domain/result.ts";
 import type { ClauseRequest, ClauseUnderTest, ConformanceSetupFailure } from "./conformance-testing-types.ts";
 
 export type RuleSetReading = {
-  readonly fileText: FileTextPort;
+  readonly ruleSetFiles: RuleSetFiles;
+  readonly loadFailureDetail: LoadFailureDetail;
   readonly path: PathPort;
   readonly mechanism: MechanismId;
   readonly installRoot: AbsolutePath;
@@ -30,10 +30,11 @@ type SetupRefusal = { readonly outcome: "failed"; readonly error: ConformanceSet
 
 const setupFailed = (error: ConformanceSetupFailure): SetupRefusal => ({ outcome: "failed", error });
 
-const unloadable = (request: { readonly failure: LoadFailure }): SetupRefusal =>
-  setupFailed({ kind: "rule-set-unloadable", detail: loadFailureDetail(request) });
+const unloadable = (request: { readonly failure: LoadFailure; readonly loadFailureDetail: LoadFailureDetail }): SetupRefusal =>
+  setupFailed({ kind: "rule-set-unloadable", detail: request.loadFailureDetail({ failure: request.failure }) });
 
 export const boundClauseOf = (request: RuleSetReading & ClauseRequest): Result<BoundClause, ConformanceSetupFailure> => {
+  const { loadFailureDetail } = request;
   const address = clauseAddressOf({ text: request.clause });
   if (address === "not-a-clause-address") {
     return setupFailed({ kind: "address-invalid", detail: request.clause });
@@ -42,10 +43,9 @@ export const boundClauseOf = (request: RuleSetReading & ClauseRequest): Result<B
   if (ruleSetRoot.outcome === "failed") {
     return setupFailed({ kind: "rule-set-unloadable", detail: `${request.ruleSetRoot} does not resolve: ${ruleSetRoot.error.kind}` });
   }
-  const reading = { fileText: request.fileText, path: request.path, ruleSetRoot: ruleSetRoot.value, installRoot: request.installRoot };
-  const discipline = readDisciplineFile({ ...reading, discipline: address.discipline });
+  const discipline = request.ruleSetFiles.disciplineFile({ ruleSetRoot: ruleSetRoot.value, discipline: address.discipline });
   if (discipline.outcome === "failed") {
-    return unloadable({ failure: discipline.error });
+    return unloadable({ failure: discipline.error, loadFailureDetail });
   }
   const definition = discipline.value.clauses.find(
     (clause): clause is MechanicalClause => clause.id === address.clause && clause.kind === "mechanical",
@@ -54,15 +54,15 @@ export const boundClauseOf = (request: RuleSetReading & ClauseRequest): Result<B
     return setupFailed({ kind: "clause-not-mechanical", detail: request.clause });
   }
   if (!definition.mechanisms.includes(request.mechanism)) {
-    return unloadable({ failure: { kind: "mechanism-not-allowed", address: request.clause, mechanism: request.mechanism } });
+    return unloadable({ failure: { kind: "mechanism-not-allowed", address: request.clause, mechanism: request.mechanism }, loadFailureDetail });
   }
-  const piece = readPieceFile({ ...reading, mechanism: request.mechanism, discipline: discipline.value });
+  const piece = request.ruleSetFiles.pieceFile({ ruleSetRoot: ruleSetRoot.value, installRoot: request.installRoot, mechanism: request.mechanism, discipline: discipline.value });
   if (piece.outcome === "failed") {
-    return unloadable({ failure: piece.error });
+    return unloadable({ failure: piece.error, loadFailureDetail });
   }
   const entry = piece.value.clauses.find((candidate) => candidate.clause === address.clause);
   if (entry === undefined) {
-    return unloadable({ failure: { kind: "piece-missing", address: request.clause, mechanism: request.mechanism } });
+    return unloadable({ failure: { kind: "piece-missing", address: request.clause, mechanism: request.mechanism }, loadFailureDetail });
   }
   return {
     outcome: "ok",

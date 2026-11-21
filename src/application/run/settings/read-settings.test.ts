@@ -8,6 +8,7 @@ import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/iden
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { type SettingsReading, readSettings } from "./read-settings.ts";
 import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 
@@ -111,7 +112,7 @@ const sourcesHolding = (request: { readonly document: unknown; readonly piece: R
 
 describe("readSettings", () => {
   it("gives the reading version 1 gives for the same choices, with every record's why-chain required", () => {
-    expect(readSettings({ sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }) })).toEqual<{
+    expect(readSettings({ settingsFormat: SETTINGS_FILE_FORMAT, sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }) })).toEqual<{
       readonly outcome: "ok";
       readonly value: SettingsReading;
     }>({
@@ -153,13 +154,14 @@ describe("readSettings", () => {
 
   it("asks for the piece of each run clause from the root of its rule set", () => {
     const sources = sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } });
-    readSettings({ sources });
+    readSettings({ settingsFormat: SETTINGS_FILE_FORMAT, sources });
     expect(sources.pieceClause).toHaveBeenCalledWith({ ruleSetRoot: INSTALL_ROOT, clause: LOOPS_CLAUSE, mechanism: AUDIT });
   });
 
   it("notes each declared convention no check reads yet", () => {
     expect(
       readSettings({
+        settingsFormat: SETTINGS_FILE_FORMAT,
         sources: sourcesHolding({
           document: { ...DOCUMENT, generated: [{ files: ["src/generated/**"], outsideParty: "@graphql-codegen/cli" }], layers: { domain: ["src/domain"] } },
           piece: { outcome: "ok", value: LOOPS_PIECE },
@@ -178,7 +180,7 @@ describe("readSettings", () => {
 
   it("refuses a file its wire refuses, naming the file", () => {
     expect(
-      readSettings({ sources: sourcesHolding({ document: { ...DOCUMENT, fileExceptionWhyChains: "optional" }, piece: { outcome: "ok", value: LOOPS_PIECE } }) }),
+      readSettings({ settingsFormat: SETTINGS_FILE_FORMAT, sources: sourcesHolding({ document: { ...DOCUMENT, fileExceptionWhyChains: "optional" }, piece: { outcome: "ok", value: LOOPS_PIECE } }) }),
     ).toEqual({
       outcome: "failed",
       error: {
@@ -192,6 +194,7 @@ describe("readSettings", () => {
   it("refuses a check the catalogue does not hold, in the new words", () => {
     expect(
       readSettings({
+        settingsFormat: SETTINGS_FILE_FORMAT,
         sources: sourcesHolding({ document: { ...DOCUMENT, checks: { "loop-keyword#nowhere": "walker" }, checkSettings: {} }, piece: { outcome: "ok", value: LOOPS_PIECE } }),
       }),
     ).toEqual({ outcome: "failed", error: { kind: "unknown-check", address: "loop-keyword#nowhere" } });
@@ -200,6 +203,7 @@ describe("readSettings", () => {
   it("refuses an edition the piece does not declare, naming the check it was given on", () => {
     expect(
       readSettings({
+        settingsFormat: SETTINGS_FILE_FORMAT,
         sources: sourcesHolding({ document: { ...DOCUMENT, checkSettings: { "loop-keyword#loops": { edition: "3" } } }, piece: { outcome: "ok", value: LOOPS_PIECE } }),
       }),
     ).toEqual({
@@ -211,6 +215,7 @@ describe("readSettings", () => {
   it("passes on the failure of a piece it cannot read", () => {
     expect(
       readSettings({
+        settingsFormat: SETTINGS_FILE_FORMAT,
         sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } } }),
       }),
     ).toEqual({ outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } });

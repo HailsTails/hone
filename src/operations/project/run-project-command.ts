@@ -28,6 +28,8 @@ const projectionsIn = (
     path: request.path,
     git: request.git,
     exceptionRepository: request.exceptionRepositoryOf({ repoRoot: request.repoRoot }),
+    exceptionEntryParser: request.exceptionEntryParser,
+    selectionRepositoryOf: request.selectionRepositoryOf,
   });
 };
 

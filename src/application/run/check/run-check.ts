@@ -2,8 +2,8 @@ import { type CheckedTree, checkedTreeOf, typescriptFilesOf } from "../checked-t
 import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { ClauseBinding, Selection } from "../../../domain/settings/selection/selection.ts";
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
-import { parseExceptionEntries } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
 import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
@@ -36,8 +36,6 @@ import type {
 } from "../../../domain/report/check-report.ts";
 import { clauseReadingsOf } from "./clause-readings.ts";
 import { exceptionBaselineOf, partialAssessmentsOf, touchedSetFor, unmeasuredOf } from "./measurement.ts";
-import { packageLinkOf } from "../../../infrastructure/command-line/installation/package-link.ts";
-import { shownPathOf } from "../../../infrastructure/command-line/installation/shown-path.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { paidDebtNotesOf } from "../../../domain/report/paid-debt-notes.ts";
 import { shownRemediesOf } from "./shown-remedies.ts";
@@ -57,13 +55,15 @@ export type CheckRequest = {
   readonly git: GitPort;
   readonly selectionRepository: SelectionRepository;
   readonly exceptionRepository: Pick<ExceptionRepository, "read" | "readAt">;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
 };
 
 export type ExceptionBaselineReader = (request: {
   readonly entries: readonly StructuralExceptionEntry[];
 }) => ExceptionBaseline;
 
-export type LoadRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "git"> & {
+export type LoadRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "git" | "shownPathOf"> & {
   readonly exceptionBaselineOf: ExceptionBaselineReader;
 };
 
@@ -159,7 +159,7 @@ export const loadInputs = async (request: LoadRequest): Promise<Result<LoadedInp
     return entries;
   }
   const exceptionBaseline = request.exceptionBaselineOf({ entries: entries.value.map(({ entry }) => entry) });
-  const parsed = parseExceptionEntries({
+  const parsed = request.exceptionEntryParser.parseExceptionEntries({
     entries: entries.value,
     selection: reading.value.selection,
     baseline: exceptionBaseline,
@@ -289,11 +289,6 @@ export const mechanismRuns = async (request: {
 export const findingsOf = (request: { readonly runs: readonly MechanismRun[] }): readonly Finding[] =>
   request.runs.flatMap((run) => run.hits.map((hit) => ({ ...hit, mechanism: run.mechanism })));
 
-const shownPathsOf = (request: { readonly check: CheckRequest }): ShownPathOf => {
-  const link = packageLinkOf(request.check);
-  return ({ target }) => shownPathOf({ path: request.check.path, repoRoot: request.check.repoRoot, link, target });
-};
-
 const remediedFindingsOf = (request: {
   readonly check: CheckRequest;
   readonly inputs: LoadedInputs;
@@ -303,7 +298,7 @@ const remediedFindingsOf = (request: {
   if (!findings.some((finding) => finding.remedy !== undefined)) {
     return findings;
   }
-  return shownRemediesOf({ ...request.check, shownPathOf: shownPathsOf(request), clauseRoots: request.inputs.clauseRoots, findings });
+  return shownRemediesOf({ ...request.check, clauseRoots: request.inputs.clauseRoots, findings });
 };
 
 const absentFilesOf = (request: {
@@ -362,7 +357,7 @@ const checkReportOf = (request: {
     ],
     assessment: partialAssessmentsOf({ assessment: request.assessment, records: request.inputs.records }),
     readFirst: [
-      ...clauseReadingsOf({ ...request.check, shownPathOf: shownPathsOf(request), findings: governed.findings, clauseRoots: request.inputs.clauseRoots }),
+      ...clauseReadingsOf({ ...request.check, findings: governed.findings, clauseRoots: request.inputs.clauseRoots }),
       ...paidDebtNotesOf({ governed, paid: paidDebt, runs: request.runs }),
     ],
   };

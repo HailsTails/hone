@@ -10,6 +10,9 @@ import type { RecordsReading } from "./domain/records/hone-records/hone-record.t
 import type { RunLoadFailure } from "./domain/report/run-load-failure.ts";
 import { createSettingsRepository, type SettingsReading } from "./application/run/settings/read-settings.ts";
 import { createSettingsSources } from "./infrastructure/hone-config-file/settings-sources.ts";
+import { SETTINGS_FILE_FORMAT } from "./infrastructure/hone-config-file/settings-file.ts";
+import { recordsReader } from "./infrastructure/hone-records-folder/reading/records-reading.ts";
+import { createSymptomCatalogueRepository } from "./infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { SymptomCatalogue } from "./domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { ModuleExtension } from "./application/ports/host/module-extension.ts";
@@ -44,7 +47,7 @@ type StagesRequest = { readonly ports: VersionTwoPorts; readonly locations: Vers
 const settingsStage = (request: StagesRequest & { readonly catalogue: SymptomCatalogue }): Result<SettingsReading, RunLoadFailure> => {
   const { fileText, path } = request.ports;
   const { repoRoot, installRoot, moduleExtension } = request.locations;
-  const read = createSettingsRepository({ sources: createSettingsSources({ fileText, path, repoRoot, installRoot, moduleExtension }) }).read({});
+  const read = createSettingsRepository({ sources: createSettingsSources({ fileText, path, repoRoot, installRoot, moduleExtension }), settingsFormat: SETTINGS_FILE_FORMAT }).read({});
   return read.outcome === "failed" ? { outcome: "failed", error: runFailureOf({ engines: request.catalogue.engines, source: read.error }) } : read;
 };
 
@@ -52,6 +55,7 @@ const recordsStage = (request: StagesRequest & { readonly catalogue: SymptomCata
   const { fileText, path, directory, git, gitTree, recordsSourceOf } = request.ports;
   const read = readHoneRecords({
     source: recordsSourceOf({ fileText, path, directory, git, gitTree, repoRoot: request.locations.repoRoot, catalogue: request.catalogue }),
+    recordsReader,
     catalogue: request.catalogue,
     baseRevision: request.locations.baseRevision,
   });
@@ -82,7 +86,13 @@ const enginesRequestOf = (request: StagesRequest & { readonly stage: EngineStage
 });
 
 export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages => ({
-  catalogue: () => toolCatalogueOf({ fileText: request.ports.fileText, path: request.ports.path, installRoot: request.locations.installRoot }),
+  catalogue: () =>
+    toolCatalogueOf({
+      fileText: request.ports.fileText,
+      path: request.ports.path,
+      installRoot: request.locations.installRoot,
+      symptomCatalogueOf: createSymptomCatalogueRepository,
+    }),
   settings: (stage) => settingsStage({ ...request, ...stage }),
   records: (stage) => recordsStage({ ...request, ...stage }),
   tree: (stage) => treeStage({ ...request, ...stage }),

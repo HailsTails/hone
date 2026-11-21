@@ -2,16 +2,16 @@ import { type CheckRequest, findingsOf, loadInputs, mechanismRuns, projectionOut
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import { fixedRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { EngineFindings, EnginePass, EnginePassFailure } from "../../ports/upgrade/engine-pass.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 
-const failureOf = (request: { readonly failure: LoadFailure }): Result<EngineFindings, EnginePassFailure> => ({
+const failureOf = (request: { readonly failure: LoadFailure; readonly loadFailureDetail: LoadFailureDetail }): Result<EngineFindings, EnginePassFailure> => ({
   outcome: "failed",
-  error: { kind: "version-one-run-failed", detail: loadFailureDetail({ failure: request.failure }) },
+  error: { kind: "version-one-run-failed", detail: request.loadFailureDetail({ failure: request.failure }) },
 });
 
 const projectionFileOf = (request: { readonly mechanism: MechanismId }): RepoPath => fixedRepoPath(`disciplines.${request.mechanism}.mjs`);
@@ -34,20 +34,20 @@ const projectionFailureOf = (request: { readonly runs: readonly MechanismRun[] }
   };
 };
 
-export const createVersionOneEnginePass = (request: { readonly check: CheckRequest }): EnginePass => ({
+export const createVersionOneEnginePass = (request: { readonly check: CheckRequest; readonly loadFailureDetail: LoadFailureDetail }): EnginePass => ({
   findingsFor: async ({ records }) => {
-    const { check } = request;
+    const { check, loadFailureDetail } = request;
     const inputs = await loadInputs({ ...check, exceptionBaselineOf: () => UNMEASURED_EXCEPTION_BASELINE });
     if (inputs.outcome === "failed") {
-      return failureOf({ failure: inputs.error });
+      return failureOf({ failure: inputs.error, loadFailureDetail });
     }
     const tree = treeOf({ check, inputs: inputs.value });
     if (tree.outcome === "failed") {
-      return failureOf({ failure: tree.error });
+      return failureOf({ failure: tree.error, loadFailureDetail });
     }
     const runs = await mechanismRuns({ check, tree: tree.value, inputs: { ...inputs.value, records } });
     if (runs.outcome === "failed") {
-      return failureOf({ failure: runs.error });
+      return failureOf({ failure: runs.error, loadFailureDetail });
     }
     const projectionFailure = projectionFailureOf({ runs: runs.value });
     return projectionFailure === undefined

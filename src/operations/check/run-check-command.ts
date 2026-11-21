@@ -95,6 +95,8 @@ const unshownCheckRunAt = async (
     git: request.git,
     selectionRepository: createSelectionRepository({ ...request, moduleExtension }),
     exceptionRepository: request.exceptionRepositoryOf({ repoRoot: request.repoRoot }),
+    exceptionEntryParser: request.exceptionEntryParser,
+    shownPathOf: request.shownPathOfRepository(request),
   });
   return checkRunOf({
     report,

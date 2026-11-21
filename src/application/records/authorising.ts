@@ -2,14 +2,18 @@ import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catal
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace, RecordRefusal, RecordsAtBase, RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
-import { documentsWithAdded, placeOfAddition } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
-import type { RecordsEditFailure } from "../ports/records/records-editor.ts";
+import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
-import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 
-type Judging = {
+export type AuthorisingPorts = {
+  readonly recordsReader: RecordsReader;
+  readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded" | "placeOfAddition">;
+};
+
+type Judging = AuthorisingPorts & {
   readonly documents: readonly RecordsDocument[];
   readonly catalogue: SymptomCatalogue;
   readonly addition: RecordAddition;
@@ -33,11 +37,11 @@ const refusalsAt = (request: { readonly refused: readonly { readonly place: Reco
   request.refused.filter((candidate) => candidate.place.file === request.place.file && candidate.place.index === request.place.index).flatMap((candidate) => candidate.refusals);
 
 const judgedAddition = (request: Judging): Result<Authorising, RecordsEditFailure> => {
-  const added = documentsWithAdded({ documents: request.documents, additions: [request.addition] });
+  const added = request.recordsEditor.documentsWithAdded({ documents: request.documents, additions: [request.addition] });
   if (added.outcome === "failed") {
     return added;
   }
-  const reading = recordsReadingOf({
+  const reading = request.recordsReader.recordsReadingOf({
     documents: [...request.documents.filter((document) => document.file !== request.addition.file), ...added.value],
     catalogue: request.catalogue,
     base: UNMEASURED_BASE,
@@ -45,11 +49,11 @@ const judgedAddition = (request: Judging): Result<Authorising, RecordsEditFailur
   if (reading.outcome === "failed") {
     return { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } };
   }
-  const refusals = refusalsAt({ refused: reading.value.refused, place: placeOfAddition(request) });
+  const refusals = refusalsAt({ refused: reading.value.refused, place: request.recordsEditor.placeOfAddition(request) });
   return { outcome: "ok", value: refusals.length === 0 ? { judged: "accepted", edit: { write: added.value, remove: [] } } : refusedOutcome({ refusals }) };
 };
 
-export const authorisingOf = (request: {
+export const authorisingOf = (request: AuthorisingPorts & {
   readonly request: AuthoriseRequest;
   readonly documents: readonly RecordsDocument[];
   readonly catalogue: SymptomCatalogue;
@@ -58,5 +62,11 @@ export const authorisingOf = (request: {
   if (file.outcome === "failed") {
     return { outcome: "ok", value: { judged: "refused", refusals: [file.error] } };
   }
-  return judgedAddition({ documents: request.documents, catalogue: request.catalogue, addition: { file: file.value, entry: entryOf({ request: request.request }) } });
+  return judgedAddition({
+    recordsReader: request.recordsReader,
+    recordsEditor: request.recordsEditor,
+    documents: request.documents,
+    catalogue: request.catalogue,
+    addition: { file: file.value, entry: entryOf({ request: request.request }) },
+  });
 };

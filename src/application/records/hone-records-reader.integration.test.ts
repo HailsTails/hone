@@ -25,6 +25,7 @@ import {
   createDefaultScratchFilesPort,
   type ScratchFilesPort,
 } from "../../../delivery/install-proof/install-proof-ports.ts";
+import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
 
 type ScratchRecordsFile = { readonly folder: string; readonly name: string; readonly records: readonly ReadonlyJsonValue[] };
 
@@ -299,7 +300,7 @@ const NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 describe("Hone's records over a real hone-records folder with a git base, built in the test's own scratch", () => {
   it("reads the plan's record examples, each of its kind in path order, holds the carried record the base holds and refuses the one reworded since", () => {
-    expect(readHoneRecords({ source, catalogue, baseRevision: "HEAD" })).toMatchObject({
+    expect(readHoneRecords({ recordsReader, source, catalogue, baseRevision: "HEAD" })).toMatchObject({
       outcome: "ok",
       value: {
         records: [
@@ -328,7 +329,7 @@ describe("Hone's records over a real hone-records folder with a git base, built 
   });
 
   it("answers each finding at an example's site by that record alone, leaves the rest, lists nothing stale, and lists the debt the authorised location holds as paid", () => {
-    const reading = readHoneRecords({ source, catalogue, baseRevision: "HEAD" });
+    const reading = readHoneRecords({ recordsReader, source, catalogue, baseRevision: "HEAD" });
     assert(reading.outcome === "ok", "the records read");
     expect(answerFindings({ catalogue, records: reading.value.records, findings: FINDINGS, touched: NOTHING_TOUCHED, runs: [], measurements: { runs: [], tracked: [], excluded: [] } })).toMatchObject({
       findings: [CAST_IN_ORDERS, DATE_FNS_IMPORT_IN_CLOCK_SOURCE],
@@ -348,7 +349,7 @@ describe("Hone's records over a real hone-records folder with a git base, built 
   });
 
   it("answers by carried records left unjudged when no base revision is given, and lists the import as unmeasured", () => {
-    const reading = readHoneRecords({ source, catalogue, baseRevision: undefined });
+    const reading = readHoneRecords({ recordsReader, source, catalogue, baseRevision: undefined });
     assert(reading.outcome === "ok", "the records read");
     expect({
       answering: answerFindings({ catalogue, records: reading.value.records, findings: FINDINGS, touched: NOTHING_TOUCHED, runs: [], measurements: { runs: [], tracked: [], excluded: [] } }),

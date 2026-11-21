@@ -1,7 +1,7 @@
 import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
-import { settingsTextOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { fixedRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -36,6 +36,7 @@ export type UpgradePlanRequest = {
   readonly answered: readonly RecordAnswered[];
   readonly catalogues: readonly RuleSetCatalogue[];
   readonly projectionFilesOf: ProjectionFilesOf;
+  readonly settingsFormat: Pick<SettingsFileFormat, "textOf">;
 };
 
 const recordFilesOf = (request: { readonly documents: readonly MappedRecordsDocument[] }): readonly PlannedRepoFile[] =>
@@ -71,7 +72,7 @@ export const upgradePlanOf = async (request: UpgradePlanRequest): Promise<Result
     value: {
       markedNotAdopted: settings.value.markedNotAdopted,
       inputs: inputs.value,
-      files: [{ file: SETTINGS_FILE, text: settingsTextOf({ settings: settings.value.settings }) }, ...recordFilesOf({ documents }), ...projected.value.files],
+      files: [{ file: SETTINGS_FILE, text: request.settingsFormat.textOf({ settings: settings.value.settings }) }, ...recordFilesOf({ documents }), ...projected.value.files],
       projected: projected.value.projections,
     },
   };

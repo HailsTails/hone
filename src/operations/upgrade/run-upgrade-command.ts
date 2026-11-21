@@ -24,7 +24,9 @@ import { createAnsweringOracle } from "../../application/upgrade/record-answers/
 import { createVersionOneEnginePass } from "../../application/upgrade/record-answers/version-one-engine-pass.ts";
 import { type UpgradeProofRequest, upgradeProof } from "../../application/upgrade/proof/upgrade-proof.ts";
 import { foundTreeCheckReachOf, foundTreeRunReachOf } from "../../application/upgrade/found-tree/found-tree-reach.ts";
-import { plannedProjectionOf } from "../../application/upgrade/command/planned-projection.ts";
+import { type PlannedProjectionPorts, plannedProjectionOf } from "../../application/upgrade/command/planned-projection.ts";
+import type { FoundTreeRecordsSourceOf } from "../../application/ports/records/records-source-of.ts";
+import type { LoadFailureDetail } from "../../application/ports/report/load-failure-detail.ts";
 import { proofRunsOf } from "../../infrastructure/command-line/proof-runs.ts";
 import { shippedCataloguesOf } from "../../infrastructure/content-files/symptom-catalogues/shipped-catalogues.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
@@ -34,12 +36,15 @@ import { recordsOnDiskOf } from "../../infrastructure/discipline-exceptions-fold
 import { versionOneReadOf } from "../../infrastructure/disciplines-file/version-one-reading.ts";
 import type { VersionOneRead } from "../../application/ports/records/version-one-reading.ts";
 
-export type UpgradePorts = VersionTwoRepositoryPorts & {
-  readonly fileCreation: FileCreationPort;
-  readonly fileRemoval: FileRemovalPort;
-  readonly directoryRemoval: DirectoryRemovalPort;
-  readonly entryKind: EntryKindPort;
-};
+export type UpgradePorts = VersionTwoRepositoryPorts &
+  PlannedProjectionPorts & {
+    readonly fileCreation: FileCreationPort;
+    readonly fileRemoval: FileRemovalPort;
+    readonly directoryRemoval: DirectoryRemovalPort;
+    readonly entryKind: EntryKindPort;
+    readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
+    readonly loadFailureDetail: LoadFailureDetail;
+  };
 
 type Located = RepositoryLocated & { readonly arguments: UpgradeArguments };
 
@@ -89,6 +94,8 @@ const checkRequestOf = (request: { readonly command: VersionOneCommandRequest; r
       git: command.git,
       selectionRepository: createSelectionRepository({ repoRoot, installRoot, moduleExtension, fileText: command.fileText, path: command.path }),
       exceptionRepository: command.exceptionRepositoryOf({ repoRoot }),
+      exceptionEntryParser: command.exceptionEntryParser,
+      shownPathOf: command.shownPathOfRepository({ path: command.path, fileText: command.fileText, repoRoot, installRoot }),
     },
   };
 };
@@ -126,7 +133,12 @@ const preparedOf = (request: { readonly ports: UpgradePorts; readonly command: V
 
 const foundTreeStagesOf = (request: { readonly ports: UpgradePorts; readonly command: VersionOneCommandRequest; readonly located: Located }) => {
   const { ports, command, located } = request;
-  const found = foundTreeRunReachOf({ recordsSourceOf: ports.recordsSourceOf, command });
+  const found = foundTreeRunReachOf({
+    recordsSourceOf: ports.recordsSourceOf,
+    foundTreeRecordsSourceOf: ports.foundTreeRecordsSourceOf,
+    loadFailureDetail: ports.loadFailureDetail,
+    command,
+  });
   return stagesOverRepository({
     ports: { ...ports, recordsSourceOf: found.recordsSourceOf },
     command: { ...command, git: found.git },
@@ -152,9 +164,9 @@ const proofRequestOf = (request: {
       entryKind: ports.entryKind,
       path: command.path,
     },
-    oracle: createAnsweringOracle({ enginePass: createVersionOneEnginePass({ check: prepared.check }), catalogues: prepared.catalogues }),
+    oracle: createAnsweringOracle({ enginePass: createVersionOneEnginePass({ check: prepared.check, loadFailureDetail: ports.loadFailureDetail }), catalogues: prepared.catalogues }),
     runs: proofRunsOf({
-      versionOne: () => runCheck({ ...prepared.check, ...foundTreeCheckReachOf({ check: prepared.check }) }),
+      versionOne: () => runCheck({ ...prepared.check, ...foundTreeCheckReachOf({ check: prepared.check, loadFailureDetail: ports.loadFailureDetail }) }),
       versionTwo: () =>
         versionTwoRunOver({
           stages: foundTreeStagesOf({ ports, command, located }),
@@ -165,10 +177,21 @@ const proofRequestOf = (request: {
     versionOneFiles: prepared.read.versionOneFiles,
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
-    projectionFilesOf: plannedProjectionOf({ command, repoRoot: located.repoRoot, installRoot: located.installRoot }),
+    projectionFilesOf: plannedProjectionOf({
+      command,
+      repoRoot: located.repoRoot,
+      installRoot: located.installRoot,
+      recordsReader: ports.recordsReader,
+      symptomCatalogueOf: ports.symptomCatalogueOf,
+      settingsFormat: ports.settingsFormat,
+      settingsSourcesOf: ports.settingsSourcesOf,
+    }),
+    settingsFormat: ports.settingsFormat,
     versionOneProjectionsOf: versionOneProjectionsOfRepository({
       project: runProject,
       check: prepared.check,
+      selectionRepositoryOf: command.selectionRepositoryOf,
+      loadFailureDetail: ports.loadFailureDetail,
       fileText: command.fileText,
       path: command.path,
       repoRoot: located.repoRoot,

@@ -63,6 +63,7 @@ const debtOutcomesOf = async (request: DebtRequest): Promise<DebtResult> => {
     baseRevision: request.arguments.baseRevision,
     assessment: ASSESSED_IN_THIS_RUN,
     selectionRepository: selectionRepositoryHolding({ reading: request.selection }),
+    shownPathOf: request.shownPathOfRepository(request),
   });
   if (reached.outcome === "failed") {
     return reached;

@@ -9,6 +9,15 @@ import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identif
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { createRuleSetFileReader } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { RuleSetReading } from "./clause-under-test.ts";
+
+const ruleSetReadingOf = (request: { readonly fileText: FileTextPort; readonly path: PathPort }): Pick<RuleSetReading, "ruleSetFiles" | "loadFailureDetail" | "path"> => ({
+  ruleSetFiles: createRuleSetFileReader(request),
+  loadFailureDetail,
+  path: request.path,
+});
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 const MECHANISM = mechanismIdSchema.parse("audit");
@@ -95,8 +104,7 @@ const checksRunner = () => ({
 
 const conformanceOver = (namespace: unknown) =>
   clauseConformanceOf({
-    fileText: acmeFileText(),
-    path: acmePath(),
+    ...ruleSetReadingOf({ fileText: acmeFileText(), path: acmePath() }),
     engine: createDefaultEnginePort({}),
     modules: { load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: namespace }) },
     installRoot: INSTALL_ROOT,

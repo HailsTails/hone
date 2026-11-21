@@ -3,7 +3,8 @@ import { loadFailureText } from "./infrastructure/printed-report/load-failures/l
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
-import { createSymptomCatalogueRepository, SYMPTOM_CATALOGUE_SEGMENTS } from "./infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { createSymptomCatalogueRepository } from "./infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { SYMPTOM_CATALOGUE_SEGMENTS } from "./domain/language-layer/symptom-catalogue-location.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { Result } from "./domain/result.ts";
 import { TOOL_IDENTITY } from "./domain/rule-set/tool-identity.ts";

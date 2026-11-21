@@ -1,9 +1,9 @@
-import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { ProjectionRequest } from "../ports/engine/runner-module.ts";
 import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { SelectionRepositoryOf } from "../ports/selection/selection-repository.ts";
 import type { Result } from "../../domain/result.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { CheckedTree } from "../run/checked-tree-of.ts";
@@ -17,8 +17,9 @@ import {
   treeOf,
 } from "../run/check/run-check.ts";
 
-export type ProjectRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "selectionRepository" | "fileText"> & {
+export type ProjectRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "selectionRepository" | "fileText" | "shownPathOf"> & {
   readonly fileText: FileTextPort;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
 };
 
 type ProjectionInputs = {
@@ -47,7 +48,7 @@ export const runProject = async (
 ): Promise<Result<readonly ProjectionWrite[], LoadFailure>> => {
   const inputs = await loadInputs({
     ...request,
-    selectionRepository: createSelectionRepository(request),
+    selectionRepository: request.selectionRepositoryOf(request),
     exceptionBaselineOf: () => UNMEASURED_EXCEPTION_BASELINE,
   });
   if (inputs.outcome === "failed") {

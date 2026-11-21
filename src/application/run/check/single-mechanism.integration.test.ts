@@ -35,6 +35,11 @@ import {
 import { createEslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -69,12 +74,23 @@ const singleFileRepositoryOver = (request: {
     gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
   });
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };

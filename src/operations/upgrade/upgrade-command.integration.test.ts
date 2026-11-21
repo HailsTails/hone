@@ -32,6 +32,9 @@ import { eslint9PieceModules, eslint9ToolchainModules } from "../../infrastructu
 import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
 import type { AuthorisedLocationEntry } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
 
 const VERSION_ONE = 1;
 
@@ -246,6 +249,9 @@ const runCommandIn = async (request: {
     modules: request.modules,
     git: createDefaultGitPort({}),
     exceptionRepositoryOf: createDefaultExceptionRepositoryOf({}),
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
     moduleUrl: ENTRY_URL,
   });
   return { writes: vi.mocked(processPort.writeOut).mock.calls, exits: vi.mocked(processPort.exitWith).mock.calls };

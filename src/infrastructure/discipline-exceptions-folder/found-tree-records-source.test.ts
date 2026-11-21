@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSource } from "../../ports/records/records-source.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
-import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
+import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordsSource } from "../../application/ports/records/records-source.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { foundTreeRecordsSourceOver } from "./found-tree-records-source.ts";
-import { FOUND_TREE_REVISION } from "./found-tree-reach.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -90,7 +88,7 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
 
 const ENTRY = { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "kept" } as const;
 
-const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
+const FOUND_TREE = "the tree the upgrade found";
 
 const AUTHORISED_DOCUMENT: RecordsDocument = {
   file: repoPathSchema.parse("hone-records/authorised-locations/loop-keyword.json"),
@@ -99,9 +97,8 @@ const AUTHORISED_DOCUMENT: RecordsDocument = {
 
 const WRITTEN_DOCUMENT: RecordsDocument = { file: repoPathSchema.parse("hone-records/debt/loop-keyword.json"), document: { version: 2, records: [] } };
 
-const exceptionsReading = (): Pick<ExceptionRepository, "read" | "readAt"> => ({
-  read: vi.fn<ExceptionRepository["read"]>().mockReturnValue({ outcome: "ok", value: [PLACED] }),
-  readAt: vi.fn<ExceptionRepository["readAt"]>(),
+const entriesAtFoundTree = (): Pick<ExceptionRepository, "readAt"> => ({
+  readAt: vi.fn<ExceptionRepository["readAt"]>().mockReturnValue({ outcome: "ok", value: [ENTRY] }),
 });
 
 const sourceReading = (): RecordsSource => ({
@@ -111,18 +108,18 @@ const sourceReading = (): RecordsSource => ({
 
 describe("foundTreeRecordsSourceOver", () => {
   it("reads the records the working tree holds as they are", () => {
-    const source = foundTreeRecordsSourceOver({ source: sourceReading(), exceptions: exceptionsReading(), catalogue: SETTINGS_CATALOGUE });
+    const source = foundTreeRecordsSourceOver({ source: sourceReading(), exceptions: entriesAtFoundTree(), catalogue: SETTINGS_CATALOGUE });
     expect(source.read()).toEqual({ outcome: "ok", value: [WRITTEN_DOCUMENT] });
   });
 
-  it("holds at the base the records the working tree's version 1 entries become, and asks git for nothing", () => {
+  it("holds at the base the records the version 1 entries at the found tree become, and asks the records folder for nothing at the base", () => {
     const underlying = sourceReading();
-    const exceptions = exceptionsReading();
+    const exceptions = entriesAtFoundTree();
     const source = foundTreeRecordsSourceOver({ source: underlying, exceptions, catalogue: SETTINGS_CATALOGUE });
     expect({
-      atBase: source.readAt({ revision: FOUND_TREE_REVISION }),
+      atBase: source.readAt({ revision: FOUND_TREE }),
       askedRecords: vi.mocked(underlying.readAt).mock.calls,
       askedEntries: vi.mocked(exceptions.readAt).mock.calls,
-    }).toEqual({ atBase: { outcome: "ok", value: [AUTHORISED_DOCUMENT] }, askedRecords: [], askedEntries: [] });
+    }).toEqual({ atBase: { outcome: "ok", value: [AUTHORISED_DOCUMENT] }, askedRecords: [], askedEntries: [[{ revision: FOUND_TREE }]] });
   });
 });

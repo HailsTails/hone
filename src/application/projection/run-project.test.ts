@@ -15,6 +15,8 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { Result } from "../../domain/result.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
@@ -335,7 +337,7 @@ const projectRequest = (overrides: Partial<ProjectRequest>): ProjectRequest => {
     git: GIT,
     ...overrides,
   };
-  return { exceptionRepository: singleFileRepositoryOver(ports), ...ports };
+  return { exceptionRepository: singleFileRepositoryOver(ports), exceptionEntryParser, selectionRepositoryOf: createSelectionRepository, ...ports };
 };
 
 describe("runProject", () => {

@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "../../application/ports/records/exception-repository.ts";
+import type { ExceptionEntryParser } from "../../application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "../../application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "../../application/ports/installation/shown-path-of.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
@@ -82,6 +85,16 @@ const GIT: GitPort = {
 
 const EXCEPTION_REPOSITORY_OF = vi.fn<ExceptionRepositoryOf>();
 
+const EXCEPTION_ENTRY_PARSER: ExceptionEntryParser = {
+  parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+  importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+  importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
+};
+
+const SELECTION_REPOSITORY_OF = vi.fn<SelectionRepositoryOf>();
+
+const SHOWN_PATH_OF_REPOSITORY = vi.fn<ShownPathOfRepository>();
+
 const MODULE_URL = "file:///repo/node_modules/@hailstails/hone/src/hone.ts";
 
 const COMMAND: VersionOneCommandRequest = {
@@ -97,6 +110,9 @@ const COMMAND: VersionOneCommandRequest = {
   modules: MODULES,
   git: GIT,
   exceptionRepositoryOf: EXCEPTION_REPOSITORY_OF,
+  exceptionEntryParser: EXCEPTION_ENTRY_PARSER,
+  selectionRepositoryOf: SELECTION_REPOSITORY_OF,
+  shownPathOfRepository: SHOWN_PATH_OF_REPOSITORY,
   moduleUrl: MODULE_URL,
 };
 
@@ -112,6 +128,9 @@ const ABSENT_SELECTION_COMMAND: VersionOneCommandRequest = {
   modules: MODULES,
   git: GIT,
   exceptionRepositoryOf: EXCEPTION_REPOSITORY_OF,
+  exceptionEntryParser: EXCEPTION_ENTRY_PARSER,
+  selectionRepositoryOf: SELECTION_REPOSITORY_OF,
+  shownPathOfRepository: SHOWN_PATH_OF_REPOSITORY,
   moduleUrl: MODULE_URL,
 };
 
@@ -148,6 +167,9 @@ describe("guidedCheckRunFor", () => {
       modules: MODULES,
       git: GIT,
       exceptionRepositoryOf: EXCEPTION_REPOSITORY_OF,
+      exceptionEntryParser: EXCEPTION_ENTRY_PARSER,
+      selectionRepositoryOf: SELECTION_REPOSITORY_OF,
+      shownPathOfRepository: SHOWN_PATH_OF_REPOSITORY,
       moduleUrl: MODULE_URL,
       locations: {
         arguments: { repo: "/repo", baseRevision: undefined, reportOutput: undefined, forfeiture: undefined },

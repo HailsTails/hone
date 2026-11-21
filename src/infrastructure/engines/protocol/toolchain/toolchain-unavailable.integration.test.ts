@@ -29,6 +29,11 @@ import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultEnginePort } from "../engine-port.ts";
+import type { SelectionRepositoryOf } from "../../../../application/ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../../../application/ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../../../application/ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../command-line/installation/shown-path.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
@@ -80,12 +85,23 @@ type DiskRequest = {
   readonly git: GitPort;
 };
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const fileText = createDefaultFileTextPort({});

@@ -50,6 +50,11 @@ import {
 } from "../toolchain/eslint-toolchain.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { createDefaultEnginePort } from "../../../protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../../../../application/ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../../../../application/ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../../../../application/ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../../command-line/installation/shown-path.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -229,12 +234,23 @@ type DiskRequest = {
   readonly git: GitPort;
 };
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const STORED_LINT_CONFIG_NAME = "lint-config.fixture";

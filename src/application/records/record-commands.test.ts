@@ -9,7 +9,8 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { PlacedRecord, RecordsDocument, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "./record-commands.ts";
-import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsReader, recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { RecordsStore } from "../ports/records/records-store.ts";
 
@@ -196,7 +197,7 @@ const LEFT_TO_ANOTHER_RUN: TouchedSet = { measured: "elsewhere" };
 
 const UNMEASURED: TouchedSet = { measured: "no", base: { state: "git-failed", revision: "origin/main", gitMessage: "bad revision" } };
 
-const COMMAND = { catalogue: REPORT_CATALOGUE };
+const COMMAND = { catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor };
 const WEBHOOK_DEBT_DOCUMENT: RecordsDocument = {
   file: repoPathSchema.parse("hone-records/debt/claimed-type.json"),
   document: { version: 2, records: [{ answers: "claimed-type#cast-expressions", file: TOUCHED_FILE }] },
@@ -332,14 +333,14 @@ const PAID_DEBT: PlacedRecord = {
 describe("hone prune-debt over a run's paid, stale and forfeited debt", () => {
   it("removes exactly the debt the report listed, from the document that holds it", () => {
     const { apply, store } = storeOf();
-    const pruned = pruneDebtOf({ source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })({ report: { paid: [{ debt: PAID_DEBT, answeredBy: [] }], stale: [], forfeited: [] } });
+    const pruned = pruneDebtOf({ recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })({ report: { paid: [{ debt: PAID_DEBT, answeredBy: [] }], stale: [], forfeited: [] } });
     expect(pruned).toMatchObject({ outcome: "ok", value: [{ place: { file: DEBT_FILE, index: 0 }, reason: "paid" }] });
     expect(apply).toHaveBeenCalledWith({ edit: { write: [], remove: [DEBT_FILE] } });
   });
 
   it("writes nothing when the report lists nothing to remove", () => {
     const { apply, store } = storeOf();
-    expect(pruneDebtOf({ source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })({ report: { paid: [], stale: [], forfeited: [] } })).toEqual({ outcome: "ok", value: [] });
+    expect(pruneDebtOf({ recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })({ report: { paid: [], stale: [], forfeited: [] } })).toEqual({ outcome: "ok", value: [] });
     expect(apply).not.toHaveBeenCalled();
   });
 });
@@ -359,23 +360,23 @@ const AUTHORISE = {
 describe("hone authorise over the person's arguments", () => {
   it("writes the one record when the form accepts it", () => {
     const { apply, store } = storeOf();
-    expect(authoriseOf({ catalogue: REPORT_CATALOGUE, source: sourceOf({ documents: [] }), store })(AUTHORISE)).toMatchObject({ outcome: "ok", value: { judged: "accepted" } });
+    expect(authoriseOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })(AUTHORISE)).toMatchObject({ outcome: "ok", value: { judged: "accepted" } });
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
   it("writes nothing when the form refuses the chain", () => {
     const { apply, store } = storeOf();
-    expect(authoriseOf({ catalogue: REPORT_CATALOGUE, source: sourceOf({ documents: [] }), store })({ ...AUTHORISE, rootCause: "no" })).toMatchObject({ outcome: "ok", value: { judged: "refused" } });
+    expect(authoriseOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({ ...AUTHORISE, rootCause: "no" })).toMatchObject({ outcome: "ok", value: { judged: "refused" } });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("writes nothing for a record already held", () => {
     const first = storeOf();
-    authoriseOf({ catalogue: REPORT_CATALOGUE, source: sourceOf({ documents: [] }), store: first.store })(AUTHORISE);
+    authoriseOf({ ...COMMAND, source: sourceOf({ documents: [] }), store: first.store })(AUTHORISE);
     const { apply, store } = storeOf();
     const [firstCall] = first.apply.mock.calls;
     assert(firstCall !== undefined, "the first authorise wrote its record");
-    expect(authoriseOf({ catalogue: REPORT_CATALOGUE, source: sourceOf({ documents: firstCall[0].edit.write }), store })(AUTHORISE)).toMatchObject({ outcome: "ok", value: { judged: "already-held" } });
+    expect(authoriseOf({ ...COMMAND, source: sourceOf({ documents: firstCall[0].edit.write }), store })(AUTHORISE)).toMatchObject({ outcome: "ok", value: { judged: "already-held" } });
     expect(apply).not.toHaveBeenCalled();
   });
 });

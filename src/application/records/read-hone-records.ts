@@ -4,7 +4,7 @@ import type { Result } from "../../domain/result.ts";
 import type { RecordsAtBase, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
-import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
 
 const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly baseRevision: string | undefined }): Result<RecordsAtBase, HoneRecordsFailure> => {
   if (request.baseRevision === undefined) {
@@ -21,6 +21,7 @@ const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly bas
 
 export const readHoneRecords = (request: {
   readonly source: RecordsSource;
+  readonly recordsReader: RecordsReader;
   readonly catalogue: SymptomCatalogue;
   readonly baseRevision: string | undefined;
 }): Result<RecordsReading, HoneRecordsFailure> => {
@@ -32,6 +33,6 @@ export const readHoneRecords = (request: {
   if (base.outcome === "failed") {
     return base;
   }
-  const reading = recordsReadingOf({ documents: working.value, catalogue: request.catalogue, base: base.value });
+  const reading = request.recordsReader.recordsReadingOf({ documents: working.value, catalogue: request.catalogue, base: base.value });
   return reading.outcome === "failed" ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } } : reading;
 };

@@ -15,6 +15,9 @@ import type { VersionOneCommandRequest } from "../../application/ports/version-o
 import { runCheckCommand } from "./run-check-command.ts";
 import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -200,7 +203,13 @@ const commandRequest = (overrides: Partial<VersionOneCommandRequest>): VersionOn
     moduleUrl: ENTRY_URL,
     ...overrides,
   };
-  return { exceptionRepositoryOf: singleFileRepositoriesOver(ports), ...ports };
+  return {
+    exceptionRepositoryOf: singleFileRepositoriesOver(ports),
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
+    ...ports,
+  };
 };
 
 const outputOf = (request: { readonly process: ProcessPort }) => ({

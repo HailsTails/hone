@@ -24,6 +24,7 @@ import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } fr
 import type { EslintClass } from "../toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../toolchain/eslint-toolchain.ts";
 import { eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../../hone-config-file/settings-file.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -172,7 +173,7 @@ const versionOneBindings = () => {
 
 const versionTwoBindings = () => {
   const sources = createSettingsSources({ repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
-  const reading = createSettingsRepository({ sources }).read({});
+  const reading = createSettingsRepository({ settingsFormat: SETTINGS_FILE_FORMAT, sources }).read({});
   assert(reading.outcome === "ok", "the pair's version 2 file loads");
   return reading.value.selection.bindings;
 };

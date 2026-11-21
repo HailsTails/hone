@@ -16,6 +16,9 @@ import type { Case, Principle, RecordKind, Rule, Symptom } from "../../src/domai
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { runSelfCheck, selfCheckOutcomeOf, VERSION_TWO_GATED_SECTIONS, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
 import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "../../src/application/ports/installation/shown-path-of.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -265,6 +268,13 @@ const requestOver = (request: { readonly process: ProcessPort }): VersionOneComm
     renamedSince: vi.fn<GitPort["renamedSince"]>(),
   },
   exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),
+  exceptionEntryParser: {
+    parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+    importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+    importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
+  },
+  selectionRepositoryOf: vi.fn<SelectionRepositoryOf>(),
+  shownPathOfRepository: vi.fn<ShownPathOfRepository>(),
   moduleUrl: "file:///install/src/hone.ts",
 });
 

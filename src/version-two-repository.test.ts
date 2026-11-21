@@ -43,6 +43,9 @@ const command: VersionOneCommandRequest = {
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: "file:///install/src/hone.ts",
 };
 

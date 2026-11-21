@@ -8,6 +8,9 @@ import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runSplitRecordsCommand } from "./run-split-records-command.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
 
 type RecordsDisk = {
   readonly repoRoot: AbsolutePath;
@@ -138,6 +141,9 @@ const commandOver = (request: { readonly disk: RecordsDisk; readonly process: Pr
   modules: { load: vi.fn() },
   git: request.disk.ports.git,
   exceptionRepositoryOf: exceptionRepositoryOf(request.disk.ports),
+  exceptionEntryParser,
+  selectionRepositoryOf: createSelectionRepository,
+  shownPathOfRepository,
   moduleUrl: "file:///install/src/hone.ts",
 });
 

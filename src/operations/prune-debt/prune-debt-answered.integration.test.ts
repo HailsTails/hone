@@ -17,6 +17,9 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { createWalkerRunner } from "../../infrastructure/engines/audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -142,6 +145,9 @@ const pruneDebtOver = async (request: {
     modules: auditRunnerOver(request.fileText),
     git: request.git,
     exceptionRepositoryOf: repositoryOf,
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
     moduleUrl: TOOL_COMMAND_URL,
   });
   return { printed: writeOut.mock.calls, exits: exitWith.mock.calls };

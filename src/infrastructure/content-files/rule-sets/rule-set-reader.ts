@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { RuleSetFiles } from "../../../application/ports/rule-set/rule-set-files.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseEditionsSchema, editionSchema } from "../edition.ts";
 import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
@@ -306,3 +307,8 @@ export const readPieceFile = (request: {
   }
   return { outcome: "ok", value: piece };
 };
+
+export const createRuleSetFileReader = (options: { readonly fileText: FileTextPort; readonly path: PathPort }): RuleSetFiles => ({
+  disciplineFile: (request) => readDisciplineFile({ ...options, ...request }),
+  pieceFile: (request) => readPieceFile({ ...options, ...request }),
+});

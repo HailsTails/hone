@@ -12,6 +12,7 @@ import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracl
 import type { RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
 import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf } from "./upgrade-plan.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -160,6 +161,7 @@ const requestOver =(overrides: Partial<UpgradePlanRequest>): UpgradePlanRequest 
   answered: [FINDINGS_ON_LOOPS],
   catalogues: CATALOGUES,
   projectionFilesOf: projecting({ files: [PLANNED_PROJECTION] }),
+  settingsFormat: SETTINGS_FILE_FORMAT,
   ...overrides,
 });
 

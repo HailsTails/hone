@@ -6,9 +6,8 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import type { Result } from "../../../domain/result.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
+import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import { symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
-
-export const SYMPTOM_CATALOGUE_SEGMENTS: readonly string[] = ["rules", "typescript", "symptoms.json"];
 
 type CatalogueSource = {
   readonly fileText: FileTextPort;

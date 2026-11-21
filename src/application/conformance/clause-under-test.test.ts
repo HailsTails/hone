@@ -5,7 +5,15 @@ import { absolutePathSchema } from "../../infrastructure/content-files/absolute-
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import { boundClauseOf, clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";
+import { boundClauseOf, clauseUnderTestOf, repoPathOf, type RuleSetReading } from "./clause-under-test.ts";
+import { createRuleSetFileReader } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
+
+const ruleSetReadingOf = (request: { readonly fileText: FileTextPort; readonly path: PathPort }): Pick<RuleSetReading, "ruleSetFiles" | "loadFailureDetail" | "path"> => ({
+  ruleSetFiles: createRuleSetFileReader(request),
+  loadFailureDetail,
+  path: request.path,
+});
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -131,8 +139,7 @@ describe("boundClauseOf", () => {
   it("binds the clause as hone check binds it, with its piece settings, its default clause settings and its cases", () => {
     expect(
       boundClauseOf({
-        fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: PIECE_TEXT }),
-        path: pathJoining(),
+        ...ruleSetReadingOf({ fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: PIECE_TEXT }), path: pathJoining() }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -149,7 +156,7 @@ describe("boundClauseOf", () => {
   });
 
   it("refuses text that is not a clause address", () => {
-    expect(boundClauseOf({ fileText: ACME_TEXT, path: ACME_PATH, mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT, clause: "ACME-2" })).toEqual({
+    expect(boundClauseOf({ ...ruleSetReadingOf({ fileText: ACME_TEXT, path: ACME_PATH }), mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT, clause: "ACME-2" })).toEqual({
       outcome: "failed",
       error: { kind: "address-invalid", detail: "ACME-2" },
     });
@@ -158,8 +165,7 @@ describe("boundClauseOf", () => {
   it("refuses a judgement clause, which has no cases to run", () => {
     expect(
       boundClauseOf({
-        fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: PIECE_TEXT }),
-        path: pathJoining(),
+        ...ruleSetReadingOf({ fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: PIECE_TEXT }), path: pathJoining() }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#named-intent",
       }),
@@ -169,12 +175,14 @@ describe("boundClauseOf", () => {
   it("names the file it could not read when the discipline is missing", () => {
     expect(
       boundClauseOf({
-        fileText: {
-          read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" } }),
-          exists: vi.fn(),
-          write: vi.fn(),
-        },
-        path: pathJoining(),
+        ...ruleSetReadingOf({
+          fileText: {
+            read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" } }),
+            exists: vi.fn(),
+            write: vi.fn(),
+          },
+          path: pathJoining(),
+        }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -184,8 +192,7 @@ describe("boundClauseOf", () => {
   it("refuses a clause the audit mechanism may not check, as hone check does", () => {
     expect(
       boundClauseOf({
-        fileText: fileTextReading({ discipline: ESLINT_ONLY_DISCIPLINE_TEXT, piece: PIECE_TEXT }),
-        path: pathJoining(),
+        ...ruleSetReadingOf({ fileText: fileTextReading({ discipline: ESLINT_ONLY_DISCIPLINE_TEXT, piece: PIECE_TEXT }), path: pathJoining() }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -195,8 +202,7 @@ describe("boundClauseOf", () => {
   it("refuses a clause its audit piece does not list, as hone check does", () => {
     expect(
       boundClauseOf({
-        fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: EMPTY_PIECE_TEXT }),
-        path: pathJoining(),
+        ...ruleSetReadingOf({ fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: EMPTY_PIECE_TEXT }), path: pathJoining() }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -206,8 +212,7 @@ describe("boundClauseOf", () => {
   it("refuses a rule set root that does not resolve", () => {
     expect(
       boundClauseOf({
-        fileText: ACME_TEXT,
-        path: { ...ACME_PATH, resolve: vi.fn<PathPort["resolve"]>().mockReturnValue({ outcome: "failed", error: { kind: "working-directory-unusable", path: "acme" } }) },
+        ...ruleSetReadingOf({ fileText: ACME_TEXT, path: { ...ACME_PATH, resolve: vi.fn<PathPort["resolve"]>().mockReturnValue({ outcome: "failed", error: { kind: "working-directory-unusable", path: "acme" } }) } }),
         mechanism: AUDIT, ruleSetRoot: "acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -219,8 +224,7 @@ describe("clauseUnderTestOf", () => {
   it("gives the bound clause and each case's name, file and source", () => {
     expect(
       clauseUnderTestOf({
-        fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: PIECE_TEXT }),
-        path: pathJoining(),
+        ...ruleSetReadingOf({ fileText: fileTextReading({ discipline: DISCIPLINE_TEXT, piece: PIECE_TEXT }), path: pathJoining() }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -239,8 +243,7 @@ describe("clauseUnderTestOf", () => {
   it("gives each case the edition it runs under, the piece's default when it names none", () => {
     expect(
       clauseUnderTestOf({
-        fileText: fileTextReading({ discipline: EDITIONED_DISCIPLINE_TEXT, piece: EDITIONED_PIECE_TEXT }),
-        path: pathJoining(),
+        ...ruleSetReadingOf({ fileText: fileTextReading({ discipline: EDITIONED_DISCIPLINE_TEXT, piece: EDITIONED_PIECE_TEXT }), path: pathJoining() }),
         mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
         clause: "acme/ACME-2#scratch-files",
       }),
@@ -251,7 +254,7 @@ describe("clauseUnderTestOf", () => {
   });
 
   it("passes a setup failure through", () => {
-    expect(clauseUnderTestOf({ fileText: ACME_TEXT, path: ACME_PATH, mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT, clause: "#" })).toEqual({
+    expect(clauseUnderTestOf({ ...ruleSetReadingOf({ fileText: ACME_TEXT, path: ACME_PATH }), mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT, clause: "#" })).toEqual({
       outcome: "failed",
       error: { kind: "address-invalid", detail: "#" },
     });

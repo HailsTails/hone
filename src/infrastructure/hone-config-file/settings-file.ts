@@ -26,6 +26,7 @@ import {
   type SettingsFile,
   type SettingsFileFault,
 } from "../../domain/settings/settings-file.ts";
+import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
 
 const RULE_SET_SUFFIX_SEPARATOR = "-";
 
@@ -228,3 +229,5 @@ export const settingsFileOf = (request: { readonly document: unknown }): Result<
   const fault = ruleSetFaultOf({ ruleSets: file.ruleSets });
   return fault === undefined ? { outcome: "ok", value: file } : { outcome: "failed", error: fault };
 };
+
+export const SETTINGS_FILE_FORMAT: SettingsFileFormat = { fileOf: settingsFileOf, documentOf: settingsWireOf, textOf: settingsTextOf };

@@ -33,6 +33,12 @@ import { createAnsweringOracle } from "./answering-oracle.ts";
 import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
 import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
+import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 const path = createDefaultPathPort({});
 
@@ -148,12 +154,23 @@ type DiskRequest = {
   readonly git: GitPort;
 };
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const SCRATCH = createDefaultScratchFilesPort({});
@@ -252,6 +269,7 @@ const trackedIn =(request: { readonly files: readonly RepoPath[] }): GitPort => 
 const enginePassOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked: readonly RepoPath[] }) => {
   const { modules, ports } = checkPortsOver(request);
   return createVersionOneEnginePass({
+    loadFailureDetail,
     check: { ...withSingleFileRecords({ ...ports, modules }), modules, engine: createDefaultEnginePort({}), baseRevision: undefined, assessment: DEFAULT_ASSESSMENT, selectionRepository: createSelectionRepository(ports) },
   });
 };

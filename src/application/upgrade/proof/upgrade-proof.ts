@@ -15,6 +15,7 @@ import { type RecordsRoot, filesStillPresentOf, recordsOutsideRoot, removedVersi
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 import { replacementsOf } from "./projection-replacements.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import { type ProjectionFilesOf, type UpgradePlan, upgradePlanOf } from "./upgrade-plan.ts";
 import type { ProjectionsRefusal, VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
 
@@ -27,6 +28,7 @@ export type UpgradeProofRequest = {
   readonly catalogues: readonly RuleSetCatalogue[];
   readonly repoRoot: AbsolutePath;
   readonly projectionFilesOf: ProjectionFilesOf;
+  readonly settingsFormat: Pick<SettingsFileFormat, "textOf">;
   readonly versionOneProjectionsOf: VersionOneProjectionsOf;
 };
 
@@ -243,6 +245,7 @@ export const upgradeProof = async (request: UpgradeProofRequest): Promise<Result
     answered: answered.value,
     catalogues: request.catalogues,
     projectionFilesOf: request.projectionFilesOf,
+    settingsFormat: request.settingsFormat,
   });
   if (plan.outcome === "failed") {
     return { outcome: "failed", error: { kind: "plan-refused", refusal: plan.error, removedByVersionOne: [] } };

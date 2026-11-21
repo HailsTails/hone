@@ -11,9 +11,9 @@ import { settledCheckSettings } from "../../../domain/settings/clause-settings/c
 import type { Conventions } from "../../../domain/settings/conventions.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
 import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
-import { settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
 import type { EslintConfigLookupChoice, SettingsFile } from "../../../domain/settings/settings-file.ts";
 import type { SettingsDocument, SettingsSources } from "../../ports/settings-sources.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
@@ -33,7 +33,9 @@ export const settingsRepositoryHolding = (request: { readonly reading: SettingsR
   read: (_request) => ({ outcome: "ok", value: request.reading }),
 });
 
-export const createSettingsRepository = (options: { readonly sources: SettingsSources }): SettingsRepository => ({
+export type SettingsReadRequest = { readonly sources: SettingsSources; readonly settingsFormat: Pick<SettingsFileFormat, "fileOf"> };
+
+export const createSettingsRepository = (options: SettingsReadRequest): SettingsRepository => ({
   read: (_request) => readSettings(options),
 });
 
@@ -159,12 +161,12 @@ const settingsReadingOf = (request: {
   notes: request.file.conventions.declared.map((key) => ({ kind: "declared-not-read", key })),
 });
 
-const parsedSettingsFile = (request: { readonly sources: SettingsSources }): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
+const parsedSettingsFile = (request: SettingsReadRequest): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
   const document = request.sources.settingsFile({});
   if (document.outcome === "failed") {
     return document;
   }
-  const file = settingsFileOf({ document: document.value.document });
+  const file = request.settingsFormat.fileOf({ document: document.value.document });
   if (file.outcome === "ok") {
     return { outcome: "ok", value: { ...document.value, file: file.value } };
   }
@@ -173,7 +175,7 @@ const parsedSettingsFile = (request: { readonly sources: SettingsSources }): Res
     : { outcome: "failed", error: file.error };
 };
 
-export const readSettings = (request: { readonly sources: SettingsSources }): Result<SettingsReading, SettingsFailure> => {
+export const readSettings = (request: SettingsReadRequest): Result<SettingsReading, SettingsFailure> => {
   const parsed = parsedSettingsFile(request);
   if (parsed.outcome === "failed") {
     return parsed;

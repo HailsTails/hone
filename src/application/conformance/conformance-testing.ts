@@ -1,10 +1,12 @@
-import { installRootOfApiEntry } from "../../infrastructure/command-line/installation/install-root.ts";
-import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
-import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
+import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
+import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { Result } from "../../domain/result.ts";
 import { moduleExtensionOf } from "../ports/host/module-extension.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
 import { clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";
@@ -13,7 +15,9 @@ import type { ClauseConformanceOf, ClauseUnderTestOf, RepoPathOf } from "./confo
 export type ConformanceTestingPorts = {
   readonly mechanism: MechanismId;
   readonly moduleUrl: string;
-  readonly fileText: FileTextPort;
+  readonly installRoot: Result<AbsolutePath, LoadFailure>;
+  readonly ruleSetFiles: RuleSetFiles;
+  readonly loadFailureDetail: LoadFailureDetail;
   readonly path: PathPort;
   readonly modules: ModuleLoaderPort;
   readonly engine: EnginePort;
@@ -27,37 +31,37 @@ export type ConformanceTesting = {
 
 export const createConformanceTesting = (ports: ConformanceTestingPorts): ConformanceTesting => ({
   clauseConformanceOf: (request) => {
-    const installRoot = installRootOfApiEntry({ path: ports.path, moduleUrl: ports.moduleUrl });
-    if (installRoot.outcome === "failed") {
+    if (ports.installRoot.outcome === "failed") {
       return Promise.resolve({
         outcome: "failed",
-        error: { kind: "runner-unloadable", detail: loadFailureDetail({ failure: installRoot.error }) },
+        error: { kind: "runner-unloadable", detail: ports.loadFailureDetail({ failure: ports.installRoot.error }) },
       });
     }
     return clauseConformanceOf({
       ruleSetRoot: request.ruleSetRoot,
       clause: request.clause,
       mechanism: ports.mechanism,
-      fileText: ports.fileText,
+      ruleSetFiles: ports.ruleSetFiles,
+      loadFailureDetail: ports.loadFailureDetail,
       path: ports.path,
       modules: ports.modules,
       engine: ports.engine,
-      installRoot: installRoot.value,
+      installRoot: ports.installRoot.value,
       moduleExtension: moduleExtensionOf({ moduleUrl: ports.moduleUrl }),
     });
   },
   clauseUnderTestOf: (request) => {
-    const installRoot = installRootOfApiEntry({ path: ports.path, moduleUrl: ports.moduleUrl });
-    if (installRoot.outcome === "failed") {
-      return { outcome: "failed", error: { kind: "rule-set-unloadable", detail: loadFailureDetail({ failure: installRoot.error }) } };
+    if (ports.installRoot.outcome === "failed") {
+      return { outcome: "failed", error: { kind: "rule-set-unloadable", detail: ports.loadFailureDetail({ failure: ports.installRoot.error }) } };
     }
     return clauseUnderTestOf({
       ruleSetRoot: request.ruleSetRoot,
       clause: request.clause,
       mechanism: ports.mechanism,
-      fileText: ports.fileText,
+      ruleSetFiles: ports.ruleSetFiles,
+      loadFailureDetail: ports.loadFailureDetail,
       path: ports.path,
-      installRoot: installRoot.value,
+      installRoot: ports.installRoot.value,
     });
   },
   repoPathOf,

@@ -26,6 +26,8 @@ import {
   createDefaultScratchFilesPort,
   type ScratchFilesPort,
 } from "../../../delivery/install-proof/install-proof-ports.ts";
+import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -194,11 +196,11 @@ const RAISED: readonly RaisedFinding[] = [{ finding: CAST_IN_ORDERS, party: { re
 
 const NOTHING_CHANGED: TouchedSet = { measured: "yes", paths: new Set() };
 
-const recordDebt = recordDebtOf({ catalogue, source, store });
+const recordDebt = recordDebtOf({ catalogue, source, store, recordsReader, recordsEditor });
 
-const pruneDebt = pruneDebtOf({ source, store });
+const pruneDebt = pruneDebtOf({ source, store, recordsEditor });
 
-const authorise = authoriseOf({ catalogue, source, store });
+const authorise = authoriseOf({ catalogue, source, store, recordsReader, recordsEditor });
 
 const DEBT_TEXT = '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "claimed-type",\n      "file": "src/orders/charge-order.ts"\n    }\n  ]\n}\n';
 
@@ -209,7 +211,7 @@ const textOf = (request: { readonly file: string }): string => {
 };
 
 const answering = (request: { readonly findings: readonly RaisedFinding[] }) => {
-  const reading = readHoneRecords({ source, catalogue, baseRevision: undefined });
+  const reading = readHoneRecords({ recordsReader, source, catalogue, baseRevision: undefined });
   assert(reading.outcome === "ok", "the records written read back");
   return answerFindings({
     catalogue,

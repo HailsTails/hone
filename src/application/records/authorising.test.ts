@@ -5,6 +5,8 @@ import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identif
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authorisingOf } from "./authorising.ts";
+import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
 import type { AuthoriseRequest } from "../ports/authorising.ts";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 
@@ -119,7 +121,7 @@ const REQUEST: AuthoriseRequest = {
 const NO_DOCUMENTS: readonly RecordsDocument[] = [];
 
 const authorised = (request: { readonly request: AuthoriseRequest; readonly documents: readonly RecordsDocument[] }) =>
-  authorisingOf({ ...request, catalogue: REPORT_CATALOGUE });
+  authorisingOf({ ...request, catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor });
 
 const OTHER_FILE = repoPathSchema.parse("src/adapters/other-webhook.ts");
 

@@ -26,6 +26,7 @@ import type { ProjectionFilesOf } from "./upgrade-plan.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -288,6 +289,7 @@ const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofReques
   catalogues: CATALOGUES,
   repoRoot: REPO,
   projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value: { files: [ROOT_PROJECTION_FILE], projections: [ROOT_PROJECTION_FILE] } }),
+  settingsFormat: SETTINGS_FILE_FORMAT,
   versionOneProjectionsOf: request.doubles.projections,
 });
 

@@ -17,6 +17,9 @@ import type { ExceptionRepository } from "../../ports/records/exception-reposito
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
 import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -126,12 +129,14 @@ const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
     read: vi.fn<ExceptionRepository["read"]>().mockReturnValue({ outcome: "ok", value: [] }),
     readAt: vi.fn<ExceptionRepository["readAt"]>(),
   },
+  exceptionEntryParser,
+  shownPathOf: vi.fn<ShownPathOf>(),
   ...overrides,
 });
 
 describe("createVersionOneEnginePass", () => {
   it("gives every finding of the engines, unfiltered by the records it was asked with", async () => {
-    await expect(createVersionOneEnginePass({ check: checkRequest({}) }).findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
+    await expect(createVersionOneEnginePass({ loadFailureDetail, check: checkRequest({}) }).findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "ok",
       value: {
         findings: [{ ...HIT_IN_A, mechanism: "audit" }],
@@ -152,7 +157,7 @@ describe("createVersionOneEnginePass", () => {
   });
 
   it("gives the findings of an embedded runner whose projection is current, its projected kinds as what a record can cover", async () => {
-    const pass = createVersionOneEnginePass({ check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "current", hits: [HIT_IN_A], slices: [] }) }) }) });
+    const pass = createVersionOneEnginePass({ loadFailureDetail, check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "current", hits: [HIT_IN_A], slices: [] }) }) }) });
     await expect(pass.findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "ok",
       value: {
@@ -174,7 +179,7 @@ describe("createVersionOneEnginePass", () => {
   });
 
   it("fails naming the mechanism when its projection is missing, which version 1 reads as the mechanism not run", async () => {
-    const pass = createVersionOneEnginePass({ check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "missing", hits: [], slices: [] }) }) }) });
+    const pass = createVersionOneEnginePass({ loadFailureDetail, check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "missing", hits: [], slices: [] }) }) }) });
     await expect(pass.findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "failed",
       error: { kind: "projection-not-current", file: "disciplines.audit.mjs", state: "missing" },
@@ -182,7 +187,7 @@ describe("createVersionOneEnginePass", () => {
   });
 
   it("fails naming the mechanism when its projection is not included by the team's configuration", async () => {
-    const pass = createVersionOneEnginePass({ check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "not-included", hits: [], slices: [] }) }) }) });
+    const pass = createVersionOneEnginePass({ loadFailureDetail, check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "not-included", hits: [], slices: [] }) }) }) });
     await expect(pass.findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "failed",
       error: { kind: "projection-not-current", file: "disciplines.audit.mjs", state: "not-included" },
@@ -190,7 +195,7 @@ describe("createVersionOneEnginePass", () => {
   });
 
   it("fails naming the mechanism when its projection is out of date, which version 1 itself fails", async () => {
-    const pass = createVersionOneEnginePass({ check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "out-of-date", hits: [HIT_IN_A], slices: [] }) }) }) });
+    const pass = createVersionOneEnginePass({ loadFailureDetail, check: checkRequest({ modules: modulesLoading({ runner: embeddedRunner({ projection: "out-of-date", hits: [HIT_IN_A], slices: [] }) }) }) });
     await expect(pass.findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "failed",
       error: { kind: "projection-not-current", file: "disciplines.audit.mjs", state: "out-of-date" },
@@ -199,6 +204,7 @@ describe("createVersionOneEnginePass", () => {
 
   it("fails naming the slice when a package slice is out of date, though the root projection is current", async () => {
     const pass = createVersionOneEnginePass({
+      loadFailureDetail,
       check: checkRequest({
         modules: modulesLoading({ runner: embeddedRunner({ projection: "current", hits: [], slices: [{ slice: "packages/a/disciplines.audit.mjs", state: "out-of-date" }] }) }),
       }),
@@ -211,6 +217,7 @@ describe("createVersionOneEnginePass", () => {
 
   it("fails naming the slice when its config does not apply it", async () => {
     const pass = createVersionOneEnginePass({
+      loadFailureDetail,
       check: checkRequest({
         modules: modulesLoading({ runner: embeddedRunner({ projection: "current", hits: [], slices: [{ slice: "packages/a/disciplines.audit.mjs", state: "not-applied" }] }) }),
       }),
@@ -223,6 +230,7 @@ describe("createVersionOneEnginePass", () => {
 
   it("fails naming the selection's own problem when the version 1 selection cannot be read", async () => {
     const pass = createVersionOneEnginePass({
+      loadFailureDetail,
       check: checkRequest({
         selectionRepository: { read: vi.fn<SelectionRepository["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unexpected-error", detail: "no selection" } }) },
       }),
@@ -232,6 +240,7 @@ describe("createVersionOneEnginePass", () => {
 
   it("fails when the repository's tracked files cannot be listed", async () => {
     const pass = createVersionOneEnginePass({
+      loadFailureDetail,
       check: checkRequest({ git: gitTracking({ trackedPaths: { outcome: "failed", error: { kind: "git-failed", command: "git ls-files", detail: "not a repository" } } }) }),
     });
     await expect(pass.findingsFor({ records: [] })).resolves.toEqual({ outcome: "failed", error: { kind: "version-one-run-failed", detail: "git-failed git ls-files: not a repository" } });

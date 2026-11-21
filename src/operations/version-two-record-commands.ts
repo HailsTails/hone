@@ -9,6 +9,8 @@ import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import { authoriseOf, pruneDebtOf, type RecordCommandFailure, recordDebtOf } from "../application/records/record-commands.ts";
 import type { RecordsSource } from "../application/ports/records/records-source.ts";
 import type { RecordsStore } from "../application/ports/records/records-store.ts";
+import type { RecordsReader } from "../application/ports/records/records-reader.ts";
+import type { RecordsEditor } from "../application/ports/records/records-editor.ts";
 import { createRecordsStore } from "../infrastructure/hone-records-folder/writing/records-store.ts";
 import { projectCommandOf } from "../infrastructure/command-line/arguments/tool-invocations.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../infrastructure/printed-report/records/record-command-lines.ts";
@@ -20,7 +22,11 @@ import { repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPor
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import { versionTwoRunOver } from "../application/run/version-two-run.ts";
 
-export type VersionTwoRecordPorts = VersionTwoRepositoryPorts & { readonly removal: FileRemovalPort };
+export type VersionTwoRecordPorts = VersionTwoRepositoryPorts & {
+  readonly removal: FileRemovalPort;
+  readonly recordsReader: RecordsReader;
+  readonly recordsEditor: RecordsEditor;
+};
 
 type Context = {
   readonly ports: VersionTwoRecordPorts;
@@ -81,7 +87,13 @@ const recordDebtOutcome: OutcomeOf = async (request) => {
   if (run.outcome === "failed") {
     return failureOutcomeOf({ context: context.value, failure: run.error });
   }
-  const recorded = recordDebtOf({ catalogue: run.value.catalogue, source: sourceOf({ ...context.value, catalogue: run.value.catalogue }), store: storeOf(context.value) })({
+  const recorded = recordDebtOf({
+    catalogue: run.value.catalogue,
+    source: sourceOf({ ...context.value, catalogue: run.value.catalogue }),
+    store: storeOf(context.value),
+    recordsReader: request.ports.recordsReader,
+    recordsEditor: request.ports.recordsEditor,
+  })({
     findings: run.value.report.findings,
     unrecorded: run.value.report.unrecorded,
     runs: run.value.runs,
@@ -117,7 +129,11 @@ const pruneDebtOutcome: OutcomeOf = async (request) => {
   if (run.outcome === "failed") {
     return failureOutcomeOf({ context: context.value, failure: run.error });
   }
-  const pruned = pruneDebtOf({ source: sourceOf({ ...context.value, catalogue: run.value.catalogue }), store: storeOf(context.value) })({ report: run.value.report });
+  const pruned = pruneDebtOf({
+    source: sourceOf({ ...context.value, catalogue: run.value.catalogue }),
+    store: storeOf(context.value),
+    recordsEditor: request.ports.recordsEditor,
+  })({ report: run.value.report });
   return pruned.outcome === "failed" ? recordFailureOutcome({ context: context.value, failure: pruned.error }) : linesOutcome({ lines: pruned.value.map((debt) => prunedDebtLine({ pruned: debt })) });
 };
 
@@ -127,7 +143,13 @@ const authorisedOutcome = (request: { readonly context: Context; readonly author
   if (catalogue.outcome === "failed") {
     return failureOutcomeOf({ context, failure: catalogue.error });
   }
-  const authorised = authoriseOf({ catalogue: catalogue.value, source: sourceOf({ ...context, catalogue: catalogue.value }), store: storeOf(context) })(authorising);
+  const authorised = authoriseOf({
+    catalogue: catalogue.value,
+    source: sourceOf({ ...context, catalogue: catalogue.value }),
+    store: storeOf(context),
+    recordsReader: context.ports.recordsReader,
+    recordsEditor: context.ports.recordsEditor,
+  })(authorising);
   return authorised.outcome === "failed"
     ? recordFailureOutcome({ context, failure: authorised.error })
     : linesOutcome({ lines: authorisingLines({ address: authorising.answers, file: authorising.file, authorising: authorised.value }) });

@@ -13,6 +13,13 @@ import { versionTwoNeededCommandOf } from "./operations/authorise/version-two-ne
 import { versionTwoAuthoriseCommandOf, versionTwoPruneDebtCommandOf, versionTwoRecordDebtCommandOf } from "./operations/version-two-record-commands.ts";
 import { installedStagesOver } from "./version-two-repository.ts";
 import { versionOneAwareRecordsSourceOf } from "./infrastructure/discipline-exceptions-folder/base-standing-records-source.ts";
+import { foundTreeRecordsSourceOf } from "./infrastructure/discipline-exceptions-folder/found-tree-records-source.ts";
+import { recordsReader } from "./infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "./infrastructure/hone-records-folder/writing/records-edit.ts";
+import { loadFailureDetail } from "./infrastructure/printed-report/load-failures/load-failure-text.ts";
+import { createSymptomCatalogueRepository } from "./infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { SETTINGS_FILE_FORMAT } from "./infrastructure/hone-config-file/settings-file.ts";
+import { createSettingsSources } from "./infrastructure/hone-config-file/settings-sources.ts";
 import { parseInvocation } from "./infrastructure/command-line/arguments/command-arguments.ts";
 import { helpText } from "./infrastructure/command-line/arguments/command-help.ts";
 import type { HelpTopic, Subcommand } from "./infrastructure/command-line/arguments/command-line.ts";
@@ -102,7 +109,7 @@ const versionTwoCheck = versionTwoCheckCommandOf(versionTwoPorts);
 
 const versionTwoProject = versionTwoProjectCommandOf(versionTwoPorts);
 
-const versionTwoRecordPorts = { ...versionTwoPorts, removal: createDefaultFileRemovalPort({}) };
+const versionTwoRecordPorts = { ...versionTwoPorts, removal: createDefaultFileRemovalPort({}), recordsReader, recordsEditor };
 
 const upgradePorts = {
   ...versionTwoPorts,
@@ -110,6 +117,12 @@ const upgradePorts = {
   fileRemoval: createDefaultFileRemovalPort({}),
   directoryRemoval: createDefaultDirectoryRemovalPort({}),
   entryKind: createDefaultEntryKindPort({}),
+  foundTreeRecordsSourceOf,
+  loadFailureDetail,
+  recordsReader,
+  symptomCatalogueOf: createSymptomCatalogueRepository,
+  settingsFormat: SETTINGS_FILE_FORMAT,
+  settingsSourcesOf: createSettingsSources,
 };
 
 export const TOOL_SUBCOMMANDS: Subcommands = {

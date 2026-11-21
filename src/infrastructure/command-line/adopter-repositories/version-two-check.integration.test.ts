@@ -15,6 +15,9 @@ import { installedEslintBoundary } from "../../engines/eslint/runner/toolchain/e
 import { type CommandRunPort, createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
+import type { ExceptionEntryParser } from "../../../application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "../../../application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "../../../application/ports/installation/shown-path-of.ts";
 
 const installedBoundary = await installedEslintBoundary();
 
@@ -129,6 +132,13 @@ const runCommandIn = async (request: { readonly repo: string; readonly subcomman
     modules: createDefaultModuleLoaderPort({}),
     git: createDefaultGitPort({}),
     exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),
+    exceptionEntryParser: {
+      parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+      importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+      importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
+    },
+    selectionRepositoryOf: vi.fn<SelectionRepositoryOf>(),
+    shownPathOfRepository: vi.fn<ShownPathOfRepository>(),
     moduleUrl: ENTRY_URL,
   });
   return { writes: vi.mocked(processPort.writeOut).mock.calls, exits: vi.mocked(processPort.exitWith).mock.calls };

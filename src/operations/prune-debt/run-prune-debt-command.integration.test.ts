@@ -12,6 +12,9 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
 import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
 
 const FIXTURE = `${import.meta.dirname}/prune-debt`;
 
@@ -66,6 +69,9 @@ const pruning = (request: {
   modules: createDefaultModuleLoaderPort({}),
   git: request.git,
   exceptionRepositoryOf: (repository) => ({ ...createDefaultExceptionRepositoryOf({})(repository), remove: request.remove }),
+  exceptionEntryParser,
+  selectionRepositoryOf: createSelectionRepository,
+  shownPathOfRepository,
   moduleUrl: request.moduleUrl,
 });
 

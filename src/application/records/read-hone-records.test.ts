@@ -4,6 +4,7 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { readHoneRecords } from "./read-hone-records.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
+import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 
@@ -37,6 +38,7 @@ describe("readHoneRecords", () => {
   it("judges carried records unjudged when no base revision is given, and reads nothing at a base", () => {
     const readAt = vi.fn<RecordsSource["readAt"]>();
     const reading = readHoneRecords({
+      recordsReader,
       source: sourceOf({ read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }), readAt }),
       catalogue: CATALOGUE,
       baseRevision: undefined,
@@ -50,6 +52,7 @@ describe("readHoneRecords", () => {
   it("judges carried records against the records the base revision holds", () => {
     const readAt = vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS });
     const reading = readHoneRecords({
+      recordsReader,
       source: sourceOf({ read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }), readAt }),
       catalogue: CATALOGUE,
       baseRevision: "origin/main",
@@ -63,6 +66,7 @@ describe("readHoneRecords", () => {
   it("judges carried records unjudged when git cannot read the base revision", () => {
     expect(
       readHoneRecords({
+        recordsReader,
         source: sourceOf({
           read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }),
           readAt: vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "failed", error: { kind: "git-failed", command: "git ls-tree", detail: "fatal: bad revision\nmore" } }),
@@ -83,6 +87,7 @@ describe("readHoneRecords", () => {
   it("fails with the folder's failure when the working records cannot be read", () => {
     expect(
       readHoneRecords({
+        recordsReader,
         source: sourceOf({
           read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.md") } }),
           readAt: vi.fn<RecordsSource["readAt"]>(),
@@ -96,6 +101,7 @@ describe("readHoneRecords", () => {
   it("fails with the folder's failure when a base records file cannot be read", () => {
     expect(
       readHoneRecords({
+        recordsReader,
         source: sourceOf({
           read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }),
           readAt: vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "failed", error: { kind: "records-file-not-json", file: FILE, detail: "Unexpected end" } }),
@@ -109,6 +115,7 @@ describe("readHoneRecords", () => {
   it("fails with each document refused", () => {
     expect(
       readHoneRecords({
+        recordsReader,
         source: sourceOf({ read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: [{ file: FILE, document: [] }] }), readAt: vi.fn<RecordsSource["readAt"]>() }),
         catalogue: CATALOGUE,
         baseRevision: undefined,

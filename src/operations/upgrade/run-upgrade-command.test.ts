@@ -51,6 +51,9 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: "file:///install/src/hone.ts",
 });
 
@@ -63,6 +66,12 @@ const PORTS: UpgradePorts = {
   fileRemoval: { remove: vi.fn() },
   directoryRemoval: { removeEmpty: vi.fn() },
   entryKind: { kindOf: vi.fn() },
+  foundTreeRecordsSourceOf: vi.fn(),
+  loadFailureDetail: vi.fn(),
+  recordsReader: { recordsReadingOf: vi.fn() },
+  symptomCatalogueOf: vi.fn(),
+  settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
+  settingsSourcesOf: vi.fn(),
 };
 
 const gitFailing = (): GitPort => ({
@@ -76,7 +85,7 @@ const gitFailing = (): GitPort => ({
 const commandWith = (request: { readonly arguments: readonly string[]; readonly files: Readonly<Record<string, string>>; readonly git: GitPort }) => {
   const recorded = recordedProcessWith({ arguments: request.arguments });
   const base = commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) });
-  const command: VersionOneCommandRequest = { ...base, git: request.git, exceptionRepositoryOf: vi.fn() };
+  const command: VersionOneCommandRequest = { ...base, git: request.git, exceptionRepositoryOf: vi.fn(), shownPathOfRepository: vi.fn() };
   return { command, recorded };
 };
 

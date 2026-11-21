@@ -24,6 +24,8 @@ import type { StagesOver } from "../version-two-repository.ts";
 import { versionTwoAuthoriseCommandOf, versionTwoPruneDebtCommandOf, versionTwoRecordDebtCommandOf } from "./version-two-record-commands.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
 
 const REPO_FOLDER = "/repo";
 
@@ -104,6 +106,9 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: "file:///install/src/hone.ts",
 });
 
@@ -423,6 +428,8 @@ const ranWith = async (request: {
     removal: repository.removal,
     recordsSourceOf: createRecordsFolder,
     stagesOver,
+    recordsReader,
+    recordsEditor,
   })(
     commandOver({ process: recorded.port, fileText: repository.fileText }),
   );

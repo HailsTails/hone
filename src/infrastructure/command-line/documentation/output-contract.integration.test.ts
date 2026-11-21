@@ -82,6 +82,8 @@ import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom,
 import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../../../operations/help/run-help.ts";
 import { runToolCommand } from "../../../run-tool-command.ts";
 import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
+import { recordsReader } from "../../hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../../hone-records-folder/writing/records-edit.ts";
 
 type Fills = Readonly<Record<string, string>>;
 
@@ -2349,7 +2351,7 @@ const RECORD_COMMAND_LINES: readonly PrintedLine[] = (() => {
   };
 
   const formRefusalSample = (): readonly (readonly [RecordRefusal, Readonly<Record<string, string>>])[] => {
-    const judged = authorisingOf({ request: MISTAKEN_CHAIN, documents: [], catalogue: REPORT_CATALOGUE });
+    const judged = authorisingOf({ request: MISTAKEN_CHAIN, documents: [], catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor });
     if (judged.outcome === "failed" || judged.value.judged !== "refused") {
       return [];
     }
@@ -2432,6 +2434,9 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: ENTRY_URL,
 });
 
