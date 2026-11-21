@@ -6,7 +6,7 @@ import type { ProjectionWrite } from "../../../domain/runner/runner-result-types
 import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { teamConfigsOf } from "../proof/team-config-finder.ts";
 import { type VersionOneProjectionsOf, versionOneProjectionsOver } from "../proof/version-one-projections-reading.ts";

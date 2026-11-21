@@ -3,7 +3,7 @@ import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort 
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { createExceptionRepository } from "../../../../discipline-exceptions-folder/exception-layout.ts";
-import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { createSelectionRepository, type SelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
@@ -11,7 +11,8 @@ import type { ModuleExtension } from "../../../../node/modules/install-layout.ts
 import { runCheck } from "../../../../../application/run/check/run-check.ts";
 import { loadRunner } from "../../../protocol/engine-run/load-runner.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
-import type { ExceptionRecord, ExceptionRepository } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { LoadedRunner, RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/file-system/file-text-port.ts";
@@ -25,7 +26,8 @@ import type { AbsolutePath } from "../../../../../domain/repository/absolute-pat
 import { DEFAULT_ASSESSMENT } from "../../../../hone-config-file/assessment.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { runner as walkerRunner } from "../../../audit/runner/runner.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";

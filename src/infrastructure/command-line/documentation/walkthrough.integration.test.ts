@@ -9,7 +9,8 @@ import type { GitPort } from "../../git/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../node/process/process-port.ts";
-import { type RepoPath, repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 
 type FencedBlock = { readonly language: string; readonly body: string };
 

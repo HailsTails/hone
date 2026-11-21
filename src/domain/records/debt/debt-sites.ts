@@ -1,8 +1,8 @@
 import type { Finding } from "../../finding/governance.ts";
 import { checkAddressOf } from "../../language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { clauseAddressText } from "../../rule-set/clause-address.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { findingSitesOf, type RaisedFinding } from "../answering/answering.ts";
 import { codePointOrder } from "../code-point-order.ts";
 import type { Site } from "../answering/record-reach.ts";

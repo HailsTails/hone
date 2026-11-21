@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { type ClauseAddress, clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "./repo-path.ts";
-import type { InheritedDebtProvenance } from "../../domain/records/discipline-exceptions/exception-record.ts";
+import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
+import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
+import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
 import { mappedRecords } from "./records-mapping.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };

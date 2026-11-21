@@ -1,7 +1,7 @@
 import type { FoundCheck } from "../../language-layer/check-address.ts";
 import type { Check, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { AuthorisedReach, BoundaryRecord, Deviation, HoneRecord, OutsideParty, RuntimeFacility } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { AuthorisedReach, BoundaryRecord, Deviation, HoneRecord, OutsideParty, RuntimeFacility } from "../hone-records/hone-record.ts";
 import { banStandingOf, dependencyOf } from "./outside-dependency.ts";
 
 export type PartyReport = { readonly reported: "specifier"; readonly specifier: string } | { readonly reported: "not-reported" };

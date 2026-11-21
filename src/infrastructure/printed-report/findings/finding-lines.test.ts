@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
-import type { PlacedRecord, SymptomReach } from "../../hone-records-folder/hone-record.ts";
+import type { PlacedRecord, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../../content-files/edition.ts";

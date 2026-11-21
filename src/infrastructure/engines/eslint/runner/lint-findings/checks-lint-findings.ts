@@ -2,9 +2,10 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { Hit, MeasuredPair, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { MisnamedRuleId, SelectedCheck, VersionOneRuleId } from "../checks-runner/checks-run-types.ts";
 import type { LintedFile } from "../toolchain/eslint-instance.ts";

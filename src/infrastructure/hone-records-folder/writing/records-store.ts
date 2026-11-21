@@ -2,10 +2,10 @@ import type { DirectoryPort, FileRemovalPort, FileTextPort } from "../../node/fi
 import type { PathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { RecordsDocument } from "../hone-record.ts";
-import { type RecordsEdit, recordsTextOf } from "./records-edit.ts";
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
+import { type RecordsEdit, recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
 
 export type RecordsUnwritable = { readonly kind: "file-unwritable"; readonly path: string; readonly detail: string };
 

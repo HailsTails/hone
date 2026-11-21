@@ -4,51 +4,29 @@ import type { Selection } from "../../domain/settings/selection/selection.ts";
 import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import {
-  type ClauseAddress,
-  clauseAddressSchema,
-  sameClauseAddress,
-} from "./clause-address.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
 import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
+import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
 import type { DebtPair } from "../../domain/records/discipline-exceptions/debt-pair.ts";
 import type {
   AuthorisedLocationEntry,
+  ExceptionReading,
   ExceptionRecord,
   FileCarveOutEntry,
   InvalidRecord,
   RecordPlace,
 } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import {
-  legacyWhyChainSchema,
-  type RecordedWhyChain,
-  versionOneWhyChainSchema,
-  whyChainFormOf,
-} from "./version-one-why-chain.ts";
-
-export type {
-  AuthorisationEvidence,
-  AuthorisedLocationEntry,
-  ClauseWideCarveOutEntry,
-  ExceptionEntry,
-  ExceptionRecord,
-  ExceptionsFile,
-  ExistingAuthorisationProvenance,
-  FileCarveOutEntry,
-  FileDebtEvidence,
-  InheritedDebtProvenance,
-  InvalidRecord,
-  RecordPlace,
-} from "../../domain/records/discipline-exceptions/exception-record.ts";
-
-export type ExceptionReading = {
-  readonly records: readonly ExceptionRecord[];
-  readonly invalid: readonly InvalidRecord[];
-};
+import type { ImportEvidence, PlacedEntry, StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
+import { type ExceptionBaseline, type MeasuredBaseline, judgedAtBase } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
+import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
+import type { RecordedWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 
 export type RecordsWrite = { readonly path: RepoPath; readonly effect: "written" | "removed" };
 
@@ -100,9 +78,7 @@ const exceptionsFileSchema = z.object({
   ),
 });
 
-export type StructuralExceptionEntry = z.infer<typeof exceptionsFileSchema>["exceptions"][number];
-
-export type PlacedEntry = { readonly place: RecordPlace; readonly entry: StructuralExceptionEntry };
+export const isStructuralExceptionEntryEqual: Equal<z.infer<typeof exceptionsFileSchema>["exceptions"][number], StructuralExceptionEntry> = true;
 
 export const exceptionEntriesOfDocument = (request: {
   readonly document: unknown;
@@ -121,17 +97,6 @@ export const foreignKeysOfDocument = (request: { readonly document: unknown }): 
   const keys = documentKeysSchema.safeParse(request.document);
   return keys.success ? Object.keys(keys.data).filter((key) => !RECORDS_DOCUMENT_KEYS.includes(key)) : [];
 };
-
-export type ExceptionBaseline =
-  | { readonly measured: "no"; readonly base: BaseRevisionAvailability }
-  | {
-      readonly measured: "yes";
-      readonly entriesAtBase: readonly StructuralExceptionEntry[];
-      readonly sourceTextsAtBase: ReadonlyMap<RepoPath, string>;
-      readonly basePathOfRenamed: ReadonlyMap<RepoPath, RepoPath>;
-    };
-
-export const UNMEASURED_EXCEPTION_BASELINE: ExceptionBaseline = { measured: "no", base: { state: "not-given" } };
 
 const LEGACY_DIRECTORY_OF = {
   "inherited-debt": ".constitution-carve-outs",
@@ -289,8 +254,6 @@ const importRefused = (request: { readonly detail: string; readonly kind: Import
   error: { kind: "import-unverified", detail: `${request.detail}: ${IMPORT_WAY_OUT[request.kind]}` },
 });
 
-type MeasuredBaseline = Extract<ExceptionBaseline, { readonly measured: "yes" }>;
-
 const basePathOf = (request: { readonly file: RepoPath; readonly baseline: MeasuredBaseline }): RepoPath =>
   request.baseline.basePathOfRenamed.get(request.file) ?? request.file;
 
@@ -331,26 +294,6 @@ const heldAtBase = (request: {
   )
     ? "held"
     : "not-held";
-};
-
-type JudgedEvidence = { readonly whyChain?: unknown; readonly provenance?: unknown };
-
-const evidenceJudgedBy = (request: { readonly evidence: JudgedEvidence }): "itself" | "the-base" =>
-  (request.evidence.whyChain === undefined ? request.evidence.provenance === undefined : whyChainFormOf({ chain: request.evidence.whyChain }) === "causal")
-    ? "itself"
-    : "the-base";
-
-const judgedAtBase = <Judged>(request: {
-  readonly evidence: JudgedEvidence;
-  readonly baseline: ExceptionBaseline;
-  readonly inFull: () => Judged;
-  readonly unjudged: () => Judged;
-  readonly againstBase: (base: MeasuredBaseline) => Judged;
-}): Judged => {
-  if (evidenceJudgedBy(request) === "itself") {
-    return request.inFull();
-  }
-  return request.baseline.measured === "no" ? request.unjudged() : request.againstBase(request.baseline);
 };
 
 const importAgainstBase = <ImportedRecord>(request: {
@@ -446,20 +389,6 @@ const judgedWhyChain = (request: {
       heldAtBase({ entry: request.entry, baseline: base }) === "held"
         ? legacyChainOf(request)
         : causalChainOf({ whyChain: request.whyChain, preface: [LEGACY_CHAIN_NEW_OR_EDITED] }),
-  });
-
-export type AuthorisationStanding = "established" | "provisional";
-
-export const authorisationStandingOf = (request: {
-  readonly record: JudgedEvidence;
-  readonly baseline: ExceptionBaseline;
-}): AuthorisationStanding =>
-  judgedAtBase({
-    evidence: request.record,
-    baseline: request.baseline,
-    inFull: () => "established",
-    unjudged: () => "provisional",
-    againstBase: () => "established",
   });
 
 type ClauseSelection = { readonly clause: ClauseAddress; readonly mechanism: MechanismId };
@@ -661,8 +590,6 @@ export const parseExceptionEntries = (request: {
   return { records: firstRecordsOf({ valid }), invalid: invalidRecordsOf({ parsed, valid }) };
 };
 
-export type ImportEvidence = { readonly imported: "no" } | { readonly imported: "yes"; readonly source: string };
-
 const importedEvidenceOf = (request: { readonly entry: StructuralExceptionEntry }) => {
   switch (request.entry.kind) {
     case "authorised-location":
@@ -682,14 +609,6 @@ const importEvidenceOf = (request: { readonly entry: StructuralExceptionEntry })
   return { imported: "yes", source: evidence.data.provenance.source };
 };
 
-export const recordImportOf = (request: { readonly record: ExceptionRecord }): ImportEvidence => {
-  const { record } = request;
-  if (record.kind === "clause-wide-carve-out" || record.whyChain !== undefined || record.provenance === undefined) {
-    return { imported: "no" };
-  }
-  return { imported: "yes", source: record.provenance.source };
-};
-
 const importSourcePathsOf = (request: { readonly entry: StructuralExceptionEntry }): readonly RepoPath[] => {
   const evidence = importEvidenceOf(request);
   if (evidence.imported === "no") {
@@ -703,13 +622,6 @@ export const importedEntriesIn = (request: {
   readonly entries: readonly StructuralExceptionEntry[];
 }): "present" | "absent" =>
   request.entries.some((entry) => importEvidenceOf({ entry }).imported === "yes") ? "present" : "absent";
-
-export const legacyChainsIn = (request: {
-  readonly entries: readonly StructuralExceptionEntry[];
-}): "present" | "absent" =>
-  request.entries.some((entry) => whyChainFormOf({ chain: entry.whyChain }) === "legacy")
-    ? "present"
-    : "absent";
 
 export const importSourcesOf = (request: {
   readonly entries: readonly StructuralExceptionEntry[];

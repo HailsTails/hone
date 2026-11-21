@@ -3,7 +3,7 @@ import type { NativeException } from "../../../../../domain/runner/runner-result
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { mappedOutcome } from "../checks-outcomes.ts";
 import { type AnsweredFile, CHECKS_PROJECTION_PATH } from "../projection/checks-projection.ts";

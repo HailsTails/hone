@@ -1,7 +1,7 @@
-import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import type { MechanismId } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RecordedWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { RecordedWhyChain } from "./version-one-why-chain.ts";
 
 export type ExistingAuthorisationProvenance = {
   readonly kind: "existing-authorisation";
@@ -97,4 +97,9 @@ export type InvalidRecord = {
     | { readonly kind: "import-unverified"; readonly detail: string }
     | { readonly kind: "non-exemptible-clause"; readonly clause: ClauseAddress }
     | { readonly kind: "duplicate"; readonly of: RecordPlace };
+};
+
+export type ExceptionReading = {
+  readonly records: readonly ExceptionRecord[];
+  readonly invalid: readonly InvalidRecord[];
 };

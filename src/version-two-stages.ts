@@ -5,7 +5,7 @@ import type { ModuleLoaderPort } from "./infrastructure/node/modules/module-load
 import type { PathPort } from "./infrastructure/node/path-port.ts";
 import type { RecordsSourceOf } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { readHoneRecords } from "./application/records/read-hone-records.ts";
-import type { RecordsReading } from "./infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading } from "./domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "./domain/report/run-load-failure.ts";
 import { createSettingsRepository, type SettingsReading } from "./application/run/settings/read-settings.ts";
 import { createSettingsSources } from "./infrastructure/hone-config-file/settings-sources.ts";

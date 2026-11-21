@@ -1,12 +1,12 @@
 import { z } from "zod";
-import type { RecordsDocument } from "../hone-records-folder/hone-record.ts";
-import { namedRecordsFileOf } from "../hone-records-folder/folder-layout/records-layout.ts";
-import { RECORDS_VERSION } from "../hone-records-folder/records-wire.ts";
+import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
+import { RECORDS_VERSION, namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
 import type { Check } from "../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { checksOfClause } from "../../domain/language-layer/clause-checks.ts";
 import type { VersionOneEntry } from "./version-one-entries.ts";
 

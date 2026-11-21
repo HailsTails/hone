@@ -1,11 +1,12 @@
-import { type ExceptionRecord, type InvalidRecord, type RecordPlace, recordImportOf } from "../discipline-exceptions-folder/exception-records.ts";
+import { recordImportOf } from "../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord, InvalidRecord, RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { AttributedNativeException } from "../../domain/finding/governance.ts";
 import type { ExemptedFinding } from "../../domain/records/discipline-exceptions/governance.ts";
 import type { InlineReach, ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { PRUNE_DEBT_SUBCOMMAND } from "../command-line/arguments/subcommand-names.ts";
-import { clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../command-line/assessment-file.ts";

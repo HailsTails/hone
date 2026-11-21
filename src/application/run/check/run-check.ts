@@ -2,14 +2,10 @@ import { type CheckedTree, checkedTreeOf, typescriptFilesOf } from "../checked-t
 import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
 import type { ClauseBinding, Selection } from "../../../domain/settings/selection/selection.ts";
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
-import {
-  type ExceptionRecord,
-  type ExceptionBaseline,
-  type ExceptionRepository,
-  type InvalidRecord,
-  parseExceptionEntries,
-  type StructuralExceptionEntry,
-} from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { type ExceptionRepository, parseExceptionEntries } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { DebtPair } from "../../../domain/records/discipline-exceptions/debt-pair.ts";
 import { paidDebtOf } from "../../../domain/records/discipline-exceptions/paid-debt.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
@@ -26,7 +22,8 @@ import type { Assessment } from "../../../domain/settings/assessment.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { UnprojectedFolder } from "../../../domain/runner/unprojected-folder.ts";
 import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { isRepoPath } from "../../../domain/repository/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
   CheckReport,
@@ -228,8 +225,8 @@ const nestedConfigurationsOf = (request: { readonly run: MechanismRun }): readon
     if (slice.state !== NESTED_CONFIGURATION) {
       return [];
     }
-    const folder = repoPathSchema.safeParse(slice.slice.split("/").slice(0, -1).join("/"));
-    return folder.success ? [folder.data] : [];
+    const folder = slice.slice.split("/").slice(0, -1).join("/");
+    return isRepoPath(folder) ? [folder] : [];
   });
 
 type TreeRequest = Pick<CheckRequest, "git" | "repoRoot" | "path" | "fileText">;

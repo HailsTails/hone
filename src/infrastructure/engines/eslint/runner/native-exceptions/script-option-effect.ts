@@ -1,7 +1,7 @@
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ConfigFileSearch, EslintPort, QueryInstance } from "../toolchain/eslint-instance.ts";
 import { type NotPlainReason, repoPathResolved, type ScriptOption } from "./package-script-scanner.ts";

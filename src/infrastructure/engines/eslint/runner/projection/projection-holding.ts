@@ -1,6 +1,7 @@
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 
 export type ProjectionHolding = "projected-off" | "not-held";
 

@@ -3,8 +3,8 @@ import type { FoundCheck } from "../../language-layer/check-address.ts";
 import type { Case, Check, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { AuthorisedLocation, BoundaryRecord, Debt, HoneRecord, RuntimeFacility, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
-import type { WhyChain } from "../../../infrastructure/hone-records-folder/why-chain.ts";
+import type { AuthorisedLocation, BoundaryRecord, Debt, HoneRecord, RuntimeFacility, SymptomReach } from "../hone-records/hone-record.ts";
+import type { WhyChain } from "../why-chain.ts";
 import { holdsAt, type PartyReport, placeCovers, placesReachedBy } from "./record-reach.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {

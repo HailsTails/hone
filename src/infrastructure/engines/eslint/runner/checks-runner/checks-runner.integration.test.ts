@@ -23,7 +23,8 @@ import {
 } from "../toolchain/eslint-toolchain.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import SYMPTOMS from "../../../../../../rules/typescript/symptoms.json" with { type: "json" };
 import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
 import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };

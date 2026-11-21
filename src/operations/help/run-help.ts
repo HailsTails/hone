@@ -1,5 +1,5 @@
 import { AUTHORISE_COMMAND_OPTIONS, COMMANDS, type CommandOption, type CommandSpec, HELP_FLAGS, UPGRADE_SUBCOMMAND, VERSION_FLAG } from "../../infrastructure/command-line/arguments/command-line.ts";
-import { RECORDS_FOLDER } from "../../infrastructure/hone-records-folder/folder-layout/records-layout.ts";
+import { RECORDS_FOLDER } from "../../domain/records/hone-records/records-layout.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
 import { FORFEITURE_ASSESSMENTS } from "../../domain/settings/assessment.ts";

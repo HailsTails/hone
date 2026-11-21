@@ -8,14 +8,9 @@ import { installedVersionOf } from "../installation/installed-version.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { loadFailureDetail, loadFailureText } from "../../printed-report/load-failures/load-failure-text.ts";
 import { runLoadFailureLine } from "../../printed-report/load-failures/load-failure-lines.ts";
-import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { InheritedDebtOutcome } from "../../../domain/records/discipline-exceptions/inherited-debt.ts";
-import type {
-  ExistingAuthorisationProvenance,
-  InheritedDebtProvenance,
-  InvalidRecord,
-  RecordsSplit,
-} from "../../discipline-exceptions-folder/exception-records.ts";
+import type { RecordsSplit } from "../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord, ExistingAuthorisationProvenance, InheritedDebtProvenance, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
@@ -26,14 +21,15 @@ import { createPathPort } from "../../node/path-port.ts";
 import type { ProcessPort } from "../../node/process/process-port.ts";
 import { WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { editionSchema } from "../../content-files/edition.ts";
 import type { ClauseEditionReading } from "../../../domain/rule-set/edition-types.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import type { WhyChain } from "../../hone-records-folder/why-chain.ts";
-import type { VersionOneWhyChain } from "../../discipline-exceptions-folder/version-one-why-chain.ts";
+import type { WhyChain } from "../../../domain/records/why-chain.ts";
+import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { REPORT_OUTPUTS, type ReportOutput, VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type {
   AssessmentFileNote,
@@ -79,7 +75,7 @@ import type {
   RecordRefusal,
   RecordsDocumentRefusal,
   SymptomReach,
-} from "../../hone-records-folder/hone-record.ts";
+} from "../../../domain/records/hone-records/hone-record.ts";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../../../operations/help/run-help.ts";
 import { runToolCommand } from "../../../run-tool-command.ts";
@@ -1757,7 +1753,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
     "form-refused": {
       entry: {
         place: { file: AUTHORISED_FILE, index: 2 },
-        refusals: [{ kind: "form-refused", issues: [{ code: "invalid_type", expected: "string", path: ["file"], message: "Invalid input: expected string, received number", input: 3 }] }],
+        refusals: [{ kind: "form-refused", issues: [{ path: ["file"], message: "Invalid input: expected string, received number" }] }],
       },
       fills: { "records file": "hone-records/authorised-locations/claimed-type.json", index: "2", issues: "file: Invalid input: expected string, received number" },
     },
@@ -2165,7 +2161,7 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
   const DOCUMENT_REFUSED: RecordsDocumentRefusal = {
     kind: "document-refused",
     file: DEBT_FILE,
-    issues: [{ code: "custom", path: ["records", 0, "file"], message: "expected a repository path", input: 1 }],
+    issues: [{ path: ["records", 0, "file"], message: "expected a repository path" }],
   };
 
   const STRAY_REFUSED: RecordsDocumentRefusal = { kind: "not-a-records-file", file: STRAY_FILE };

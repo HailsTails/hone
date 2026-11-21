@@ -3,9 +3,9 @@ import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from 
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { WhyChain } from "../../infrastructure/hone-records-folder/why-chain.ts";
+import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { type AuthoriseRequest, authorisingOf } from "./authorising.ts";
-import type { RecordsDocument } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

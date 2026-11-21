@@ -1,5 +1,5 @@
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import { verdictOf } from "../../../domain/report/verdict.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";

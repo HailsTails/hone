@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { VersionOneWhyChain } from "../discipline-exceptions-folder/version-one-why-chain.ts";
-import type { ExceptionRecord } from "../discipline-exceptions-folder/exception-records.ts";
+import type { VersionOneWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { Finding } from "../../domain/finding/governance.ts";
 import type { ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";

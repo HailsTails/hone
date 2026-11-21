@@ -3,18 +3,20 @@ import type { RunReport } from "../../domain/report/run-report.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { type AuthoriseRequest, type Authorising, authorisingOf } from "./authorising.ts";
 import { type DebtOutcome, debtOutcomesOf } from "../../domain/records/debt/debt-effects.ts";
 import { debtSitesOf, inSiteOrder, unrecordableSitesOf } from "../../domain/records/debt/debt-sites.ts";
 import { nativeDebtSitesOf } from "../../domain/records/debt/native-debt-sites.ts";
-import type { RecordsAtBase, RecordsDocument, RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsAtBase, RecordsDocument, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { type PrunableDebt, prunableDebtOf } from "../../domain/records/debt/prunable-debt.ts";
 import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
-import { documentsWithAdded, documentsWithRemoved, type RecordAddition } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
-import { namedRecordsFileOf } from "../../infrastructure/hone-records-folder/folder-layout/records-layout.ts";
+import { documentsWithAdded, documentsWithRemoved } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
+import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
+import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
 import type { RecordsSource } from "../ports/records-source.ts";
 import type { RecordsStore, RecordsUnwritable } from "../../infrastructure/hone-records-folder/writing/records-store.ts";
@@ -43,7 +45,7 @@ type Commanded<Value> = Result<Value, RecordCommandFailure>;
 
 const UNMEASURED_BASE: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const DEBT_FOLDER = repoPathSchema.parse("hone-records/debt");
+const DEBT_FOLDER = fixedRepoPath("hone-records/debt");
 
 const documentsOf = (request: { readonly source: Pick<RecordsSource, "read"> }): Commanded<readonly RecordsDocument[]> => {
   const read = request.source.read();

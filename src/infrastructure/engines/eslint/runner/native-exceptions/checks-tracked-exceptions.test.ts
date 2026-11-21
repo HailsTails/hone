@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { SelectedCheck } from "../checks-runner/checks-run-types.ts";
 import { trackedExceptionsOf } from "./checks-tracked-exceptions.ts";
 import type { PackageScriptsReader } from "./package-script-scanner.ts";

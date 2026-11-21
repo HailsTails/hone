@@ -1,4 +1,4 @@
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { commentValueOf } from "./checks-comment-value.ts";
 import type { NonEmptyRuleIds } from "../../../../../domain/runner/checks-run-report.ts";
 import type { MisnamedRuleId, VersionOneRuleId } from "../checks-runner/checks-run-types.ts";

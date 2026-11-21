@@ -1,6 +1,6 @@
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { isRuleSetName } from "../rule-set/identifiers.ts";
-import { TOOL_RULE_SET } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
 export type ListedAddress = { readonly ruleSet: ClauseAddress["ruleSet"]; readonly check: string };
 

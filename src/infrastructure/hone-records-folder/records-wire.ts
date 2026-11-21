@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { CATALOGUE_NAME, catalogueNameSchema } from "../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { CHECK_ADDRESS_SEPARATOR } from "../../domain/language-layer/check-address-text.ts";
+import { catalogueNameSchema } from "../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import { recordedReachOf } from "../../domain/records/hone-records/recorded-reach.ts";
+import { RECORDS_VERSION } from "../../domain/records/hone-records/records-layout.ts";
 import { repoPathSchema } from "./repo-path.ts";
 import { whyChainSchema } from "./why-chain.ts";
-
-export const RECORDS_VERSION = 2;
+import type { WrittenRecord } from "../../domain/records/upgrade/records-mapping.ts";
+import type { DeepReadonly, Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
 const PACKAGE_NAME = String.raw`(?:@[A-Za-z0-9][A-Za-z0-9._~-]*\/)?[A-Za-z0-9][A-Za-z0-9._~-]*`;
 
@@ -26,17 +27,14 @@ const SCHEME_MODULE = String.raw`(?!runtime:|npm:|${FILE_SCHEME}|${DRIVE_LETTER}
 
 const textSchema = z.string().trim().min(1);
 
-export type RecordedReach = { readonly reaches: "whole-symptom"; readonly symptom: string } | { readonly reaches: "one-check"; readonly symptom: string; readonly check: string };
-
-const recordedReachOf = (text: string): RecordedReach => {
-  const mark = text.indexOf(CHECK_ADDRESS_SEPARATOR);
-  return mark === -1 ? { reaches: "whole-symptom", symptom: text } : { reaches: "one-check", symptom: text.slice(0, mark), check: text.slice(mark + 1) };
-};
-
-export const recordedReachSchema = z
-  .string()
-  .regex(new RegExp(`^${CATALOGUE_NAME}(?:${CHECK_ADDRESS_SEPARATOR}${CATALOGUE_NAME})?$`), { error: "is not a symptom's name, or a symptom's name and one of its checks written <symptom>#<check>" })
-  .transform(recordedReachOf);
+export const recordedReachSchema = z.string().transform((text, context) => {
+  const reach = recordedReachOf({ text });
+  if (reach === "not-a-recorded-reach") {
+    context.addIssue({ code: "custom", message: "is not a symptom's name, or a symptom's name and one of its checks written <symptom>#<check>" });
+    return z.NEVER;
+  }
+  return reach;
+});
 
 export const packageNameSchema = z.string().regex(new RegExp(`^${PACKAGE_NAME}$`), { error: "is not the name of one direct outside dependency" });
 
@@ -75,6 +73,8 @@ export const carriedAuthorisedLocationWireSchema = z.strictObject(
   { answers: recordedReachSchema, file: repoPathSchema, carried: carriedEntrySchema },
   { error: addressFieldRetirement },
 );
+
+export const isWrittenRecordEqual: Equal<DeepReadonly<z.input<typeof debtWireSchema> | z.input<typeof carriedAuthorisedLocationWireSchema>>, WrittenRecord> = true;
 
 export const statedBoundaryRecordWireSchema = z.strictObject({
   module: repoPathSchema,

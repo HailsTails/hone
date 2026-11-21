@@ -1,9 +1,10 @@
-import type { z } from "zod";
-import type { Case, Check, Pointed, Recipe, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
-import type { RepoPath } from "./repo-path.ts";
-import type { WhyChain } from "./why-chain.ts";
+import type { Case, Check, Pointed, Recipe, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type { BaseRevisionAvailability } from "../../repository/base-revision-availability.ts";
+import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { WhyChain } from "../why-chain.ts";
+
+export type RecordIssue = { readonly path: readonly PropertyKey[]; readonly message: string };
 
 export type RuntimeFacility = "clock" | "random" | "process" | "json";
 
@@ -92,7 +93,7 @@ export type RecordPlace = { readonly file: RepoPath; readonly index: number };
 export type PlacedRecord = { readonly place: RecordPlace; readonly record: HoneRecord };
 
 export type RecordRefusal =
-  | { readonly kind: "form-refused"; readonly issues: readonly z.core.$ZodIssue[] }
+  | { readonly kind: "form-refused"; readonly issues: readonly RecordIssue[] }
   | { readonly kind: "unknown-symptom"; readonly symptom: string }
   | { readonly kind: "unknown-check"; readonly symptom: string; readonly check: string }
   | { readonly kind: "unknown-recipe"; readonly recipe: string }
@@ -131,4 +132,4 @@ export type RecordsReading = {
 
 export type RecordsDocumentRefusal =
   | { readonly kind: "not-a-records-file"; readonly file: RepoPath }
-  | { readonly kind: "document-refused"; readonly file: RepoPath; readonly issues: readonly z.core.$ZodIssue[] };
+  | { readonly kind: "document-refused"; readonly file: RepoPath; readonly issues: readonly RecordIssue[] };

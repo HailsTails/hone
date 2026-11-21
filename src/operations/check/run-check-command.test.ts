@@ -8,7 +8,8 @@ import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-
 import { createPathPort, type PathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runCheckCommand } from "./run-check-command.ts";
 import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";

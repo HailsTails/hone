@@ -3,7 +3,7 @@ import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptio
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type DebtEffectsRequest, debtOutcomesOf } from "./debt-effects.ts";
-import type { PlacedRecord, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom } from "../../language-layer/symptom-catalogue.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };

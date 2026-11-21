@@ -4,7 +4,7 @@ import type { PathPort } from "../../node/path-port.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { createSymptomCatalogueRepository, SYMPTOM_CATALOGUE_SEGMENTS } from "./read-symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { TOOL_RULE_SET } from "../../discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export const shippedCataloguesOf = (request: {

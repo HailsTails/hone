@@ -1,11 +1,12 @@
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
-import { type ClauseAddress, clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import type { MechanismId } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { UnprojectedFolder } from "../../runner/unprojected-folder.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs, entryPairKey } from "./debt-pair.ts";
 import type { FileCarveOutEntry } from "./exception-record.ts";
-import type { PlacedEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { PlacedEntry } from "./exception-entry.ts";
 
 export type InheritedDebtOutcome =
   | (DebtPair & { readonly effect: "recorded" | "new-file" | "refused" })

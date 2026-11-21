@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type ClauseAddress, clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { checkAddressOf, checkAt, checkNamedAt, checksOf } from "./check-address.ts";
 import type { Check, Engine, Principle, Recipe, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";

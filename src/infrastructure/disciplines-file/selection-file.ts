@@ -2,35 +2,21 @@ import { z } from "zod";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { assessmentSchema, DEFAULT_ASSESSMENT } from "../hone-config-file/assessment.ts";
 import { checkEditionsSchema } from "../hone-config-file/check-editions.ts";
-import {
-  type ClauseAddress,
-  clauseAddressSchema,
-  clauseAddressText,
-  sameClauseAddress,
-  TOOL_RULE_SET,
-} from "../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
 import { fileExceptionWhyChainsSchema } from "../hone-config-file/file-exception-why-chains.ts";
 import { mechanismIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
 import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { reportOutputSchema } from "../hone-config-file/report-output.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
-import { brandedRepoPathSchema, type RepoPath, repoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
+import { brandedRepoPathSchema, repoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RunSettings } from "../../domain/settings/run-settings.ts";
 import { clauseSettingsSchema } from "./clause-settings.ts";
-
-export type RuleSetLocation =
-  | { readonly location: "repo-root" }
-  | { readonly location: "folder"; readonly path: RepoPath };
-
-export type ClauseChoice =
-  | { readonly state: "run"; readonly mechanism: MechanismId }
-  | { readonly state: "not-run" }
-  | { readonly state: "not-adopted" };
-
-export type UnrunState = Exclude<ClauseChoice["state"], "run">;
+import type { ClauseChoice, ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
+import type { DeepReadonlyKeepingTuples, Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
 const RULE_SET_SUFFIX_SEPARATOR = "-";
 
@@ -136,7 +122,7 @@ const consumerSelectionFileSchema = z.strictObject({
     });
 });
 
-export type ConsumerSelectionFile = z.infer<typeof consumerSelectionFileSchema>;
+export const isConsumerSelectionFileEqual: Equal<DeepReadonlyKeepingTuples<z.infer<typeof consumerSelectionFileSchema>>, ConsumerSelectionFile> = true;
 
 const reservedRuleSetNameRefusalOf = (request: { readonly file: ConsumerSelectionFile }): LoadFailure | undefined => {
   const reserved = request.file.ruleSets.find(

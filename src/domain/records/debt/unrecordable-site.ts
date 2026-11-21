@@ -1,5 +1,5 @@
 import type { NativeException, ScriptOptionCause } from "../../runner/runner-result-types.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 
 export type UnrecordableBecause =
   | { readonly kind: "no-check" }

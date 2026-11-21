@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository, PlacedEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
 import { FOUND_TREE_REVISION } from "./found-tree-reach.ts";
 

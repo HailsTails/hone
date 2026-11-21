@@ -7,7 +7,8 @@ import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { ExceptionRepository, PlacedEntry } from "../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../discipline-exceptions-folder/exception-records.ts";
+import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { RecordsOnDisk } from "../discipline-exceptions-folder/version-one-records-on-disk.ts";
 import { versionOneReadOf, type VersionOneReadRequest } from "./version-one-reading.ts";
 

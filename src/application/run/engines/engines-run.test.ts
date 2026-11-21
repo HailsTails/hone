@@ -6,7 +6,7 @@ import type { ClauseBinding } from "../../../domain/settings/selection/selection
 import type { ChecksRunRequest } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
 import type { ModuleLoad, ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsReading, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";

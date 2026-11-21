@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Case, Check, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../repo-path.ts";
-import type { RecordsAtBase, SymptomReach } from "../hone-record.ts";
+import type { RecordsAtBase, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import { owedBy, recordOf } from "./record-resolution.ts";
 
 const THE_TYPE_CHECKER_PROVES_IT: Principle = { name: "the-type-checker-proves-it", title: "The type checker proves it" };

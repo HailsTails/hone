@@ -9,7 +9,7 @@ import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
-import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSourceOf } from "../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";

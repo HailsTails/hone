@@ -5,7 +5,7 @@ import type { FileTextPort } from "../../../../node/file-system/file-text-port.t
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { CoreInstall } from "./core-install.ts";
 import type { ProjectionStates } from "./projection-states.ts";

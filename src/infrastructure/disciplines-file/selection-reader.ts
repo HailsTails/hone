@@ -4,7 +4,8 @@ import type { PathPort } from "../node/path-port.ts";
 import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import { type ConsumerSelectionFile, selectionFileOf } from "./selection-file.ts";
+import { selectionFileOf } from "./selection-file.ts";
+import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
 
 export const selectionFilePathOf = (request: { readonly path: PathPort; readonly repoRoot: AbsolutePath }): string =>
   request.path.join({ segments: [request.repoRoot, "disciplines.json"] });

@@ -12,13 +12,15 @@ import type { RunSettings } from "../../domain/settings/run-settings.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import type { ClauseBinding, ClauseEditionReading, SelectionReading } from "../../domain/settings/selection/selection.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { type ClauseAddress, clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import type { ModuleExtension } from "../node/modules/install-layout.ts";
 import type { Result } from "../../domain/result.ts";
 import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
-import { type ConsumerSelectionFile, type RuleSetLocation, runSettingsOf, type UnrunState } from "./selection-file.ts";
+import { runSettingsOf } from "./selection-file.ts";
+import type { ConsumerSelectionFile, RuleSetLocation, UnrunState } from "../../domain/settings/selection/selection-file.ts";
 import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
 
 export type SelectionRepository = {

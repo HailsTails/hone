@@ -135,7 +135,7 @@ const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
   '[".","rules","CD-5"]': "rules/CD-5",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/runner/piece-failure-types.ts"]': "src/domain/runner/piece-failure-types.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/runner/runner-module-types.ts"]': "src/domain/runner/runner-module-types.ts",
-  '["./src/infrastructure/engines/audit/CD-5","../../../discipline-exceptions-folder/clause-address.ts"]': "src/infrastructure/discipline-exceptions-folder/clause-address.ts",
+  '["./src/infrastructure/engines/audit/CD-5","../../../../domain/rule-set/clause-address.ts"]': "src/domain/rule-set/clause-address.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/gathered-outcomes.ts"]': "src/domain/gathered-outcomes.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/finding/anchor.ts"]': "src/domain/finding/anchor.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/result.ts"]': "src/domain/result.ts",

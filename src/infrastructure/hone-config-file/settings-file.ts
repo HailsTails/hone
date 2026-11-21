@@ -4,7 +4,7 @@ import { forfeitureAssessmentSchema } from "./assessment.ts";
 import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
 import { checkEditionsSchema } from "./check-editions.ts";
 import type { CheckEditions } from "../../domain/settings/clause-settings/check-editions.ts";
-import { TOOL_RULE_SET } from "../discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
 import type { EslintConfigLookup } from "../../domain/settings/eslint-config-lookup.ts";
 import { ruleSetNameSchema } from "./identifiers.ts";

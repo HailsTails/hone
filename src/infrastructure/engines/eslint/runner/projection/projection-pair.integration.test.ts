@@ -1,6 +1,6 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { createSettingsRepository } from "../../../../../application/run/settings/read-settings.ts";

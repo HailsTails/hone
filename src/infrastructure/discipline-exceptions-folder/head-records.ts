@@ -2,26 +2,12 @@ import { z } from "zod";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
 import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
 import type { Result } from "../../domain/result.ts";
-import {
-  type ExceptionBaseline,
-  type ExceptionRecord,
-  type InvalidRecord,
-  type PlacedEntry,
-  parseExceptionEntries,
-  type RecordPlace,
-} from "./exception-records.ts";
-import type { CarriedEntry, RecordInput } from "../hone-records-folder/records-mapping.ts";
-
-type RecordOf<Kind extends ExceptionRecord["kind"]> = Extract<ExceptionRecord, { readonly kind: Kind }>;
-
-export type HeadRecord =
-  | Omit<Extract<RecordInput, { readonly kind: "file-carve-out" }>, "answer">
-  | { readonly kind: "authorised-location"; readonly record: RecordOf<"authorised-location">; readonly entry: CarriedEntry }
-  | Extract<RecordInput, { readonly kind: "clause-wide-carve-out" }>;
-
-export type HeadRecordsRefusal =
-  | { readonly kind: "invalid-records"; readonly invalid: readonly InvalidRecord[] }
-  | { readonly kind: "entry-not-json"; readonly place: RecordPlace };
+import { parseExceptionEntries } from "./exception-records.ts";
+import type { ExceptionBaseline } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
+import type { CarriedEntry } from "../../domain/records/upgrade/records-mapping.ts";
+import type { HeadRecord, HeadRecordsRefusal } from "../../domain/records/upgrade/head-records.ts";
 
 export type HeadRecordsRequest = {
   readonly entries: readonly PlacedEntry[];

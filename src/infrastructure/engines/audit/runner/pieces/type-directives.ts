@@ -1,7 +1,8 @@
 import type { InlineDisable } from "../../../../../domain/runner/runner-result-types.ts";
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { CommentRange, SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
 
 export const TYPE_DIRECTIVES = ["@ts-expect-error", "@ts-ignore", "@ts-nocheck"] as const;

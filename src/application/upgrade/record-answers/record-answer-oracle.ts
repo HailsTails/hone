@@ -1,7 +1,7 @@
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { CarveOutAnswer, LocationAnswer } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
+import type { CarveOutAnswer, LocationAnswer } from "../../../domain/records/upgrade/records-mapping.ts";
 
 export type FileCarveOutRecord = Extract<ExceptionRecord, { readonly kind: "file-carve-out" }>;
 

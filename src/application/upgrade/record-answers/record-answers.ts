@@ -2,7 +2,7 @@ import type { Finding } from "../../../domain/finding/governance.ts";
 import { sitesOfFinding } from "../../../domain/records/debt/debt-sites.ts";
 import { catalogueOf, type RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressText, sameClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";

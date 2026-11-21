@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RecordsDocumentRefusal } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
@@ -21,7 +21,7 @@ const UNCATALOGUED = mechanismIdSchema.parse("stylelint");
 
 const RECORDS_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
 
-const DOCUMENT_REFUSED: RecordsDocumentRefusal = { kind: "document-refused", file: RECORDS_FILE, issues: [{ code: "custom", path: ["records"], message: "expected an array", input: 1 }] };
+const DOCUMENT_REFUSED: RecordsDocumentRefusal = { kind: "document-refused", file: RECORDS_FILE, issues: [{ path: ["records"], message: "expected an array" }] };
 
 describe("runLoadFailureOf, a failure the version 1 settings path names in version 2's words", () => {
   it.each<MappedRow>([

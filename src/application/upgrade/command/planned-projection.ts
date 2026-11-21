@@ -1,6 +1,6 @@
 import type { CommandRequest } from "../../ports/command-request.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import type { RecordsAtBase, RecordsReading } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsAtBase, RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
 import { recordsReadingOf } from "../../../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { type CheckedTree, checkedTreeOf } from "../../run/checked-tree-of.ts";
 import { enginesProjectionOf } from "../../run/engines/engines-run.ts";
@@ -17,7 +17,7 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import { moduleExtensionOf } from "../../../infrastructure/node/modules/install-layout.ts";
 import { projectionOutputsOf } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { MappedRecordsDocument } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
+import type { MappedRecordsDocument } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { ProjectionFailure, ProjectionFilesOf } from "../proof/upgrade-plan.ts";
 
 const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-given" } };

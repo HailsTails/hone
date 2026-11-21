@@ -6,10 +6,11 @@ import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-ca
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { parsedJson } from "../../content-files/parsed-json.ts";
-import { type RepoPath, repoPathSchema } from "../repo-path.ts";
+import { repoPathSchema } from "../repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { RecordsDocument } from "../hone-record.ts";
-import { RECORDS_FOLDER, recordsFileStandingOf } from "./records-layout.ts";
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
+import { RECORDS_FOLDER, recordsFileStandingOf } from "../../../domain/records/hone-records/records-layout.ts";
 import type { RecordsSource } from "../../../application/ports/records-source.ts";
 import type { RecordsFolderFailure } from "../../../domain/records/records-folder-failure.ts";
 

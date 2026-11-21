@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../repo-path.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { namedRecordsFileOf, recordsFileStandingOf } from "./records-layout.ts";
 
 describe("recordsFileStandingOf", () => {

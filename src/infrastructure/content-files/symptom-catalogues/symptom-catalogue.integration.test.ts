@@ -27,7 +27,8 @@ import type {
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema, clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 

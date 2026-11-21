@@ -1,6 +1,7 @@
-import { type ClauseAddress, clauseAddressSchema, clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { StructuralExceptionEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
+import { clauseAddressOf, clauseAddressText } from "../../rule-set/clause-address.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { StructuralExceptionEntry } from "./exception-entry.ts";
 
 export type DebtPair = {
   readonly clause: ClauseAddress;
@@ -16,8 +17,8 @@ export const entryPairKey = (request: { readonly entry: StructuralExceptionEntry
   if (request.entry.kind === "clause-wide-carve-out") {
     return undefined;
   }
-  const clause = clauseAddressSchema.safeParse(request.entry.clause);
-  return clause.success ? pairKeyOf({ clauseText: clauseAddressText({ address: clause.data }), file: request.entry.file }) : undefined;
+  const clause = clauseAddressOf({ text: request.entry.clause });
+  return clause === "not-a-clause-address" ? undefined : pairKeyOf({ clauseText: clauseAddressText({ address: clause }), file: request.entry.file });
 };
 
 const textOrder = (request: { readonly left: string; readonly right: string }): number => {

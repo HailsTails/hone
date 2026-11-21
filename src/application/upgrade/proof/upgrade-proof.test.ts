@@ -1,6 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
+import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
 import type { FileCreationPort } from "../../../infrastructure/node/file-system/file-creation-port.ts";
@@ -10,12 +10,13 @@ import { createPathPort, type PathPort } from "../../../infrastructure/node/path
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { RecordAnswerOracle, FileCarveOutRecord } from "../record-answers/record-answer-oracle.ts";
-import type { HeadRecord } from "../../../infrastructure/discipline-exceptions-folder/head-records.ts";
+import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
 import { type ProofRuns, upgradeProof, type UpgradeProofRequest } from "./upgrade-proof.ts";
 import type { ProjectionFilesOf, VersionOneReading } from "./upgrade-plan.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";

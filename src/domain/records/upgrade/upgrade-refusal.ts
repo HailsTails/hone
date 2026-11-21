@@ -1,5 +1,5 @@
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 
 export type UnansweredCredit = "nothing" | "suppression-only";
 

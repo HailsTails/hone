@@ -3,7 +3,7 @@ import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom,
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { Hit } from "../../domain/runner/runner-result-types.ts";
-import type { RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "./settings/read-settings.ts";

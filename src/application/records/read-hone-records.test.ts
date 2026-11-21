@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RecordsDocument } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { readHoneRecords } from "./read-hone-records.ts";
 import type { RecordsSource } from "../ports/records-source.ts";
 

@@ -1,6 +1,6 @@
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { MarkedNotAdopted } from "../mapping/settings-mapping.ts";
 import { afterSectionsOf } from "./after-sections.ts";

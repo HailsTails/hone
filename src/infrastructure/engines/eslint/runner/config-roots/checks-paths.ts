@@ -1,4 +1,5 @@
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 
 export const fileNameOf = (request: { readonly path: RepoPath }): string => request.path.split("/").at(-1) ?? "";
 

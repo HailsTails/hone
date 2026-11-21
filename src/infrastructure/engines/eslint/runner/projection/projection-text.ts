@@ -1,10 +1,8 @@
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import {
-  type ClauseAddress,
-  clauseAddressText,
-  sameClauseAddress,
-} from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { enabledRuleEntry, reservedNamespace } from "../toolchain/eslint-instance.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { escapedGlobPath } from "./projection.ts";

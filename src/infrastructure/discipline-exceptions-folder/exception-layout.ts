@@ -9,20 +9,14 @@ import { createDefaultPathPort, type PathPort } from "../node/path-port.ts";
 import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "./clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import {
-  type ExceptionRepository,
-  type ExceptionRepositoryOf,
-  exceptionEntriesOfDocument,
-  exceptionEntriesOfText,
-  foreignKeysOfDocument,
-  type PlacedEntry,
-  type RecordsSplit,
-  type StructuralExceptionEntry,
-} from "./exception-records.ts";
+import { type ExceptionRepository, type ExceptionRepositoryOf, exceptionEntriesOfDocument, exceptionEntriesOfText, foreignKeysOfDocument, type RecordsSplit } from "./exception-records.ts";
+import type { PlacedEntry, StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import { type DebtPair, debtPairKey, entryPairKey } from "../../domain/records/discipline-exceptions/debt-pair.ts";
 import { exceptionsTextWith, exceptionsTextWithout, type WritableEntry } from "./exceptions-text.ts";
 

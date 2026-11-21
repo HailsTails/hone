@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
+import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";

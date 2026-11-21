@@ -1,7 +1,7 @@
 import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
 import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsReading } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";

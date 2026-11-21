@@ -2,10 +2,10 @@ import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { RecordAnswerOracle, OracleFailure } from "../record-answers/record-answer-oracle.ts";

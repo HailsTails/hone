@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../domain/finding/governance.ts";
-import type { PlacedRecord, SymptomReach } from "../hone-records-folder/hone-record.ts";
-import type { WhyChain } from "../hone-records-folder/why-chain.ts";
+import type { PlacedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
+import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../content-files/edition.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";

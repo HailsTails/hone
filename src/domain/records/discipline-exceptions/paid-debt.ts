@@ -1,9 +1,9 @@
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
 import type { ExemptedFinding } from "./governance.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs } from "./debt-pair.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
-import { authorisationStandingOf, type ExceptionBaseline } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { authorisationStandingOf, type ExceptionBaseline } from "./exception-baseline.ts";
 
 export type PaidDebtRequest = {
   readonly findings: readonly Finding[];

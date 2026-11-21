@@ -1,5 +1,5 @@
 import { type AddressedCheck, checkAddressTextOf } from "../../../../../domain/language-layer/check-address-text.ts";
-import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 
 export type RuledCheck = {

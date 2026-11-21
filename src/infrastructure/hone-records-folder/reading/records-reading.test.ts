@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { Check, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../repo-path.ts";
-import type { RecordsAtBase, SymptomReach } from "../hone-record.ts";
-import { carriedListingOf, recordsReadingOf, sameRecordIdentity } from "./records-reading.ts";
+import type { RecordsAtBase, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
+import { recordsReadingOf } from "./records-reading.ts";
+import { carriedListingOf } from "../../../domain/records/hone-records/record-listings.ts";
+import { sameRecordIdentity } from "../../../domain/records/hone-records/record-identity.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 

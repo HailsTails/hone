@@ -1,4 +1,5 @@
-import { type RepoPath, repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { FORFEITURE_ASSESSMENTS, type ForfeitureAssessment, WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";

@@ -15,9 +15,11 @@ import type { RuleSetCatalogue } from "../../../../domain/settings/check-choices
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../hone-config-file/assessment.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import { runProject } from "../../../../application/projection/run-project.ts";
 import { createEslintRunner } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort, type EslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";

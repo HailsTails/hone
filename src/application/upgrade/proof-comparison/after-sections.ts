@@ -1,11 +1,11 @@
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import { runVerdictOf } from "../../../domain/report/report-sections.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import { catalogueOf, type RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { checkAt } from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { answeredKeyOf, findingKeyOf, nativeKeyOf } from "./before-sections.ts";
 import { joinedKey, type SectionKeys, uniqueKeys } from "./section-keys.ts";
 

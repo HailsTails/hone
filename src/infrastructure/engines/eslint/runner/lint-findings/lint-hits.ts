@@ -1,8 +1,8 @@
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Hit, InlineReach, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
-import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { CUT_MARK, SNIPPET_LIMIT } from "../../../protocol/runner-module/snippet.ts";
 import { commentValueOf } from "./checks-comment-value.ts";

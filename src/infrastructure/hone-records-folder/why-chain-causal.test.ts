@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { causalProblemsOf, type Why, type WhyChain, whyChainSchema } from "./why-chain.ts";
+import { whyChainSchema } from "./why-chain.ts";
+import { causalProblemsOf, type Why, type WhyChain } from "../../domain/records/why-chain.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

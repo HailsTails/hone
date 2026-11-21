@@ -6,7 +6,7 @@ import { clauseAddressSchema } from "../../../discipline-exceptions-folder/claus
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import type { ExceptionRecord } from "../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { projectMechanism, runMechanismWithRecords } from "./mechanism-dispatch.ts";
 
 const WALKER = mechanismIdSchema.parse("audit");

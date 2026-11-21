@@ -1,18 +1,15 @@
-import type { z } from "zod";
-import { codePointOrder } from "../../domain/records/code-point-order.ts";
-import { type NamedFolderKind, namedRecordsFileOf } from "./folder-layout/records-layout.ts";
-import { type carriedAuthorisedLocationWireSchema, type debtWireSchema, RECORDS_VERSION } from "./records-wire.ts";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
-import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
-import type { Check } from "../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
-import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
-import type { RepoPath } from "./repo-path.ts";
-import type { Result } from "../../domain/result.ts";
-import type { DeepReadonly } from "../engines/protocol/runner-module/type-equality.ts";
-import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import { checksOfClause } from "../../domain/language-layer/clause-checks.ts";
-import type { UnansweredCredit, UpgradeRefusal } from "../../application/upgrade/mapping/upgrade-refusal.ts";
+import { codePointOrder } from "../code-point-order.ts";
+import { type NamedFolderKind, RECORDS_VERSION, namedRecordsFileOf } from "../hone-records/records-layout.ts";
+import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
+import { checkAddressOf } from "../../language-layer/check-address.ts";
+import type { Check } from "../../language-layer/symptom-catalogue.ts";
+import { clauseAddressText } from "../../rule-set/clause-address.ts";
+import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { Result } from "../../result.ts";
+import type { ExceptionRecord } from "../discipline-exceptions/exception-record.ts";
+import { checksOfClause } from "../../language-layer/clause-checks.ts";
+import type { UnansweredCredit, UpgradeRefusal } from "./upgrade-refusal.ts";
 
 export type CarriedEntry = { readonly [key: string]: ReadonlyJsonValue };
 
@@ -39,7 +36,9 @@ export type RecordInput =
 
 export type RecordsMappingRequest = { readonly inputs: readonly RecordInput[]; readonly catalogues: readonly RuleSetCatalogue[] };
 
-export type WrittenRecord = DeepReadonly<z.input<typeof debtWireSchema> | z.input<typeof carriedAuthorisedLocationWireSchema>>;
+export type WrittenRecord =
+  | { readonly answers: string; readonly file: string; readonly note?: string; readonly carried?: CarriedEntry }
+  | { readonly answers: string; readonly file: string; readonly carried: CarriedEntry };
 
 export type MappedRecordsDocument = { readonly file: RepoPath; readonly version: typeof RECORDS_VERSION; readonly records: readonly WrittenRecord[] };
 

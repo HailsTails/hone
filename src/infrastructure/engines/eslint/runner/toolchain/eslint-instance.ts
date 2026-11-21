@@ -6,7 +6,7 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 import { type RuleState, resolvedConfigSchema, ruleStateOf } from "./eslint-config-schema.ts";

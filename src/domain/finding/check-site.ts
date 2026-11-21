@@ -4,7 +4,8 @@ import { checkAddressOf, checkNamedAt, checksOf } from "../language-layer/check-
 import type { NamedCheck } from "../language-layer/check-address.ts";
 import { type FindingCheck, checkOfFinding } from "./finding-check.ts";
 import type { Check, Engine, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
-import { type ClauseAddress, clauseAddressText } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../rule-set/clause-address.ts";
 import type { MechanismId } from "../rule-set/identifier-types.ts";
 
 export type CheckSite =

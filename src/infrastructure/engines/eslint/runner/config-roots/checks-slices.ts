@@ -1,5 +1,6 @@
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { outsideNestedRepositories, packageConfigFilesOf } from "./checks-config-roots.ts";
 import { directoryOf } from "./checks-paths.ts";
 import { type AnsweredFile, CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH } from "../projection/checks-projection.ts";

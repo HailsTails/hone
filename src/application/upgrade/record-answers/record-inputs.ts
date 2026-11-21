@@ -1,8 +1,8 @@
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { HeadRecord } from "../../../infrastructure/discipline-exceptions-folder/head-records.ts";
-import type { RecordInput } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
+import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
+import type { RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { RecordAnswered } from "./record-answer-oracle.ts";
 
 export type CarveOutUnanswered = { readonly kind: "carve-out-unanswered"; readonly clause: string; readonly file: RepoPath };

@@ -1,23 +1,16 @@
-import {
-  type ExceptionBaseline,
-  type ExceptionRecord,
-  type ExceptionRepository,
-  importedEntriesIn,
-  importSourcesOf,
-  legacyChainsIn,
-  recordImportOf,
-  type StructuralExceptionEntry,
-  UNMEASURED_EXCEPTION_BASELINE,
-} from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { type ExceptionRepository, importedEntriesIn, importSourcesOf } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
+import { legacyChainsIn, recordImportOf, type StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import { baseRevisionAvailabilityOf, computeTouchedSet } from "../touched-set/touched-set.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Assessment } from "../../../domain/settings/assessment.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import { whyChainFormOf } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import { whyChainFormOf } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { PartialAssessment, Unmeasured } from "../../../domain/report/check-report.ts";
 
 export type ChangeSetReach = {

@@ -7,7 +7,7 @@ import {
   statedAuthorisedLocationWireSchema,
   statedBoundaryRecordWireSchema,
 } from "./records-wire.ts";
-import type { WhyChain } from "./why-chain.ts";
+import type { WhyChain } from "../../domain/records/why-chain.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

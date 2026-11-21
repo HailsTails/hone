@@ -3,8 +3,8 @@ import type { Hit, MeasuredPair, NativeException } from "../../../../../domain/r
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { AnsweredFile } from "../projection/checks-projection.ts";
 import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";

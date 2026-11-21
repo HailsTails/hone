@@ -6,12 +6,13 @@ import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
 import type { GitPort, GitTreePort } from "../../../infrastructure/git/git-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsDocument } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSourceOf } from "../../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import type { RecordsSource } from "../../ports/records-source.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository, PlacedEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import { FOUND_TREE_REVISION, foundTreeCheckReachOf, foundTreeRunReachOf } from "./found-tree-reach.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");

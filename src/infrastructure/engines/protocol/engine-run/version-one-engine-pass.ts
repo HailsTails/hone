@@ -1,12 +1,13 @@
 import { type CheckRequest, findingsOf, loadInputs, mechanismRuns, projectionOutcome, sliceProblemsOf, treeOf } from "../../../../application/run/check/run-check.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
-import { type RepoPath, repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import { loadFailureDetail } from "../../../printed-report/load-failures/load-failure-text.ts";
 import type { LoadFailure } from "../../../../domain/report/load-failure.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineFindings, EnginePass, EnginePassFailure } from "../../../../application/upgrade/record-answers/answering-oracle.ts";
-import { UNMEASURED_EXCEPTION_BASELINE } from "../../../discipline-exceptions-folder/exception-records.ts";
+import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 
 const failureOf = (request: { readonly failure: LoadFailure }): Result<EngineFindings, EnginePassFailure> => ({
   outcome: "failed",

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
 import { projectionText } from "../projection/projection-text.ts";
 import type { ProjectionStates } from "../projection/projection-states.ts";

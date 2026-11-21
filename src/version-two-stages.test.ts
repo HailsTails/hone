@@ -7,7 +7,7 @@ import type { FileTextPort } from "./infrastructure/node/file-system/file-text-p
 import type { GitPort, GitTreePort } from "./infrastructure/git/git-port.ts";
 import type { ModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createPathPort } from "./infrastructure/node/path-port.ts";
-import type { RecordsReading, SymptomReach } from "./infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading, SymptomReach } from "./domain/records/hone-records/hone-record.ts";
 import { DEFAULT_CONVENTIONS } from "./domain/settings/conventions.ts";
 import type { SettingsReading } from "./application/run/settings/read-settings.ts";
 import { absolutePathSchema } from "./infrastructure/content-files/absolute-path.ts";

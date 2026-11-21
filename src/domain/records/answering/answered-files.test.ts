@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
-import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";

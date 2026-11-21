@@ -1,4 +1,4 @@
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { directoryOf, fileNameOf } from "./checks-paths.ts";
 
 export const SETTINGS_FILE_NAME = "hone.config.json";

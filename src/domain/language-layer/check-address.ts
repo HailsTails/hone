@@ -1,5 +1,6 @@
 import { checkAddressTextOf } from "./check-address-text.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../rule-set/clause-address.ts";
 import type { Check, SymptomCatalogue } from "./symptom-catalogue.ts";
 
 export type FoundCheck = { readonly found: "check"; readonly check: Check } | { readonly found: "none" };

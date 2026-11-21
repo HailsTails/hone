@@ -7,10 +7,10 @@ import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptio
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { answerFindings, type RaisedFinding, type StaleReason, type StaleRecord } from "./answering.ts";
-import type { AuthorisedLocation, Debt, PlacedRecord, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { AuthorisedLocation, Debt, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { RunMeasurement } from "../measurement/measured-at.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { WhyChain } from "../../../infrastructure/hone-records-folder/why-chain.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { WhyChain } from "../why-chain.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

@@ -1,8 +1,7 @@
-import type { z } from "zod";
 import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../domain/runner/runner-failure.ts";
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
-import type { RecordsDocumentRefusal } from "../../hone-records-folder/hone-record.ts";
-import { NAMED_FOLDER_KINDS, RECORDS_FILE_EXTENSION, RECORDS_FOLDER, SINGLE_FILE_KINDS } from "../../hone-records-folder/folder-layout/records-layout.ts";
+import type { RecordIssue, RecordsDocumentRefusal } from "../../../domain/records/hone-records/hone-record.ts";
+import { NAMED_FOLDER_KINDS, RECORDS_FILE_EXTENSION, RECORDS_FOLDER, SINGLE_FILE_KINDS } from "../../../domain/records/hone-records/records-layout.ts";
 import type { CheckSettingsListing } from "../../../domain/settings/check-choices.ts";
 import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
@@ -72,7 +71,7 @@ const allowedText = (request: { readonly allowed: AllowedEngines }): string =>
 const settingsListingRepair = (request: { readonly listing: CheckSettingsListing }): string =>
   request.listing === "unlisted" ? "list it under checks or remove its settings" : "run it or remove its settings";
 
-const issueText = (request: { readonly issue: z.core.$ZodIssue }): string => {
+const issueText = (request: { readonly issue: RecordIssue }): string => {
   const path = request.issue.path.length === 0 ? WHOLE_DOCUMENT : request.issue.path.join(".");
   return `${path}: ${onOneLine({ text: request.issue.message })}`;
 };

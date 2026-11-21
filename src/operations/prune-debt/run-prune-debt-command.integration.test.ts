@@ -7,7 +7,8 @@ import { createDefaultModuleLoaderPort } from "../../infrastructure/node/modules
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
 

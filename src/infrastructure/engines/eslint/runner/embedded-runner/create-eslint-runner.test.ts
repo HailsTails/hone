@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
 import type { CaseVerdict, ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
@@ -12,7 +12,8 @@ import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.t
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ConfigLookup } from "../config-roots/config-lookup.ts";
 import { type EslintRunnerPorts, eslintRunnerOver } from "./create-eslint-runner.ts";

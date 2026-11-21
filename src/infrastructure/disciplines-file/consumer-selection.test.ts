@@ -16,7 +16,8 @@ import {
   selectionFrom,
 } from "./consumer-selection.ts";
 import type { Held, RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
-import { type ConsumerSelectionFile, type RuleSetLocation, selectionFileOf } from "./selection-file.ts";
+import { selectionFileOf } from "./selection-file.ts";
+import type { ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const INSTALL_ROOT = absolutePathSchema.parse("/install");

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { moduleFileForm } from "../../../../node/modules/install-layout.ts";
-import { isRepoPathText } from "../../../../hone-records-folder/repo-path.ts";
+import { isRepoPathText } from "../../../../../domain/repository/repo-path.ts";
 import type { Equal } from "../../../protocol/runner-module/type-equality.ts";
 import type { EslintPieceSettings, RuleOptions } from "./eslint-piece-settings-types.ts";
 

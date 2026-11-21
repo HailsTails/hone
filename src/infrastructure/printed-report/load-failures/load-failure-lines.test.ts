@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { RecordsDocumentRefusal } from "../../hone-records-folder/hone-record.ts";
+import type { RecordsDocumentRefusal } from "../../../domain/records/hone-records/hone-record.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { runLoadFailureLine } from "./load-failure-lines.ts";
@@ -22,8 +22,8 @@ const DOCUMENT_REFUSED: RecordsDocumentRefusal = {
   kind: "document-refused",
   file: DEBT_FILE,
   issues: [
-    { code: "custom", path: ["records", 0, "file"], message: "expected a repository path", input: 1 },
-    { code: "custom", path: [], message: "expected version 2", input: 1 },
+    { path: ["records", 0, "file"], message: "expected a repository path" },
+    { path: [], message: "expected version 2" },
   ],
 };
 

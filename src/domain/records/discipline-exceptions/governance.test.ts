@@ -5,8 +5,8 @@ import type { TouchedSet } from "../../repository/touched-set.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRecord } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import type { ExceptionRecord } from "./exception-record.ts";
+import type { VersionOneWhyChain } from "./version-one-why-chain.ts";
 import { applyGovernance, type GovernanceRequest } from "./governance.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {

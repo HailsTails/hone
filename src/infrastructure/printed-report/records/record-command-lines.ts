@@ -3,7 +3,7 @@ import type { ScriptOptionCause } from "../../../domain/runner/runner-result-typ
 import { type DebtEffect, type DebtOutcome, debtAddressOf } from "../../../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt, PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
 import type { UnrecordableBecause } from "../../../domain/records/debt/unrecordable-site.ts";
-import type { RepoPath } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { recordsFileText, refusalText } from "./record-lines.ts";
 import { scriptOptionAdviceOf } from "./script-option-advice.ts";
 

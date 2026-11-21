@@ -1,13 +1,13 @@
 import type { LoadFailure, VersionTwoLoadFailure } from "./load-failure.ts";
 import type { NotReadyYetFailure } from "../runner/checks-run-report.ts";
 import type { RunnerFailure } from "../runner/runner-failure.ts";
-import type { RecordsDocumentRefusal } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
 import type { HoneRecordsFailure } from "../records/hone-records-failure.ts";
 import type { RecordsFolderFailure } from "../records/records-folder-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
 import type { MechanismId } from "../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../repository/repo-path-types.ts";
 
 type KeptKind =
   | "arguments-invalid"

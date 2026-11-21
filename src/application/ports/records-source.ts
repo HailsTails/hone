@@ -1,5 +1,5 @@
 import type { Result } from "../../domain/result.ts";
-import type { RecordsDocument } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsFolderFailure } from "../../domain/records/records-folder-failure.ts";
 
 export type RecordsSource = {

@@ -6,11 +6,12 @@ import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import { type CheckState, eslintConfigLookupOf, type GivenCheckSettings, type ListedCheck, RENAMED_SETTINGS, type SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type ClauseAddress, clauseAddressText, sameClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ClauseChoice, ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
+import type { ClauseChoice, ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { checksOfClause } from "../../../domain/language-layer/clause-checks.ts";
-import type { UpgradeDrop, UpgradeRefusal } from "./upgrade-refusal.ts";
+import type { UpgradeDrop, UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;

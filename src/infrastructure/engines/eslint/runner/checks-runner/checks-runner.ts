@@ -15,7 +15,8 @@ import { nestedVersionTwoFoldersOf, nestedVersionTwoRepositoriesOf, SETTINGS_FIL
 import { selectedChecksOf } from "./checks-selection.ts";
 import { trackedExceptionsOf } from "../native-exceptions/checks-tracked-exceptions.ts";
 import { CHECKS_PLUGIN_NAMESPACE, checkRuleIdOf, eslintRuleIdsOf, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
 import { cachedGoverningIgnores } from "../config-roots/governing-config.ts";
 import { coreInstallOf } from "../projection/core-install.ts";
 import { MISNAMED_DISABLE_RULE, MISNAMED_DISABLE_RULE_ID, misnamedDisableRule } from "../lint-findings/misnamed-disable-rule.ts";

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { Equal } from "./type-equality.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";

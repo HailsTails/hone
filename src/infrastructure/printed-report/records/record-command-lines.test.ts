@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Authorising } from "../../../application/records/authorising.ts";
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { Debt, SymptomReach } from "../../hone-records-folder/hone-record.ts";
+import type { Debt, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "./record-command-lines.ts";
 

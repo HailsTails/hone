@@ -2,7 +2,7 @@ import type { CommandRequest } from "../../application/ports/command-request.ts"
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
 import { type CheckRequest, runCheck } from "../../application/run/check/run-check.ts";
 import { runProject } from "../../application/projection/run-project.ts";
-import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { createSelectionRepository, readRunSettings } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import { type UpgradeArguments, parseUpgradeArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { type CommandOutcome, loadFailureOutcome } from "../../infrastructure/command-line/outcomes/command-outcome.ts";

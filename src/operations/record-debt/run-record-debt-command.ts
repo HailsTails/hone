@@ -1,6 +1,7 @@
 import { readSelection, selectionRepositoryHolding } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
-import type { ExceptionRepository, PlacedEntry } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import {
   type InheritedDebtOutcome,
   inheritedDebtEntriesOf,
@@ -10,10 +11,10 @@ import {
 import type { GitTreePort } from "../../infrastructure/git/git-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Assessment } from "../../domain/settings/assessment.ts";
-import { clauseAddressText } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
-import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { parseRecordDebtArguments, type RecordDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { recordDebtCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";

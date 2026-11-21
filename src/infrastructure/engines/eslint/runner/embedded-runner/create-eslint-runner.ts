@@ -1,4 +1,4 @@
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { EmbeddedRunReport, ReturnedEmbeddedRunReport } from "../../../protocol/embedded/embedded-run-report-schema.ts";
 import type { EmbeddedRunner, EmbeddedRunRequest, ProjectionRequest } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
@@ -7,9 +7,9 @@ import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts
 import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { PathPort } from "../../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import { sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { measuredOn, parseableFile } from "../lint-findings/checks-lint-findings.ts";
 import { mappedOutcome } from "../checks-outcomes.ts";
 import { type ConfigLocation, queriedFiles, type QueriedFiles } from "../native-exceptions/checks-queried-files.ts";

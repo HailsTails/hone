@@ -3,7 +3,8 @@ import type { FileTextPort } from "../../infrastructure/node/file-system/file-te
 import type { GitPort } from "../../infrastructure/git/git-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { checkedTreeOf, typescriptFilesOf } from "./checked-tree-of.ts";
 
 const REPO = absolutePathSchema.parse("/repo");

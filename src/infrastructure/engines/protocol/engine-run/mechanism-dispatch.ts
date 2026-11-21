@@ -9,9 +9,9 @@ import { runnerResultSchema } from "../runner-module/runner-result-schema.ts";
 import type { Hit, MeasuredPair, NativeException } from "../../../../domain/runner/runner-result-types.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { standaloneRunReportSchema } from "../runner-module/standalone-run-report-schema.ts";
-import { clauseAddressText, sameClauseAddress } from "../../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText, sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 
 const STANDALONE_COVERABLE_KINDS: readonly NativeException["kind"][] = ["inline-disable"];

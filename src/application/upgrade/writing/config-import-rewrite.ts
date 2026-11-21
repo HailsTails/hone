@@ -1,4 +1,4 @@
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { directoryOf, relativeSpecifierOf, resolvedPathOf } from "./relative-specifier.ts";
 

@@ -1,5 +1,5 @@
 import type { AnsweredFile } from "../../runner/checks-run-report.ts";
-import type { HoneRecord, PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 
 const answeredBy = (request: { readonly record: HoneRecord }): readonly AnsweredFile[] => {
   const { record } = request;

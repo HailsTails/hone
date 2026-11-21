@@ -3,9 +3,9 @@ import type { AttributedNativeException, Finding } from "../../finding/governanc
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { LegacyWhyChain, VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import type { LegacyWhyChain, VersionOneWhyChain } from "./version-one-why-chain.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
-import { UNMEASURED_EXCEPTION_BASELINE } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { UNMEASURED_EXCEPTION_BASELINE } from "./exception-baseline.ts";
 import { paidDebtOf, type PaidDebtRequest } from "./paid-debt.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {

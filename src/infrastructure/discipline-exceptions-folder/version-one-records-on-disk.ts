@@ -5,7 +5,8 @@ import type { FilePresence } from "../../domain/repository/file-presence.ts";
 import type { PathPort } from "../node/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import type { VersionOneRecordsRoot } from "../../application/upgrade/proof/upgrade-proof.ts";
 

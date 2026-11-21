@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { clauseAddressSchema, clauseAddressText, sameClauseAddress } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
+import { isCatalogueName } from "../../../domain/language-layer/catalogue-name.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
@@ -27,9 +29,7 @@ const SUPPORTED_VERSION = 1;
 
 const NOT_A_CATALOGUE_NAME = "is not a lower-case hyphenated name";
 
-export const CATALOGUE_NAME = "[a-z][a-z0-9]*(?:-[a-z0-9]+)*";
-
-export const catalogueNameSchema = z.string().regex(new RegExp(`^${CATALOGUE_NAME}$`), { error: NOT_A_CATALOGUE_NAME });
+export const catalogueNameSchema = z.string().refine(isCatalogueName, { error: NOT_A_CATALOGUE_NAME });
 
 const textSchema = z.string().min(1);
 

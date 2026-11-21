@@ -1,5 +1,5 @@
 import type { PaidDebt, StaleReason, StaleRecord } from "../../../domain/records/answering/answering.ts";
-import type { PlacedRecord } from "../../hone-records-folder/hone-record.ts";
+import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import { recordSubjectText, referencesText } from "./record-lines.ts";
 
 export type PruneCommand = { readonly pruneCommand: string };

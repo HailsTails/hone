@@ -1,7 +1,10 @@
-import { catalogueNameSchema } from "../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { type RepoPath, repoPathSchema } from "../repo-path.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { RecordsFolderKind } from "../hone-record.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
+import { isRepoPath } from "../../repository/repo-path.ts";
+import type { Result } from "../../result.ts";
+import type { RecordsFolderKind } from "./hone-record.ts";
+import { isCatalogueName } from "../../language-layer/catalogue-name.ts";
+
+export const RECORDS_VERSION = 2;
 
 export const RECORDS_FOLDER = "hone-records";
 
@@ -45,7 +48,8 @@ export const recordsFileStandingOf = (request: { readonly file: RepoPath }): Rec
 };
 
 export const namedRecordsFileOf = (request: { readonly kind: NamedFolderKind; readonly name: string }): Result<RepoPath, NotARecordsName> => {
-  const name = catalogueNameSchema.safeParse(request.name);
-  const file = name.success ? repoPathSchema.safeParse(`${RECORDS_FOLDER}/${request.kind}/${name.data}${RECORDS_FILE_EXTENSION}`) : name;
-  return file.success ? { outcome: "ok", value: file.data } : { outcome: "failed", error: { kind: "not-a-records-name", name: request.name } };
+  const file = `${RECORDS_FOLDER}/${request.kind}/${request.name}${RECORDS_FILE_EXTENSION}`;
+  return isCatalogueName(request.name) && isRepoPath(file)
+    ? { outcome: "ok", value: file }
+    : { outcome: "failed", error: { kind: "not-a-records-name", name: request.name } };
 };

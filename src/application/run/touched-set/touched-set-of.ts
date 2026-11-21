@@ -1,4 +1,4 @@
-import type { PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import type { GitPort } from "../../../infrastructure/git/git-port.ts";
 import { touchedSetUnder } from "./forfeiture-touched-set.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";

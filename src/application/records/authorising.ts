@@ -1,11 +1,12 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { Why } from "../../infrastructure/hone-records-folder/why-chain.ts";
-import type { RecordPlace, RecordRefusal, RecordsAtBase, RecordsDocument } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { Why } from "../../domain/records/why-chain.ts";
+import type { RecordPlace, RecordRefusal, RecordsAtBase, RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
-import { documentsWithAdded, placeOfAddition, type RecordAddition, type RecordsEdit, type RecordsEditFailure } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
-import { namedRecordsFileOf } from "../../infrastructure/hone-records-folder/folder-layout/records-layout.ts";
+import { documentsWithAdded, placeOfAddition, type RecordsEditFailure } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
+import type { RecordAddition, RecordsEdit } from "../../domain/records/hone-records/records-edit.ts";
+import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
 
 export type AuthoriseRequest = {

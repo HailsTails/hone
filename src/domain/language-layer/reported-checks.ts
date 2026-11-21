@@ -1,5 +1,6 @@
 import type { RunnerFailure } from "../runner/runner-failure.ts";
-import { type ClauseAddress, clauseAddressText } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../rule-set/clause-address.ts";
 import type { Result } from "../result.ts";
 import { checkNamedAt } from "./check-address.ts";
 import type { SymptomCatalogue } from "./symptom-catalogue.ts";

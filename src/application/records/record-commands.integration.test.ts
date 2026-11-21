@@ -17,7 +17,7 @@ import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identif
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
-import type { WhyChain } from "../../infrastructure/hone-records-folder/why-chain.ts";
+import type { WhyChain } from "../../domain/records/why-chain.ts";
 import type { PathPort } from "../../infrastructure/node/path-port.ts";
 import {
   type CommandRunPort,

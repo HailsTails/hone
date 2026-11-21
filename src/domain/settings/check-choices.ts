@@ -1,6 +1,7 @@
 import { checkAddressOf, checkAt, checksOf } from "../language-layer/check-address.ts";
 import type { CataloguedClause, Check, ClauseSight, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
-import { type ClauseAddress, sameClauseAddress, TOOL_RULE_SET } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
+import { sameClauseAddress, TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import type { MechanismId } from "../rule-set/identifier-types.ts";
 import { sameJsonValue } from "./json-values/json-kind.ts";
 import type { Result } from "../result.ts";

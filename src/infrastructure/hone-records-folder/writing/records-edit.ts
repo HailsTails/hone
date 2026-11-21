@@ -1,19 +1,15 @@
 import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
-import type { RepoPath } from "../repo-path.ts";
+import type { RecordAddition, RecordsEdit } from "../../../domain/records/hone-records/records-edit.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { RecordPlace, RecordsDocument } from "../hone-record.ts";
+import type { RecordPlace, RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
 import type { HoneRecordsFailure } from "../../../domain/records/hone-records-failure.ts";
-import { RECORDS_VERSION, recordsDocumentSchema } from "../records-wire.ts";
+import { recordsDocumentSchema } from "../records-wire.ts";
+import { RECORDS_VERSION } from "../../../domain/records/hone-records/records-layout.ts";
 
 export type RecordsEditFailure = Extract<HoneRecordsFailure, { readonly kind: "records-documents" }>;
 
-export type RecordAddition = { readonly file: RepoPath; readonly entry: ReadonlyJsonValue };
-
-export type RecordsEdit = { readonly write: readonly RecordsDocument[]; readonly remove: readonly RepoPath[] };
-
 type Edited = Result<readonly RecordsDocument[], RecordsEditFailure>;
-
-const JSON_INDENT = 2;
 
 const entriesHeldBy = (request: { readonly documents: readonly RecordsDocument[]; readonly file: RepoPath }): Result<readonly ReadonlyJsonValue[], RecordsEditFailure> => {
   const held = request.documents.find((document) => document.file === request.file);
@@ -79,5 +75,3 @@ export const documentsWithRemoved = (request: { readonly documents: readonly Rec
     },
     { outcome: "ok", value: { write: [], remove: [] } },
   );
-
-export const recordsTextOf = (request: { readonly document: unknown }): string => `${JSON.stringify(request.document, null, JSON_INDENT)}\n`;

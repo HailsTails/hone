@@ -4,7 +4,7 @@ import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
 import type { Hit } from "../../domain/runner/runner-result-types.ts";
-import type { Debt, PlacedRecord, RecordsReading, RefusedRecord, SymptomReach } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { Debt, PlacedRecord, RecordsReading, RefusedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { editionSchema } from "../../infrastructure/content-files/edition.ts";

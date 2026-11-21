@@ -21,7 +21,8 @@ import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../i
 import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createWalkerRunner } from "../../../infrastructure/engines/audit/runner/create-walker-runner.ts";
 
