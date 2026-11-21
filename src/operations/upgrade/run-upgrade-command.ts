@@ -29,7 +29,8 @@ import { versionOneProjectionsOfRepository } from "../../application/upgrade/com
 import { type UpgradeFailureOutcome, upgradeFailureOutcomeOf } from "../../infrastructure/printed-report/upgrade/upgrade-refusal-text.ts";
 import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
 import { recordsOnDiskOf } from "../../infrastructure/discipline-exceptions-folder/version-one-records-on-disk.ts";
-import { type VersionOneRead, versionOneReadOf } from "../../infrastructure/disciplines-file/version-one-reading.ts";
+import { versionOneReadOf } from "../../infrastructure/disciplines-file/version-one-reading.ts";
+import type { VersionOneRead } from "../../application/ports/records/version-one-reading.ts";
 
 export type UpgradePorts = VersionTwoRepositoryPorts & {
   readonly fileCreation: FileCreationPort;

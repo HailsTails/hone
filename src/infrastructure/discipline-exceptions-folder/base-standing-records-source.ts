@@ -1,13 +1,13 @@
 import { z } from "zod";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSourceOf } from "../hone-records-folder/folder-layout/records-folder.ts";
-import type { RecordsSource } from "../../application/ports/records-source.ts";
+import type { RecordsSourceOf } from "../../application/ports/records/records-source-of.ts";
+import type { RecordsSource } from "../../application/ports/records/records-source.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "./exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { type RecordInput, mappedRecords } from "../../domain/records/upgrade/records-mapping.ts";
 import { carriedDebtDocumentsAtBaseOf } from "./carried-debt-at-base.ts";
 import { type VersionOneEntries, type VersionOneEntry, versionOneEntriesOf } from "./version-one-entries.ts";

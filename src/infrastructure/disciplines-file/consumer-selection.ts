@@ -24,10 +24,7 @@ import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-set
 import { runSettingsOf } from "./selection-file.ts";
 import type { ConsumerSelectionFile, RuleSetLocation, UnrunState } from "../../domain/settings/selection/selection-file.ts";
 import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
-
-export type SelectionRepository = {
-  readonly read: (request: Record<string, never>) => Result<SelectionReading, LoadFailure>;
-};
+import type { SelectionRepository } from "../../application/ports/selection/selection-repository.ts";
 
 export const createSelectionRepository = (options: {
   readonly repoRoot: AbsolutePath;

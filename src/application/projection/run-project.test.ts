@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { createExceptionRepository, type ExceptionLayoutPorts } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../ports/records/exception-repository.ts";
 import type { LegacyWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { LoadedRunner } from "../ports/engine/runner-module.ts";
 import type { DirectoryEntry } from "../ports/file-system/directory-port.ts";

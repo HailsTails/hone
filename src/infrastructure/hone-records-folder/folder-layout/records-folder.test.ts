@@ -5,7 +5,8 @@ import type { GitPort, GitTreePort } from "../../../application/ports/git-port.t
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../repo-path.ts";
-import { createRecordsFolder, type RecordsFolderPorts } from "./records-folder.ts";
+import { createRecordsFolder } from "./records-folder.ts";
+import type { RecordsFolderPorts } from "../../../application/ports/records/records-source-of.ts";
 
 
 const REPO = absolutePathSchema.parse("/repo");

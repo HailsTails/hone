@@ -3,7 +3,7 @@ import type { FileTextPort } from "./application/ports/file-system/file-text-por
 import type { GitPort, GitTreePort } from "./application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "./application/ports/host/module-loader-port.ts";
 import type { PathPort } from "./application/ports/host/path-port.ts";
-import type { RecordsSourceOf } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
+import type { RecordsSourceOf } from "./application/ports/records/records-source-of.ts";
 import { readHoneRecords } from "./application/records/read-hone-records.ts";
 import type { RecordsReading } from "./domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "./domain/report/run-load-failure.ts";

@@ -9,7 +9,7 @@ import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { loadFailureDetail, loadFailureText } from "../../printed-report/load-failures/load-failure-text.ts";
 import { runLoadFailureLine } from "../../printed-report/load-failures/load-failure-lines.ts";
 import type { InheritedDebtOutcome } from "../../../domain/records/discipline-exceptions/inherited-debt.ts";
-import type { RecordsSplit } from "../../discipline-exceptions-folder/exception-records.ts";
+import type { RecordsSplit } from "../../../application/ports/records/exception-repository.ts";
 import type { ExceptionRecord, ExistingAuthorisationProvenance, InheritedDebtProvenance, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";

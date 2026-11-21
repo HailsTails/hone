@@ -10,8 +10,8 @@ import type { PlacedRecord, RecordsDocument, SymptomReach } from "../../domain/r
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "./record-commands.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import type { RecordsSource } from "../ports/records-source.ts";
-import type { RecordsStore } from "../../infrastructure/hone-records-folder/writing/records-store.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
+import type { RecordsStore } from "../ports/records/records-store.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

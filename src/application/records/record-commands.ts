@@ -19,8 +19,8 @@ import { documentsWithAdded, documentsWithRemoved } from "../../infrastructure/h
 import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import type { RecordsSource } from "../ports/records-source.ts";
-import type { RecordsStore, RecordsUnwritable } from "../../infrastructure/hone-records-folder/writing/records-store.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
+import type { RecordsStore, RecordsUnwritable } from "../ports/records/records-store.ts";
 
 export type RecordCommandFailure = HoneRecordsFailure | RecordsUnwritable | { readonly kind: "git-failed"; readonly detail: string };
 

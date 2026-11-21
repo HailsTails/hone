@@ -5,7 +5,7 @@ import type { DirectoryPort } from "./application/ports/file-system/directory-po
 import type { FileTextPort } from "./application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "./application/ports/host/path-port.ts";
 import type { ProcessPort } from "./application/ports/host/process-port.ts";
-import type { RecordsSourceOf } from "./infrastructure/hone-records-folder/folder-layout/records-folder.ts";
+import type { RecordsSourceOf } from "./application/ports/records/records-source-of.ts";
 import { absolutePathSchema } from "./infrastructure/content-files/absolute-path.ts";
 import { createPathPort } from "./infrastructure/node/path-port.ts";
 import { type StagesOver, repoRootOf, repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";

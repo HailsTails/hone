@@ -1,10 +1,10 @@
-import type { RecordsSourceOf } from "../../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
-import type { RecordsSource } from "../../ports/records-source.ts";
+import type { RecordsSourceOf } from "../../ports/records/records-source-of.ts";
+import type { RecordsSource } from "../../ports/records/records-source.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { baseStandingRecordsSource } from "../../../infrastructure/discipline-exceptions-folder/base-standing-records-source.ts";
 import { versionOneEntriesOf } from "../../../infrastructure/discipline-exceptions-folder/version-one-entries.ts";
-import type { ExceptionRepository, ExceptionRepositoryOf } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository, ExceptionRepositoryOf } from "../../ports/records/exception-repository.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
 
 export const foundTreeRecordsSourceOver = (request: {

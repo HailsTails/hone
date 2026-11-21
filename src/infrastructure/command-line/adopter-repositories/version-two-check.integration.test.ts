@@ -2,7 +2,7 @@ import { afterAll, assert, describe, expect, it, vi } from "vitest";
 import { projectCommandOf } from "../arguments/tool-invocations.ts";
 import type { Subcommand } from "../arguments/command-line.ts";
 import { TOOL_SUBCOMMANDS } from "../../../run-tool-command.ts";
-import type { ExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepositoryOf } from "../../../application/ports/records/exception-repository.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultGitPort } from "../../git/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";

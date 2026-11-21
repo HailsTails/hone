@@ -2,7 +2,7 @@ import { createSelectionRepository, readRunSettings } from "../../infrastructure
 import type { RunSettings } from "../../domain/settings/run-settings.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import type { DebtPair } from "../../domain/records/discipline-exceptions/debt-pair.ts";
-import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { type Assessment, assessmentInEffect } from "../../domain/settings/assessment.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";

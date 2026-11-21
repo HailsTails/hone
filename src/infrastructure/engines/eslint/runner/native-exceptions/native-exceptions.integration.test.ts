@@ -4,14 +4,15 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { Result } from "../../../../../domain/result.ts";
 import { createExceptionRepository } from "../../../../discipline-exceptions-folder/exception-layout.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { createSelectionRepository, type SelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../../../../application/ports/selection/selection-repository.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import type { ModuleExtension } from "../../../../../application/ports/host/module-extension.ts";
 import { runCheck } from "../../../../../application/run/check/run-check.ts";
 import { loadRunner } from "../../../protocol/engine-run/load-runner.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
-import type { ExceptionRepository } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../../../../application/ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { LoadedRunner } from "../../../../../application/ports/engine/runner-module.ts";

@@ -7,8 +7,8 @@ import type { FileRemovalPort } from "../application/ports/file-system/file-remo
 import { authoriseRequestOf } from "../infrastructure/command-line/arguments/authorise-options.ts";
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import { authoriseOf, pruneDebtOf, type RecordCommandFailure, recordDebtOf } from "../application/records/record-commands.ts";
-import type { RecordsSource } from "../application/ports/records-source.ts";
-import type { RecordsStore } from "../infrastructure/hone-records-folder/writing/records-store.ts";
+import type { RecordsSource } from "../application/ports/records/records-source.ts";
+import type { RecordsStore } from "../application/ports/records/records-store.ts";
 import { createRecordsStore } from "../infrastructure/hone-records-folder/writing/records-store.ts";
 import { projectCommandOf } from "../infrastructure/command-line/arguments/tool-invocations.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../infrastructure/printed-report/records/record-command-lines.ts";

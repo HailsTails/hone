@@ -7,11 +7,11 @@ import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../../ports/git-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSourceOf } from "../../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
-import type { RecordsSource } from "../../ports/records-source.ts";
+import type { RecordsSourceOf } from "../../ports/records/records-source-of.ts";
+import type { RecordsSource } from "../../ports/records/records-source.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import { FOUND_TREE_REVISION, foundTreeCheckReachOf, foundTreeRunReachOf } from "./found-tree-reach.ts";
 

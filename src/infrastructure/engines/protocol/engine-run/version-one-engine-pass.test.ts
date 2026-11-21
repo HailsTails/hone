@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CheckRequest } from "../../../../application/run/check/run-check.ts";
-import type { SelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../../../application/ports/selection/selection-repository.ts";
 import type { LoadedRunner } from "../../../../application/ports/engine/runner-module.ts";
 import type { GitPort } from "../../../../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
@@ -13,7 +13,7 @@ import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { ExceptionRepository } from "../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../../../application/ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
 

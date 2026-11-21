@@ -1,4 +1,4 @@
-import type { RecordsSplit } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { RecordsSplit } from "../../application/ports/records/exception-repository.ts";
 import type { Result } from "../../domain/result.ts";
 import { parseSplitRecordsArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
 import { splitRecordsCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";

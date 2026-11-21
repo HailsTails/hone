@@ -17,6 +17,7 @@ import { recordsFileStandingOf } from "../../../domain/records/hone-records/reco
 import { sameRecordIdentity } from "../../../domain/records/hone-records/record-identity.ts";
 import { catalogueNotesOf } from "../../../domain/records/hone-records/record-listings.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
+import type { RecordsReader } from "../../../application/ports/records/records-reader.ts";
 
 type PlacedEntry = { readonly place: RecordPlace; readonly filedUnder: FiledUnder; readonly entry: z.core.util.JSONType };
 
@@ -91,3 +92,5 @@ export const recordsReadingOf = (request: {
   const judged = placed.map((entry) => judgedEntry({ placed: entry, catalogue: request.catalogue, base: request.base }));
   return { outcome: "ok", value: readingOf({ judged: withoutDuplicates({ judged }), base: request.base }) };
 };
+
+export const recordsReader: RecordsReader = { recordsReadingOf };

@@ -8,19 +8,13 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { VersionOneRecordsRoot } from "../../application/ports/upgrade/version-one-reading.ts";
+import type { RecordsOnDisk } from "../../application/ports/records/version-one-reading.ts";
 
 const SINGLE_RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
 
 const SPLIT_RECORDS_FOLDER = repoPathSchema.parse("discipline-exceptions");
 
 const RECORDS_FILE_EXTENSION = ".json";
-
-export type RecordsOnDisk = {
-  readonly files: readonly RepoPath[];
-  readonly folders: readonly RepoPath[];
-  readonly root: VersionOneRecordsRoot;
-};
 
 export type RecordsOnDiskRequest = {
   readonly repoRoot: AbsolutePath;

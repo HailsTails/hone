@@ -3,11 +3,9 @@ import type { RecordAddition, RecordsEdit } from "../../../domain/records/hone-r
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RecordPlace, RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
-import type { HoneRecordsFailure } from "../../../domain/records/hone-records-failure.ts";
+import type { RecordsEditFailure, RecordsEditor } from "../../../application/ports/records/records-editor.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
 import { RECORDS_VERSION } from "../../../domain/records/hone-records/records-layout.ts";
-
-export type RecordsEditFailure = Extract<HoneRecordsFailure, { readonly kind: "records-documents" }>;
 
 type Edited = Result<readonly RecordsDocument[], RecordsEditFailure>;
 
@@ -75,3 +73,5 @@ export const documentsWithRemoved = (request: { readonly documents: readonly Rec
     },
     { outcome: "ok", value: { write: [], remove: [] } },
   );
+
+export const recordsEditor: RecordsEditor = { documentsWithAdded, placeOfAddition, documentsWithRemoved };

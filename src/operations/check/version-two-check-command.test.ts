@@ -3,7 +3,7 @@ import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule,
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { CommandRequest } from "../../application/ports/command-request.ts";
-import type { ExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepositoryOf } from "../../application/ports/records/exception-repository.ts";
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../../application/ports/git-port.ts";
@@ -11,7 +11,7 @@ import type { ModuleLoaderPort } from "../../application/ports/host/module-loade
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSourceOf } from "../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
+import type { RecordsSourceOf } from "../../application/ports/records/records-source-of.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "../../application/run/settings/read-settings.ts";

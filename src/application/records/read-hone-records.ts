@@ -2,7 +2,7 @@ import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catal
 import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordsAtBase, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSource } from "../ports/records-source.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
 

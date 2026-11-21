@@ -1,4 +1,5 @@
-import { type ExceptionRepository, importedEntriesIn, importSourcesOf } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { importedEntriesIn, importSourcesOf } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import { type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { legacyChainsIn, recordImportOf, type StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";

@@ -1,5 +1,5 @@
 import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 
 type EntriesReach = Pick<ExceptionRepository, "read" | "readAt">;
 

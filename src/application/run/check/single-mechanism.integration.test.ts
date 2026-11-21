@@ -1,8 +1,9 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { runCheck } from "./run-check.ts";
 import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import { createSelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import {

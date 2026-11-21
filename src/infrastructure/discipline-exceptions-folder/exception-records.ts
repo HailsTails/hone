@@ -1,9 +1,6 @@
 import { z } from "zod";
-import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
-import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
@@ -14,7 +11,6 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
 import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
-import type { DebtPair } from "../../domain/records/discipline-exceptions/debt-pair.ts";
 import type {
   AuthorisedLocationEntry,
   ExceptionReading,
@@ -27,22 +23,7 @@ import type { ImportEvidence, PlacedEntry, StructuralExceptionEntry } from "../.
 import { type ExceptionBaseline, type MeasuredBaseline, judgedAtBase } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
 import type { RecordedWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-
-export type RecordsWrite = { readonly path: RepoPath; readonly effect: "written" | "removed" };
-
-export type RecordsSplit =
-  | { readonly effect: "split"; readonly writes: readonly RecordsWrite[] }
-  | { readonly effect: "already-split" | "no-records"; readonly path: RepoPath };
-
-export type ExceptionRepository = {
-  readonly read: () => Result<readonly PlacedEntry[], LoadFailure>;
-  readonly readAt: (request: { readonly revision: string }) => Result<readonly StructuralExceptionEntry[], GitFailure>;
-  readonly add: (request: { readonly entries: readonly FileCarveOutEntry[] }) => Result<void, LoadFailure>;
-  readonly remove: (request: { readonly pairs: readonly DebtPair[] }) => Result<readonly DebtPair[], LoadFailure>;
-  readonly moveToSplitLayout: () => Result<RecordsSplit, LoadFailure>;
-};
-
-export type ExceptionRepositoryOf = (request: { readonly repoRoot: AbsolutePath }) => ExceptionRepository;
+import type { ExceptionEntryParser } from "../../application/ports/records/exception-entries.ts";
 
 type IndexedRecord = { readonly index: number; readonly place: RecordPlace; readonly record: ExceptionRecord };
 
@@ -635,3 +616,5 @@ export const exceptionEntriesOfText = (request: { readonly text: string }): read
   const entries = exceptionEntriesOfDocument({ document: document.value });
   return entries.outcome === "ok" ? entries.value : [];
 };
+
+export const exceptionEntryParser: ExceptionEntryParser = { parseExceptionEntries, importedEntriesIn, importSourcesOf };

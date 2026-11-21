@@ -2,7 +2,8 @@ import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catal
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace, RecordRefusal, RecordsAtBase, RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
-import { documentsWithAdded, placeOfAddition, type RecordsEditFailure } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
+import { documentsWithAdded, placeOfAddition } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
+import type { RecordsEditFailure } from "../ports/records/records-editor.ts";
 import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";

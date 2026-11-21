@@ -1,7 +1,7 @@
 import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import type { RecordsSourceOf } from "../../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
+import type { RecordsSourceOf } from "../../ports/records/records-source-of.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
 import { foundTreeGitOf } from "./found-tree-git.ts";
 import { foundTreeRecordsSourceOf } from "./found-tree-records-source.ts";

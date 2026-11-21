@@ -3,7 +3,7 @@ import type { RecordKind, Symptom, SymptomCatalogue } from "../../domain/languag
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { readHoneRecords } from "./read-hone-records.ts";
-import type { RecordsSource } from "../ports/records-source.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 

@@ -3,9 +3,9 @@ import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } 
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSource } from "../../ports/records-source.ts";
+import type { RecordsSource } from "../../ports/records/records-source.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import { foundTreeRecordsSourceOver } from "./found-tree-records-source.ts";
 import { FOUND_TREE_REVISION } from "./found-tree-reach.ts";

@@ -1,8 +1,9 @@
 import { type CheckedTree, checkedTreeOf, typescriptFilesOf } from "../checked-tree-of.ts";
-import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { ClauseBinding, Selection } from "../../../domain/settings/selection/selection.ts";
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
-import { type ExceptionRepository, parseExceptionEntries } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { parseExceptionEntries } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";

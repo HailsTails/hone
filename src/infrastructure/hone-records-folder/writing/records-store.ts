@@ -7,9 +7,8 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
-import { type RecordsEdit, recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
-
-export type RecordsUnwritable = { readonly kind: "file-unwritable"; readonly path: string; readonly detail: string };
+import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
+import type { RecordsStore, RecordsUnwritable } from "../../../application/ports/records/records-store.ts";
 
 export type RecordsStorePorts = {
   readonly fileText: Pick<FileTextPort, "write">;
@@ -17,10 +16,6 @@ export type RecordsStorePorts = {
   readonly directory: Pick<DirectoryPort, "create">;
   readonly path: Pick<PathPort, "join">;
   readonly repoRoot: AbsolutePath;
-};
-
-export type RecordsStore = {
-  readonly apply: (request: { readonly edit: RecordsEdit }) => Result<void, RecordsUnwritable>;
 };
 
 type Step = Result<void, RecordsUnwritable>;

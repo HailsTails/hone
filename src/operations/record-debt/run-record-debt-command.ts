@@ -1,6 +1,6 @@
 import { readSelection, selectionRepositoryHolding } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
-import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import {
   type InheritedDebtOutcome,

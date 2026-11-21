@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
@@ -10,7 +10,7 @@ import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import { type VersionOneProject, versionOneProjectionsOfRepository } from "./version-one-projections.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");

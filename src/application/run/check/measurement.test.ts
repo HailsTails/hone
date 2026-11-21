@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { LegacyWhyChain, VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";

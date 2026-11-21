@@ -14,7 +14,7 @@ import type { OracleFailure } from "../../../application/ports/upgrade/record-an
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { VersionOneReadFailure } from "../../disciplines-file/version-one-reading.ts";
+import type { VersionOneReadFailure } from "../../../application/ports/records/version-one-reading.ts";
 
 export const UPGRADE_ISSUES_URL = `${TOOL_IDENTITY.repository}/issues`;
 
