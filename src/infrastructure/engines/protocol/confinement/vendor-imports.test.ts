@@ -253,8 +253,6 @@ const loadedOutsideMechanisms = import.meta.glob(
     "!./tests/required-entry.ts",
     "!./tests/confinement.ts",
     "!./tests/conformance-rows.ts",
-    "!./tests/eslint-toolchains.ts",
-    "!./tests/typescript-parse-port.ts",
     "!./src/infrastructure/engines/audit/**",
     "!./src/infrastructure/engines/eslint/*/**",
     "!./vitest.config.ts",
@@ -450,6 +448,52 @@ const relativeImportUnderCoreFrom = ({ importingFolder }: { readonly importingFo
   }),
   packageOrComputedImport,
 ];
+
+describe("the confinement reading over written-out sources, so each guard can fail", () => {
+  it("lists each import no allowance allows, with its file, in source order", () => {
+    expect(
+      importsOutside({
+        sources: {
+          "./a.ts": 'import { z } from "zod";\nimport { b } from "./b.ts";\nimport ts from "typescript";\n',
+          "./b.ts": 'export type { Padding } from "left-pad";\n',
+        },
+        allowed: [relativeImport, zodImport],
+      }),
+    ).toEqual([
+      { file: "./a.ts", specifier: "typescript", form: "value" },
+      { file: "./b.ts", specifier: "left-pad", form: "type-only" },
+    ]);
+  });
+
+  it("resolves each import from its own file's folder, so a file in a subfolder reaching outside core is refused", () => {
+    expect(
+      importsOutsideFromOwnFolder({
+        sources: {
+          "./src/run/a.ts": 'import { x } from "../values/x.ts";\nimport { y } from "../infrastructure/engines/audit/y.ts";\n',
+          "./src/run/deeper/b.ts": 'import { x } from "../../values/x.ts";\nimport { y } from "../../infrastructure/engines/audit/y.ts";\nimport { z } from "../values/z.ts";\n',
+        },
+        allowedFrom: relativeImportUnderCoreFrom,
+      }),
+    ).toEqual([
+      { file: "./src/run/a.ts", specifier: "../infrastructure/engines/audit/y.ts", form: "value" },
+      { file: "./src/run/deeper/b.ts", specifier: "../../infrastructure/engines/audit/y.ts", form: "value" },
+    ]);
+  });
+
+  it("refuses with each allowance an import of a form or a specifier it does not name", () => {
+    expect([
+      relativeImport({ moduleImport: { specifier: "./a.ts", form: "dynamic" } }),
+      relativeImportOfAnyForm({ moduleImport: { specifier: "zod", form: "value" } }),
+      nodeBuiltinImport({ moduleImport: { specifier: "node:path", form: "dynamic" } }),
+      computedModuleLoad({ moduleImport: { specifier: "./runner.ts", form: "dynamic" } }),
+      zodImport({ moduleImport: { specifier: "zod", form: "dynamic" } }),
+      vitestImport({ moduleImport: { specifier: "vitest-extra", form: "value" } }),
+      packageTypeImport({ packageName: "typescript" })({ moduleImport: { specifier: "typescript", form: "value" } }),
+      packageDynamicImport({ packageName: "eslint" })({ moduleImport: { specifier: "eslint", form: "value" } }),
+      dynamicLoadMatching({ specifier: /^load-\w+$/ })({ moduleImport: { specifier: "load-one", form: "value" } }),
+    ]).toEqual(["outside", "outside", "outside", "outside", "outside", "outside", "outside", "outside", "outside"]);
+  });
+});
 
 describe("Vendor confinement over what this repository's own Hone source imports, read as build-time raw modules (CD-19, CD-20; CD-47: that source is the assertion's subject and no fake can stand in for it; nothing is spawned or written)", () => {
   it("reads a known file through every scanned set, so no set is silently empty", () => {

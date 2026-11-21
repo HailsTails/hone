@@ -287,6 +287,29 @@ const insideTheBoundaries = import.meta.glob(
   { base: "../../../../../../", query: "?raw", import: "default", eager: true },
 );
 
+describe("the ESLint import reading over written-out sources, so each guard can fail", () => {
+  it("lists an import of eslint or eslint-9 of any form, by file and form", () => {
+    expect(
+      importsOutside({
+        sources: { "./a.ts": 'import type { Rule } from "eslint";\nimport { z } from "zod";\nconst loaded = await import("eslint-9/use-at-your-own-risk");\n' },
+        allowed: [notAnEslintMajor],
+      }),
+    ).toEqual([
+      { file: "./a.ts", specifier: "eslint", form: "type-only" },
+      { file: "./a.ts", specifier: "eslint-9/use-at-your-own-risk", form: "dynamic" },
+    ]);
+  });
+
+  it("lists a static import of eslint or eslint-9 that the facts do not hold, with how many were found and held", () => {
+    expect(
+      importsWithoutFacts({
+        sources: { "./a.ts": 'import { ESLint } from "eslint";\nimport "eslint-9/side-effect";\n' },
+        specifier: ESLINT_MAJOR_SPECIFIER,
+      }),
+    ).toEqual([{ file: "./a.ts", specifier: "eslint-9/side-effect", found: 1, withFacts: 0 }]);
+  });
+});
+
 describe("where ESLint is imported, read as build-time raw modules (CD-47: that source is the assertion's subject and no fake can stand in for it)", () => {
   it("reads a known file from each scanned set, so no scan is silently empty", () => {
     expect([outsideTheBoundaries, insideTheBoundaries]).toEqual([
@@ -338,6 +361,7 @@ describe("where ESLint is imported, read as build-time raw modules (CD-47: that 
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts", specifier: "eslint-9/use-at-your-own-risk", form: "value" },
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts", specifier: "eslint", form: "type-only" },
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts", specifier: "eslint", form: "type-only" },
-      { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts", specifier: "eslint", form: "dynamic" },    ]);
+      { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts", specifier: "eslint", form: "dynamic" },
+    ]);
   });
 });

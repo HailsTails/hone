@@ -64,6 +64,19 @@ const shippedCheckRows = (): readonly GuideCheckRow[] => {
 
 const documentedCheckRows = (request: { readonly text: string }): readonly GuideCheckRow[] => guideCheckTableOf(request).rows.toSorted(byCheck);
 
+describe("guideCheckTableOf over a written-out table, so the reading can fail", () => {
+  it("reports a row written in a form it does not know instead of dropping it", () => {
+    expect(
+      guideCheckTableOf({
+        text: "Every check Hone ships, with the engines.\n\n| Check to list | Engines | Clause address on the rule pages |\n|---|---|---|\n| `loop-keyword#loop-statement` | `walker` | `CD-15#loops` |\n| `authored-class-or-this#class-keyword` | `walker`, `eslint` | `CD-14#class-syntax` |\n",
+      }),
+    ).toEqual({
+      rows: [{ check: "loop-keyword#loop-statement", engines: ["walker"], clause: "CD-15#loops" }],
+      unread: ["| `authored-class-or-this#class-keyword` | `walker`, `eslint` | `CD-14#class-syntax` |"],
+    });
+  });
+});
+
 describe("the table of checks in the adopting guide, read against the shipped symptom catalogue (CD-47: the shipped guide and catalogue are the assertion's subject; nothing is spawned or written)", () => {
   it("holds a row for every check the catalogue ships with its engines and clause address, and no row for a check it does not", () => {
     expect(documentedCheckRows({ text: ADOPTING_GUIDE_TEXT })).toEqual(shippedCheckRows());

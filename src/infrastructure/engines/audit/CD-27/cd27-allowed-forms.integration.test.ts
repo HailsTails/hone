@@ -364,6 +364,36 @@ const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
 
 const eslintRunner = runnerModuleSchema.parse(eslintRunnerModule.runner);
 
+describe("the allowed-form compilation over written-out forms, so it can fail", () => {
+  it("reports reading an indexed element that may be missing and an optional property given undefined, under the compiler options CD-3 requires", () => {
+    expect(
+      typeErrorsOf({
+        syntaxApi: defaultParsePort.syntaxApi,
+        repoRoot: REPO_ROOT,
+        blocks: [
+          { name: "indexed", source: 'declare const rows: readonly { readonly id: string }[];\nexpect(rows[0].id).toBe("a");\n' },
+          { name: "optional", source: "const options: { readonly limit?: number } = { limit: undefined };\nexpect(options).toEqual({});\n" },
+        ],
+      }).blocks,
+    ).toEqual([
+      { name: "indexed", errors: ["Object is possibly 'undefined'."] },
+      { name: "optional", errors: [expect.any(String)] },
+    ]);
+  });
+
+  it("keeps a diagnostic with no file, or in a file that is not a form, as unattributed", () => {
+    expect(
+      typeErrorsAmong({
+        forms: [{ name: "first", path: "/repo/allowed-form-0.test.ts" }],
+        diagnostics: [
+          { fileName: undefined, message: "option 'strict' is invalid" },
+          { fileName: "/repo/core/imported.ts", message: "broken through an import" },
+        ],
+      }),
+    ).toEqual({ blocks: [{ name: "first", errors: [] }], unattributed: ["option 'strict' is invalid", "/repo/core/imported.ts: broken through an import"] });
+  });
+});
+
 describe("rules/CD-27/CHECKS.md, Allowed forms in a test", () => {
   it("has one section for each fix a CD-27#test-body-logic finding names, in the same order", () => {
     expect(sectionNamesOf({ sections: SECTIONS })).toEqual(TEST_BODY_SECTIONS);

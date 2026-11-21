@@ -290,6 +290,25 @@ const CLEAN_REPORT = {
   readFirst: [],
 };
 
+describe("installCallsOutside over written-out calls, so the path confinement can fail", () => {
+  it("reports at least one call and lists the observed paths outside the install path list or carrying a harness segment", () => {
+    expect({
+      installList: installCallsOutside({
+        calls: [[{ path: `${INSTALL_ROOT}/src/domain/a.ts` }], [{ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/b.ts` }]],
+        paths: WALKER_INSTALL_LIST,
+      }),
+      harness: installCallsOutside({ calls: [[{ path: `${INSTALL_ROOT}/src/domain/a.ts` }], [{ path: `${INSTALL_ROOT}/.claude/c.ts` }]], paths: NO_HARNESS_SEGMENT }),
+    }).toEqual({
+      installList: { called: "at least once", outside: [`${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/b.ts`] },
+      harness: { called: "at least once", outside: [`${INSTALL_ROOT}/.claude/c.ts`] },
+    });
+  });
+
+  it("reports never when no call was made", () => {
+    expect(installCallsOutside({ calls: [], paths: WALKER_INSTALL_LIST })).toEqual({ called: "never", outside: [] });
+  });
+});
+
 describe("a consumer with no harness directory selecting CD-23 through the audit, run against the install", () => {
   it("passes when every tracked unit has its test sibling, exiting 0", async () => {
     const ports = observedPorts();

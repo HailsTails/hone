@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
@@ -9,11 +9,25 @@ import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
 import type { PathPort } from "../../node/path-port.ts";
 import { type DisciplineFile, readDisciplineFile } from "../rule-sets/rule-set-reader.ts";
 import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
-import type { Case, Check, Indication, Pointed, Recipe, RecipeReason, Standing, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type {
+  Case,
+  Check,
+  Engine,
+  Indication,
+  Pointed,
+  Principle,
+  Recipe,
+  RecipeReason,
+  RecordKind,
+  Rule,
+  Standing,
+  Symptom,
+  SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
 import type { AbsolutePath } from "../absolute-path.ts";
-import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
+import { clauseAddressSchema, clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import { disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 
 type CatalogueCoverage = {
@@ -567,6 +581,245 @@ const PROSE_LINKS: readonly ProseLink[] = [
     cases: ["An adopter is not handed our risk"],
   },
 ];
+
+describe("the catalogue guards over written-out pages and catalogues, so each can fail", () => {
+  const INSTALL_ROOT = absolutePathSchema.parse("/install");
+
+  const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+
+  const AUTHORISED_LOCATION: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
+
+  const NOTHING_CATALOGUED: SymptomCatalogue = {
+    principles: [],
+    rules: [],
+    cases: [],
+    recipes: [],
+    recordKinds: [AUTHORISED_LOCATION, DEBT],
+    alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
+    engines: [],
+    symptoms: [],
+    clauses: [],
+    checks: [],
+    namedBans: [],
+  };
+
+  const WRITE_INTO_A_PARAMETER: Symptom = {
+    name: "write-into-a-parameter",
+    title: "write-into-a-parameter",
+    seen: "write-into-a-parameter",
+    mayIndicate: [],
+    breachUsuallySits: "in the unit",
+    recipes: [],
+    correctUses: [],
+  };
+
+  const REBINDING: Symptom = { name: "rebinding", title: "rebinding", seen: "rebinding", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
+
+  const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+
+  const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+
+  const MUTATION_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-mutation");
+
+  const REASSIGNMENT_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-reassignment");
+
+  const INTENT_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-intent");
+
+  const PARAMETER_CLAUSES: SymptomCatalogue["clauses"] = [
+    { clause: MUTATION_CLAUSE, sight: { kind: "one-symptom", symptom: WRITE_INTO_A_PARAMETER } },
+    { clause: REASSIGNMENT_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+    { clause: INTENT_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
+  ];
+
+  const MUTATION_CHECK: Check = { name: "parameter-mutation", symptom: WRITE_INTO_A_PARAMETER, clause: MUTATION_CLAUSE, engines: [WALKER], forms: [] };
+
+  const CD44_JUDGEMENT_FILE: FileTextPort = {
+    read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "ok",
+      value:
+        '{\n  "version": 1,\n  "id": "CD-44",\n  "clauses": [\n    { "kind": "judgement", "id": "parameter-mutation", "summary": "Write into no parameter.", "enforcedBy": "review" },\n    { "kind": "judgement", "id": "parameter-reassignment", "summary": "Rebind no parameter.", "enforcedBy": "review" }\n  ]\n}',
+    }),
+    exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+    write: vi.fn<FileTextPort["write"]>(),
+  };
+
+  const CD44_MECHANICAL_FILE: FileTextPort = {
+    read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "ok",
+      value:
+        '{\n  "version": 1,\n  "id": "CD-44",\n  "clauses": [\n    {\n      "kind": "mechanical",\n      "id": "parameter-mutation",\n      "summary": "Write into no parameter.",\n      "mechanisms": ["audit"],\n      "anchor": { "kind": "file" },\n      "cases": { "flag": [{ "name": "push", "fileName": "push.ts", "source": "export const append = (list: number[]): void => {\\n  list.push(1);\\n};\\n", "expectedLines": [2] }], "allow": [{ "name": "copy", "fileName": "copy.ts", "source": "export const append = (list: readonly number[]): readonly number[] => [...list, 1];\\n", "expectedLines": [] }] }\n    },\n    {\n      "kind": "mechanical",\n      "id": "parameter-reassignment",\n      "summary": "Rebind no parameter.",\n      "mechanisms": ["eslint"],\n      "anchor": { "kind": "keyword", "keyword": "=" },\n      "cases": { "flag": [{ "name": "assign", "fileName": "bump.ts", "source": "export const bump = (count: number): number => {\\n  count = 2;\\n  return count;\\n};\\n", "expectedLines": [2] }], "allow": [{ "name": "new value", "fileName": "next.ts", "source": "export const next = (count: number): number => count + 1;\\n", "expectedLines": [] }] }\n    },\n    { "kind": "judgement", "id": "parameter-intent", "summary": "Say what a parameter is for.", "enforcedBy": "review" }\n  ]\n}',
+    }),
+    exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+    write: vi.fn<FileTextPort["write"]>(),
+  };
+
+  const PAGE_CASES: readonly PageCase[] = [
+    { title: "Makes a new value from what it has", standing: "accepted" },
+    { title: "Causes an effect (writes, logs, sends, exits)", standing: "accepted" },
+    { title: "Ships code for others", standing: "proposed" },
+  ];
+
+  const OWES_RULES_PAGE =
+    "# Rules\n\n## One place decides\n\n### Doer or orchestrator\n\n- **What must hold:** An orchestrator only calls.\n- **Cases served:** Makes a new value from what it has.\n\nBuilding every real implementation in one place at start-up is a case: Doer or orchestrator plus Ports declared inside give it.\n";
+
+  const ONE_PLACE: Principle = { name: "one-place-decides", title: "One place decides" };
+
+  const DOER: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE, standing: "accepted" };
+
+  const STUB_WITH_VIFN: Recipe = {
+    name: "stub-with-vifn",
+    title: "Stub with vi.fn",
+    standing: "accepted",
+    reason: { text: '"Stubs return written-out values."', standing: "accepted" },
+  };
+
+  const COMPOSITION_ROOT: Recipe = {
+    name: "composition-root",
+    title: "Composition root",
+    standing: "accepted",
+    reason: { text: '"One place builds."', standing: "proposed" },
+  };
+
+  it("names each clause a discipline defines that the catalogue lacks, and each catalogued clause no discipline defines", () => {
+    expect(
+      catalogueCoverageOf({
+        catalogue: {
+          ...NOTHING_CATALOGUED,
+          clauses: [
+            { clause: MUTATION_CLAUSE, sight: { kind: "one-symptom", symptom: WRITE_INTO_A_PARAMETER } },
+            { clause: clauseAddressSchema.parse("CD-27#test-body-logic"), sight: { kind: "one-symptom", symptom: REBINDING } },
+          ],
+        },
+        fileText: CD44_JUDGEMENT_FILE,
+        path: PATH,
+        ruleSetRoot: INSTALL_ROOT,
+        disciplines: ["CD-44"],
+      }),
+    ).toEqual({ uncatalogued: ["CD-44#parameter-reassignment"], unknown: ["CD-27#test-body-logic"], unreadable: [] });
+  });
+
+  it("names a mechanical clause with no check, a check on a judgement clause, and a check run by engines other than its clause's mechanisms", () => {
+    expect(
+      checkCoverageOf({
+        catalogue: {
+          ...NOTHING_CATALOGUED,
+          engines: [WALKER, ESLINT],
+          symptoms: [WRITE_INTO_A_PARAMETER, REBINDING],
+          clauses: PARAMETER_CLAUSES,
+          checks: [
+            { ...MUTATION_CHECK, engines: [WALKER, ESLINT] },
+            { name: "parameter-intent", symptom: REBINDING, clause: INTENT_CLAUSE, engines: [WALKER], forms: [] },
+          ],
+        },
+        fileText: CD44_MECHANICAL_FILE,
+        path: PATH,
+        ruleSetRoot: INSTALL_ROOT,
+        disciplines: ["CD-44"],
+      }),
+    ).toEqual({
+      unchecked: ["CD-44#parameter-reassignment"],
+      unmechanical: ["rebinding#parameter-intent"],
+      engineMismatches: ["write-into-a-parameter#parameter-mutation"],
+    });
+  });
+
+  it("names an address that resolves to an earlier check holding the same address", () => {
+    expect(
+      unresolvedAddressesOf({
+        catalogue: { ...NOTHING_CATALOGUED, clauses: PARAMETER_CLAUSES, checks: [MUTATION_CHECK, { ...MUTATION_CHECK, clause: REASSIGNMENT_CLAUSE }] },
+      }),
+    ).toEqual(["write-into-a-parameter#parameter-mutation"]);
+  });
+
+  it("names a case name cut shorter than its title, and one that keeps its title's parenthetical", () => {
+    expect(
+      caseNamesOffTheirTitles({
+        cases: [
+          { name: "causes", title: "Causes an effect (writes, logs, sends, exits)" },
+          { name: "gives-a-value-its-type-declares-it", title: "Gives a value its type (declares it, or needs it narrower)" },
+        ],
+      }),
+    ).toEqual(["causes", "gives-a-value-its-type-declares-it"]);
+  });
+
+  it("names each spelling before an arrow on the symptoms page that is not a case on the cases page", () => {
+    expect(
+      unlistedCaseNamesOn({
+        symptomsPage:
+          "- **May indicate:** Makes a new value, Causes an effect (writes, logs, sends, exits) → Ports declared inside. Causes an effect → Written-out answers; Makes a new value from what it has (proposed) → One place decides.\n",
+        cases: PAGE_CASES,
+      }),
+    ).toEqual(["Makes a new value, Causes an effect (writes, logs, sends, exits)", "Causes an effect", "Makes a new value from what it has (proposed)"]);
+  });
+
+  it("names each served case on the rules page spelled otherwise than the cases page spells it", () => {
+    expect(
+      unservedCaseNamesOn({
+        rulesPage: "- **Cases served:** Makes a new value; Causes an effect (writes, logs, sends, exits).\n- **Case it would serve:** [Ships code](cases.md#proposed-cases) (proposed).\n",
+        cases: PAGE_CASES,
+      }),
+    ).toEqual(["Makes a new value", "Ships code"]);
+  });
+
+  it("names a short name the cases page does not define as unknown", () => {
+    expect(
+      owesOnPages({
+        casesPage: "| Case | Owes | What to do |\n|---|---|---|\n| Makes a new value from what it has | Tests | It returns. |\n",
+        rulesPage: "",
+        links: [],
+      }),
+    ).toEqual([{ title: "Makes a new value from what it has", principles: ["unknown short name Tests"], rules: [] }]);
+  });
+
+  it("names a pointer of an indication whose case does not owe it", () => {
+    expect(
+      unowedPointersOf({
+        catalogue: {
+          symptoms: [
+            {
+              name: "wide-port",
+              mayIndicate: [
+                {
+                  case: { name: "builds-the-real-implementations", title: "Builds the real implementations", standing: "accepted", owes: [{ kind: "principle", principle: ONE_PLACE }] },
+                  points: [
+                    { kind: "principle", principle: ONE_PLACE },
+                    { kind: "rule", rule: DOER },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    ).toEqual([{ symptom: "wide-port", case: "builds-the-real-implementations", pointer: "Doer or orchestrator" }]);
+  });
+
+  it("names a sentence that makes a case of rules that no prose link lists, and a prose link whose sentence no page holds", () => {
+    expect({
+      unlinked: unlinkedCaseSentencesOn({ pages: [OWES_RULES_PAGE], links: [] }),
+      missing: missingLinkSentencesOn({ pages: [OWES_RULES_PAGE], links: [{ sentence: "Guard first gives it.", cases: ["Builds the real implementations"] }] }),
+    }).toEqual({
+      unlinked: ["Building every real implementation in one place at start-up is a case: Doer or orchestrator plus Ports declared inside give it."],
+      missing: ["Guard first gives it."],
+    });
+  });
+
+  it("names a recipe whose reason is presented as settled where the page proposes it, one whose words differ, and one the page has no reason for", () => {
+    expect(
+      reasonMismatchesOf({
+        recipes: [
+          { ...COMPOSITION_ROOT, reason: { text: '"One place builds."', standing: "accepted" } },
+          { ...STUB_WITH_VIFN, reason: { text: '"Stubs are simple."', standing: "accepted" } },
+          { ...STUB_WITH_VIFN, name: "guard-clauses", title: "Guard clauses" },
+        ],
+        page: [
+          { title: "Stub with vi.fn", reason: { text: '"Stubs return written-out values."', standing: "accepted" } },
+          { title: "Composition root", reason: { text: '"One place builds."', standing: "proposed" } },
+        ],
+      }),
+    ).toEqual(["composition-root", "stub-with-vifn", "guard-clauses"]);
+  });
+});
 
 const reading = createSymptomCatalogueRepository({ fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT }).read({});
 
