@@ -11,7 +11,9 @@ export const checkNamesOf = (request: { readonly text: string }): CheckNames | u
     : undefined;
 };
 
+export type CheckAddressText = `${string}#${string}`;
+
 export type AddressedCheck = { readonly name: string; readonly symptom: { readonly name: string } };
 
-export const checkAddressTextOf = (request: { readonly check: AddressedCheck }): string =>
+export const checkAddressTextOf = (request: { readonly check: AddressedCheck }): CheckAddressText =>
   `${request.check.symptom.name}${CHECK_ADDRESS_SEPARATOR}${request.check.name}`;

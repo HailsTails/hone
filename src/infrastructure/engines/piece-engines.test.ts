@@ -3,6 +3,10 @@ import type { DirectoryPort } from "../../application/ports/file-system/director
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { createEngineBindingsRepository } from "./piece-engines.ts";
+import type { CheckContent, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
 const INSTALL = absoluteRootOf("/install");
@@ -10,6 +14,22 @@ const INSTALL = absoluteRootOf("/install");
 const TEAM = absoluteRootOf("/repo/team-rules");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => INSTALL });
+
+const DATE_USED_DIRECTLY: Symptom = {
+  name: "date-used-directly", title: "Date used directly", seen: "A date read.", mayIndicate: [],
+  breachUsuallySits: "in the unit", recipes: [], correctUses: [],
+};
+
+const TEAM_CHECKS: readonly CheckContent[] = [
+  {
+    name: "clock-sources", symptom: DATE_USED_DIRECTLY, forms: [],
+    clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
+  },
+  {
+    name: "timers", symptom: DATE_USED_DIRECTLY, forms: [],
+    clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("timers") },
+  },
+];
 
 const AUDIT_PIECE_TEXT =
   '{ "version": 1, "discipline": "CD-17", "mechanism": "walker", "clauses": [{ "clause": "clock-sources", "settings": {} }, { "clause": "timers", "settings": {} }] }';
@@ -46,17 +66,17 @@ describe("createEngineBindingsRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "CD-17", kind: "directory" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({ checks: TEAM_CHECKS })).toEqual({
       outcome: "ok",
       value: new Map([
         [
-          "CD-17#clock-sources",
+          "date-used-directly#clock-sources",
           [
             { name: "walker" },
             { name: "eslint" },
           ],
         ],
-        ["CD-17#timers", [{ name: "walker" }]],
+        ["date-used-directly#timers", [{ name: "walker" }]],
       ]),
     });
     expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/mechanisms/audit" });
@@ -75,9 +95,9 @@ describe("createEngineBindingsRepository", () => {
       list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [{ name: "CD-17", kind: "directory" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({ checks: TEAM_CHECKS })).toEqual({
       outcome: "ok",
-      value: new Map([["CD-17#clock-sources", [{ name: "walker" }]]]),
+      value: new Map([["date-used-directly#clock-sources", [{ name: "walker" }]]]),
     });
     expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/mechanisms/audit" });
     expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/repo/team-rules/mechanisms/eslint" });
@@ -90,7 +110,7 @@ describe("createEngineBindingsRepository", () => {
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({ checks: TEAM_CHECKS })).toEqual({
       outcome: "ok",
       value: new Map(),
     });
@@ -110,7 +130,7 @@ describe("createEngineBindingsRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: [] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toMatchObject({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({ checks: TEAM_CHECKS })).toMatchObject({
       outcome: "failed",
       error: { kind: "file-malformed", path: "/repo/team-rules/mechanisms/audit/CD-17/piece.json" },
     });
@@ -132,7 +152,7 @@ describe("createEngineBindingsRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: [] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({ checks: TEAM_CHECKS })).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", path: "/repo/team-rules/mechanisms/audit", detail: "EACCES" },
     });
