@@ -87,7 +87,18 @@ const directiveAt = (request: { readonly clause: Finding["clause"]; readonly fil
   reach: "one-clause",
 });
 
-const NOTHING: PaidDebtRequest = { findings: [], exempted: [], stale: [], forfeited: [], nativeExceptions: [], absent: [], measured: [], baseline: UNMEASURED_EXCEPTION_BASELINE };
+const NOTHING: PaidDebtRequest = {
+  findings: [],
+  exempted: [],
+  stale: [],
+  forfeited: [],
+  nativeExceptions: [],
+  absent: [],
+  excluded: [],
+  runs: [],
+  measured: [],
+  baseline: UNMEASURED_EXCEPTION_BASELINE,
+};
 
 const CHECKOUT = repoPathSchema.parse("src/checkout.ts");
 const PRICES = repoPathSchema.parse("src/prices.ts");
@@ -408,6 +419,67 @@ describe("paidDebtOf keeping a forfeited record each native exception on its fil
           { kind: "suppression-entry", clause: LOOPS, mechanism: ESLINT, file: PRICES, location: repoPathSchema.parse("eslint-suppressions.json") },
           { kind: "inline-rule-config", clause: LOOPS, mechanism: ESLINT, file: TOTALS, line: 1, text: "/* eslint hone/no-for-of: off */" },
         ],
+      }),
+    ).toEqual([]);
+  });
+});
+
+const VENDORED = repoPathSchema.parse("src/vendored");
+const VENDORED_BASKET = repoPathSchema.parse("src/vendored/basket.ts");
+const VENDORED_PRICES = repoPathSchema.parse("src/vendored/prices.ts");
+const ESLINT_RAN: PaidDebtRequest["runs"] = [{ mechanism: ESLINT, projection: "current" }];
+const EXCLUDING_VENDORED: PaidDebtRequest = { ...NOTHING, excluded: [VENDORED], runs: ESLINT_RAN };
+
+describe("paidDebtOf naming debt on a file the selection excludes once its mechanism ran", () => {
+  it("names a stale and a forfeited file carve-out on files still on disk inside an excluded folder", () => {
+    expect(
+      paidDebtOf({
+        ...EXCLUDING_VENDORED,
+        stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })],
+        forfeited: [carveOut({ clause: CASTS, file: VENDORED_PRICES })],
+      }),
+    ).toEqual([
+      { clause: LOOPS, file: VENDORED_BASKET },
+      { clause: CASTS, file: VENDORED_PRICES },
+    ]);
+  });
+
+  it("names a stale file carve-out on an excluded file whose mechanism ran with no projection to read", () => {
+    expect(
+      paidDebtOf({ ...EXCLUDING_VENDORED, runs: [{ mechanism: ESLINT, projection: "none" }], stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })] }),
+    ).toEqual([{ clause: LOOPS, file: VENDORED_BASKET }]);
+  });
+
+  it.each<{ readonly name: string; readonly runs: PaidDebtRequest["runs"] }>([
+    { name: "its mechanism's projection is missing", runs: [{ mechanism: ESLINT, projection: "missing" }] },
+    { name: "its mechanism's projection is not included", runs: [{ mechanism: ESLINT, projection: "not-included" }] },
+    { name: "only another mechanism ran", runs: [{ mechanism: AUDIT, projection: "none" }] },
+    { name: "no mechanism ran", runs: [] },
+  ])("leaves a stale file carve-out on an excluded file when $name", ({ runs }) => {
+    expect(paidDebtOf({ ...EXCLUDING_VENDORED, runs, stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })] })).toEqual([]);
+  });
+
+  it("leaves a stale file carve-out on a file outside the excluded folder that its mechanism did not measure", () => {
+    expect(paidDebtOf({ ...EXCLUDING_VENDORED, stale: [carveOut({ clause: LOOPS, file: BASKET })] })).toEqual([]);
+  });
+
+  it("keeps a forfeited file carve-out on a measured file outside the excluded folder that still holds a finding", () => {
+    expect(
+      paidDebtOf({
+        ...EXCLUDING_VENDORED,
+        forfeited: [carveOut({ clause: LOOPS, file: BASKET })],
+        findings: [findingAt({ clause: LOOPS, file: BASKET })],
+        measured: [{ clause: LOOPS, file: BASKET }],
+      }),
+    ).toEqual([]);
+  });
+
+  it("keeps a stale file carve-out on an excluded file whose clause and file hold an ignore", () => {
+    expect(
+      paidDebtOf({
+        ...EXCLUDING_VENDORED,
+        stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })],
+        nativeExceptions: [{ kind: "ignore", clause: LOOPS, mechanism: ESLINT, file: VENDORED_BASKET }],
       }),
     ).toEqual([]);
   });
