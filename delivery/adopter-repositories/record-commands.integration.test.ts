@@ -1,35 +1,35 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import type { Finding } from "../domain/finding/governance.ts";
-import { createDefaultDirectoryPort, createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
-import { createDefaultGitPort, createDefaultGitTreePort } from "../infrastructure/git/git-port.ts";
-import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { answerFindings, type RaisedFinding } from "../domain/records/answering/answering.ts";
-import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "../application/records/record-commands.ts";
-import type { RunReport } from "../domain/report/run-report.ts";
-import type { AuthoriseRequest } from "../application/ports/authorising.ts";
-import { readHoneRecords } from "../application/records/read-hone-records.ts";
-import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
-import { createRecordsStore } from "../infrastructure/hone-records-folder/writing/records-store.ts";
-import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { TouchedSet } from "../domain/repository/touched-set.ts";
-import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
-import type { Result } from "../domain/result.ts";
-import type { ReadonlyJsonValue } from "../domain/settings/json-values/json-value.ts";
-import type { WhyChain } from "../domain/records/why-chain.ts";
-import type { PathPort } from "../application/ports/host/path-port.ts";
+import type { Finding } from "../../src/domain/finding/governance.ts";
+import { createDefaultDirectoryPort, createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import { createDefaultGitPort, createDefaultGitTreePort } from "../../src/infrastructure/git/git-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { answerFindings, type RaisedFinding } from "../../src/domain/records/answering/answering.ts";
+import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "../../src/application/records/record-commands.ts";
+import type { RunReport } from "../../src/domain/report/run-report.ts";
+import type { AuthoriseRequest } from "../../src/application/ports/authorising.ts";
+import { readHoneRecords } from "../../src/application/records/read-hone-records.ts";
+import { createRecordsFolder } from "../../src/infrastructure/hone-records-folder/folder-layout/records-folder.ts";
+import { createRecordsStore } from "../../src/infrastructure/hone-records-folder/writing/records-store.ts";
+import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
+import type { Result } from "../../src/domain/result.ts";
+import type { ReadonlyJsonValue } from "../../src/domain/settings/json-values/json-value.ts";
+import type { WhyChain } from "../../src/domain/records/why-chain.ts";
+import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import {
   type CommandRunPort,
   createDefaultCommandRunPort,
   createDefaultScratchFilesPort,
   type ScratchFilesPort,
-} from "../../delivery/install-proof/install-proof-ports.ts";
-import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
+} from "../install-proof/install-proof-ports.ts";
+import { recordsReader } from "../../src/infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../../src/infrastructure/hone-records-folder/writing/records-edit.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
