@@ -13,7 +13,11 @@ type ShownRemedyRequest = {
 const ruleFolderOf = (request: ShownRemedyRequest & { readonly finding: Finding }): string | undefined => {
   const clause = clauseAddressText({ address: request.finding.clause });
   const root = request.clauseRoots.find((candidate) => clauseAddressText({ address: candidate.clause }) === clause);
-  return root === undefined ? undefined : request.path.join({ segments: [root.ruleSetRoot, "rules", root.clause.discipline] });
+  if (root === undefined) {
+    return undefined;
+  }
+  const segments = "symptom" in root.clause ? ["typescript", "symptoms", root.clause.symptom] : [root.clause.discipline];
+  return request.path.join({ segments: [root.ruleSetRoot, "rules", ...segments] });
 };
 
 const shownRemedyOf = (request: ShownRemedyRequest & { readonly finding: Finding }): Finding => {

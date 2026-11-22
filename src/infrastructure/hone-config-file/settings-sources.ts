@@ -8,14 +8,15 @@ import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
+import type { ClauseAddress, LegacyClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, isNamedCheckAddress } from "../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
 import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import type { Result } from "../../domain/result.ts";
 import type { PieceClause, SettingsDocument, SettingsSources } from "../../application/ports/settings-sources.ts";
+import { readNamedPiece } from "../engines/named-piece.ts";
 import { ruleSetRootOf } from "./rule-set-root.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 
@@ -29,6 +30,8 @@ type SourcesOptions = {
 };
 
 type PieceRequest = SourcesOptions & { readonly ruleSetRoot: AbsolutePath; readonly clause: ClauseAddress; readonly mechanism: MechanismId };
+
+type LegacyPieceRequest = PieceRequest & { readonly clause: LegacyClauseAddress };
 
 type MechanicalDefinition = Extract<DisciplineFile["clauses"][number], { readonly kind: "mechanical" }>;
 
@@ -49,7 +52,7 @@ const settingsDocumentOf = (request: SourcesOptions): Result<SettingsDocument, V
     : { outcome: "ok", value: { path, document: document.value } };
 };
 
-const mechanicalDefinitionOf = (request: PieceRequest): Result<{ readonly discipline: DisciplineFile; readonly definition: MechanicalDefinition }, VersionTwoLoadFailure> => {
+const mechanicalDefinitionOf = (request: LegacyPieceRequest): Result<{ readonly discipline: DisciplineFile; readonly definition: MechanicalDefinition }, VersionTwoLoadFailure> => {
   const address = clauseAddressText({ address: request.clause });
   const held = readHeldDiscipline({ fileText: request.fileText, path: request.path, ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.clause.discipline });
   if (held.outcome === "failed") {
@@ -72,15 +75,19 @@ const mechanicalDefinitionOf = (request: PieceRequest): Result<{ readonly discip
   return { outcome: "ok", value: { discipline, definition } };
 };
 
-const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoadFailure> => {
+const runnerExists = (request: PieceRequest): boolean => {
+  const runnerPath = request.path.join({
+    segments: runnerModuleSegmentsOf({ installRoot: request.installRoot, mechanism: request.mechanism, moduleExtension: request.moduleExtension }),
+  });
+  return request.fileText.exists({ path: runnerPath }) === "present";
+};
+
+const legacyPieceClauseOf = (request: LegacyPieceRequest): Result<PieceClause, VersionTwoLoadFailure> => {
   const defined = mechanicalDefinitionOf(request);
   if (defined.outcome === "failed") {
     return defined;
   }
-  const runnerPath = request.path.join({
-    segments: runnerModuleSegmentsOf({ installRoot: request.installRoot, mechanism: request.mechanism, moduleExtension: request.moduleExtension }),
-  });
-  if (request.fileText.exists({ path: runnerPath }) === "absent") {
+  if (!runnerExists(request)) {
     return failed({ kind: "runner-missing", mechanism: request.mechanism });
   }
   const address = clauseAddressText({ address: request.clause });
@@ -113,6 +120,16 @@ const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoa
       editions: entry.editions,
     },
   };
+};
+
+const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoadFailure> => {
+  const { clause } = request;
+  if (!isNamedCheckAddress(clause)) {
+    return legacyPieceClauseOf({ ...request, clause });
+  }
+  return runnerExists(request)
+    ? readNamedPiece({ ...request, symptom: clause.symptom, check: clause.check })
+    : failed({ kind: "runner-missing", mechanism: request.mechanism });
 };
 
 export const createSettingsSources = (options: SourcesOptions): SettingsSources => ({

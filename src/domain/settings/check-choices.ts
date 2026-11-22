@@ -62,11 +62,14 @@ const listingOfClause = (request: {
   readonly catalogue: SymptomCatalogue;
   readonly entry: CataloguedClause;
   readonly check: string;
-}): "review-only" | "other" =>
-  checksOf({ catalogue: request.catalogue, clause: request.entry.clause }).length === 0 &&
-  seenSymptomNames({ sight: request.entry.sight }).some((symptom) => `${symptom}#${request.entry.clause.clause}` === request.check)
-    ? "review-only"
-    : "other";
+}): "review-only" | "other" => {
+  const { clause, sight } = request.entry;
+  return "discipline" in clause &&
+    checksOf({ catalogue: request.catalogue, clause }).length === 0 &&
+    seenSymptomNames({ sight }).some((symptom) => `${symptom}#${clause.clause}` === request.check)
+      ? "review-only"
+      : "other";
+};
 
 const checkOf = (request: CatalogueRequest & { readonly address: ListedAddress }): Result<FoundCheck, CheckChoiceRefusal> => {
   const address = listedAddressText({ address: request.address });

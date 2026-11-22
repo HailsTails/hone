@@ -47,7 +47,7 @@ const configEligibility = (request: { readonly file: string }): "eligible" | "ex
 const selectedFlagsOf = (request: { readonly clauses: readonly RunnerClause[] }): readonly SelectedFlag[] =>
   STRICT_FLAGS.flatMap((flag) =>
     request.clauses
-      .filter((clause) => clause.address.discipline === "CD-3" && clause.address.clause === flag.clause)
+      .filter((clause) => "discipline" in clause.address && clause.address.discipline === "CD-3" && clause.address.clause === flag.clause)
       .map((clause) => ({
         address: clause.address,
         option: flag.option,

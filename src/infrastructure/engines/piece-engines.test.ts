@@ -3,6 +3,7 @@ import type { DirectoryPort } from "../../application/ports/file-system/director
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { createEngineBindingsRepository } from "./piece-engines.ts";
+import { catalogueNameOf } from "../../domain/language-layer/catalogue-name.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
 const INSTALL = absoluteRootOf("/install");
@@ -17,6 +18,22 @@ const AUDIT_PIECE_TEXT =
 const ESLINT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-17", "mechanism": "eslint", "clauses": [{ "clause": "clock-sources", "settings": {} }] }';
 
 describe("createEngineBindingsRepository", () => {
+  it("binds an audit piece at its own check address", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: '{ "version": 2, "anchor": { "kind": "file" }, "settings": {} }' }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
+    const namedChecks = [{ ruleSet: "hone", symptom: catalogueNameOf("randomness-used-directly"), check: catalogueNameOf("ambient-randomness") }] as const;
+
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: INSTALL, installRoot: INSTALL }).read({ namedChecks })).toEqual({
+      outcome: "ok",
+      value: new Map([["randomness-used-directly#ambient-randomness", [{ name: "walker", mechanism: "audit" }]]]),
+    });
+    expect(fileText.read).toHaveBeenCalledWith({ path: "/install/src/infrastructure/engines/audit/randomness-used-directly/ambient-randomness/piece.json" });
+  });
+
   it("gives each clause the engines whose pieces under the install's engines folder run it, in the order of the registry, passing over folders that hold no piece", () => {
     const fileText: FileTextPort = {
       exists: vi

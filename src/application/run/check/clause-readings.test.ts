@@ -5,6 +5,7 @@ import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import { clauseReadingsOf } from "./clause-readings.ts";
+import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
@@ -118,6 +119,21 @@ const CLASS_SYNTAX_READING = {
 };
 
 describe("clauseReadingsOf", () => {
+  it("points a named finding at the page for its check", () => {
+    const clause = { ruleSet: TOOL_RULE_SET, symptom: catalogueNameOf("loop-keyword"), check: catalogueNameOf("loop-statement") };
+    const page = "/repo/node_modules/@hailstails/hone/rules/typescript/symptoms/loop-keyword/loop-statement.md";
+    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(page);
+    const shown = "node_modules/@hailstails/hone/rules/typescript/symptoms/loop-keyword/loop-statement.md";
+    const fileText = assessmentHolding({ text: "# Disciplines assessment\n\n## loop-keyword#loop-statement\n" });
+    const readings = clauseReadingsOf({
+      findings: [findingOn({ clause, file: repoPathOf("src/a.ts") })],
+      clauseRoots: [{ clause, ruleSetRoot: INSTALL_ROOT }], repoRoot: REPO_ROOT, installRoot: INSTALL_ROOT,
+      fileText, path: pathJoining(join), shownPathOf: shownAs(shown),
+    });
+    expect(readings).toEqual([{ kind: "clause", clause, assessmentSection: "present", rulePage: { path: shown, presence: "present" } }]);
+    expect(join).toHaveBeenLastCalledWith({ segments: [INSTALL_ROOT, "rules", "typescript", "symptoms", "loop-keyword", "loop-statement.md"] });
+  });
+
   it("reads nothing and points nowhere when there are no findings", () => {
     const fileText = assessmentHolding({ text: "" });
     expect({

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { registeredAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
 import { isCatalogueName } from "../../../domain/language-layer/catalogue-name.ts";
@@ -82,7 +82,7 @@ export const recordKindWireSchema = z.strictObject({
 export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
-  clause: clauseAddressSchema,
+  clause: registeredAddressSchema,
 });
 
 export const catalogueFileSchema = z.strictObject({
@@ -102,7 +102,7 @@ export const catalogueFileSchema = z.strictObject({
   recordKinds: z.array(recordKindWireSchema),
   engines: z.array(z.strictObject({ name: catalogueNameSchema, mechanism: mechanismIdSchema })),
   symptoms: z.array(symptomWireSchema),
-  clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema })),
+  clauses: z.array(z.strictObject({ clause: registeredAddressSchema, sight: sightWireSchema })),
   checks: z.array(checkWireSchema),
   namedBans: z.array(z.strictObject({ outsideDependency: textSchema })),
 });

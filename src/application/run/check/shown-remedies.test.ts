@@ -4,6 +4,7 @@ import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { shownRemediesOf } from "./shown-remedies.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
@@ -40,6 +41,18 @@ const REMEDIED: Finding = { ...LOCATED, remedy: { fix: "write the values out", p
 const SHIPPED_ROOT = { clause: CLAUSE, ruleSetRoot: STORE_ROOT };
 
 describe("shownRemediesOf", () => {
+  it("finds the remedy for a named check in its symptom folder", () => {
+    const clause = { ruleSet: TOOL_RULE_SET, symptom: catalogueNameOf("branch-in-a-test"), check: catalogueNameOf("test-body") };
+    const symptomFolder = `${STORE_ROOT}/rules/typescript/symptoms/branch-in-a-test`;
+    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(symptomFolder).mockReturnValueOnce(`${symptomFolder}/test-body.md`);
+    const shown = "node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md";
+    const remedy = { fix: "write the values out", page: "test-body.md", section: "a-method-that-computes-a-value" };
+    expect(shownRemediesOf({
+      path: pathJoining(join), shownPathOf: shownAs(shown), clauseRoots: [{ clause, ruleSetRoot: STORE_ROOT }], findings: [{ ...LOCATED, clause, remedy }],
+    })).toEqual([{ ...LOCATED, clause, remedy: { ...remedy, page: shown } }]);
+    expect(join).toHaveBeenNthCalledWith(1, { segments: [STORE_ROOT, "rules", "typescript", "symptoms", "branch-in-a-test"] });
+  });
+
   it("shows the page a finding's rule names as the path a reader opens, through the repository's link", () => {
     expect(
       shownRemediesOf({

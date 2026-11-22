@@ -118,6 +118,7 @@ const namedRuleOf = (request: {
   const clauseRule = request.clauseRules.find(
     (candidate) =>
       request.check.clause.ruleSet === TOOL_IDENTITY.ownRuleSet &&
+      "discipline" in request.check.clause &&
       request.check.clause.discipline === candidate.discipline &&
       request.check.clause.clause === candidate.clause,
   );

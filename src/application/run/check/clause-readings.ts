@@ -87,8 +87,13 @@ const clauseReadingOf = (
   rulePage: { path: shownPageOf(request), presence: request.fileText.exists({ path: request.page }) },
 });
 
-const rulePageOf = (request: { readonly root: ClauseRoot; readonly path: PathPort }): string =>
-  request.path.join({ segments: [request.root.ruleSetRoot, "rules", request.root.clause.discipline, "README.md"] });
+const rulePageOf = (request: { readonly root: ClauseRoot; readonly path: PathPort }): string => {
+  const { clause, ruleSetRoot } = request.root;
+  const segments = "symptom" in clause
+    ? ["typescript", "symptoms", clause.symptom, `${clause.check}.md`]
+    : [clause.discipline, "README.md"];
+  return request.path.join({ segments: [ruleSetRoot, "rules", ...segments] });
+};
 
 const assessmentFileNotes = (
   request: ShownPageRequest & { readonly headings: AssessmentHeadings; readonly installRoot: AbsolutePath },

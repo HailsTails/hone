@@ -7,6 +7,8 @@ import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-addr
 import { mechanismIdSchema } from "./identifiers.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import { createSettingsSources } from "./settings-sources.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { catalogueNameOf } from "../../domain/language-layer/catalogue-name.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
@@ -128,6 +130,25 @@ const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; re
   });
 
 describe("createSettingsSources", () => {
+  it("resolves a named check using only its piece and the runner", () => {
+    const files = {
+      "/install/src/infrastructure/engines/audit/runner/runner.ts": RUNNER_TEXT,
+      "/install/src/infrastructure/engines/audit/randomness-used-directly/ambient-randomness/piece.json":
+        '{ "version": 2, "anchor": { "kind": "file" }, "settings": { "module": "ambient-randomness.ts" } }',
+    };
+    expect(sourcesOver({ files }).pieceClause({
+      clause: { ruleSet: "hone", symptom: catalogueNameOf("randomness-used-directly"), check: catalogueNameOf("ambient-randomness") },
+      mechanism: "audit",
+      ruleSetRoot: INSTALL_ROOT,
+    })).toEqual({
+      outcome: "ok",
+      value: {
+        anchor: { kind: "file" }, exceptions: "allowed", settings: { module: "ambient-randomness.ts" },
+        declarations: {}, editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") }, pieceRoot: "/install/src/infrastructure/engines/audit/randomness-used-directly/ambient-randomness",
+      },
+    });
+  });
+
   it("reads hone.config.json at the repository root as a document, naming its path", () => {
     expect(sourcesOver({ files: INSTALL_FILES }).settingsFile({})).toEqual({
       outcome: "ok",

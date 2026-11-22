@@ -14,7 +14,7 @@ import type { RunSettings } from "../../domain/settings/run-settings.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import type { ClauseBinding, ClauseEditionReading, SelectionReading } from "../../domain/settings/selection/selection.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import type { LegacyClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
@@ -50,7 +50,7 @@ type ResolvedClause = {
   readonly ruleSetRoot: AbsolutePath;
   readonly discipline: DisciplineFile;
   readonly piece: PieceFile;
-  readonly binding: ClauseBinding;
+  readonly binding: ClauseBinding & { readonly clause: { readonly address: LegacyClauseAddress } };
   readonly exceptions: ClauseExceptions;
   readonly declarations: ClauseSettingDeclarations;
   readonly editions: ClauseEditions;
@@ -62,7 +62,7 @@ const failed = (error: LoadFailure): { readonly outcome: "failed"; readonly erro
 });
 
 export const ruleSetRootOf = (request: {
-  readonly ruleSet: ClauseAddress["ruleSet"];
+  readonly ruleSet: LegacyClauseAddress["ruleSet"];
   readonly ruleSets: Readonly<Record<string, RuleSetLocation>>;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
@@ -98,7 +98,7 @@ type ClauseRequest = {
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
   readonly ruleSetRoot: AbsolutePath;
-  readonly address: ClauseAddress;
+  readonly address: LegacyClauseAddress;
   readonly mechanism: MechanismId;
   readonly earlier: readonly ResolvedClause[];
 };
@@ -251,7 +251,7 @@ const resolveClause = (request: {
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
   readonly ruleSets: ConsumerSelectionFile["ruleSets"];
-  readonly address: ClauseAddress;
+  readonly address: LegacyClauseAddress;
   readonly mechanism: MechanismId;
   readonly earlier: readonly ResolvedClause[];
 }): Result<ResolvedClause, LoadFailure> => {
@@ -271,12 +271,12 @@ const resolveClause = (request: {
   return { outcome: "ok", value: resolvedClauseOf({ clauseRequest, defined: defined.value, entry: entry.value }) };
 };
 
-const addressOf = (request: { readonly resolved: ResolvedClause }): ClauseAddress =>
+const addressOf = (request: { readonly resolved: ResolvedClause }): LegacyClauseAddress =>
   request.resolved.binding.clause.address;
 
 type ListedClause = {
   readonly discipline: DisciplineFile;
-  readonly address: ClauseAddress;
+  readonly address: LegacyClauseAddress;
 };
 
 const occurrenceInDiscipline = (request: {
@@ -293,7 +293,7 @@ const occurrenceInDiscipline = (request: {
 
 const listingOf = (request: {
   readonly listed: readonly ListedClause[];
-  readonly address: ClauseAddress;
+  readonly address: LegacyClauseAddress;
 }): "listed" | "unlisted" =>
   request.listed.some((listed) => sameClauseAddress({ left: listed.address, right: request.address }) === "same")
     ? "listed"
@@ -302,13 +302,13 @@ const listingOf = (request: {
 const unlistedClausesOf = (request: {
   readonly listed: readonly ListedClause[];
   readonly representative: ListedClause;
-}): readonly ClauseAddress[] =>
+}): readonly LegacyClauseAddress[] =>
   request.representative.discipline.clauses
     .filter((definition) => definition.kind === "mechanical")
-    .map((definition): ClauseAddress => ({ ...request.representative.address, clause: definition.id }))
+    .map((definition): LegacyClauseAddress => ({ ...request.representative.address, clause: definition.id }))
     .filter((address) => listingOf({ listed: request.listed, address }) === "unlisted");
 
-const uncoveredClauses = (request: { readonly listed: readonly ListedClause[] }): readonly ClauseAddress[] =>
+const uncoveredClauses = (request: { readonly listed: readonly ListedClause[] }): readonly LegacyClauseAddress[] =>
   request.listed
     .filter((clause, index) => occurrenceInDiscipline({ listed: request.listed, clause, index }) === "first")
     .flatMap((representative) => unlistedClausesOf({ listed: request.listed, representative }));
@@ -323,13 +323,13 @@ type SelectionRequest = {
   readonly filePath: string;
 };
 
-const adoptedEntries = (request: { readonly file: ConsumerSelectionFile }): readonly (readonly [ClauseAddress, MechanismId])[] =>
-  request.file.clauses.flatMap(([address, choice]): readonly (readonly [ClauseAddress, MechanismId])[] =>
+const adoptedEntries = (request: { readonly file: ConsumerSelectionFile }): readonly (readonly [LegacyClauseAddress, MechanismId])[] =>
+  request.file.clauses.flatMap(([address, choice]): readonly (readonly [LegacyClauseAddress, MechanismId])[] =>
     choice.state === "run" ? [[address, choice.mechanism]] : [],
   );
 
-const unrunEntries = (request: { readonly file: ConsumerSelectionFile }): readonly (readonly [ClauseAddress, UnrunState])[] =>
-  request.file.clauses.flatMap(([address, choice]): readonly (readonly [ClauseAddress, UnrunState])[] =>
+const unrunEntries = (request: { readonly file: ConsumerSelectionFile }): readonly (readonly [LegacyClauseAddress, UnrunState])[] =>
+  request.file.clauses.flatMap(([address, choice]): readonly (readonly [LegacyClauseAddress, UnrunState])[] =>
     choice.state === "run" ? [] : [[address, choice.state]],
   );
 
@@ -349,7 +349,7 @@ type UnrunRequest = SelectionRequest & { readonly adopted: readonly ResolvedClau
 type UnrunClause = ListedClause & { readonly state: UnrunState };
 
 const unrunClause = (
-  request: UnrunRequest & { readonly address: ClauseAddress; readonly state: UnrunState },
+  request: UnrunRequest & { readonly address: LegacyClauseAddress; readonly state: UnrunState },
 ): Result<UnrunClause, LoadFailure> => {
   const root = ruleSetRootOf({
     ...request,
@@ -376,7 +376,7 @@ const unrunClauses = (request: UnrunRequest): Result<readonly UnrunClause[], Loa
     { outcome: "ok", value: [] },
   );
 
-const addressesIn = (request: { readonly unrun: readonly UnrunClause[]; readonly state: UnrunState }): readonly ClauseAddress[] =>
+const addressesIn = (request: { readonly unrun: readonly UnrunClause[]; readonly state: UnrunState }): readonly LegacyClauseAddress[] =>
   request.unrun.filter((clause) => clause.state === request.state).map((clause) => clause.address);
 
 const appendedClause = <Clause>(request: {
@@ -433,7 +433,7 @@ const selectionReadingOf = (request: {
 
 const givenClauseSettings = (request: {
   readonly file: ConsumerSelectionFile;
-  readonly address: ClauseAddress;
+  readonly address: LegacyClauseAddress;
 }): ClauseSettingValues | undefined =>
   request.file.clauseSettings.find(([address]) => sameClauseAddress({ left: address, right: request.address }) === "same")?.[1];
 

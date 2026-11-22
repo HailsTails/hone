@@ -1009,7 +1009,7 @@ const loops = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), cla
 const loopsFinding: Finding = { ...finding, clause: loops, snippet: "const total = 0;" };
 
 const readingOf = (request: {
-  readonly clause: ClauseReading["clause"];
+  readonly clause: Extract<ClauseReading["clause"], { readonly discipline: string }>;
   readonly assessmentSection: ClauseReading["assessmentSection"];
   readonly presence: ClauseReading["rulePage"]["presence"];
 }): ClauseReading => ({

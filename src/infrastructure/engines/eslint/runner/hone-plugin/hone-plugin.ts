@@ -37,7 +37,7 @@ const eslintDisciplinesOf = (request: { readonly checks: readonly RuledCheck[] }
   ...new Set(
     request.checks
       .filter((check) => runsOnEslint({ check }) === "eslint" && check.clause.ruleSet === TOOL_IDENTITY.ownRuleSet)
-      .map((check) => check.clause.discipline),
+      .flatMap((check) => "discipline" in check.clause ? [check.clause.discipline] : []),
   ),
 ];
 
