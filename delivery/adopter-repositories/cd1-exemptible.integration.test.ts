@@ -283,7 +283,7 @@ const git: GitPort = {
 describe("the shipped CD-1 rule, read from rules/CD-1/discipline.json through a full check (CD-47: the shipped rule file is the assertion's subject; nothing is spawned or written)", () => {
   it("accepts an authorised location for CD-1 and still flags an unrecorded any cast", async () => {
     const report = await runCheck(withSingleFileRecords({
-      repoRoot: resolvedPath({ path: `${import.meta.dirname}/../../src/application/run/check/cd1-exempted` }),
+      repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),
       installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
       moduleExtension: ".ts",
       baseRevision: undefined,
@@ -318,7 +318,7 @@ const CASCADE_REPO = restoredFixture({
   scratch,
   fileText: createDefaultFileTextPort({}),
   path,
-  fixtureRoot: resolvedPath({ path: `${import.meta.dirname}/../../src/application/run/check/cd1-cascade` }),
+  fixtureRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-cascade` }),
 });
 
 const LEGACY_FILE = repoPathSchema.parse("src/legacy.ts");

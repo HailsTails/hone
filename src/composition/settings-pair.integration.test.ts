@@ -25,7 +25,7 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
 
 const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", ".."] }) });
 
-const PAIR_ROOT = path.join({ segments: [import.meta.dirname, "..", "infrastructure", "hone-config-file", "settings-pair"] });
+const PAIR_ROOT = path.join({ segments: [import.meta.dirname, "settings-pair"] });
 
 const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "before"] }) });
 

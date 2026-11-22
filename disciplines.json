@@ -46,9 +46,9 @@
   "assessment": { "forfeiture": "elsewhere" },
   "exclude": [
     "delivery/install-proof/consumer-proof",
-    "src/application/run/check/cd1-cascade",
-    "src/application/run/check/cd1-exempted",
-    "src/infrastructure/hone-config-file/settings-pair/before",
+    "delivery/adopter-repositories/cd1-cascade",
+    "delivery/adopter-repositories/cd1-exempted",
+    "src/composition/settings-pair/before",
     "src/infrastructure/content-files/rule-sets/team-rule-set/repo",
     "src/infrastructure/engines/eslint/runner/native-exceptions/command-line-options",
     "src/infrastructure/engines/eslint/runner/native-exceptions/fr3-anchors",
