@@ -66,8 +66,8 @@ export type MappedRecordsDocument = {
   readonly records: readonly WrittenRecord[];
 };
 
-export type RecordLine = {
-  readonly recordKind: ExceptionRecord["kind"];
+export type PlacedRecordLine = {
+  readonly recordKind: Exclude<ExceptionRecord["kind"], "clause-wide-carve-out">;
   readonly clause: ClauseAddress;
   readonly file: RepoPath;
   readonly newKind: "debt" | "authorised-location";
@@ -75,16 +75,31 @@ export type RecordLine = {
   readonly holding: "carried" | "stated";
 };
 
+export type NotAdoptedLine = {
+  readonly recordKind: "clause-wide-carve-out";
+  readonly clause: ClauseAddress;
+  readonly newKind: "not-adopted";
+  readonly check: Check;
+};
+
+export type CarveOutReasonLine = {
+  readonly recordKind: "clause-wide-carve-out";
+  readonly clause: ClauseAddress;
+  readonly reason: string;
+};
+
+export type RecordLine = PlacedRecordLine | NotAdoptedLine | CarveOutReasonLine;
+
 export type MappedRecords = {
   readonly documents: readonly MappedRecordsDocument[];
   readonly lines: readonly RecordLine[];
 };
 
-type RecordOrigin = Pick<RecordLine, "recordKind" | "clause" | "file">;
+type RecordOrigin = Pick<PlacedRecordLine, "recordKind" | "clause" | "file">;
 
 type MappedFolderKind = Extract<NamedFolderKind, "debt" | "authorised-locations">;
 
-const NEW_KIND_OF_FOLDER: Readonly<Record<MappedFolderKind, RecordLine["newKind"]>> = {
+const NEW_KIND_OF_FOLDER: Readonly<Record<MappedFolderKind, PlacedRecordLine["newKind"]>> = {
   debt: "debt",
   "authorised-locations": "authorised-location",
 };
@@ -92,16 +107,18 @@ const NEW_KIND_OF_FOLDER: Readonly<Record<MappedFolderKind, RecordLine["newKind"
 type PlacedRecord = {
   readonly file: RepoPath;
   readonly record: WrittenRecord;
-  readonly line: RecordLine;
+  readonly line: PlacedRecordLine;
 };
 
 type InputOutcome = {
   readonly placed: readonly PlacedRecord[];
+  readonly choices: readonly RecordLine[];
   readonly refusals: readonly UpgradeRefusal[];
 };
 
 const refusedWith = (request: { readonly refusal: UpgradeRefusal }): InputOutcome => ({
   placed: [],
+  choices: [],
   refusals: [request.refusal],
 });
 
@@ -118,7 +135,7 @@ const lineOf = (request: {
   readonly kind: MappedFolderKind;
   readonly check: Check;
   readonly record: WrittenRecord;
-}): RecordLine => ({
+}): PlacedRecordLine => ({
   ...request.origin,
   newKind: NEW_KIND_OF_FOLDER[request.kind],
   check: request.check,
@@ -149,6 +166,7 @@ const outcomeOfPlacements = (request: {
   placed: request.placements.flatMap((placement) =>
     placement.outcome === "ok" ? [placement.value] : [],
   ),
+  choices: [],
   refusals: request.placements.flatMap((placement) =>
     placement.outcome === "failed" ? [placement.error] : [],
   ),
@@ -244,6 +262,38 @@ const authorisedLocationOutcome = (request: {
   });
 };
 
+const notAdoptedLinesOf = (request: {
+  readonly record: RecordOf<"clause-wide-carve-out">;
+  readonly checks: readonly Check[];
+}): readonly RecordLine[] => {
+  const { clause } = request.record;
+  return [
+    { recordKind: "clause-wide-carve-out", clause, reason: request.record.reason },
+    ...request.checks.map((check): NotAdoptedLine => ({
+      recordKind: "clause-wide-carve-out",
+      clause,
+      newKind: "not-adopted",
+      check,
+    })),
+  ];
+};
+
+const clauseWideCarveOutOutcome = (request: {
+  readonly input: Extract<RecordInput, { readonly kind: "clause-wide-carve-out" }>;
+  readonly catalogues: readonly RuleSetCatalogue[];
+}): InputOutcome => {
+  const { record } = request.input;
+  const checks = checksOfClause({ catalogues: request.catalogues, clause: record.clause });
+  return checks.length === 0
+    ? refusedWith({
+        refusal: {
+          kind: "clause-without-check",
+          clause: clauseAddressText({ address: record.clause }),
+        },
+      })
+    : { placed: [], choices: notAdoptedLinesOf({ record, checks }), refusals: [] };
+};
+
 const outcomeOf = (request: {
   readonly input: RecordInput;
   readonly catalogues: readonly RuleSetCatalogue[];
@@ -255,12 +305,7 @@ const outcomeOf = (request: {
     case "authorised-location":
       return authorisedLocationOutcome({ input, catalogues: request.catalogues });
     case "clause-wide-carve-out":
-      return refusedWith({
-        refusal: {
-          kind: "clause-wide-carve-out",
-          clause: clauseAddressText({ address: input.record.clause }),
-        },
-      });
+      return clauseWideCarveOutOutcome({ input, catalogues: request.catalogues });
   }
 };
 
@@ -283,10 +328,18 @@ export const mappedRecords = (
   );
   const refusals = outcomes.flatMap((outcome) => outcome.refusals);
   const placed = outcomes.flatMap((outcome) => outcome.placed);
+  const lines = outcomes.flatMap((outcome) => [
+    ...outcome.placed.map(({ line }) => line),
+    ...outcome.choices,
+  ]);
   return refusals.length > 0
     ? { outcome: "failed", error: refusals }
-    : {
-        outcome: "ok",
-        value: { documents: documentsOf({ placed }), lines: placed.map(({ line }) => line) },
-      };
+    : { outcome: "ok", value: { documents: documentsOf({ placed }), lines } };
 };
+
+export const clausesCarriedAsNotAdopted = (request: {
+  readonly inputs: readonly RecordInput[];
+}): readonly ClauseAddress[] =>
+  request.inputs.flatMap((input) =>
+    input.kind === "clause-wide-carve-out" ? [input.record.clause] : [],
+  );

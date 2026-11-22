@@ -243,8 +243,9 @@ const definedPlaceholdersIn = (request: { readonly text: string }): ReadonlySet<
   );
 
 const UPGRADE_PLACEHOLDER_FORMS: Readonly<Record<string, RegExp>> = {
-  "record kind": /^(?:file-carve-out|authorised-location)$/,
-  "new kind": /^(?:debt|authorised-location)$/,
+  "record kind": /^(?:file-carve-out|authorised-location|clause-wide-carve-out)$/,
+  "new kind": /^(?:debt|authorised-location|not-adopted)$/,
+  reason: /^[^\n]+$/,
   clause: /^(?:[a-z][a-z0-9-]*\/)?[A-Z][A-Za-z]*-\d+#[a-z][a-z0-9-]*$/,
   check: /^[a-z][a-z0-9-]*#[a-z][a-z0-9-]*$/,
   file: /^[^\n]+$/,
@@ -802,7 +803,6 @@ const { UPGRADE_LINES, UPGRADE_SUCCESS_LINES } = (() => {
               file: FILE,
               credited: "suppression-only",
             },
-            { kind: "clause-wide-carve-out", clause: CLAUSE },
             { kind: "records-name-refused", name: "Not A Name" },
           ],
         },
@@ -1266,6 +1266,13 @@ const { UPGRADE_LINES, UPGRADE_SUCCESS_LINES } = (() => {
           check: CAST_CHECK,
           holding: "carried",
         },
+        { recordKind: "clause-wide-carve-out", clause: CAST_EXPRESSIONS, reason: "generated code" },
+        {
+          recordKind: "clause-wide-carve-out",
+          clause: CAST_EXPRESSIONS,
+          newKind: "not-adopted",
+          check: CAST_CHECK,
+        },
       ],
       findings: 3,
       mentions: [{ file: repoPathOf("package.json"), line: 4 }],
@@ -1299,8 +1306,24 @@ const { UPGRADE_LINES, UPGRADE_SUCCESS_LINES } = (() => {
       }),
     },
     {
+      marker: /^reason /,
+      fills: (text) => ({
+        clause: wordsOf(text)[1]?.slice(0, -1) ?? "",
+        reason: wordsOf(text).slice(2).join(" "),
+      }),
+    },
+    {
       marker: /^carried /,
       fills: (text) => ({ check: wordsOf(text)[1] ?? "", file: wordsOf(text)[2] ?? "" }),
+    },
+    {
+      marker: /^clause-wide-carve-out \S+ -> /,
+      fills: (text) => ({
+        "record kind": wordsOf(text)[0] ?? "",
+        clause: wordsOf(text)[1] ?? "",
+        "new kind": wordsOf(text)[3] ?? "",
+        check: wordsOf(text)[4] ?? "",
+      }),
     },
     {
       marker: / -> /,

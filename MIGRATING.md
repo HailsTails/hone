@@ -431,7 +431,6 @@ Each line below is the tool's own, with `<...>` standing for what it names. Do w
 - `version 1's own run could not be made (<detail>). Run hone check and fix its load failure first.` The same action follows `version 1's run failed (<detail>).` and `version 1's files could not be read (<detail>).`
 - `version 1 already reports <clauses> as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.`
 - `the file carve-out for <clause> in <file> answers no finding. Remove it, or fix the file it names, then run the upgrade again.` An `answers only a suppression` line says the same.
-- `<clause> carries a clause-wide carve-out, which version 2 has no record for. Replace it with file carve-outs first.`
 - `<clause> in <file> is held by both a file carve-out and an authorised location. Remove one of them first, then run the upgrade again.`
 - `<clause> has no version 2 check to run it, and version 2 does not carry the clauses of a version 1 team rule set. Remove it from disciplines.json to upgrade without it, or stay on version 1.`
 - `<path> already exists. Move it aside, then run the upgrade again.` The same action, with a different cause, follows `<path> could not be read to be replaced (<detail>). Make it readable, then run the upgrade again.`, `<path> could not be created (<detail>). Fix what the detail names, then run the upgrade again.` and `<path> could not be written (<detail>). Fix what the detail names, then run the upgrade again.`

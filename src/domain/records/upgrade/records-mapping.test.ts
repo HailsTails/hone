@@ -16,7 +16,7 @@ import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
-import { mappedRecords } from "./records-mapping.ts";
+import { clausesCarriedAsNotAdopted, mappedRecords } from "./records-mapping.ts";
 import type { UpgradeRefusal } from "./upgrade-refusal.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
@@ -593,30 +593,128 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   });
 });
 
-describe("mappedRecords refusing what carries over to nothing", () => {
-  it("refuses a clause-wide carve-out, naming the clause", () => {
+const SIX_TEST_BODY_CHECKS: readonly Check[] = [
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "rebinding" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "loop-keyword" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "branch-in-a-test" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "text-past-its-reader" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "computed-value-in-a-test" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "claimed-type" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+];
+
+const SIX_CHECK_CATALOGUES: readonly RuleSetCatalogue[] = [
+  {
+    ruleSet: "hone",
+    catalogue: {
+      ...SETTINGS_CATALOGUE,
+      clauses: [
+        { clause: TEST_BODY_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+      ],
+      checks: SIX_TEST_BODY_CHECKS,
+    },
+  },
+];
+
+const CLAUSE_WIDE_ON_LOOPS = {
+  kind: "clause-wide-carve-out",
+  record: {
+    kind: "clause-wide-carve-out",
+    clause: LOOPS_CLAUSE,
+    mechanism: AUDIT,
+    reason: "generated code",
+    whyChain: WHY_CHAIN,
+  },
+} as const;
+
+const CLAUSE_WIDE_ON_TEST_BODY = {
+  kind: "clause-wide-carve-out",
+  record: {
+    kind: "clause-wide-carve-out",
+    clause: TEST_BODY_CLAUSE,
+    mechanism: AUDIT,
+    reason: "the tests are generated",
+    whyChain: WHY_CHAIN,
+  },
+} as const;
+
+describe("mappedRecords carrying a clause-wide carve-out as a choice, not a record", () => {
+  it("writes no record for it", () => {
+    expect(mappedRecords({ catalogues: CATALOGUES, inputs: [CLAUSE_WIDE_ON_LOOPS] })).toMatchObject(
+      {
+        outcome: "ok",
+        value: { documents: [] },
+      },
+    );
+  });
+
+  it("refuses a clause that has no check to not adopt, naming the clause", () => {
     expect(
       mappedRecords({
-        catalogues: CATALOGUES,
-        inputs: [
-          {
-            kind: "clause-wide-carve-out",
-            record: {
-              kind: "clause-wide-carve-out",
-              clause: LOOPS_CLAUSE,
-              mechanism: AUDIT,
-              reason: "generated code",
-              whyChain: WHY_CHAIN,
-            },
-          },
-        ],
+        catalogues: [],
+        inputs: [CLAUSE_WIDE_ON_LOOPS],
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "clause-wide-carve-out", clause: "CD-15#loops" }],
+      error: [{ kind: "clause-without-check", clause: "CD-15#loops" }],
     });
   });
+});
 
+describe("clausesCarriedAsNotAdopted", () => {
+  it("names the clause of each clause-wide carve-out and no other record", () => {
+    expect(
+      clausesCarriedAsNotAdopted({
+        inputs: [
+          CLAUSE_WIDE_ON_LOOPS,
+          {
+            kind: "authorised-location",
+            record: { clause: TEST_BODY_CLAUSE, file: SRC_A },
+            entry: {},
+            answer: WHOLE_CLAUSE,
+          },
+        ],
+      }),
+    ).toEqual([LOOPS_CLAUSE]);
+  });
+});
+
+describe("mappedRecords refusing what carries over to nothing", () => {
   it("refuses a stale file carve-out, naming the clause and the file", () => {
     expect(
       mappedRecords({
@@ -877,6 +975,80 @@ describe("mappedRecords lines", () => {
             newKind: "authorised-location",
             check: CATALOGUE_REBINDING_TEST_BODY,
             holding: "carried",
+          },
+        ],
+      },
+    });
+  });
+
+  it("gives a clause-wide carve-out its reason, then one not-adopted line for the check of its clause", () => {
+    expect(mappedRecords({ catalogues: CATALOGUES, inputs: [CLAUSE_WIDE_ON_LOOPS] })).toMatchObject(
+      {
+        outcome: "ok",
+        value: {
+          documents: [],
+          lines: [
+            { recordKind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, reason: "generated code" },
+            {
+              recordKind: "clause-wide-carve-out",
+              clause: LOOPS_CLAUSE,
+              newKind: "not-adopted",
+              check: LOOP_KEYWORD_LOOPS,
+            },
+          ],
+        },
+      },
+    );
+  });
+
+  it("gives a clause-wide carve-out on CD-27 one not-adopted line at each of its six checks", () => {
+    expect(
+      mappedRecords({ catalogues: SIX_CHECK_CATALOGUES, inputs: [CLAUSE_WIDE_ON_TEST_BODY] }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        documents: [],
+        lines: [
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            reason: "the tests are generated",
+          },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            newKind: "not-adopted",
+            check: SIX_TEST_BODY_CHECKS[0],
+          },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            newKind: "not-adopted",
+            check: SIX_TEST_BODY_CHECKS[1],
+          },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            newKind: "not-adopted",
+            check: SIX_TEST_BODY_CHECKS[2],
+          },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            newKind: "not-adopted",
+            check: SIX_TEST_BODY_CHECKS[3],
+          },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            newKind: "not-adopted",
+            check: SIX_TEST_BODY_CHECKS[4],
+          },
+          {
+            recordKind: "clause-wide-carve-out",
+            clause: TEST_BODY_CLAUSE,
+            newKind: "not-adopted",
+            check: SIX_TEST_BODY_CHECKS[5],
           },
         ],
       },

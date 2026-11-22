@@ -29,6 +29,7 @@ import {
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;
   readonly catalogues: readonly RuleSetCatalogue[];
+  readonly notAdoptedClauses: readonly ClauseAddress[];
 };
 
 export type MappedSettings = {
@@ -82,6 +83,19 @@ const listedAddressOf = (request: {
   ruleSet: request.clause.ruleSet,
   check: checkAddressOf({ check: request.check }),
 });
+
+const NOT_ADOPTED_CHOICE: ClauseChoice = { state: "not-adopted" };
+
+const choiceCarriedOver = (request: {
+  readonly clause: ClauseAddress;
+  readonly choice: ClauseChoice;
+  readonly notAdoptedClauses: readonly ClauseAddress[];
+}): ClauseChoice =>
+  request.notAdoptedClauses.some(
+    (notAdopted) => sameClauseAddress({ left: notAdopted, right: request.clause }) === "same",
+  )
+    ? NOT_ADOPTED_CHOICE
+    : request.choice;
 
 const listingOf = (request: {
   readonly catalogues: readonly RuleSetCatalogue[];
@@ -148,7 +162,11 @@ export const mappedSettings = (
 ): Result<MappedSettings, readonly UpgradeRefusal[]> => {
   const { selection } = request;
   const listings = selection.clauses.map(([clause, choice]) =>
-    listingOf({ catalogues: request.catalogues, clause, choice }),
+    listingOf({
+      catalogues: request.catalogues,
+      clause,
+      choice: choiceCarriedOver({ clause, choice, notAdoptedClauses: request.notAdoptedClauses }),
+    }),
   );
   const refusals = listings.flatMap((listing) => listing.refusals);
   if (refusals.length > 0) {

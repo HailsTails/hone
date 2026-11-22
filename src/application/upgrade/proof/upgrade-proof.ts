@@ -1,4 +1,5 @@
 import { failureDetailOf } from "../../../domain/failure-detail.ts";
+import { clausesCarriedAsNotAdopted } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
@@ -248,6 +249,7 @@ const comparedAfterWriting = async (
     before: request.before,
     after: after.value,
     catalogues: request.catalogues,
+    notAdoptedClauses: clausesCarriedAsNotAdopted({ inputs: request.plan.inputs }),
   });
   return differences.length > 0
     ? {

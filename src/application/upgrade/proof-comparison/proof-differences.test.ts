@@ -14,6 +14,7 @@ import type { PlacedRecord } from "../../../domain/records/hone-records/hone-rec
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
@@ -193,6 +194,24 @@ const CARVE_OUT: ExceptionRecord = {
   reason: "legacy loop",
 };
 
+const CLAUSE_WIDE_WHY = {
+  why: "a loop was written",
+  because: "it was quicker",
+  evidence: "the commit",
+} as const;
+
+const CLAUSE_WIDE: ExceptionRecord = {
+  kind: "clause-wide-carve-out",
+  clause: LOOPS_CLAUSE,
+  mechanism: AUDIT,
+  reason: "generated code",
+  whyChain: {
+    whys: [CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY],
+    rootCause: "no rule at the time",
+    owner: "the team",
+  },
+};
+
 const AUTHORISED: ExceptionRecord = {
   kind: "authorised-location",
   clause: LOOPS_CLAUSE,
@@ -233,14 +252,20 @@ const INLINE_DISABLE: AttributedNativeException = {
   mechanism: AUDIT,
 };
 
-const differencesBetween = (request: {
+const differencesBetween = ({
+  before,
+  after,
+  notAdoptedClauses = [],
+}: {
   readonly before?: Partial<CheckReport>;
   readonly after?: Partial<RunReport>;
+  readonly notAdoptedClauses?: readonly ClauseAddress[];
 }) =>
   proofDifferencesOf({
-    before: { ...EMPTY_BEFORE, ...request.before },
-    after: { ...EMPTY_AFTER, ...request.after },
+    before: { ...EMPTY_BEFORE, ...before },
+    after: { ...EMPTY_AFTER, ...after },
     catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }],
+    notAdoptedClauses,
   });
 
 describe("proofDifferencesOf", () => {
@@ -527,6 +552,49 @@ describe("proofDifferencesOf", () => {
     ).toEqual([
       { section: "unmeasured", onlyBefore: ["walker not-run missing"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
+    ]);
+  });
+
+  it("finds no difference when a clause-wide carve-out answered a finding and its check is not adopted now", () => {
+    expect(
+      differencesBetween({
+        before: { exempted: [{ finding: LOOP_FINDING, by: [CLAUSE_WIDE] }] },
+        after: { "not-adopted": [LOOP_KEYWORD_LOOPS] },
+        notAdoptedClauses: [LOOPS_CLAUSE],
+      }),
+    ).toEqual([]);
+  });
+
+  it("finds no difference when a clause-wide carve-out answered nothing and is stale", () => {
+    expect(
+      differencesBetween({
+        before: { stale: [CLAUSE_WIDE] },
+        after: { "not-adopted": [LOOP_KEYWORD_LOOPS] },
+        notAdoptedClauses: [LOOPS_CLAUSE],
+      }),
+    ).toEqual([]);
+  });
+
+  it("reads the several checks of a clause-wide carve-out's clause as the one clause version 1 carved out", () => {
+    expect(
+      differencesBetween({
+        after: { "not-adopted": [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY] },
+        notAdoptedClauses: [TEST_BODY_CLAUSE],
+      }),
+    ).toEqual([]);
+  });
+
+  it("names a carved-out clause version 2 still runs, since its check was not marked not adopted", () => {
+    expect(
+      differencesBetween({
+        before: { exempted: [{ finding: LOOP_FINDING, by: [CLAUSE_WIDE] }] },
+        after: { findings: [NAMED_LOOP_FINDING] },
+        notAdoptedClauses: [LOOPS_CLAUSE],
+      }),
+    ).toEqual([
+      { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
+      { section: "not-adopted", onlyBefore: ["CD-15#loops"], onlyAfter: [] },
+      { section: "verdict", onlyBefore: ["pass"], onlyAfter: ["fail"] },
     ]);
   });
 });

@@ -134,8 +134,6 @@ const mappingLineOf = (request: { readonly refusal: UpgradeRefusal }): string =>
       return `${refusal.check} could run on ${refusal.engines.join(" or ")} through the ${refusal.mechanism} mechanism; the upgrade cannot choose. ${FAULT_IN_HONE}`;
     case "record-answers-nothing":
       return `the file carve-out for ${refusal.clause} in ${refusal.file} answers ${refusal.credited === "nothing" ? "no finding" : "only a suppression"}. Remove it, or fix the file it names, then run the upgrade again.`;
-    case "clause-wide-carve-out":
-      return `${refusal.clause} carries a clause-wide carve-out, which version 2 has no record for. Replace it with file carve-outs first.`;
     case "records-name-refused":
       return `${refusal.name} is not a name version 2 can file records under. ${FAULT_IN_HONE}`;
   }

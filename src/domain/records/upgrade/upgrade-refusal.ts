@@ -22,7 +22,6 @@ export type UpgradeRefusal =
       readonly file: RepoPath;
       readonly credited: UnansweredCredit;
     }
-  | { readonly kind: "clause-wide-carve-out"; readonly clause: string }
   | { readonly kind: "records-name-refused"; readonly name: string };
 
 export type UpgradeDrop = {
