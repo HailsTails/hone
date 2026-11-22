@@ -59,7 +59,7 @@ const entryCount = (entries: readonly unknown[]): "empty" | "some" =>
 const textDistinctness = (texts: readonly string[]): "distinct" | "repeated" =>
   new Set(texts).size === texts.length ? "distinct" : "repeated";
 
-const sourceCaseSchema = z.object({
+export const sourceCaseSchema = z.object({
   name: z.string(),
   fileName: repoPathSchema,
   source: z.string(),

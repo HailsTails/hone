@@ -1,7 +1,8 @@
+import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { RunnerLocation } from "../ports/engine/runner-location.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { Result } from "../../domain/result.ts";
-import { boundClauseOf, type RuleSetReading } from "./clause-under-test.ts";
+import { boundClauseOf, type BoundClause, type RuleSetReading } from "./clause-under-test.ts";
 import { conformingRunnerOf } from "./conforming-runner.ts";
 import { editionRunsOf } from "../../domain/runner/edition-runs.ts";
 import { gatheredOutcomes } from "../../domain/gathered-outcomes.ts";
@@ -16,7 +17,13 @@ export const clauseConformanceOf = async (
   if (bound.outcome === "failed") {
     return bound;
   }
-  const engine = await request.engine.load(request);
+  return conformBoundClause({ location: request, engine: request.engine, loadFailureDetail: request.loadFailureDetail, bound: bound.value });
+};
+
+export const conformBoundClause = async (
+  request: { readonly location: RunnerLocation; readonly engine: EnginePort; readonly bound: BoundClause; readonly loadFailureDetail: LoadFailureDetail },
+): Promise<Result<readonly ConformanceFailure[], ConformanceSetupFailure>> => {
+  const engine = await request.engine.load(request.location);
   if (engine.outcome === "failed") {
     return { outcome: "failed", error: { kind: "runner-unloadable", detail: request.loadFailureDetail({ failure: engine.error }) } };
   }
@@ -26,7 +33,7 @@ export const clauseConformanceOf = async (
   }
   const conformance = gatheredOutcomes({
     outcomes: await Promise.all(
-      editionRunsOf(bound.value).map((run) => request.engine.conform({ clause: run.clause, cases: run.cases, runner: runner.value })),
+      editionRunsOf(request.bound).map((run) => request.engine.conform({ clause: run.clause, cases: run.cases, runner: runner.value })),
     ),
   });
   return conformance.outcome === "failed"
@@ -34,7 +41,7 @@ export const clauseConformanceOf = async (
         outcome: "failed",
         error: {
           kind: "runner-refused",
-          detail: request.loadFailureDetail({ failure: { kind: "runner-failed", mechanism: request.mechanism, failure: conformance.error } }),
+          detail: request.loadFailureDetail({ failure: { kind: "runner-failed", mechanism: request.location.mechanism, failure: conformance.error } }),
         },
       }
     : conformance;
