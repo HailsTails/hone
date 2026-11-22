@@ -1,5 +1,4 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { editionRunsOf } from "../../../../application/conformance/edition-runs.ts";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
 import { runnerModuleSchema, type StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
@@ -284,22 +283,23 @@ const rowsOf = (request: {
   return piece.value.clauses.flatMap((entry) => {
     const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
     assert(definition?.kind === "mechanical", `${request.discipline}#${entry.clause} is a mechanical clause`);
-    const runs = editionRunsOf({
+    const casesByEdition = Map.groupBy(
+      [...definition.cases.flag, ...definition.cases.allow],
+      (sourceCase) => sourceCase.edition ?? entry.editions.default,
+    );
+    return [...casesByEdition].map(([edition, cases]) => ({
+      name: edition === entry.editions.default
+        ? `${request.discipline}#${entry.clause}`
+        : `${request.discipline}#${entry.clause} edition ${edition}`,
       clause: {
         address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
         anchor: definition.anchor,
         pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
         settings: entry.settings,
         clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
-        edition: entry.editions.default,
+        edition,
       },
-      cases: [...definition.cases.flag, ...definition.cases.allow],
-    });
-    return runs.map((run) => ({
-      name: run.clause.edition === entry.editions.default
-        ? `${request.discipline}#${entry.clause}`
-        : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
-      ...run,
+      cases,
     }));
   });
 };

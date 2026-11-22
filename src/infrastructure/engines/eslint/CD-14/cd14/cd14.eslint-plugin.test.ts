@@ -1,46 +1,13 @@
-import { assert, describe, expect, it, test, vi } from "vitest";
-import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../../node/path-port.ts";
-import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
-import type { ClauseDefinition, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
+import { assert, describe, expect, it, test } from "vitest";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import discipline from "../../../../../../rules/CD-14/discipline.json" with { type: "json" };
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import classAuthoringPlugin, { classDisposition, containerMode } from "./cd14.eslint-plugin.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
-
-type MechanicalCases = Extract<ClauseDefinition, { readonly kind: "mechanical" }>["cases"];
-
-const classSyntaxCases = (): MechanicalCases => {
-  const loaded = readDisciplineFile({
-    fileText: {
-      read: () => ({ outcome: "ok", value: JSON.stringify(discipline) }),
-      exists: () => "present",
-      write: vi.fn<FileTextPort["write"]>(),
-    },
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
-    ruleSetRoot: absolutePathSchema.parse("/install"),
-    discipline: disciplineIdSchema.parse("CD-14"),
-  });
-  assert(loaded.outcome === "ok", "CD-14 discipline.json reads through the rule-set reader");
-  const [classSyntax, libraryConstruction, staticOnlyClass, ...surplus] = loaded.value.clauses;
-  assert(classSyntax?.id === "class-syntax", "CD-14 declares class-syntax as its first clause");
-  assert(classSyntax.kind === "mechanical", "CD-14 declares class-syntax as a mechanical clause");
-  assert(
-    libraryConstruction?.id === "library-construction",
-    "CD-14 declares the library-construction judgement clause second",
-  );
-  assert(staticOnlyClass?.id === "static-only-class", "CD-14 declares the static-only-class clause third");
-  assert(surplus.length === 0, "CD-14 declares exactly three clauses");
-  return classSyntax.cases;
-};
-
-const sharedCases = classSyntaxCases();
 
 const keywordAfterNodeStartCases: readonly SourceCase[] = [
   {
@@ -145,12 +112,8 @@ test("an unrelated declared node does not provide an ambient exemption", () => {
   ).toBe("runtime");
 });
 
-describe("CD-14 no-class-authoring rule through the ESLint runner's lintSourceCases", () => {
-  it.each([
-    ...sharedCases.flag,
-    ...sharedCases.allow,
-    ...keywordAfterNodeStartCases,
-  ])("flags exactly the expected lines of the case $name", async (sharedCase) => {
+describe("CD-14 no-class-authoring rule, on a class keyword after its node's start, through the ESLint runner's lintSourceCases", () => {
+  it.each(keywordAfterNodeStartCases)("flags exactly the expected lines of the case $name", async (sharedCase) => {
     expect(
       await eslint.lintSourceCases({
         cwd: PIECE_ROOT,

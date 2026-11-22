@@ -1,37 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { type ArgumentProblem, argumentsInvalid } from "../arguments/argument-problem.ts";
-import { helpText, SYNOPSIS } from "../arguments/command-help.ts";
-import { FORFEITURE_OPTION, type HelpTopic, LEAVE_OPTION, REPO_OPTION, SUBCOMMANDS } from "../arguments/command-line.ts";
-import { projectCommandOutcome, versionCommandOutcome } from "../outcomes/command-outcome.ts";
-import { pruneDebtCommandOutcome, recordDebtCommandOutcome, splitRecordsCommandOutcome } from "../outcomes/record-command-outcomes.ts";
-import { installedVersionOf } from "../installation/installed-version.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import { loadFailureDetail, loadFailureText } from "../../printed-report/load-failures/load-failure-text.ts";
-import { runLoadFailureLine } from "../../printed-report/load-failures/load-failure-lines.ts";
-import type { InheritedDebtOutcome } from "../../../domain/records/discipline-exceptions/inherited-debt.ts";
-import type { RecordsSplit } from "../../../application/ports/records/exception-repository.ts";
-import type { ExceptionRecord, ExistingAuthorisationProvenance, InheritedDebtProvenance, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
-import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
-import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
-import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
-import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { FilePresence } from "../../../domain/repository/file-presence.ts";
-import { createPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
-import { WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
-import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { editionSchema } from "../../content-files/edition.ts";
-import type { ClauseEditionReading } from "../../../domain/rule-set/edition-types.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import type { WhyChain } from "../../../domain/records/why-chain.ts";
-import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { REPORT_OUTPUTS, type ReportOutput, VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
+import { type ArgumentProblem, argumentsInvalid } from "../infrastructure/command-line/arguments/argument-problem.ts";
+import { helpText, SYNOPSIS } from "../infrastructure/command-line/arguments/command-help.ts";
+import { FORFEITURE_OPTION, type HelpTopic, LEAVE_OPTION, REPO_OPTION, SUBCOMMANDS } from "../infrastructure/command-line/arguments/command-line.ts";
+import { projectCommandOutcome, versionCommandOutcome } from "../infrastructure/command-line/outcomes/command-outcome.ts";
+import { pruneDebtCommandOutcome, recordDebtCommandOutcome, splitRecordsCommandOutcome } from "../infrastructure/command-line/outcomes/record-command-outcomes.ts";
+import { installedVersionOf } from "../infrastructure/command-line/installation/installed-version.ts";
+import type { LoadFailure } from "../domain/report/load-failure.ts";
+import { loadFailureDetail, loadFailureText } from "../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import { runLoadFailureLine } from "../infrastructure/printed-report/load-failures/load-failure-lines.ts";
+import type { InheritedDebtOutcome } from "../domain/records/discipline-exceptions/inherited-debt.ts";
+import type { RecordsSplit } from "../application/ports/records/exception-repository.ts";
+import type { ExceptionRecord, ExistingAuthorisationProvenance, InheritedDebtProvenance, InvalidRecord } from "../domain/records/discipline-exceptions/exception-record.ts";
+import type { AttributedNativeException, Finding } from "../domain/finding/governance.ts";
+import type { RunnerFailure } from "../domain/runner/runner-failure.ts";
+import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../domain/runner/runner-result-types.ts";
+import type { MisnamedRuleId } from "../domain/runner/checks-run-report.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import type { FilePresence } from "../domain/repository/file-presence.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import { WAIVED_CLAUSES_REPLACEMENT } from "../domain/settings/assessment.ts";
+import type { BaseRevisionAvailability } from "../domain/repository/base-revision-availability.ts";
+import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
+import { editionSchema } from "../infrastructure/content-files/edition.ts";
+import type { ClauseEditionReading } from "../domain/rule-set/edition-types.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import type { WhyChain } from "../domain/records/why-chain.ts";
+import type { VersionOneWhyChain } from "../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import { REPORT_OUTPUTS, type ReportOutput, VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../domain/settings/report-output.ts";
 import type {
   AssessmentFileNote,
   AssessmentSection,
@@ -41,28 +41,28 @@ import type {
   PartialAssessment,
   ProjectionProblem,
   Unmeasured,
-} from "../../../domain/report/check-report.ts";
-import { SECTION_NAMES, type SectionName, sectionRoleOf } from "../../../domain/report/section-roles.ts";
-import { RUN_SECTION_NAMES, type RunSectionName, runSectionRoleOf } from "../../../domain/report/report-sections.ts";
-import type { EngineNotRun, RunProjectionProblem, RunReport, RunUnmeasured } from "../../../domain/report/run-report.ts";
-import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import type { Verdict } from "../../../domain/report/verdict.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide, type UnreadableGuide } from "../../printed-report/symptoms/symptom-notes.ts";
-import { renderGuidedReportText } from "../../printed-report/report-text.ts";
-import { renderRunReportText } from "../../printed-report/run-report-text.ts";
-import { recordReferenceText, recordSubjectText } from "../../printed-report/records/record-lines.ts";
-import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../../printed-report/records/record-command-lines.ts";
-import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../../printed-report/upgrade/upgrade-success-text.ts";
-import { UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../../printed-report/upgrade/upgrade-refusal-text.ts";
-import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
-import type { PlanRefusal } from "../../../application/ports/upgrade/plan-refusal.ts";
-import { authorisingOf } from "../../../application/records/authorising.ts";
-import type { AuthoriseRequest, Authorising } from "../../../application/ports/authorising.ts";
-import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
-import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
-import type { PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
-import type { RecordsUnmeasured } from "../../../domain/records/measurement/records-unmeasured.ts";
-import type { ConventionKey } from "../../../domain/settings/conventions.ts";
+} from "../domain/report/check-report.ts";
+import { SECTION_NAMES, type SectionName, sectionRoleOf } from "../domain/report/section-roles.ts";
+import { RUN_SECTION_NAMES, type RunSectionName, runSectionRoleOf } from "../domain/report/report-sections.ts";
+import type { EngineNotRun, RunProjectionProblem, RunReport, RunUnmeasured } from "../domain/report/run-report.ts";
+import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
+import type { Verdict } from "../domain/report/verdict.ts";
+import { NO_SYMPTOM_GUIDE, type SymptomGuide, type UnreadableGuide } from "../infrastructure/printed-report/symptoms/symptom-notes.ts";
+import { renderGuidedReportText } from "../infrastructure/printed-report/report-text.ts";
+import { renderRunReportText } from "../infrastructure/printed-report/run-report-text.ts";
+import { recordReferenceText, recordSubjectText } from "../infrastructure/printed-report/records/record-lines.ts";
+import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../infrastructure/printed-report/records/record-command-lines.ts";
+import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
+import { UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../infrastructure/printed-report/upgrade/upgrade-refusal-text.ts";
+import type { UpgradeFailure } from "../application/ports/upgrade/upgrade-stop.ts";
+import type { PlanRefusal } from "../application/ports/upgrade/plan-refusal.ts";
+import { authorisingOf } from "../application/records/authorising.ts";
+import type { AuthoriseRequest, Authorising } from "../application/ports/authorising.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
+import type { PrunedReason } from "../domain/records/debt/prunable-debt.ts";
+import type { RecordsUnmeasured } from "../domain/records/measurement/records-unmeasured.ts";
+import type { ConventionKey } from "../domain/settings/conventions.ts";
 import type {
   AuthorisedLocation,
   AuthorisedReach,
@@ -78,14 +78,14 @@ import type {
   RecordRefusal,
   RecordsDocumentRefusal,
   SymptomReach,
-} from "../../../domain/records/hone-records/hone-record.ts";
-import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../arguments/run-help.ts";
-import { INSTALLED_PORTS, toolCommandOver } from "../../../composition/run-tool-command.ts";
-import type { VersionOneCommandRequest as ToolCommandRequest } from "../../../application/ports/version-one-command-request.ts";
-import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
-import { recordsReader } from "../../hone-records-folder/reading/records-reading.ts";
-import { recordsEditor } from "../../hone-records-folder/writing/records-edit.ts";
+} from "../domain/records/hone-records/hone-record.ts";
+import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../infrastructure/command-line/arguments/run-help.ts";
+import { INSTALLED_PORTS, toolCommandOver } from "./run-tool-command.ts";
+import type { VersionOneCommandRequest as ToolCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
 
 const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
@@ -2462,11 +2462,11 @@ const printedHelpBlocksOf = async (request: {
 const helpBlocksIn = (request: { readonly text: string }): readonly string[] =>
   [...request.text.matchAll(HELP_BLOCK)].map((match) => match[0]).toSorted();
 
-const CONTRACT_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../../../docs/output-contract.md` });
+const CONTRACT_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../docs/output-contract.md` });
 
 const CONTRACT_PARTS = contractPartsOf({ text: CONTRACT_TEXT });
 
-const README_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../../../README.md` });
+const README_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../README.md` });
 
 describe("contractGaps over written-out lines, so the contract reading can fail", () => {
   const FINDING_TEMPLATE: DocumentedLine = { label: "findings", template: "<clause> <mechanism> <file>:<line>:<column> <snippet>" };

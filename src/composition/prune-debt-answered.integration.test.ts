@@ -1,27 +1,27 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { commandOf } from "../../composition/composed-command.ts";
-import type { VersionOneCommandRequest as PruneCommand } from "../../application/ports/version-one-command-request.ts";
-import { PRUNE_DEBT } from "../../composition/commands.ts";
-import { exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import type { EntryKindPort } from "../../application/ports/file-system/entry-kind-port.ts";
-import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "../../application/ports/git-port.ts";
-import { createDefaultModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../application/ports/host/process-port.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { createWalkerRunner } from "../../infrastructure/engines/audit/runner/create-walker-runner.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
-import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
-import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
-import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
+import { commandOf } from "./composed-command.ts";
+import type { VersionOneCommandRequest as PruneCommand } from "../application/ports/version-one-command-request.ts";
+import { PRUNE_DEBT } from "./commands.ts";
+import { exceptionRepositoryOf } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../domain/repository/repo-path-types.ts";
+import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
 
 const runPruneDebtCommand = (command: PruneCommand) => commandOf({ tool: PRUNE_DEBT, ports: command })(command);
 
@@ -63,7 +63,7 @@ const inMemoryOverlay = (request: {
   };
 };
 
-const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../..`, installForm: "source" }) });
+const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../..`, installForm: "source" }) });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
 assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 const defaultParsePort = loadedParsePort.value;
@@ -78,14 +78,14 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const FIXTURE = resolvedPath({ path: `${import.meta.dirname}/prune-debt-answered` });
+const FIXTURE = resolvedPath({ path: `${import.meta.dirname}/../operations/prune-debt/prune-debt-answered` });
 
 const RECORDS_PATH = `${FIXTURE}/discipline-exceptions.json`;
 
 const recordsOnDisk = disk.read({ path: RECORDS_PATH });
 assert(recordsOnDisk.outcome === "ok", "the fixture's records read from disk");
 
-const TOOL_COMMAND_URL = new URL("../../hone.ts", import.meta.url).href;
+const TOOL_COMMAND_URL = new URL("../hone.ts", import.meta.url).href;
 
 const ANSWERED = repoPathSchema.parse("src/answered.ts");
 const DOUBLY = repoPathSchema.parse("src/doubly.ts");
