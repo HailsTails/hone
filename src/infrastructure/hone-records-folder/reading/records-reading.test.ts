@@ -336,12 +336,15 @@ describe("recordsReadingOf", () => {
     ).toMatchObject({ outcome: "ok", value: { refused: [{ place: { file: BOUNDARIES_FILE, index: 1 }, refusals: [{ kind: "duplicate", of: { file: BOUNDARIES_FILE, index: 0 } }] }] } });
   });
 
-  it.each([CLAIMED_TYPE, TEXT_PAST_ITS_READER])("accepts debt on $name: debt is debt, not blockers", (symptom) => {
+  it.each([
+    { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/debt/claimed-type.json") },
+    { symptom: TEXT_PAST_ITS_READER, file: repoPathOf("hone-records/debt/text-past-its-reader.json") },
+  ])("accepts debt on $symptom.name: debt is debt, not blockers", ({ symptom, file }) => {
     expect(
       recordsReadingOf({
         documents: [
           {
-            file: repoPathOf(`hone-records/debt/${symptom.name}.json`),
+            file,
             document: { version: 2, records: [{ answers: symptom.name, file: "src/held.ts" }] },
           },
         ],
@@ -351,12 +354,15 @@ describe("recordsReadingOf", () => {
     ).toMatchObject({ outcome: "ok", value: { records: [{ record: { kind: "debt", symptom: { name: symptom.name } } }], refused: [] } });
   });
 
-  it.each([CLAIMED_TYPE, TEXT_PAST_ITS_READER])("never refuses an authorised location for being on $name", (symptom) => {
+  it.each([
+    { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/authorised-locations/claimed-type.json") },
+    { symptom: TEXT_PAST_ITS_READER, file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json") },
+  ])("never refuses an authorised location for being on $symptom.name", ({ symptom, file }) => {
     expect(
       recordsReadingOf({
         documents: [
           {
-            file: repoPathOf(`hone-records/authorised-locations/${symptom.name}.json`),
+            file,
             document: {
               version: 2,
               records: [{ answers: symptom.name, file: "src/held.ts", case: "gives-a-value-its-type", owes: "declared-not-asserted", whyChain: WHY_CHAIN }],
