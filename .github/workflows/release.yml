@@ -47,7 +47,7 @@ jobs:
     name: Release the package tarball
     needs: version
     if: needs.version.outputs.state == 'unreleased'
-    runs-on: windows-2025-vs2026
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: write
