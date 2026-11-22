@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { createSelectionRepository, readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
@@ -44,6 +44,12 @@ const readBefore = () => {
   return reading.value;
 };
 
+const readBeforeRunSettings = () => {
+  const reading = readRunSettings({ fileText, path, repoRoot: BEFORE_ROOT });
+  assert(reading.outcome === "ok", "the plan's version 1 run settings load");
+  return reading.value;
+};
+
 const readAfter = () => {
   const stages = versionTwoStagesOver({
     ports: {
@@ -70,20 +76,32 @@ const readAfter = () => {
 };
 
 describe("the plan's version 1 and version 2 files through the settings pipeline", () => {
-  it("give the same selected clauses, clause roots, not-run clauses and editions", () => {
+  it("give the same bindings, each with its clause settings, edition, anchor and piece root", () => {
+    expect(readAfter().selection.bindings).toEqual(readBefore().bindings);
+  });
+
+  it("give the same selected clauses, clause roots, not-adopted clauses, not-run clauses, editions and excluded paths", () => {
     const before = readBefore();
     const after = readAfter();
     expect({
       selected: after.selection.selection.selected,
       clauseRoots: after.selection.clauseRoots,
+      notAdopted: after.selection.selection.notAdopted,
       notRun: after.selection.selection.notRun,
       editions: after.selection.selection.editions,
+      excluded: after.selection.excluded,
     }).toEqual({
       selected: before.selection.selected,
       clauseRoots: before.clauseRoots,
+      notAdopted: before.selection.notAdopted,
       notRun: before.selection.notRun,
       editions: before.selection.editions,
+      excluded: before.excluded,
     });
+  });
+
+  it("give the same run settings", () => {
+    expect(readAfter().runSettings).toEqual(readBeforeRunSettings());
   });
 
   it("names as uncovered, per symptom, every clause whose check of a listed symptom is listed nowhere", () => {
