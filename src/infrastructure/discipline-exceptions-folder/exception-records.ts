@@ -8,6 +8,7 @@ import type { FileExceptionWhyChains } from "../../domain/settings/selection/fil
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import { basePathOf } from "../../domain/repository/renamed-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
 import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
@@ -235,9 +236,6 @@ const importRefused = (request: { readonly detail: string; readonly kind: Import
   error: { kind: "import-unverified", detail: `${request.detail}: ${IMPORT_WAY_OUT[request.kind]}` },
 });
 
-const basePathOf = (request: { readonly file: RepoPath; readonly baseline: MeasuredBaseline }): RepoPath =>
-  request.baseline.basePathOfRenamed.get(request.file) ?? request.file;
-
 const REGULAR_EXPRESSION_SYNTAX = /[.*+?^${}()|[\]\\]/g;
 
 const PATH_CHARACTER_BESIDES_DOT = "[\\p{L}\\p{N}\\p{M}_\\/\\-+~@＿／－＋～＠．]";
@@ -297,7 +295,7 @@ const importAgainstBase = <ImportedRecord>(request: {
   ) {
     return importRefused({ detail: "the imported record was edited since the base revision", kind: request.identity.kind });
   }
-  const fileAtBase = basePathOf({ file: request.identity.file, baseline });
+  const fileAtBase = basePathOf({ file: request.identity.file, basePathOfRenamed: baseline.basePathOfRenamed });
   const source = legacySourceOf({ source: request.provenance.source });
   const listed =
     source !== "not-legacy-source" &&

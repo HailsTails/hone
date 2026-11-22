@@ -4,6 +4,7 @@ import type { ExceptionRepository } from "../../application/ports/records/except
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import {
   type InheritedDebtOutcome,
+  type InheritedDebtRequest,
   inheritedDebtEntriesOf,
   inheritedDebtOf,
   reachedDebtOf,
@@ -13,7 +14,7 @@ import type { Assessment } from "../../domain/settings/assessment.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordDebtArguments } from "../../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../../application/ports/command/repository-located.ts";
@@ -32,18 +33,28 @@ type DebtResult = Result<readonly InheritedDebtOutcome[], LoadFailure>;
 
 const ASSESSED_IN_THIS_RUN: Assessment = { forfeiture: "this-run" };
 
-const pathsInBase = (request: AdoptionInput): Result<ReadonlySet<RepoPath>, LoadFailure> => {
-  const listed = request.gitTree.pathsAt({ repoRoot: request.repoRoot, revision: request.arguments.baseRevision });
-  return listed.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "git-failed", detail: `${listed.error.command}: ${listed.error.detail}` } }
-    : { outcome: "ok", value: new Set(listed.value) };
+type BaseTree = Pick<InheritedDebtRequest, "inBase" | "basePathOfRenamed">;
+
+const loadFailureOf = (failure: GitFailure): Result<never, LoadFailure> => ({
+  outcome: "failed",
+  error: { kind: "git-failed", detail: `${failure.command}: ${failure.detail}` },
+});
+
+const baseTreeOf = (request: AdoptionInput): Result<BaseTree, LoadFailure> => {
+  const { repoRoot, arguments: { baseRevision } } = request;
+  const listed = request.gitTree.pathsAt({ repoRoot, revision: baseRevision });
+  if (listed.outcome === "failed") {
+    return loadFailureOf(listed.error);
+  }
+  const renamed = request.git.renamedSince({ repoRoot, baseRevision });
+  return renamed.outcome === "failed" ? loadFailureOf(renamed.error) : { outcome: "ok", value: { inBase: new Set(listed.value), basePathOfRenamed: renamed.value } };
 };
 
-type DebtRequest = AdoptionInput & {
-  readonly selection: SelectionReading;
-  readonly existing: readonly PlacedEntry[];
-  readonly inBase: ReadonlySet<RepoPath>;
-};
+type DebtRequest = AdoptionInput &
+  BaseTree & {
+    readonly selection: SelectionReading;
+    readonly existing: readonly PlacedEntry[];
+  };
 
 const clauseMechanismsOf = (request: { readonly selection: SelectionReading }): ReadonlyMap<string, MechanismId> =>
   new Map(request.selection.selection.selected.map((clause) => [clauseAddressText({ address: clause.address }), clause.mechanism]));
@@ -67,6 +78,7 @@ const debtOutcomesOf = async (request: DebtRequest): Promise<DebtResult> => {
       existing: request.existing,
       leave: request.arguments.leave,
       inBase: request.inBase,
+      basePathOfRenamed: request.basePathOfRenamed,
       refusing: request.selection.selection.selected.flatMap((clause) => (clause.exceptions === "refused" ? [clause.address] : [])),
     }),
     unprojected: reached.value.unprojected,
@@ -86,9 +98,9 @@ export const adoptionDebt = (request: AdoptionInput): Promise<DebtResult> => {
   if (existing.outcome === "failed") {
     return Promise.resolve(existing);
   }
-  const inBase = pathsInBase(request);
-  if (inBase.outcome === "failed") {
-    return Promise.resolve(inBase);
+  const baseTree = baseTreeOf(request);
+  if (baseTree.outcome === "failed") {
+    return Promise.resolve(baseTree);
   }
-  return debtOutcomesOf({ ...request, selection: selection.value, existing: existing.value, inBase: inBase.value });
+  return debtOutcomesOf({ ...request, ...baseTree.value, selection: selection.value, existing: existing.value });
 };
