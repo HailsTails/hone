@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { symptomsPageOf } from "./symptoms-page.ts";
+import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -61,8 +63,8 @@ const FILE: CatalogueFile = {
       correctUses: [],
     },
   ],
-  clauses: [{ clause: clauseAddressSchema.parse("CD-1#any-cast"), sight: { kind: "one-symptom", symptom: "claimed-type" } }],
-  checks: [{ symptom: "claimed-type", name: "cast-to-any", clause: clauseAddressSchema.parse("CD-1#any-cast") }],
+  clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, sight: { kind: "one-symptom", symptom: "claimed-type" } }],
+  checks: [{ symptom: "claimed-type", name: "cast-to-any", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") } }],
   namedBans: [],
 };
 

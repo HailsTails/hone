@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
-import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { readInstallDiscipline } from "./install-discipline.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const CD_14 = disciplineIdSchema.parse("CD-14");
+const CD_14 = disciplineIdOf("CD-14");
 
 const NAMES_PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
 

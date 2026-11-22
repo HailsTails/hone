@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { checksPageOf } from "./checks-page.ts";
+import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -37,8 +39,8 @@ const FILE: CatalogueFile = {
   ],
   clauses: [],
   checks: [
-    { symptom: "claimed-type", name: "cast-to-any", clause: clauseAddressSchema.parse("CD-1#any-cast") },
-    { symptom: "claimed-type", name: "non-null-assertions", clause: clauseAddressSchema.parse("CD-1#non-null") },
+    { symptom: "claimed-type", name: "cast-to-any", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") } },
+    { symptom: "claimed-type", name: "non-null-assertions", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("non-null") } },
   ],
   namedBans: [],
 };

@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
-import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { readHeldDiscipline } from "./held-discipline.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const TEAM_ROOT = absolutePathSchema.parse("/repo/team-rules");
+const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
 
-const TM_1 = disciplineIdSchema.parse("TM-1");
+const TM_1 = disciplineIdOf("TM-1");
 
 const TM_1_PATH = "/repo/team-rules/rules/TM-1/discipline.json";
 
@@ -58,7 +58,7 @@ describe("readHeldDiscipline", () => {
     const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent");
     const read = vi.fn<FileTextPort["read"]>();
     expect(
-      readHeldDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, discipline: disciplineIdSchema.parse("CD-14") }),
+      readHeldDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, discipline: disciplineIdOf("CD-14") }),
     ).toEqual({ outcome: "ok", value: { held: "absent" } });
     expect(exists.mock.calls).toEqual([[{ path: "/install/src/infrastructure/disciplines-file/version-one-names.json" }]]);
   });

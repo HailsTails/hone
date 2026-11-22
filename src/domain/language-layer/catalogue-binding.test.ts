@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { catalogueBoundTo, type EngineBindings, holdingBoundTo, pieceClauseKeyOf } from "./catalogue-binding.ts";
 import type { CatalogueContent, CheckContent, Engine, RecordKind, Symptom } from "./symptom-catalogue.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
@@ -22,9 +24,11 @@ const DATE_USED_DIRECTLY: Symptom = {
   correctUses: [],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+const TEAM_CLOCK_SOURCES = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
+
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const CLOCK_SOURCES_CHECK: CheckContent = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, forms: [] };
 
@@ -51,7 +55,7 @@ const BINDINGS: EngineBindings = new Map([
 
 describe("pieceClauseKeyOf", () => {
   it("names a clause by its discipline and clause, whatever rule set it sits in", () => {
-    expect(pieceClauseKeyOf(clauseAddressSchema.parse("team/CD-17#clock-sources"))).toBe("CD-17#clock-sources");
+    expect(pieceClauseKeyOf(TEAM_CLOCK_SOURCES)).toBe("CD-17#clock-sources");
   });
 });
 

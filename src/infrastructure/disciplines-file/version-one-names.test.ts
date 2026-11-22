@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { NO_VERSION_ONE_NAMES, readVersionOneNames, VERSION_ONE_NAMES_SEGMENTS, versionOneNamesOf } from "./version-one-names.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
 
@@ -36,9 +38,9 @@ describe("versionOneNamesOf", () => {
     ).toEqual({
       outcome: "ok",
       value: {
-        clauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "outside-the-cases" } }],
-        namedClauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), kind: "mechanical", anchor: { kind: "file" } }],
-        clauseOfCheck: new Map([["date-used-directly#clock-sources", clauseAddressSchema.parse("CD-17#clock-sources")]]),
+        clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "outside-the-cases" } }],
+        namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" } }],
+        clauseOfCheck: new Map([["date-used-directly#clock-sources", { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }]]),
         formatsOfToday: { debt: "file-carve-out" },
       },
     });
@@ -69,7 +71,7 @@ describe("versionOneNamesOf", () => {
   it("names a clause with no checks and no anchor a judgement clause", () => {
     expect(versionOneNamesOf({ document: { version: 1, clauses: [{ clause: "CD-32#outside", sight: { kind: "outside-the-cases" }, checks: [] }], recordKinds: {} } })).toMatchObject({
       outcome: "ok",
-      value: { namedClauses: [{ clause: clauseAddressSchema.parse("CD-32#outside"), kind: "judgement" }] },
+      value: { namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("outside") }, kind: "judgement" }] },
     });
   });
 
@@ -105,9 +107,9 @@ describe("readVersionOneNames", () => {
     expect(readVersionOneNames({ fileText: fileTextHolding({ text }), path: PATH })).toEqual({
       outcome: "ok",
       value: {
-        clauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-        namedClauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), kind: "mechanical", anchor: { kind: "file" } }],
-        clauseOfCheck: new Map([["date-used-directly#clock-sources", clauseAddressSchema.parse("CD-17#clock-sources")]]),
+        clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
+        namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" } }],
+        clauseOfCheck: new Map([["date-used-directly#clock-sources", { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }]]),
         formatsOfToday: {},
       },
     });

@@ -2,12 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
 import { createBoundCatalogueOf, readBoundCatalogue } from "./bound-catalogue.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const TEAM_ROOT = absolutePathSchema.parse("/repo/team-rules");
+const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
@@ -94,7 +94,7 @@ describe("readBoundCatalogue", () => {
     const directory: DirectoryPort = {
       list: vi
         .fn<DirectoryPort["list"]>()
-        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absolutePathSchema.parse("/repo/team-rules/mechanisms/audit"), detail: "EACCES" } }),
+        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/team-rules/mechanisms/audit"), detail: "EACCES" } }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
 

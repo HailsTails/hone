@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { checkTodayOf } from "./check-today.ts";
+import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 
 type Symptom = CatalogueFile["symptoms"][number];
 
@@ -36,12 +38,12 @@ const FILE: CatalogueFile = {
   symptoms: [CHECKED, PERSON_FIRST, REVIEWED, SEEN_ONLY_BY_A_CHECKED_CLAUSE, UNSEEN],
   clauses: [
     {
-      clause: clauseAddressSchema.parse("CD-1#checked-clause"),
+      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") },
       sight: { kind: "symptom-by-form", forms: [{ section: "Form", symptom: "seen-only-by-a-checked-clause" }] },
     },
-    { clause: clauseAddressSchema.parse("CD-2#review-clause"), sight: { kind: "method", recipe: "composition-root", outcomeSeenBy: ["reviewed", "person-first"] } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("review-clause") }, sight: { kind: "method", recipe: "composition-root", outcomeSeenBy: ["reviewed", "person-first"] } },
   ],
-  checks: [{ symptom: "checked", name: "a-check", clause: clauseAddressSchema.parse("CD-1#checked-clause") }],
+  checks: [{ symptom: "checked", name: "a-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") } }],
   namedBans: [],
 };
 

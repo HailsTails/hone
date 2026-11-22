@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { createEngineBindingsRepository } from "./piece-engines.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
-const INSTALL = absolutePathSchema.parse("/install");
+const INSTALL = absoluteRootOf("/install");
 
-const TEAM = absolutePathSchema.parse("/repo/team-rules");
+const TEAM = absoluteRootOf("/repo/team-rules");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => INSTALL });
 
@@ -127,7 +127,7 @@ describe("createEngineBindingsRepository", () => {
         .fn<DirectoryPort["list"]>()
         .mockReturnValueOnce({
           outcome: "failed",
-          error: { kind: "directory-unreadable", path: absolutePathSchema.parse("/install/src/infrastructure/engines/audit"), detail: "EACCES" },
+          error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/audit"), detail: "EACCES" },
         })
         .mockReturnValueOnce({ outcome: "ok", value: [] }),
       create: vi.fn<DirectoryPort["create"]>(),
