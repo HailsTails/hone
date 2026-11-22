@@ -52,7 +52,7 @@ const CLASS_SYNTAX_CLAUSE = {
 const ABSTRACT_SYNTAX_CLAUSE = {
   address: ABSTRACT_SYNTAX,
   anchor: { kind: "keyword", keyword: "abstract" },
-  pieceRoot: "/install/src/infrastructure/engines/lint/CD-14",
+  pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14",
   settings: { module: "abstract-syntax.ts" },
   clauseSettings: {},
   edition: editionOf("1"),

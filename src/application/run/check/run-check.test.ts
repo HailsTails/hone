@@ -837,7 +837,7 @@ const TWO_MECHANISM_READING: SelectionReading = {
   selection: { ...SELECTION_READING.selection, selected: [SELECTED_CLASS_SYNTAX, { ...SELECTED_ABSTRACT_SYNTAX, mechanism: LINT }] },
   bindings: [
     classSyntaxBinding,
-    { mechanism: LINT, clause: { ...abstractSyntaxBinding.clause, pieceRoot: "/install/src/infrastructure/engines/lint/CD-14" } },
+    { mechanism: LINT, clause: { ...abstractSyntaxBinding.clause, pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14" } },
   ],
   clauseRoots: [CLASS_SYNTAX_ROOT, ABSTRACT_SYNTAX_ROOT],
 };
