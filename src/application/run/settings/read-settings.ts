@@ -7,6 +7,8 @@ import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { checksOfClause } from "../../../domain/language-layer/clause-checks.ts";
+import type { AddressedCheck } from "../../../domain/language-layer/check-address-text.ts";
 import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSetCatalogue, sameRuleSet } from "../../../domain/settings/check-choices.ts";
 import { settledCheckSettings } from "../../../domain/settings/clause-settings/check-settings.ts";
 import type { Conventions } from "../../../domain/settings/conventions.ts";
@@ -78,7 +80,12 @@ const cataloguesHeld = (request: SourcesRequest): Result<readonly RuleSetCatalog
 };
 
 const boundClauseOf = (
-  request: SourcesRequest & { readonly chosen: ChosenClause; readonly mechanism: MechanismId; readonly settingsPath: string },
+  request: SourcesRequest & {
+    readonly catalogues: readonly RuleSetCatalogue[];
+    readonly chosen: ChosenClause;
+    readonly mechanism: MechanismId;
+    readonly settingsPath: string;
+  },
 ): Result<BoundClause, VersionTwoLoadFailure> => {
   const { chosen, mechanism } = request;
   const ruleSetRoot = request.sources.ruleSetRoot({ ruleSet: chosen.clause.ruleSet, ruleSets: request.file.ruleSets });
@@ -113,11 +120,14 @@ const boundClauseOf = (
           edition: settled.value.edition,
         },
       },
-      root: { clause: chosen.clause, ruleSetRoot: ruleSetRoot.value },
+      root: { clause: chosen.clause, ruleSetRoot: ruleSetRoot.value, checks: addressedChecksOf({ catalogues: request.catalogues, clause: chosen.clause }) },
       editions: piece.value.editions,
     },
   };
 };
+
+const addressedChecksOf = (request: { readonly catalogues: readonly RuleSetCatalogue[]; readonly clause: ClauseAddress }): readonly AddressedCheck[] =>
+  checksOfClause(request).map((check) => ({ name: check.name, symptom: { name: check.symptom.name } }));
 
 const runClauses = (request: { readonly clauses: readonly ChosenClause[] }): readonly (readonly [ChosenClause, MechanismId])[] =>
   request.clauses.flatMap((chosen): readonly (readonly [ChosenClause, MechanismId])[] =>
@@ -194,7 +204,7 @@ export const readSettings = (request: SettingsReadRequest): Result<SettingsReadi
   }
   const bound = everyOk({
     entries: runClauses({ clauses: choices.value.clauses }),
-    resolve: ([chosen, mechanism]) => boundClauseOf({ sources: request.sources, file, chosen, mechanism, settingsPath: path }),
+    resolve: ([chosen, mechanism]) => boundClauseOf({ sources: request.sources, file, catalogues: catalogues.value, chosen, mechanism, settingsPath: path }),
   });
   if (bound.outcome === "failed") {
     return bound;

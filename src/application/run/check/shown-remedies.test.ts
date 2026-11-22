@@ -35,21 +35,22 @@ const LOCATED: Finding = {
   snippet: "rows.map(idOf);",
 };
 
-const REMEDIED: Finding = { ...LOCATED, remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-method-that-computes-a-value" } };
+const REMEDIED: Finding = { ...LOCATED, remedy: { fix: "write the values out", page: "computed-value-in-a-test/test-body.md", section: "a-method-that-computes-a-value" } };
 
-const SHIPPED_ROOT = { clause: CLAUSE, ruleSetRoot: STORE_ROOT };
+const SHIPPED_ROOT = { clause: CLAUSE, ruleSetRoot: STORE_ROOT, checks: [{ name: "test-body", symptom: { name: "computed-value-in-a-test" } }] };
 
 describe("shownRemediesOf", () => {
-  it("shows the page a finding's rule names as the path a reader opens, through the repository's link", () => {
+  it("shows the page a finding's check item names, under the rule set's check items, as the path a reader opens", () => {
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone\\rules\\typescript\\symptoms")
+      .mockReturnValueOnce(
+        "C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone\\rules\\typescript\\symptoms\\computed-value-in-a-test/test-body.md",
+      );
     expect(
       shownRemediesOf({
-        path: pathJoining(
-          vi
-            .fn<PathPort["join"]>()
-            .mockReturnValueOnce("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone\\rules\\CD-27")
-            .mockReturnValueOnce("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone\\rules\\CD-27\\CHECKS.md"),
-        ),
-        shownPathOf: shownAs("node_modules/@hailstails/hone/rules/CD-27/CHECKS.md"),
+        path: pathJoining(join),
+        shownPathOf: shownAs("node_modules/@hailstails/hone/rules/typescript/symptoms/computed-value-in-a-test/test-body.md"),
         clauseRoots: [SHIPPED_ROOT],
         findings: [REMEDIED],
       }),
@@ -58,15 +59,16 @@ describe("shownRemediesOf", () => {
         ...LOCATED,
         remedy: {
           fix: "write the values out",
-          page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md",
+          page: "node_modules/@hailstails/hone/rules/typescript/symptoms/computed-value-in-a-test/test-body.md",
           section: "a-method-that-computes-a-value",
         },
       },
     ]);
+    expect(join).toHaveBeenNthCalledWith(1, { segments: [STORE_ROOT, "rules", "typescript", "symptoms"] });
   });
 
-  it("shows a page in a folder of a local rule set relative to the repository", () => {
-    const localRoot = { clause: CLAUSE, ruleSetRoot: LOCAL_ROOT };
+  it("shows a page of a clause with no check items in its rule folder, relative to the repository", () => {
+    const localRoot = { clause: CLAUSE, ruleSetRoot: LOCAL_ROOT, checks: [] };
     const paged: Finding = { ...LOCATED, remedy: { fix: "write the values out", page: "pages/forms.md", section: "a-form" } };
 
     expect(

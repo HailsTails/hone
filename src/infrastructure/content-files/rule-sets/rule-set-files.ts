@@ -10,6 +10,10 @@ import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identif
 import { runnerModuleSegmentsOf } from "../../node/modules/install-layout.ts";
 import type { ModuleExtension } from "../../../application/ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { AddressedCheck } from "../../../domain/language-layer/check-address-text.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { readInstallChecks } from "./install-checks.ts";
 
 export type RuleSetFiles = {
   readonly discipline: (request: {
@@ -23,6 +27,10 @@ export type RuleSetFiles = {
     readonly discipline: DisciplineFile;
     readonly mechanism: MechanismId;
   }) => Result<Held<PieceFile>, LoadFailure>;
+  readonly checks: (request: {
+    readonly installRoot: AbsolutePath;
+    readonly clause: ClauseAddress;
+  }) => Result<readonly AddressedCheck[], LoadFailure>;
   readonly runner: (request: {
     readonly installRoot: AbsolutePath;
     readonly mechanism: MechanismId;
@@ -47,6 +55,10 @@ export const createRuleSetFiles = (options: { readonly fileText: FileTextPort; r
       read: () => readPieceFile({ ...location, fileText: options.fileText, discipline }),
     });
   },
+  checks: ({ installRoot, clause }) =>
+    clause.ruleSet === TOOL_RULE_SET
+      ? readInstallChecks({ fileText: options.fileText, path: options.path, installRoot, clause })
+      : { outcome: "ok", value: [] },
   runner: ({ installRoot, mechanism, moduleExtension }) =>
     options.fileText.exists({ path: options.path.join({ segments: runnerModuleSegmentsOf({ installRoot, mechanism, moduleExtension }) }) }),
 });

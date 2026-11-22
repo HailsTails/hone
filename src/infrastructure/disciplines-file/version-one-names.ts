@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { CATALOGUE_NAME } from "../../domain/language-layer/catalogue-name.ts";
+import { type AddressedCheck, CHECK_ADDRESS_SEPARATOR } from "../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
@@ -17,7 +18,7 @@ const formatOfTodaySchema = recordKindWireSchema.shape.todaysFormat.exclude(["no
 export type FormatsOfToday = Readonly<Partial<Record<z.output<typeof recordKindNameSchema>, z.output<typeof formatOfTodaySchema>>>>;
 
 export type NamedClause =
-  | { readonly clause: ClauseAddress; readonly kind: "mechanical"; readonly anchor: AnchorKind }
+  | { readonly clause: ClauseAddress; readonly kind: "mechanical"; readonly anchor: AnchorKind; readonly checks: readonly AddressedCheck[] }
   | { readonly clause: ClauseAddress; readonly kind: "judgement" };
 
 export type VersionOneNames = {
@@ -51,8 +52,15 @@ export const NO_VERSION_ONE_NAMES: VersionOneNames = { clauses: [], namedClauses
 
 type NamesEntry = z.output<typeof versionOneNamesSchema>["clauses"][number];
 
+const addressedCheckOf = (address: string): AddressedCheck => {
+  const mark = address.indexOf(CHECK_ADDRESS_SEPARATOR);
+  return { name: address.slice(mark + 1), symptom: { name: address.slice(0, mark) } };
+};
+
 const namedClauseOf = (entry: NamesEntry): NamedClause =>
-  entry.anchor === undefined ? { clause: entry.clause, kind: "judgement" } : { clause: entry.clause, kind: "mechanical", anchor: entry.anchor };
+  entry.anchor === undefined
+    ? { clause: entry.clause, kind: "judgement" }
+    : { clause: entry.clause, kind: "mechanical", anchor: entry.anchor, checks: entry.checks.map(addressedCheckOf) };
 
 const namesOf = (file: z.output<typeof versionOneNamesSchema>): VersionOneNames => ({
   clauses: file.clauses.map(({ clause, sight }) => ({ clause, sight })),
