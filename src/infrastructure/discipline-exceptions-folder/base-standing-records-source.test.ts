@@ -345,7 +345,6 @@ describe("versionOneAwareRecordsSourceOf", () => {
       exceptionRepositoryOf,
     })({
       fileText: { exists: vi.fn(), read: vi.fn() },
-      path: { join: vi.fn() },
       directory: { list: vi.fn() },
       git: { textInBase: vi.fn() },
       gitTree: { pathsAt: vi.fn() },

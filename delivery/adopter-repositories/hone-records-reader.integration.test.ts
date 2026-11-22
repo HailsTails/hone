@@ -233,7 +233,6 @@ afterAll(() => {
 
 const source = createRecordsFolder({
   fileText,
-  path,
   directory: createDefaultDirectoryPort({}),
   git: createDefaultGitPort({}),
   gitTree: createDefaultGitTreePort({}),

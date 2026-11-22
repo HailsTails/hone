@@ -2,7 +2,6 @@ import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../domain/repository/file-presence.ts";
-import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
@@ -21,7 +20,6 @@ export type RecordsOnDiskRequest = {
   readonly repoRoot: AbsolutePath;
   readonly fileText: Pick<FileTextPort, "exists">;
   readonly directory: Pick<DirectoryPort, "list">;
-  readonly path: Pick<PathPort, "join">;
 };
 
 type Tree = { readonly files: readonly RepoPath[]; readonly folders: readonly RepoPath[] };

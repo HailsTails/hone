@@ -64,7 +64,7 @@ const recordInputOf = (request: {
     stages: stagesOverRepository({ ports, moduleUrl: request.command.moduleUrl, located, baseRevision: request.baseRevision }),
     repoRoot: located.repoRoot,
     recordsSourceFor: ({ catalogue }) =>
-      ports.recordsSourceOf({ fileText, path, git, gitTree: ports.gitTree, directory: ports.directory, repoRoot: located.repoRoot, catalogue }),
+      ports.recordsSourceOf({ fileText, git, gitTree: ports.gitTree, directory: ports.directory, repoRoot: located.repoRoot, catalogue }),
     recordsStoreOf: ({ repoRoot }) => createRecordsStore({ fileText, path, removal: ports.fileRemoval, directory: ports.directory, repoRoot }),
     recordsReader: ports.recordsReader,
     recordsEditor: ports.recordsEditor,

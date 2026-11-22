@@ -172,7 +172,6 @@ const REPO_ROOT = absolutePathSchema.parse(made.value);
 
 const source = createRecordsFolder({
   fileText,
-  path,
   directory: createDefaultDirectoryPort({}),
   git: createDefaultGitPort({}),
   gitTree: createDefaultGitTreePort({}),

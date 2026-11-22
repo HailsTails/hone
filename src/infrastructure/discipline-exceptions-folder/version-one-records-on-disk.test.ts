@@ -1,7 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../node/path-port.ts";
 import { recordsOnDiskOf } from "./version-one-records-on-disk.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
@@ -22,7 +21,6 @@ const RECORDS_FOLDER_PATH = { path: "/repo/discipline-exceptions" };
 const read = (request: { readonly exists: Mock<FileTextPort["exists"]>; readonly list: Mock<DirectoryPort["list"]> }) =>
   recordsOnDiskOf({
     repoRoot: absoluteRootOf("/repo"),
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
     fileText: { exists: request.exists },
     directory: { list: request.list },
   });

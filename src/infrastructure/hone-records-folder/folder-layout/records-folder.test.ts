@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../../../application/ports/git-port.ts";
-import { createPathPort } from "../../node/path-port.ts";
 import { createRecordsFolder } from "./records-folder.ts";
 import type { RecordsFolderPorts } from "../../../application/ports/records/records-source-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -10,8 +9,6 @@ import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 
 const REPO = absoluteRootOf("/repo");
-
-const path = createPathPort({ flavour: "posix", workingDirectory: vi.fn<(request: Record<string, never>) => string>().mockReturnValue("/repo") });
 
 const DEBT_TEXT = '{ "version": 2, "records": [{ "answers": "claimed-type", "file": "src/a.ts" }] }';
 
@@ -25,7 +22,6 @@ const portsWith = (request: {
   readonly textInBase: GitPort["textInBase"];
 }): RecordsFolderPorts => ({
   fileText: { exists: request.exists, read: request.read },
-  path,
   directory: { list: request.list },
   git: { textInBase: request.textInBase },
   gitTree: { pathsAt: request.pathsAt },
