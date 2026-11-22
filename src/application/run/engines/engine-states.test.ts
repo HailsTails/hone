@@ -8,13 +8,13 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
@@ -68,7 +68,7 @@ describe("engineUnmeasuredOf", () => {
 
   it("names the mechanism when the catalogue gives it no engine", () => {
     expect(engineUnmeasuredOf({ catalogue: { ...REPORT_CATALOGUE, engines: [WALKER] }, runs: [runWith({ mechanism: ESLINT, projection: "missing" })], tracked: TRACKED, selected: [] })).toEqual([
-      { kind: "engine-not-run", engine: { name: "eslint", mechanism: ESLINT }, projection: "missing" },
+      { kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" },
     ]);
   });
 

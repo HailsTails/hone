@@ -9,7 +9,7 @@ import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 const REPO_ROOT = absoluteRootOf("/repo");
 const INSTALL_ROOT = absoluteRootOf("/install");
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
@@ -68,7 +68,7 @@ describe("runMechanism with a standalone runner", () => {
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        mechanism: "audit",
+        mechanism: "walker",
         hits: [HIT_IN_A],
         nativeExceptions: [],
         coverableKinds: ["inline-disable"],
@@ -85,7 +85,7 @@ describe("runMechanism with a standalone runner", () => {
       dispatchRun({ runner: standaloneRunner({ run: runResolving({ outcome: "ok", value: { hits: [], nativeExceptions: [] } }) }) }),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { mechanism: "audit", hits: [], nativeExceptions: [], coverableKinds: ["inline-disable"], projection: "none", slices: [], unprojectedFolders: [], measured: [] },
+      value: { mechanism: "walker", hits: [], nativeExceptions: [], coverableKinds: ["inline-disable"], projection: "none", slices: [], unprojectedFolders: [], measured: [] },
     });
   });
 
@@ -133,7 +133,7 @@ describe("runMechanism with a standalone runner", () => {
       dispatchRun({ runner: standaloneRunner({ run: runResolving({ outcome: "ok", value: { hits: [], nativeExceptions: [EXPECTATION_IN_A] } }) }) }),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { mechanism: "audit", hits: [], nativeExceptions: [EXPECTATION_IN_A], coverableKinds: ["inline-disable"], projection: "none", slices: [], unprojectedFolders: [], measured: [] },
+      value: { mechanism: "walker", hits: [], nativeExceptions: [EXPECTATION_IN_A], coverableKinds: ["inline-disable"], projection: "none", slices: [], unprojectedFolders: [], measured: [] },
     });
   });
 
@@ -225,7 +225,7 @@ describe("runMechanism with a standalone runner, the pairs it measured", () => {
     ).resolves.toEqual({
       outcome: "ok",
       value: {
-        mechanism: "audit",
+        mechanism: "walker",
         hits: [],
         nativeExceptions: [],
         coverableKinds: ["inline-disable"],

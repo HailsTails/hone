@@ -1,7 +1,7 @@
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { basePathOf } from "../../repository/renamed-path.ts";
 import type { UnprojectedFolder } from "../../runner/unprojected-folder.ts";
@@ -17,7 +17,7 @@ export type InheritedDebtOutcome =
       readonly effect: "nested-configuration";
       readonly under: RepoPath;
       readonly selectionFolder: RepoPath;
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
     });
 
 export type InheritedDebtRequest = {
@@ -90,7 +90,7 @@ export const inheritedDebtEntriesOf = (request: {
 const reachedOutcomeOf = (request: {
   readonly outcome: InheritedDebtOutcome;
   readonly unprojected: readonly UnprojectedFolder[];
-  readonly mechanisms: ReadonlyMap<string, MechanismId>;
+  readonly mechanisms: ReadonlyMap<string, EngineId>;
 }): InheritedDebtOutcome => {
   const { outcome } = request;
   if (outcome.effect !== "recorded") {
@@ -115,5 +115,5 @@ const reachedOutcomeOf = (request: {
 export const reachedDebtOf = (request: {
   readonly outcomes: readonly InheritedDebtOutcome[];
   readonly unprojected: readonly UnprojectedFolder[];
-  readonly mechanisms: ReadonlyMap<string, MechanismId>;
+  readonly mechanisms: ReadonlyMap<string, EngineId>;
 }): readonly InheritedDebtOutcome[] => request.outcomes.map((outcome) => reachedOutcomeOf({ ...request, outcome }));

@@ -1,3 +1,4 @@
+import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import { indicatedNamesOf, type SymptomReading } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
@@ -6,7 +7,7 @@ export const escapedLineBreaks = (request: { readonly text: string }): string =>
   request.text.replaceAll("\n", "\\n").replaceAll("\r", "\\r");
 
 export const locatedFindingLine = (request: { readonly finding: Finding }): string =>
-  `${clauseAddressText({ address: request.finding.clause })} ${request.finding.mechanism} ${request.finding.file}:${request.finding.anchor.line}:${request.finding.anchor.column} ${escapedLineBreaks({ text: request.finding.snippet })}`;
+  `${clauseAddressText({ address: request.finding.clause })} ${versionOneEngineNameOf(request.finding.mechanism)} ${request.finding.file}:${request.finding.anchor.line}:${request.finding.anchor.column} ${escapedLineBreaks({ text: request.finding.snippet })}`;
 
 const remedyNote = (request: { readonly finding: Finding }): string =>
   request.finding.remedy === undefined

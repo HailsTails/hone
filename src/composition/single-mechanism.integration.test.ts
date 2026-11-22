@@ -18,11 +18,11 @@ import type { PackageLocationPort } from "../infrastructure/node/modules/package
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { installFormOf } from "../infrastructure/node/modules/install-layout.ts";
-import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { createWalkerRunner } from "../infrastructure/engines/walker/runner/create-walker-runner.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
-} from "../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+} from "../infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import {
   createEslintRunner,
   ESLINT_PROJECTED_KINDS,
@@ -110,27 +110,27 @@ const repositoryFiles = (request: {
 
 const NOT_RUNNING_NAMING_CONVENTION = repositoryFiles({
   clauses: {
-    "CD-6#identifier-names": "audit",
+    "CD-6#identifier-names": "walker",
     "CD-6#naming-convention": "not-run",
   },
 });
 
 const NOT_ADOPTING_NAMING_CONVENTION = repositoryFiles({
   clauses: {
-    "CD-6#identifier-names": "audit",
+    "CD-6#identifier-names": "walker",
     "CD-6#naming-convention": "not-adopted",
   },
 });
 
 const RUNNING_NAMING_CONVENTION = repositoryFiles({
   clauses: {
-    "CD-6#identifier-names": "audit",
+    "CD-6#identifier-names": "walker",
     "CD-6#naming-convention": "eslint",
   },
 });
 
 const AUDIT_ONLY = repositoryFiles({
-  clauses: { "CD-6#identifier-names": "audit" },
+  clauses: { "CD-6#identifier-names": "walker" },
 });
 
 const git: GitPort = {
@@ -211,7 +211,7 @@ const modulesServing = (request: {
     runnerSuffix: "/src/infrastructure/engines/eslint/runner/runner.ts",
     runner: request.eslintRunner,
     base: modulesServingRunner({
-      runnerSuffix: "/src/infrastructure/engines/audit/runner/runner.ts",
+      runnerSuffix: "/src/infrastructure/engines/walker/runner/runner.ts",
       runner: auditRunnerOver({ fileText: request.fileText }),
       base: createDefaultModuleLoaderPort({}),
     }),

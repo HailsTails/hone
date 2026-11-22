@@ -6,9 +6,9 @@ import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -125,7 +125,7 @@ describe("runsOnEslint", () => {
   });
 
   it("says a check only the walker runs runs elsewhere", () => {
-    expect(runsOnEslint({ check: { engines: [{ mechanism: "audit" }] } })).toBe("elsewhere");
+    expect(runsOnEslint({ check: { engines: [{ name: "walker" }] } })).toBe("elsewhere");
   });
 });
 

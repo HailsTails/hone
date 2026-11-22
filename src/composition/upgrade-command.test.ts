@@ -95,7 +95,7 @@ const commandWith = (request: { readonly arguments: readonly string[]; readonly 
   return { command, recorded };
 };
 
-const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "audit" } }';
+const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "walker" } }';
 
 describe("upgradeCommandOf", () => {
   it("exits 2 with an arguments-invalid line, reading nothing, when --repo is not given", async () => {

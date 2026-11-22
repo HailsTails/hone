@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "function"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd40",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "max-params",
+    "options": [
+      {
+        "max": 2,
+        "countVoidThis": true
+      }
+    ]
+  }
+}

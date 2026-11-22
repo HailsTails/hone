@@ -641,10 +641,10 @@ describe.each(ESLINT_LINES)("hone upgrade over a real repository whose ESLint sl
 
 const AUDIT_SELECTION = selectionTextOf({
   clauses: {
-    "CD-1#any-cast": "audit",
+    "CD-1#any-cast": "walker",
     "CD-1#explicit-any": "eslint",
     "CD-1#implicit-any-let": "eslint",
-    "CD-2#cast-expressions": "audit",
+    "CD-2#cast-expressions": "walker",
     "CD-2#non-null-assertions": "eslint",
   },
 });
@@ -700,12 +700,12 @@ const AUDIT_EXCEPTIONS = exceptionsTextOf({
 });
 
 const CD_1_ONLY_SELECTION = (request: { readonly implicitAnyLet: string }): string =>
-  `{ "version": 1, "ruleSets": {}, "clauses": { "CD-1#any-cast": "audit", "CD-1#explicit-any": "eslint", "CD-1#implicit-any-let": ${request.implicitAnyLet} } }\n`;
+  `{ "version": 1, "ruleSets": {}, "clauses": { "CD-1#any-cast": "walker", "CD-1#explicit-any": "eslint", "CD-1#implicit-any-let": ${request.implicitAnyLet} } }\n`;
 
 describe("hone upgrade over a real repository that selects only some disciplines", () => {
   it("refuses it before writing anything when version 1 already reports a clause of a selected discipline uncovered", async () => {
     const repo = await versionOneRepositoryOf({
-      selection: '{ "version": 1, "ruleSets": {}, "clauses": { "CD-1#any-cast": "audit", "CD-1#explicit-any": "eslint" } }\n',
+      selection: '{ "version": 1, "ruleSets": {}, "clauses": { "CD-1#any-cast": "walker", "CD-1#explicit-any": "eslint" } }\n',
       exceptions: NO_RECORDS,
       sources: { "open.ts": ANY_CAST },
     });
@@ -749,7 +749,7 @@ describe("hone upgrade over a real repository that selects only some disciplines
 describe("hone upgrade over a real repository that selects only CD-10", () => {
   it("upgrades it, writing only the checks of the clauses version 1 selected", async () => {
     const repo = await versionOneRepositoryOf({
-      selection: '{ "version": 1, "ruleSets": {}, "clauses": { "CD-10#throws-in-tests": "audit", "CD-10#throw-only-error": "eslint" } }\n',
+      selection: '{ "version": 1, "ruleSets": {}, "clauses": { "CD-10#throws-in-tests": "walker", "CD-10#throw-only-error": "eslint" } }\n',
       exceptions: NO_RECORDS,
       sources: { "kept.ts": "export const kept = 1;\n" },
     });

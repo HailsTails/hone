@@ -93,15 +93,15 @@ const NOTHING_SELECTED: Readonly<Record<string, FakeFile>> = {
 };
 
 const CLASS_SYNTAX_SELECTED: Readonly<Record<string, FakeFile>> = {
-  "/repo/disciplines.json": presentJsonFile({ document: { version: 1, ruleSets: {}, clauses: { "CD-14#class-syntax": "audit" } } }),
+  "/repo/disciplines.json": presentJsonFile({ document: { version: 1, ruleSets: {}, clauses: { "CD-14#class-syntax": "walker" } } }),
   "/repo/discipline-exceptions.json": ABSENT_FILE,
   "/install/src/infrastructure/disciplines-file/version-one-names.json": presentJsonFile({ document: CLASS_SYNTAX_NAMES }),
-  "/install/src/infrastructure/engines/audit/CD-14/class-syntax.cases.json": presentJsonFile({ document: CLASS_SYNTAX_CASES }),
-  "/install/src/infrastructure/engines/eslint/CD-14/piece.json": ABSENT_FILE,
-  "/install/src/infrastructure/engines/audit/CD-14/piece.json": presentJsonFile({
-    document: { version: 1, discipline: "CD-14", mechanism: "audit", clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" } }] },
+  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-keyword.examples.json": presentJsonFile({ document: CLASS_SYNTAX_CASES }),
+  "/install/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json": ABSENT_FILE,
+  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/piece.json": presentJsonFile({
+    document: { version: 2, anchor: { kind: "keyword", keyword: "class" }, settings: { module: "class-syntax.ts" } },
   }),
-  "/install/src/infrastructure/engines/audit/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
+  "/install/src/infrastructure/engines/walker/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
   "/repo/src/a.ts": presentFile({ text: "class A {}\n" }),
 };
 
@@ -296,7 +296,7 @@ describe("runProjectCommand", () => {
     await runProjectCommand(commandRequest({ fileText: fileTextOver(CLASS_SYNTAX_SELECTED), modules }));
 
     expect(vi.mocked(modules.load).mock.calls).toEqual([
-      [{ path: "/install/src/infrastructure/engines/audit/runner/runner.ts" }],
+      [{ path: "/install/src/infrastructure/engines/walker/runner/runner.ts" }],
     ]);
   });
 

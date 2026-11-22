@@ -1,6 +1,6 @@
-import { type CatalogueFile, catalogueFileSchema } from "../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 
-export const ENGINE_REGISTRY: CatalogueFile["engines"] = catalogueFileSchema.shape.engines.parse([
-  { name: "walker", mechanism: "audit" },
-  { name: "eslint", mechanism: "eslint" },
-]);
+export const ENGINE_REGISTRY: Engine[] = [
+  { name: "walker" },
+  { name: "eslint" },
+];

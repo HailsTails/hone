@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
-import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
-import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
+import type { LocatedPieceFile, RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { boundClauseOf, clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";
 import { repoPathOf as staticRepoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
@@ -11,7 +11,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ESLINT = "eslint" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
 const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
@@ -73,13 +73,14 @@ const ESLINT_ONLY_DISCIPLINE: DisciplineFile = {
   ],
 };
 
-const PIECE: PieceFile = {
+const PIECE: LocatedPieceFile = {
   version: 1,
   discipline: ACME_2,
   mechanism: AUDIT,
   clauses: [
     {
       clause: SCRATCH_FILES_ID,
+      pieceRoot: PIECE_ROOT,
       settings: { module: "scratch-files.ts" },
       clauseSettings: { marker: { default: ".scratch." } },
       editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
@@ -87,13 +88,14 @@ const PIECE: PieceFile = {
   ],
 };
 
-const EDITIONED_PIECE: PieceFile = {
+const EDITIONED_PIECE: LocatedPieceFile = {
   version: 1,
   discipline: ACME_2,
   mechanism: AUDIT,
   clauses: [
     {
       clause: SCRATCH_FILES_ID,
+      pieceRoot: PIECE_ROOT,
       settings: { module: "scratch-files.ts" },
       clauseSettings: { marker: { default: ".scratch." } },
       editions: { declared: [editionOf("1"), SECOND_EDITION], default: editionOf("1"), latest: SECOND_EDITION },
@@ -101,9 +103,9 @@ const EDITIONED_PIECE: PieceFile = {
   ],
 };
 
-const EMPTY_PIECE: PieceFile = { version: 1, discipline: ACME_2, mechanism: AUDIT, clauses: [] };
+const EMPTY_PIECE: LocatedPieceFile = { version: 1, discipline: ACME_2, mechanism: AUDIT, clauses: [] };
 
-const ruleSetFilesReading = (request: { readonly discipline: DisciplineFile; readonly piece: PieceFile }): RuleSetFiles => ({
+const ruleSetFilesReading = (request: { readonly discipline: DisciplineFile; readonly piece: LocatedPieceFile }): RuleSetFiles => ({
   disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "present", file: request.discipline } }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>().mockReturnValue({ outcome: "ok", value: request.piece }),
 });
@@ -175,14 +177,14 @@ describe("boundClauseOf", () => {
     expect(ruleSetFiles.pieceFile).toHaveBeenCalledWith({ ruleSetRoot: RULE_SET_ROOT, installRoot: INSTALL_ROOT, mechanism: AUDIT, discipline: DISCIPLINE });
   });
 
-  it("roots the bound clause's piece in the rule set's own mechanism folder", () => {
+  it("carries the mechanism folder provided by the rule-set reader", () => {
     const path = pathResolving({ outcome: "ok", value: RULE_SET_ROOT });
-    boundClauseOf({
+    const bound = boundClauseOf({
       ruleSetFiles: ACME_FILES, loadFailureDetail: NO_LOAD_FAILURE_DETAIL, path,
       mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
       clause: "acme/ACME-2#scratch-files",
     });
-    expect(path.join).toHaveBeenCalledWith({ segments: ["/repo/tools/disciplines/acme", "mechanisms", "audit", "ACME-2"] });
+    expect(bound).toMatchObject({ outcome: "ok", value: { clause: { pieceRoot: PIECE_ROOT } } });
   });
 
   it("refuses text that is not a clause address", () => {

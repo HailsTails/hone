@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { catalogueNameOf } from "../language-layer/catalogue-name.ts";
 import { disciplineIdOf } from "./discipline-id-of.ts";
-import { enginesFolderSegmentsOf, pieceFolderSegmentsOf } from "./piece-folder.ts";
+import { enginesFolderSegmentsOf, namedPieceFolderSegmentsOf, pieceFolderSegmentsOf } from "./piece-folder.ts";
 
 describe("enginesFolderSegmentsOf", () => {
   it("is the install's engines source folder for the install's own rule set", () => {
@@ -15,13 +16,22 @@ describe("enginesFolderSegmentsOf", () => {
 describe("pieceFolderSegmentsOf", () => {
   it("names the piece folder of a discipline under a mechanism in the install's own rule set", () => {
     expect(
-      pieceFolderSegmentsOf({ ruleSetRoot: "/install", installRoot: "/install", mechanism: "audit", discipline: disciplineIdOf("CD-14") }),
-    ).toEqual(["/install", "src", "infrastructure", "engines", "audit", "CD-14"]);
+      pieceFolderSegmentsOf({ ruleSetRoot: "/install", installRoot: "/install", mechanism: "walker", discipline: disciplineIdOf("CD-14") }),
+    ).toEqual(["/install", "src", "infrastructure", "engines", "walker", "CD-14"]);
   });
 
   it("names the piece folder of a discipline under a mechanism in another rule set", () => {
     expect(
       pieceFolderSegmentsOf({ ruleSetRoot: "/team", installRoot: "/install", mechanism: "eslint", discipline: disciplineIdOf("TM-1") }),
     ).toEqual(["/team", "mechanisms", "eslint", "TM-1"]);
+  });
+});
+
+describe("namedPieceFolderSegmentsOf", () => {
+  it("locates a shipped check by its symptom and name", () => {
+    expect(namedPieceFolderSegmentsOf({
+      ruleSetRoot: "/install", installRoot: "/install", mechanism: "walker",
+      symptom: catalogueNameOf("ambient-randomness"), check: catalogueNameOf("direct-call"),
+    })).toEqual(["/install", "src", "infrastructure", "engines", "walker", "ambient-randomness", "direct-call"]);
   });
 });

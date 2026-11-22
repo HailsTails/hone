@@ -11,8 +11,8 @@ import type {
   SyntaxApi,
   SyntaxNode,
   TypeScriptParsePort,
-} from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+} from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import type { DeclarationEmit, DeclarationFailure, DeclarationPort, EmittedDeclaration } from "./package-declarations.ts";
 
 type DeclarationTransformerFactory = NonNullable<CustomTransformers["afterDeclarations"]>[number];

@@ -1,5 +1,5 @@
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { RecordedWhyChain } from "./version-one-why-chain.ts";
 
@@ -59,21 +59,21 @@ export type ExceptionRecord =
   | (AuthorisationEvidence & {
       readonly kind: "authorised-location";
       readonly clause: ClauseAddress;
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly file: RepoPath;
       readonly reason: string;
     })
   | (FileDebtEvidence & {
       readonly kind: "file-carve-out";
       readonly clause: ClauseAddress;
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly file: RepoPath;
       readonly reason?: string;
     })
   | {
       readonly kind: "clause-wide-carve-out";
       readonly clause: ClauseAddress;
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly reason: string;
       readonly whyChain: RecordedWhyChain;
     };

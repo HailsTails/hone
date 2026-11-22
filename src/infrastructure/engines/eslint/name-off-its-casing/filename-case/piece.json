@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd7",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "filename-case"
+  }
+}

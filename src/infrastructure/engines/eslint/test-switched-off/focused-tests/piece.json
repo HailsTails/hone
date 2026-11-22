@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "only"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd27",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "focused-tests"
+  }
+}

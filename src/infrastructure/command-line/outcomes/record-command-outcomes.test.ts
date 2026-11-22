@@ -5,7 +5,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 
 describe("splitRecordsCommandOutcome", () => {
   it("prints each file written, then the file removed, and exits 0", () => {

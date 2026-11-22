@@ -8,7 +8,7 @@ import type { NativeException, ProjectionWrite } from "../../../../domain/runner
 import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/standalone-mechanism-dispatch.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { clauseAddressText } from "../../../../domain/rule-set/clause-address.ts";
-import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 
 const reportResultSchema = runnerResultSchema({ value: embeddedRunReportSchema });
@@ -17,7 +17,7 @@ const projectionWriteResultSchema = runnerResultSchema({ value: z.array(projecti
 
 const embeddedRun = (request: {
   readonly returned: unknown;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly projectedKinds: readonly NativeException["kind"][];
   readonly run: RunRequest;
 }): Result<MechanismRun, RunnerFailure> => {

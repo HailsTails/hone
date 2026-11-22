@@ -48,12 +48,12 @@ describe("runnerModuleSegmentsOf", () => {
   });
 
   it("names the source runner module in a source install", () => {
-    expect(runnerModuleSegmentsOf({ installRoot: "/install", mechanism: "audit", moduleExtension: ".ts" })).toEqual([
+    expect(runnerModuleSegmentsOf({ installRoot: "/install", mechanism: "walker", moduleExtension: ".ts" })).toEqual([
       "/install",
       "src",
       "infrastructure",
       "engines",
-      "audit",
+      "walker",
       "runner",
       "runner.ts",
     ]);

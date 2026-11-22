@@ -31,17 +31,17 @@ const typePackageTexts = import.meta.glob(["./src/infrastructure/engines/*/runne
 
 const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
   '["./src/infrastructure/engines/eslint/runner/piece-type-packages.json"]': "src/infrastructure/engines/eslint/runner/piece-type-packages.json",
-  '[".","src","infrastructure","engines","audit","runner","piece-type-packages.json"]': "src/infrastructure/engines/audit/runner/piece-type-packages.json",
-  '["./src/infrastructure/engines/audit/runner/piece-type-packages.json"]': "src/infrastructure/engines/audit/runner/piece-type-packages.json",
+  '[".","src","infrastructure","engines","walker","runner","piece-type-packages.json"]': "src/infrastructure/engines/walker/runner/piece-type-packages.json",
+  '["./src/infrastructure/engines/walker/runner/piece-type-packages.json"]': "src/infrastructure/engines/walker/runner/piece-type-packages.json",
   '["./src/infrastructure/content-files/rule-sets/probe-rule-set","mechanisms","audit","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
   '["./src/infrastructure/content-files/rule-sets/probe-rule-set","rules","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/rules/PD-1",
-  '[".","src","infrastructure","engines","audit","runner"]': "src/infrastructure/engines/audit/runner",
+  '[".","src","infrastructure","engines","walker","runner"]': "src/infrastructure/engines/walker/runner",
   '[".","src","domain"]': "src/domain",
   '[".","src","application","ports"]': "src/application/ports",
   '[".","src","infrastructure","content-files"]': "src/infrastructure/content-files",
   '[".","src","infrastructure","discipline-exceptions-folder"]': "src/infrastructure/discipline-exceptions-folder",
-  '["./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1","../../../../../../engines/audit/runner/pieces/walker-piece.ts"]':
-    "src/infrastructure/engines/audit/runner/pieces/walker-piece.ts",
+  '["./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1","../../../../../../engines/walker/runner/pieces/walker-piece.ts"]':
+    "src/infrastructure/engines/walker/runner/pieces/walker-piece.ts",
 };
 
 const REPOSITORY_DIRECTORIES: Readonly<Record<string, string>> = {
@@ -75,7 +75,7 @@ describe("FR-8 piece imports over the probe rule set's own piece source, shipped
           {
             file: "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts",
             ruleSetRoot: "./src/infrastructure/content-files/rule-sets/probe-rule-set",
-            mechanism: "audit",
+            mechanism: "walker",
             discipline: "PD-1",
           },
         ]),

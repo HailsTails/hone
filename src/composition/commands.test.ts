@@ -178,13 +178,11 @@ const authoriseArgumentsFor = (request: { readonly repo: string; readonly rootCa
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = "audit" as const;
-
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 
@@ -328,7 +326,7 @@ const FILE_A = repoPathOf("src/a.ts");
 const settingsWith = (request: { readonly forfeiture: ForfeitureAssessment }): SettingsReading => ({
   available: [],
   selection: {
-    selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],
     clauseRoots: [],
     excluded: [],

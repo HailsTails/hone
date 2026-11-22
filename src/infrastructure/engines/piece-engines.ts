@@ -3,14 +3,16 @@ import type { EngineBindingsRepository } from "../../application/ports/engine-bi
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { type EngineBindings, type PieceClauseKey, pieceClauseKeyOf } from "../../domain/language-layer/catalogue-binding.ts";
-import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { EngineBindings } from "../../domain/language-layer/catalogue-binding.ts";
+import type { CheckContent, Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import { enginesFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
+import { engineFolderOf, enginesFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { pieceFileSchema, readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
+import { type CheckAddressText, checkAddressTextOf, checkNamesOf } from "../../domain/language-layer/check-address-text.ts";
+import { readNamedPiece } from "./named-piece.ts";
 import { ENGINE_REGISTRY } from "./engine-registry.ts";
 
 type PieceSource = {
@@ -21,7 +23,7 @@ type PieceSource = {
   readonly installRoot: AbsolutePath;
 };
 
-type Binding = { readonly key: PieceClauseKey; readonly engine: Engine };
+type Binding = { readonly address: CheckAddressText; readonly engine: Engine };
 
 type Bound = Result<readonly Binding[], VersionTwoLoadFailure>;
 
@@ -32,7 +34,7 @@ const allBound = (bounds: readonly Bound[]): Bound => {
   return failure ?? { outcome: "ok", value: bounds.flatMap((bound) => (bound.outcome === "ok" ? bound.value : [])) };
 };
 
-const bindingsOfPiece = (request: { readonly source: PieceSource; readonly engine: Engine; readonly mechanismFolder: AbsolutePath; readonly piece: string }): Bound => {
+const bindingsOfPiece = (request: { readonly source: PieceSource; readonly engine: Engine; readonly mechanismFolder: AbsolutePath; readonly piece: string; readonly checks: readonly CheckContent[] }): Bound => {
   const path = request.source.path.join({ segments: [request.mechanismFolder, request.piece, PIECE_FILE] });
   if (request.source.fileText.exists({ path }) === "absent") {
     return { outcome: "ok", value: [] };
@@ -45,13 +47,15 @@ const bindingsOfPiece = (request: { readonly source: PieceSource; readonly engin
   return piece.success
     ? {
         outcome: "ok",
-        value: piece.data.clauses.map((entry) => ({ key: pieceClauseKeyOf({ discipline: piece.data.discipline, clause: entry.clause }), engine: request.engine })),
+        value: request.checks
+          .filter(({ clause }) => clause.discipline === piece.data.discipline && piece.data.clauses.some((entry) => entry.clause === clause.clause))
+          .map((check) => ({ address: checkAddressTextOf({ check }), engine: request.engine })),
       }
     : { outcome: "failed", error: { kind: "file-malformed", path, detail: z.prettifyError(piece.error) } };
 };
 
-const bindingsOfEngine = (request: { readonly source: PieceSource; readonly enginesFolder: readonly string[]; readonly engine: Engine }): Bound => {
-  const joined = request.source.path.join({ segments: [...request.enginesFolder, request.engine.mechanism] });
+const bindingsOfEngine = (request: { readonly source: PieceSource; readonly enginesFolder: readonly string[]; readonly engine: Engine; readonly checks: readonly CheckContent[] }): Bound => {
+  const joined = request.source.path.join({ segments: [...request.enginesFolder, engineFolderOf({ ...request.source, mechanism: request.engine.name })] });
   const mechanismFolder = absolutePathSchema.safeParse(joined);
   if (!mechanismFolder.success) {
     return { outcome: "failed", error: { kind: "file-unreadable", path: joined, detail: "is not an absolute path" } };
@@ -64,23 +68,42 @@ const bindingsOfEngine = (request: { readonly source: PieceSource; readonly engi
     return { outcome: "failed", error: { kind: "file-unreadable", path: entries.error.path, detail: entries.error.detail } };
   }
   const pieces = entries.value.filter((entry) => entry.kind === "directory").map((entry) => entry.name);
-  return allBound(pieces.toSorted().map((piece) => bindingsOfPiece({ source: request.source, engine: request.engine, mechanismFolder: mechanismFolder.data, piece })));
+  return allBound(pieces.toSorted().map((piece) => bindingsOfPiece({ ...request, mechanismFolder: mechanismFolder.data, piece })));
 };
 
-const bindingsByKey = (bindings: readonly Binding[]): EngineBindings =>
-  new Map(
-    [...new Set(bindings.map((binding) => binding.key))].map((key): readonly [PieceClauseKey, readonly Engine[]] => [
-      key,
-      bindings.filter((binding) => binding.key === key).map((binding) => binding.engine),
-    ]),
-  );
+const bindingsByAddress = (bindings: readonly Binding[]): EngineBindings => {
+  const byAddress = new Map<CheckAddressText, readonly Engine[]>();
+  bindings.forEach(({ address, engine }) => {
+    const engines = byAddress.get(address) ?? [];
+    if (!engines.some(({ name }) => name === engine.name)) {
+      byAddress.set(address, [...engines, engine]);
+    }
+  });
+  return byAddress;
+};
 
-const readEngineBindings = (source: PieceSource): Result<EngineBindings, VersionTwoLoadFailure> => {
+const namedBindingOf = (request: { readonly source: PieceSource; readonly engine: Engine; readonly check: CheckContent }): Bound => {
+  const address = checkAddressTextOf(request);
+  const names = checkNamesOf({ text: address });
+  if (names === undefined) {
+    return { outcome: "ok", value: [] };
+  }
+  const piece = readNamedPiece({ ...request.source, ...names, mechanism: request.engine.name });
+  if (piece.outcome === "ok") {
+    return { outcome: "ok", value: [{ address, engine: request.engine }] };
+  }
+  return piece.error.kind === "piece-missing" ? { outcome: "ok", value: [] } : piece;
+};
+
+const readEngineBindings = (source: PieceSource, checks: readonly CheckContent[]): Result<EngineBindings, VersionTwoLoadFailure> => {
   const enginesFolder = [source.ruleSetRoot, ...enginesFolderSegmentsOf(source)];
-  const bound = allBound(ENGINE_REGISTRY.map((engine) => bindingsOfEngine({ source, enginesFolder, engine })));
-  return bound.outcome === "failed" ? bound : { outcome: "ok", value: bindingsByKey(bound.value) };
+  const installed = source.ruleSetRoot === source.installRoot;
+  const bound = allBound(ENGINE_REGISTRY.flatMap((engine) => installed
+    ? checks.map((check) => namedBindingOf({ source, engine, check }))
+    : [bindingsOfEngine({ source, enginesFolder, engine, checks })]));
+  return bound.outcome === "failed" ? bound : { outcome: "ok", value: bindingsByAddress(bound.value) };
 };
 
 export const createEngineBindingsRepository = (options: PieceSource): EngineBindingsRepository => ({
-  read: (_request) => readEngineBindings(options),
+  read: (request) => readEngineBindings(options, request.checks),
 });

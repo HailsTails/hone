@@ -1,14 +1,14 @@
-import piece0 from "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
-import piece1 from "./src/infrastructure/engines/eslint/CD-1/cd1/cd1.eslint-plugin.ts";
-import piece2 from "./src/infrastructure/engines/eslint/CD-10/cd10/cd10.eslint-plugin.ts";
-import piece3 from "./src/infrastructure/engines/eslint/CD-2/cd2/cd2.eslint-plugin.ts";
-import piece4 from "./src/infrastructure/engines/eslint/CD-27/cd27/cd27.eslint-plugin.ts";
-import piece5 from "./src/infrastructure/engines/eslint/CD-40/cd40/cd40.eslint-plugin.ts";
-import piece6 from "./src/infrastructure/engines/eslint/CD-41/cd41/cd41.eslint-plugin.ts";
-import piece7 from "./src/infrastructure/engines/eslint/CD-42/cd42/cd42.eslint-plugin.ts";
-import piece8 from "./src/infrastructure/engines/eslint/CD-44/cd44/cd44.eslint-plugin.ts";
-import piece9 from "./src/infrastructure/engines/eslint/CD-6/cd6/cd6.eslint-plugin.ts";
-import piece10 from "./src/infrastructure/engines/eslint/CD-7/cd7/cd7.eslint-plugin.ts";
+import piece0 from "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
+import piece1 from "./src/infrastructure/engines/eslint/untyped-value/explicit-any/eslint-plugin.ts";
+import piece2 from "./src/infrastructure/engines/eslint/thrown-non-error/throw-only-error/eslint-plugin.ts";
+import piece3 from "./src/infrastructure/engines/eslint/claimed-type/non-null-assertions/eslint-plugin.ts";
+import piece4 from "./src/infrastructure/engines/eslint/test-switched-off/focused-tests/eslint-plugin.ts";
+import piece5 from "./src/infrastructure/engines/eslint/positional-parameters/parameter-count/eslint-plugin.ts";
+import piece6 from "./src/infrastructure/engines/eslint/tangled-function/cognitive-complexity/eslint-plugin.ts";
+import piece7 from "./src/infrastructure/engines/eslint/work-inside-a-condition/else-after-an-exit/eslint-plugin.ts";
+import piece8 from "./src/infrastructure/engines/eslint/rebinding/parameter-reassignment/eslint-plugin.ts";
+import piece9 from "./src/infrastructure/engines/eslint/name-off-its-casing/naming-convention/eslint-plugin.ts";
+import piece10 from "./src/infrastructure/engines/eslint/name-off-its-casing/filename-case/eslint-plugin.ts";
 
 export default [
   {
@@ -80,23 +80,23 @@ export default [
   {
     name: "hone-core/file-records/CD-41#cognitive-complexity",
     files: [
-      "src/infrastructure/engines/audit/CD-43/boolean-signatures.ts",
+      "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.ts",
     ],
     rules: { "hone-cd41/cognitive-complexity": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#cognitive-complexity, CD-41#function-length",
     files: [
-      "src/infrastructure/engines/audit/CD-6/identifier-names.ts",
+      "src/infrastructure/engines/walker/shorthand-name/identifier-names/identifier-names.ts",
     ],
     rules: { "hone-cd41/cognitive-complexity": "off", "hone-cd41/function-length": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#function-length",
     files: [
-      "src/infrastructure/engines/audit/runner/observe-walker-file.test.ts",
-      "src/infrastructure/engines/audit/runner/prepare-walker-pieces.test.ts",
-      "src/infrastructure/engines/eslint/CD-6/cd6/cd6.eslint-plugin.test.ts",
+      "src/infrastructure/engines/eslint/name-off-its-casing/naming-convention/eslint-plugin.test.ts",
+      "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts",
+      "src/infrastructure/engines/walker/runner/prepare-walker-pieces.test.ts",
     ],
     rules: { "hone-cd41/function-length": "off" },
   },

@@ -29,11 +29,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-23#export-test-sibling",
-      "file": "src/domain/language-layer/catalogue-name.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
       "file": "src/domain/records/discipline-exceptions/exception-baseline.ts"
     },
     {

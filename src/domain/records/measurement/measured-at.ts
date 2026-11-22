@@ -2,13 +2,13 @@ import type { MeasuredPair } from "../../runner/runner-result-types.ts";
 import type { Check } from "../../language-layer/symptom-catalogue.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../../rule-set/clause-address.ts";
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { placeCovers, type ReachedPlace } from "../answering/record-reach.ts";
 import { type Exclusion, exclusionOf } from "../../repository/exclusion.ts";
 
 export type RunMeasurement = {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly selected: readonly ClauseAddress[];
   readonly measured: readonly MeasuredPair[];
 };
@@ -24,7 +24,7 @@ export type Measurement = "measured" | "not-measured" | "not-run" | "gone" | "ex
 const runsOfCheck = (request: { readonly runs: readonly RunMeasurement[]; readonly check: Check }): readonly RunMeasurement[] =>
   request.runs.filter(
     (run) =>
-      request.check.engines.some((engine) => engine.mechanism === run.mechanism) &&
+      request.check.engines.some((engine) => engine.name === run.mechanism) &&
       run.selected.some((clause) => sameClauseAddress({ left: clause, right: request.check.clause }) === "same"),
   );
 

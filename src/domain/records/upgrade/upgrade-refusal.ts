@@ -1,15 +1,15 @@
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 
 export type UnansweredCredit = "nothing" | "suppression-only";
 
 export type UpgradeRefusal =
   | { readonly kind: "clause-without-check"; readonly clause: string }
-  | { readonly kind: "no-engine-on-mechanism"; readonly check: string; readonly mechanism: MechanismId }
+  | { readonly kind: "no-engine-on-mechanism"; readonly check: string; readonly mechanism: EngineId }
   | {
       readonly kind: "two-engines-on-mechanism";
       readonly check: string;
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly engines: readonly string[];
     }
   | { readonly kind: "record-answers-nothing"; readonly clause: string; readonly file: RepoPath; readonly credited: UnansweredCredit }

@@ -7,7 +7,7 @@ import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.t
 import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
 import { fileExceptionWhyChainsSchema } from "../hone-config-file/file-exception-why-chains.ts";
-import { mechanismIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
+import { versionOneEngineIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
 import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
 import { reportOutputSchema } from "../hone-config-file/report-output.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
@@ -28,7 +28,7 @@ const clauseChoiceSchema = z.union(
   [
     z.literal(NOT_RUN).transform((): ClauseChoice => ({ state: "not-run" })),
     z.literal(NOT_ADOPTED).transform((): ClauseChoice => ({ state: "not-adopted" })),
-    mechanismIdSchema.transform((mechanism): ClauseChoice => ({ state: "run", mechanism })),
+    versionOneEngineIdSchema.transform((mechanism): ClauseChoice => ({ state: "run", mechanism })),
   ],
   { error: `a clause takes a mechanism id, "${NOT_RUN}" or "${NOT_ADOPTED}"` },
 );

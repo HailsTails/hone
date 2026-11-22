@@ -19,9 +19,9 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -97,7 +97,7 @@ describe("checkChoicesOf", () => {
           {
             clause: TEST_BODY_CLAUSE,
             checks: [LISTED_TEST_BODY[0].address, LISTED_TEST_BODY[1].address],
-            choice: { state: "run", mechanism: "audit", settings: undefined },
+            choice: { state: "run", mechanism: "walker", settings: undefined },
           },
           { clause: LOOPS_CLAUSE, checks: [LISTED_LOOPS.address], choice: { state: "not-adopted" } },
         ],
@@ -145,7 +145,7 @@ describe("checkChoicesOf", () => {
           {
             clause: TEST_BODY_CLAUSE,
             checks: [LISTED_TEST_BODY[0].address, LISTED_TEST_BODY[1].address],
-            choice: { state: "run", mechanism: "audit", settings: undefined },
+            choice: { state: "run", mechanism: "walker", settings: undefined },
           },
           { clause: LOOPS_CLAUSE, checks: [LISTED_LOOPS.address], choice: { state: "not-adopted" } },
         ],

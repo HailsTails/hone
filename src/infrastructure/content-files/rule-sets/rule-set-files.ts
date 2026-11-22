@@ -1,12 +1,13 @@
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { pieceFilePath, readPieceFile } from "./rule-set-reader.ts";
+import { pieceFilePath } from "./rule-set-reader.ts";
 import { readHeldDiscipline } from "./held-discipline.ts";
-import type { Held } from "../../../application/ports/rule-set/rule-set-files.ts";
-import type { DisciplineFile, PieceFile } from "../../../domain/rule-set/rule-set-types.ts";
+import { readLocatedPieceFile } from "./located-piece-file.ts";
+import type { Held, LocatedPieceFile } from "../../../application/ports/rule-set/rule-set-files.ts";
+import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { runnerModuleSegmentsOf } from "../../node/modules/install-layout.ts";
 import type { ModuleExtension } from "../../../application/ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -25,15 +26,15 @@ export type RuleSetFiles = {
     readonly ruleSetRoot: AbsolutePath;
     readonly installRoot: AbsolutePath;
     readonly discipline: DisciplineFile;
-    readonly mechanism: MechanismId;
-  }) => Result<Held<PieceFile>, LoadFailure>;
+    readonly mechanism: EngineId;
+  }) => Result<Held<LocatedPieceFile>, LoadFailure>;
   readonly checks: (request: {
     readonly installRoot: AbsolutePath;
     readonly clause: ClauseAddress;
   }) => Result<readonly AddressedCheck[], LoadFailure>;
   readonly runner: (request: {
     readonly installRoot: AbsolutePath;
-    readonly mechanism: MechanismId;
+    readonly mechanism: EngineId;
     readonly moduleExtension: ModuleExtension;
   }) => "present" | "absent";
 };
@@ -51,8 +52,8 @@ export const createRuleSetFiles = (options: { readonly fileText: FileTextPort; r
   piece: ({ ruleSetRoot, installRoot, discipline, mechanism }) => {
     const location = { path: options.path, ruleSetRoot, installRoot, discipline: discipline.id, mechanism };
     return heldOf({
-      presence: options.fileText.exists({ path: pieceFilePath(location) }),
-      read: () => readPieceFile({ ...location, fileText: options.fileText, discipline }),
+      presence: ruleSetRoot === installRoot ? "present" : options.fileText.exists({ path: pieceFilePath(location) }),
+      read: () => readLocatedPieceFile({ ...location, fileText: options.fileText, discipline }),
     });
   },
   checks: ({ installRoot, clause }) =>

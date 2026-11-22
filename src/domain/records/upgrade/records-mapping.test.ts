@@ -20,9 +20,9 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -77,7 +77,7 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
 
 const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: SETTINGS_CATALOGUE }];
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const SRC_A = repoPathOf("src/a.ts");
 

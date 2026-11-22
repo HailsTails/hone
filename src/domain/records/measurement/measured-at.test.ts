@@ -7,7 +7,7 @@ import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
@@ -21,7 +21,7 @@ const FILE_A = repoPathOf("src/a.ts");
 
 const FILE_B = repoPathOf("src/b.ts");
 
-const CHECK: Check = { name: "cast-expressions", symptom: SYMPTOM, clause: CLAUSE, engines: [{ name: "eslint", mechanism: ESLINT }], forms: [] };
+const CHECK: Check = { name: "cast-expressions", symptom: SYMPTOM, clause: CLAUSE, engines: [{ name: "eslint" }], forms: [] };
 
 const AT_FILE_A: ReachedPlace = { check: CHECK, place: { at: "file", file: FILE_A } };
 

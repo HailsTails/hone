@@ -31,7 +31,7 @@ describe("readSelectionFile", () => {
       outcome: "ok",
       value: {
         ruleSets: [["team", { location: "folder", path: "team-rules" }]],
-        clauses: [[{ ruleSet: { name: "team" }, discipline: "TM-1", clause: "no-tmp-files" }, { state: "run", mechanism: "audit" }]],
+        clauses: [[{ ruleSet: { name: "team" }, discipline: "TM-1", clause: "no-tmp-files" }, { state: "run", mechanism: "walker" }]],
         exclude: ["vendor"],
       },
     });

@@ -4,8 +4,8 @@ import type { FileTextPort } from "../../../application/ports/file-system/file-t
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseEditionsSchema, editionSchema } from "../edition.ts";
-import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import { clauseIdSchema, disciplineIdSchema, engineIdSchema, versionOneEngineIdSchema } from "../../hone-config-file/identifiers.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { parsedJson } from "../parsed-json.ts";
@@ -59,7 +59,7 @@ const entryCount = (entries: readonly unknown[]): "empty" | "some" =>
 const textDistinctness = (texts: readonly string[]): "distinct" | "repeated" =>
   new Set(texts).size === texts.length ? "distinct" : "repeated";
 
-const sourceCaseSchema = z.object({
+export const sourceCaseSchema = z.object({
   name: z.string(),
   fileName: repoPathSchema,
   source: z.string(),
@@ -82,12 +82,12 @@ export const anchorKindSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("file") }),
 ]);
 
-const ruleSetMechanismSchema = z.string().transform((text, context): MechanismId => {
-  const parsed = mechanismIdSchema.safeParse(text);
+const ruleSetMechanismSchema = z.string().transform((text, context): EngineId => {
+  const parsed = versionOneEngineIdSchema.safeParse(text);
   if (parsed.success) {
     return parsed.data;
   }
-  context.addIssue({ code: "custom", message: `not a mechanism: expected one of ${mechanismIdSchema.options.join(", ")}` });
+  context.addIssue({ code: "custom", message: `not a mechanism: expected one of ${engineIdSchema.options.join(", ")}` });
   return z.NEVER;
 });
 
@@ -227,7 +227,7 @@ export const pieceFilePath = (request: {
   readonly path: PathPort;
   readonly ruleSetRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly discipline: DisciplineId;
 }): string =>
   request.path.join({ segments: [...pieceFolderSegmentsOf(request), "piece.json"] });
@@ -282,7 +282,7 @@ export const readPieceFile = (request: {
   readonly path: PathPort;
   readonly ruleSetRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly discipline: DisciplineFile;
 }): Result<PieceFile, VersionTwoLoadFailure> => {
   const path = pieceFilePath({

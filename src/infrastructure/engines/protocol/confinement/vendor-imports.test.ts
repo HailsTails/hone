@@ -1,8 +1,8 @@
 import { assert, describe, expect, it } from "vitest";
 import { createPathPort } from "../../../node/path-port.ts";
 import type { PathPort } from "../../../../application/ports/host/path-port.ts";
-import type { SyntaxNode, SyntaxTree } from "../../audit/runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
+import type { SyntaxNode, SyntaxTree } from "../../walker/runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../walker/runner/toolchain/typescript-toolchain.ts";
 import { installedEslintBoundary } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
 import { projectionOutputNamesOf, projectionOutputsOf } from "../../../../domain/repository/projection-outputs.ts";
 
@@ -254,7 +254,7 @@ const loadedOutsideMechanisms = import.meta.glob(
     "!./tests/required-entry.ts",
     "!./tests/confinement.ts",
     "!./tests/conformance-rows.ts",
-    "!./src/infrastructure/engines/audit/**",
+    "!./src/infrastructure/engines/walker/**",
     "!./src/infrastructure/engines/eslint/*/**",
     "!./vitest.config.ts",
     "!./delivery/install-proof/install-proof-ports.ts",
@@ -283,8 +283,8 @@ const runnerSources = import.meta.glob(
     "!./src/infrastructure/engines/eslint/runner/native-exceptions/*/**",
     "!./src/infrastructure/engines/eslint/runner/projection/projection-pair/**",
     "!./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts",
-    "!./src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts",
-    "!./src/infrastructure/engines/audit/runner/pieces/jsonc-parse.ts",
+    "!./src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts",
+    "!./src/infrastructure/engines/walker/runner/pieces/jsonc-parse.ts",
     "!./src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts",
     "!./src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts",
     "!./src/infrastructure/engines/eslint/runner/native-exceptions/inline-config-parser.ts",
@@ -295,12 +295,12 @@ const runnerSources = import.meta.glob(
 
 const unlistedMechanismSources = import.meta.glob(
   [
-    "./src/infrastructure/engines/audit/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
+    "./src/infrastructure/engines/walker/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
     "./src/infrastructure/engines/eslint/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
     "!./src/infrastructure/engines/**/*.test.*",
     "!./src/infrastructure/engines/*/runner/**",
-    "!./src/infrastructure/engines/audit/*/*",
-    "!./src/infrastructure/engines/audit/*/*/**",
+    "!./src/infrastructure/engines/walker/*/*",
+    "!./src/infrastructure/engines/walker/*/*/**",
     "!./src/infrastructure/engines/eslint/*/*",
     "!./src/infrastructure/engines/eslint/*/*/**",
     "!./src/infrastructure/engines/eslint/eslint-config-lookup.ts",
@@ -348,7 +348,7 @@ const coreSources = import.meta.glob(
     "!./src/eslint-plugin.ts",
     "!./src/rule-set.ts",
     "!./src/testing.ts",
-    "!./src/infrastructure/engines/audit/**",
+    "!./src/infrastructure/engines/walker/**",
     "!./src/infrastructure/engines/eslint/*/**",
     "!./src/infrastructure/command-line/documentation/walkthrough/**",
     "!./src/infrastructure/content-files/rule-sets/probe-rule-set/**",
@@ -358,14 +358,14 @@ const coreSources = import.meta.glob(
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
 );
 
-const typescriptWrapperSources = import.meta.glob(["./src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts"], {
+const typescriptWrapperSources = import.meta.glob(["./src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts"], {
   base: "../../../../../",
   query: "?raw",
   import: "default",
   eager: true,
 });
 
-const jsoncWrapperSources = import.meta.glob(["./src/infrastructure/engines/audit/runner/pieces/jsonc-parse.ts"], {
+const jsoncWrapperSources = import.meta.glob(["./src/infrastructure/engines/walker/runner/pieces/jsonc-parse.ts"], {
   base: "../../../../../",
   query: "?raw",
   import: "default",
@@ -402,10 +402,10 @@ const nativeRulesWrapperSources = import.meta.glob(["./src/infrastructure/engine
 
 const walkerPieceSources = import.meta.glob(
   [
-    "./src/infrastructure/engines/audit/*/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
+    "./src/infrastructure/engines/walker/*/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
     "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
-    "!./src/infrastructure/engines/audit/runner/**",
-    "!./src/infrastructure/engines/audit/**/*.test.*",
+    "!./src/infrastructure/engines/walker/runner/**",
+    "!./src/infrastructure/engines/walker/**/*.test.*",
     "!./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/**/*.test.*",
   ],
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
@@ -443,7 +443,7 @@ const vitestImport = packageImport({ packageName: "vitest" });
 const relativeImportUnderCoreFrom = ({ importingFolder }: { readonly importingFolder: string }) => [
   relativeImportReaching({
     importingFolder,
-    reach: /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:audit|eslint\/[^/]+)\/)/,
+    reach: /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:walker|eslint\/[^/]+)\/)/,
   }),
   packageOrComputedImport,
 ];
@@ -468,14 +468,14 @@ describe("the confinement reading over written-out sources, so each guard can fa
     expect(
       importsOutsideFromOwnFolder({
         sources: {
-          "./src/run/a.ts": 'import { x } from "../values/x.ts";\nimport { y } from "../infrastructure/engines/audit/y.ts";\n',
-          "./src/run/deeper/b.ts": 'import { x } from "../../values/x.ts";\nimport { y } from "../../infrastructure/engines/audit/y.ts";\nimport { z } from "../values/z.ts";\n',
+          "./src/run/a.ts": 'import { x } from "../values/x.ts";\nimport { y } from "../infrastructure/engines/walker/y.ts";\n',
+          "./src/run/deeper/b.ts": 'import { x } from "../../values/x.ts";\nimport { y } from "../../infrastructure/engines/walker/y.ts";\nimport { z } from "../values/z.ts";\n',
         },
         allowedFrom: relativeImportUnderCoreFrom,
       }),
     ).toEqual([
-      { file: "./src/run/a.ts", specifier: "../infrastructure/engines/audit/y.ts", form: "value" },
-      { file: "./src/run/deeper/b.ts", specifier: "../../infrastructure/engines/audit/y.ts", form: "value" },
+      { file: "./src/run/a.ts", specifier: "../infrastructure/engines/walker/y.ts", form: "value" },
+      { file: "./src/run/deeper/b.ts", specifier: "../../infrastructure/engines/walker/y.ts", form: "value" },
     ]);
   });
 
@@ -522,10 +522,10 @@ describe("Vendor confinement over what this repository's own Hone source imports
       installProofPortSources: { "./delivery/install-proof/install-proof-ports.ts": expect.any(String) },
       bundlerPortSources: { "./delivery/packaging/building/esbuild-bundler-port.ts": expect.any(String) },
       walkerPieceSources: expect.objectContaining({
-        "./src/infrastructure/engines/audit/CD-14/class-syntax.ts": expect.any(String),
+        "./src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.ts": expect.any(String),
         "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts": expect.any(String),
       }),
-      eslintPieceSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts": expect.any(String) }),
+      eslintPieceSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts": expect.any(String) }),
       testSources: expect.objectContaining({
         "./src/application/run/check/run-check.test.ts": expect.any(String),
         "./src/infrastructure/node/file-system/file-system-port.test.ts": expect.any(String),

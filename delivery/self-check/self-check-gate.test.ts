@@ -49,7 +49,7 @@ const CLASS_IN_A: Finding = {
   file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
-  mechanism: "audit",
+  mechanism: "walker",
 };
 
 const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };

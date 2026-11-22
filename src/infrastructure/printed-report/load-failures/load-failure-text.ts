@@ -1,3 +1,4 @@
+import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
 import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../domain/runner/runner-failure.ts";
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
@@ -98,15 +99,15 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
       return [`${request.failure.address}:`, JUDGEMENT_CLAUSE_LISTED_REPAIR];
     case "mechanism-not-allowed":
     case "piece-missing":
-      return [request.failure.address, request.failure.mechanism];
+      return [request.failure.address, versionOneEngineNameOf(request.failure.mechanism)];
     case "config-root-untracked":
       return [`${request.failure.root}:`, CONFIG_ROOT_REPAIR];
     case "runner-missing":
-      return [request.failure.mechanism];
+      return [versionOneEngineNameOf(request.failure.mechanism)];
     case "runner-invalid":
-      return [request.failure.mechanism, request.failure.detail];
+      return [versionOneEngineNameOf(request.failure.mechanism), request.failure.detail];
     case "runner-failed":
-      return [request.failure.mechanism, ...runnerFailureFields({ failure: request.failure.failure })];
+      return [versionOneEngineNameOf(request.failure.mechanism), ...runnerFailureFields({ failure: request.failure.failure })];
   }
 };
 

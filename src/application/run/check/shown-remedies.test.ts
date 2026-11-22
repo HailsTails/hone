@@ -29,7 +29,7 @@ const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), cl
 
 const LOCATED: Finding = {
   clause: CLAUSE,
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/a.test.ts"),
   anchor: { line: 3, column: 5 },
   snippet: "rows.map(idOf);",

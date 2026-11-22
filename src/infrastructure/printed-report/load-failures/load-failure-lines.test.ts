@@ -5,9 +5,9 @@ import { runLoadFailureLine } from "./load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 type LineRow = { readonly failure: RunLoadFailure; readonly line: string };
 

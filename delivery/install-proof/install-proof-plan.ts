@@ -40,7 +40,7 @@ export type ProofCase = {
 
 export type ManifestFailure = { readonly kind: "manifest-invalid"; readonly detail: string };
 
-const ESLINT_PROJECTION = `import piece0 from "${TOOL_IDENTITY.packageName}/src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js";
+const ESLINT_PROJECTION = `import piece0 from "${TOOL_IDENTITY.packageName}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.js";
 
 export default [
   {
@@ -83,7 +83,7 @@ const ESLINT_MISSING_ACTIONS: readonly ProofAction[] = [
   },
 ];
 
-const WORKSPACE_SLICE = `import piece0 from "${TOOL_IDENTITY.packageName}/src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js";
+const WORKSPACE_SLICE = `import piece0 from "${TOOL_IDENTITY.packageName}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.js";
 
 export default [
   {

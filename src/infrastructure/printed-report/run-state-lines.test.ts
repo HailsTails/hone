@@ -6,9 +6,9 @@ import type { RunProjectionProblem, RunUnmeasured } from "../../domain/report/ru
 import { assessmentLine, projectionProblemLine, settingsNoteLine, settingsNoteText, unmeasuredLine } from "./run-state-lines.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 

@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "any"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd1",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "no-explicit-any"
+  }
+}

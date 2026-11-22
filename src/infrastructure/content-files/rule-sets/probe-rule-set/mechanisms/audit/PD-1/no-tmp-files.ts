@@ -1,4 +1,4 @@
-import type { WalkerPiece } from "../../../../../../engines/audit/runner/pieces/walker-piece.ts";
+import type { WalkerPiece } from "../../../../../../engines/walker/runner/pieces/walker-piece.ts";
 
 export const check: WalkerPiece = {
   prepare: ({ clauses }) => ({

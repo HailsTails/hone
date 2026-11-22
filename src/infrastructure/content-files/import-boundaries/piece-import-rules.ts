@@ -1,18 +1,19 @@
 import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { parsedJson } from "../rule-sets/rule-set-reader.ts";
-import { enginesFolderSegmentsOf, pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
-import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import { isCatalogueName } from "../../../domain/language-layer/catalogue-name.ts";
+import type { CheckNames } from "../../../domain/language-layer/check-address-text.ts";
+import { enginesFolderSegmentsOf, namedPieceFolderSegmentsOf, pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { isDisciplineId } from "../../../domain/rule-set/identifiers.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { engineIdSchema, versionOneEngineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type PieceLocation = {
   readonly file: string;
   readonly ruleSetRoot: string;
-  readonly mechanism: MechanismId;
-  readonly discipline: DisciplineId;
-};
+  readonly mechanism: EngineId;
+} & ({ readonly discipline: DisciplineId } | CheckNames);
 
 export type PieceImportRefusal = {
   readonly specifier: string;
@@ -92,7 +93,12 @@ const pieceLocationOf = (request: {
   if (mechanismText === undefined || discipline === undefined || rest.length === 0 || discipline === RUNNER_FOLDER) {
     return { outcome: "ok", value: [] };
   }
-  const mechanism = mechanismIdSchema.safeParse(mechanismText);
+  const engineSchema = request.ruleSetRoot === request.installRoot ? engineIdSchema : versionOneEngineIdSchema;
+  const mechanism = engineSchema.safeParse(mechanismText);
+  const [check, ...sources] = rest;
+  if (mechanism.success && isCatalogueName(discipline) && check !== undefined && isCatalogueName(check) && sources.length > 0) {
+    return { outcome: "ok", value: [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, symptom: discipline, check }] };
+  }
   if (!isDisciplineId(discipline)) {
     return mechanism.success
       ? { outcome: "failed", error: { kind: "not-a-discipline", file: request.file, folder: discipline } }
@@ -136,14 +142,12 @@ const relativeRefusal = (request: {
   const target = request.path.joinRepository({
     segments: [request.path.repositoryDirectoryOf({ path: request.piece.file }), request.specifier],
   });
+  const location = { ...request.piece, installRoot: request.installRoot };
+  const localReach = "symptom" in location
+    ? [namedPieceFolderSegmentsOf(location), [location.ruleSetRoot, "rules", "typescript", "symptoms", location.symptom]]
+    : [pieceFolderSegmentsOf(location), [location.ruleSetRoot, "rules", location.discipline]];
   const reach = [
-    pieceFolderSegmentsOf({
-      ruleSetRoot: request.piece.ruleSetRoot,
-      installRoot: request.installRoot,
-      mechanism: request.piece.mechanism,
-      discipline: request.piece.discipline,
-    }),
-    [request.piece.ruleSetRoot, "rules", request.piece.discipline],
+    ...localReach,
     [request.installRoot, "src", "infrastructure", "engines", request.piece.mechanism, "runner"],
     [request.installRoot, "src", "domain"],
     [request.installRoot, "src", "application", "ports"],

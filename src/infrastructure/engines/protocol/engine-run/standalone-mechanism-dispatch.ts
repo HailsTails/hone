@@ -10,7 +10,7 @@ import type { Hit, MeasuredPair, NativeException } from "../../../../domain/runn
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { standaloneRunReportSchema } from "../runner-module/standalone-run-report-schema.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
-import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
 
@@ -66,7 +66,7 @@ const invalidStandaloneDetail = (request: { readonly returned: unknown; readonly
 
 const standaloneRun = (request: {
   readonly returned: unknown;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly run: RunRequest;
 }): Result<MechanismRun, RunnerFailure> => {
   const parsed = standaloneResultSchema.safeParse(request.returned);
@@ -118,7 +118,7 @@ export const unrequestedNativeException = (request: {
 
 export const runMechanism = (request: {
   readonly runner: LoadedStandaloneRunner;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly run: RunRequest;
 }): Promise<Result<MechanismRun, RunnerFailure>> => {
   const { runner } = request;

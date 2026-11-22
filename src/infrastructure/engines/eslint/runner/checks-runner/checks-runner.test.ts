@@ -8,7 +8,7 @@ import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
-import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };
+import ESLINT_CD_14_PIECE from "../../authored-class-or-this/class-keyword/piece.json" with { type: "json" };
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../projection/checks-projection.ts";
 import type { ChecksRepository } from "./checks-repository.ts";
 import type { ChecksRunRequest } from "./checks-run-types.ts";
@@ -126,7 +126,7 @@ const CLASS_KEYWORD_CHECK: RuledCheck = {
   name: "class-keyword",
   symptom: { name: "authored-class-or-this", title: "Authored class or this" },
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
-  engines: [{ mechanism: "audit" }, { mechanism: "eslint" }],
+  engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
 const CLASS_PROJECTED = { symptom: "authored-class-or-this", check: "class-keyword", ruleId: "hone/authored-class-or-this#class-keyword", options: [] };
@@ -138,8 +138,8 @@ const CLASS_BINDINGS: ChecksRunRequest["bindings"] = [
     mechanism: "eslint",
     clause: {
       address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
-      pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/CD-14`,
-      settings: ESLINT_CD_14_PIECE.clauses[0].settings,
+      pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
+      settings: ESLINT_CD_14_PIECE.settings,
     },
   },
 ];

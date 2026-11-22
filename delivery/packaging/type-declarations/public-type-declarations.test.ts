@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from "vitest";
 import type { Result } from "../../../src/domain/result.ts";
-import type { ExportDeclaration, ImportDeclaration, Statement, SyntaxApi } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import type { ExportDeclaration, ImportDeclaration, Statement, SyntaxApi } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import {
   type DeclarationEmit,
   type DeclarationFailure,
@@ -244,7 +244,7 @@ describe("the declarations the public type entries ship, emitted in memory by th
   });
 
   it("declare folderScope, editionReaches and isEdition from the audit entry, the three testing functions from the testing entry, only the default export from the eslint-plugin entry, and no named value from the rule-set entry", () => {
-    expect(reach.entryValues).toEqual({ audit: ["folderScope", "editionReaches", "isEdition"], "eslint-plugin": ["export default plugin;"], "rule-set": [], testing: ["clauseConformanceOf", "clauseUnderTestOf", "repoPathOf"] });
+    expect(reach.entryValues).toEqual({ audit: ["folderScope", "editionReaches", "isEdition"], "eslint-plugin": ["export default plugin;"], "rule-set": [], testing: ["clauseConformanceOf", "clauseUnderTestOf", "repoPathOf", "checkUnderTestOf", "checkConformanceOf"] });
   });
 
   it("ship no declaration that mentions zod", () => {

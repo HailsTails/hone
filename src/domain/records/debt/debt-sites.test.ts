@@ -7,13 +7,13 @@ import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 

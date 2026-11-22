@@ -237,13 +237,13 @@ const contractTextAt = (request: { readonly path: string }): string => {
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
@@ -1103,7 +1103,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
 
   const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md";
 
-  const AUDIT = "audit" as const;
+  const AUDIT = "walker" as const;
 
   const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 

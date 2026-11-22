@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultTypeScriptDeclarationPort, publishedDeclarationText } from "./typescript-declaration-port.ts";
 
 const REPO_ROOT = `${import.meta.dirname}/../../..`;
@@ -9,7 +9,7 @@ const port = createDefaultTypeScriptDeclarationPort({});
 const emitted = (request: { readonly entryPoints: readonly string[] }) => port.emit({ sourceRoot: REPO_ROOT, entryPoints: request.entryPoints });
 
 const ENTRIES_EMITTED_TOGETHER = emitted({
-  entryPoints: ["src/domain/runner/piece-failure-types.ts", "src/domain/repository/repo-path-types.ts", "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts", "src/domain/repository/branded.ts"],
+  entryPoints: ["src/domain/runner/piece-failure-types.ts", "src/domain/repository/repo-path-types.ts", "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts", "src/domain/repository/branded.ts"],
 });
 
 describe("the TypeScript declaration port, emitting in memory with the repository's own TypeScript and tsconfig (CD-47: nothing is spawned or written)", () => {
@@ -22,7 +22,7 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
       { path: "src/domain/repository/branded.d.ts", specifiers: [], refusals: [] },
       { path: "src/domain/repository/repo-path-types.d.ts", specifiers: ["./branded.js"], refusals: [] },
       { path: "src/domain/runner/piece-failure-types.d.ts", specifiers: ["../repository/repo-path-types.js"], refusals: [] },
-      { path: "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.d.ts", specifiers: ["typescript"], refusals: [] },
+      { path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts", specifiers: ["typescript"], refusals: [] },
     ]);
   });
 
@@ -39,7 +39,7 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
       value: {
         declarations: expect.arrayContaining([
           expect.objectContaining({
-            path: "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.d.ts",
+            path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts",
             specifiers: ["typescript"],
             text: expect.stringContaining("export declare const defaultTypeScriptModules: TypeScriptModules;"),
             refusals: [],
@@ -54,7 +54,7 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
       outcome: "ok",
       value: {
         declarations: expect.arrayContaining([
-          expect.objectContaining({ path: "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.d.ts", text: expect.stringContaining("export type SyntaxApi = typeof typescript;") }),
+          expect.objectContaining({ path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts", text: expect.stringContaining("export type SyntaxApi = typeof typescript;") }),
         ]),
       },
     });
@@ -175,7 +175,7 @@ describe("the TypeScript declaration port, emitting a public entry that exports 
         diagnostics: [],
         declarations: expect.arrayContaining([
           expect.objectContaining({ path: "src/audit.d.ts", text: expect.stringContaining("export declare const folderScope: (request: {"), refusals: [] }),
-          expect.objectContaining({ path: "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.d.ts", text: expect.not.stringContaining("defaultTypeScriptModules") }),
+          expect.objectContaining({ path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts", text: expect.not.stringContaining("defaultTypeScriptModules") }),
         ]),
       },
     });

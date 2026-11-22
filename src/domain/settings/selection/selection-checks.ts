@@ -14,7 +14,7 @@ export const editionsOf = (request: {
   request.readings.flatMap((reading) =>
     checksOf({ catalogue: request.catalogue, clause: reading.address }).flatMap((check) =>
       check.engines
-        .filter((engine) => engine.mechanism === reading.mechanism)
+        .filter((engine) => engine.name === reading.mechanism)
         .map((engine) => ({ check, engine, edition: reading.edition, latest: reading.latest })),
     ),
   );

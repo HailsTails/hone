@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadFailureOutcome, projectCommandOutcome, versionCommandOutcome } from "./command-outcome.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 
 describe("loadFailureOutcome", () => {
   it("exits 2 and prints the load failure line when an input could not be loaded", () => {

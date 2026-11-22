@@ -32,7 +32,7 @@ const CHECK: PlacedItem = {
 };
 
 const BESIDE: HeldBesideItems = {
-  engines: [{ name: "walker", mechanism: "audit" }],
+  engines: [{ name: "walker" }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
   formatsOfToday: { debt: "file-carve-out" },
@@ -51,7 +51,7 @@ describe("catalogueFileOf", () => {
         cases: [],
         recipes: [],
         recordKinds: [{ name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" }],
-        engines: [{ name: "walker", mechanism: "audit" }],
+        engines: [{ name: "walker" }],
         symptoms: [],
         clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
         checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: CLOCK_SOURCES }],

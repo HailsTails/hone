@@ -5,7 +5,7 @@ import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { moduleExtensionOf } from "../ports/host/module-extension.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
@@ -13,7 +13,7 @@ import { clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";
 import type { ClauseConformanceOf, ClauseUnderTestOf, RepoPathOf } from "./conformance-testing-types.ts";
 
 export type ConformanceTestingPorts = {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly moduleUrl: string;
   readonly installRoot: Result<AbsolutePath, LoadFailure>;
   readonly ruleSetFiles: RuleSetFiles;

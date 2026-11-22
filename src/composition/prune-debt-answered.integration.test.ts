@@ -15,8 +15,8 @@ import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
-import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createWalkerRunner } from "../infrastructure/engines/walker/runner/create-walker-runner.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
@@ -108,7 +108,7 @@ const fixtureRepository = (): FileTextPort =>
 
 const auditRunnerOver = (fileText: FileTextPort): ModuleLoaderPort =>
   modulesServingRunner({
-    runnerSuffix: "/src/infrastructure/engines/audit/runner/runner.ts",
+    runnerSuffix: "/src/infrastructure/engines/walker/runner/runner.ts",
     runner: createWalkerRunner({ fileText, modules: createDefaultModuleLoaderPort({}), path, parse: defaultParsePort, entryKind: ABSENT_ENTRY_KIND }),
     base: createDefaultModuleLoaderPort({}),
   });

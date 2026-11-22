@@ -4,7 +4,7 @@ import { checkNamedAt, checksOf } from "../../language-layer/check-address.ts";
 import { checkOfFinding } from "../../finding/finding-check.ts";
 import type { Check, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
@@ -138,11 +138,11 @@ export const nativeSitesOf = (request: {
   if (!request.run.coverableKinds.includes(request.exception.kind)) {
     return [];
   }
-  const checks = checksReachedBy(request).filter((check) => check.engines.some((engine) => engine.mechanism === request.run.mechanism));
+  const checks = checksReachedBy(request).filter((check) => check.engines.some((engine) => engine.name === request.run.mechanism));
   return fileOfNative(request).flatMap((file) => checks.map((check) => ({ symptom: check.symptom, check: { found: "check", check }, file, party: NOT_REPORTED })));
 };
 
-const attributed = (request: { readonly exception: NativeException; readonly mechanism: MechanismId }): AttributedNativeException => ({
+const attributed = (request: { readonly exception: NativeException; readonly mechanism: EngineId }): AttributedNativeException => ({
   ...request.exception,
   mechanism: request.mechanism,
 });

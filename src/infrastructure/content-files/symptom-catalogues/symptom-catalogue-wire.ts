@@ -2,8 +2,8 @@ import { z } from "zod";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
-import { isCatalogueName } from "../../../domain/language-layer/catalogue-name.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { CATALOGUE_NAME } from "../../../domain/language-layer/catalogue-name.ts";
+import { engineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
   AlwaysRecordable,
@@ -29,7 +29,7 @@ export const SUPPORTED_VERSION = 1;
 
 const NOT_A_CATALOGUE_NAME = "is not a lower-case hyphenated name";
 
-export const catalogueNameSchema = z.string().refine(isCatalogueName, { error: NOT_A_CATALOGUE_NAME });
+export const catalogueNameSchema = z.string().regex(new RegExp(`^${CATALOGUE_NAME}$`), { error: NOT_A_CATALOGUE_NAME });
 
 const textSchema = z.string().min(1);
 
@@ -106,7 +106,7 @@ export const catalogueFileSchema = z.strictObject({
     }),
   ),
   recordKinds: z.array(recordKindWireSchema),
-  engines: z.array(z.strictObject({ name: catalogueNameSchema, mechanism: mechanismIdSchema })),
+  engines: z.array(z.strictObject({ name: engineIdSchema })),
   symptoms: z.array(symptomWireSchema),
   clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema })),
   checks: z.array(checkWireSchema),
@@ -199,7 +199,7 @@ const recordKindOf = (wire: RecordKindWire): RecordKind => ({
   todaysFormat: wire.todaysFormat,
 });
 
-const engineOf = (wire: EngineWire): Engine => ({ name: wire.name, mechanism: wire.mechanism });
+const engineOf = (wire: EngineWire): Engine => ({ name: wire.name });
 
 const namedBanOf = (wire: NamedBanWire): NamedBan => ({ outsideDependency: wire.outsideDependency });
 
@@ -478,7 +478,6 @@ const repeatedNamesOf = (request: { readonly file: CatalogueFile }): readonly st
   ...repeatsIn({ listing: "recipes", names: request.file.recipes.map((recipe) => recipe.name) }),
   ...repeatsIn({ listing: "recordKinds", names: request.file.recordKinds.map((kind) => kind.name) }),
   ...repeatsIn({ listing: "engines", names: request.file.engines.map((engine) => engine.name) }),
-  ...repeatsIn({ listing: "the mechanisms of engines", names: request.file.engines.map((engine) => engine.mechanism) }),
   ...repeatsIn({ listing: "symptoms", names: request.file.symptoms.map((symptom) => symptom.name) }),
   ...repeatsIn({ listing: "clauses", names: request.file.clauses.map(({ clause }) => clauseAddressText({ address: clause })) }),
   ...repeatsIn({ listing: "checks", names: request.file.checks.map((check) => `${check.symptom}#${check.name}`) }),

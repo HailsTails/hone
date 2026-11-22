@@ -46,7 +46,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 const noTmpFiles = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
 const eslint = "eslint" as const;
-const audit = "audit" as const;
+const audit = "walker" as const;
 
 const cd14Piece: ProjectedPiece = {
   pluginNamespace: "hone",

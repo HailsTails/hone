@@ -17,45 +17,45 @@ const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string,
 const INSTALL_ROOT = "packages/hone";
 const PROBE_ROOT = "packages/hone/tests/probe-rule-set";
 
-const PIECE_FOLDER = "packages/hone/src/infrastructure/engines/audit/CD-14";
-const CLASS_SYNTAX_KEY = "../../src/infrastructure/engines/audit/CD-14/class-syntax.ts";
-const HELPER_KEY = "../../src/infrastructure/engines/audit/CD-14/helper.ts";
+const PIECE_FOLDER = "packages/hone/src/infrastructure/engines/walker/CD-14";
+const CLASS_SYNTAX_KEY = "../../src/infrastructure/engines/walker/CD-14/class-syntax.ts";
+const HELPER_KEY = "../../src/infrastructure/engines/walker/CD-14/helper.ts";
 const PROBE_KEY = "../../tests/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
 const PROBE_FOLDER = "../../tests/probe-rule-set/mechanisms/audit/PD-1";
-const TYPE_PACKAGES_KEY = "../../src/infrastructure/engines/audit/runner/piece-type-packages.json";
+const TYPE_PACKAGES_KEY = "../../src/infrastructure/engines/walker/runner/piece-type-packages.json";
 
 const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
-  '["packages/hone","src","infrastructure","engines","audit","CD-14"]': PIECE_FOLDER,
+  '["packages/hone","src","infrastructure","engines","walker","CD-14"]': PIECE_FOLDER,
   '["packages/hone","rules","CD-14"]': "packages/hone/rules/CD-14",
-  '["packages/hone","src","infrastructure","engines","audit","runner"]': "packages/hone/src/infrastructure/engines/audit/runner",
+  '["packages/hone","src","infrastructure","engines","walker","runner"]': "packages/hone/src/infrastructure/engines/walker/runner",
   '["packages/hone","src","domain"]': "packages/hone/src/domain",
   '["packages/hone","src","application","ports"]': "packages/hone/src/application/ports",
   '["packages/hone","src","infrastructure","content-files"]': "packages/hone/src/infrastructure/content-files",
   '["packages/hone","src","infrastructure","discipline-exceptions-folder"]':
     "packages/hone/src/infrastructure/discipline-exceptions-folder",
   [`["${PIECE_FOLDER}","./nested/helper.ts"]`]: `${PIECE_FOLDER}/nested/helper.ts`,
-  [`["${PIECE_FOLDER}","../runner/walker-piece.ts"]`]: "packages/hone/src/infrastructure/engines/audit/runner/walker-piece.ts",
+  [`["${PIECE_FOLDER}","../runner/walker-piece.ts"]`]: "packages/hone/src/infrastructure/engines/walker/runner/walker-piece.ts",
   [`["${PIECE_FOLDER}","../../../../../src/domain/values/result.ts"]`]: "packages/hone/src/domain/values/result.ts",
   [`["${PIECE_FOLDER}","../../../../../rules/CD-14/discipline.json"]`]: "packages/hone/rules/CD-14/discipline.json",
   [`["${PIECE_FOLDER}","../../eslint/CD-14/cd14.ts"]`]: "packages/hone/src/infrastructure/engines/eslint/CD-14/cd14.ts",
-  [`["${PIECE_FOLDER}","../CD-15/no-for-of.ts"]`]: "packages/hone/src/infrastructure/engines/audit/CD-15/no-for-of.ts",
+  [`["${PIECE_FOLDER}","../CD-15/no-for-of.ts"]`]: "packages/hone/src/infrastructure/engines/walker/CD-15/no-for-of.ts",
   [`["${PIECE_FOLDER}","../../eslint/runner/eslint-instance.ts"]`]:
     "packages/hone/src/infrastructure/engines/eslint/runner/eslint-instance.ts",
-  '["../..","src","infrastructure","engines","audit","runner","piece-type-packages.json"]': TYPE_PACKAGES_KEY,
+  '["../..","src","infrastructure","engines","walker","runner","piece-type-packages.json"]': TYPE_PACKAGES_KEY,
   [`["${TYPE_PACKAGES_KEY}"]`]: TYPE_PACKAGES_KEY,
   '["../../tests/probe-rule-set","mechanisms","audit","PD-1"]': PROBE_FOLDER,
   '["../../tests/probe-rule-set","rules","PD-1"]': "../../tests/probe-rule-set/rules/PD-1",
-  '["../..","src","infrastructure","engines","audit","runner"]': "../../src/infrastructure/engines/audit/runner",
+  '["../..","src","infrastructure","engines","walker","runner"]': "../../src/infrastructure/engines/walker/runner",
   '["../..","src","domain"]': "../../src/domain",
   '["../..","src","application","ports"]': "../../src/application/ports",
   '["../..","src","infrastructure","content-files"]': "../../src/infrastructure/content-files",
   '["../..","src","infrastructure","discipline-exceptions-folder"]': "../../src/infrastructure/discipline-exceptions-folder",
-  [`["${PROBE_FOLDER}","../../../../../src/infrastructure/engines/audit/runner/walker-piece.ts"]`]:
-    "../../src/infrastructure/engines/audit/runner/walker-piece.ts",
+  [`["${PROBE_FOLDER}","../../../../../src/infrastructure/engines/walker/runner/walker-piece.ts"]`]:
+    "../../src/infrastructure/engines/walker/runner/walker-piece.ts",
 };
 
 const REPOSITORY_DIRECTORIES: Readonly<Record<string, string>> = {
-  "packages/hone/src/infrastructure/engines/audit/CD-14/class-syntax.ts": PIECE_FOLDER,
+  "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.ts": PIECE_FOLDER,
   [PROBE_KEY]: PROBE_FOLDER,
 };
 
@@ -70,9 +70,9 @@ const path: PathPort = {
 };
 
 const WALKER_PIECE: PieceLocation = {
-  file: "packages/hone/src/infrastructure/engines/audit/CD-14/class-syntax.ts",
+  file: "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.ts",
   ruleSetRoot: INSTALL_ROOT,
-  mechanism: "audit",
+  mechanism: "walker",
   discipline: disciplineIdOf("CD-14"),
 };
 
@@ -93,9 +93,9 @@ describe("pieceFilesOf", () => {
     expect(
       pieceFilesOf({
         trackedPaths: [
-          "packages/hone/src/infrastructure/engines/audit/CD-14/class-syntax.ts",
-          "packages/hone/src/infrastructure/engines/audit/CD-14/class-syntax.test.ts",
-          "packages/hone/src/infrastructure/engines/audit/CD-14/piece.json",
+          "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.ts",
+          "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.test.ts",
+          "packages/hone/src/infrastructure/engines/walker/CD-14/piece.json",
         ],
         ruleSetRoots: [INSTALL_ROOT, PROBE_ROOT],
         installRoot: INSTALL_ROOT,
@@ -105,14 +105,14 @@ describe("pieceFilesOf", () => {
 
   it.each([
     "packages/hone/src/infrastructure/engines/protocol/checks/checks-runner.ts",
-    "packages/hone/src/infrastructure/engines/audit/runner/runner.ts",
+    "packages/hone/src/infrastructure/engines/walker/runner/runner.ts",
   ])("does not list %s, which is no piece's file", (file) => {
     expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: [] });
   });
 
   it.each([
-    { file: "packages/hone/src/infrastructure/engines/audit/not-a-discipline/class-syntax.ts", folder: "not-a-discipline" },
-    { file: "packages/hone/src/infrastructure/engines/audit/cd-14/class-syntax.ts", folder: "cd-14" },
+    { file: "packages/hone/src/infrastructure/engines/walker/not-a-discipline/class-syntax.ts", folder: "not-a-discipline" },
+    { file: "packages/hone/src/infrastructure/engines/walker/cd-14/class-syntax.ts", folder: "cd-14" },
   ])("refuses the folder $folder under the audit mechanism, which is no discipline id", ({ file, folder }) => {
     expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({
       outcome: "failed",
@@ -202,7 +202,7 @@ describe("pieceImportRefusals refuses", () => {
 const SOURCES: Readonly<Record<string, string>> = {
   [CLASS_SYNTAX_KEY]: 'import type { Program } from "acorn";\n',
   [HELPER_KEY]: 'import type { Node } from "typescript";\n',
-  [PROBE_KEY]: 'import type { WalkerPiece } from "../../../../../src/infrastructure/engines/audit/runner/walker-piece.ts";\n',
+  [PROBE_KEY]: 'import type { WalkerPiece } from "../../../../../src/infrastructure/engines/walker/runner/walker-piece.ts";\n',
 };
 
 const findingsOver = (request: { readonly typePackageTexts: Readonly<Record<string, string>> }) =>
@@ -220,9 +220,9 @@ describe("pieceImportFindings", () => {
       outcome: "ok",
       value: {
         pieces: [
-          { file: CLASS_SYNTAX_KEY, ruleSetRoot: "../..", mechanism: "audit", discipline: "CD-14" },
-          { file: HELPER_KEY, ruleSetRoot: "../..", mechanism: "audit", discipline: "CD-14" },
-          { file: PROBE_KEY, ruleSetRoot: "../../tests/probe-rule-set", mechanism: "audit", discipline: "PD-1" },
+          { file: CLASS_SYNTAX_KEY, ruleSetRoot: "../..", mechanism: "walker", discipline: "CD-14" },
+          { file: HELPER_KEY, ruleSetRoot: "../..", mechanism: "walker", discipline: "CD-14" },
+          { file: PROBE_KEY, ruleSetRoot: "../../tests/probe-rule-set", mechanism: "walker", discipline: "PD-1" },
         ],
         refusals: [{ file: CLASS_SYNTAX_KEY, specifier: "acorn", reason: "package-not-listed" }],
       },

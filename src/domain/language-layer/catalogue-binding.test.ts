@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { catalogueBoundTo, type EngineBindings, holdingBoundTo, pieceClauseKeyOf } from "./catalogue-binding.ts";
+import { catalogueBoundTo, type EngineBindings, holdingBoundTo } from "./catalogue-binding.ts";
 import type { CatalogueContent, CheckContent, Engine, RecordKind, Symptom } from "./symptom-catalogue.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
@@ -25,8 +24,6 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
-
-const TEAM_CLOCK_SOURCES = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
 const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
@@ -49,15 +46,9 @@ const CONTENT: CatalogueContent = {
 };
 
 const BINDINGS: EngineBindings = new Map([
-  [pieceClauseKeyOf(CLOCK_SOURCES), [WALKER]],
-  [pieceClauseKeyOf(LOOPS), [WALKER, ESLINT]],
+  ["date-used-directly#clock-sources", [WALKER]],
+  ["date-used-directly#loops", [WALKER, ESLINT]],
 ]);
-
-describe("pieceClauseKeyOf", () => {
-  it("names a clause by its discipline and clause, whatever rule set it sits in", () => {
-    expect(pieceClauseKeyOf(TEAM_CLOCK_SOURCES)).toBe("CD-17#clock-sources");
-  });
-});
 
 describe("catalogueBoundTo", () => {
   it("gives each check the engines of the pieces that run its clause", () => {
@@ -73,8 +64,18 @@ describe("catalogueBoundTo", () => {
     });
   });
 
+  it("binds two check addresses that share a legacy clause independently", () => {
+    expect(catalogueBoundTo({
+      content: { ...CONTENT, checks: [CLOCK_SOURCES_CHECK, { ...LOOPS_CHECK, clause: CLOCK_SOURCES }] },
+      bindings: new Map([["date-used-directly#clock-sources", [WALKER]], ["date-used-directly#loops", [ESLINT]]]),
+    })).toMatchObject({ outcome: "ok", value: { checks: [
+      { name: "clock-sources", clause: CLOCK_SOURCES, engines: [WALKER] },
+      { name: "loops", clause: CLOCK_SOURCES, engines: [ESLINT] },
+    ] } });
+  });
+
   it("refuses naming each check whose clause no piece runs", () => {
-    expect(catalogueBoundTo({ content: CONTENT, bindings: new Map([[pieceClauseKeyOf(LOOPS), [ESLINT]]]) })).toEqual({
+    expect(catalogueBoundTo({ content: CONTENT, bindings: new Map([["date-used-directly#loops", [ESLINT]]]) })).toEqual({
       outcome: "failed",
       error: "no piece runs the clause of date-used-directly#clock-sources",
     });

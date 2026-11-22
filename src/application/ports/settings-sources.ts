@@ -5,7 +5,7 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import type { AnchorKind } from "../../domain/finding/anchor.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../domain/result.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import type { DirectoryPort } from "./file-system/directory-port.ts";
@@ -34,7 +34,7 @@ export type SettingsSources = {
   readonly pieceClause: (request: {
     readonly ruleSetRoot: AbsolutePath;
     readonly clause: ClauseAddress;
-    readonly mechanism: MechanismId;
+    readonly mechanism: EngineId;
   }) => Result<PieceClause, VersionTwoLoadFailure>;
 };
 

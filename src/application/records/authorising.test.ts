@@ -48,7 +48,7 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
 
 const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const DECLARED_NOT_ASSERTED: Rule = {
   name: "declared-not-asserted",

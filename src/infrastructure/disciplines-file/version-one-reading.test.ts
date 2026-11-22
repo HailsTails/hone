@@ -15,7 +15,7 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const SELECTION_TEXT = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "eslint" } }';
 

@@ -10,9 +10,9 @@ import { createDefaultFileTextPort } from "../../../node/file-system/file-text-p
 import type { PackageLocationPort } from "../../../node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
-import { defaultTypeScriptModules } from "../../audit/runner/toolchain/typescript-parse.ts";
-import { loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
+import { createWalkerRunner } from "../../walker/runner/create-walker-runner.ts";
+import { defaultTypeScriptModules } from "../../walker/runner/toolchain/typescript-parse.ts";
+import { loadParsePort } from "../../walker/runner/toolchain/typescript-toolchain.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
@@ -22,7 +22,7 @@ const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../.
 
 const ESLINT = "eslint" as const;
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const REPO = absoluteRootOf("/repository");
 

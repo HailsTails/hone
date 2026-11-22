@@ -1,5 +1,5 @@
 import type { RunnerFailure } from "../runner/runner-failure.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 
 export type LoadFailure =
@@ -20,16 +20,16 @@ export type LoadFailure =
   | { readonly kind: "unknown-clause"; readonly address: string }
   | { readonly kind: "judgement-clause-selected"; readonly address: string }
   | { readonly kind: "judgement-clause-listed"; readonly address: string }
-  | { readonly kind: "mechanism-not-allowed"; readonly address: string; readonly mechanism: MechanismId }
-  | { readonly kind: "runner-missing"; readonly mechanism: MechanismId }
-  | { readonly kind: "runner-invalid"; readonly mechanism: MechanismId; readonly detail: string }
-  | { readonly kind: "piece-missing"; readonly address: string; readonly mechanism: MechanismId }
+  | { readonly kind: "mechanism-not-allowed"; readonly address: string; readonly mechanism: EngineId }
+  | { readonly kind: "runner-missing"; readonly mechanism: EngineId }
+  | { readonly kind: "runner-invalid"; readonly mechanism: EngineId; readonly detail: string }
+  | { readonly kind: "piece-missing"; readonly address: string; readonly mechanism: EngineId }
   | { readonly kind: "rule-set-invalid"; readonly path: string; readonly detail: string }
   | { readonly kind: "git-failed"; readonly detail: string }
   | { readonly kind: "config-root-untracked"; readonly root: RepoPath }
   | { readonly kind: "selection-absent"; readonly repo: string }
   | { readonly kind: "unexpected-error"; readonly detail: string }
-  | { readonly kind: "runner-failed"; readonly mechanism: MechanismId; readonly failure: RunnerFailure };
+  | { readonly kind: "runner-failed"; readonly mechanism: EngineId; readonly failure: RunnerFailure };
 
 type RemovedKind = "why-chains-required" | "records-in-both-layouts" | "records-unsplittable";
 

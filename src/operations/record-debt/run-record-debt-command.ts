@@ -12,7 +12,7 @@ import {
 import type { GitTreePort } from "../../application/ports/git-port.ts";
 import type { Assessment } from "../../domain/settings/assessment.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
 import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import type { Result } from "../../domain/result.ts";
@@ -56,7 +56,7 @@ type DebtRequest = AdoptionInput &
     readonly existing: readonly PlacedEntry[];
   };
 
-const clauseMechanismsOf = (request: { readonly selection: SelectionReading }): ReadonlyMap<string, MechanismId> =>
+const clauseMechanismsOf = (request: { readonly selection: SelectionReading }): ReadonlyMap<string, EngineId> =>
   new Map(request.selection.selection.selected.map((clause) => [clauseAddressText({ address: clause.address }), clause.mechanism]));
 
 const debtOutcomesOf = async (request: DebtRequest): Promise<DebtResult> => {

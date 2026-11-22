@@ -8,13 +8,13 @@ import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 

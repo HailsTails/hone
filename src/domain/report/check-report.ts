@@ -5,7 +5,7 @@ import type { FilePresence } from "../repository/file-presence.ts";
 import type { BaseRevisionAvailability } from "../repository/base-revision-availability.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import type { ClauseEditionReading } from "../rule-set/edition-types.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 
 export type Unmeasured =
@@ -15,12 +15,12 @@ export type Unmeasured =
     }
   | {
       readonly kind: "mechanism-not-run";
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly projection: "missing";
     }
   | {
       readonly kind: "mechanism-not-run";
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly projection: "not-included";
       readonly nestedConfigurations: readonly RepoPath[];
     };
@@ -32,10 +32,10 @@ export type PartialAssessment = {
 };
 
 export type ProjectionProblem =
-  | { readonly scope: "projection"; readonly mechanism: MechanismId; readonly state: "out-of-date" }
+  | { readonly scope: "projection"; readonly mechanism: EngineId; readonly state: "out-of-date" }
   | {
       readonly scope: "slice";
-      readonly mechanism: MechanismId;
+      readonly mechanism: EngineId;
       readonly state: "out-of-date" | "missing" | "not-applied" | "unconfigured";
       readonly slice: RepoPath;
     };
@@ -64,7 +64,7 @@ export type AssessmentFileNote = {
 export type PaidDebtNote = {
   readonly kind: "paid-debt";
   readonly fileCarveOuts: number;
-  readonly projections: readonly MechanismId[];
+  readonly projections: readonly EngineId[];
 };
 
 export type ReadFirstEntry = AssessmentFileNote | ClauseReading | PaidDebtNote;

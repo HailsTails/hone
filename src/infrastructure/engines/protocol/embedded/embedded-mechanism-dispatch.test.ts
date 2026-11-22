@@ -11,7 +11,7 @@ import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 const REPO_ROOT = absoluteRootOf("/repo");
 const INSTALL_ROOT = absoluteRootOf("/install");
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };

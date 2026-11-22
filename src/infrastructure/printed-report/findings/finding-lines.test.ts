@@ -12,13 +12,13 @@ import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
@@ -228,7 +228,7 @@ describe("answeredLine", () => {
 
 describe("the lines that name a check", () => {
   it("prints an edition by its check, engine, the edition that ran and the latest", () => {
-    expect(editionLine({ reading: { check: CLOCK_CHECK, engine: { name: "walker", mechanism: AUDIT }, edition: editionOf("2"), latest: editionOf("3") } })).toBe(
+    expect(editionLine({ reading: { check: CLOCK_CHECK, engine: { name: "walker" }, edition: editionOf("2"), latest: editionOf("3") } })).toBe(
       "date-used-directly#clock-sources walker edition 2 of 3",
     );
   });

@@ -34,8 +34,8 @@ const DOCUMENT = {
   ],
   recordKinds: RECORD_KINDS_DOCUMENT,
   engines: [
-    { name: "walker", mechanism: "audit" },
-    { name: "eslint", mechanism: "eslint" },
+    { name: "walker" },
+    { name: "eslint" },
   ],
   symptoms: [
     {
@@ -107,9 +107,9 @@ const AUTHORISED_LOCATION: RecordKind = {
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -169,7 +169,7 @@ const SYMPTOM_HOLDING_DOCUMENT = {
   ...EMPTY_DOCUMENT,
   principles: PRINCIPLES_DOCUMENT,
   cases: [CASE_DOCUMENT],
-  engines: [{ name: "eslint", mechanism: "eslint" }],
+  engines: [{ name: "eslint" }],
   symptoms: [SYMPTOM_DOCUMENT],
   clauses: [{ clause: "CD-42#useless-else", sight: { kind: "one-symptom", symptom: "work-inside-a-condition" } }],
 };
@@ -341,8 +341,8 @@ describe("catalogueContentOf", () => {
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         engines: [
-          { name: "eslint", mechanism: "eslint" },
-          { name: "eslint", mechanism: "audit" },
+          { name: "eslint" },
+          { name: "eslint" },
         ],
       },
       refusal: "✖ engines holds eslint more than once",
@@ -388,17 +388,6 @@ describe("catalogueContentOf", () => {
       },
       refusal:
         "✖ checks holds work-inside-a-condition#useless-else more than once\n✖ the checks of work-inside-a-condition holds CD-42#useless-else more than once",
-    },
-    {
-      name: "an engine listed twice under one mechanism",
-      document: {
-        ...SYMPTOM_HOLDING_DOCUMENT,
-        engines: [
-          { name: "eslint", mechanism: "eslint" },
-          { name: "linter", mechanism: "eslint" },
-        ],
-      },
-      refusal: "✖ the mechanisms of engines holds eslint more than once",
     },
     {
       name: "two checks of one symptom on one clause",

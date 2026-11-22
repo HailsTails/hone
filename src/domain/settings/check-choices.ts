@@ -2,7 +2,7 @@ import { checkAddressOf, checkAt, checksOf } from "../language-layer/check-addre
 import type { CataloguedClause, Check, ClauseSight, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress, TOOL_RULE_SET } from "../rule-set/clause-address.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import { sameJsonValue } from "./json-values/json-kind.ts";
 import type { Result } from "../result.ts";
 import { everyOk } from "./every-ok.ts";
@@ -12,7 +12,7 @@ import type { CheckState, GivenCheckSettings, ListedCheck } from "./settings-fil
 export type RuleSetCatalogue = { readonly ruleSet: ClauseAddress["ruleSet"]; readonly catalogue: SymptomCatalogue };
 
 export type ClauseChoice =
-  | { readonly state: "run"; readonly mechanism: MechanismId; readonly settings: GivenCheckSettings | undefined }
+  | { readonly state: "run"; readonly mechanism: EngineId; readonly settings: GivenCheckSettings | undefined }
   | { readonly state: "not-run" }
   | { readonly state: "not-adopted" };
 
@@ -99,7 +99,7 @@ const choiceOf = (request: { readonly listed: ListedCheck; readonly check: Check
           engines: request.check.engines.map((candidate) => candidate.name),
         },
       }
-    : { outcome: "ok", value: { state: "run", mechanism: engine.mechanism, settings: undefined } };
+    : { outcome: "ok", value: { state: "run", mechanism: engine.name, settings: undefined } };
 };
 
 const resolvedCheckOf = (request: CatalogueRequest & { readonly listed: ListedCheck }): Result<ResolvedCheck, CheckChoiceRefusal> => {

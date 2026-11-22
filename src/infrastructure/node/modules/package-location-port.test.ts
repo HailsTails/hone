@@ -23,7 +23,7 @@ describe("installRootOfRunnerEntry", () => {
     expect(
       path.resolve({
         path: installRootOfRunnerEntry({
-          entryFile: path.join({ segments: [import.meta.dirname, "..", "..", "engines", "audit", "runner", "runner.ts"] }),
+          entryFile: path.join({ segments: [import.meta.dirname, "..", "..", "engines", "walker", "runner", "runner.ts"] }),
         }),
       }),
     ).toEqual(SOURCE_INSTALL_ROOT);

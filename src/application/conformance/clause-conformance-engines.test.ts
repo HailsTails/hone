@@ -5,8 +5,8 @@ import type { LoadedRunner } from "../ports/engine/runner-module.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
-import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
-import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
+import type { LocatedPieceFile, RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
@@ -16,7 +16,7 @@ import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
-const MECHANISM = "audit" as const;
+const MECHANISM = "walker" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
 const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 
@@ -42,13 +42,14 @@ const DISCIPLINE: DisciplineFile = {
   ],
 };
 
-const PIECE: PieceFile = {
+const PIECE: LocatedPieceFile = {
   version: 1,
   discipline: ACME_2,
   mechanism: MECHANISM,
   clauses: [
     {
       clause: SCRATCH_FILES_ID,
+      pieceRoot: PIECE_ROOT,
       settings: { module: "scratch-files.ts" },
       clauseSettings: {},
       editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },

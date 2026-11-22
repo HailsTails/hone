@@ -12,7 +12,7 @@ const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
 const noClass = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
 const fileA = repoPathOf("src/a.ts");
-const audit = "audit" as const;
+const audit = "walker" as const;
 const eslint = "eslint" as const;
 
 const finding: Finding = {

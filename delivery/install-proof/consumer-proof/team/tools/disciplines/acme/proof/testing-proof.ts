@@ -1,5 +1,5 @@
 import { folderScope, isEdition, type PieceFailure, type RunnerClause, type WalkerDisk } from "@hailstails/hone/audit";
-import { type CaseUnderTest, clauseConformanceOf, clauseUnderTestOf, repoPathOf } from "@hailstails/hone/testing";
+import { type CaseUnderTest, checkConformanceOf, checkUnderTestOf, clauseConformanceOf, clauseUnderTestOf, repoPathOf } from "@hailstails/hone/testing";
 import typescript from "typescript";
 import { check } from "../mechanisms/audit/ACME-2/scratch-files.ts";
 
@@ -29,6 +29,17 @@ provedEqual({
   proof: "ACME-1 is not an audit clause",
   actual: await clauseConformanceOf({ ruleSetRoot: RULE_SET_ROOT, clause: "acme/ACME-1#console-calls" }),
   expected: { outcome: "failed", error: { kind: "rule-set-unloadable", detail: "mechanism-not-allowed acme/ACME-1#console-calls audit" } },
+});
+
+const classKeyword = checkUnderTestOf({ check: "authored-class-or-this#class-keyword", engine: "walker" });
+if (classKeyword.outcome === "failed") {
+  throw new Error(`the installed class-keyword examples could not be read: ${classKeyword.error.detail}`);
+}
+
+provedEqual({
+  proof: "the installed class-keyword piece runs its named examples",
+  actual: await checkConformanceOf({ check: "authored-class-or-this#class-keyword", engine: "walker" }),
+  expected: { outcome: "ok", value: [] },
 });
 
 const underTest = clauseUnderTestOf({ ruleSetRoot: RULE_SET_ROOT, clause: "acme/ACME-2#scratch-files" });

@@ -15,12 +15,13 @@ import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/mod
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { readPieceFile } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { readLocatedPieceFile } from "../../src/infrastructure/content-files/rule-sets/located-piece-file.ts";
+import { readInstalledNames } from "../../src/infrastructure/content-files/rule-sets/installed-pieces.ts";
 import { readHeldDiscipline } from "../../src/infrastructure/content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../src/domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
-import type { MechanismId } from "../../src/domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../src/domain/rule-set/identifier-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort, type EslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
@@ -77,8 +78,6 @@ const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner 
       }),
   });
 
-type RawTable = Readonly<Record<string, string>>;
-
 type ConformanceRow = {
   readonly name: string;
   readonly clause: RunnerClause;
@@ -86,19 +85,6 @@ type ConformanceRow = {
 };
 
 const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
-
-const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
-
-const foldersUnder = (request: { readonly table: RawTable; readonly prefix: string }): readonly string[] =>
-  [
-    ...new Set(
-      Object.keys(request.table)
-        .filter((key) => key.startsWith(request.prefix))
-        .map((key) => folderOf({ key })),
-    ),
-  ].sort();
-
-
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
   const held = readHeldDiscipline({
@@ -117,11 +103,10 @@ const disciplineOf = (request: { readonly fileText: FileTextPort; readonly disci
 const rowsOf = (request: {
   readonly fileText: FileTextPort;
   readonly discipline: string;
-  readonly mechanism: MechanismId;
-  readonly mechanismRoot: string;
+  readonly mechanism: EngineId;
 }): readonly ConformanceRow[] => {
   const discipline = disciplineOf(request);
-  const piece = readPieceFile({
+  const piece = readLocatedPieceFile({
     fileText: request.fileText,
     path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
@@ -136,7 +121,7 @@ const rowsOf = (request: {
     const clause: RunnerClause = {
       address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
       anchor: definition.anchor,
-      pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
+      pieceRoot: entry.pieceRoot,
       settings: entry.settings,
       clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
       edition: entry.editions.default,
@@ -152,12 +137,11 @@ const rowsOf = (request: {
 
 const conformanceRows = (request: {
   readonly disciplines: readonly string[];
-  readonly mechanism: MechanismId;
-  readonly mechanismRoot: string;
+  readonly mechanism: EngineId;
 }): readonly ConformanceRow[] => {
   const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
-    rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
+    rowsOf({ fileText, discipline, mechanism: request.mechanism }),
   );
 };
 
@@ -170,19 +154,17 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
-  base: "../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const heldNames = readInstalledNames({ fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), installRoot: RULE_SET_ROOT });
 
-const eslintDisciplines = foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" });
+assert(heldNames.outcome === "ok", "the install's version 1 names read");
+
+const legacyDisciplines = [...new Set(heldNames.value.namedClauses.filter((clause) => clause.kind === "mechanical").map(({ clause }) => clause.discipline))].sort();
+
+const eslintDisciplines = legacyDisciplines;
 
 const CONFORMANCE_ROWS = conformanceRows({
   disciplines: eslintDisciplines,
   mechanism: "eslint",
-  mechanismRoot: `${import.meta.dirname}/../../src/infrastructure/engines/eslint`,
 });
 
 const eslintRunner = runnerModuleSchema.parse(eslintRunnerModule.runner);

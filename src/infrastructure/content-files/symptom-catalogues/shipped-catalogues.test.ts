@@ -15,7 +15,7 @@ describe("shippedCataloguesOf", () => {
   it("fails naming the catalogue's path when the install holds none", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: '{ "version": 1, "clauses": [], "recordKinds": {} }' }),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     expect(shippedCataloguesOf({ fileText, directory: UNLISTED, path: PATH, installRoot: INSTALL_ROOT })).toEqual({
@@ -24,21 +24,21 @@ describe("shippedCataloguesOf", () => {
     });
   });
 
-  it("fails with the load failure when the install's pieces cannot be read", () => {
+  it("fails with the load failure when the install's rule items cannot be listed", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: '{ "version": 1, "clauses": [], "recordKinds": {} }' }),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
       list: vi
         .fn<DirectoryPort["list"]>()
-        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/audit"), detail: "EACCES" } }),
+        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/rules"), detail: "EACCES" } }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     expect(shippedCataloguesOf({ fileText, directory, path: PATH, installRoot: INSTALL_ROOT })).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/audit", detail: "EACCES" },
+      error: { kind: "file-unreadable", path: "/install/rules", detail: "EACCES" },
     });
   });
 

@@ -10,7 +10,7 @@ import type { EngineCall } from "../../../../application/ports/engine/engine-por
 import type { EngineRun, EngineRunRequest, LoadedEngine, ParsedChecksRunner } from "../../../../application/ports/engine/engine-run.ts";
 import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
-import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
@@ -23,12 +23,12 @@ const TYPESCRIPT_RUNNER_MODULE = z.object({ runner: runnerModuleSchema, checksRu
 
 const NO_CHECKS_RUNNER_DETAIL = "the runner module exports no checksRunner, which a version 2 run needs of an engine that runs through a native tool";
 
-const invalid = (request: { readonly mechanism: MechanismId; readonly detail: string }): Result<never, RunnerInvalid> => ({
+const invalid = (request: { readonly mechanism: EngineId; readonly detail: string }): Result<never, RunnerInvalid> => ({
   outcome: "failed",
   error: { kind: "runner-invalid", mechanism: request.mechanism, detail: request.detail },
 });
 
-const runnerFailed = (request: { readonly mechanism: MechanismId; readonly failure: RunnerFailure }): Outcome<never> => ({
+const runnerFailed = (request: { readonly mechanism: EngineId; readonly failure: RunnerFailure }): Outcome<never> => ({
   outcome: "failed",
   error: { kind: "runner-failed", mechanism: request.mechanism, failure: request.failure },
 });
@@ -48,10 +48,10 @@ export const loadedEngineOf = async (request: RunnerLocation): Promise<Result<Lo
     : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
 };
 
-const clausesOf = (request: { readonly request: EngineRunRequest; readonly mechanism: MechanismId }) =>
+const clausesOf = (request: { readonly request: EngineRunRequest; readonly mechanism: EngineId }) =>
   request.request.bindings.filter((binding) => binding.mechanism === request.mechanism).map((binding) => binding.clause);
 
-const standaloneRunOf = async (request: { readonly runner: LoadedStandaloneRunner; readonly mechanism: MechanismId; readonly run: EngineRunRequest }): Promise<Outcome<EngineRun>> => {
+const standaloneRunOf = async (request: { readonly runner: LoadedStandaloneRunner; readonly mechanism: EngineId; readonly run: EngineRunRequest }): Promise<Outcome<EngineRun>> => {
   const ran = await runMechanism({
     runner: request.runner,
     mechanism: request.mechanism,
@@ -86,7 +86,7 @@ const unrequestedNativeDetail = (request: { readonly report: ChecksRunReport; re
   return entry === undefined ? [] : [`a native exception names ${clauseAddressText({ address: entry.clause })}, which the request did not hold`];
 };
 
-const invalidReport = (request: { readonly report: ChecksRunReport; readonly run: EngineRunRequest; readonly mechanism: MechanismId }): readonly string[] => {
+const invalidReport = (request: { readonly report: ChecksRunReport; readonly run: EngineRunRequest; readonly mechanism: EngineId }): readonly string[] => {
   const clauses = clausesOf({ request: request.run, mechanism: request.mechanism }).map((clause) => clause.address);
   return [
     ...unrequestedDetail({ noun: "a hit", entries: request.report.hits, files: request.run.files, clauses }),
@@ -98,7 +98,7 @@ const invalidReport = (request: { readonly report: ChecksRunReport; readonly run
 const engineRunOfReport = (request: {
   readonly report: ChecksRunReport;
   readonly run: EngineRunRequest;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly projectedKinds: ParsedChecksRunner["projectedKinds"];
 }): Outcome<EngineRun> => {
   const [unrequested] = invalidReport(request);
@@ -125,17 +125,17 @@ const engineRunOfReport = (request: {
   };
 };
 
-type ChecksCall = { readonly checksRunner: ParsedChecksRunner; readonly mechanism: MechanismId; readonly run: EngineRunRequest };
+type ChecksCall = { readonly checksRunner: ParsedChecksRunner; readonly mechanism: EngineId; readonly run: EngineRunRequest };
 
 const returnedBy = (request: { readonly call: () => Promise<unknown> }): Promise<unknown> =>
   Promise.resolve()
     .then(request.call)
     .catch((thrown: unknown) => ({ outcome: "failed", error: rejectedCall({ thrown }).error }));
 
-const invalidChecksOutput = (request: { readonly mechanism: MechanismId; readonly error: z.ZodError }): Outcome<never> =>
+const invalidChecksOutput = (request: { readonly mechanism: EngineId; readonly error: z.ZodError }): Outcome<never> =>
   runnerFailed({ mechanism: request.mechanism, failure: runnerInvalidOutput({ detail: z.prettifyError(request.error) }).error });
 
-const failedChecksCall = (request: { readonly mechanism: MechanismId; readonly error: ChecksRunFailure }): Outcome<never> =>
+const failedChecksCall = (request: { readonly mechanism: EngineId; readonly error: ChecksRunFailure }): Outcome<never> =>
   request.error.kind === "not-ready-yet" ? { outcome: "failed", error: request.error } : runnerFailed({ mechanism: request.mechanism, failure: request.error });
 
 const checksRunOf = async (request: ChecksCall): Promise<Outcome<EngineRun>> => {

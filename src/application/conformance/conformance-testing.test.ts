@@ -3,8 +3,8 @@ import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
-import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
-import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
+import type { LocatedPieceFile, RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { type ConformanceTestingPorts, createConformanceTesting } from "./conformance-testing.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
@@ -12,7 +12,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
 const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 
@@ -39,13 +39,14 @@ const DISCIPLINE: DisciplineFile = {
   ],
 };
 
-const PIECE: PieceFile = {
+const PIECE: LocatedPieceFile = {
   version: 1,
   discipline: ACME_2,
   mechanism: AUDIT,
   clauses: [
     {
       clause: SCRATCH_FILES_ID,
+      pieceRoot: PIECE_ROOT,
       settings: { module: "scratch-files.ts" },
       clauseSettings: {},
       editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },

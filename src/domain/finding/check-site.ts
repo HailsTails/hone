@@ -6,18 +6,18 @@ import { type FindingCheck, checkOfFinding } from "./finding-check.ts";
 import type { Check, Engine, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../rule-set/clause-address.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 
 export type CheckSite =
   | { readonly sited: "check"; readonly check: Check; readonly engine: Engine }
-  | { readonly sited: "unchecked"; readonly clause: ClauseAddress; readonly mechanism: MechanismId };
+  | { readonly sited: "unchecked"; readonly clause: ClauseAddress; readonly mechanism: EngineId };
 
-type EngineRequest = { readonly catalogue: SymptomCatalogue; readonly clause: ClauseAddress; readonly mechanism: MechanismId };
+type EngineRequest = { readonly catalogue: SymptomCatalogue; readonly clause: ClauseAddress; readonly mechanism: EngineId };
 
 const uncheckedSite = (request: EngineRequest): CheckSite => ({ sited: "unchecked", clause: request.clause, mechanism: request.mechanism });
 
-const sitesOfCheck = (request: { readonly check: Check; readonly mechanism: MechanismId }): readonly CheckSite[] =>
-  request.check.engines.filter((engine) => engine.mechanism === request.mechanism).map((engine) => ({ sited: "check", check: request.check, engine }));
+const sitesOfCheck = (request: { readonly check: Check; readonly mechanism: EngineId }): readonly CheckSite[] =>
+  request.check.engines.filter((engine) => engine.name === request.mechanism).map((engine) => ({ sited: "check", check: request.check, engine }));
 
 const sitesAtEngine = (request: EngineRequest): readonly CheckSite[] => checksOf(request).flatMap((check) => sitesOfCheck({ check, mechanism: request.mechanism }));
 
@@ -45,7 +45,7 @@ export const findingSiteOf = (request: { readonly catalogue: SymptomCatalogue; r
 
 export const nativeSitesOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly exception: NativeException & { readonly mechanism: MechanismId };
+  readonly exception: NativeException & { readonly mechanism: EngineId };
 }): readonly CheckSite[] => {
   const engineRequest: EngineRequest = { catalogue: request.catalogue, clause: request.exception.clause, mechanism: request.exception.mechanism };
   const named = checkNamedAt({ catalogue: request.catalogue, clause: request.exception.clause, address: request.exception.check });

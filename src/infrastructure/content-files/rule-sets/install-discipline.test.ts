@@ -13,13 +13,11 @@ const CD_14 = disciplineIdOf("CD-14");
 
 const NAMES_PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
 
-const AUDIT_PIECE_PATH = "/install/src/infrastructure/engines/audit/CD-14/piece.json";
+const AUDIT_PIECE_PATH = "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/piece.json";
 
-const ESLINT_PIECE_PATH = "/install/src/infrastructure/engines/eslint/CD-14/piece.json";
+const ESLINT_PIECE_PATH = "/install/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json";
 
-const AUDIT_CASES_PATH = "/install/src/infrastructure/engines/audit/CD-14/class-syntax.cases.json";
-
-const ESLINT_CASES_PATH = "/install/src/infrastructure/engines/eslint/CD-14/class-syntax.cases.json";
+const AUDIT_CASES_PATH = "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-keyword.examples.json";
 
 const NAMES_TEXT = `{
   "version": 1,
@@ -37,11 +35,11 @@ const NAMES_WITHOUT_CD_14_TEXT = `{
   "recordKinds": {}
 }`;
 
-const AUDIT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "audit", "clauses": [{ "clause": "class-syntax", "settings": { "module": "class-syntax.ts" } }] }';
+const AUDIT_PIECE_TEXT = '{ "version": 2, "anchor": { "kind": "keyword", "keyword": "class" }, "settings": { "module": "class-syntax.ts" } }';
 
-const ESLINT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "eslint", "clauses": [{ "clause": "class-syntax", "settings": { "rule": "no-class" } }] }';
+const ESLINT_PIECE_TEXT = '{ "version": 2, "anchor": { "kind": "keyword", "keyword": "class" }, "settings": { "rule": "no-class" } }';
 
-const MALFORMED_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "audit" }';
+const MALFORMED_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "walker" }';
 
 const CASES_TEXT = `{
   "flag": [{ "name": "a class", "fileName": "src/a.ts", "source": "class A {}\\n", "expectedLines": [1] }],
@@ -91,7 +89,7 @@ describe("readInstallDiscipline", () => {
             {
               kind: "mechanical",
               id: "class-syntax",
-              mechanisms: ["audit", "eslint"],
+              mechanisms: ["walker", "eslint"],
               anchor: { kind: "keyword", keyword: "class" },
               exceptions: "allowed",
               cases: {
@@ -124,29 +122,7 @@ describe("readInstallDiscipline", () => {
       .mockReturnValueOnce({ outcome: "ok", value: AUDIT_PIECE_TEXT });
     expect(readInstallDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, installRoot: INSTALL_ROOT, discipline: CD_14 })).toEqual({
       outcome: "failed",
-      error: { kind: "rule-set-invalid", path: NAMES_PATH, detail: "no piece that runs CD-14#class-syntax holds its class-syntax.cases.json" },
-    });
-  });
-
-  it("refuses a mechanical clause whose cases sit beside more than one piece, naming each", () => {
-    const exists = vi
-      .fn<FileTextPort["exists"]>()
-      .mockReturnValueOnce("present")
-      .mockReturnValueOnce("present")
-      .mockReturnValueOnce("present")
-      .mockReturnValueOnce("present");
-    const read = vi
-      .fn<FileTextPort["read"]>()
-      .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
-      .mockReturnValueOnce({ outcome: "ok", value: AUDIT_PIECE_TEXT })
-      .mockReturnValueOnce({ outcome: "ok", value: ESLINT_PIECE_TEXT });
-    expect(readInstallDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, installRoot: INSTALL_ROOT, discipline: CD_14 })).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "rule-set-invalid",
-        path: AUDIT_CASES_PATH,
-        detail: `the cases of CD-14#class-syntax sit beside more than one piece: ${AUDIT_CASES_PATH}, ${ESLINT_CASES_PATH}`,
-      },
+      error: { kind: "rule-set-invalid", path: NAMES_PATH, detail: "no piece that runs CD-14#class-syntax holds its examples" },
     });
   });
 
@@ -175,7 +151,7 @@ describe("readInstallDiscipline", () => {
       .mockReturnValueOnce({ outcome: "ok", value: MALFORMED_PIECE_TEXT });
     expect(readInstallDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, installRoot: INSTALL_ROOT, discipline: CD_14 })).toEqual({
       outcome: "failed",
-      error: { kind: "file-malformed", path: AUDIT_PIECE_PATH, detail: "✖ Invalid input: expected array, received undefined\n  → at clauses" },
+      error: { kind: "file-malformed", path: AUDIT_PIECE_PATH, detail: expect.stringContaining("authored-class-or-this#class-keyword") },
     });
   });
 

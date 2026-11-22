@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Finding, GovernedRun } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
-import type { Check, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
+import type { Check, Engine, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import { answerFindings, type RaisedFinding, type StaleReason, type StaleRecord } from "./answering.ts";
 import type { AuthorisedLocation, Debt, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
@@ -48,7 +48,7 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
   owner: "capture 01a0b421",
 };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
@@ -91,7 +91,7 @@ const UNCATALOGUED = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-99
 
 const checkOf = (request: { readonly name: string; readonly symptom: Symptom; readonly clause: Check["clause"] }): Check => ({
   ...request,
-  engines: [{ name: "walker", mechanism: AUDIT }],
+  engines: [{ name: "walker" }],
   forms: [],
 });
 
@@ -108,7 +108,7 @@ const CATALOGUE: SymptomCatalogue = {
   recipes: [ADAPTER_PER_OUTSIDE_PARTY],
   recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
-  engines: [{ name: "walker", mechanism: AUDIT }],
+  engines: [{ name: "walker" }],
   symptoms: [AUTHORED_CLASS, LOOP_KEYWORD, OUTSIDE_IMPORT],
   clauses: [
     { clause: NO_CLASS, sight: { kind: "one-symptom", symptom: AUTHORED_CLASS } },
@@ -912,7 +912,7 @@ const CLASS_IN_TYPES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-
 
 const IMPORT_IN_TYPES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-19"), clause: clauseIdOf("no-import-in-types") };
 
-const ESLINT_ENGINE = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const MIXED_ENGINES: SymptomCatalogue = {
   ...CATALOGUE,

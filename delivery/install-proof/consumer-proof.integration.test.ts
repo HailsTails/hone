@@ -11,7 +11,7 @@ import type { SelectionRepository } from "../../src/application/ports/selection/
 import type { EntryKindPort } from "../../src/application/ports/file-system/entry-kind-port.ts";
 import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
 import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { runProject } from "../../src/application/projection/run-project.ts";
@@ -27,7 +27,7 @@ import type { AbsolutePath } from "../../src/domain/repository/absolute-path-typ
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createWalkerRunner } from "../../src/infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { createWalkerRunner } from "../../src/infrastructure/engines/walker/runner/create-walker-runner.ts";
 import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
@@ -135,17 +135,17 @@ const ESLINT_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/consumer-pr
 
 const INSTALLED_SOURCE = String.raw`(?!(?:[^/]*\/)*tests\/)(?!.*\.test\.ts$).*`;
 
-const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-23\/(?:piece\.json|[^/]+\.cases\.json)`;
+const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/unit-without-a-running-test\/companion-test-file\/(?:piece\.json|companion-test-file\.examples\.json)`;
 
-const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-14\/(?:piece\.json|[^/]+\.cases\.json)`;
+const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/authored-class-or-this\/(?:class-keyword|static-members-only)\/(?:piece\.json|[^/]+\.examples\.json)`;
 
 const CD_23_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/unit-without-a-running-test\/companion-test-file\.md`;
 
 const CD_14_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/authored-class-or-this\/class-keyword\.md`;
 
-const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|src\/infrastructure\/engines\/audit\/runner|src\/infrastructure\/engines\/audit\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA}|${CD_23_CHECK_ITEM})`;
+const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/walker\/runner|src\/infrastructure\/engines\/walker\/unit-without-a-running-test\/companion-test-file)\/${INSTALLED_SOURCE}|${CD_23_DATA}|${CD_23_CHECK_ITEM})`;
 
-const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA}|${CD_14_CHECK_ITEM})`;
+const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/authored-class-or-this\/(?:class-keyword|static-members-only))\/${INSTALLED_SOURCE}|${CD_14_DATA}|${CD_14_CHECK_ITEM})`;
 
 const WALKER_INSTALL_LIST = new RegExp(`^${WALKER_INSTALLED}$`);
 
@@ -192,7 +192,7 @@ const observedPorts = (): ObservedPorts => {
   };
   const pieceModules: ModuleLoaderPort = { load: createDefaultModuleLoaderPort({}).load };
   const runners: Readonly<Record<string, unknown>> = {
-    [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/audit/runner/runner.ts` })]: {
+    [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/walker/runner/runner.ts` })]: {
       runner: createWalkerRunner({ fileText, modules: pieceModules, path, parse: defaultParsePort, entryKind: ABSENT_ENTRY_KIND }),
     },
     [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/runner.ts` })]: {
@@ -283,7 +283,7 @@ const UNSIBLINGED_FINDING = {
   file: "src/kept.ts",
   anchor: { line: 1, column: 0 },
   snippet: "missing co-located *.test.ts(x) sibling",
-  mechanism: "audit",
+  mechanism: "walker",
 };
 
 const readingOf = (request: { readonly clause: { readonly discipline: string }; readonly checkPage: string }) => ({

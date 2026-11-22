@@ -60,7 +60,7 @@ const probeNoTmp = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disc
 const fileA = repoPathOf("src/a.ts");
 const packageJson = repoPathOf("package.json");
 const suppressions = repoPathOf("eslint-suppressions.json");
-const audit = "audit" as const;
+const audit = "walker" as const;
 const eslint = "eslint" as const;
 const SLICE = repoPathOf("packages/a/disciplines.eslint.mjs");
 const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
@@ -1208,7 +1208,7 @@ describe("renderReportText readFirst by output", () => {
 describe("renderReportText clause editions", () => {
   const editionReading = {
     address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
-    mechanism: "audit" as const,
+    mechanism: "walker" as const,
     edition: editionOf("1"),
     latest: editionOf("2"),
   };

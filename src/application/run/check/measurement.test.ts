@@ -75,7 +75,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const LEGACY_FILE = repoPathOf("src/legacy.ts");
 

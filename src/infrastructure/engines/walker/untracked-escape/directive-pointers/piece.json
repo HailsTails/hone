@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "comments-directives.ts"
+  },
+  "checkSettings": {
+    "trackerPatterns": {
+      "default": [
+        "^\\(\\S+\\)$"
+      ]
+    }
+  }
+}
