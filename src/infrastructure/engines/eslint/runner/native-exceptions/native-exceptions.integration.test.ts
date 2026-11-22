@@ -19,7 +19,7 @@ import type { ModuleLoaderPort } from "../../../../../application/ports/host/mod
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
-import { singleFileExceptionReading } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import { exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile } from "../../../../discipline-exceptions-folder/exception-records.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
@@ -409,8 +409,8 @@ const fixtureRecords = (request: { readonly name: string }): readonly ExceptionR
   assert(selection.outcome === "ok", `${request.name} selects its clauses`);
   const text = fileText.read({ path: `${repoRoot}/discipline-exceptions.json` });
   assert(text.outcome === "ok", `${request.name} holds its records`);
-  const reading = singleFileExceptionReading({
-    text: text.value,
+  const reading = parseExceptionEntries({
+    entries: placedInSingleFile({ entries: exceptionEntriesOfText({ text: text.value }) }),
     selection: selection.value.selection,
     baseline: UNMEASURED_EXCEPTION_BASELINE,
     fileExceptionWhyChains: selection.value.fileExceptionWhyChains,

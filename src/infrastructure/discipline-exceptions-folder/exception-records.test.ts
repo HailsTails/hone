@@ -5,7 +5,7 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile, singleFileExceptionReading } from "./exception-records.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile } from "./exception-records.ts";
 import { authorisationStandingOf, type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { type ImportEvidence, legacyChainsIn, type PlacedEntry, recordImportOf, type StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
@@ -1594,10 +1594,15 @@ const SINGLE_FILE_TEXT = `{
   ]
 }`;
 
-describe("singleFileExceptionReading", () => {
+describe("parseExceptionEntries over the entries of a discipline-exceptions.json text placed in that file", () => {
   it("reads the entries of a discipline-exceptions.json text as records, placing each invalid one by its position in that file", () => {
     expect(
-      singleFileExceptionReading({ text: SINGLE_FILE_TEXT, selection: SELECTION, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE }),
+      parseExceptionEntries({
+        entries: placedInSingleFile({ entries: exceptionEntriesOfText({ text: SINGLE_FILE_TEXT }) }),
+        selection: SELECTION,
+        fileExceptionWhyChains: "required",
+        baseline: UNMEASURED_EXCEPTION_BASELINE,
+      }),
     ).toEqual({
       records: [
         {
