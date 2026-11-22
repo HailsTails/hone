@@ -59,10 +59,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/infrastructure/command-line/documentation/adopting-guide-checks.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue.integration.test.ts"
     },
     {
@@ -108,10 +104,6 @@
     {
       "answers": "branch-in-a-test#test-body",
       "file": "src/composition/output-contract.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/walkthrough.integration.test.ts"
     },
     {
       "answers": "branch-in-a-test#test-body",

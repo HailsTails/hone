@@ -59,10 +59,6 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/walkthrough.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
