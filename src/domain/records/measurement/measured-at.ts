@@ -5,6 +5,7 @@ import { sameClauseAddress } from "../../rule-set/clause-address.ts";
 import type { MechanismId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { placeCovers, type ReachedPlace } from "../answering/record-reach.ts";
+import { type Exclusion, exclusionOf } from "../../repository/exclusion.ts";
 
 export type RunMeasurement = {
   readonly mechanism: MechanismId;
@@ -35,8 +36,8 @@ const pairIsAt = (request: { readonly pair: MeasuredPair; readonly reached: Reac
 
 const pathOfPlace = (request: { readonly place: ReachedPlace["place"] }): RepoPath => (request.place.at === "file" ? request.place.file : request.place.module);
 
-const placeIsExcluded = (request: { readonly excluded: readonly RepoPath[]; readonly place: ReachedPlace["place"] }): "excluded" | "included" =>
-  request.excluded.some((path) => placeCovers({ place: { at: "module", module: path }, file: pathOfPlace(request) }) === "holds") ? "excluded" : "included";
+const placeExclusionOf = (request: { readonly excluded: readonly RepoPath[]; readonly place: ReachedPlace["place"] }): Exclusion =>
+  exclusionOf({ path: pathOfPlace(request), excluded: request.excluded });
 
 const placeExists = (request: { readonly tracked: readonly RepoPath[]; readonly place: ReachedPlace["place"] }): "exists" | "gone" =>
   request.tracked.some((file) => placeCovers({ place: request.place, file }) === "holds") ? "exists" : "gone";
@@ -47,7 +48,7 @@ export const measurementOf = (request: { readonly measurements: RunMeasurements;
   if (running.length === 0) {
     return "not-run";
   }
-  if (placeIsExcluded({ excluded: measurements.excluded, place: reached.place }) === "excluded") {
+  if (placeExclusionOf({ excluded: measurements.excluded, place: reached.place }) === "excluded") {
     return "excluded";
   }
   if (placeExists({ tracked: measurements.tracked, place: reached.place }) === "gone") {
