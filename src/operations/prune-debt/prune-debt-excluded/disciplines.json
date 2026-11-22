@@ -1,6 +1,0 @@
-{
-  "version": 1,
-  "ruleSets": {},
-  "clauses": { "CD-15#loops": "audit" },
-  "exclude": ["src/vendored"]
-}

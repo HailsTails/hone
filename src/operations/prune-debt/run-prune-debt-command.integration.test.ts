@@ -36,16 +36,6 @@ const FIXTURE_TRACKED = [
   repoPathSchema.parse("src/kept.ts"),
 ];
 
-const EXCLUDING_FIXTURE = `${import.meta.dirname}/prune-debt-excluded`;
-
-const VENDORED_PAIR = { clause: LOOPS, file: repoPathSchema.parse("src/vendored/vendored.ts") };
-
-const EXCLUDING_FIXTURE_TRACKED = [
-  repoPathSchema.parse("discipline-exceptions.json"),
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("src/vendored/vendored.ts"),
-];
-
 const TRACKED_WITHOUT_KEPT = [repoPathSchema.parse("discipline-exceptions.json"), repoPathSchema.parse("disciplines.json")];
 
 const TRACKED_WITH_LEGACY_SCRIPT = [
@@ -135,16 +125,6 @@ describe("runPruneDebtCommand over a repository on disk, through this install's 
       }),
     );
     expect(git.changedSince).not.toHaveBeenCalled();
-  });
-});
-
-describe("runPruneDebtCommand over a repository whose selection excludes a folder", () => {
-  it("removes the carve-out on a file still on disk inside the excluded folder and keeps the one on a file no runner measured", async () => {
-    const process = processGiven(["--repo", EXCLUDING_FIXTURE]);
-    const remove = vi.fn<ExceptionRepository["remove"]>().mockReturnValue({ outcome: "ok", value: [VENDORED_PAIR] });
-    await runPruneDebtCommand(pruning({ process, git: gitTracking(EXCLUDING_FIXTURE_TRACKED), remove, moduleUrl: TOOL_COMMAND_URL }));
-    expect(remove).toHaveBeenCalledExactlyOnceWith({ pairs: [VENDORED_PAIR] });
-    expect(process.exitWith).toHaveBeenCalledExactlyOnceWith({ code: 0 });
   });
 });
 

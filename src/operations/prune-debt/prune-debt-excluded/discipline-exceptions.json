@@ -1,7 +1,0 @@
-{
-  "version": 1,
-  "exceptions": [
-    { "kind": "file-carve-out", "clause": "CD-15#loops", "file": "src/vendored/vendored.ts" },
-    { "kind": "file-carve-out", "clause": "CD-15#loops", "file": "src/untracked.ts" }
-  ]
-}
