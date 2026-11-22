@@ -14,8 +14,6 @@ import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 
 const AUDIT = "walker" as const;
 
-const ESLINT = "eslint" as const;
-
 const SRC_A = repoPathOf("src/a.ts");
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };

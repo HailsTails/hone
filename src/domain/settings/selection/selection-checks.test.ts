@@ -6,8 +6,6 @@ import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const AUDIT = "walker" as const;
-
 const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker" };

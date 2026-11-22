@@ -46,8 +46,6 @@ const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, Recor
 
 const AUDIT = "walker" as const;
 
-const ESLINT = "eslint" as const;
-
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
 const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };

@@ -178,8 +178,6 @@ const authoriseArgumentsFor = (request: { readonly repo: string; readonly rootCa
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = "walker" as const;
-
 const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker" };

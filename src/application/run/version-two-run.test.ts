@@ -14,8 +14,6 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const FILE_A = repoPathOf("src/a.ts");
 
-const AUDIT = "walker" as const;
-
 const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker" };

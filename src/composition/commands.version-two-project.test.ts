@@ -27,10 +27,6 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 const versionTwoProjectCommandOf = (ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>) => (command: CommandRequest) =>
   commandOf({ tool: VERSION_TWO_PROJECT, ports: { ...command, ...ports } })(command);
 
-const AUDIT = "walker" as const;
-
-const ESLINT = "eslint" as const;
-
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
