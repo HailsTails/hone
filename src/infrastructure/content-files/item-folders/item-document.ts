@@ -80,7 +80,7 @@ export const catalogueFileOf = (request: { readonly items: readonly PlacedItem[]
     outcome: "ok",
     value: {
       version: SUPPORTED_VERSION,
-      principles: items.filter(ofKind("principle")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
+      principles: items.filter(ofKind("principle")).map((placed) => ({ name: placed.name, title: placed.title })),
       rules: rules.map(ruleOf),
       cases: items.filter(ofKind("case")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
       recipes: items.filter(ofKind("recipe")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),

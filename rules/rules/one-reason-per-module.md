@@ -3,7 +3,12 @@
 ```json
 {
   "principle": "one-place-decides",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "di-discipline",
+    "naming",
+    "test-discipline"
+  ]
 }
 ```
 

@@ -3,7 +3,11 @@
 ```json
 {
   "principle": "our-code-reads-in-the-common-language",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "function-first",
+    "naming"
+  ]
 }
 ```
 

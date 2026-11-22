@@ -199,7 +199,7 @@ Stop and ask the human if anything outside the old trial uses the copied tools o
 | Path matching | old tools matched records by path suffix | exact repository paths |
 | Linter | Biome, ESLint or oxlint for explicit `any` only | ESLint through the generated projection; Biome and oxlint are not Hone mechanisms |
 | Exhaustive switch ([Default on a closed union](rules/typescript/symptoms.md#default-on-a-closed-union)) | typed ESLint `switch-exhaustiveness-check` suggested | the audit's `switch-defaults` clause only; type-aware linting is not supported |
-| Judgement rules | read by an agent on request | each rule page names a review lens in `methods/lenses/`; ADOPTING step 9 is the procedure |
+| Judgement rules | read by an agent on request | each rule item names its review lenses, methods in `methods/lenses/`; ADOPTING step 9 is the procedure |
 
 ## 8. Moving to causal why-chains
 

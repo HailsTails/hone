@@ -3,7 +3,13 @@
 ```json
 {
   "principle": "external-behaviour-sits-at-a-boundary",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "clean-architecture",
+    "di-discipline",
+    "function-first",
+    "test-discipline"
+  ]
 }
 ```
 

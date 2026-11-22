@@ -1,7 +1,7 @@
 # Function-first lens
 
 A reusable audit method, not a ruleset. The rules it enforces are **data**: load
-every rule page whose `Review lens` line names `function-first`
+every rule whose `lenses` fact or `Review lens` line names `function-first`
 from the codebase under review and treat their text as authoritative. This file
 describes only *how* the lens reads code — the concept, the inspection
 procedure, and the output shape. It names no specific rule numbers, file paths,
@@ -52,10 +52,10 @@ default intuition.
 
 ## Loading the ruleset
 
-1. Resolve the rule pages: `rules/*/README.md` in the Hone install (the folder holding `core/` and `rules/`), and in each rule set the repository's `disciplines.json` names under `ruleSets`.
-2. Keep the pages whose `Review lens` line names `function-first`. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
-3. Read each kept page in full together with its sibling `CHECKS.md`, including the `## Exceptions` section in `CHECKS.md` and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names exact permitted sites (the one permitted class and its file, the closed table of adapter files, the closed list of library-callback signatures), those are the only permitted sites.
-4. If zero rule pages name this lens in their `Review lens` line, report that the codebase declares no function-first discipline and produce an empty finding set — do not invent rules.
+1. Resolve the rules: the rule and principle items, `rules/rules/*.md` and `rules/principles/*.md`, in the Hone install (the folder holding `core/` and `rules/`), and the rule pages, `rules/*/README.md`, in each rule set the repository's `disciplines.json` names under `ruleSets`.
+2. Keep the items whose `lenses` fact names `function-first`, and the rule-set pages whose `Review lens` line names it. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
+3. Read each kept page in full together with its check pages (for a Hone item, `rules/typescript/symptoms/<symptom>/<check>.md` of each symptom that may indicate it; for a rule set's page, its sibling `CHECKS.md` with its `## Exceptions` section) and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names exact permitted sites (the one permitted class and its file, the closed table of adapter files, the closed list of library-callback signatures), those are the only permitted sites.
+4. If no item or rule page names this lens, report that the codebase declares no function-first discipline and produce an empty finding set — do not invent rules.
 
 ## Inspection procedure
 
@@ -184,7 +184,7 @@ declarations by classification (justified / closure-candidate / pure-fn-candidat
 raw-library-import and `new X(...)` sites by in-factory vs out-of-factory, and
 multi-argument authored signatures by carve-out vs finding. Every finding is
 `file:line | quoted code | <rule-id> | defect-named`, citing the loaded rule by
-the discipline id and clause address in its CHECKS.md Clauses table (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules.md#failures-are-values)), plus the bucket or the named-field/composition
+its name and the clause address [Every numbered discipline](../../rules/numbers.md#every-numbered-discipline) gives it (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules/failures-are-values.md)), plus the bucket or the named-field/composition
 replacement. Where a finding touches another lens's rule (the context-generic
 binding, the port/boundary discipline), name that as a cross-reference — do not
 re-tag or re-own it. State the rule-page paths you resolved and which rule

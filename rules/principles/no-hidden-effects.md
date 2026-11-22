@@ -1,7 +1,12 @@
 # No hidden effects
 
 ```json
-{}
+{
+  "lenses": [
+    "decomposition",
+    "function-first"
+  ]
+}
 ```
 
 - **Must hold:** A unit changes nothing: it gives back the value it returns and calls ports passed in to it.

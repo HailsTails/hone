@@ -20,7 +20,7 @@ The rule binds, but its check is not a true measure of the intent here, or canno
 
 ## Judgement rules adopted
 
-Applied in review with the lens each rule page names.
+Applied in review with the lens each rule item names.
 
 - `<clause address>`: <lens>
 

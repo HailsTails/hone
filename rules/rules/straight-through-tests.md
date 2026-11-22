@@ -3,7 +3,11 @@
 ```json
 {
   "principle": "tests-are-ours",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "errors-as-data",
+    "test-discipline"
+  ]
 }
 ```
 

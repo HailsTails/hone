@@ -23,6 +23,8 @@ describe("itemFactsOf", () => {
     { kind: "symptom", facts: SYMPTOM_FACTS },
     { kind: "check", facts: {} },
     { kind: "rule", facts: { principle: "outside-risk-is-carried-on-purpose", standing: "accepted", namedBans: ["lodash"] } },
+    { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted", lenses: ["di-discipline", "test-discipline"] } },
+    { kind: "principle", facts: { lenses: ["zod-boundary"] } },
   ])("accepts the facts of a $kind as they are written", ({ kind, facts }) => {
     expect(itemFactsOf({ kind, facts })).toEqual({ outcome: "ok", value: { kind, facts } });
   });
@@ -38,6 +40,9 @@ describe("itemFactsOf", () => {
     { name: "a clause, which the version 1 names give", kind: "check", facts: { clause: "CD-17#clock-sources" } },
     { name: "a named ban list that is empty", kind: "rule", facts: { principle: "p", standing: "accepted", namedBans: [] } },
     { name: "facts that are no object", kind: "principle", facts: ["x"] },
+    { name: "a lens list that is empty", kind: "rule", facts: { principle: "p", standing: "accepted", lenses: [] } },
+    { name: "a lens Hone has no method for", kind: "principle", facts: { lenses: ["defended-on-intent"] } },
+    { name: "a lens given alone rather than as a list", kind: "rule", facts: { principle: "p", standing: "accepted", lens: "naming" } },
   ])("refuses $name", ({ kind, facts }) => {
     expect(itemFactsOf({ kind, facts })).toEqual({ outcome: "failed", error: expect.any(String) });
   });

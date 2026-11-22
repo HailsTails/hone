@@ -1,7 +1,7 @@
 # Decomposition lens
 
 A reusable audit method, not a ruleset. The rules it enforces are **data**: load
-every rule page whose `Review lens` line names `decomposition`
+every rule whose `lenses` fact or `Review lens` line names `decomposition`
 from the codebase under review and treat their text as authoritative. This file
 describes only *how* the lens reads code — the concept, the inspection
 procedure, and the output shape. It names no specific rule numbers, file paths,
@@ -39,10 +39,10 @@ forbidden. Read them first; they override any default intuition.
 
 ## Loading the ruleset
 
-1. Resolve the rule pages: `rules/*/README.md` in the Hone install (the folder holding `core/` and `rules/`), and in each rule set the repository's `disciplines.json` names under `ruleSets`.
-2. Keep the pages whose `Review lens` line names `decomposition`. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
-3. Read each kept page in full together with its sibling `CHECKS.md`, including the `## Exceptions` section in `CHECKS.md` and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a clause lists a deterministic check (a lint rule, an audit script) in the `## Clauses` table of its `CHECKS.md`, treat that as a partial mechanical floor: the enforcer catches the obvious cases, but the structural read on diff-touched functions is the lens's job and is not mechanically covered.
-4. If zero rule pages name this lens in their `Review lens` line, report that the codebase declares no decomposition discipline and produce an empty finding set — do not invent rules or thresholds.
+1. Resolve the rules: the rule and principle items, `rules/rules/*.md` and `rules/principles/*.md`, in the Hone install (the folder holding `core/` and `rules/`), and the rule pages, `rules/*/README.md`, in each rule set the repository's `disciplines.json` names under `ruleSets`.
+2. Keep the items whose `lenses` fact names `decomposition`, and the rule-set pages whose `Review lens` line names it. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
+3. Read each kept page in full together with its check pages (for a Hone item, `rules/typescript/symptoms/<symptom>/<check>.md` of each symptom that may indicate it; for a rule set's page, its sibling `CHECKS.md` with its `## Exceptions` section) and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a clause lists a deterministic check (a lint rule, an audit script) on its check pages, treat that as a partial mechanical floor: the enforcer catches the obvious cases, but the structural read on diff-touched functions is the lens's job and is not mechanically covered.
+4. If no item or rule page names this lens, report that the codebase declares no decomposition discipline and produce an empty finding set — do not invent rules or thresholds.
 
 ## Inspection procedure
 
@@ -154,6 +154,6 @@ inspected, complexity/length ceilings crossed by type, orchestrator-purity
 violations, early-return inversions, parameter-mutation findings (split by
 script-confirmed vs code-review category), and untracked suppressions. Every
 finding is `file:line | quoted code | <rule-id> | defect-named`, citing the
-loaded rule by the discipline id and clause address in its CHECKS.md Clauses table (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules.md#failures-are-values)), and — where extraction is
+loaded rule by its name and the clause address [Every numbered discipline](../../rules/numbers.md#every-numbered-discipline) gives it (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules/failures-are-values.md)), and — where extraction is
 recommended — the suggested split per the four questions above. State the
 rule-page paths you resolved and which rule ids you loaded under this lens.

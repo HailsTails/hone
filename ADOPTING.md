@@ -470,15 +470,15 @@ It must exit `1` with a line starting `date-used-directly#clock-sources walker s
 
 A judgement clause cannot be listed in `hone.config.json`, and no check reports it. List the judgement rules the repository adopts in the Judgement rules section of `disciplines.assessment.md` (step 5a), so reviewers and agents know to apply them.
 
-Each rule page names its review lens, a method under [methods/lenses/](methods/README.md) for reading code against that kind of rule. To review a change, by a human reviewer or a coding agent:
+Each rule item names its review lenses in its `lenses` fact, each a method under [methods/lenses/](methods/README.md) for reading code against that kind of rule. To review a change, by a human reviewer or a coding agent:
 
 1. The reviewer is not the change's author. An agent reviewing a change reads files only; it does not edit them.
 2. Pin the tree under review to a commit and review that.
-3. Run each lens on its own, one concern at a time, without seeing the other lenses' findings. Follow the lens file: load the rule pages that name it, inspect the change as it says, and report findings in its output shape, citing the clause address. A lens covers mechanical rules too, beyond what their checks flag.
+3. Run each lens on its own, one concern at a time, without seeing the other lenses' findings. Follow the lens file: load the rule items that name it, inspect the change as it says, and report findings in its output shape, citing the clause address. A lens covers mechanical rules too, beyond what their checks flag.
 4. Run [defended-on-intent](methods/lenses/defended-on-intent.md) last, over the rule text and the other lenses' findings, to catch changes that meet a rule's letter but defeat its intent.
 5. Fix each finding. A deliberate departure from a judgement rule is recorded where the review decision is kept, with a `whyChain` in the same shape as step 7.
 
-To use an agent, give it the lens file, the rule pages it names, the change and the pinned commit, and ask it to follow the lens exactly. A single reviewer covering every concern at once misses what separate lenses catch.
+To use an agent, give it the lens file, the rule items that name it, the change and the pinned commit, and ask it to follow the lens exactly. A single reviewer covering every concern at once misses what separate lenses catch.
 
 ## 10. Update and remove
 

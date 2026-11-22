@@ -70,6 +70,18 @@ describe("catalogueFileOf", () => {
     });
   });
 
+  it("keeps the review lenses off the principles and rules, which the lens methods read from the items themselves", () => {
+    const principle: PlacedItem = { ...PRINCIPLE, item: { kind: "principle", facts: { lenses: ["zod-boundary"] } } };
+    const rule: PlacedItem = { ...RULE, item: { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted", lenses: ["test-discipline"] } } };
+    expect(catalogueFileOf({ items: [principle, rule], beside: NOTHING_BESIDE })).toEqual({
+      outcome: "ok",
+      value: expect.objectContaining({
+        principles: [{ name: "tests-are-ours", title: "Tests are ours" }],
+        rules: [{ name: "written-out-answers", title: "Written-out answers", principle: "tests-are-ours", standing: "accepted" }],
+      }),
+    });
+  });
+
   it("keeps two items of one kind in the order given", () => {
     const second: PlacedItem = { ...PRINCIPLE, name: "one-place-decides", title: "One place decides" };
     expect(catalogueFileOf({ items: [second, PRINCIPLE], beside: NOTHING_BESIDE })).toMatchObject({
