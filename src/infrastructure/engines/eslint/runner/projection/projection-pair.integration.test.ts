@@ -1,36 +1,34 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import type { ExceptionRecord } from "../domain/records/discipline-exceptions/exception-record.ts";
-import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { createSettingsRepository } from "../application/run/settings/read-settings.ts";
-import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
-import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
-import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
-import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
-import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
-import { type ProjectedPiece, projectionText } from "../infrastructure/engines/eslint/runner/projection/projection-text.ts";
-import { createDefaultScratchFilesPort } from "../../delivery/install-proof/install-proof-ports.ts";
-import { checksOf } from "../domain/language-layer/check-address.ts";
-import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import type { ClauseBinding } from "../domain/settings/selection/selection.ts";
-import type { PathPort } from "../application/ports/host/path-port.ts";
-import { checkRuleIdOf, runsOnEslint } from "../infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
-import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../infrastructure/engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
-import type { EslintClass } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
-import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
+import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import { createSymptomCatalogueRepository } from "../../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts";
+import { projectedChecksOf } from "./projected-checks.ts";
+import { resolvedConfigSchema } from "../toolchain/eslint-config-schema.ts";
+import { type ProjectedPiece, projectionText } from "./projection-text.ts";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { checksOf } from "../../../../../domain/language-layer/check-address.ts";
+import type { SymptomCatalogue } from "../../../../../domain/language-layer/symptom-catalogue.ts";
+import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import { checkRuleIdOf, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
+import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
+import type { EslintClass } from "../toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../toolchain/eslint-toolchain.ts";
+import { eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
 const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
 
-const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../..`, installForm: "source" });
+const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
 
 const ESLINT_MODULES: Readonly<Record<EslintLine, EslintToolchainModules>> = {
   "eslint-10": DEVELOPMENT_PEERS.modules,
@@ -99,19 +97,15 @@ const path = createDefaultPathPort({});
 
 const fileText = createDefaultFileTextPort({});
 
-const scratch = createDefaultScratchFilesPort({});
-
 const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   const resolved = path.resolve(request);
   assert(resolved.outcome === "ok", `${request.path} resolves to an absolute path`);
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", ".."] }) });
+const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "..", "..", "..", "..", ".."] }) });
 
-const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "infrastructure", "engines", "eslint", "runner", "projection", "projection-pair", "before"] }) });
-
-const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "infrastructure", "engines", "eslint", "runner", "projection", "projection-pair", "after"] }) });
+const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "projection-pair", "before"] }) });
 
 const ESLINT = mechanismIdSchema.parse("eslint");
 
@@ -165,24 +159,17 @@ const catalogue = () => {
   return reading.value.catalogue;
 };
 
-const versionOneBindings = () => {
+const selectedBindings = () => {
   const reading = createSelectionRepository({ repoRoot: BEFORE_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
-  assert(reading.outcome === "ok", "the pair's version 1 file loads");
+  assert(reading.outcome === "ok", "the pair's selection file loads");
   return reading.value.bindings;
 };
 
-const versionTwoBindings = () => {
-  const sources = createSettingsSources({ repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
-  const reading = createSettingsRepository({ settingsFormat: SETTINGS_FILE_FORMAT, sources }).read({});
-  assert(reading.outcome === "ok", "the pair's version 2 file loads");
-  return reading.value.selection.bindings;
-};
-
 const versionOneText = (): string =>
-  projectionText({ selectedPieces: versionOnePiecesOf({ bindings: versionOneBindings(), path, specifierOf }), records: VERSION_ONE_RECORDS });
+  projectionText({ selectedPieces: versionOnePiecesOf({ bindings: selectedBindings(), path, specifierOf }), records: VERSION_ONE_RECORDS });
 
 const versionTwoText = (): string => {
-  const checks = projectedChecksOf({ checks: catalogue().checks, bindings: versionTwoBindings() });
+  const checks = projectedChecksOf({ checks: catalogue().checks, bindings: selectedBindings() });
   assert(checks.outcome === "ok", "the pair's version 2 checks project");
   return checksProjectionText({
     pluginImport: specifierOf({ modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }) }),
@@ -191,11 +178,7 @@ const versionTwoText = (): string => {
   });
 };
 
-const scratchFolder = scratch.createTemporaryDirectory({ prefix: "hone-projection-pair-" });
-
-assert(scratchFolder.outcome === "ok", "a scratch folder is made for the two projections");
-
-const SCRATCH = scratchFolder.value;
+const SCRATCH = resolvedPath({ path: mkdtempSync(path.join({ segments: [tmpdir(), "hone-projection-pair-"] })) });
 
 const writtenConfig = (request: { readonly name: string; readonly text: string }): string => {
   const configPath = path.join({ segments: [SCRATCH, request.name] });
@@ -235,14 +218,14 @@ const lintedMessages = async (request: { readonly line: EslintLine }) => {
 };
 
 afterAll(() => {
-  scratch.removeTree({ path: SCRATCH });
+  rmSync(SCRATCH, { recursive: true, force: true });
 });
 
 describe.each(ESLINT_LINES)("on %s, the version 1 projection and its version 2 form", (line) => {
   it.each(PROBED_FILES)("enable the same rules with the same options on %s", async (file) => {
     const before = await resolvedRules({ line, config: VERSION_ONE_CONFIG, file });
     const after = await resolvedRules({ line, config: VERSION_TWO_CONFIG, file });
-    expect(after).toEqual(inCheckRuleIds({ catalogue: catalogue(), bindings: versionOneBindings(), rules: before }));
+    expect(after).toEqual(inCheckRuleIds({ catalogue: catalogue(), bindings: selectedBindings(), rules: before }));
   });
 
   it("switch off, on a file its records answer, only the rules of the symptoms they answer", async () => {
