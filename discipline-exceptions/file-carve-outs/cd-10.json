@@ -95,6 +95,16 @@
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
       "file": "src/composition/walkthrough.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
     }
   ]
 }

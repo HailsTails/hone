@@ -445,6 +445,26 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/composition/walkthrough.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/shipped-content/eslint-conformance.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
     }
   ]
 }
