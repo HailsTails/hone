@@ -426,7 +426,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
         writes: [
           [
             {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0), same verdict\n",
             },
           ],
         ],
@@ -558,7 +558,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
         writes: [
           [
             {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions/file-carve-outs/cd-14.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved discipline-exceptions/file-carve-outs\nremoved discipline-exceptions\n",
+              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions/file-carve-outs/cd-14.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved discipline-exceptions/file-carve-outs\nremoved discipline-exceptions\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0), same verdict\n",
             },
           ],
         ],
@@ -593,7 +593,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
         writes: [
           [
             {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (0), same verdict\n",
             },
           ],
         ],
@@ -608,6 +608,26 @@ describe("hone upgrade over a real repository, through the real ports", () => {
         "src/kept.ts",
       ],
     });
+  });
+
+  it("names each line of a tracked script that still mentions a version 1 file, after the records and before the proof line", async () => {
+    const repo = await versionOneRepositoryOf({
+      selection: SELECTION,
+      exceptions: EXCEPTIONS,
+      sources: {
+        "kept.ts": KEPT_CLASS,
+        "check.sh": "set -e\ncat disciplines.json\nrm -r discipline-exceptions\n",
+      },
+    });
+    const upgraded = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      modules: DEFAULT_MODULES,
+    });
+    expect(upgraded.writes[0]?.[0]?.text).toContain(
+      "authored-class-or-this#class-keyword\nmention src/check.sh:2\nmention src/check.sh:3\nupgrade: same findings (0), same verdict\n",
+    );
   });
 
   it("removes a split records folder whose kind folder was emptied by an earlier prune", async () => {
@@ -633,7 +653,7 @@ describe("hone upgrade over a real repository, through the real ports", () => {
         writes: [
           [
             {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions/file-carve-outs/cd-14.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved discipline-exceptions/authorised-locations\nremoved discipline-exceptions/file-carve-outs\nremoved discipline-exceptions\n",
+              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions/file-carve-outs/cd-14.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved discipline-exceptions/authorised-locations\nremoved discipline-exceptions/file-carve-outs\nremoved discipline-exceptions\nfile-carve-out CD-14#class-syntax src/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0), same verdict\n",
             },
           ],
         ],
@@ -725,7 +745,7 @@ describe.each(ESLINT_LINES)(
           writes: [
             [
               {
-                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\n",
+                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0), same verdict\n",
               },
             ],
           ],
@@ -791,7 +811,7 @@ describe.each(ESLINT_LINES)(
           writes: [
             [
               {
-                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\n",
+                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax packages/a/kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0), same verdict\n",
               },
             ],
           ],
@@ -844,7 +864,7 @@ describe.each(ESLINT_LINES)(
           writes: [
             [
               {
-                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\n",
+                text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/authored-class-or-this.json\nwrote hone.eslint.mjs\nwrote packages/a/hone.eslint.mjs\nwrote hone.eslint.d.mts\nwrote packages/a/hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved packages/a/disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-14#class-syntax kept.ts -> debt authored-class-or-this#class-keyword\nupgrade: same findings (0), same verdict\n",
               },
             ],
           ],
@@ -1036,7 +1056,7 @@ describe("hone upgrade over a real repository that selects only some disciplines
       writes: [
         [
           {
-            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (2), same verdict\n",
           },
         ],
       ],
@@ -1063,7 +1083,7 @@ describe("hone upgrade over a real repository that selects only CD-10", () => {
       writes: [
         [
           {
-            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+            text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (0), same verdict\n",
           },
         ],
       ],
@@ -1098,7 +1118,7 @@ describe("hone upgrade over a real repository whose clause is bound to the audit
         writes: [
           [
             {
-              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/authorised-locations/claimed-type.json\nwrote hone-records/debt/claimed-type.json\nwrote hone-records/debt/untyped-value.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/authorised-locations/claimed-type.json\nwrote hone-records/debt/claimed-type.json\nwrote hone-records/debt/untyped-value.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nfile-carve-out CD-1#any-cast src/owed.ts -> debt claimed-type#cast-to-any\nfile-carve-out CD-1#explicit-any src/owed.ts -> debt untyped-value#explicit-any\nauthorised-location CD-1#any-cast src/located.ts -> authorised-location claimed-type#cast-to-any\ncarried claimed-type#cast-to-any src/located.ts\nupgrade: same findings (3), same verdict\n",
             },
           ],
         ],

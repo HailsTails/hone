@@ -1,6 +1,7 @@
 import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
 import {
   mappedRecords,
+  type RecordLine,
   type MappedRecordsDocument,
   type RecordInput,
 } from "../../../domain/records/upgrade/records-mapping.ts";
@@ -32,6 +33,7 @@ export type ProjectionFilesOf = (request: {
 
 export type UpgradePlan = {
   readonly inputs: readonly RecordInput[];
+  readonly lines: readonly RecordLine[];
   readonly files: readonly PlannedRepoFile[];
   readonly projected: readonly PlannedRepoFile[];
 };
@@ -76,7 +78,7 @@ export const upgradePlanOf = async (
       },
     };
   }
-  const { documents } = records.value;
+  const { documents, lines } = records.value;
   const beyond = reachBeyondEntriesOf({
     written: documents.flatMap(({ records: written }) => written),
     inputs: inputs.value,
@@ -96,6 +98,7 @@ export const upgradePlanOf = async (
     outcome: "ok",
     value: {
       inputs: inputs.value,
+      lines,
       files: [
         {
           file: SETTINGS_FILE,

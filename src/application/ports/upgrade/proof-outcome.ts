@@ -1,3 +1,4 @@
+import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
@@ -84,6 +85,8 @@ export type ProofCarriedOver = {
   readonly written: readonly RepoPath[];
   readonly replaced: readonly RepoPath[];
   readonly removed: Removed;
+  readonly records: readonly RecordLine[];
+  readonly findings: number;
 };
 
 export type AfterWriting = {

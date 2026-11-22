@@ -179,6 +179,15 @@ const CARVE_OUT_INPUT: RecordInput = {
   answer: { credit: "findings", checks: [LOOP_KEYWORD_LOOPS] },
 };
 
+const DEBT_LINE = {
+  recordKind: "file-carve-out",
+  clause: LOOPS_CLAUSE,
+  file: repoPathOf("src/a.ts"),
+  newKind: "debt",
+  check: LOOP_KEYWORD_LOOPS,
+  holding: "stated",
+} as const;
+
 const SETTINGS_TEXT = "the settings format's text";
 
 const PLANNED_SETTINGS = { file: "hone.config.json", text: SETTINGS_TEXT };
@@ -238,6 +247,7 @@ describe("upgradePlanOf", () => {
         outcome: "ok",
         value: {
           inputs: [CARVE_OUT_INPUT],
+          lines: [DEBT_LINE],
           files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
           projected: [PLANNED_PROJECTION],
         },
@@ -259,6 +269,7 @@ describe("upgradePlanOf", () => {
         outcome: "ok",
         value: {
           inputs: [CARVE_OUT_INPUT],
+          lines: [DEBT_LINE],
           files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
           projected: [PLANNED_PROJECTION],
         },
@@ -299,6 +310,7 @@ describe("upgradePlanOf", () => {
         outcome: "ok",
         value: {
           inputs: [CARVE_OUT_INPUT],
+          lines: [DEBT_LINE],
           files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
           projected: [PLANNED_PROJECTION],
         },
@@ -332,7 +344,12 @@ describe("upgradePlanOf", () => {
       upgradePlanOf(requestOver({ projectionFilesOf: projecting({ files: [] }) })),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT], projected: [] },
+      value: {
+        inputs: [CARVE_OUT_INPUT],
+        lines: [DEBT_LINE],
+        files: [PLANNED_SETTINGS, PLANNED_DEBT],
+        projected: [],
+      },
     });
   });
 

@@ -1,8 +1,9 @@
 import type { UpgradeArguments } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
-import type { ProofCarriedOver } from "../application/ports/upgrade/proof-outcome.ts";
+import type { UpgradeCarriedOver } from "../application/ports/upgrade/upgrade-carried-over.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { foundTreeRunReachOf } from "../application/upgrade/found-tree/found-tree-reach.ts";
+import { upgradeProof } from "../application/upgrade/proof/upgrade-proof.ts";
 import { parseUpgradeArguments } from "../infrastructure/command-line/arguments/command-arguments.ts";
 import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
 import { proofRunsOf } from "../infrastructure/command-line/proof-runs.ts";
@@ -37,7 +38,7 @@ type Placed = {
   readonly located: RepositoryLocated;
 };
 
-type Upgraded = { readonly located: RepositoryLocated; readonly carried: ProofCarriedOver };
+type Upgraded = { readonly located: RepositoryLocated; readonly carried: UpgradeCarriedOver };
 
 const foundTreeStagesOf = (request: Placed): VersionTwoStages => {
   const { ports, command, located } = request;
@@ -74,6 +75,7 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
       recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),
     proofRunsOf,
+    proofOf: upgradeProof,
     foundTreeStages: () => foundTreeStagesOf(request),
   };
 };
