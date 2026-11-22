@@ -8,6 +8,7 @@ import type { ShownPathOf, ShownPathOfRepository } from "../../application/ports
 import type { EnginePort } from "../../application/ports/engine/engine-port.ts";
 import type { LoadedRunner } from "../../application/ports/engine/runner-module.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
@@ -90,7 +91,7 @@ const engineFindingLoopsIn = (request: { readonly file: RepoPath }): EnginePort 
       outcome: "ok",
       value: {
         mechanism: AUDIT,
-        hits: [{ clause: LOOPS, file: request.file, anchor: { line: 3, column: 0 }, snippet: "for (const item of basket) {" }],
+        hits: [{ clause: LOOPS, file: request.file, anchor: { line: 3, column: 0 }, snippet: "total += item.price;" }],
         nativeExceptions: [],
         coverableKinds: [],
         projection: "none",
@@ -104,9 +105,9 @@ const engineFindingLoopsIn = (request: { readonly file: RepoPath }): EnginePort 
   conform: vi.fn<EnginePort["conform"]>(),
 });
 
-const ONLY_THE_MOVED_BASKET_ON_DISK: FileTextPort = {
-  read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }),
-  exists: ({ path }) => (path === "/repo/src/checkout/basket.ts" ? "present" : "absent"),
+const MOVED_BASKET_ON_DISK: FileTextPort = {
+  read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/src/checkout/basket.ts", detail: "EACCES" } }),
+  exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
   write: vi.fn<FileTextPort["write"]>(),
 };
 
@@ -187,8 +188,8 @@ describe("adoptionDebt", () => {
     expect(
       await adoptionDebt({
         ...ports,
-        path: { ...ports.path, join: ({ segments }) => segments.join("/") },
-        fileText: ONLY_THE_MOVED_BASKET_ON_DISK,
+        path: { ...ports.path, join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/checkout/basket.ts") },
+        fileText: MOVED_BASKET_ON_DISK,
         engine: engineFindingLoopsIn({ file: MOVED_BASKET }),
         git: MOVED_BASKET_GIT,
         exceptionEntryParser: { parseExceptionEntries: () => ({ records: [], invalid: [] }), importedEntriesIn: () => "absent", importSourcesOf: () => [] },
