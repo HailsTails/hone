@@ -5,9 +5,6 @@ import { type DebtPair, debtPairKey, distinctDebtPairs } from "./debt-pair.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 import { authorisationStandingOf, type ExceptionBaseline } from "./exception-baseline.ts";
 import { exclusionOf } from "../../repository/exclusion.ts";
-import type { MechanismRun } from "../../runner/mechanism-run.ts";
-
-type RunOfMechanism = Pick<MechanismRun, "mechanism" | "projection">;
 
 export type PaidDebtRequest = {
   readonly findings: readonly Finding[];
@@ -17,16 +14,13 @@ export type PaidDebtRequest = {
   readonly nativeExceptions: readonly AttributedNativeException[];
   readonly absent: readonly RepoPath[];
   readonly excluded: readonly RepoPath[];
-  readonly runs: readonly RunOfMechanism[];
   readonly measured: readonly DebtPair[];
   readonly baseline: ExceptionBaseline;
 };
 
 type FileCarveOut = Extract<ExceptionRecord, { readonly kind: "file-carve-out" }>;
 
-type SettlingEvidence = Pick<PaidDebtRequest, "absent" | "excluded" | "runs" | "measured">;
-
-const PROJECTIONS_THAT_DID_NOT_RUN: readonly RunOfMechanism["projection"][] = ["missing", "not-included"];
+type SettlingEvidence = Pick<PaidDebtRequest, "absent" | "excluded" | "measured">;
 
 const answeredByAuthorisedLocation = (request: {
   readonly exempted: ExemptedFinding;
@@ -64,22 +58,12 @@ const heldPairKeys = (request: PaidDebtRequest): ReadonlySet<string> =>
     }),
   ]);
 
-const mechanismRanOf = (request: { readonly runs: readonly RunOfMechanism[]; readonly record: FileCarveOut }): "ran" | "did-not-run" =>
-  request.runs.some((run) => run.mechanism === request.record.mechanism && !PROJECTIONS_THAT_DID_NOT_RUN.includes(run.projection))
-    ? "ran"
-    : "did-not-run";
-
-const exclusionStandingOf = (request: Pick<SettlingEvidence, "excluded" | "runs"> & { readonly record: FileCarveOut }): "established" | "unestablished" =>
-  exclusionOf({ path: request.record.file, excluded: request.excluded }) === "excluded" && mechanismRanOf(request) === "ran"
-    ? "established"
-    : "unestablished";
-
 const settlementOf = (
   request: SettlingEvidence & { readonly record: FileCarveOut; readonly measuredKeys: ReadonlySet<string> },
 ): "settled" | "unsettled" =>
   request.absent.includes(request.record.file) ||
   request.measuredKeys.has(debtPairKey(request.record)) ||
-  exclusionStandingOf(request) === "established"
+  exclusionOf({ path: request.record.file, excluded: request.excluded }) === "excluded"
     ? "settled"
     : "unsettled";
 

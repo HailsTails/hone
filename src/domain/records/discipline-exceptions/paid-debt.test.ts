@@ -95,7 +95,6 @@ const NOTHING: PaidDebtRequest = {
   nativeExceptions: [],
   absent: [],
   excluded: [],
-  runs: [],
   measured: [],
   baseline: UNMEASURED_EXCEPTION_BASELINE,
 };
@@ -427,10 +426,9 @@ describe("paidDebtOf keeping a forfeited record each native exception on its fil
 const VENDORED = repoPathSchema.parse("src/vendored");
 const VENDORED_BASKET = repoPathSchema.parse("src/vendored/basket.ts");
 const VENDORED_PRICES = repoPathSchema.parse("src/vendored/prices.ts");
-const ESLINT_RAN: PaidDebtRequest["runs"] = [{ mechanism: ESLINT, projection: "current" }];
-const EXCLUDING_VENDORED: PaidDebtRequest = { ...NOTHING, excluded: [VENDORED], runs: ESLINT_RAN };
+const EXCLUDING_VENDORED: PaidDebtRequest = { ...NOTHING, excluded: [VENDORED] };
 
-describe("paidDebtOf naming debt on a file the selection excludes once its mechanism ran", () => {
+describe("paidDebtOf naming debt on a file the selection excludes", () => {
   it("names a stale and a forfeited file carve-out on files still on disk inside an excluded folder", () => {
     expect(
       paidDebtOf({
@@ -444,33 +442,18 @@ describe("paidDebtOf naming debt on a file the selection excludes once its mecha
     ]);
   });
 
-  it("names a stale file carve-out on an excluded file whose mechanism ran with no projection to read", () => {
-    expect(
-      paidDebtOf({ ...EXCLUDING_VENDORED, runs: [{ mechanism: ESLINT, projection: "none" }], stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })] }),
-    ).toEqual([{ clause: LOOPS, file: VENDORED_BASKET }]);
-  });
-
-  it.each<{ readonly name: string; readonly runs: PaidDebtRequest["runs"] }>([
-    { name: "its mechanism's projection is missing", runs: [{ mechanism: ESLINT, projection: "missing" }] },
-    { name: "its mechanism's projection is not included", runs: [{ mechanism: ESLINT, projection: "not-included" }] },
-    { name: "only another mechanism ran", runs: [{ mechanism: AUDIT, projection: "none" }] },
-    { name: "no mechanism ran", runs: [] },
-  ])("leaves a stale file carve-out on an excluded file when $name", ({ runs }) => {
-    expect(paidDebtOf({ ...EXCLUDING_VENDORED, runs, stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })] })).toEqual([]);
-  });
-
   it("leaves a stale file carve-out on a file outside the excluded folder that its mechanism did not measure", () => {
     expect(paidDebtOf({ ...EXCLUDING_VENDORED, stale: [carveOut({ clause: LOOPS, file: BASKET })] })).toEqual([]);
   });
+});
 
-  it("keeps a forfeited file carve-out on a measured file outside the excluded folder that still holds a finding", () => {
+describe("paidDebtOf keeping debt on an excluded file whose pair is still held", () => {
+  it.each<{ readonly name: string; readonly nativeException: AttributedNativeException }>([
+    { name: "an ignore", nativeException: { kind: "ignore", clause: LOOPS, mechanism: ESLINT, file: VENDORED_BASKET } },
+    { name: "an inline disable", nativeException: directiveAt({ clause: LOOPS, file: VENDORED_BASKET }) },
+  ])("keeps a forfeited file carve-out on an excluded file whose clause and file hold $name", ({ nativeException }) => {
     expect(
-      paidDebtOf({
-        ...EXCLUDING_VENDORED,
-        forfeited: [carveOut({ clause: LOOPS, file: BASKET })],
-        findings: [findingAt({ clause: LOOPS, file: BASKET })],
-        measured: [{ clause: LOOPS, file: BASKET }],
-      }),
+      paidDebtOf({ ...EXCLUDING_VENDORED, forfeited: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })], nativeExceptions: [nativeException] }),
     ).toEqual([]);
   });
 
