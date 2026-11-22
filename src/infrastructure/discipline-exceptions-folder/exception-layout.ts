@@ -21,7 +21,7 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import { exceptionEntriesOfDocument, exceptionEntriesOfText, foreignKeysOfDocument } from "./exception-records.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, foreignKeysOfDocument, placedInSingleFile } from "./exception-records.ts";
 import type { ExceptionRepository, ExceptionRepositoryOf, RecordsSplit } from "../../application/ports/records/exception-repository.ts";
 import type { PlacedEntry, StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import { type DebtPair, debtPairKey, entryPairKey } from "../../domain/records/discipline-exceptions/debt-pair.ts";
@@ -223,7 +223,7 @@ const singleEntries = (request: LayoutRequest): Result<readonly PlacedEntry[], L
   const entries = documentEntries({ ...request, file: SINGLE_FILE });
   return entries.outcome === "failed"
     ? entries
-    : { outcome: "ok", value: placedIn({ entries: entries.value, layout: "single-file", file: SINGLE_FILE }) };
+    : { outcome: "ok", value: placedInSingleFile({ entries: entries.value }) };
 };
 
 const workingEntries = (request: LayoutRequest): Result<readonly PlacedEntry[], LoadFailure> => {

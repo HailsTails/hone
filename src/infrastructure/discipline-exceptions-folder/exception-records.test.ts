@@ -5,7 +5,7 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, singleFileExceptionReading } from "./exception-records.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile, singleFileExceptionReading } from "./exception-records.ts";
 import { authorisationStandingOf, type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { type ImportEvidence, legacyChainsIn, type PlacedEntry, recordImportOf, type StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
@@ -1616,5 +1616,14 @@ describe("singleFileExceptionReading", () => {
         },
       ],
     });
+  });
+});
+
+describe("placedInSingleFile", () => {
+  it("places each entry in discipline-exceptions.json at its position", () => {
+    expect(placedInSingleFile({ entries: [LOCATION, FILE_CARVE_OUT] })).toEqual([
+      { place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, entry: LOCATION },
+      { place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 }, entry: FILE_CARVE_OUT },
+    ]);
   });
 });
