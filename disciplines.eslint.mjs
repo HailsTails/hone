@@ -78,14 +78,6 @@ export default [
     rules: { "hone-cd7/filename-case": "error" },
   },
   {
-    name: "hone-core/file-records/CD-1#explicit-any",
-    files: [
-      "src/application/run/check/cd1-exempted/src/fresh.ts",
-      "src/application/run/check/cd1-exempted/src/parse.ts",
-    ],
-    rules: { "hone-cd1/no-explicit-any": "off" },
-  },
-  {
     name: "hone-core/file-records/CD-41#cognitive-complexity",
     files: [
       "src/infrastructure/engines/audit/CD-43/boolean-signatures.ts",
@@ -109,12 +101,20 @@ export default [
     rules: { "hone-cd41/function-length": "off" },
   },
   {
+    name: "hone-core/file-records/CD-41#function-length, CD-6#naming-convention",
+    files: [
+      "src/infrastructure/command-line/documentation/output-contract.integration.test.ts",
+    ],
+    rules: { "hone-cd41/function-length": "off", "hone-cd6/naming-convention": "off" },
+  },
+  {
     name: "hone-core/file-records/CD-6#naming-convention",
     files: [
       "delivery/install-proof/install-proof-plan.test.ts",
       "delivery/install-proof/install-proof-ports.test.ts",
       "src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.test.ts",
       "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts",
+      "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts",
       "src/infrastructure/git/git-port.test.ts",
       "src/infrastructure/node/process/execution-port.test.ts",
     ],

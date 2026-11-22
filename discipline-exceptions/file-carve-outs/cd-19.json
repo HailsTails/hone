@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "exceptions": [
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "delivery/install-proof/install-proof-ports.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/engines/eslint/runner/pieces/native-rules.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/node/file-system/file-system-port.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/node/modules/module-loader-port.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/node/path-port.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-19#import-boundaries",
+      "file": "src/infrastructure/node/process/execution-port.ts"
+    }
+  ]
+}
