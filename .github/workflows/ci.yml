@@ -85,17 +85,17 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Pack the package
         run: pnpm run pack-package
-      - name: Prove the packed tarball installs and runs in real consumers
-        run: |
-          tarballs=(artefacts/*.tgz)
-          test "${#tarballs[@]}" -eq 1
-          pnpm run install-proof --tarball "${tarballs[0]}"
       - name: Fingerprint the packed tarball
         id: tarball
         run: |
           tarballs=(artefacts/*.tgz)
           test "${#tarballs[@]}" -eq 1
           echo "sha256=$(sha256sum "${tarballs[0]}" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - name: Prove the packed tarball installs and runs in real consumers
+        run: |
+          tarballs=(artefacts/*.tgz)
+          test "${#tarballs[@]}" -eq 1
+          pnpm run install-proof --tarball "${tarballs[0]}"
 
   same-tarball:
     name: Packed tarball is the same on Linux and Windows
