@@ -1,11 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { runCheck } from "../application/run/check/run-check.ts";
-import { createExceptionRepository } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../application/ports/records/exception-repository.ts";
-import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../application/ports/selection/selection-repository.ts";
+import { pathToFileURL } from "node:url";
+import type { ExceptionRepository, ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
-import type { ModuleExtension } from "../application/ports/host/module-extension.ts";
 import {
   toolchainBoundEmbeddedRunner,
   toolchainBoundStandaloneRunner,
@@ -18,9 +14,7 @@ import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/mo
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PackageLocationPort } from "../infrastructure/node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../infrastructure/hone-config-file/assessment.ts";
 import { installFormOf } from "../infrastructure/node/modules/install-layout.ts";
 import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
@@ -34,64 +28,8 @@ import {
 } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import type { SelectionRepositoryOf } from "../application/ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../application/ports/records/exception-entries.ts";
-import type { ShownPathOf } from "../application/ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
-
-const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
-
-const SPLIT_FOLDER_NAME = "discipline-exceptions";
-
-type DiskRequest = {
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-  readonly moduleExtension: ModuleExtension;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-};
-
-const singleFileRepositoryOver = (request: {
-  readonly repoRoot: AbsolutePath;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-}): ExceptionRepository =>
-  createExceptionRepository({
-    ...request,
-    fileText: {
-      ...request.fileText,
-      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
-    },
-    directory: {
-      list: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path: folder, detail: "the single-file fake holds no folders" } }),
-      create: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path: folder, detail: "the single-file fake holds no folders" } }),
-    },
-    fileRemoval: { remove: ({ path: file }) => ({ outcome: "failed", error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" } }) },
-    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
-  });
-
-type SingleFileRecords = {
-  readonly selectionRepository: SelectionRepository;
-  readonly selectionRepositoryOf: SelectionRepositoryOf;
-  readonly exceptionRepository: ExceptionRepository;
-  readonly exceptionEntryParser: ExceptionEntryParser;
-  readonly shownPathOf: ShownPathOf;
-};
-
-const withSingleFileRecords = <Request extends DiskRequest>(
-  request: Request,
-): Request & SingleFileRecords => ({
-  ...request,
-  selectionRepository: createSelectionRepository(request),
-  selectionRepositoryOf: createSelectionRepository,
-  exceptionRepository: singleFileRepositoryOver(request),
-  exceptionEntryParser,
-  shownPathOf: shownPathOfRepository(request),
-});
+import { checkRunAt } from "./check-command.ts";
+import { INSTALLED_PORTS } from "./run-tool-command.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -158,10 +96,6 @@ const repositoryFiles = (request: {
         ruleSets: {},
         clauses: request.clauses,
       }),
-      [`${REPO_ROOT}/discipline-exceptions.json`]: JSON.stringify({
-        version: 1,
-        exceptions: [],
-      }),
       [`${REPO_ROOT}/src/greeting.ts`]:
         "export const greetingFor = (visitorName: string): string => visitorName.trim();\n",
     },
@@ -196,7 +130,6 @@ const git: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
     outcome: "ok",
     value: [
-      repoPathSchema.parse("discipline-exceptions.json"),
       repoPathSchema.parse("disciplines.json"),
       repoPathSchema.parse("src/greeting.ts"),
     ],
@@ -289,22 +222,33 @@ const unloadableEslintOver = (request: {
 }): ModuleLoaderPort =>
   modulesServing({ eslintRunner: undefined, fileText: request.fileText });
 
+const NO_EXCEPTIONS: ExceptionRepository = {
+  read: vi.fn<ExceptionRepository["read"]>().mockReturnValue({ outcome: "ok", value: [] }),
+  readAt: vi.fn<ExceptionRepository["readAt"]>(),
+  add: vi.fn<ExceptionRepository["add"]>(),
+  remove: vi.fn<ExceptionRepository["remove"]>(),
+  moveToSplitLayout: vi.fn<ExceptionRepository["moveToSplitLayout"]>(),
+};
+
+const noExceptionsOf: ExceptionRepositoryOf = () => NO_EXCEPTIONS;
+
 const checkOf = (request: {
   readonly modules: ModuleLoaderPort;
   readonly fileText: FileTextPort;
 }) =>
-  runCheck(withSingleFileRecords({
-    repoRoot: REPO_ROOT,
-    installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-    baseRevision: undefined,
-    assessment: DEFAULT_ASSESSMENT,
+  checkRunAt({
+    ...INSTALLED_PORTS,
+    exceptionRepositoryOf: noExceptionsOf,
     fileText: request.fileText,
-    engine: createDefaultEnginePort({}),
     modules: request.modules,
-    path,
     git,
-  }));
+    moduleUrl: pathToFileURL(`${INSTALL_ROOT}/src/hone.ts`).href,
+    locations: {
+      arguments: { repo: REPO_ROOT, baseRevision: undefined, reportOutput: undefined, forfeiture: undefined },
+      repoRoot: REPO_ROOT,
+      installRoot: INSTALL_ROOT,
+    },
+  });
 
 const WHOLE_AUDIT_ONLY_REPORT = {
   findings: [],
@@ -328,9 +272,7 @@ describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLin
     ).toEqual({
       outcome: "ok",
       value: expect.objectContaining({
-        ...WHOLE_AUDIT_ONLY_REPORT,
-        notAdopted: [],
-        notRun: [NAMING_CONVENTION],
+        report: expect.objectContaining({ ...WHOLE_AUDIT_ONLY_REPORT, notAdopted: [], notRun: [NAMING_CONVENTION] }),
       }),
     });
   });
@@ -346,8 +288,7 @@ describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLin
     ).toEqual({
       outcome: "ok",
       value: expect.objectContaining({
-        ...WHOLE_AUDIT_ONLY_REPORT,
-        notRun: [NAMING_CONVENTION],
+        report: expect.objectContaining({ ...WHOLE_AUDIT_ONLY_REPORT, notRun: [NAMING_CONVENTION] }),
       }),
     });
   });
@@ -365,9 +306,7 @@ describe("adopting CD-6 with its ESLint clause not adopted, and no ESLint instal
     ).toEqual({
       outcome: "ok",
       value: expect.objectContaining({
-        ...WHOLE_AUDIT_ONLY_REPORT,
-        notAdopted: [NAMING_CONVENTION],
-        notRun: [],
+        report: expect.objectContaining({ ...WHOLE_AUDIT_ONLY_REPORT, notAdopted: [NAMING_CONVENTION], notRun: [] }),
       }),
     });
   });
@@ -405,7 +344,7 @@ describe("adopting CD-6 without stating its ESLint clause, and no ESLint install
       }),
     ).toMatchObject({
       outcome: "ok",
-      value: { findings: [], uncovered: [NAMING_CONVENTION] },
+      value: { report: { findings: [], uncovered: [NAMING_CONVENTION] } },
     });
   });
 });
