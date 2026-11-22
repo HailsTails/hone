@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "fixed-versions-and-local-tools.ts",
+    "observation": "floating-version"
+  }
+}

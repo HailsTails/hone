@@ -1,0 +1,18 @@
+{
+  "flag": [
+    {
+      "name": "dependency without a tracked lock",
+      "fileName": "packages/order/package.json",
+      "source": "{\"dependencies\":{\"some-tool\":\"1.2.3\"}}",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "dependency-free manifest",
+      "fileName": "package.json",
+      "source": "{\"name\":\"order\"}",
+      "expectedLines": []
+    }
+  ]
+}

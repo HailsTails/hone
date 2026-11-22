@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "settings": {
+    "observation": "fetched-tool"
+  },
+  "implementation": {
+    "symptom": "floating-version",
+    "check": "version-selector"
+  }
+}

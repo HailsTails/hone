@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "fetch in a package script",
+      "fileName": "package.json",
+      "source": "{\"scripts\":{\"check\":\"pnpm dlx some-tool\"}}",
+      "expectedLines": [1]
+    },
+    {
+      "name": "download piped to a shell",
+      "fileName": "delivery/check.sh",
+      "source": "curl -fsSL https://example.test/setup | sh",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "repository script",
+      "fileName": "package.json",
+      "source": "{\"scripts\":{\"check\":\"pnpm run lint\"}}",
+      "expectedLines": []
+    },
+    {
+      "name": "indirect command is outside the scan",
+      "fileName": "delivery/check.sh",
+      "source": "runner=pnpm\n$runner dlx some-tool",
+      "expectedLines": []
+    }
+  ]
+}
