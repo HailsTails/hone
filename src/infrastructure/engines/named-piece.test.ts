@@ -21,15 +21,17 @@ describe("readNamedPiece", () => {
     const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(PIECE_PATH).mockReturnValueOnce(EXAMPLES_PATH).mockReturnValueOnce(PIECE_ROOT);
     const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
       outcome: "ok",
-      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"ambient-randomness.ts"},"editions":["1","2"]}',
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"ambient-randomness.ts"},"checkSettings":{"limit":{"default":3}},"editions":["1","2"]}',
     });
     expect(readNamedPiece({ ...SUBJECT, path: { join }, fileText: { exists: () => "present", read } })).toEqual({
       outcome: "ok",
       value: {
-        anchor: { kind: "file" }, exceptions: "allowed", settings: { module: "ambient-randomness.ts" }, declarations: {},
+        anchor: { kind: "file" }, exceptions: "allowed", settings: { module: "ambient-randomness.ts" }, declarations: { limit: { default: 3 } },
         editions: { declared: [editionOf("1"), editionOf("2")], default: editionOf("1"), latest: editionOf("2") },
         pieceRoot: PIECE_ROOT,
+        declarationPath: PIECE_PATH,
         examplesPath: EXAMPLES_PATH,
+        exampleOwner: { symptom: "ambient-randomness", check: "direct-call" },
         forms: {},
       },
     });

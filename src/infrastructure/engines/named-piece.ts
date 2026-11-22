@@ -19,6 +19,8 @@ export const namedPieceImplementationSchema = z.strictObject({ symptom: catalogu
 
 export type NamedPiece = PieceClause & {
   readonly forms: Readonly<Record<string, CheckNames>>;
+  readonly declarationPath: string;
+  readonly exampleOwner: CheckNames;
   readonly examplesPath: string;
 };
 
@@ -30,7 +32,7 @@ const namedPieceSchema = z.strictObject({
   implementation: namedPieceImplementationSchema.optional(),
   forms: z.record(z.string(), namedPieceImplementationSchema).default({}),
   examples: z.literal("with-implementation").optional(),
-  clauseSettings: legacyPieceEntry.clauseSettings,
+  checkSettings: legacyPieceEntry.clauseSettings,
   editions: legacyPieceEntry.editions,
 });
 
@@ -74,12 +76,16 @@ export const readNamedPiece = (request: NamedPieceRequest): Result<NamedPiece, V
   }
   const declared = readPieceDeclaration({ fileText: request.fileText, path, address });
   if (declared.outcome === "failed") return declared;
-  const { anchor, exceptions, settings, clauseSettings, editions, forms, implementation, examples } = declared.value;
+  const { anchor, exceptions, settings, checkSettings, editions, forms, implementation, examples } = declared.value;
   const implementationRoot = namedPieceFolderSegmentsOf({ ...request, ...implementation });
-  const exampleOwner = examples === "with-implementation" && implementation !== undefined ? { ...request, ...implementation } : request;
-  const examplesPath = request.path.join({ segments: [...namedPieceFolderSegmentsOf(exampleOwner), `${exampleOwner.check}.examples.json`] });
+  const localCheck = { symptom: request.symptom, check: request.check };
+  const exampleOwner = examples === "with-implementation" ? implementation : localCheck;
+  if (exampleOwner === undefined) {
+    return { outcome: "failed", error: { kind: "file-malformed", path, detail: `${address}: shared examples require an implementation` } };
+  }
+  const examplesPath = request.path.join({ segments: [...namedPieceFolderSegmentsOf({ ...request, ...exampleOwner }), `${exampleOwner.check}.examples.json`] });
   return { outcome: "ok", value: {
-    anchor, exceptions, settings, declarations: clauseSettings, editions, forms, examplesPath,
+    anchor, exceptions, settings, declarations: checkSettings, editions, forms, declarationPath: path, exampleOwner, examplesPath,
     pieceRoot: request.path.join({ segments: implementationRoot }),
   } };
 };

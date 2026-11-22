@@ -1,6 +1,6 @@
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { CheckNames } from "../../../domain/language-layer/check-address-text.ts";
+import { checkAddressOfNames, type CheckNames } from "../../../domain/language-layer/check-address-text.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { CatalogueFile } from "../symptom-catalogues/symptom-catalogue-wire.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
@@ -72,11 +72,17 @@ export const catalogueClausesOf = (request: InstallFiles & { readonly names: Ver
       if (first.outcome === "failed") {
         return first;
       }
-      const discovered = Object.entries(first.value?.piece.forms ?? {}).map(([section, { symptom }]) => ({ section, symptom }));
-      if (discovered.length === 0) {
+      const forms = Object.entries(first.value?.piece.forms ?? {});
+      if (first.value === undefined || forms.length === 0) {
         return { outcome: "failed", error: { kind: "rule-set-invalid", path: installedNamesPathOf(request), detail: `no piece declares the forms of ${clauseAddressText({ address: clause })}` } };
       }
-      return { outcome: "ok", value: { clause, sight: { kind: "symptom-by-form", forms: discovered } } };
+      const names = new Set(checksNamedFor({ names: request.names, clause }).map(checkAddressOfNames));
+      const unknown = forms.find(([, check]) => !names.has(checkAddressOfNames(check)));
+      if (unknown !== undefined) {
+        const [section, check] = unknown;
+        return { outcome: "failed", error: { kind: "file-malformed", path: first.value.piece.declarationPath, detail: `form ${section} names unregistered check ${checkAddressOfNames(check)}` } };
+      }
+      return { outcome: "ok", value: { clause, sight: { kind: "symptom-by-form", forms: forms.map(([section, { symptom }]) => ({ section, symptom })) } } };
     },
   });
   return forms.outcome === "failed" ? forms : { outcome: "ok", value: [...request.names.clauses, ...forms.value] };

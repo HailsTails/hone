@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CHECK_ADDRESS_SEPARATOR, checkAddressTextOf, checkNamesOf } from "./check-address-text.ts";
+import { catalogueNameOf } from "./catalogue-name.ts";
+import { CHECK_ADDRESS_SEPARATOR, checkAddressOfNames, checkAddressTextOf, checkNamesOf } from "./check-address-text.ts";
 
 describe("checkAddressTextOf", () => {
   it("spells a check's address as its symptom, the address separator and its name", () => {
@@ -16,6 +17,10 @@ describe("checkNamesOf", () => {
     expect(checkNamesOf({ text: "authored-class-or-this#class-keyword" })).toEqual({
       symptom: "authored-class-or-this", check: "class-keyword",
     });
+  });
+
+  it("formats the parsed names as a check address", () => {
+    expect(checkAddressOfNames({ symptom: catalogueNameOf("authored-class-or-this"), check: catalogueNameOf("class-keyword") })).toBe("authored-class-or-this#class-keyword");
   });
 
   it("refuses a trailing segment", () => {
