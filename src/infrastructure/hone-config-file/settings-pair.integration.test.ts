@@ -72,9 +72,6 @@ const readAfterPiece = (request: { readonly index: number }) => {
   return piece.value;
 };
 
-const givenAfter = (request: { readonly check: string }) =>
-  readAfterFile().checkSettings.find((given) => given.address.check === request.check)?.values;
-
 describe("the plan's version 1 and version 2 files", () => {
   it("exclude the same paths", () => {
     expect({ before: readBefore().excluded, after: readAfterFile().exclude }).toEqual({ before: ["vendor"], after: ["vendor"] });
@@ -88,39 +85,57 @@ describe("the plan's version 1 and version 2 files", () => {
   });
 
   it("run the same clauses through the same mechanisms", () => {
-    expect(readBefore().selection.selected.map((selected) => [selected.address, selected.mechanism])).toEqual(
-      CLAUSES_RUN.map((clause, index) => [clause, MECHANISMS_RUN[index]]),
-    );
+    expect(readBefore().selection.selected).toMatchObject([
+      { address: clauseAddressSchema.parse("CD-17#clock-sources"), mechanism: "audit" },
+      { address: clauseAddressSchema.parse("CD-2#cast-expressions"), mechanism: "audit" },
+      { address: clauseAddressSchema.parse("CD-2#non-null-assertions"), mechanism: "eslint" },
+      { address: clauseAddressSchema.parse("CD-5#comments-directives"), mechanism: "audit" },
+      { address: clauseAddressSchema.parse("CD-19#import-boundaries"), mechanism: "audit" },
+      { address: clauseAddressSchema.parse("CD-27#test-body-logic"), mechanism: "audit" },
+    ]);
   });
 
-  it("bind each run clause to the same piece folder, anchor and piece settings", () => {
-    const after = CLAUSES_RUN.map((_clause, index) => readAfterPiece({ index }));
-    expect(after.map((piece) => ({ anchor: piece.anchor, pieceRoot: piece.pieceRoot, settings: piece.settings }))).toEqual(
-      readBefore().bindings.map((binding) => ({ anchor: binding.clause.anchor, pieceRoot: binding.clause.pieceRoot, settings: binding.clause.settings })),
-    );
-  });
-
-  it("carry the given clause settings under each version's own names", () => {
-    expect({
-      before: readBefore().bindings.map((binding) => binding.clause.clauseSettings),
-      after: [
-        givenAfter({ check: "untracked-escape#directive-pointers" }),
-        givenAfter({ check: "outside-import-past-a-boundary#import-or-require" }),
-        givenAfter({ check: "branch-in-a-test#test-body" }),
-      ],
-    }).toEqual({
-      before: [{}, {}, {}, { trackerPatterns: ["^\\(spec-\\d+\\)$"] }, { confinedPackages: ["uuid"] }, {}],
-      after: [{ trackerPatterns: ["^\\(spec-\\d+\\)$"] },{ confinedOutsideDependencies: ["uuid"] }, { edition: "2" }],
+  it.each([0, 1, 2, 3, 4, 5])("bind run clause %s to the same piece folder, anchor and piece settings", (index) => {
+    const piece = readAfterPiece({ index });
+    const binding = readBefore().bindings[index];
+    assert.isDefined(binding, `version 1 binds run clause ${index}`);
+    expect({ anchor: piece.anchor, pieceRoot: piece.pieceRoot, settings: piece.settings }).toEqual({
+      anchor: binding.clause.anchor,
+      pieceRoot: binding.clause.pieceRoot,
+      settings: binding.clause.settings,
     });
   });
 
+  it.each([
+    { index: 0, clauseSettings: {} },
+    { index: 1, clauseSettings: {} },
+    { index: 2, clauseSettings: {} },
+    { index: 3, clauseSettings: { trackerPatterns: ["^\\(spec-\\d+\\)$"] } },
+    { index: 4, clauseSettings: { confinedPackages: ["uuid"] } },
+    { index: 5, clauseSettings: {} },
+  ])("carry version 1's given clause settings of run clause $index", ({ index, clauseSettings }) => {
+    const binding = readBefore().bindings[index];
+    assert.isDefined(binding, `version 1 binds run clause ${index}`);
+    expect(binding.clause.clauseSettings).toEqual(clauseSettings);
+  });
+
+  it("carry version 2's given check settings under its own names", () => {
+    expect(readAfterFile().checkSettings).toMatchObject([
+      { address: { check: "untracked-escape#directive-pointers" }, values: { trackerPatterns: ["^\\(spec-\\d+\\)$"] } },
+      { address: { check: "outside-import-past-a-boundary#import-or-require" }, values: { confinedOutsideDependencies: ["uuid"] } },
+      { address: { check: "branch-in-a-test#test-body" }, values: { edition: "2" } },
+    ]);
+  });
+
   it("pin the second edition of the test-body clause", () => {
-    expect({ before: readBefore().selection.editions[0].edition, latest: readAfterPiece({ index: 5 }).editions.latest }).toEqual({ before: "2", latest: "2" });
+    const [edition] = readBefore().selection.editions;
+    assert.isDefined(edition, "version 1 pins an edition");
+    expect({ before: edition.edition, latest: readAfterPiece({ index: 5 }).editions.latest }).toEqual({ before: "2", latest: "2" });
   });
 
   it("leave the same clause not adopted", () => {
     expect(readBefore().selection.notAdopted).toEqual([clauseAddressSchema.parse("CD-15#loops")]);
-    expect(readAfterFile().checks.at(-1)).toEqual({
+    expect(readAfterFile().checks[11]).toEqual({
       address: { ruleSet: "hone", check: "loop-keyword#loop-statement" },
       state: { state: "not-adopted" },
     });
