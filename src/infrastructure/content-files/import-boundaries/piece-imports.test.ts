@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { PathPort } from "../../node/path-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { pieceImportFindings } from "./piece-import-rules.ts";
 
 const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
@@ -68,8 +68,8 @@ const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
   '["./src/infrastructure/engines/audit/CD-17","../runner/pieces/source-scope.ts"]': "src/infrastructure/engines/audit/runner/pieces/source-scope.ts",
   '[".","src","infrastructure","engines","audit","CD-19"]': "src/infrastructure/engines/audit/CD-19",
   '[".","rules","CD-19"]': "rules/CD-19",
-  '["./src/infrastructure/engines/audit/CD-19","../../../../application/ports/piece-failure-types.ts"]': "src/application/ports/piece-failure-types.ts",
-  '["./src/infrastructure/engines/audit/CD-19","../../../../application/ports/runner-module-types.ts"]': "src/application/ports/runner-module-types.ts",
+  '["./src/infrastructure/engines/audit/CD-19","../../../../domain/runner/piece-failure-types.ts"]': "src/domain/runner/piece-failure-types.ts",
+  '["./src/infrastructure/engines/audit/CD-19","../../../../domain/runner/runner-module-types.ts"]': "src/domain/runner/runner-module-types.ts",
   '["./src/infrastructure/engines/audit/CD-19","../../../../domain/result.ts"]': "src/domain/result.ts",
   '["./src/infrastructure/engines/audit/CD-19","../runner/toolchain/typescript-parse.ts"]': "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts",
   '["./src/infrastructure/engines/audit/CD-19","../runner/pieces/walker-piece.ts"]': "src/infrastructure/engines/audit/runner/pieces/walker-piece.ts",
@@ -99,15 +99,19 @@ const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
   '["./src/infrastructure/engines/audit/CD-27","../runner/pieces/source-scope.ts"]': "src/infrastructure/engines/audit/runner/pieces/source-scope.ts",
   '["./src/infrastructure/engines/audit/CD-27","../runner/toolchain/typescript-parse.ts"]': "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts",
   '["./src/infrastructure/engines/audit/CD-27","../../../content-files/edition.ts"]': "src/infrastructure/content-files/edition.ts",
+  '["./src/infrastructure/engines/audit/CD-27","../../../../domain/rule-set/edition-reach.ts"]': "src/domain/rule-set/edition-reach.ts",
+  '["./src/infrastructure/engines/audit/CD-27","../../../../domain/rule-set/edition-types.ts"]': "src/domain/rule-set/edition-types.ts",
   '[".","src","infrastructure","engines","audit","CD-3"]': "src/infrastructure/engines/audit/CD-3",
   '[".","rules","CD-3"]': "rules/CD-3",
   '["./src/infrastructure/engines/audit/CD-3","../../../../domain/repository/repo-path-types.ts"]': "src/domain/repository/repo-path-types.ts",
   '["./src/infrastructure/engines/audit/CD-3","../runner/pieces/walker-piece.ts"]': "src/infrastructure/engines/audit/runner/pieces/walker-piece.ts",
   '["./src/infrastructure/engines/audit/CD-3","../runner/toolchain/typescript-parse.ts"]': "src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts",
-  '["./src/infrastructure/engines/audit/CD-3","../../../../application/ports/piece-failure-types.ts"]': "src/application/ports/piece-failure-types.ts",
-  '["./src/infrastructure/engines/audit/CD-3","../../../../application/ports/runner-module-types.ts"]': "src/application/ports/runner-module-types.ts",
+  '["./src/infrastructure/engines/audit/CD-3","../../../../domain/runner/piece-failure-types.ts"]': "src/domain/runner/piece-failure-types.ts",
+  '["./src/infrastructure/engines/audit/CD-3","../../../../domain/runner/runner-module-types.ts"]': "src/domain/runner/runner-module-types.ts",
   '["./src/infrastructure/engines/audit/CD-3","../../../../domain/rule-set/clause-address-types.ts"]': "src/domain/rule-set/clause-address-types.ts",
   '["./src/infrastructure/engines/audit/CD-3","../../../content-files/edition.ts"]': "src/infrastructure/content-files/edition.ts",
+  '["./src/infrastructure/engines/audit/CD-3","../../../../domain/rule-set/edition-reach.ts"]': "src/domain/rule-set/edition-reach.ts",
+  '["./src/infrastructure/engines/audit/CD-3","../../../../domain/rule-set/edition-types.ts"]': "src/domain/rule-set/edition-types.ts",
   '["./src/infrastructure/engines/audit/CD-3","../../../../domain/result.ts"]': "src/domain/result.ts",
   '["./src/infrastructure/engines/audit/CD-3","../runner/pieces/jsonc-parse.ts"]': "src/infrastructure/engines/audit/runner/pieces/jsonc-parse.ts",
   '["./src/infrastructure/engines/audit/CD-3","../runner/pieces/source-scope.ts"]': "src/infrastructure/engines/audit/runner/pieces/source-scope.ts",
@@ -129,9 +133,9 @@ const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
   '["./src/infrastructure/engines/audit/CD-47","../runner/pieces/source-scope.ts"]': "src/infrastructure/engines/audit/runner/pieces/source-scope.ts",
   '[".","src","infrastructure","engines","audit","CD-5"]': "src/infrastructure/engines/audit/CD-5",
   '[".","rules","CD-5"]': "rules/CD-5",
-  '["./src/infrastructure/engines/audit/CD-5","../../../../application/ports/piece-failure-types.ts"]': "src/application/ports/piece-failure-types.ts",
-  '["./src/infrastructure/engines/audit/CD-5","../../../../application/ports/runner-module-types.ts"]': "src/application/ports/runner-module-types.ts",
-  '["./src/infrastructure/engines/audit/CD-5","../../../discipline-exceptions-folder/clause-address.ts"]': "src/infrastructure/discipline-exceptions-folder/clause-address.ts",
+  '["./src/infrastructure/engines/audit/CD-5","../../../../domain/runner/piece-failure-types.ts"]': "src/domain/runner/piece-failure-types.ts",
+  '["./src/infrastructure/engines/audit/CD-5","../../../../domain/runner/runner-module-types.ts"]': "src/domain/runner/runner-module-types.ts",
+  '["./src/infrastructure/engines/audit/CD-5","../../../../domain/rule-set/clause-address.ts"]': "src/domain/rule-set/clause-address.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/gathered-outcomes.ts"]': "src/domain/gathered-outcomes.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/finding/anchor.ts"]': "src/domain/finding/anchor.ts",
   '["./src/infrastructure/engines/audit/CD-5","../../../../domain/result.ts"]': "src/domain/result.ts",

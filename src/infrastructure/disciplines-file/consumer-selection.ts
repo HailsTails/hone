@@ -1,34 +1,30 @@
-import type { LoadFailure } from "../command-line/load-failure.ts";
-import type { ClauseSettingValues } from "../../application/ports/runner-module-types.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../node/file-system/file-text-port.ts";
-import { createDefaultPathPort, type PathPort } from "../node/path-port.ts";
-import {
-  type ClauseExceptions,
-  type ClauseSettingDeclarations,
-  type DisciplineFile,
-  type PieceFile,
-  pieceFolderSegmentsOf,
-} from "../content-files/rule-sets/rule-set-reader.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
+import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../node/path-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
+import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
+import type { ClauseExceptions, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
 import { settledClauseEdition } from "../../domain/settings/clause-settings/clause-edition.ts";
 import { settledClauseSettings } from "./clause-settings.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import { editionPinOf } from "../../domain/settings/clause-settings/edition-pin.ts";
 import type { RunSettings } from "../../domain/settings/run-settings.ts";
-import type { ReportOutput } from "../hone-config-file/report-output.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import type { ClauseBinding, ClauseEditionReading, SelectionReading } from "../../domain/settings/selection/selection.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
-import { type ClauseAddress, clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../discipline-exceptions-folder/clause-address.ts";
-import type { ClauseEditions } from "../content-files/edition.ts";
-import type { MechanismId } from "../hone-config-file/identifiers.ts";
-import type { ModuleExtension } from "../node/modules/install-layout.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import type { Result } from "../../domain/result.ts";
 import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
-import { type ConsumerSelectionFile, type RuleSetLocation, runSettingsOf, type UnrunState } from "./selection-file.ts";
+import { runSettingsOf } from "./selection-file.ts";
+import type { ConsumerSelectionFile, RuleSetLocation, UnrunState } from "../../domain/settings/selection/selection-file.ts";
 import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
-
-export type SelectionRepository = {
-  readonly read: (request: Record<string, never>) => Result<SelectionReading, LoadFailure>;
-};
+import type { SelectionRepository } from "../../application/ports/selection/selection-repository.ts";
 
 export const createSelectionRepository = (options: {
   readonly repoRoot: AbsolutePath;
@@ -38,10 +34,6 @@ export const createSelectionRepository = (options: {
   readonly path: PathPort;
 }): SelectionRepository => ({
   read: (_request) => readSelection(options),
-});
-
-export const selectionRepositoryHolding = (request: { readonly reading: SelectionReading }): SelectionRepository => ({
-  read: (_request) => ({ outcome: "ok", value: request.reading }),
 });
 
 export const createDefaultSelectionRepository = (options: {

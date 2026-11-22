@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { ruleSetNameSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { upgradeSuccessOutcomeOf } from "./upgrade-success-text.ts";

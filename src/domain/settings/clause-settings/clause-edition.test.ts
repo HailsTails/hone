@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { clauseEditionsSchema } from "../../../infrastructure/content-files/edition.ts";
-import type { CheckEditions } from "../../../infrastructure/hone-config-file/check-editions.ts";
+import type { CheckEditions } from "./check-editions.ts";
 import { settledClauseEdition } from "./clause-edition.ts";
 
 const ADDRESS = clauseAddressSchema.parse("CD-27#test-body-logic");

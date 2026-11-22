@@ -3,18 +3,14 @@ import {
   type RunnerFailure,
   rejectedCall,
   runnerInvalidOutput,
-} from "../../../application/ports/runner-failure.ts";
-import type { LoadedRunner, RunnerClause } from "./runner-module/runner-module-schema.ts";
-import {
-  type CaseVerdict,
-  caseVerdictSchema,
-  runnerResultSchema,
-} from "./runner-module/runner-result-schema.ts";
-import type { SourceCase } from "../../content-files/rule-sets/rule-set-reader.ts";
+} from "../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
+import { caseVerdictSchema, runnerResultSchema } from "./runner-module/runner-result-schema.ts";
+import type { CaseVerdict } from "../../../domain/runner/runner-result-types.ts";
+import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ConformanceFailure } from "../../../application/conformance/conformance-types.ts";
-
-export type { ConformanceFailure } from "../../../application/conformance/conformance-types.ts";
+import type { ConformanceFailure } from "../../../domain/runner/conformance-types.ts";
 
 const caseVerdictsResultSchema = runnerResultSchema({
   value: z.array(caseVerdictSchema).readonly(),

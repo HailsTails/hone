@@ -1,17 +1,22 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { createExceptionRepository, type ExceptionLayoutPorts } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { LegacyWhyChain } from "../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
-import type { LoadedRunner } from "../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
-import type { DirectoryEntry } from "../../infrastructure/node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import { createPathPort, type PathPort } from "../../infrastructure/node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import type { ExceptionRepository } from "../ports/records/exception-repository.ts";
+import type { LegacyWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { LoadedRunner } from "../ports/engine/runner-module.ts";
+import type { DirectoryEntry } from "../ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../ports/git-port.ts";
+import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
+import { createPathPort } from "../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
+import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
@@ -326,12 +331,13 @@ const projectRequest = (overrides: Partial<ProjectRequest>): ProjectRequest => {
     installRoot: absolutePathSchema.parse("/install"),
     moduleExtension: ".ts" as const,
     fileText: fileTextOver(INSTALL),
+    engine: createDefaultEnginePort({}),
     modules: modulesLoading({ runner: standaloneRunner() }),
     path: TABLE_PATH,
     git: GIT,
     ...overrides,
   };
-  return { exceptionRepository: singleFileRepositoryOver(ports), ...ports };
+  return { exceptionRepository: singleFileRepositoryOver(ports), exceptionEntryParser, selectionRepositoryOf: createSelectionRepository, ...ports };
 };
 
 describe("runProject", () => {

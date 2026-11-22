@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DirectoryPort } from "../../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "../../git/git-port.ts";
+import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { GitPort, GitTreePort } from "../../../application/ports/git-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../repo-path.ts";
-import { createRecordsFolder, type RecordsFolderPorts } from "./records-folder.ts";
+import { createRecordsFolder } from "./records-folder.ts";
+import type { RecordsFolderPorts } from "../../../application/ports/records/records-source-of.ts";
 
 
 const REPO = absolutePathSchema.parse("/repo");

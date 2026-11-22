@@ -1,24 +1,17 @@
-import type { SelectionRepository } from "./consumer-selection.ts";
+import type { SelectionRepository } from "../../application/ports/selection/selection-repository.ts";
 import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
-import type { LoadFailure } from "../command-line/load-failure.ts";
-import type { FileTextPort } from "../node/file-system/file-text-port.ts";
-import type { PathPort } from "../node/path-port.ts";
-import type { AbsolutePath } from "../content-files/absolute-path.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
-import { type HeadRecordsRefusal, headRecordsOf } from "../discipline-exceptions-folder/head-records.ts";
-import { type ExceptionRepository, UNMEASURED_EXCEPTION_BASELINE } from "../discipline-exceptions-folder/exception-records.ts";
-import type { VersionOneReading } from "../../application/upgrade/proof/upgrade-plan.ts";
-import type { VersionOneFiles } from "../../application/upgrade/proof/upgrade-proof.ts";
-import type { RecordsOnDisk } from "../discipline-exceptions-folder/version-one-records-on-disk.ts";
+import { headRecordsOf } from "../discipline-exceptions-folder/head-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
+import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { RecordsOnDisk, VersionOneRead, VersionOneReadFailure } from "../../application/ports/records/version-one-reading.ts";
 
 const VERSION_ONE_SETTINGS = repoPathSchema.parse("disciplines.json");
-
-export type VersionOneRead = { readonly reading: VersionOneReading; readonly versionOneFiles: VersionOneFiles };
-
-export type VersionOneReadFailure =
-  | { readonly kind: "version-one-unreadable"; readonly failure: LoadFailure }
-  | { readonly kind: "records-refused"; readonly refusal: HeadRecordsRefusal };
 
 export type VersionOneReadRequest = {
   readonly repoRoot: AbsolutePath;

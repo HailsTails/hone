@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";

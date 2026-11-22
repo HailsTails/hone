@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import type { Result } from "../../src/domain/result.ts";
 import type { ProofCase, StepRun } from "./install-proof-plan.ts";
 import type { CommandRunPort, EffectFailure, ListedEntry, ScratchFilesPort } from "./install-proof-ports.ts";

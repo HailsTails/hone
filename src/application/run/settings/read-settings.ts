@@ -1,47 +1,19 @@
-import type { VersionTwoLoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
-import type { VersionTwoReportOutput } from "../../../infrastructure/hone-config-file/report-output.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
+import type { VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type { RunSettings } from "../../../domain/settings/run-settings.ts";
 import type { ClauseBinding, ClauseEditionReading, ClauseRoot, SelectedClause, SelectionReading } from "../../../domain/settings/selection/selection.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { AnchorKind } from "../../../domain/finding/anchor.ts";
-import type { ClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { ClauseEditions } from "../../../infrastructure/content-files/edition.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSetCatalogue, sameRuleSet } from "../../../domain/settings/check-choices.ts";
 import { settledCheckSettings } from "../../../domain/settings/clause-settings/check-settings.ts";
-import type { ConventionKey, Conventions } from "../../../infrastructure/hone-config-file/conventions.ts";
+import type { Conventions } from "../../../domain/settings/conventions.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
-import { type DeclaredRuleSet, type EslintConfigLookupChoice, type SettingsFile, settingsFileOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
-
-export type SettingsDocument = { readonly path: string; readonly document: unknown };
-
-export type PieceClause = {
-  readonly exceptions: ClauseExceptions;
-  readonly anchor: AnchorKind;
-  readonly pieceRoot: string;
-  readonly settings: unknown;
-  readonly declarations: ClauseSettingDeclarations;
-  readonly editions: ClauseEditions;
-};
-
-export type SettingsSources = {
-  readonly settingsFile: (request: Record<string, never>) => Result<SettingsDocument, VersionTwoLoadFailure>;
-  readonly ruleSetRoot: (request: {
-    readonly ruleSet: ClauseAddress["ruleSet"];
-    readonly ruleSets: readonly DeclaredRuleSet[];
-  }) => Result<AbsolutePath, VersionTwoLoadFailure>;
-  readonly catalogue: (request: { readonly ruleSetRoot: AbsolutePath }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
-  readonly pieceClause: (request: {
-    readonly ruleSetRoot: AbsolutePath;
-    readonly clause: ClauseAddress;
-    readonly mechanism: MechanismId;
-  }) => Result<PieceClause, VersionTwoLoadFailure>;
-};
-
-export type SettingsNote = { readonly kind: "declared-not-read"; readonly key: ConventionKey };
+import type { SettingsNote } from "../../../domain/settings/settings-note.ts";
+import type { EslintConfigLookupChoice, SettingsFile } from "../../../domain/settings/settings-file.ts";
+import type { SettingsDocument, SettingsSources } from "../../ports/settings-sources.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
@@ -61,17 +33,11 @@ export const settingsRepositoryHolding = (request: { readonly reading: SettingsR
   read: (_request) => ({ outcome: "ok", value: request.reading }),
 });
 
-export const createSettingsRepository = (options: { readonly sources: SettingsSources }): SettingsRepository => ({
+export type SettingsReadRequest = { readonly sources: SettingsSources; readonly settingsFormat: Pick<SettingsFileFormat, "fileOf"> };
+
+export const createSettingsRepository = (options: SettingsReadRequest): SettingsRepository => ({
   read: (_request) => readSettings(options),
 });
-
-const NOTE_KEY_TEXTS: Readonly<Record<ConventionKey, string>> = {
-  generated: "generated",
-  layers: "layers",
-};
-
-export const settingsNoteText = (request: { readonly note: SettingsNote }): string =>
-  `${NOTE_KEY_TEXTS[request.note.key]} is declared; no check reads it yet`;
 
 type BoundClause = {
   readonly selected: SelectedClause;
@@ -195,12 +161,12 @@ const settingsReadingOf = (request: {
   notes: request.file.conventions.declared.map((key) => ({ kind: "declared-not-read", key })),
 });
 
-const parsedSettingsFile = (request: { readonly sources: SettingsSources }): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
+const parsedSettingsFile = (request: SettingsReadRequest): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
   const document = request.sources.settingsFile({});
   if (document.outcome === "failed") {
     return document;
   }
-  const file = settingsFileOf({ document: document.value.document });
+  const file = request.settingsFormat.fileOf({ document: document.value.document });
   if (file.outcome === "ok") {
     return { outcome: "ok", value: { ...document.value, file: file.value } };
   }
@@ -209,7 +175,7 @@ const parsedSettingsFile = (request: { readonly sources: SettingsSources }): Res
     : { outcome: "failed", error: file.error };
 };
 
-export const readSettings = (request: { readonly sources: SettingsSources }): Result<SettingsReading, SettingsFailure> => {
+export const readSettings = (request: SettingsReadRequest): Result<SettingsReading, SettingsFailure> => {
   const parsed = parsedSettingsFile(request);
   if (parsed.outcome === "failed") {
     return parsed;

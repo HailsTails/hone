@@ -1,11 +1,13 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { LoadFailure } from "../command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
-import { createDefaultPathPort, createPathPort, type PathPort } from "../node/path-port.ts";
+import { createDefaultPathPort, createPathPort } from "../node/path-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseEditionsSchema } from "../content-files/edition.ts";
-import { clauseIdSchema, disciplineIdSchema, type MechanismId, mechanismIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import {
@@ -15,7 +17,8 @@ import {
   selectionFrom,
 } from "./consumer-selection.ts";
 import type { Held, RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
-import { type ConsumerSelectionFile, type RuleSetLocation, selectionFileOf } from "./selection-file.ts";
+import { selectionFileOf } from "./selection-file.ts";
+import type { ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const INSTALL_ROOT = absolutePathSchema.parse("/install");

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { projectionHolding } from "./projection-holding.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {

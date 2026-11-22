@@ -1,27 +1,38 @@
 import type { CommandRequest } from "../../ports/command-request.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import type { RecordsAtBase, RecordsReading } from "../../../infrastructure/hone-records-folder/hone-record.ts";
-import { recordsReadingOf } from "../../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import type { RecordsAtBase, RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
+import type { RecordsReader } from "../../ports/records/records-reader.ts";
 import { type CheckedTree, checkedTreeOf } from "../../run/checked-tree-of.ts";
 import { enginesProjectionOf } from "../../run/engines/engines-run.ts";
 import { runFailureOf } from "../../../domain/report/run-failure.ts";
 import { toolCatalogueOf } from "../../run/tool-catalogue.ts";
 import { type SettingsReading, readSettings } from "../../run/settings/read-settings.ts";
-import { type SettingsFile, settingsWireOf } from "../../../infrastructure/hone-config-file/settings-file.ts";
-import { SETTINGS_FILE_NAME, createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
-import type { ProjectedFile } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import type { SettingsSourcesOf } from "../../ports/settings-sources.ts";
+import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
+import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
+import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
 import type { Engine, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import { moduleExtensionOf } from "../../../infrastructure/node/modules/install-layout.ts";
-import { projectionOutputsOf } from "../../../infrastructure/engines/protocol/projection-outputs.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { moduleExtensionOf } from "../../ports/host/module-extension.ts";
+import { projectionOutputsOf } from "../../../domain/repository/projection-outputs.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { MappedRecordsDocument } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
-import type { ProjectionFailure, ProjectionFilesOf } from "../proof/upgrade-plan.ts";
+import type { MappedRecordsDocument } from "../../../domain/records/upgrade/records-mapping.ts";
+import type { ProjectionFilesOf } from "../proof/upgrade-plan.ts";
+import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 
 const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-type Context = {
-  readonly command: CommandRequest;
+export type PlannedProjectionPorts = {
+  readonly recordsReader: RecordsReader;
+  readonly symptomCatalogueOf: SymptomCatalogueOf;
+  readonly settingsFormat: SettingsFileFormat;
+  readonly settingsSourcesOf: SettingsSourcesOf;
+};
+
+type Context = PlannedProjectionPorts & {
+  readonly command: Omit<CommandRequest, "process">;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
 };
@@ -32,14 +43,21 @@ const refusedBy = (request: { readonly failure: RunLoadFailure }): Result<never,
 });
 
 const settingsReadingOf = (request: Context & { readonly settings: SettingsFile; readonly catalogue: SymptomCatalogue }): Result<SettingsReading, ProjectionFailure> => {
-  const { command, repoRoot, installRoot, settings, catalogue } = request;
-  const real = createSettingsSources({ fileText: command.fileText, path: command.path, repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }) });
-  const read = readSettings({ sources: { ...real, settingsFile: () => ({ outcome: "ok", value: { path: SETTINGS_FILE_NAME, document: settingsWireOf({ settings }) } }) } });
+  const { command, repoRoot, installRoot, settings, catalogue, settingsFormat } = request;
+  const real = request.settingsSourcesOf({ fileText: command.fileText, path: command.path, repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }) });
+  const read = readSettings({
+    sources: { ...real, settingsFile: () => ({ outcome: "ok", value: { path: SETTINGS_FILE_NAME, document: settingsFormat.documentOf({ settings }) } }) },
+    settingsFormat,
+  });
   return read.outcome === "failed" ? refusedBy({ failure: runFailureOf({ engines: catalogue.engines, source: read.error }) }) : read;
 };
 
-const recordsReadingFor = (request: { readonly documents: readonly MappedRecordsDocument[]; readonly catalogue: SymptomCatalogue }): Result<RecordsReading, ProjectionFailure> => {
-  const read = recordsReadingOf({
+const recordsReadingFor = (request: {
+  readonly recordsReader: RecordsReader;
+  readonly documents: readonly MappedRecordsDocument[];
+  readonly catalogue: SymptomCatalogue;
+}): Result<RecordsReading, ProjectionFailure> => {
+  const read = request.recordsReader.recordsReadingOf({
     documents: request.documents.map(({ file, version, records }) => ({ file, document: { version, records } })),
     catalogue: request.catalogue,
     base: BASE_NOT_GIVEN,
@@ -73,7 +91,7 @@ export const plannedProjectionOf =
   (context: Context): ProjectionFilesOf =>
   async ({ settings, documents }) => {
     const { command, repoRoot, installRoot } = context;
-    const catalogue = toolCatalogueOf({ fileText: command.fileText, path: command.path, installRoot });
+    const catalogue = toolCatalogueOf({ fileText: command.fileText, path: command.path, installRoot, symptomCatalogueOf: context.symptomCatalogueOf });
     if (catalogue.outcome === "failed") {
       return refusedBy({ failure: catalogue.error });
     }
@@ -81,7 +99,7 @@ export const plannedProjectionOf =
     if (planned.outcome === "failed") {
       return planned;
     }
-    const records = recordsReadingFor({ documents, catalogue: catalogue.value });
+    const records = recordsReadingFor({ recordsReader: context.recordsReader, documents, catalogue: catalogue.value });
     if (records.outcome === "failed") {
       return records;
     }
@@ -99,6 +117,7 @@ export const plannedProjectionOf =
       moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
       path: command.path,
       modules: command.modules,
+      engine: command.engine,
     });
     return projected.outcome === "failed"
       ? refusedBy({ failure: projected.error })

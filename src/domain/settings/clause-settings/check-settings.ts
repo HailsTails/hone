@@ -1,14 +1,14 @@
 import { defaultClauseSettings } from "./default-clause-settings.ts";
 import { editionPinOf } from "./edition-pin.ts";
-import type { ClauseSettingValues } from "../../../application/ports/runner-module-types.ts";
-import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import type { CheckEditions } from "../../../infrastructure/hone-config-file/check-editions.ts";
-import type { ClauseEditions, Edition } from "../../../infrastructure/content-files/edition.ts";
+import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
+import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../../rule-set/rule-set-types.ts";
+import type { CheckEditions } from "./check-editions.ts";
+import type { ClauseEditions, Edition } from "../../rule-set/edition-types.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../json-values/json-kind.ts";
 import type { ReadonlyJsonValue } from "../json-values/json-value.ts";
 import type { Result } from "../../result.ts";
-import { listedAddressText } from "../../../infrastructure/hone-config-file/listed-address.ts";
-import { type GivenCheckSettings, RENAMED_SETTINGS } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import { listedAddressText } from "../listed-address.ts";
+import { type GivenCheckSettings, RENAMED_SETTINGS } from "../settings-file.ts";
 
 export type SettledCheckSettings = { readonly clauseSettings: ClauseSettingValues; readonly edition: Edition };
 

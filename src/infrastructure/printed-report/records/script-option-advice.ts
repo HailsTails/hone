@@ -1,4 +1,4 @@
-import type { ScriptOptionCause } from "../../engines/protocol/runner-module/runner-result-schema.ts";
+import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { quoted } from "../printed-text.ts";
 
 export type ScriptOptionAdvice = { readonly problem: string; readonly fix: string };

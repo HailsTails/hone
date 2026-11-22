@@ -1,16 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  causalProblemsOf,
-  causalWhySchema,
-  checkableTextSchema,
-  fiveWhysSchema,
-  legacyWhySchema,
-  ownerSchema,
-  rootCauseSchema,
-  substantiveTextSchema,
-  type WhyChain,
-  whyChainSchema,
-} from "./why-chain.ts";
+import { causalWhySchema, checkableTextSchema, fiveWhysSchema, legacyWhySchema, ownerSchema, rootCauseSchema, substantiveTextSchema, whyChainSchema } from "./why-chain.ts";
+import { causalProblemsOf, type WhyChain } from "../../domain/records/why-chain.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

@@ -1,8 +1,10 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
-import type { FileCreationPort } from "../../../infrastructure/node/file-system/file-creation-port.ts";
-import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import type { DirectoryPort, EntryKindPort, FileTextPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
+import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
+import type { FileCreationPort } from "../../ports/file-system/file-creation-port.ts";
+import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { type PlannedFile, type ProofWritePorts, type ProofWrites, rolledBackProofWrites, writeProofFiles } from "./proof-writes.ts";

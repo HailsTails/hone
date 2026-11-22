@@ -1,6 +1,6 @@
 import type { Result } from "../../domain/result.ts";
 import type { ExceptionEntry } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import type { StructuralExceptionEntry } from "./exception-records.ts";
+import type { StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 
 export type WritableEntry = ExceptionEntry | StructuralExceptionEntry;
 

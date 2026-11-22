@@ -1,14 +1,11 @@
 import { z } from "zod";
-import type { PieceFailure } from "../../../../application/ports/piece-failure-types.ts";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
-import {
-  type Hit,
-  hitSchema,
-  type InlineDisable,
-  runnerResultSchema,
-} from "../../protocol/runner-module/runner-result-schema.ts";
+import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import { hitSchema, runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
+import type { Hit, InlineDisable } from "../../../../domain/runner/runner-result-types.ts";
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
 import { type DirectiveEscape, directiveEscapesIn, escapesOf } from "./pieces/type-directives.ts";

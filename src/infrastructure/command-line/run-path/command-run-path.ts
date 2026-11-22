@@ -1,6 +1,6 @@
 import type { CommandRequest } from "../../../application/ports/command-request.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { repoArgumentOf } from "../arguments/repo-argument.ts";
 import { type RunPath, runPathOf } from "./run-path.ts";

@@ -1,9 +1,9 @@
 import { assert, describe, expect, it } from "vitest";
-import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
-import type { FileTextPort } from "../../../node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
-import type { SourceCase } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";

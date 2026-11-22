@@ -3,15 +3,18 @@ import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } 
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
-import type { DirectoryPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import type { GitPort, GitTreePort } from "../../../infrastructure/git/git-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
+import type { GitPort, GitTreePort } from "../../ports/git-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsDocument } from "../../../infrastructure/hone-records-folder/hone-record.ts";
-import type { RecordsSourceOf } from "../../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
-import type { RecordsSource } from "../../ports/records-source.ts";
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
+import type { RecordsSourceOf } from "../../ports/records/records-source-of.ts";
+import type { RecordsSource } from "../../ports/records/records-source.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository, PlacedEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import { foundTreeRecordsSourceOf } from "../../../infrastructure/discipline-exceptions-folder/found-tree-records-source.ts";
+import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 import { FOUND_TREE_REVISION, foundTreeCheckReachOf, foundTreeRunReachOf } from "./found-tree-reach.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
@@ -130,7 +133,7 @@ describe("foundTreeCheckReachOf", () => {
   it("gives a version 1 check the tree the upgrade found as its base revision, git and entries at the base", () => {
     const underlyingGit = git();
     const underlyingExceptions = exceptions();
-    const reach = foundTreeCheckReachOf({ check: { git: underlyingGit, fileText: fileText(), path: PATH, exceptionRepository: underlyingExceptions } });
+    const reach = foundTreeCheckReachOf({ check: { git: underlyingGit, fileText: fileText(), path: PATH, exceptionRepository: underlyingExceptions }, loadFailureDetail });
     expect({
       baseRevision: reach.baseRevision,
       changedSince: reach.git.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
@@ -151,9 +154,12 @@ describe("foundTreeRunReachOf", () => {
     const underlyingGit = git();
     const directory: Pick<DirectoryPort, "list"> = { list: vi.fn<DirectoryPort["list"]>() };
     const gitTree: GitTreePort = { pathsAt: vi.fn<GitTreePort["pathsAt"]>() };
+    const underlyingExceptions = exceptions();
     const reach = foundTreeRunReachOf({
       recordsSourceOf: vi.fn<RecordsSourceOf>().mockReturnValue(underlyingSource),
-      command: { git: underlyingGit, fileText: fileText(), path: PATH, exceptionRepositoryOf: () => exceptions() },
+      foundTreeRecordsSourceOf,
+      loadFailureDetail,
+      command: { git: underlyingGit, fileText: fileText(), path: PATH, exceptionRepositoryOf: () => underlyingExceptions },
     });
     const folder = { fileText: fileText(), path: PATH, directory, git: underlyingGit, gitTree, repoRoot: REPO_ROOT, catalogue: SETTINGS_CATALOGUE };
     expect({
@@ -161,11 +167,13 @@ describe("foundTreeRunReachOf", () => {
       changedSince: reach.git.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
       recordsAtBase: reach.recordsSourceOf(folder).readAt({ revision: FOUND_TREE_REVISION }),
       askedRecords: vi.mocked(underlyingSource.readAt).mock.calls,
+      askedEntries: vi.mocked(underlyingExceptions.readAt).mock.calls,
     }).toEqual({
       baseRevision: FOUND_TREE_REVISION,
       changedSince: { outcome: "ok", value: [] },
       recordsAtBase: { outcome: "ok", value: [AUTHORISED_DOCUMENT] },
       askedRecords: [],
+      askedEntries: [],
     });
   });
 });

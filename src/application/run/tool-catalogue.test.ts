@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { toolCatalogueOf } from "./tool-catalogue.ts";
+import { createSymptomCatalogueRepository } from "../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 
 const INSTALL = absolutePathSchema.parse("/install");
 
@@ -10,7 +11,7 @@ const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
 
-const catalogueOver = (request: { readonly fileText: FileTextPort }) => toolCatalogueOf({ fileText: request.fileText, path: POSIX, installRoot: INSTALL });
+const catalogueOver = (request: { readonly fileText: FileTextPort }) => toolCatalogueOf({ symptomCatalogueOf: createSymptomCatalogueRepository, fileText: request.fileText, path: POSIX, installRoot: INSTALL });
 
 const filesHolding = (request: { readonly text: string }): FileTextPort => ({
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),

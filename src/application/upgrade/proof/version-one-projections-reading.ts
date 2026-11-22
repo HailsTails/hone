@@ -1,7 +1,8 @@
-import type { ProjectionWrite } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { TeamConfigRefusal, VersionOneProjection } from "./team-config-finder.ts";
+import type { VersionOneProjection } from "./team-config-finder.ts";
+import type { TeamConfigRefusal } from "../../ports/upgrade/plan-refusal.ts";
 
 export type ProjectionsRefusal =
   | { readonly kind: "project-failed"; readonly detail: string }

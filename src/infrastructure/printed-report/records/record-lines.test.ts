@@ -3,8 +3,8 @@ import type { Case, Check, Pointed, Recipe, Rule, Symptom } from "../../../domai
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import type { CatalogueNote, HoneRecord, RecordRefusal, SymptomReach } from "../../hone-records-folder/hone-record.ts";
-import type { WhyChain } from "../../hone-records-folder/why-chain.ts";
+import type { CatalogueNote, HoneRecord, RecordRefusal, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
+import type { WhyChain } from "../../../domain/records/why-chain.ts";
 import { carriedLine, recordNoteLine, recordPlaceText, recordReferenceText, recordSubjectText, refusedLines } from "./record-lines.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
@@ -265,8 +265,8 @@ describe("refusedLines", () => {
       refusal: {
         kind: "form-refused",
         issues: [
-          { code: "invalid_type", expected: "string", path: ["file"], message: "Invalid input: expected string, received number", input: 3 },
-          { code: "unrecognized_keys", keys: ["kind"], path: [], message: 'Unrecognized key: "kind"', input: {} },
+          { path: ["file"], message: "Invalid input: expected string, received number" },
+          { path: [], message: 'Unrecognized key: "kind"' },
         ],
       },
       line: 'hone-records/authorised-locations/claimed-type.json records[2] form-refused file: Invalid input: expected string, received number; record: Unrecognized key: "kind"',

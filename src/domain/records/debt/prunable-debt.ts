@@ -1,7 +1,7 @@
 import type { RunReport } from "../../report/run-report.ts";
 import { codePointOrder } from "../code-point-order.ts";
 import type { StaleReason } from "../answering/answering.ts";
-import type { Debt, PlacedRecord, RecordPlace } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { Debt, PlacedRecord, RecordPlace } from "../hone-records/hone-record.ts";
 
 export type PrunedReason = "paid" | "forfeited" | StaleReason;
 

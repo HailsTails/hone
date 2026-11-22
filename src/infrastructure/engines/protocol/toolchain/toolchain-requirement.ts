@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { PackageLocationPort, PackageUnlocatable } from "../../../node/modules/package-location-port.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { PeerKind, RunnerFailure, UnavailablePeer } from "../../../../application/ports/runner-failure.ts";
+import type { PeerKind, RunnerFailure, UnavailablePeer } from "../../../../domain/runner/runner-failure.ts";
 
 export type ReleaseLine = {
   readonly floor: string;

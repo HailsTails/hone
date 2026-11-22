@@ -1,25 +1,32 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
-import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
-import type { FileCreationPort } from "../../../infrastructure/node/file-system/file-creation-port.ts";
-import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import type { DirectoryPort, EntryKindPort, FileTextPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import { createPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
+import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
+import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
+import type { FileCreationPort } from "../../ports/file-system/file-creation-port.ts";
+import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
-import type { RecordAnswerOracle, FileCarveOutRecord } from "../record-answers/record-answer-oracle.ts";
-import type { HeadRecord } from "../../../infrastructure/discipline-exceptions-folder/head-records.ts";
-import { type ProofRuns, upgradeProof, type UpgradeProofRequest } from "./upgrade-proof.ts";
-import type { ProjectionFilesOf, VersionOneReading } from "./upgrade-plan.ts";
+import type { RecordAnswerOracle, FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
+import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
+import { upgradeProof, type UpgradeProofRequest } from "./upgrade-proof.ts";
+import type { ProofRuns } from "../../ports/upgrade/proof-runs.ts";
+import type { ProjectionFilesOf } from "./upgrade-plan.ts";
+import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -282,6 +289,7 @@ const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofReques
   catalogues: CATALOGUES,
   repoRoot: REPO,
   projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value: { files: [ROOT_PROJECTION_FILE], projections: [ROOT_PROJECTION_FILE] } }),
+  settingsFormat: SETTINGS_FILE_FORMAT,
   versionOneProjectionsOf: request.doubles.projections,
 });
 

@@ -1,18 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
-import type { CaseVerdict, ProjectionWrite } from "../../../protocol/runner-module/runner-result-schema.ts";
-import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CaseVerdict, ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import {
   createPathPort,
 } from "../../../../node/path-port.ts";
-import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ConfigLookup } from "../config-roots/config-lookup.ts";
 import { type EslintRunnerPorts, eslintRunnerOver } from "./create-eslint-runner.ts";

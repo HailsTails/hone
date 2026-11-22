@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepository } from "./exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { versionOneEntriesOf } from "./version-one-entries.ts";
 
 const repositoryReading = (request: { readonly read: ReturnType<ExceptionRepository["readAt"]> }): Pick<ExceptionRepository, "readAt"> => ({

@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { SettingsFile } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import { recordsReader } from "../../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { createSymptomCatalogueRepository } from "../../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
 
 const SETTINGS: SettingsFile = {
   exclude: [],
@@ -30,16 +35,28 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
     read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: "file:///install/src/hone.ts",
 };
 
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
     const command = EMPTY_REPOSITORY_COMMAND;
-    const projected = await plannedProjectionOf({ command, repoRoot: absolutePathSchema.parse("/repo"), installRoot: absolutePathSchema.parse("/install") })({
+    const projected = await plannedProjectionOf({
+      command,
+      repoRoot: absolutePathSchema.parse("/repo"),
+      installRoot: absolutePathSchema.parse("/install"),
+      recordsReader,
+      symptomCatalogueOf: createSymptomCatalogueRepository,
+      settingsFormat: SETTINGS_FILE_FORMAT,
+      settingsSourcesOf: createSettingsSources,
+    })({
       settings: SETTINGS,
       documents: [],
     });

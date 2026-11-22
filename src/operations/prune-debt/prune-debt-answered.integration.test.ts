@@ -1,17 +1,29 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
+import { commandOf } from "../../composition/composed-command.ts";
+import type { VersionOneCommandRequest as PruneCommand } from "../../application/ports/version-one-command-request.ts";
+import { PRUNE_DEBT } from "../../composition/commands.ts";
 import { exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { FileRemovalPort } from "../../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort, type EntryKindPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "../../infrastructure/git/git-port.ts";
-import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
+import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
+import type { EntryKindPort } from "../../application/ports/file-system/entry-kind-port.ts";
+import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { GitPort, GitTreePort } from "../../application/ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { ProcessPort } from "../../application/ports/host/process-port.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { createWalkerRunner } from "../../infrastructure/engines/audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
+
+const runPruneDebtCommand = (command: PruneCommand) => commandOf({ tool: PRUNE_DEBT, ports: command })(command);
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -133,9 +145,13 @@ const pruneDebtOver = async (request: {
     process,
     path,
     fileText: request.fileText,
+    engine: createDefaultEnginePort({}),
     modules: auditRunnerOver(request.fileText),
     git: request.git,
     exceptionRepositoryOf: repositoryOf,
+    exceptionEntryParser,
+    selectionRepositoryOf: createSelectionRepository,
+    shownPathOfRepository,
     moduleUrl: TOOL_COMMAND_URL,
   });
   return { printed: writeOut.mock.calls, exits: exitWith.mock.calls };

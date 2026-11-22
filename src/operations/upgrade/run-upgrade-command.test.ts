@@ -1,112 +1,110 @@
-import { describe, expect, it, vi } from "vitest";
-import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import type { GitPort } from "../../infrastructure/git/git-port.ts";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
-import { alreadyUpgradedCommand, type UpgradePorts, upgradeCommandOf } from "./run-upgrade-command.ts";
+import { assert, describe, expect, it, vi } from "vitest";
+import type { GitPort } from "../../application/ports/git-port.ts";
+import type { RecordsOnDiskOf, VersionOneReadOf } from "../../application/ports/records/version-one-reading.ts";
+import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
+import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import { isAbsolutePath } from "../../domain/repository/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { type UpgradeInput, type UpgradePorts, upgradeOf } from "./run-upgrade-command.ts";
 
-const notUsed = (): never => {
-  throw new Error("this port is not used by the command under test");
+const absolute = (text: string): AbsolutePath => {
+  assert(isAbsolutePath(text), `${text} is absolute`);
+  return text;
 };
 
-const memoryFileTextOf = (request: { readonly files: Readonly<Record<string, string>> }): FileTextPort => {
-  const held = new Map<string, string>(Object.entries(request.files).map(([file, text]) => [`/repo/${file}`, text]));
-  const holdsUnder = (path: string): boolean => [...held.keys()].some((key) => key.startsWith(`${path}/`));
-  return {
-    exists: ({ path }) => (held.has(path) || holdsUnder(path) ? "present" : "absent"),
-    read: ({ path }) => {
-      const text = held.get(path);
-      return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } } : { outcome: "ok", value: text };
-    },
-    write: ({ path, text }) => {
-      held.set(path, text);
-      return { outcome: "ok", value: undefined };
-    },
-  };
-};
+const REPO_ROOT = absolute("/repo");
 
-type Writes = Parameters<ProcessPort["writeOut"]>[];
+const SELECTION_ABSENT: LoadFailure = { kind: "selection-absent", repo: "/repo" };
 
-type Exits = Parameters<ProcessPort["exitWith"]>[];
+const SETTINGS_READ = vi.fn<RunSettingsOf>().mockReturnValue({ outcome: "ok", value: { reportOutput: "full", assessment: { forfeiture: "this-run" } } });
 
-const recordedProcessWith = (request: { readonly arguments: readonly string[] }) => {
-  const writes: Writes = [];
-  const exits: Exits = [];
-  const port: ProcessPort = {
-    arguments: request.arguments,
-    writeOut: (written) => writes.push([written]),
-    writeError: () => undefined,
-    exitWith: (exit) => exits.push([exit]),
-  };
-  return { port, writes, exits };
-};
+const gitListing = (request: { readonly tracked: ReturnType<GitPort["trackedPaths"]> }): GitPort => ({
+  trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue(request.tracked),
+  changedSince: vi.fn(),
+  contentInBase: vi.fn(),
+  textInBase: vi.fn(),
+  renamedSince: vi.fn(),
+});
 
-const commandOver = (request: { readonly process: ProcessPort; readonly fileText: FileTextPort }): VersionOneCommandRequest => ({
-  process: request.process,
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
-  fileText: request.fileText,
-  modules: { load: notUsed },
-  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
-  exceptionRepositoryOf: notUsed,
+const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts => ({
+  path: { join: vi.fn(), joinRepository: vi.fn(), relative: vi.fn(), directoryOf: vi.fn(), repositoryDirectoryOf: vi.fn(), resolve: vi.fn(), fromFileUrl: vi.fn() },
+  fileText: { read: vi.fn(), exists: vi.fn(), write: vi.fn() },
+  modules: { load: vi.fn() },
+  engine: { load: vi.fn(), run: { checks: vi.fn(), withRecords: vi.fn() }, project: { checks: vi.fn(), withRecords: vi.fn() }, conform: vi.fn() },
+  git: request.git,
+  exceptionRepositoryOf: vi.fn(),
+  exceptionEntryParser: { parseExceptionEntries: vi.fn(), importedEntriesIn: vi.fn(), importSourcesOf: vi.fn() },
+  selectionRepositoryOf: vi.fn(),
+  shownPathOfRepository: vi.fn(),
   moduleUrl: "file:///install/src/hone.ts",
 });
 
 const PORTS: UpgradePorts = {
-  gitTree: { pathsAt: vi.fn() },
+  recordsReader: { recordsReadingOf: vi.fn() },
+  symptomCatalogueOf: vi.fn(),
+  settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
+  settingsSourcesOf: vi.fn(),
   directory: { list: vi.fn(), create: vi.fn() },
-  recordsSourceOf: vi.fn(),
-  stagesOver: vi.fn(),
   fileCreation: { createNew: vi.fn() },
   fileRemoval: { remove: vi.fn() },
   directoryRemoval: { removeEmpty: vi.fn() },
   entryKind: { kindOf: vi.fn() },
+  loadFailureDetail: vi.fn(),
 };
 
-const gitFailing = (): GitPort => ({
-  trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "failed", error: { kind: "git-failed", command: "git ls-files", detail: "not a git repository" } }),
-  changedSince: vi.fn<GitPort["changedSince"]>(),
-  contentInBase: vi.fn<GitPort["contentInBase"]>(),
-  textInBase: vi.fn<GitPort["textInBase"]>(),
-  renamedSince: vi.fn<GitPort["renamedSince"]>(),
+const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): UpgradeInput => ({
+  command: commandOver({ git: request.git }),
+  ports: PORTS,
+  located: { repoRoot: REPO_ROOT, installRoot: absolute("/install") },
+  runSettingsOf: SETTINGS_READ,
+  catalogues: () => ({ outcome: "ok", value: [] }),
+  recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),
+  versionOneReadOf: vi.fn<VersionOneReadOf>(),
+  proofRunsOf: vi.fn(),
+  foundTreeStages: vi.fn(),
+  ...request,
 });
 
-const commandWith = (request: { readonly arguments: readonly string[]; readonly files: Readonly<Record<string, string>>; readonly git: GitPort }) => {
-  const recorded = recordedProcessWith({ arguments: request.arguments });
-  const base = commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) });
-  const command: VersionOneCommandRequest = { ...base, git: request.git, exceptionRepositoryOf: vi.fn() };
-  return { command, recorded };
-};
+const TRACKED: ReturnType<GitPort["trackedPaths"]> = { outcome: "ok", value: [] };
 
-const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "audit" } }';
+describe("upgradeOf", () => {
+  it("stops on the run settings' load failure and lists no tracked files", async () => {
+    const git = gitListing({ tracked: TRACKED });
 
-describe("upgradeCommandOf", () => {
-  it("exits 2 with an arguments-invalid line, reading nothing, when --repo is not given", async () => {
-    const { command, recorded } = commandWith({ arguments: [], files: {}, git: gitFailing() });
-    await upgradeCommandOf(PORTS)(command);
-    expect({ writes: recorded.writes, exits: recorded.exits }).toEqual({
-      writes: [[{ text: "load failure: arguments-invalid hone upgrade needs --repo <dir>: the folder that holds disciplines.json, usually the repository root\n" }]],
-      exits: [[{ code: 2 }]],
+    expect(await upgradeOf(inputWith({ git, runSettingsOf: vi.fn<RunSettingsOf>().mockReturnValue({ outcome: "failed", error: SELECTION_ABSENT }) }))).toEqual({
+      outcome: "failed",
+      error: { stopped: "load-failed", failure: SELECTION_ABSENT },
+    });
+    expect(git.trackedPaths).not.toHaveBeenCalled();
+  });
+
+  it("stops on a git failure when the tracked files cannot be listed", async () => {
+    const git = gitListing({ tracked: { outcome: "failed", error: { kind: "git-failed", command: "git ls-files", detail: "not a git repository" } } });
+
+    expect(await upgradeOf(inputWith({ git }))).toEqual({
+      outcome: "failed",
+      error: { stopped: "load-failed", failure: { kind: "git-failed", detail: "git ls-files: not a git repository" } },
     });
   });
 
-  it("exits 2 with a git-failed line when the tracked files cannot be listed", async () => {
-    const { command, recorded } = commandWith({ arguments: ["--repo", "/repo"], files: { "disciplines.json": SELECTION }, git: gitFailing() });
-    await upgradeCommandOf(PORTS)(command);
-    expect({ writes: recorded.writes, exits: recorded.exits }).toEqual({
-      writes: [[{ text: "load failure: git-failed git ls-files: not a git repository\n" }]],
-      exits: [[{ code: 2 }]],
-    });
-  });
-});
+  it("stops on the shipped catalogues' load failure and reads no records", async () => {
+    const recordsOnDiskOf = vi.fn<RecordsOnDiskOf>();
 
-describe("alreadyUpgradedCommand", () => {
-  it("says the repository is already on version 2 and exits 0", async () => {
-    const { command, recorded } = commandWith({ arguments: ["--repo", "/repo"], files: {}, git: gitFailing() });
-    await alreadyUpgradedCommand(command);
-    expect({ writes: recorded.writes, exits: recorded.exits }).toEqual({
-      writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
-      exits: [[{ code: 0 }]],
+    expect(await upgradeOf(inputWith({ git: gitListing({ tracked: TRACKED }), catalogues: () => ({ outcome: "failed", error: SELECTION_ABSENT }), recordsOnDiskOf }))).toEqual({
+      outcome: "failed",
+      error: { stopped: "load-failed", failure: SELECTION_ABSENT },
+    });
+    expect(recordsOnDiskOf).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the version 1 records cannot be read", async () => {
+    const recordsOnDiskOf = vi.fn<RecordsOnDiskOf>().mockReturnValue({ outcome: "ok", value: { files: [], folders: [], root: { kind: "repository" } } });
+    const versionOneReadOf = vi.fn<VersionOneReadOf>().mockReturnValue({ outcome: "failed", error: { kind: "version-one-unreadable", failure: SELECTION_ABSENT } });
+
+    expect(await upgradeOf(inputWith({ git: gitListing({ tracked: TRACKED }), recordsOnDiskOf, versionOneReadOf }))).toEqual({
+      outcome: "failed",
+      error: { stopped: "refused", failure: { kind: "version-one-unreadable", failure: SELECTION_ABSENT } },
     });
   });
 });

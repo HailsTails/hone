@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { legacyWhyChainSchema, type VersionOneWhyChain, versionOneWhyChainSchema, whyChainFormOf } from "./version-one-why-chain.ts";
+import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
+import { type VersionOneWhyChain, whyChainFormOf } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [

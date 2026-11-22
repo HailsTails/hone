@@ -1,4 +1,4 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { checkOfRuleId, type RuledCheck } from "../hone-plugin/check-rule-id.ts";

@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { pieceImportFindings } from "../../import-boundaries/piece-import-rules.ts";
-import type { PathPort } from "../../../node/path-port.ts";
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 
 const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
   const entry = request.table[request.key];

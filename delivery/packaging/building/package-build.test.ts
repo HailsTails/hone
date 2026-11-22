@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
-import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../src/application/ports/file-system/file-text-port.ts";
 import type { EntryDisposition } from "../../install-proof/install-proof-plan.ts";
 import type { CopiedEntry, ListedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
 import type { DeclarationPort, EmittedDeclaration } from "../type-declarations/package-declarations.ts";

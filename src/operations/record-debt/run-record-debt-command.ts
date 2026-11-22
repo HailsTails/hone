@@ -1,50 +1,45 @@
-import { readSelection, selectionRepositoryHolding } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { selectionRepositoryHolding } from "../../application/run/settings/selection-holding.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
-import type { ExceptionRepository, PlacedEntry } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
+import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import {
   type InheritedDebtOutcome,
   inheritedDebtEntriesOf,
   inheritedDebtOf,
   reachedDebtOf,
 } from "../../domain/records/discipline-exceptions/inherited-debt.ts";
-import type { GitTreePort } from "../../infrastructure/git/git-port.ts";
-import type { AbsolutePath } from "../../infrastructure/content-files/absolute-path.ts";
-import type { Assessment } from "../../infrastructure/hone-config-file/assessment.ts";
-import { clauseAddressText } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { moduleExtensionOf } from "../../infrastructure/node/modules/install-layout.ts";
-import type { RepoPath } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { GitTreePort } from "../../application/ports/git-port.ts";
+import type { Assessment } from "../../domain/settings/assessment.ts";
+import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import { parseRecordDebtArguments, type RecordDebtArguments } from "../../infrastructure/command-line/arguments/command-arguments.ts";
-import { recordDebtCommandOutcome } from "../../infrastructure/command-line/outcomes/record-command-outcomes.ts";
-import { installRootOf } from "../../infrastructure/command-line/installation/install-root.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
-import { repoRootOf } from "../../infrastructure/printed-report/check-locations.ts";
-import { printOutcome } from "../../infrastructure/command-line/outcomes/print-outcome.ts";
-import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import { withShownPaths } from "../check/run-check-command.ts";
+import type { RecordDebtArguments } from "../../application/ports/command/command-arguments.ts";
+import type { RepositoryLocated } from "../../application/ports/command/repository-located.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import { runReachedCheck } from "../../application/run/check/run-check.ts";
 
-type AdoptionRequest = VersionOneCommandRequest & {
-  readonly gitTree: GitTreePort;
-  readonly arguments: RecordDebtArguments;
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-  readonly exceptionRepository: ExceptionRepository;
-};
+export type AdoptionInput = VersionOneCommandPorts &
+  RepositoryLocated & {
+    readonly gitTree: GitTreePort;
+    readonly arguments: RecordDebtArguments;
+    readonly exceptionRepository: ExceptionRepository;
+  };
 
 type DebtResult = Result<readonly InheritedDebtOutcome[], LoadFailure>;
 
 const ASSESSED_IN_THIS_RUN: Assessment = { forfeiture: "this-run" };
 
-const pathsInBase = (request: AdoptionRequest): Result<ReadonlySet<RepoPath>, LoadFailure> => {
+const pathsInBase = (request: AdoptionInput): Result<ReadonlySet<RepoPath>, LoadFailure> => {
   const listed = request.gitTree.pathsAt({ repoRoot: request.repoRoot, revision: request.arguments.baseRevision });
   return listed.outcome === "failed"
     ? { outcome: "failed", error: { kind: "git-failed", detail: `${listed.error.command}: ${listed.error.detail}` } }
     : { outcome: "ok", value: new Set(listed.value) };
 };
 
-type DebtRequest = AdoptionRequest & {
+type DebtRequest = AdoptionInput & {
   readonly selection: SelectionReading;
   readonly existing: readonly PlacedEntry[];
   readonly inBase: ReadonlySet<RepoPath>;
@@ -60,6 +55,7 @@ const debtOutcomesOf = async (request: DebtRequest): Promise<DebtResult> => {
     baseRevision: request.arguments.baseRevision,
     assessment: ASSESSED_IN_THIS_RUN,
     selectionRepository: selectionRepositoryHolding({ reading: request.selection }),
+    shownPathOf: request.shownPathOfRepository(request),
   });
   if (reached.outcome === "failed") {
     return reached;
@@ -80,8 +76,9 @@ const debtOutcomesOf = async (request: DebtRequest): Promise<DebtResult> => {
   return written.outcome === "failed" ? written : { outcome: "ok", value: outcomes };
 };
 
-const adoptionDebt = (request: AdoptionRequest): Promise<DebtResult> => {
-  const selection = readSelection({ ...request, moduleExtension: moduleExtensionOf({ moduleUrl: request.moduleUrl }) });
+export const adoptionDebt = (request: AdoptionInput): Promise<DebtResult> => {
+  const { repoRoot, installRoot, fileText, path } = request;
+  const selection = request.selectionRepositoryOf({ repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: request.moduleUrl }), fileText, path }).read({});
   if (selection.outcome === "failed") {
     return Promise.resolve(selection);
   }
@@ -95,33 +92,3 @@ const adoptionDebt = (request: AdoptionRequest): Promise<DebtResult> => {
   }
   return debtOutcomesOf({ ...request, selection: selection.value, existing: existing.value, inBase: inBase.value });
 };
-
-const recordDebtResult = async (request: VersionOneCommandRequest & { readonly gitTree: GitTreePort }): Promise<DebtResult> => {
-  const parsed = parseRecordDebtArguments({ arguments: request.process.arguments });
-  if (parsed.outcome === "failed") {
-    return parsed;
-  }
-  const repoRoot = repoRootOf({ path: request.path, fileText: request.fileText, repo: parsed.value.repo });
-  if (repoRoot.outcome === "failed") {
-    return repoRoot;
-  }
-  const installRoot = installRootOf({ path: request.path, moduleUrl: request.moduleUrl });
-  const run: DebtResult =
-    installRoot.outcome === "failed"
-      ? installRoot
-      : await adoptionDebt({
-          ...request,
-          arguments: parsed.value,
-          repoRoot: repoRoot.value,
-          installRoot: installRoot.value,
-          exceptionRepository: request.exceptionRepositoryOf({ repoRoot: repoRoot.value }),
-        });
-  return withShownPaths({ path: request.path, fileText: request.fileText, repoRoot: repoRoot.value, installRoot, run });
-};
-
-export const recordDebtCommandOf =
-  (ports: { readonly gitTree: GitTreePort }): ((request: VersionOneCommandRequest) => Promise<void>) =>
-  (request) =>
-    recordDebtResult({ ...request, gitTree: ports.gitTree }).then((debt) =>
-      printOutcome({ process: request.process, outcome: recordDebtCommandOutcome({ result: debt }) }),
-    );

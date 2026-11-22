@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { ChecksRunFailure as CoreChecksRunFailure, MisnamedRuleId as CoreMisnamedRuleId, NotReadyYetFailure as CoreNotReadyYetFailure } from "../../../protocol/checks/checks-runner-types.ts";
-import type { ProjectionState } from "../../../protocol/runner-module/runner-result-schema.ts";
+import type { ChecksRunFailure as CoreChecksRunFailure } from "../../../protocol/checks/checks-runner-types.ts";
+import type { MisnamedRuleId as CoreMisnamedRuleId, NotReadyYetFailure as CoreNotReadyYetFailure } from "../../../../../domain/runner/checks-run-report.ts";
+import type { ProjectionState } from "../../../../../domain/runner/runner-result-types.ts";
 import type { RunLoadFailure } from "../../../../../domain/report/run-load-failure.ts";
 import type { Equal } from "../../../protocol/runner-module/type-equality.ts";
 import type { ChecksProjectionState, ChecksRunFailure, MisnamedRuleId, NotReadyYetFailure } from "./checks-run-types.ts";

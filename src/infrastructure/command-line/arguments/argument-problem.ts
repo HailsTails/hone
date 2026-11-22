@@ -1,7 +1,7 @@
-import { removedText } from "../../hone-config-file/assessment.ts";
+import { removedText } from "../../../domain/settings/assessment.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import { COMMANDS, type CommandOption, REPO_OPTION, SUBCOMMANDS, type Subcommand } from "./command-line.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 
 export type ArgumentProblem =
   | { readonly kind: "command-missing" }

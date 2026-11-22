@@ -1,15 +1,7 @@
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
-import type { Result } from "../../../domain/result.ts";
-import { failureDetailOf } from "./failure-detail.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { failureDetailOf } from "../../../domain/failure-detail.ts";
+import type { FileCreationPort } from "../../../application/ports/file-system/file-creation-port.ts";
 import { createFileExclusively } from "./file-system-port.ts";
-
-export type FileCreationFailure =
-  | { readonly kind: "already-exists"; readonly path: AbsolutePath }
-  | { readonly kind: "uncreatable"; readonly path: AbsolutePath; readonly detail: string };
-
-export type FileCreationPort = {
-  readonly createNew: (request: { readonly path: AbsolutePath; readonly text: string }) => Result<void, FileCreationFailure>;
-};
 
 export type FileCreationSurface = {
   readonly createExclusively: (request: { readonly path: AbsolutePath; readonly text: string }) => void;

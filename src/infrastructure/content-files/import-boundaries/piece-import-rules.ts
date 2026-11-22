@@ -1,6 +1,7 @@
 import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
-import type { PathPort } from "../../node/path-port.ts";
-import { enginesFolderSegmentsOf, parsedJson, pieceFolderSegmentsOf } from "../rule-sets/rule-set-reader.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { parsedJson } from "../rule-sets/rule-set-reader.ts";
+import { enginesFolderSegmentsOf, pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type PieceLocation = {

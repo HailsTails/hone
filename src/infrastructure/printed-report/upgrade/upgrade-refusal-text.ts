@@ -1,27 +1,23 @@
 import { loadFailureDetail } from "../load-failures/load-failure-text.ts";
-import type { MisnamedRuleId } from "../../engines/protocol/checks/checks-runner-types.ts";
+import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import { replacementText } from "../misnamed-lines.ts";
 import { runLoadFailureLine } from "../load-failures/load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import { type ClauseAddress, clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { PlanRefusal } from "../../../application/upgrade/proof/upgrade-plan.ts";
-import type { ProofRefusal } from "../../../application/upgrade/proof/upgrade-proof.ts";
-import type { ProofWriteFailure, Unrestored } from "../../../application/upgrade/proof-writes/proof-writes.ts";
-import type { UpgradeRefusal } from "../../../application/upgrade/mapping/upgrade-refusal.ts";
-import type { ConfigImportRefusal } from "../../../application/upgrade/writing/config-import-rewrite.ts";
-import type { OracleFailure } from "../../../application/upgrade/record-answers/record-answer-oracle.ts";
-import type { PairingRefusal } from "../../../application/upgrade/proof/projection-replacements.ts";
-import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
-import type { RepoPath } from "../../hone-records-folder/repo-path.ts";
-import type { TeamConfigRefusal } from "../../../application/upgrade/proof/team-config-finder.ts";
-import type { VersionOneReadFailure } from "../../disciplines-file/version-one-reading.ts";
+import type { ConfigImportRefusal, PairingRefusal, PlanRefusal, TeamConfigRefusal } from "../../../application/ports/upgrade/plan-refusal.ts";
+import type { ProofRefusal, ProofWriteFailure, Unrestored } from "../../../application/ports/upgrade/proof-outcome.ts";
+import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
+import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { VersionOneReadFailure } from "../../../application/ports/records/version-one-reading.ts";
+import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
 
 export const UPGRADE_ISSUES_URL = `${TOOL_IDENTITY.repository}/issues`;
-
-export type UpgradeFailure = VersionOneReadFailure | ProofRefusal;
 
 export type UpgradeFailureCode = 1 | 2 | 3;
 

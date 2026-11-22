@@ -1,23 +1,14 @@
 import { assert, describe, expect, it } from "vitest";
-import type { LegacyWhyChain, VersionOneWhyChain } from "./version-one-why-chain.ts";
+import type { LegacyWhyChain, VersionOneWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import {
-  authorisationStandingOf,
-  type ExceptionBaseline,
-  type ExceptionRecord,
-  exceptionEntriesOfDocument,
-  exceptionEntriesOfText,
-  type ImportEvidence,
-  legacyChainsIn,
-  parseExceptionEntries,
-  type PlacedEntry,
-  recordImportOf,
-  type StructuralExceptionEntry,
-  UNMEASURED_EXCEPTION_BASELINE,
-} from "./exception-records.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries } from "./exception-records.ts";
+import { authorisationStandingOf, type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
+import { type ImportEvidence, legacyChainsIn, type PlacedEntry, recordImportOf, type StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [

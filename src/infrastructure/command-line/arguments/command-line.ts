@@ -1,7 +1,7 @@
-import type { ExitCode } from "../../node/process/process-port.ts";
+import type { ExitCode } from "../../../application/ports/host/process-port.ts";
 import { PRUNE_DEBT_SUBCOMMAND, RECORD_DEBT_SUBCOMMAND } from "./subcommand-names.ts";
-import { forfeitureAssessmentSchema } from "../../hone-config-file/assessment.ts";
-import { reportOutputSchema } from "../../hone-config-file/report-output.ts";
+import { FORFEITURE_ASSESSMENTS } from "../../../domain/settings/assessment.ts";
+import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
 
 export const SPLIT_RECORDS_SUBCOMMAND = "split-records";
 
@@ -81,7 +81,7 @@ export const BASE_REVISION_OPTION: CommandOption = {
 
 export const REPORT_OUTPUT_OPTION: CommandOption = {
   name: "--report-output",
-  value: choiceValue({ choices: reportOutputSchema.options }),
+  value: choiceValue({ choices: REPORT_OUTPUTS }),
   need: "optional",
   occurrence: "once",
   summary: "how much of the report to print, over reportOutput in disciplines.json; full when neither is set",
@@ -89,7 +89,7 @@ export const REPORT_OUTPUT_OPTION: CommandOption = {
 
 export const FORFEITURE_OPTION: CommandOption = {
   name: "--forfeiture",
-  value: choiceValue({ choices: forfeitureAssessmentSchema.options }),
+  value: choiceValue({ choices: FORFEITURE_ASSESSMENTS }),
   need: "optional",
   occurrence: "once",
   summary: "assess file carve-out decay in this run or leave it to another, over assessment.forfeiture in disciplines.json; this-run when neither is set",

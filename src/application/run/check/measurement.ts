@@ -1,21 +1,17 @@
-import {
-  type ExceptionBaseline,
-  type ExceptionRecord,
-  type ExceptionRepository,
-  importedEntriesIn,
-  importSourcesOf,
-  legacyChainsIn,
-  recordImportOf,
-  type StructuralExceptionEntry,
-  UNMEASURED_EXCEPTION_BASELINE,
-} from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
-import { baseRevisionAvailabilityOf, computeTouchedSet, type TouchedSet } from "../touched-set/touched-set.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { Assessment } from "../../../infrastructure/hone-config-file/assessment.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import { type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
+import { legacyChainsIn, recordImportOf, type StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import { baseRevisionAvailabilityOf, computeTouchedSet } from "../touched-set/touched-set.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { Assessment } from "../../../domain/settings/assessment.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import { whyChainFormOf } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import { whyChainFormOf } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { PartialAssessment, Unmeasured } from "../../../domain/report/check-report.ts";
 
 export type ChangeSetReach = {
@@ -134,18 +130,18 @@ const textsInBase = (request: {
   };
 };
 
+export type ImportedEntriesReader = Pick<ExceptionEntryParser, "importedEntriesIn" | "importSourcesOf">;
+
 export const baselineNeedOf = (request: {
   readonly baseRevision: string | undefined;
   readonly entries: readonly StructuralExceptionEntry[];
+  readonly exceptionEntryParser: ImportedEntriesReader;
 }): BaselineNeed => {
-  const { baseRevision } = request;
-  if (
-    baseRevision === undefined ||
-    (importedEntriesIn({ entries: request.entries }) === "absent" && legacyChainsIn({ entries: request.entries }) === "absent")
-  ) {
+  const { baseRevision, entries, exceptionEntryParser } = request;
+  if (baseRevision === undefined || (exceptionEntryParser.importedEntriesIn({ entries }) === "absent" && legacyChainsIn({ entries }) === "absent")) {
     return { kind: "settled", baseline: UNMEASURED_EXCEPTION_BASELINE };
   }
-  return { kind: "read-at-base", baseRevision, sources: importSourcesOf({ entries: request.entries }) };
+  return { kind: "read-at-base", baseRevision, sources: exceptionEntryParser.importSourcesOf({ entries }) };
 };
 
 export const baselineAtBase = (request: {
@@ -170,10 +166,11 @@ export const baselineAtBase = (request: {
 };
 
 export const exceptionBaselineOf = (request: {
-  readonly check: BaselineReach & { readonly baseRevision: string | undefined };
+  readonly check: BaselineReach & { readonly baseRevision: string | undefined; readonly exceptionEntryParser: ImportedEntriesReader };
   readonly entries: readonly StructuralExceptionEntry[];
 }): ExceptionBaseline => {
-  const need = baselineNeedOf({ baseRevision: request.check.baseRevision, entries: request.entries });
+  const { baseRevision, exceptionEntryParser } = request.check;
+  const need = baselineNeedOf({ baseRevision, entries: request.entries, exceptionEntryParser });
   return need.kind === "settled"
     ? need.baseline
     : baselineAtBase({ reach: request.check, baseRevision: need.baseRevision, sources: need.sources });

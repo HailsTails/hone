@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { StandaloneRunner } from "../../../protocol/runner-module/runner-module-schema.ts";
-import type { ProjectedFile } from "../../../protocol/checks/checks-runner-types.ts";
+import type { ProjectedFile } from "../../../../../domain/runner/checks-run-report.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ChecksRunnerPorts, EslintPlatformPorts } from "./checks-ports.ts";
@@ -15,7 +15,8 @@ import { nestedVersionTwoFoldersOf, nestedVersionTwoRepositoriesOf, SETTINGS_FIL
 import { selectedChecksOf } from "./checks-selection.ts";
 import { trackedExceptionsOf } from "../native-exceptions/checks-tracked-exceptions.ts";
 import { CHECKS_PLUGIN_NAMESPACE, checkRuleIdOf, eslintRuleIdsOf, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
 import { cachedGoverningIgnores } from "../config-roots/governing-config.ts";
 import { coreInstallOf } from "../projection/core-install.ts";
 import { MISNAMED_DISABLE_RULE, MISNAMED_DISABLE_RULE_ID, misnamedDisableRule } from "../lint-findings/misnamed-disable-rule.ts";
@@ -25,9 +26,9 @@ import { configLookupDeclaring, folderConfigurationOf, teamConfigLookupFor } fro
 import type { QueryInstance } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import { answeredWithin, type ChecksSlice, type ChecksSlices, declarationPathOf, slicesOf } from "../config-roots/checks-slices.ts";
-import type { ChecksSliceProblem } from "../../../protocol/checks/checks-runner-types.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
-import type { EslintConfigLookup } from "../../eslint-config-lookup.ts";
+import type { ChecksSliceProblem } from "../../../../../domain/runner/checks-run-report.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { conformedCases, loadedPieceClauseOf } from "../conformance/eslint-conform.ts";
 import { honePluginAt, honePluginFailureText } from "../hone-plugin/hone-plugin.ts";
 import { checksPluginImportOf, type ProjectionFailure, projectedChecksOf } from "../projection/projected-checks.ts";

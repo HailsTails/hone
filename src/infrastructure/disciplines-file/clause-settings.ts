@@ -1,11 +1,15 @@
 import { z } from "zod";
-import type { ClauseSettingValues } from "../../application/ports/runner-module-types.ts";
-import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
+import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
-import { type ClauseAddress, clauseAddressSchema, clauseAddressText } from "../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../../domain/settings/json-values/json-kind.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
 import type { Result } from "../../domain/result.ts";
+import type { ClauseSettings } from "../../domain/settings/clause-settings/clause-settings.ts";
+import type { DeepReadonlyKeepingTuples, Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
 export const clauseSettingsSchema = z
   .record(z.string(), z.record(z.string(), z.json()))
@@ -18,7 +22,7 @@ export const clauseSettingsSchema = z
     }),
   );
 
-export type ClauseSettings = z.output<typeof clauseSettingsSchema>;
+export const isClauseSettingsEqual: Equal<DeepReadonlyKeepingTuples<z.output<typeof clauseSettingsSchema>>, ClauseSettings> = true;
 
 type GivenSetting = { readonly key: string; readonly value: ReadonlyJsonValue };
 

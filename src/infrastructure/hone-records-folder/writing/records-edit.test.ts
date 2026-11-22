@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { repoPathSchema } from "../repo-path.ts";
-import { documentsWithAdded, documentsWithRemoved, placeOfAddition, recordsTextOf } from "./records-edit.ts";
+import { documentsWithAdded, documentsWithRemoved, placeOfAddition } from "./records-edit.ts";
 
 const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
 
@@ -94,13 +94,5 @@ describe("removing records from the documents hone-records holds", () => {
       outcome: "failed",
       error: { kind: "records-documents", refusals: [{ kind: "document-refused", file: DEBT_FILE, issues: expect.any(Array) }] },
     });
-  });
-});
-
-describe("the text a records document is written as", () => {
-  it("is the document's object at two spaces of indent, then a newline", () => {
-    expect(recordsTextOf({ document: { version: 2, records: [FIRST] } })).toBe(
-      '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "claimed-type",\n      "file": "src/a.ts"\n    }\n  ]\n}\n',
-    );
   });
 });

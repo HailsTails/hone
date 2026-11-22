@@ -1,7 +1,7 @@
-import { baseJudgementOf, type TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
+import { baseJudgementOf, type TouchedSet } from "../../repository/touched-set.ts";
 import type { BaseRevisionAvailability } from "../../repository/base-revision-availability.ts";
-import type { BaseMeasurement, PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
-import { carriedListingOf } from "../../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import type { BaseMeasurement, PlacedRecord } from "../hone-records/hone-record.ts";
+import { carriedListingOf } from "../hone-records/record-listings.ts";
 
 export type RecordsUnmeasured = { readonly kind: "forfeiture-unmeasured" | "import-unmeasured"; readonly base: BaseRevisionAvailability };
 

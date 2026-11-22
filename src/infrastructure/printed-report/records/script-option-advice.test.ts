@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ScriptOptionCause } from "../../engines/protocol/runner-module/runner-result-schema.ts";
+import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { type ScriptOptionAdvice, scriptOptionAdviceOf } from "./script-option-advice.ts";
 
 const UNJUDGED = "so Hone cannot tell what the option does to the files under check";

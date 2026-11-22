@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { type Case, pointedNameOf, type Recipe, type Symptom, type SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { RepoPath } from "../repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { carriedStandingOf } from "./carried-standing.ts";
 import type {
@@ -17,20 +17,11 @@ import type {
   RecordsAtBase,
   RuntimeFacility,
   SymptomReach,
-} from "../hone-record.ts";
+} from "../../../domain/records/hone-records/hone-record.ts";
 import { banStandingOf, dependencyOf } from "../../../domain/records/answering/outside-dependency.ts";
-import { type NamedFolderKind, namedRecordsFileOf, type SingleFileKind } from "../folder-layout/records-layout.ts";
-import {
-  carriedAuthorisedLocationWireSchema,
-  carriedBoundaryRecordWireSchema,
-  carriedFormSchema,
-  debtWireSchema,
-  dependencyRecordWireSchema,
-  deviationWireSchema,
-  type RecordedReach,
-  statedAuthorisedLocationWireSchema,
-  statedBoundaryRecordWireSchema,
-} from "../records-wire.ts";
+import { type NamedFolderKind, namedRecordsFileOf, type SingleFileKind } from "../../../domain/records/hone-records/records-layout.ts";
+import { carriedAuthorisedLocationWireSchema, carriedBoundaryRecordWireSchema, carriedFormSchema, debtWireSchema, dependencyRecordWireSchema, deviationWireSchema, statedAuthorisedLocationWireSchema, statedBoundaryRecordWireSchema } from "../records-wire.ts";
+import type { RecordedReach } from "../../../domain/records/hone-records/recorded-reach.ts";
 
 type Resolution<Value> = Result<Value, readonly RecordRefusal[]>;
 

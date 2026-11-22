@@ -1,5 +1,6 @@
-import { type RepoPath, repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { type ForfeitureAssessment, forfeitureAssessmentSchema, WAIVED_CLAUSES_REPLACEMENT } from "../../hone-config-file/assessment.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { FORFEITURE_ASSESSMENTS, WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
@@ -19,34 +20,16 @@ import {
   subcommandOf,
   VERSION_FLAG,
 } from "./command-line.ts";
-import type { LoadFailure } from "../load-failure.ts";
-
-export type CheckArguments<Output extends string> = {
-  readonly repo: string;
-  readonly baseRevision: string | undefined;
-  readonly reportOutput: Output | undefined;
-  readonly forfeiture: ForfeitureAssessment | undefined;
-};
-
-export type PruneDebtArguments = {
-  readonly repo: string;
-  readonly baseRevision: string | undefined;
-  readonly forfeiture: ForfeitureAssessment | undefined;
-};
-
-export type ProjectArguments = {
-  readonly repo: string;
-};
-
-export type SplitRecordsArguments = {
-  readonly repo: string;
-};
-
-export type RecordDebtArguments = {
-  readonly repo: string;
-  readonly baseRevision: string;
-  readonly leave: readonly RepoPath[];
-};
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type {
+  AuthoriseArguments,
+  CheckArguments,
+  ProjectArguments,
+  PruneDebtArguments,
+  RecordDebtArguments,
+  SplitRecordsArguments,
+  UpgradeArguments,
+} from "../../../application/ports/command/command-arguments.ts";
 
 export type Invocation =
   | { readonly kind: "run"; readonly subcommand: Subcommand; readonly arguments: readonly string[] }
@@ -175,7 +158,7 @@ const checkArgumentsOf = <Output extends string>(request: {
   if (reportOutput.outcome === "failed") {
     return reportOutput;
   }
-  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: forfeitureAssessmentSchema.options, values: request.values });
+  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: FORFEITURE_ASSESSMENTS, values: request.values });
   if (forfeiture.outcome === "failed") {
     return forfeiture;
   }
@@ -203,7 +186,7 @@ const pruneDebtArgumentsOf = (request: { readonly values: OptionValues }): Resul
   if (repo.outcome === "failed") {
     return repo;
   }
-  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: forfeitureAssessmentSchema.options, values: request.values });
+  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: FORFEITURE_ASSESSMENTS, values: request.values });
   return forfeiture.outcome === "failed"
     ? forfeiture
     : {
@@ -245,10 +228,6 @@ export const parseSplitRecordsArguments = (request: {
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
 };
 
-export type UpgradeArguments = {
-  readonly repo: string;
-};
-
 export const parseUpgradeArguments = (request: {
   readonly arguments: readonly string[];
 }): Result<UpgradeArguments, LoadFailure> => {
@@ -258,11 +237,6 @@ export const parseUpgradeArguments = (request: {
   }
   const repo = requiredRepo({ subcommand: "upgrade", values: values.value });
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
-};
-
-export type AuthoriseArguments = {
-  readonly repo: string;
-  readonly values: ReadonlyMap<string, readonly string[]>;
 };
 
 export const parseAuthoriseArguments = (request: {

@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { DeepReadonly, DeepReadonlyKeepingTuples, Equal } from "../runner-module/type-equality.ts";
-import type { ChecksRunReport, ChecksSliceProblem, LoadedChecksRunner, MisnamedRuleId, NotReadyYetFailure, ProjectedFile } from "./checks-runner-types.ts";
+import type { ChecksRunReport, LoadedChecksRunner } from "./checks-runner-types.ts";
+import type { ParsedChecksRunner } from "../../../../application/ports/engine/engine-run.ts";
+import type { ChecksSliceProblem, MisnamedRuleId, NotReadyYetFailure, ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 import { nativeExceptionSchema } from "../embedded/embedded-run-report-schema.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 import { hitSchema, measuredPairSchema, nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
@@ -69,6 +71,8 @@ export const checksProjectResultSchema = z.union([
 ]);
 
 export const isProjectedFileSchemaEqual: Equal<DeepReadonly<z.output<typeof projectedFileSchema>>, ProjectedFile> = true;
+
+export const isParsedChecksRunnerSchemaEqual: Equal<DeepReadonly<z.output<typeof checksRunnerModuleSchema>>, ParsedChecksRunner> = true;
 
 export const isChecksModuleKeySetEqual: Equal<keyof LoadedChecksRunner, keyof z.output<typeof checksRunnerModuleSchema>> = true;
 

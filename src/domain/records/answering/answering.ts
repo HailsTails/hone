@@ -1,13 +1,13 @@
-import type { AttributedNativeException, Finding, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
-import type { NativeException } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
+import type { AttributedNativeException, Finding, GovernedRun } from "../../finding/governance.ts";
+import type { NativeException } from "../../runner/runner-result-types.ts";
 import { checkNamedAt, checksOf } from "../../language-layer/check-address.ts";
 import { checkOfFinding } from "../../finding/finding-check.ts";
 import type { Check, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
-import type { HoneRecord, PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import { measurementOf, type RunMeasurements } from "../measurement/measured-at.ts";
 import { holdsAt, type PartyReport, placesReachedBy, type Site } from "./record-reach.ts";
 

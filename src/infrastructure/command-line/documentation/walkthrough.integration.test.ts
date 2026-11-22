@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
-import { runToolCommand } from "../../../run-tool-command.ts";
+import { INSTALLED_PORTS, toolCommandOver } from "../../../composition/run-tool-command.ts";
+import type { VersionOneCommandRequest as ToolCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import { createDefaultExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-layout.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../git/git-port.ts";
+import type { GitPort } from "../../../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../node/process/process-port.ts";
-import { type RepoPath, repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../installation/shown-path.ts";
+
+const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
 type FencedBlock = { readonly language: string; readonly body: string };
 
@@ -122,15 +130,19 @@ const commandOver = (request: { readonly tracked: readonly RepoPath[]; readonly 
   process: request.process,
   path: createDefaultPathPort({}),
   fileText: createDefaultFileTextPort({}),
+  engine: createDefaultEnginePort({}),
   modules: createDefaultModuleLoaderPort({}),
   git: trackingGit({ tracked: request.tracked }),
   exceptionRepositoryOf: createDefaultExceptionRepositoryOf({}),
+  exceptionEntryParser,
+  selectionRepositoryOf: createSelectionRepository,
+  shownPathOfRepository,
   moduleUrl: ENTRY_URL,
 });
 
 const checkedOutput = async (request: { readonly repo: string; readonly tracked: readonly RepoPath[] }) => {
   const recorded = recordedProcessWith({ arguments: ["check", "--repo", request.repo] });
-  await runToolCommand(commandOver({ tracked: request.tracked, process: recorded.port }));
+  await commandRan(commandOver({ tracked: request.tracked, process: recorded.port }));
   return { writes: recorded.writes, exits: recorded.exits };
 };
 

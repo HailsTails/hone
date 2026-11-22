@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { runReleaseTag } from "./release-tag.ts";
 
 const COMMIT = "d32d2530312c64d2938aeab5753737e89f972e48";

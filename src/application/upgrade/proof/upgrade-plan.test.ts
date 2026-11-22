@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
+import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { HeadRecord } from "../../../infrastructure/discipline-exceptions-folder/head-records.ts";
-import type { FileCarveOutRecord } from "../record-answers/record-answer-oracle.ts";
-import type { RecordInput } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
-import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf, type VersionOneReading } from "./upgrade-plan.ts";
+import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
+import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
+import type { RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
+import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf } from "./upgrade-plan.ts";
+import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -158,6 +161,7 @@ const requestOver =(overrides: Partial<UpgradePlanRequest>): UpgradePlanRequest 
   answered: [FINDINGS_ON_LOOPS],
   catalogues: CATALOGUES,
   projectionFilesOf: projecting({ files: [PLANNED_PROJECTION] }),
+  settingsFormat: SETTINGS_FILE_FORMAT,
   ...overrides,
 });
 

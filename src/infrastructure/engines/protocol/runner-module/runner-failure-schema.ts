@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { Equal } from "./type-equality.ts";
-import type { PeerKind, RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { PeerKind, RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 
 export const peerKindSchema = z.enum(["required", "optional"]);
 

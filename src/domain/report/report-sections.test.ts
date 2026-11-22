@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PlacedRecord } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { PlacedRecord } from "../records/hone-records/hone-record.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { RUN_SECTION_NAMES, type RunSectionName, type RunSectionRole, runSectionRoleOf, runVerdictOf } from "./report-sections.ts";
 import type { RunReport } from "./run-report.ts";

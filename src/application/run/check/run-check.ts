@@ -1,47 +1,46 @@
 import { type CheckedTree, checkedTreeOf, typescriptFilesOf } from "../checked-tree-of.ts";
-import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { ClauseBinding, Selection } from "../../../domain/settings/selection/selection.ts";
 import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
-import {
-  type ExceptionRecord,
-  type ExceptionBaseline,
-  type ExceptionRepository,
-  type InvalidRecord,
-  parseExceptionEntries,
-  type StructuralExceptionEntry,
-} from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { DebtPair } from "../../../domain/records/discipline-exceptions/debt-pair.ts";
 import { paidDebtOf } from "../../../domain/records/discipline-exceptions/paid-debt.ts";
-import type { Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import { applyGovernance, type GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
-import type { RunnerFailure } from "../../ports/runner-failure.ts";
-import type { LoadedRunner, RunnerClause, RunRequest } from "../../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
-import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { TouchedSet } from "../touched-set/touched-set.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { Assessment } from "../../../infrastructure/hone-config-file/assessment.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { UnprojectedFolder } from "./unprojected-folder.ts";
-import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner, RunRequest } from "../../ports/engine/runner-module.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
+import type { LoadedEngine } from "../../ports/engine/engine-run.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { Assessment } from "../../../domain/settings/assessment.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { UnprojectedFolder } from "../../../domain/runner/unprojected-folder.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
+import { isRepoPath } from "../../../domain/repository/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type {
   CheckReport,
   ProjectionProblem,
   Unmeasured,
 } from "../../../domain/report/check-report.ts";
-import { clauseReadingsOf } from "../../../infrastructure/printed-report/findings/clause-readings.ts";
+import { clauseReadingsOf } from "./clause-readings.ts";
 import { exceptionBaselineOf, partialAssessmentsOf, touchedSetFor, unmeasuredOf } from "./measurement.ts";
-import { packageLinkOf } from "../../../infrastructure/command-line/installation/package-link.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { paidDebtNotesOf } from "../../../domain/report/paid-debt-notes.ts";
-import { shownRemediesOf } from "../../../infrastructure/printed-report/findings/shown-remedies.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
-import type { MechanismRun } from "../../../infrastructure/engines/protocol/engine-run/mechanism-dispatch.ts";
-import { loadRunner } from "../../../infrastructure/engines/protocol/engine-run/load-runner.ts";
-import { runMechanismWithRecords } from "../../../infrastructure/engines/protocol/embedded/mechanism-dispatch.ts";
+import { shownRemediesOf } from "./shown-remedies.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 
 export type CheckRequest = {
   readonly repoRoot: AbsolutePath;
@@ -51,17 +50,20 @@ export type CheckRequest = {
   readonly assessment: Assessment;
   readonly fileText: Pick<FileTextPort, "read" | "exists">;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
   readonly path: PathPort;
   readonly git: GitPort;
   readonly selectionRepository: SelectionRepository;
   readonly exceptionRepository: Pick<ExceptionRepository, "read" | "readAt">;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
 };
 
 export type ExceptionBaselineReader = (request: {
   readonly entries: readonly StructuralExceptionEntry[];
 }) => ExceptionBaseline;
 
-export type LoadRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "git"> & {
+export type LoadRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "git" | "shownPathOf"> & {
   readonly exceptionBaselineOf: ExceptionBaselineReader;
 };
 
@@ -123,14 +125,14 @@ const clausesOf = (request: {
 const loadedMechanism = (request: {
   readonly bindings: readonly ClauseBinding[];
   readonly mechanism: MechanismId;
-  readonly runner: Result<LoadedRunner, LoadFailure>;
+  readonly engine: Result<LoadedEngine, LoadFailure>;
 }): Result<LoadedMechanism, LoadFailure> => {
-  if (request.runner.outcome === "failed") {
-    return request.runner;
+  if (request.engine.outcome === "failed") {
+    return request.engine;
   }
   return {
     outcome: "ok",
-    value: { mechanism: request.mechanism, runner: request.runner.value, clauses: clausesOf(request) },
+    value: { mechanism: request.mechanism, runner: request.engine.value.runner, clauses: clausesOf(request) },
   };
 };
 
@@ -140,8 +142,8 @@ const loadMechanisms = async (
   allOk({
     results: await Promise.all(
       distinctMechanisms(request).map((mechanism) =>
-        loadRunner({ ...request, mechanism }).then((runner) =>
-          loadedMechanism({ bindings: request.bindings, mechanism, runner }),
+        request.engine.load({ ...request, mechanism }).then((engine) =>
+          loadedMechanism({ bindings: request.bindings, mechanism, engine }),
         ),
       ),
     ),
@@ -157,7 +159,7 @@ export const loadInputs = async (request: LoadRequest): Promise<Result<LoadedInp
     return entries;
   }
   const exceptionBaseline = request.exceptionBaselineOf({ entries: entries.value.map(({ entry }) => entry) });
-  const parsed = parseExceptionEntries({
+  const parsed = request.exceptionEntryParser.parseExceptionEntries({
     entries: entries.value,
     selection: reading.value.selection,
     baseline: exceptionBaseline,
@@ -228,8 +230,8 @@ const nestedConfigurationsOf = (request: { readonly run: MechanismRun }): readon
     if (slice.state !== NESTED_CONFIGURATION) {
       return [];
     }
-    const folder = repoPathSchema.safeParse(slice.slice.split("/").slice(0, -1).join("/"));
-    return folder.success ? [folder.data] : [];
+    const folder = slice.slice.split("/").slice(0, -1).join("/");
+    return isRepoPath(folder) ? [folder] : [];
   });
 
 type TreeRequest = Pick<CheckRequest, "git" | "repoRoot" | "path" | "fileText">;
@@ -263,7 +265,7 @@ const mechanismRunOf = (request: {
   readonly records: readonly ExceptionRecord[];
   readonly loaded: LoadedMechanism;
 }): Promise<Result<MechanismRun, LoadFailure>> =>
-  runMechanismWithRecords({
+  request.check.engine.run.withRecords({
     runner: request.loaded.runner,
     mechanism: request.loaded.mechanism,
     run: runRequestOf(request),
@@ -296,8 +298,7 @@ const remediedFindingsOf = (request: {
   if (!findings.some((finding) => finding.remedy !== undefined)) {
     return findings;
   }
-  const link = packageLinkOf(request.check);
-  return shownRemediesOf({ ...request.check, link, clauseRoots: request.inputs.clauseRoots, findings });
+  return shownRemediesOf({ ...request.check, clauseRoots: request.inputs.clauseRoots, findings });
 };
 
 const absentFilesOf = (request: {

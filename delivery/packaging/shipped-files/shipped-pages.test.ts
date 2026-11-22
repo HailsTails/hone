@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../src/application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import type { ListedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
 import { shippedPagesAt } from "./shipped-pages.ts";

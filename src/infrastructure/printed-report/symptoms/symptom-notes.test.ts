@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { Case, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";

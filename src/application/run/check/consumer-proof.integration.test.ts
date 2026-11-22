@@ -3,27 +3,38 @@ import { runCheck } from "./run-check.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { Result } from "../../../domain/result.ts";
 import { checkCommandOutcome } from "../../../infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
-import type { EntryKindPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
-import type { ExitCode } from "../../../infrastructure/node/process/process-port.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import { createSelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
+import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
+import type { ExitCode } from "../../ports/host/process-port.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { createEslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { runProject } from "../../projection/run-project.ts";
 import { createDefaultFileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createWalkerRunner } from "../../../infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -58,12 +69,23 @@ const singleFileRepositoryOver = (request: {
     gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
   });
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
@@ -202,6 +224,7 @@ const checkOf = (request: {
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText: request.ports.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.ports.runnerModules,
     path,
     git: gitTracking({ tracked: request.tracked }),
@@ -213,6 +236,7 @@ const projectOf = (request: { readonly repo: AbsolutePath; readonly ports: Obser
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
     fileText: request.ports.fileText,
+    engine: createDefaultEnginePort({}),
     modules: request.ports.runnerModules,
     path,
     git: gitTracking({ tracked: [] }),

@@ -4,19 +4,30 @@ import { runCheck } from "./run-check.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { Result } from "../../../domain/result.ts";
 import { checkCommandOutcome } from "../../../infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository, type SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import { createSelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
+import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import { createDefaultModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import type { ExitCode } from "../../../infrastructure/node/process/process-port.ts";
-import { createDefaultPathPort, type PathPort } from "../../../infrastructure/node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { ExitCode } from "../../ports/host/process-port.ts";
+import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -51,12 +62,23 @@ const singleFileRepositoryOver = (request: {
     gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
   });
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
@@ -267,6 +289,7 @@ describe("the shipped CD-1 rule, read from rules/CD-1/discipline.json through a 
       baseRevision: undefined,
       assessment: DEFAULT_ASSESSMENT,
       fileText: createDefaultFileTextPort({}),
+      engine: createDefaultEnginePort({}),
       modules: createDefaultModuleLoaderPort({}),
       path,
       git,
@@ -322,6 +345,7 @@ const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
     baseRevision: "origin/main",
     assessment: DEFAULT_ASSESSMENT,
     fileText: createDefaultFileTextPort({}),
+    engine: createDefaultEnginePort({}),
     modules: createDefaultModuleLoaderPort({}),
     path,
     git: cascadeGit,

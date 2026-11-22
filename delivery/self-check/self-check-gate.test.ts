@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepositoryOf } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepositoryOf } from "../../src/application/ports/records/exception-repository.ts";
 import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
-import type { Finding } from "../../src/infrastructure/command-line/governance.ts";
-import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../src/infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../src/infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { Finding } from "../../src/domain/finding/governance.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../src/application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../src/application/ports/host/path-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
@@ -15,6 +15,10 @@ import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../src/infrastructure/pr
 import type { Case, Principle, RecordKind, Rule, Symptom } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { runSelfCheck, selfCheckOutcomeOf, VERSION_TWO_GATED_SECTIONS, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
+import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "../../src/application/ports/installation/shown-path-of.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -128,7 +132,7 @@ describe("VERSION_TWO_GATED_SECTIONS", () => {
 
 describe("versionTwoSelfCheckOutcomeOf", () => {
   it("passes a clean run, printing the report and the gate line", () => {
-    expect(versionTwoSelfCheckOutcomeOf({ checked: { kind: "ran", outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT } })).toEqual({
+    expect(versionTwoSelfCheckOutcomeOf({ checked: { outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT } })).toEqual({
       code: 0,
       text: "verdict: pass\nself-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
@@ -137,7 +141,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
   it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: { kind: "ran", outcome: { code: 1, text: "verdict: fail\n" }, report: { ...EMPTY_RUN_REPORT, findings: [CLASS_IN_A], unrecorded: [IGNORED_IN_A, IGNORED_IN_A] } },
+        checked: { outcome: { code: 1, text: "verdict: fail\n" }, report: { ...EMPTY_RUN_REPORT, findings: [CLASS_IN_A], unrecorded: [IGNORED_IN_A, IGNORED_IN_A] } },
       }),
     ).toEqual({
       code: 0,
@@ -149,7 +153,6 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
         checked: {
-          kind: "ran",
           outcome: { code: 1, text: "verdict: fail\n" },
           report: {
             ...EMPTY_RUN_REPORT,
@@ -163,13 +166,6 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     ).toEqual({
       code: 1,
       text: "verdict: fail\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
-    });
-  });
-
-  it("hands on a version 2 check that could not run as it is, with its own exit code", () => {
-    expect(versionTwoSelfCheckOutcomeOf({ checked: { kind: "not-run", outcome: { code: 2, text: "load failure: arguments-invalid --repo is required\n" } } })).toEqual({
-      code: 2,
-      text: "load failure: arguments-invalid --repo is required\n",
     });
   });
 });
@@ -254,6 +250,7 @@ const requestOver = (request: { readonly process: ProcessPort }): VersionOneComm
     fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
   },
   fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() },
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
@@ -263,6 +260,13 @@ const requestOver = (request: { readonly process: ProcessPort }): VersionOneComm
     renamedSince: vi.fn<GitPort["renamedSince"]>(),
   },
   exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),
+  exceptionEntryParser: {
+    parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+    importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+    importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
+  },
+  selectionRepositoryOf: vi.fn<SelectionRepositoryOf>(),
+  shownPathOfRepository: vi.fn<ShownPathOfRepository>(),
   moduleUrl: "file:///install/src/hone.ts",
 });
 

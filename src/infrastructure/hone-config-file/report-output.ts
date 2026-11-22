@@ -1,17 +1,15 @@
 import { z } from "zod";
+import {
+  REPORT_OUTPUTS,
+  type ReportOutput,
+  VERSION_TWO_REPORT_OUTPUTS,
+  type VersionTwoReportOutput,
+} from "../../domain/settings/report-output.ts";
+import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
-export const reportOutputSchema = z.enum(["full", "failures-only", "counts", "verdict-only"]);
+export const reportOutputSchema = z.enum(REPORT_OUTPUTS);
 
-export type ReportOutput = z.infer<typeof reportOutputSchema>;
+export const versionTwoReportOutputSchema = z.enum(VERSION_TWO_REPORT_OUTPUTS);
 
-export const versionTwoReportOutputSchema = z.enum(["full", "actionable", "counts", "verdict-only"]);
-
-export type VersionTwoReportOutput = z.infer<typeof versionTwoReportOutputSchema>;
-
-export const reportOutputInEffect = <Output extends string>(request: {
-  readonly requested: Output | undefined;
-  readonly configured: Output;
-}): Output => request.requested ?? request.configured;
-
-export const reportOutputOfVersionOne = (request: { readonly output: ReportOutput }): VersionTwoReportOutput =>
-  request.output === "failures-only" ? "actionable" : request.output;
+export const isReportOutputSchemaEqual: Equal<z.output<typeof reportOutputSchema>, ReportOutput> = true;
+export const isVersionTwoReportOutputSchemaEqual: Equal<z.output<typeof versionTwoReportOutputSchema>, VersionTwoReportOutput> = true;

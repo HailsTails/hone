@@ -1,27 +1,17 @@
-import type { DirectoryEntry, DirectoryPort } from "../../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort, GitTreePort } from "../../git/git-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
-import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
+import type { DirectoryEntry } from "../../../application/ports/file-system/directory-port.ts";
+import type { RecordsFolderPorts } from "../../../application/ports/records/records-source-of.ts";
+import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { parsedJson } from "../../content-files/parsed-json.ts";
-import { type RepoPath, repoPathSchema } from "../repo-path.ts";
+import { repoPathSchema } from "../repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { RecordsDocument } from "../hone-record.ts";
-import { RECORDS_FOLDER, recordsFileStandingOf } from "./records-layout.ts";
-import type { RecordsFolderFailure, RecordsSource } from "../../../application/ports/records-source.ts";
-
-export type RecordsFolderPorts = {
-  readonly fileText: Pick<FileTextPort, "exists" | "read">;
-  readonly path: Pick<PathPort, "join">;
-  readonly directory: Pick<DirectoryPort, "list">;
-  readonly git: Pick<GitPort, "textInBase">;
-  readonly gitTree: GitTreePort;
-};
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
+import { RECORDS_FOLDER, recordsFileStandingOf } from "../../../domain/records/hone-records/records-layout.ts";
+import type { RecordsSource } from "../../../application/ports/records/records-source.ts";
+import type { RecordsFolderFailure } from "../../../domain/records/records-folder-failure.ts";
 
 type FolderRequest = RecordsFolderPorts & { readonly repoRoot: AbsolutePath };
-
-export type RecordsSourceOf = (request: FolderRequest & { readonly catalogue: SymptomCatalogue }) => RecordsSource;
 
 type Listed = Result<readonly RepoPath[], RecordsFolderFailure>;
 

@@ -1,4 +1,4 @@
-import type { Assessment } from "../../infrastructure/hone-config-file/assessment.ts";
+import type { Assessment } from "./assessment.ts";
 
 export type RunSettings<Output extends string> = {
   readonly reportOutput: Output;

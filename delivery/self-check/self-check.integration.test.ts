@@ -1,7 +1,8 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 

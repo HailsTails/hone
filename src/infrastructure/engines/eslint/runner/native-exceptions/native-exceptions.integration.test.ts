@@ -1,29 +1,38 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
 import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { createExceptionRepository } from "../../../../discipline-exceptions-folder/exception-layout.ts";
-import type { VersionOneWhyChain } from "../../../../discipline-exceptions-folder/version-one-why-chain.ts";
-import { createSelectionRepository, type SelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../../../../application/ports/selection/selection-repository.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import type { ModuleExtension } from "../../../../node/modules/install-layout.ts";
+import type { ModuleExtension } from "../../../../../application/ports/host/module-extension.ts";
 import { runCheck } from "../../../../../application/run/check/run-check.ts";
-import { loadRunner } from "../../../protocol/engine-run/load-runner.ts";
+import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
-import type { ExceptionRecord, ExceptionRepository } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import type { LoadedRunner, RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
+import type { ExceptionRepository } from "../../../../../application/ports/records/exception-repository.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { LoadedRunner } from "../../../../../application/ports/engine/runner-module.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../../git/git-port.ts";
-import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort, type PathPort } from "../../../../node/path-port.ts";
-import { type ClauseDefinition, readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../../../../application/ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
+import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../../../hone-config-file/assessment.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { runner as walkerRunner } from "../../../audit/runner/runner.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
@@ -40,6 +49,12 @@ import {
   loadEslintToolchain,
 } from "../toolchain/eslint-toolchain.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { createDefaultEnginePort } from "../../../protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../../../../application/ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../../../../application/ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../../../../application/ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../../command-line/installation/shown-path.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -219,12 +234,23 @@ type DiskRequest = {
   readonly git: GitPort;
 };
 
+type SingleFileRecords = {
+  readonly selectionRepository: SelectionRepository;
+  readonly selectionRepositoryOf: SelectionRepositoryOf;
+  readonly exceptionRepository: ExceptionRepository;
+  readonly exceptionEntryParser: ExceptionEntryParser;
+  readonly shownPathOf: ShownPathOf;
+};
+
 const withSingleFileRecords = <Request extends DiskRequest>(
   request: Request,
-): Request & { readonly selectionRepository: SelectionRepository; readonly exceptionRepository: ExceptionRepository } => ({
+): Request & SingleFileRecords => ({
   ...request,
   selectionRepository: createSelectionRepository(request),
+  selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
+  exceptionEntryParser,
+  shownPathOf: shownPathOfRepository(request),
 });
 
 const STORED_LINT_CONFIG_NAME = "lint-config.fixture";
@@ -460,6 +486,7 @@ const checkOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked:
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText,
+    engine: createDefaultEnginePort({}),
     modules: runnerModulesOn({ line: request.line, base: modules }),
     path,
     git: gitTracking({ tracked: request.tracked }),
@@ -902,7 +929,7 @@ const classSyntaxCases = (): MechanicalCases => {
 const CLASS_SYNTAX_CASES = classSyntaxCases();
 
 const coreLoadedEslintRunner = async (request: { readonly line: EslintLine }): Promise<LoadedRunner> => {
-  const loaded = await loadRunner({
+  const loaded = await loadedEngineOf({
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
     modules: runnerModulesOn({ line: request.line, base: modules }),
@@ -910,7 +937,7 @@ const coreLoadedEslintRunner = async (request: { readonly line: EslintLine }): P
     mechanism: mechanismIdSchema.parse("eslint"),
   });
   assert(loaded.outcome === "ok", "core loads the ESLint runner module");
-  return loaded.value;
+  return loaded.value.runner;
 };
 
 describe.each(ESLINT_LINES)("checkConformance over the ESLint runner as core loads it, on real %s", (line) => {

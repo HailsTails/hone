@@ -5,34 +5,33 @@ import { FORFEITURE_OPTION, type HelpTopic, LEAVE_OPTION, REPO_OPTION, SUBCOMMAN
 import { projectCommandOutcome, versionCommandOutcome } from "../outcomes/command-outcome.ts";
 import { pruneDebtCommandOutcome, recordDebtCommandOutcome, splitRecordsCommandOutcome } from "../outcomes/record-command-outcomes.ts";
 import { installedVersionOf } from "../installation/installed-version.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { loadFailureDetail, loadFailureText } from "../../printed-report/load-failures/load-failure-text.ts";
 import { runLoadFailureLine } from "../../printed-report/load-failures/load-failure-lines.ts";
-import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { InheritedDebtOutcome } from "../../../domain/records/discipline-exceptions/inherited-debt.ts";
-import type {
-  ExistingAuthorisationProvenance,
-  InheritedDebtProvenance,
-  InvalidRecord,
-  RecordsSplit,
-} from "../../discipline-exceptions-folder/exception-records.ts";
-import type { AttributedNativeException, Finding } from "../governance.ts";
-import type { RunnerFailure } from "../../../application/ports/runner-failure.ts";
-import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../engines/protocol/runner-module/runner-result-schema.ts";
-import type { MisnamedRuleId } from "../../engines/protocol/checks/checks-runner-types.ts";
-import { createDefaultFileTextPort, type FilePresence, type FileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { RecordsSplit } from "../../../application/ports/records/exception-repository.ts";
+import type { ExceptionRecord, ExistingAuthorisationProvenance, InheritedDebtProvenance, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
+import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
+import type { InlineReach, ProjectionWrite, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
+import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../node/process/process-port.ts";
-import { WAIVED_CLAUSES_REPLACEMENT } from "../../hone-config-file/assessment.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
+import { WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../discipline-exceptions-folder/clause-address.ts";
-import { type ClauseEditionReading, editionSchema } from "../../content-files/edition.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { editionSchema } from "../../content-files/edition.ts";
+import type { ClauseEditionReading } from "../../../domain/rule-set/edition-types.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import type { WhyChain } from "../../hone-records-folder/why-chain.ts";
-import type { VersionOneWhyChain } from "../../discipline-exceptions-folder/version-one-why-chain.ts";
-import { type ReportOutput, reportOutputSchema, type VersionTwoReportOutput, versionTwoReportOutputSchema } from "../../hone-config-file/report-output.ts";
+import type { WhyChain } from "../../../domain/records/why-chain.ts";
+import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import { REPORT_OUTPUTS, type ReportOutput, VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type {
   AssessmentFileNote,
   AssessmentSection,
@@ -54,14 +53,16 @@ import { renderRunReportText } from "../../printed-report/run-report-text.ts";
 import { recordReferenceText, recordSubjectText } from "../../printed-report/records/record-lines.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../../printed-report/records/record-command-lines.ts";
 import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../../printed-report/upgrade/upgrade-success-text.ts";
-import { type UpgradeFailure, UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../../printed-report/upgrade/upgrade-refusal-text.ts";
-import type { PlanRefusal } from "../../../application/upgrade/proof/upgrade-plan.ts";
-import { type AuthoriseRequest, type Authorising, authorisingOf } from "../../../application/records/authorising.ts";
+import { UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../../printed-report/upgrade/upgrade-refusal-text.ts";
+import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
+import type { PlanRefusal } from "../../../application/ports/upgrade/plan-refusal.ts";
+import { authorisingOf } from "../../../application/records/authorising.ts";
+import type { AuthoriseRequest, Authorising } from "../../../application/ports/authorising.ts";
 import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
 import type { RecordsUnmeasured } from "../../../domain/records/measurement/records-unmeasured.ts";
-import type { ConventionKey } from "../../hone-config-file/conventions.ts";
+import type { ConventionKey } from "../../../domain/settings/conventions.ts";
 import type {
   AuthorisedLocation,
   AuthorisedReach,
@@ -77,10 +78,16 @@ import type {
   RecordRefusal,
   RecordsDocumentRefusal,
   SymptomReach,
-} from "../../hone-records-folder/hone-record.ts";
+} from "../../../domain/records/hone-records/hone-record.ts";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../../../operations/help/run-help.ts";
-import { runToolCommand } from "../../../run-tool-command.ts";
+import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../arguments/run-help.ts";
+import { INSTALLED_PORTS, toolCommandOver } from "../../../composition/run-tool-command.ts";
+import type { VersionOneCommandRequest as ToolCommandRequest } from "../../../application/ports/version-one-command-request.ts";
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
+import { recordsReader } from "../../hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../../hone-records-folder/writing/records-edit.ts";
+
+const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
 type Fills = Readonly<Record<string, string>>;
 
@@ -1050,7 +1057,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     fail: { whole: { ...EMPTY_REPORT, findings: [FINDING] }, partial: { ...EMPTY_REPORT, findings: [FINDING], assessment: [ONE_CARVE_OUT_ELSEWHERE] } },
   };
 
-  const EVERY_OUTPUT: readonly ReportOutput[] = reportOutputSchema.options;
+  const EVERY_OUTPUT: readonly ReportOutput[] = REPORT_OUTPUTS;
 
   const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
@@ -1755,7 +1762,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
     "form-refused": {
       entry: {
         place: { file: AUTHORISED_FILE, index: 2 },
-        refusals: [{ kind: "form-refused", issues: [{ code: "invalid_type", expected: "string", path: ["file"], message: "Invalid input: expected string, received number", input: 3 }] }],
+        refusals: [{ kind: "form-refused", issues: [{ path: ["file"], message: "Invalid input: expected string, received number" }] }],
       },
       fills: { "records file": "hone-records/authorised-locations/claimed-type.json", index: "2", issues: "file: Invalid input: expected string, received number" },
     },
@@ -2132,7 +2139,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
   ];
 
   const RUN_PRINTABLE_LINES: readonly PrintedLine[] = [
-    ...versionTwoReportOutputSchema.options.flatMap((output) => linesOfReport({ report: EVERY_ENTRY, output })),
+    ...VERSION_TWO_REPORT_OUTPUTS.flatMap((output) => linesOfReport({ report: EVERY_ENTRY, output })),
     ...linesOfReport({ report: UNSLICED_REPORT, output: "full" }),
     ...VERDICT_REPORTS.flatMap((report) => linesOfReport({ report, output: "verdict-only" })),
     ...RECORD_PART_LINES,
@@ -2163,7 +2170,7 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
   const DOCUMENT_REFUSED: RecordsDocumentRefusal = {
     kind: "document-refused",
     file: DEBT_FILE,
-    issues: [{ code: "custom", path: ["records", 0, "file"], message: "expected a repository path", input: 1 }],
+    issues: [{ path: ["records", 0, "file"], message: "expected a repository path" }],
   };
 
   const STRAY_REFUSED: RecordsDocumentRefusal = { kind: "not-a-records-file", file: STRAY_FILE };
@@ -2348,7 +2355,7 @@ const RECORD_COMMAND_LINES: readonly PrintedLine[] = (() => {
   };
 
   const formRefusalSample = (): readonly (readonly [RecordRefusal, Readonly<Record<string, string>>])[] => {
-    const judged = authorisingOf({ request: MISTAKEN_CHAIN, documents: [], catalogue: REPORT_CATALOGUE });
+    const judged = authorisingOf({ request: MISTAKEN_CHAIN, documents: [], catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor });
     if (judged.outcome === "failed" || judged.value.judged !== "refused") {
       return [];
     }
@@ -2427,9 +2434,13 @@ const commandOver = (request: { readonly process: ProcessPort; readonly fileText
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
+  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
+  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  selectionRepositoryOf: notUsed,
+  shownPathOfRepository: notUsed,
   moduleUrl: ENTRY_URL,
 });
 
@@ -2438,7 +2449,7 @@ const printedHelpBlockOf = async (request: {
   readonly files: Readonly<Record<string, string>>;
 }): Promise<string> => {
   const recorded = recordedProcessWith({ arguments: request.given });
-  await runToolCommand(commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) }));
+  await commandRan(commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) }));
   return `${FENCE}text\n${recorded.writes.map(([written]) => written.text).join("")}${FENCE}`;
 };
 

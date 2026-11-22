@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { GitFailure } from "../git/git-port.ts";
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ExceptionRepository } from "./exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 
 export type VersionOneEntry = { readonly [key: string]: ReadonlyJsonValue };
 

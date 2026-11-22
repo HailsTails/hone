@@ -1,15 +1,9 @@
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { HeadRecord } from "../../../infrastructure/discipline-exceptions-folder/head-records.ts";
-import type { RecordInput } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
-import type { RecordAnswered } from "./record-answer-oracle.ts";
-
-export type CarveOutUnanswered = { readonly kind: "carve-out-unanswered"; readonly clause: string; readonly file: RepoPath };
-
-export type LocationUnanswered = { readonly kind: "location-unanswered"; readonly clause: string; readonly file: RepoPath };
-
-export type Unanswered = CarveOutUnanswered | LocationUnanswered;
+import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
+import type { RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
+import type { RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
+import type { CarveOutUnanswered, LocationUnanswered, Unanswered } from "../../ports/upgrade/plan-refusal.ts";
 
 const carveOutInputOf = (request: {
   readonly head: Extract<HeadRecord, { readonly kind: "file-carve-out" }>;

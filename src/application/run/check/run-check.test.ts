@@ -1,22 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LegacyWhyChain, VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
-import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { LegacyWhyChain, VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
-import type { ExceptionRepository, PlacedEntry, StructuralExceptionEntry } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { LoadedRunner } from "../../../infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
-import type { MeasuredPair } from "../../ports/runner-result-types.ts";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { PlacedEntry, StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { LoadedRunner } from "../../ports/engine/runner-module.ts";
+import type { MeasuredPair } from "../../../domain/runner/runner-result-types.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { editionSchema, FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { type CheckRequest, runCheck, runReachedCheck } from "./run-check.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -303,20 +309,26 @@ const TRACKED_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: TRACKED
 
 const FACTORY_ONLY_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: [repoPathSchema.parse("src/factory.ts")] } });
 
-const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
-  repoRoot: REPO_ROOT,
-  installRoot: INSTALL_ROOT,
-  moduleExtension: ".ts",
-  baseRevision: "main",
-  assessment: DEFAULT_ASSESSMENT,
-  fileText: fileTextOver(INSTALL),
-  modules: modulesLoading({ runner: standaloneRunner({ runReturns: CLEAN_RUN }) }),
-  path: POSIX_PATH,
-  git: TRACKED_GIT,
-  selectionRepository: selectionRepositoryReading(SELECTION_READING),
-  exceptionRepository: NO_RECORDS,
-  ...overrides,
-});
+const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => {
+  const fileText = overrides.fileText ?? fileTextOver(INSTALL);
+  return {
+    repoRoot: REPO_ROOT,
+    installRoot: INSTALL_ROOT,
+    moduleExtension: ".ts",
+    baseRevision: "main",
+    assessment: DEFAULT_ASSESSMENT,
+    fileText,
+    engine: createDefaultEnginePort({}),
+    modules: modulesLoading({ runner: standaloneRunner({ runReturns: CLEAN_RUN }) }),
+    path: POSIX_PATH,
+    git: TRACKED_GIT,
+    selectionRepository: selectionRepositoryReading(SELECTION_READING),
+    exceptionRepository: NO_RECORDS,
+    exceptionEntryParser,
+    shownPathOf: shownPathOfRepository({ path: POSIX_PATH, fileText, repoRoot: REPO_ROOT, installRoot: INSTALL_ROOT }),
+    ...overrides,
+  };
+};
 
 const AUTHORISED_FACTORY_RECORD = {
   kind: "authorised-location",

@@ -1,6 +1,6 @@
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import { indicatedNamesOf, type SymptomReading } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 
 export const escapedLineBreaks = (request: { readonly text: string }): string =>
   request.text.replaceAll("\n", "\\n").replaceAll("\r", "\\r");

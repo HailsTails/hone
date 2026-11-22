@@ -1,10 +1,10 @@
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { FileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
-import type { ModuleExtension } from "../../../../node/modules/install-layout.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import type { ModuleExtension } from "../../../../../application/ports/host/module-extension.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ChecksRepository } from "./checks-repository.ts";
 import type { CoreInstall } from "../projection/core-install.ts";

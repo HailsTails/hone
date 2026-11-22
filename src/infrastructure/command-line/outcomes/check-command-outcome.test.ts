@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Finding } from "../governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { reportOutputSchema } from "../../hone-config-file/report-output.ts";
 import type { Case, Principle, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../printed-report/symptoms/symptom-notes.ts";
 import { checkCommandOutcome, guidedCheckCommandOutcome } from "./check-command-outcome.ts";
+import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -71,14 +71,14 @@ describe("checkCommandOutcome", () => {
     });
   });
 
-  it.each(reportOutputSchema.options)("exits 1 for a failing report whatever the %s output prints", (output) => {
+  it.each(REPORT_OUTPUTS)("exits 1 for a failing report whatever the %s output prints", (output) => {
     expect(
       checkCommandOutcome({ result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output, projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } } })
         .code,
     ).toBe(1);
   });
 
-  it.each(reportOutputSchema.options)("exits 0 for a passing report whatever the %s output prints", (output) => {
+  it.each(REPORT_OUTPUTS)("exits 0 for a passing report whatever the %s output prints", (output) => {
     expect(
       checkCommandOutcome({
         result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, excluded: [repoPathSchema.parse("generated")] }, output, projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },

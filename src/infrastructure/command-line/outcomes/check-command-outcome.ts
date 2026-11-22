@@ -1,15 +1,12 @@
 import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
-import type { LoadFailure } from "../load-failure.ts";
-import type { ReportOutput } from "../../hone-config-file/report-output.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { CheckReport } from "../../../domain/report/check-report.ts";
+import type { CheckOutcome } from "../../../domain/report/check-outcome.ts";
 import { renderGuidedReportText } from "../../printed-report/report-text.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../printed-report/symptoms/symptom-notes.ts";
 import { verdictOf } from "../../../domain/report/verdict.ts";
 
-export type CheckRun = {
-  readonly report: CheckReport;
-  readonly output: ReportOutput;
+export type CheckRun = CheckOutcome & {
   readonly projectCommand: string;
   readonly pruneCommand: string;
 };

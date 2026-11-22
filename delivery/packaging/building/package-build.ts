@@ -1,5 +1,5 @@
-import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
-import type { PathPort } from "../../../src/infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../../../src/application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../src/application/ports/host/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import { CHANGELOG_FILE } from "../../release/changelog.ts";
 import type { Bundle, BundlerPort } from "./esbuild-bundler-port.ts";

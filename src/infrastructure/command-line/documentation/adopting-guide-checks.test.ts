@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { VersionTwoLoadFailure } from "../load-failure.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { createSymptomCatalogueRepository } from "../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { CatalogueHolding, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
 
 type GuideCheckRow = { readonly check: string; readonly engines: readonly string[]; readonly clause: string };

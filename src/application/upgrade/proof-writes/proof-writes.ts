@@ -1,10 +1,14 @@
-import type { DirectoryRemovalPort } from "../../../infrastructure/node/file-system/directory-removal-port.ts";
-import type { FileCreationPort } from "../../../infrastructure/node/file-system/file-creation-port.ts";
-import type { FileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import type { DirectoryPort, EntryKindPort, FileTextPort } from "../../../infrastructure/node/file-system/file-system-port.ts";
-import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
+import type { FileCreationPort } from "../../ports/file-system/file-creation-port.ts";
+import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ProofWrite, ProofWriteFailure, ProofWriteRefusal, Unrestored } from "../../ports/upgrade/proof-outcome.ts";
 
 export type PlannedFile = { readonly path: AbsolutePath; readonly text: string };
 
@@ -18,22 +22,7 @@ export type ProofWritePorts = {
   readonly path: PathPort;
 };
 
-export type ProofWrite =
-  | { readonly kind: "directory-created"; readonly path: AbsolutePath }
-  | { readonly kind: "file-created"; readonly path: AbsolutePath }
-  | { readonly kind: "file-replaced"; readonly path: AbsolutePath; readonly original: string };
-
 export type ProofWrites = readonly ProofWrite[];
-
-export type ProofWriteFailure =
-  | { readonly kind: "path-already-exists"; readonly path: AbsolutePath }
-  | { readonly kind: "replaced-file-unreadable"; readonly path: AbsolutePath; readonly detail: string }
-  | { readonly kind: "directory-uncreatable"; readonly path: AbsolutePath; readonly detail: string }
-  | { readonly kind: "unwritable"; readonly path: AbsolutePath; readonly detail: string };
-
-export type Unrestored = { readonly written: ProofWrite["kind"]; readonly path: AbsolutePath; readonly detail: string };
-
-export type ProofWriteRefusal = { readonly failure: ProofWriteFailure; readonly unrestored: readonly Unrestored[] };
 
 export type ProofWriteRequest = {
   readonly ports: ProofWritePorts;
@@ -48,8 +37,10 @@ type Step =
   | { readonly kind: "file"; readonly file: PlannedFile }
   | { readonly kind: "replacement"; readonly file: PlannedFile; readonly original: string };
 
-const parentOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): AbsolutePath =>
-  absolutePathSchema.parse(request.ports.path.directoryOf({ path: request.path }));
+const parentOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): AbsolutePath => {
+  const parent = request.ports.path.directoryOf({ path: request.path });
+  return isAbsolutePath(parent) ? parent : request.path;
+};
 
 const missingDirectoriesOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): readonly AbsolutePath[] => {
   const parent = parentOf(request);

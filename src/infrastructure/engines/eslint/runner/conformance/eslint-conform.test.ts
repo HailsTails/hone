@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { RunnerClause } from "../../../protocol/runner-module/runner-module-schema.ts";
-import type { CaseVerdict } from "../../../protocol/runner-module/runner-result-schema.ts";
-import type { ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";

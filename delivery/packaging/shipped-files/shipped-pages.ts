@@ -1,5 +1,5 @@
-import type { FileTextPort } from "../../../src/infrastructure/node/file-system/file-text-port.ts";
-import type { PathPort } from "../../../src/infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../../../src/application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../src/application/ports/host/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import type { ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
 import type { ShippedPage } from "./numbered-addresses.ts";

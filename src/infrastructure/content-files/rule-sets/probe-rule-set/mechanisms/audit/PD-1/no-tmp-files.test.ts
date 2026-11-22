@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerClause } from "../../../../../../engines/protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../../../../domain/runner/runner-module-types.ts";
 import { clauseAddressSchema } from "../../../../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../../../../../engines/audit/runner/pieces/walker-disk.ts";

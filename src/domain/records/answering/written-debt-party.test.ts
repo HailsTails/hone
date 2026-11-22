@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { HoneRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { HoneRecord } from "../hone-records/hone-record.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { holdsAt, type Site } from "./record-reach.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";

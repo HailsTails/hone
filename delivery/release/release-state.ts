@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import type { Result } from "../../src/domain/result.ts";
 import { packageVersionOf } from "../packaging/published-manifest/published-manifest.ts";
 import { RELEASE_TAG_PREFIX, versionOf } from "./release-version.ts";

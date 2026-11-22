@@ -1,14 +1,13 @@
-import type { VersionTwoLoadFailure } from "../../command-line/load-failure.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { readVersionOneJson } from "../rule-sets/rule-set-reader.ts";
-import type { AbsolutePath } from "../absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
+import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import { symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
-
-export const SYMPTOM_CATALOGUE_SEGMENTS: readonly string[] = ["rules", "typescript", "symptoms.json"];
 
 type CatalogueSource = {
   readonly fileText: FileTextPort;

@@ -1,7 +1,8 @@
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
-import type { Remedy } from "../../application/ports/runner-result-types.ts";
-import { type ClauseAddress, sameClauseAddress } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
+import type { Finding } from "../finding/governance.ts";
+import type { Remedy } from "../runner/runner-result-types.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../rule-set/clause-address.ts";
+import type { MechanismId } from "../rule-set/identifier-types.ts";
 
 export type Standing = "accepted" | "proposed";
 

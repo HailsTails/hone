@@ -1,12 +1,15 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort, type ModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { symptomCatalogueOf } from "../../../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import SYMPTOMS from "../../../../../../rules/typescript/symptoms.json" with { type: "json" };
 import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../projection/checks-projection.ts";

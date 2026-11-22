@@ -1,4 +1,4 @@
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../domain/result.ts";
 
 type Outcome<Value> = Result<Value, RunnerFailure>;

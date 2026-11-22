@@ -1,5 +1,5 @@
-import type { ClauseSettingValues } from "../../../application/ports/runner-module-types.ts";
-import { RESERVED_EDITION_SETTING } from "../../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
+import { RESERVED_EDITION_SETTING } from "./reserved-edition-setting.ts";
 import type { ReadonlyJsonValue } from "../json-values/json-value.ts";
 
 export type EditionPin = {

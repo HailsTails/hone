@@ -1,12 +1,12 @@
 import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
 import { LEAVE_OPTION } from "../arguments/command-line.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { RECORD_DEBT_SUBCOMMAND } from "../arguments/subcommand-names.ts";
-import { clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../nested-configuration-issue.ts";
 import type { DebtPair } from "../../../domain/records/discipline-exceptions/debt-pair.ts";
-import type { RecordsSplit } from "../../discipline-exceptions-folder/exception-records.ts";
+import type { RecordsSplit } from "../../../application/ports/records/exception-repository.ts";
 import type { InheritedDebtOutcome } from "../../../domain/records/discipline-exceptions/inherited-debt.ts";
 
 const inheritedDebtNote = (request: { readonly outcome: InheritedDebtOutcome }): string => {

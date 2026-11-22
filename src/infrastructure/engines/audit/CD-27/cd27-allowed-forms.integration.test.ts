@@ -2,21 +2,20 @@ import { assert, describe, expect, it, vi } from "vitest";
 import { editionRunsOf } from "../../../../application/conformance/edition-runs.ts";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
-import { type RunnerClause, runnerModuleSchema, type StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import { runnerModuleSchema, type StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import {
-  type DisciplineFile,
-  readDisciplineFile,
-  readPieceFile,
-  type SourceCase,
-} from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { disciplineIdSchema, type MechanismId, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";

@@ -1,15 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDefaultExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../application/ports/host/process-port.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
+import { commandOf } from "../../composition/composed-command.ts";
+import type { VersionOneCommandRequest as PruneCommand } from "../../application/ports/version-one-command-request.ts";
+import { PRUNE_DEBT } from "../../composition/commands.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
+
+const runPruneDebtCommand = (command: PruneCommand) => commandOf({ tool: PRUNE_DEBT, ports: command })(command);
 
 const FIXTURE = `${import.meta.dirname}/prune-debt`;
 
@@ -60,9 +69,13 @@ const pruning = (request: {
   process: request.process,
   path: createDefaultPathPort({}),
   fileText: createDefaultFileTextPort({}),
+  engine: createDefaultEnginePort({}),
   modules: createDefaultModuleLoaderPort({}),
   git: request.git,
   exceptionRepositoryOf: (repository) => ({ ...createDefaultExceptionRepositoryOf({})(repository), remove: request.remove }),
+  exceptionEntryParser,
+  selectionRepositoryOf: createSelectionRepository,
+  shownPathOfRepository,
   moduleUrl: request.moduleUrl,
 });
 

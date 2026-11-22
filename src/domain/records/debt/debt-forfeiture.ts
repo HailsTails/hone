@@ -1,5 +1,5 @@
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 
 export type DebtForfeiture = "forfeits" | "keeps";
 

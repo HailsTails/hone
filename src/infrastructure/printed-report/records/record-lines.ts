@@ -1,4 +1,3 @@
-import type { z } from "zod";
 import type {
   AuthorisedReach,
   CarriedListing,
@@ -6,15 +5,16 @@ import type {
   HoneRecord,
   OutsideParty,
   PlacedRecord,
+  RecordIssue,
   RecordNote,
   RecordPlace,
   RecordRefusal,
   RefusedRecord,
-} from "../../hone-records-folder/hone-record.ts";
-import { catalogueNotesOf } from "../../hone-records-folder/reading/records-reading.ts";
+} from "../../../domain/records/hone-records/hone-record.ts";
+import { catalogueNotesOf } from "../../../domain/records/hone-records/record-listings.ts";
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
 import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { RepoPath } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { onOneLine, quoted } from "../printed-text.ts";
 
 const WHOLE_RECORD = "record";
@@ -116,7 +116,7 @@ export const referencesText = (request: { readonly lead: string; readonly record
 export const recordNoteLine = (request: { readonly recordNote: RecordNote }): string =>
   `${recordPlaceText(request.recordNote)} ${request.recordNote.note.kind}: ${catalogueNoteWords(request.recordNote)}`;
 
-const issueText = (request: { readonly issue: z.core.$ZodIssue }): string => {
+const issueText = (request: { readonly issue: RecordIssue }): string => {
   const path = request.issue.path.length === 0 ? WHOLE_RECORD : request.issue.path.join(".");
   return `${path}: ${request.issue.message}`;
 };

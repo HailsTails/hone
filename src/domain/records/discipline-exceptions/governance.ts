@@ -1,9 +1,10 @@
-import type { AttributedNativeException, Finding, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
-import type { NativeException } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
-import { type ClauseAddress, clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { AttributedNativeException, Finding, GovernedRun } from "../../finding/governance.ts";
+import type { NativeException } from "../../runner/runner-result-types.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../../rule-set/clause-address.ts";
+import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 
 export type ExemptedFinding = {

@@ -3,10 +3,12 @@ import type { Selection } from "../../domain/settings/selection/selection.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import { type PlacedEntry, UNMEASURED_EXCEPTION_BASELINE } from "./exception-records.ts";
+import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { Result } from "../../domain/result.ts";
-import { type HeadRecord, type HeadRecordsRefusal, headRecordsOf } from "./head-records.ts";
-import type { VersionOneWhyChain } from "./version-one-why-chain.ts";
+import { headRecordsOf } from "./head-records.ts";
+import type { HeadRecord, HeadRecordsRefusal } from "../../domain/records/upgrade/head-records.ts";
+import type { VersionOneWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [

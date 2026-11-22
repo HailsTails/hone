@@ -1,6 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import type { DirectoryEntry, DirectoryPort } from "../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../node/file-system/file-text-port.ts";
+import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { recordsOnDiskOf } from "./version-one-records-on-disk.ts";

@@ -1,8 +1,10 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { projectCommandOf, pruneCommandOf } from "../arguments/tool-invocations.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
+import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
 
 type ScratchRepositories = {

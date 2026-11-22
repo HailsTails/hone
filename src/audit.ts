@@ -1,11 +1,11 @@
 import * as editionReach from "./domain/rule-set/edition-reach.ts";
 import * as sourceScope from "./infrastructure/engines/audit/runner/pieces/source-scope.ts";
 
-export type { PieceFailure } from "./application/ports/piece-failure-types.ts";
-export type { ClauseSettingValues, RunnerClause } from "./application/ports/runner-module-types.ts";
+export type { PieceFailure } from "./domain/runner/piece-failure-types.ts";
+export type { ClauseSettingValues, RunnerClause } from "./domain/runner/runner-module-types.ts";
 export type { ReadonlyJsonValue } from "./domain/settings/json-values/json-value.ts";
 export type { Edition, EditionReach } from "./domain/rule-set/edition-types.ts";
-export type { Hit, Remedy } from "./application/ports/runner-result-types.ts";
+export type { Hit, Remedy } from "./domain/runner/runner-result-types.ts";
 export type { Anchor, AnchorKind } from "./domain/finding/anchor.ts";
 export type { ClauseAddress, ToolRuleSet } from "./domain/rule-set/clause-address-types.ts";
 export type { ClauseId, DisciplineId, RuleSetName } from "./domain/rule-set/identifier-types.ts";

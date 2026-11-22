@@ -1,12 +1,14 @@
-import type { DirectoryPort, FileRemovalPort, FileTextPort } from "../../node/file-system/file-system-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
-import type { RepoPath } from "../repo-path.ts";
+import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
+import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { RecordsDocument } from "../hone-record.ts";
-import { type RecordsEdit, recordsTextOf } from "./records-edit.ts";
-
-export type RecordsUnwritable = { readonly kind: "file-unwritable"; readonly path: string; readonly detail: string };
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
+import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
+import type { RecordsStore, RecordsUnwritable } from "../../../application/ports/records/records-store.ts";
 
 export type RecordsStorePorts = {
   readonly fileText: Pick<FileTextPort, "write">;
@@ -14,10 +16,6 @@ export type RecordsStorePorts = {
   readonly directory: Pick<DirectoryPort, "create">;
   readonly path: Pick<PathPort, "join">;
   readonly repoRoot: AbsolutePath;
-};
-
-export type RecordsStore = {
-  readonly apply: (request: { readonly edit: RecordsEdit }) => Result<void, RecordsUnwritable>;
 };
 
 type Step = Result<void, RecordsUnwritable>;

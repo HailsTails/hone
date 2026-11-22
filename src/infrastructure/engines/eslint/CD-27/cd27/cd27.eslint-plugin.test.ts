@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
-import type { SourceCase } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";

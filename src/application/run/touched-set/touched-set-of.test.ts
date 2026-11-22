@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { PlacedRecord, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { PlacedRecord, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { type RepoPath, repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { touchedSetOf } from "./touched-set-of.ts";
 
 const REPO = absolutePathSchema.parse("/repo");

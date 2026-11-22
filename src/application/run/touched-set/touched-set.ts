@@ -1,17 +1,8 @@
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { BaseRevisionAvailability } from "../../../domain/repository/base-revision-availability.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-
-export type TouchedSet =
-  | { readonly measured: "yes"; readonly paths: ReadonlySet<RepoPath> }
-  | { readonly measured: "no"; readonly base: BaseRevisionAvailability }
-  | { readonly measured: "elsewhere" };
-
-export type BaseJudgement = "in-this-run" | "left-to-another-run";
-
-export const baseJudgementOf = (request: { readonly touched: TouchedSet }): BaseJudgement =>
-  request.touched.measured === "elsewhere" ? "left-to-another-run" : "in-this-run";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 
 const firstLineOf = (request: { readonly failure: GitFailure }): string =>
   request.failure.detail

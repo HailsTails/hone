@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { PathPort } from "../../node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../../content-files/absolute-path.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { installRootOf, installRootOfApiEntry } from "./install-root.ts";
 

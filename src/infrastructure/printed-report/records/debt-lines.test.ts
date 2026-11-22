@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Recipe, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { PlacedRecord, SymptomReach } from "../../hone-records-folder/hone-record.ts";
-import type { WhyChain } from "../../hone-records-folder/why-chain.ts";
+import type { PlacedRecord, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
+import type { WhyChain } from "../../../domain/records/why-chain.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { forfeitedLine, paidLine, staleLine } from "./debt-lines.ts";
 

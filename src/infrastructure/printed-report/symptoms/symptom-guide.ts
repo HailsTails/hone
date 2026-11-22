@@ -1,21 +1,15 @@
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { SymptomCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "./symptom-notes.ts";
-import type { LoadFailure } from "../../command-line/load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { loadFailureDetail } from "../load-failures/load-failure-text.ts";
 import { type PackageLink, packageLinkOf } from "../../command-line/installation/package-link.ts";
 import { shownFailureOf, shownPathOf } from "../../command-line/installation/shown-path.ts";
 
 const SYMPTOM_PAGE_SEGMENTS: readonly string[] = ["rules", "typescript", "symptoms.md"];
-
-export type SymptomCatalogueOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly ruleSetRoot: AbsolutePath;
-}) => SymptomCatalogueRepository;
 
 export type GuideLocations = {
   readonly path: PathPort;

@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { createConformanceTesting } from "./conformance-testing.ts";
+import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import { installRootOfApiEntry } from "../../infrastructure/command-line/installation/install-root.ts";
+import { createRuleSetFileReader } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -72,18 +76,30 @@ const NO_RUNNER: ModuleLoaderPort = {
   load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: {} }),
 };
 
+const conformanceTestingOver = (request: { readonly moduleUrl: string; readonly fileText: FileTextPort; readonly path: PathPort }) =>
+  createConformanceTesting({
+    mechanism: AUDIT,
+    moduleUrl: request.moduleUrl,
+    installRoot: installRootOfApiEntry(request),
+    ruleSetFiles: createRuleSetFileReader(request),
+    loadFailureDetail,
+    path: request.path,
+    modules: NO_RUNNER,
+    engine: createDefaultEnginePort({}),
+  });
+
 describe("createConformanceTesting", () => {
   it("loads the built audit runner from the install root two folders above a built entry", async () => {
     const path = pathFrom({
       entry: vi.fn<PathPort["fromFileUrl"]>().mockReturnValue({ outcome: "ok", value: absolutePathSchema.parse("/install/api/testing.js") }),
     });
-    const testing = createConformanceTesting({ mechanism: AUDIT, moduleUrl: BUILT_ENTRY_URL, fileText: acmeFileText(), path, modules: NO_RUNNER });
+    const testing = conformanceTestingOver({ moduleUrl: BUILT_ENTRY_URL, fileText: acmeFileText(), path });
     await testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" });
     expect(path.join).toHaveBeenLastCalledWith({ segments: ["/install", "src", "infrastructure", "engines", "audit", "runner", "runner.js"] });
   });
 
   it("refuses every conformance run when the entry's install root cannot be found", async () => {
-    const testing = createConformanceTesting({ mechanism: AUDIT,
+    const testing = conformanceTestingOver({
       moduleUrl: "https://example.invalid/api/testing.js",
       fileText: unreadableFileText(),
       path: pathFrom({
@@ -92,7 +108,6 @@ describe("createConformanceTesting", () => {
           error: { kind: "not-a-file-url", url: "https://example.invalid/api/testing.js", detail: "the text is not a file: URL" },
         }),
       }),
-      modules: NO_RUNNER,
     });
     await expect(testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" })).resolves.toEqual({
       outcome: "failed",
@@ -104,12 +119,7 @@ describe("createConformanceTesting", () => {
   });
 
   it("binds a clause through the given ports", () => {
-    const testing = createConformanceTesting({ mechanism: AUDIT,
-      moduleUrl: BUILT_ENTRY_URL,
-      fileText: unreadableFileText(),
-      path: BUILT_ENTRY_PATH,
-      modules: NO_RUNNER,
-    });
+    const testing = conformanceTestingOver({ moduleUrl: BUILT_ENTRY_URL, fileText: unreadableFileText(), path: BUILT_ENTRY_PATH });
     expect(testing.clauseUnderTestOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" })).toEqual({
       outcome: "failed",
       error: { kind: "rule-set-unloadable", detail: `file-unreadable ${RUNNER_PATH} ENOENT` },
@@ -117,7 +127,7 @@ describe("createConformanceTesting", () => {
   });
 
   it("gives repository paths", () => {
-    const testing = createConformanceTesting({ mechanism: AUDIT, moduleUrl: BUILT_ENTRY_URL, fileText: unreadableFileText(), path: BUILT_ENTRY_PATH, modules: NO_RUNNER });
+    const testing = conformanceTestingOver({ moduleUrl: BUILT_ENTRY_URL, fileText: unreadableFileText(), path: BUILT_ENTRY_PATH });
     expect(testing.repoPathOf({ file: "src/kept.ts" })).toEqual({ outcome: "ok", value: repoPathSchema.parse("src/kept.ts") });
   });
 });

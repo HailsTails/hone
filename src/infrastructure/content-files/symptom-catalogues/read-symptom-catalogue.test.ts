@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FilePresence, FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { createSymptomCatalogueRepository, SYMPTOM_CATALOGUE_SEGMENTS } from "./read-symptom-catalogue.ts";
+import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import type { Case, Engine, Principle, RecordKind, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 
 const RULE_SET_ROOT = absolutePathSchema.parse("/install");
@@ -78,12 +79,6 @@ const fileTextHolding = (request: { readonly presence: FilePresence; readonly re
 
 const pathJoiningTo = (joined: string): Pick<PathPort, "join"> => ({
   join: vi.fn<PathPort["join"]>().mockReturnValue(joined),
-});
-
-describe("SYMPTOM_CATALOGUE_SEGMENTS", () => {
-  it("places the catalogue in the rule set's TypeScript folder", () => {
-    expect(SYMPTOM_CATALOGUE_SEGMENTS).toEqual(["rules", "typescript", "symptoms.json"]);
-  });
 });
 
 describe("createSymptomCatalogueRepository", () => {

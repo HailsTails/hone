@@ -1,11 +1,8 @@
 import { assert, describe, expect, it, test, vi } from "vitest";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import {
-  type ClauseDefinition,
-  readDisciplineFile,
-  type SourceCase,
-} from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import type { ClauseDefinition, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";

@@ -1,4 +1,4 @@
-import type { Finding } from "../../command-line/governance.ts";
+import type { Finding } from "../../../domain/finding/governance.ts";
 import type { CorrectUse, Indication, Pointed, Recipe, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { findingSiteOf } from "../../../domain/finding/check-site.ts";
 

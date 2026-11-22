@@ -1,4 +1,4 @@
-import type { ProcessPort } from "../../node/process/process-port.ts";
+import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
 import type { CommandOutcome } from "./command-outcome.ts";
 
 export const printOutcome = (request: {

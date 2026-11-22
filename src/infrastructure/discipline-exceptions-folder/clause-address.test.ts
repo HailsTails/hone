@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  clauseAddressObjectSchema,
-  clauseAddressSchema,
-  clauseAddressText,
-  sameClauseAddress,
-} from "./clause-address.ts";
+import { clauseAddressObjectSchema, clauseAddressSchema } from "./clause-address.ts";
+import { clauseAddressText, sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
 
 describe("clauseAddressSchema", () => {
   it("reads a text with no rule-set prefix as the shared rule set", () => {

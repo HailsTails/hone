@@ -1,8 +1,8 @@
 import type { z } from "zod";
 import { sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
-import type { RepoPath } from "../repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { CarriedStanding, RecordRefusal, RecordsAtBase } from "../hone-record.ts";
+import type { CarriedStanding, RecordRefusal, RecordsAtBase } from "../../../domain/records/hone-records/hone-record.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
 
 const entriesAtBaseOf = (request: { readonly base: Extract<RecordsAtBase, { readonly measured: "yes" }>; readonly file: RepoPath }): readonly z.core.util.JSONType[] =>

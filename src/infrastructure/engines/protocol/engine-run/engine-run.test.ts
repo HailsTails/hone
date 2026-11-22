@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ChecksRunReport, ChecksRunner } from "../checks/checks-runner-types.ts";
-import type { NativeException } from "../runner-module/runner-result-schema.ts";
-import type { LoadedRunner } from "../runner-module/runner-module-schema.ts";
+import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
+import type { LoadedRunner } from "../../../../application/ports/engine/runner-module.ts";
 import type { ClauseBinding } from "../../../../domain/settings/selection/selection.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
+import type { ModuleLoad, ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
@@ -11,7 +11,8 @@ import { clauseAddressSchema } from "../../../discipline-exceptions-folder/claus
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { type EngineRunRequest, engineProjectionOf, engineRunOf, loadedEngineOf } from "./engine-run.ts";
+import type { EngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
+import { engineProjectionOf, engineRunOf, loadedEngineOf } from "./engine-run.ts";
 
 const ESLINT = mechanismIdSchema.parse("eslint");
 
@@ -277,6 +278,19 @@ const loadedWith = (request: { readonly mechanism: typeof ESLINT; readonly loade
   loadedEngineOf({ mechanism: request.mechanism, installRoot: INSTALL, moduleExtension: ".ts", path: POSIX_PATH, modules: loaderGiving(request) });
 
 describe("loadedEngineOf", () => {
+  it("loads the module at the install's runner path for the mechanism", async () => {
+    const modules = loaderGiving({ loaded: { outcome: "ok", value: { runner: STANDALONE } } });
+    await loadedEngineOf({ mechanism: AUDIT, installRoot: INSTALL, moduleExtension: ".ts", path: POSIX_PATH, modules });
+    expect(modules.load).toHaveBeenCalledExactlyOnceWith({ path: "/install/src/infrastructure/engines/audit/runner/runner.ts" });
+  });
+
+  it("fails as an invalid runner when the runner's exception path is outside every path", async () => {
+    expect(await loadedWith({ mechanism: ESLINT, loaded: { outcome: "ok", value: { runner: { ...STANDALONE, exceptionPath: "unknown-path" } } } })).toMatchObject({
+      outcome: "failed",
+      error: { kind: "runner-invalid", mechanism: ESLINT },
+    });
+  });
+
   it("loads the runner and the checks runner a mechanism's module exports", async () => {
     const checksRunner = { projectedKinds: ["config-override"], run: () => Promise.resolve(undefined), conform: () => Promise.resolve(undefined), project: () => Promise.resolve(undefined) };
     expect(await loadedWith({ mechanism: ESLINT, loaded: { outcome: "ok", value: { runner: STANDALONE, checksRunner } } })).toMatchObject({

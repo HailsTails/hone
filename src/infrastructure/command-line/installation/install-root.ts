@@ -1,8 +1,8 @@
-import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { type InstallEntry, installRootAboveEntry } from "../../node/modules/install-layout.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { LoadFailure } from "../load-failure.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 
 type ModuleEntry = Exclude<InstallEntry, "runner">;
 

@@ -1,9 +1,9 @@
 import { checkAddressOf } from "../../language-layer/check-address.ts";
-import type { TouchedSet } from "../../../application/run/touched-set/touched-set.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
 import { type DebtOrigin, type DebtSite, inSiteOrder, type SitePlace } from "./debt-sites.ts";
-import type { Debt, PlacedRecord } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { Debt, PlacedRecord } from "../hone-records/hone-record.ts";
 import type { UnrecordableBecause, UnrecordableSite } from "./unrecordable-site.ts";
 
 export type DebtEffect =

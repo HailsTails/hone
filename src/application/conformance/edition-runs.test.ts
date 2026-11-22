@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { RunnerClause } from "../ports/runner-module-types.ts";
-import type { SourceCase } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
+import type { SourceCase } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { editionSchema, FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";

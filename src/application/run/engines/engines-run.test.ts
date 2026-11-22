@@ -3,16 +3,17 @@ import type { Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
-import type { ChecksRunRequest } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { ChecksRunRequest } from "../../ports/engine/runner-module.ts";
+import type { ModuleLoad, ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsReading, SymptomReach } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsReading, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { DEFAULT_CONVENTIONS } from "../../../infrastructure/hone-config-file/conventions.ts";
+import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { enginesProjectionOf, enginesRunOf } from "./engines-run.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 
 const REPO = absolutePathSchema.parse("/repo");
 
@@ -158,6 +159,7 @@ const runOver = (request: { readonly bindings: readonly ClauseBinding[]; readonl
     installRoot: INSTALL,
     moduleExtension: ".ts",
     path: POSIX_PATH,
+    engine: createDefaultEnginePort({}),
     modules: modulesOf(request),
   });
 
@@ -173,6 +175,7 @@ describe("enginesRunOf", () => {
       installRoot: INSTALL,
       moduleExtension: ".ts",
       path: POSIX_PATH,
+      engine: createDefaultEnginePort({}),
       modules,
     });
     expect(run).toMatchObject({ outcome: "ok", value: [{ mechanism: AUDIT }, { mechanism: ESLINT }] });
@@ -253,6 +256,7 @@ const projectionOver = (request: { readonly bindings: readonly ClauseBinding[]; 
     installRoot: INSTALL,
     moduleExtension: ".ts",
     path: POSIX_PATH,
+    engine: createDefaultEnginePort({}),
     modules: modulesOf(request),
   });
 

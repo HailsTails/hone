@@ -1,17 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
-import type { LoadFailure } from "../../../infrastructure/command-line/load-failure.ts";
-import type { ProjectionWrite } from "../../../infrastructure/engines/protocol/runner-module/runner-result-schema.ts";
-import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import { type VersionOneProject, versionOneProjectionsOfRepository } from "./version-one-projections.ts";
+import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
+import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -32,6 +37,7 @@ const CHECK: CheckRequest = {
   baseRevision: undefined,
   assessment: DEFAULT_ASSESSMENT,
   fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>() },
+  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   path,
   git: {
@@ -43,7 +49,15 @@ const CHECK: CheckRequest = {
   },
   selectionRepository: { read: vi.fn<SelectionRepository["read"]>() },
   exceptionRepository: { read: vi.fn<ExceptionRepository["read"]>(), readAt: vi.fn<ExceptionRepository["readAt"]>() },
+  exceptionEntryParser: {
+    parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
+    importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+    importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
+  },
+  shownPathOf: vi.fn<ShownPathOf>(),
 };
+
+const SELECTION_REPOSITORY_OF = vi.fn<SelectionRepositoryOf>();
 
 const fileTextHolding = (request: { readonly configText: string }): FileTextPort => ({
   read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: request.configText }),
@@ -54,6 +68,8 @@ const fileTextHolding = (request: { readonly configText: string }): FileTextPort
 const requestOver = (request: { readonly project: VersionOneProject; readonly fileText: FileTextPort }) => ({
   project: request.project,
   check: CHECK,
+  selectionRepositoryOf: SELECTION_REPOSITORY_OF,
+  loadFailureDetail,
   fileText: request.fileText,
   path,
   repoRoot: REPO_ROOT,
@@ -73,7 +89,7 @@ describe("versionOneProjectionsOfRepository", () => {
       removed: [],
       outcome: { outcome: "ok", value: FOUND },
     });
-    expect(project).toHaveBeenCalledExactlyOnceWith({ ...CHECK, fileText });
+    expect(project).toHaveBeenCalledExactlyOnceWith({ ...CHECK, fileText, selectionRepositoryOf: SELECTION_REPOSITORY_OF });
   });
 
   it("names the slice version 1's project removed, and lists no projection for it", async () => {

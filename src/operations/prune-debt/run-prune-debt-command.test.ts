@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepository } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
-import type { LoadFailure } from "../../infrastructure/command-line/load-failure.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { type PruneCheck, paidDebtRemoved, type RunSettingsReader } from "./run-prune-debt-command.ts";
 
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");

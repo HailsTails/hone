@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { editionSchema } from "../edition.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
@@ -9,12 +9,8 @@ import {
   disciplineIdSchema,
   mechanismIdSchema,
 } from "../../hone-config-file/identifiers.ts";
-import {
-  type DisciplineFile,
-  parsedJson,
-  readDisciplineFile,
-  readPieceFile,
-} from "./rule-set-reader.ts";
+import { parsedJson, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
+import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 
 const ROOT = absolutePathSchema.parse("/install");
 const INSTALL_ROOT = absolutePathSchema.parse("/running-install");
@@ -323,10 +319,10 @@ describe("readDisciplineFile", () => {
     expect(readDiscipline(file)).toEqual({ outcome: "ok", value: file });
   });
 
-  it("refuses a case edition that is not a whole number as file-malformed", () => {
+  it("refuses a case edition that is not a whole number as rule-set-invalid", () => {
     expect(
       readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "latest" }], allow: [ALLOW_CASE] } }] }),
-    ).toMatchObject({ outcome: "failed", error: { kind: "file-malformed", path: DISCIPLINE_PATH } });
+    ).toMatchObject({ outcome: "failed", error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH } });
   });
 
   it("refuses a case fileName that is not a RepoPath as rule-set-invalid", () => {
@@ -366,7 +362,7 @@ describe("readPieceFile", () => {
 
   it.each([
     { name: "editions out of order", editions: ["2", "1"], kind: "rule-set-invalid" },
-    { name: "an edition that is not a whole number", editions: ["1", "two"], kind: "file-malformed" },
+    { name: "an edition that is not a whole number", editions: ["1", "two"], kind: "rule-set-invalid" },
     { name: "no editions", editions: [], kind: "file-malformed" },
   ])("refuses $name as $kind", ({ editions, kind }) => {
     expect(

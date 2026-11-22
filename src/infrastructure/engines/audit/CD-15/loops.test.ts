@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerFailure } from "../../../../application/ports/runner-failure.ts";
-import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";

@@ -1,5 +1,5 @@
-import type { EntryKindPort } from "../../../../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { EntryKindPort } from "../../../../../application/ports/file-system/entry-kind-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { WalkerDisk } from "./walker-piece.ts";
 
 export const CASE_ROOT = "/repository";

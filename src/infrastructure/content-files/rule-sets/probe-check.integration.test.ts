@@ -1,12 +1,12 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
 import { createExceptionRepository } from "../../discipline-exceptions-folder/exception-layout.ts";
-import type { EntryKindPort } from "../../node/file-system/file-system-port.ts";
+import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { runCheck } from "../../../application/run/check/run-check.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../git/git-port.ts";
-import type { ModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { DEFAULT_ASSESSMENT } from "../../hone-config-file/assessment.ts";
@@ -18,6 +18,9 @@ import cd23Discipline from "../../../../rules/CD-23/discipline.json" with { type
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
 import probePiece from "./probe-rule-set/mechanisms/audit/PD-1/piece.json" with { type: "json" };
 import probeDiscipline from "./probe-rule-set/rules/PD-1/discipline.json" with { type: "json" };
+import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../../discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../command-line/installation/shown-path.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -122,6 +125,7 @@ const probeCheck = () => {
     baseRevision: undefined,
     assessment: DEFAULT_ASSESSMENT,
     fileText,
+    engine: createDefaultEnginePort({}),
     modules: {
       load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: runnerModule }),
     },
@@ -131,6 +135,8 @@ const probeCheck = () => {
   const report = runCheck({
     ...records,
     selectionRepository: createSelectionRepository(records),
+    exceptionEntryParser,
+    shownPathOf: shownPathOfRepository(records),
     exceptionRepository: createExceptionRepository({
       ...records,
       fileText: {

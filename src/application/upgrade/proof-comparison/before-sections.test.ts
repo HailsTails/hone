@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { AttributedNativeException, Finding } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
+import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";

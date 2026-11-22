@@ -1,8 +1,9 @@
-import type { RunnerFailure } from "../../../application/ports/runner-failure.ts";
-import type { PathPort } from "../../node/path-port.ts";
-import type { AbsolutePath } from "../../content-files/absolute-path.ts";
-import type { LoadFailure } from "../load-failure.ts";
-import type { PackageLink } from "./package-link.ts";
+import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { ShownPathOfRepository } from "../../../application/ports/installation/shown-path-of.ts";
+import { type PackageLink, packageLinkOf } from "./package-link.ts";
 
 type ShownRequest = {
   readonly path: PathPort;
@@ -33,6 +34,11 @@ export const shownPathOf = (request: ShownRequest & { readonly target: string })
   const target = throughLink(request);
   const location = request.repoRoot === undefined ? undefined : request.path.relative({ from: request.repoRoot, to: target });
   return location?.relation === "within-root" ? location.path : target.replaceAll(NATIVE_SEPARATOR, SHOWN_SEPARATOR);
+};
+
+export const shownPathOfRepository: ShownPathOfRepository = (request) => {
+  const link = packageLinkOf(request);
+  return ({ target }) => shownPathOf({ path: request.path, repoRoot: request.repoRoot, link, target });
 };
 
 const shownRunnerFailureOf = (request: ShownRequest & { readonly failure: RunnerFailure }): RunnerFailure => {

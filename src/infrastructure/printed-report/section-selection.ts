@@ -1,4 +1,4 @@
-import type { ReportOutput } from "../hone-config-file/report-output.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import { type SectionName, sectionRoleOf } from "../../domain/report/section-roles.ts";
 
 export type ReportSection = {

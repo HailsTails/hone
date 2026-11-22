@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { ConventionKey } from "../hone-config-file/conventions.ts";
+import type { ConventionKey } from "../../domain/settings/conventions.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
-import { assessmentLine, projectionProblemLine, settingsNoteLine, unmeasuredLine } from "./run-state-lines.ts";
+import { assessmentLine, projectionProblemLine, settingsNoteLine, settingsNoteText, unmeasuredLine } from "./run-state-lines.ts";
 
 const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
 
@@ -130,5 +130,14 @@ describe("settingsNoteLine", () => {
     { key: "layers", line: "layers is declared; no check reads it yet" },
   ])("says $key is declared and read by no check yet", ({ key, line }) => {
     expect(settingsNoteLine({ note: { kind: "declared-not-read", key } })).toBe(line);
+  });
+});
+
+describe("settingsNoteText", () => {
+  it.each<{ readonly key: "generated" | "layers"; readonly text: string }>([
+    { key: "generated", text: "generated is declared; no check reads it yet" },
+    { key: "layers", text: "layers is declared; no check reads it yet" },
+  ])("writes $text", ({ key, text }) => {
+    expect(settingsNoteText({ note: { kind: "declared-not-read", key } })).toBe(text);
   });
 });

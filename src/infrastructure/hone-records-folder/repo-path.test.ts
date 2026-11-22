@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isRepoPathText, repoPathSchema } from "./repo-path.ts";
+import { repoPathSchema } from "./repo-path.ts";
 
 const ACCEPTED = [
   "a.ts",
@@ -35,16 +35,6 @@ const REFUSED = [
   "a\u0000b.ts",
   "src/a.ts\n",
 ];
-
-describe("isRepoPathText", () => {
-  it.each(ACCEPTED)("is repo-path for %j", (text) => {
-    expect(isRepoPathText({ text })).toBe("repo-path");
-  });
-
-  it.each(REFUSED)("is not-repo-path for %j", (text) => {
-    expect(isRepoPathText({ text })).toBe("not-repo-path");
-  });
-});
 
 describe("repoPathSchema", () => {
   it.each(ACCEPTED)("accepts %j", (text) => {

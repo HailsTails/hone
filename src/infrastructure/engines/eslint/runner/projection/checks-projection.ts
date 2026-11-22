@@ -1,6 +1,7 @@
 import { CHECK_ADDRESS_SEPARATOR } from "../../../../../domain/language-layer/check-address-text.ts";
-import { projectionOutputsOf } from "../../../protocol/projection-outputs.ts";
-import { type RepoPath, repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { projectionOutputsOf } from "../../../../../domain/repository/projection-outputs.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { enabledRuleEntry } from "../toolchain/eslint-instance.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { escapedGlobPath } from "./projection.ts";

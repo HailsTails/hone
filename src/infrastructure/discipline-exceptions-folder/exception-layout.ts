@@ -1,26 +1,29 @@
 import { z } from "zod";
-import type { LoadFailure } from "../command-line/load-failure.ts";
-import { createDefaultFileRemovalPort, type FileRemovalPort } from "../node/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort, type DirectoryEntry, type DirectoryPort } from "../node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../node/file-system/file-text-port.ts";
-import { createDefaultGitPort, createDefaultGitTreePort, type GitFailure, type GitPort, type GitTreePort } from "../git/git-port.ts";
-import { createDefaultPathPort, type PathPort } from "../node/path-port.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import { createDefaultFileRemovalPort } from "../node/file-system/file-removal-port.ts";
+import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../node/file-system/file-system-port.ts";
+import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
+import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import { createDefaultGitPort, createDefaultGitTreePort } from "../git/git-port.ts";
+import type { GitPort, GitTreePort } from "../../application/ports/git-port.ts";
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
+import { createDefaultPathPort } from "../node/path-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import { type AbsolutePath, absolutePathSchema } from "../content-files/absolute-path.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "./clause-address.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { absolutePathSchema } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import {
-  type ExceptionRepository,
-  type ExceptionRepositoryOf,
-  exceptionEntriesOfDocument,
-  exceptionEntriesOfText,
-  foreignKeysOfDocument,
-  type PlacedEntry,
-  type RecordsSplit,
-  type StructuralExceptionEntry,
-} from "./exception-records.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, foreignKeysOfDocument } from "./exception-records.ts";
+import type { ExceptionRepository, ExceptionRepositoryOf, RecordsSplit } from "../../application/ports/records/exception-repository.ts";
+import type { PlacedEntry, StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import { type DebtPair, debtPairKey, entryPairKey } from "../../domain/records/discipline-exceptions/debt-pair.ts";
 import { exceptionsTextWith, exceptionsTextWithout, type WritableEntry } from "./exceptions-text.ts";
 
@@ -45,9 +48,9 @@ type RuleFileGroup = { readonly file: RepoPath; readonly entries: readonly Writa
 
 type RecordsDocument = { readonly entries: readonly StructuralExceptionEntry[]; readonly foreignKeys: readonly string[] };
 
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE = fixedRepoPath("discipline-exceptions.json");
 
-const SPLIT_FOLDER = repoPathSchema.parse("discipline-exceptions");
+const SPLIT_FOLDER = fixedRepoPath("discipline-exceptions");
 
 const RECORDS_FILE_EXTENSION = ".json";
 

@@ -1,33 +1,22 @@
-import { reportOutputOfVersionOne } from "../../../infrastructure/hone-config-file/report-output.ts";
-import type { ClauseSettingValues } from "../../ports/runner-module-types.ts";
+import { reportOutputOfVersionOne } from "../../../domain/settings/report-output.ts";
+import type { ClauseSettingValues } from "../../../domain/runner/runner-module-types.ts";
 import { type RuleSetCatalogue, sameRuleSet, uncoveredOf } from "../../../domain/settings/check-choices.ts";
-import { DEFAULT_CONVENTIONS } from "../../../infrastructure/hone-config-file/conventions.ts";
-import type { ListedAddress } from "../../../infrastructure/hone-config-file/listed-address.ts";
-import {
-  type CheckState,
-  eslintConfigLookupOf,
-  type GivenCheckSettings,
-  type ListedCheck,
-  RENAMED_SETTINGS,
-  type SettingsFile,
-} from "../../../infrastructure/hone-config-file/settings-file.ts";
+import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
+import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
+import { type CheckState, eslintConfigLookupOf, type GivenCheckSettings, type ListedCheck, RENAMED_SETTINGS, type SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type ClauseAddress, clauseAddressText, sameClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ClauseChoice, ConsumerSelectionFile } from "../../../infrastructure/disciplines-file/selection-file.ts";
-import { checksOfClause } from "./clause-checks.ts";
-import type { UpgradeDrop, UpgradeRefusal } from "./upgrade-refusal.ts";
+import type { ClauseChoice, ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
+import { checksOfClause } from "../../../domain/language-layer/clause-checks.ts";
+import type { UpgradeDrop, UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
+import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;
   readonly catalogues: readonly RuleSetCatalogue[];
-};
-
-export type MarkedNotAdopted = {
-  readonly check: ListedAddress;
-  readonly clause: ClauseAddress;
-  readonly reason: "discipline-not-selected";
 };
 
 export type MappedSettings = {

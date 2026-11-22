@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import { type ConventionsReading, conventionsOf, conventionsWireOf, DEFAULT_CONVENTIONS } from "./conventions.ts";
-
-describe("DEFAULT_CONVENTIONS", () => {
-  it("holds no generated folders and no layers, as no check reads either today", () => {
-    expect(DEFAULT_CONVENTIONS).toEqual({ generated: [], layers: [] });
-  });
-});
+import { conventionsOf, conventionsWireOf } from "./conventions.ts";
+import { type ConventionsReading, DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 
 describe("conventionsOf", () => {
   it("gives the defaults, and names no key as declared, when the file declares none", () => {

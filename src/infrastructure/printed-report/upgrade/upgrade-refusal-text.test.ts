@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { type UpgradeFailure, type UpgradeFailureOutcome, upgradeFailureOutcomeOf } from "./upgrade-refusal-text.ts";
+import { type UpgradeFailureOutcome, upgradeFailureOutcomeOf } from "./upgrade-refusal-text.ts";
+import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
 
 const ISSUES = "https://github.com/HailsTails/hone/issues";
 

@@ -1,12 +1,12 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
-import type { ExceptionRecord } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { createSettingsRepository } from "../../../../../application/run/settings/read-settings.ts";
 import { createSettingsSources } from "../../../../hone-config-file/settings-sources.ts";
 import { createSymptomCatalogueRepository } from "../../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
@@ -18,12 +18,13 @@ import { createDefaultScratchFilesPort } from "../../../../../../delivery/instal
 import { checksOf } from "../../../../../domain/language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
-import type { PathPort } from "../../../../node/path-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { checkRuleIdOf, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
 import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
 import type { EslintClass } from "../toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../toolchain/eslint-toolchain.ts";
 import { eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../../hone-config-file/settings-file.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -172,7 +173,7 @@ const versionOneBindings = () => {
 
 const versionTwoBindings = () => {
   const sources = createSettingsSources({ repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
-  const reading = createSettingsRepository({ sources }).read({});
+  const reading = createSettingsRepository({ settingsFormat: SETTINGS_FILE_FORMAT, sources }).read({});
   assert(reading.outcome === "ok", "the pair's version 2 file loads");
   return reading.value.selection.bindings;
 };

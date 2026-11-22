@@ -1,7 +1,8 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import type { Finding } from "../../infrastructure/command-line/governance.ts";
+import type { Finding } from "../../domain/finding/governance.ts";
 import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort, type FileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import { answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
@@ -9,7 +10,7 @@ import { readHoneRecords } from "./read-hone-records.ts";
 import { createRecordsFolder } from "../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { recordsUnmeasuredOf } from "../../domain/records/measurement/records-unmeasured.ts";
 import { createSymptomCatalogueRepository } from "../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import type { TouchedSet } from "../run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
@@ -17,13 +18,14 @@ import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-pa
 import type { Recipe } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../domain/result.ts";
 import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
-import type { PathPort } from "../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import {
   type CommandRunPort,
   createDefaultCommandRunPort,
   createDefaultScratchFilesPort,
   type ScratchFilesPort,
 } from "../../../delivery/install-proof/install-proof-ports.ts";
+import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
 
 type ScratchRecordsFile = { readonly folder: string; readonly name: string; readonly records: readonly ReadonlyJsonValue[] };
 
@@ -298,7 +300,7 @@ const NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 describe("Hone's records over a real hone-records folder with a git base, built in the test's own scratch", () => {
   it("reads the plan's record examples, each of its kind in path order, holds the carried record the base holds and refuses the one reworded since", () => {
-    expect(readHoneRecords({ source, catalogue, baseRevision: "HEAD" })).toMatchObject({
+    expect(readHoneRecords({ recordsReader, source, catalogue, baseRevision: "HEAD" })).toMatchObject({
       outcome: "ok",
       value: {
         records: [
@@ -327,7 +329,7 @@ describe("Hone's records over a real hone-records folder with a git base, built 
   });
 
   it("answers each finding at an example's site by that record alone, leaves the rest, lists nothing stale, and lists the debt the authorised location holds as paid", () => {
-    const reading = readHoneRecords({ source, catalogue, baseRevision: "HEAD" });
+    const reading = readHoneRecords({ recordsReader, source, catalogue, baseRevision: "HEAD" });
     assert(reading.outcome === "ok", "the records read");
     expect(answerFindings({ catalogue, records: reading.value.records, findings: FINDINGS, touched: NOTHING_TOUCHED, runs: [], measurements: { runs: [], tracked: [], excluded: [] } })).toMatchObject({
       findings: [CAST_IN_ORDERS, DATE_FNS_IMPORT_IN_CLOCK_SOURCE],
@@ -347,7 +349,7 @@ describe("Hone's records over a real hone-records folder with a git base, built 
   });
 
   it("answers by carried records left unjudged when no base revision is given, and lists the import as unmeasured", () => {
-    const reading = readHoneRecords({ source, catalogue, baseRevision: undefined });
+    const reading = readHoneRecords({ recordsReader, source, catalogue, baseRevision: undefined });
     assert(reading.outcome === "ok", "the records read");
     expect({
       answering: answerFindings({ catalogue, records: reading.value.records, findings: FINDINGS, touched: NOTHING_TOUCHED, runs: [], measurements: { runs: [], tracked: [], excluded: [] } }),

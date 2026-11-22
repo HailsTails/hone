@@ -1,25 +1,4 @@
-export const PROOF_SECTIONS = [
-  "excluded",
-  "findings",
-  "answered",
-  "unrecorded",
-  "misnamed",
-  "paid",
-  "stale",
-  "forfeited",
-  "doubly-held",
-  "invalid-records",
-  "uncovered",
-  "not-adopted",
-  "not-run",
-  "editions",
-  "unmeasured",
-  "projection-problems",
-  "assessment",
-  "verdict",
-] as const;
-
-export type ProofSection = (typeof PROOF_SECTIONS)[number];
+import type { ProofSection } from "../../ports/upgrade/proof-outcome.ts";
 
 export type SectionKeys = Readonly<Record<ProofSection, readonly string[]>>;
 

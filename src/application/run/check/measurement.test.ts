@@ -1,13 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LegacyWhyChain, VersionOneWhyChain } from "../../../infrastructure/discipline-exceptions-folder/version-one-why-chain.ts";
-import type {
-  ExceptionBaseline,
-  ExceptionRecord,
-  ExceptionRepository,
-  StructuralExceptionEntry,
-} from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
-import type { TouchedSet } from "../touched-set/touched-set.ts";
+import type { LegacyWhyChain, VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { ExceptionBaseline } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
@@ -21,6 +20,7 @@ import {
   touchedSetFor,
   unmeasuredOf,
 } from "./measurement.ts";
+import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -386,21 +386,21 @@ describe("partialAssessmentsOf", () => {
 
 describe("baselineNeedOf", () => {
   it("settles on unmeasured when no base revision is given", () => {
-    expect(baselineNeedOf({ baseRevision: undefined, entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: undefined, entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY] })).toEqual({
       kind: "settled",
       baseline: UNMEASURED_NOT_GIVEN,
     });
   });
 
   it("settles on unmeasured when no entry is imported or holds a legacy chain", () => {
-    expect(baselineNeedOf({ baseRevision: "main", entries: [CARVE_OUT_ENTRY, REASON_ONLY_LOCATION_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [CARVE_OUT_ENTRY, REASON_ONLY_LOCATION_ENTRY] })).toEqual({
       kind: "settled",
       baseline: UNMEASURED_NOT_GIVEN,
     });
   });
 
   it("needs the records at the base and only the imported entries' sources", () => {
-    expect(baselineNeedOf({ baseRevision: "main", entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] })).toEqual({
       kind: "read-at-base",
       baseRevision: "main",
       sources: [LEGACY_SOURCE_FILE],
@@ -408,7 +408,7 @@ describe("baselineNeedOf", () => {
   });
 
   it("needs the records at the base and no source for a legacy chain", () => {
-    expect(baselineNeedOf({ baseRevision: "main", entries: [LEGACY_CHAIN_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [LEGACY_CHAIN_ENTRY] })).toEqual({
       kind: "read-at-base",
       baseRevision: "main",
       sources: [],
@@ -542,6 +542,7 @@ describe("exceptionBaselineOf", () => {
           baseRevision: "main",
           git: baseGitAnswering({ text: { outcome: "ok", value: { presence: "present-in-base", text: "[]" } }, renames: NO_RENAMES }),
           exceptionRepository: exceptionRepositoryAnswering({ outcome: "ok", value: [] }),
+          exceptionEntryParser,
         },
         entries: [IMPORTED_LOCATION_ENTRY],
       }),
@@ -551,7 +552,7 @@ describe("exceptionBaselineOf", () => {
   it("is the settled baseline when none is needed", () => {
     expect(
       exceptionBaselineOf({
-        check: { repoRoot: REPO_ROOT, baseRevision: undefined, git: UNASKED_BASE_GIT, exceptionRepository: UNASKED_REPOSITORY },
+        check: { repoRoot: REPO_ROOT, baseRevision: undefined, git: UNASKED_BASE_GIT, exceptionRepository: UNASKED_REPOSITORY, exceptionEntryParser },
         entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY],
       }),
     ).toEqual(UNMEASURED_NOT_GIVEN);

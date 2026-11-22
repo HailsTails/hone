@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerClause } from "../../protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { JsoncParsePort } from "../runner/pieces/jsonc-parse.ts";
@@ -7,7 +7,8 @@ import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/types
 import type { PreparedWalkerCheck, WalkerFile, WalkerRepository } from "../runner/pieces/walker-piece.ts";
 import type { CompilerOptionsResolution, CompilerOptionsResolutionOf, OptionSettings, ResolvedConfig } from "./compiler-options-resolution.ts";
 import { createCompilerOverridesCheck } from "./compiler-overrides.ts";
-import { type Edition, editionSchema, FIRST_EDITION } from "../../../content-files/edition.ts";
+import { editionSchema, FIRST_EDITION } from "../../../content-files/edition.ts";
+import type { Edition } from "../../../../domain/rule-set/edition-types.ts";
 import { createDefaultJsoncParsePort } from "../runner/pieces/jsonc-parse.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
 

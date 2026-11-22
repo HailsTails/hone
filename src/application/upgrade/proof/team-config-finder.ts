@@ -1,17 +1,14 @@
-import type { FileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { projectionImportingOf } from "../writing/config-import-rewrite.ts";
+import type { TeamConfigRefusal } from "../../ports/upgrade/plan-refusal.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
 
 export type VersionOneProjection = { readonly projection: RepoPath; readonly teamConfigs: readonly PlannedRepoFile[] };
-
-export type TeamConfigRefusal =
-  | { readonly kind: "no-file-imports-projection"; readonly projection: RepoPath }
-  | { readonly kind: "config-candidate-unreadable"; readonly file: RepoPath; readonly detail: string };
 
 export type TeamConfigsRequest = {
   readonly repoRoot: AbsolutePath;

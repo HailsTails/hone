@@ -1,23 +1,20 @@
-import type { LoadFailure } from "../command-line/load-failure.ts";
-import type { DirectoryEntry, DirectoryPort } from "../node/file-system/file-system-port.ts";
-import type { FilePresence, FileTextPort } from "../node/file-system/file-text-port.ts";
-import type { PathPort } from "../node/path-port.ts";
-import { type AbsolutePath, absolutePathSchema } from "../content-files/absolute-path.ts";
-import { type RepoPath, repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { FilePresence } from "../../domain/repository/file-presence.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
+import { absolutePathSchema } from "../content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { VersionOneRecordsRoot } from "../../application/upgrade/proof/upgrade-proof.ts";
+import type { RecordsOnDisk } from "../../application/ports/records/version-one-reading.ts";
 
 const SINGLE_RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
 
 const SPLIT_RECORDS_FOLDER = repoPathSchema.parse("discipline-exceptions");
 
 const RECORDS_FILE_EXTENSION = ".json";
-
-export type RecordsOnDisk = {
-  readonly files: readonly RepoPath[];
-  readonly folders: readonly RepoPath[];
-  readonly root: VersionOneRecordsRoot;
-};
 
 export type RecordsOnDiskRequest = {
   readonly repoRoot: AbsolutePath;

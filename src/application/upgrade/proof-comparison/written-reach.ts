@@ -1,11 +1,10 @@
-import { recordedReachSchema } from "../../../infrastructure/hone-records-folder/records-wire.ts";
+import { recordedReachOf } from "../../../domain/records/hone-records/recorded-reach.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { checkAt } from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { sameClauseAddress } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { RecordInput, WrittenRecord } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
-
-export type ReachBeyondEntries = { readonly symptom: string; readonly file: string };
+import { sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
+import type { RecordInput, WrittenRecord } from "../../../domain/records/upgrade/records-mapping.ts";
+import type { ReachBeyondEntries } from "../../ports/upgrade/plan-refusal.ts";
 
 type Reach = "within-an-entry" | "beyond-the-entries";
 
@@ -15,8 +14,8 @@ const checkNamed = (request: { readonly address: string; readonly catalogues: re
     .flatMap((found) => (found.found === "check" ? [found.check] : []))[0];
 
 const reachOf = (request: { readonly written: WrittenRecord; readonly inputs: readonly RecordInput[]; readonly catalogues: readonly RuleSetCatalogue[] }): Reach => {
-  const reach = recordedReachSchema.safeParse(request.written.answers);
-  if (!reach.success || reach.data.reaches !== "one-check") {
+  const reach = recordedReachOf({ text: request.written.answers });
+  if (reach === "not-a-recorded-reach" || reach.reaches !== "one-check") {
     return "beyond-the-entries";
   }
   const check = checkNamed({ address: request.written.answers, catalogues: request.catalogues });

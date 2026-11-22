@@ -4,10 +4,11 @@ import { createDefaultPathPort } from "../../node/path-port.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { TEST_BODY_SECTIONS } from "../../engines/audit/CD-27/test-body-logic.ts";
-import type { LoadFailure } from "../../command-line/load-failure.ts";
-import type { FileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { PathPort } from "../../node/path-port.ts";
-import { type DisciplineFile, readDisciplineFile } from "../rule-sets/rule-set-reader.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { readDisciplineFile } from "../rule-sets/rule-set-reader.ts";
+import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
 import type {
   Case,
@@ -25,8 +26,9 @@ import type {
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
-import type { AbsolutePath } from "../absolute-path.ts";
-import { clauseAddressSchema, clauseAddressText } from "../../discipline-exceptions-folder/clause-address.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 

@@ -1,19 +1,20 @@
-import type { ProjectedFile } from "../../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import type { ModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import type { PathPort } from "../../../infrastructure/node/path-port.ts";
-import type { RecordsReading } from "../../../infrastructure/hone-records-folder/hone-record.ts";
+import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
+import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { EslintConfigLookup } from "../../../infrastructure/engines/eslint/eslint-config-lookup.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
-import type { MechanismId } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import type { ModuleExtension } from "../../../infrastructure/node/modules/install-layout.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import { type CheckedTree, typescriptFilesOf } from "../checked-tree-of.ts";
-import { type EngineRun, type EngineRunRequest, engineProjectionOf, engineRunOf, loadedEngineOf } from "../../../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import type { EngineRun, EngineRunRequest } from "../../ports/engine/engine-run.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
 import { type RunFailureSource, runFailureOf } from "../../../domain/report/run-failure.ts";
 
 export type EnginesRunRequest = {
@@ -26,6 +27,7 @@ export type EnginesRunRequest = {
   readonly moduleExtension: ModuleExtension;
   readonly path: Pick<PathPort, "join">;
   readonly modules: ModuleLoaderPort;
+  readonly engine: EnginePort;
 };
 
 const mechanismsOf = (request: { readonly settings: SettingsReading }): readonly MechanismId[] => [
@@ -50,13 +52,13 @@ const runRequestOf = (request: EnginesRunRequest): EngineRunRequest => ({
 });
 
 const runOf = async (request: EnginesRunRequest & { readonly mechanism: MechanismId }): Promise<Result<EngineRun, RunFailureSource>> => {
-  const engine = await loadedEngineOf(request);
-  return engine.outcome === "failed" ? engine : engineRunOf({ engine: engine.value, request: runRequestOf(request) });
+  const engine = await request.engine.load(request);
+  return engine.outcome === "failed" ? engine : request.engine.run.checks({ engine: engine.value, request: runRequestOf(request) });
 };
 
 const projectionOf = async (request: EnginesRunRequest & { readonly mechanism: MechanismId }): Promise<Result<readonly ProjectedFile[], RunFailureSource>> => {
-  const engine = await loadedEngineOf(request);
-  return engine.outcome === "failed" ? engine : engineProjectionOf({ engine: engine.value, request: runRequestOf(request) });
+  const engine = await request.engine.load(request);
+  return engine.outcome === "failed" ? engine : request.engine.project.checks({ engine: engine.value, request: runRequestOf(request) });
 };
 
 export const enginesProjectionOf = async (request: EnginesRunRequest): Promise<Result<readonly ProjectedFile[], RunLoadFailure>> => {

@@ -1,8 +1,8 @@
 import { type DebtPair, debtPairKey } from "../records/discipline-exceptions/debt-pair.ts";
 import type { GovernanceResult } from "../records/discipline-exceptions/governance.ts";
-import type { MechanismId } from "../../infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../rule-set/identifier-types.ts";
 import type { PaidDebtNote } from "./check-report.ts";
-import type { MechanismRun } from "../../infrastructure/engines/protocol/engine-run/mechanism-dispatch.ts";
+import type { MechanismRun } from "../runner/mechanism-run.ts";
 
 type GovernedRecords = Pick<GovernanceResult, "stale" | "forfeited">;
 

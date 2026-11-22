@@ -1,9 +1,10 @@
 import { z } from "zod";
-import type { FileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import type { CommitRecord, GitFailure, GitHistoryPort } from "../../src/infrastructure/git/git-port.ts";
-import type { PathPort } from "../../src/infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
-import type { AbsolutePath } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import type { CommitRecord, GitHistoryPort } from "../../src/application/ports/git-port.ts";
+import type { GitFailure } from "../../src/domain/repository/git-failure.ts";
+import type { PathPort } from "../../src/application/ports/host/path-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import type { Result } from "../../src/domain/result.ts";
 import { CHANGELOG_FILE, changelogGroupOf, changelogSectionOf, changelogWithSection } from "./changelog.ts";
 import { type ChangeEntry, changeEntryOf } from "../commit-subject/conventional-subject.ts";

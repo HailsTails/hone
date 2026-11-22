@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { Result } from "../../../../../domain/result.ts";

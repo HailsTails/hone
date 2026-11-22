@@ -1,6 +1,6 @@
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { commentValueOf } from "./checks-comment-value.ts";
-import type { NonEmptyRuleIds } from "../../../protocol/checks/checks-runner-types.ts";
+import type { NonEmptyRuleIds } from "../../../../../domain/runner/checks-run-report.ts";
 import type { MisnamedRuleId, VersionOneRuleId } from "../checks-runner/checks-run-types.ts";
 import type { LintedMessage } from "../toolchain/eslint-instance.ts";
 import { MISNAMED_DISABLE_RULE_ID, namedRuleIdsOf, OWN_RULE_ID_PREFIX } from "./misnamed-disable-rule.ts";

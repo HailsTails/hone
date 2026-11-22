@@ -1,11 +1,7 @@
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ConfigImportRefusal } from "../../ports/upgrade/plan-refusal.ts";
 import { directoryOf, relativeSpecifierOf, resolvedPathOf } from "./relative-specifier.ts";
-
-export type ConfigImportRefusal =
-  | { readonly kind: "no-projection-import"; readonly file: RepoPath; readonly projection: RepoPath }
-  | { readonly kind: "several-projection-imports"; readonly file: RepoPath; readonly count: number }
-  | { readonly kind: "projection-named-elsewhere"; readonly file: RepoPath };
 
 export type ProjectionPair = { readonly versionOneProjection: RepoPath; readonly versionTwoProjection: RepoPath };
 

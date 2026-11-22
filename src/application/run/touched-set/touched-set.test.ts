@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GitFailure, GitPort } from "../../../infrastructure/git/git-port.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { Equal } from "../../../infrastructure/engines/protocol/runner-module/type-equality.ts";
-import { baseJudgementOf, baseRevisionAvailabilityOf, computeTouchedSet, type TouchedSet } from "./touched-set.ts";
+import { baseRevisionAvailabilityOf, computeTouchedSet } from "./touched-set.ts";
+import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const A = repoPathSchema.parse("a.ts");
@@ -128,15 +130,5 @@ describe("baseRevisionAvailabilityOf", () => {
     expect(
       baseRevisionAvailabilityOf({ revision: "HEAD", failure: { kind: "git-failed", command: "git ls-tree", detail: "" } }),
     ).toEqual({ state: "git-failed", revision: "HEAD", gitMessage: "" });
-  });
-});
-
-describe("baseJudgementOf", () => {
-  it.each<{ readonly name: string; readonly touched: TouchedSet; readonly judgement: "in-this-run" | "left-to-another-run" }>([
-    { name: "a touched set measured against a base", touched: { measured: "yes", paths: new Set([A]) }, judgement: "in-this-run" },
-    { name: "a touched set that could not be measured", touched: { measured: "no", base: { state: "not-given" } }, judgement: "in-this-run" },
-    { name: "a touched set left to another run", touched: { measured: "elsewhere" }, judgement: "left-to-another-run" },
-  ])("judges what needs the base $judgement for $name", ({ touched, judgement }) => {
-    expect(baseJudgementOf({ touched })).toBe(judgement);
   });
 });

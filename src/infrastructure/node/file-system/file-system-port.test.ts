@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { createDirectoryPort, createEntryKindPort, type DirectoryEntry, type DirectorySurface, type EntryKindSurface } from "./file-system-port.ts";
+import { createDirectoryPort, createEntryKindPort, type DirectorySurface, type EntryKindSurface } from "./file-system-port.ts";
+import type { DirectoryEntry } from "../../../application/ports/file-system/directory-port.ts";
 
 const DIRECTORY = absolutePathSchema.parse("D:\\work\\project files\\src");
 

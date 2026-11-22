@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProcessPort } from "../../src/infrastructure/node/process/process-port.ts";
+import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { distTagOf, releaseTextOf, runReleaseText } from "./release-text.ts";
 
 const IDENTITY = {

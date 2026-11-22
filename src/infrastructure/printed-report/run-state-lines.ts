@@ -1,10 +1,11 @@
-import { RECORDS_FOLDER } from "../hone-records-folder/folder-layout/records-layout.ts";
+import { RECORDS_FOLDER } from "../../domain/records/hone-records/records-layout.ts";
 import type { RecordsUnmeasured } from "../../domain/records/measurement/records-unmeasured.ts";
-import { type SettingsNote, settingsNoteText } from "../../application/run/settings/read-settings.ts";
-import { SETTINGS_FILE_NAME } from "../hone-config-file/settings-sources.ts";
+import type { ConventionKey } from "../../domain/settings/conventions.ts";
+import type { SettingsNote } from "../../domain/settings/settings-note.ts";
+import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
-import { projectionOutputsOf } from "../engines/protocol/projection-outputs.ts";
-import type { RepoPath } from "../hone-records-folder/repo-path.ts";
+import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import { counted, quoted } from "./printed-text.ts";
 import type { AssessmentLeftElsewhere, EngineNotRun, RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
@@ -127,5 +128,13 @@ export const assessmentLine = (request: { readonly partial: AssessmentLeftElsewh
       return `carried standing ${partial.assessedBy}: ${counted({ count: partial.carried, noun: "carried record" })} not checked against the base in this run`;
   }
 };
+
+const NOTE_KEY_TEXTS: Readonly<Record<ConventionKey, string>> = {
+  generated: "generated",
+  layers: "layers",
+};
+
+export const settingsNoteText = (request: { readonly note: SettingsNote }): string =>
+  `${NOTE_KEY_TEXTS[request.note.key]} is declared; no check reads it yet`;
 
 export const settingsNoteLine = (request: { readonly note: SettingsNote }): string => settingsNoteText(request);

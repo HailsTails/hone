@@ -1,23 +1,26 @@
-import type { AttributedNativeException, Finding, GovernedRun } from "../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, Finding, GovernedRun } from "../../domain/finding/governance.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../run/touched-set/touched-set.ts";
+import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import { type RepoPath, repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
+import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import { type AuthoriseRequest, type Authorising, authorisingOf } from "./authorising.ts";
+import { type AuthorisingPorts, authorisingOf } from "./authorising.ts";
+import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 import { type DebtOutcome, debtOutcomesOf } from "../../domain/records/debt/debt-effects.ts";
 import { debtSitesOf, inSiteOrder, unrecordableSitesOf } from "../../domain/records/debt/debt-sites.ts";
 import { nativeDebtSitesOf } from "../../domain/records/debt/native-debt-sites.ts";
-import type { RecordsAtBase, RecordsDocument, RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
+import type { RecordsAtBase, RecordsDocument, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { type PrunableDebt, prunableDebtOf } from "../../domain/records/debt/prunable-debt.ts";
-import type { HoneRecordsFailure } from "./read-hone-records.ts";
+import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
-import { documentsWithAdded, documentsWithRemoved, type RecordAddition } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
-import { namedRecordsFileOf } from "../../infrastructure/hone-records-folder/folder-layout/records-layout.ts";
-import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import type { RecordsSource } from "../ports/records-source.ts";
-import type { RecordsStore, RecordsUnwritable } from "../../infrastructure/hone-records-folder/writing/records-store.ts";
+import type { RecordsEditor } from "../ports/records/records-editor.ts";
+import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
+import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
+import type { RecordsStore, RecordsUnwritable } from "../ports/records/records-store.ts";
 
 export type RecordCommandFailure = HoneRecordsFailure | RecordsUnwritable | { readonly kind: "git-failed"; readonly detail: string };
 
@@ -25,6 +28,8 @@ export type RecordDebtPorts = {
   readonly catalogue: SymptomCatalogue;
   readonly source: Pick<RecordsSource, "read">;
   readonly store: RecordsStore;
+  readonly recordsReader: RecordsReader;
+  readonly recordsEditor: Pick<RecordsEditor, "documentsWithAdded">;
 };
 
 export type RecordDebtRequest = {
@@ -35,15 +40,23 @@ export type RecordDebtRequest = {
   readonly leave: readonly RepoPath[];
 };
 
-export type PruneDebtPorts = { readonly source: Pick<RecordsSource, "read">; readonly store: RecordsStore };
+export type PruneDebtPorts = {
+  readonly source: Pick<RecordsSource, "read">;
+  readonly store: RecordsStore;
+  readonly recordsEditor: Pick<RecordsEditor, "documentsWithRemoved">;
+};
 
-export type AuthorisePorts = { readonly catalogue: SymptomCatalogue; readonly source: Pick<RecordsSource, "read">; readonly store: RecordsStore };
+export type AuthorisePorts = AuthorisingPorts & {
+  readonly catalogue: SymptomCatalogue;
+  readonly source: Pick<RecordsSource, "read">;
+  readonly store: RecordsStore;
+};
 
 type Commanded<Value> = Result<Value, RecordCommandFailure>;
 
 const UNMEASURED_BASE: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const DEBT_FOLDER = repoPathSchema.parse("hone-records/debt");
+const DEBT_FOLDER = fixedRepoPath("hone-records/debt");
 
 const documentsOf = (request: { readonly source: Pick<RecordsSource, "read"> }): Commanded<readonly RecordsDocument[]> => {
   const read = request.source.read();
@@ -56,7 +69,7 @@ const unmeasuredFailure = (request: { readonly base: BaseRevisionAvailability })
 });
 
 const heldDebtOf = (request: { readonly ports: RecordDebtPorts; readonly documents: readonly RecordsDocument[] }): Commanded<RecordsReading> => {
-  const reading = recordsReadingOf({ documents: request.documents, catalogue: request.ports.catalogue, base: UNMEASURED_BASE });
+  const reading = request.ports.recordsReader.recordsReadingOf({ documents: request.documents, catalogue: request.ports.catalogue, base: UNMEASURED_BASE });
   return reading.outcome === "failed" ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } } : reading;
 };
 
@@ -78,12 +91,16 @@ const additionsOf = (request: { readonly outcomes: readonly DebtOutcome[] }): Co
       return addition.outcome === "failed" ? addition : { outcome: "ok", value: [...sofar.value, ...addition.value] };
     }, { outcome: "ok", value: [] });
 
-const storedAdditions = (request: { readonly store: RecordsStore; readonly documents: readonly RecordsDocument[]; readonly additions: readonly RecordAddition[] }): Commanded<void> => {
+const storedAdditions = (request: {
+  readonly ports: Pick<RecordDebtPorts, "store" | "recordsEditor">;
+  readonly documents: readonly RecordsDocument[];
+  readonly additions: readonly RecordAddition[];
+}): Commanded<void> => {
   if (request.additions.length === 0) {
     return { outcome: "ok", value: undefined };
   }
-  const added = documentsWithAdded(request);
-  return added.outcome === "failed" ? added : request.store.apply({ edit: { write: added.value, remove: [] } });
+  const added = request.ports.recordsEditor.documentsWithAdded(request);
+  return added.outcome === "failed" ? added : request.ports.store.apply({ edit: { write: added.value, remove: [] } });
 };
 
 const outcomesOf = (request: { readonly ports: RecordDebtPorts; readonly run: RecordDebtRequest; readonly documents: readonly RecordsDocument[] }): Commanded<readonly DebtOutcome[]> => {
@@ -109,9 +126,8 @@ const outcomesOf = (request: { readonly ports: RecordDebtPorts; readonly run: Re
   };
 };
 
-export const recordDebtOf =
-  (ports: RecordDebtPorts) =>
-  (run: RecordDebtRequest): Commanded<readonly DebtOutcome[]> => {
+export const recordDebtOf = (request: { readonly ports: RecordDebtPorts; readonly run: RecordDebtRequest }): Commanded<readonly DebtOutcome[]> => {
+    const { ports, run } = request;
     if (run.findings.length === 0 && run.unrecorded.length === 0) {
       return { outcome: "ok", value: [] };
     }
@@ -127,13 +143,12 @@ export const recordDebtOf =
     if (additions.outcome === "failed") {
       return additions;
     }
-    const stored = storedAdditions({ store: ports.store, documents: documents.value, additions: additions.value });
+    const stored = storedAdditions({ ports, documents: documents.value, additions: additions.value });
     return stored.outcome === "failed" ? stored : outcomes;
   };
 
-export const pruneDebtOf =
-  (ports: PruneDebtPorts) =>
-  (request: { readonly report: Pick<RunReport, "paid" | "stale" | "forfeited"> }): Commanded<readonly PrunableDebt[]> => {
+export const pruneDebtOf = (request: { readonly ports: PruneDebtPorts; readonly report: Pick<RunReport, "paid" | "stale" | "forfeited"> }): Commanded<readonly PrunableDebt[]> => {
+    const { ports } = request;
     const prunable = prunableDebtOf(request);
     if (prunable.length === 0) {
       return { outcome: "ok", value: [] };
@@ -142,7 +157,7 @@ export const pruneDebtOf =
     if (documents.outcome === "failed") {
       return documents;
     }
-    const edit = documentsWithRemoved({ documents: documents.value, places: prunable.map((pruned) => pruned.place) });
+    const edit = ports.recordsEditor.documentsWithRemoved({ documents: documents.value, places: prunable.map((pruned) => pruned.place) });
     if (edit.outcome === "failed") {
       return edit;
     }
@@ -150,14 +165,19 @@ export const pruneDebtOf =
     return stored.outcome === "failed" ? stored : { outcome: "ok", value: prunable };
   };
 
-export const authoriseOf =
-  (ports: AuthorisePorts) =>
-  (request: AuthoriseRequest): Commanded<Authorising> => {
+export const authoriseOf = (command: { readonly ports: AuthorisePorts; readonly request: AuthoriseRequest }): Commanded<Authorising> => {
+    const { ports, request } = command;
     const documents = documentsOf(ports);
     if (documents.outcome === "failed") {
       return documents;
     }
-    const authorising = authorisingOf({ request, documents: documents.value, catalogue: ports.catalogue });
+    const authorising = authorisingOf({
+      recordsReader: ports.recordsReader,
+      recordsEditor: ports.recordsEditor,
+      request,
+      documents: documents.value,
+      catalogue: ports.catalogue,
+    });
     if (authorising.outcome === "failed" || authorising.value.judged !== "accepted") {
       return authorising;
     }

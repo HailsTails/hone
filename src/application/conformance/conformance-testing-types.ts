@@ -1,10 +1,10 @@
-import type { RunnerClause } from "../ports/runner-module-types.ts";
+import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
 import type { Edition } from "../../domain/rule-set/edition-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ConformanceFailure } from "./conformance-types.ts";
+import type { ConformanceFailure } from "../../domain/runner/conformance-types.ts";
 
-export type { ConformanceFailure } from "./conformance-types.ts";
+export type { ConformanceFailure } from "../../domain/runner/conformance-types.ts";
 
 export type ClauseRequest = { readonly ruleSetRoot: string; readonly clause: string };
 

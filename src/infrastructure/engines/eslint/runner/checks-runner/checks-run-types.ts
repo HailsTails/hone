@@ -1,10 +1,10 @@
-import type { ChecksSliceProblem, MisnamedRuleId } from "../../../protocol/checks/checks-runner-types.ts";
-import type { Hit, MeasuredPair, NativeException } from "../../../protocol/runner-module/runner-result-schema.ts";
-import type { RunnerFailure } from "../../../../../application/ports/runner-failure.ts";
-import type { EslintConfigLookup } from "../../eslint-config-lookup.ts";
-import type { AbsolutePath } from "../../../../content-files/absolute-path.ts";
-import type { ClauseAddress } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../../hone-records-folder/repo-path.ts";
+import type { ChecksSliceProblem, MisnamedRuleId } from "../../../../../domain/runner/checks-run-report.ts";
+import type { Hit, MeasuredPair, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { AnsweredFile } from "../projection/checks-projection.ts";
 import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";

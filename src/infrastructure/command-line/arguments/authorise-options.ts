@@ -1,7 +1,8 @@
-import { type RepoPath, repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { Why } from "../../hone-records-folder/why-chain.ts";
-import type { AuthoriseRequest } from "../../../application/records/authorising.ts";
+import type { Why } from "../../../domain/records/why-chain.ts";
+import type { AuthoriseRequest } from "../../../application/ports/authorising.ts";
 
 export type AuthoriseOptionName = "repo" | "answers" | "file" | "case" | "owes" | "why" | "because" | "evidence" | "rootCause" | "rootEvidence" | "readback" | "owner";
 

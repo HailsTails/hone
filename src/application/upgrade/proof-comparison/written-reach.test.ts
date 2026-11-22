@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema, TOOL_RULE_SET } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RecordInput, WrittenRecord } from "../../../infrastructure/hone-records-folder/records-mapping.ts";
+import type { RecordInput, WrittenRecord } from "../../../domain/records/upgrade/records-mapping.ts";
 import { reachBeyondEntriesOf } from "./written-reach.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");

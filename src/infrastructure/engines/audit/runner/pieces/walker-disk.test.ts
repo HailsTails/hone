@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { EntryKindPort } from "../../../../node/file-system/file-system-port.ts";
-import type { FileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import type { EntryKindPort } from "../../../../../application/ports/file-system/entry-kind-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { portsDisk, textsDisk } from "./walker-disk.ts";
 
 const TEXTS_DISK = textsDisk({ root: "/repository", texts: { "packages/a/tsconfig.json": "{}", "tsconfig.base.json": "{ }" } });

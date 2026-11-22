@@ -1,7 +1,7 @@
-import type { AttributedNativeException, GovernedRun } from "../../../infrastructure/command-line/governance.ts";
+import type { AttributedNativeException, GovernedRun } from "../../finding/governance.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import { clauseAddressText } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import type { RepoPath } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { clauseAddressText } from "../../rule-set/clause-address.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { nativeSitesOf } from "../answering/answering.ts";
 import { type DebtSite, debtSiteOf, inSiteOrder } from "./debt-sites.ts";
 import type { UnrecordableBecause, UnrecordableSite } from "./unrecordable-site.ts";

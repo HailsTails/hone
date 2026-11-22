@@ -1,13 +1,10 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
-import type { RecordsAtBase, RecordsDocumentRefusal, RecordsReading } from "../../infrastructure/hone-records-folder/hone-record.ts";
-import type { RecordsFolderFailure, RecordsSource } from "../ports/records-source.ts";
-import { recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-
-export type HoneRecordsFailure =
-  | { readonly kind: "records-folder"; readonly failure: RecordsFolderFailure }
-  | { readonly kind: "records-documents"; readonly refusals: readonly RecordsDocumentRefusal[] };
+import type { RecordsAtBase, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
+import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
 
 const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly baseRevision: string | undefined }): Result<RecordsAtBase, HoneRecordsFailure> => {
   if (request.baseRevision === undefined) {
@@ -24,6 +21,7 @@ const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly bas
 
 export const readHoneRecords = (request: {
   readonly source: RecordsSource;
+  readonly recordsReader: RecordsReader;
   readonly catalogue: SymptomCatalogue;
   readonly baseRevision: string | undefined;
 }): Result<RecordsReading, HoneRecordsFailure> => {
@@ -35,6 +33,6 @@ export const readHoneRecords = (request: {
   if (base.outcome === "failed") {
     return base;
   }
-  const reading = recordsReadingOf({ documents: working.value, catalogue: request.catalogue, base: base.value });
+  const reading = request.recordsReader.recordsReadingOf({ documents: working.value, catalogue: request.catalogue, base: base.value });
   return reading.outcome === "failed" ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } } : reading;
 };

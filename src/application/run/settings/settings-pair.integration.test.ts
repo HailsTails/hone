@@ -4,8 +4,9 @@ import { createDefaultFileTextPort } from "../../../infrastructure/node/file-sys
 import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
 import { createSettingsRepository } from "./read-settings.ts";
 import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
-import type { AbsolutePath } from "../../../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
 
 const path = createDefaultPathPort({});
 
@@ -37,7 +38,7 @@ const readBeforeRunSettings = () => {
 
 const readAfter = () => {
   const sources = createSettingsSources({ repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
-  const reading = createSettingsRepository({ sources }).read({});
+  const reading = createSettingsRepository({ settingsFormat: SETTINGS_FILE_FORMAT, sources }).read({});
   assert(reading.outcome === "ok", "the plan's version 2 file loads");
   return reading.value;
 };
