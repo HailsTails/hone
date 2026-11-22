@@ -19,7 +19,7 @@ import type { ModuleLoaderPort } from "../../../../../application/ports/host/mod
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
-import { exceptionEntriesOfText, parseExceptionEntries } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import { singleFileExceptionReading } from "../../../../discipline-exceptions-folder/exception-records.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
@@ -403,18 +403,14 @@ const consumerRepo = (request: { readonly name: string }): AbsolutePath => consu
 
 const TYPESCRIPT_FILE = /\.ts$/;
 
-const EXCEPTIONS_FILE_NAME = "discipline-exceptions.json";
-
-const EXCEPTIONS_FILE = repoPathSchema.parse(EXCEPTIONS_FILE_NAME);
-
 const fixtureRecords = (request: { readonly name: string }): readonly ExceptionRecord[] => {
   const repoRoot = absolutePathSchema.parse(`${import.meta.dirname}/${request.name}`);
   const selection = createSelectionRepository({ repoRoot, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
   assert(selection.outcome === "ok", `${request.name} selects its clauses`);
-  const text = fileText.read({ path: `${repoRoot}/${EXCEPTIONS_FILE_NAME}` });
+  const text = fileText.read({ path: `${repoRoot}/discipline-exceptions.json` });
   assert(text.outcome === "ok", `${request.name} holds its records`);
-  const reading = parseExceptionEntries({
-    entries: exceptionEntriesOfText({ text: text.value }).map((entry, index) => ({ place: { layout: "single-file", file: EXCEPTIONS_FILE, index }, entry })),
+  const reading = singleFileExceptionReading({
+    text: text.value,
     selection: selection.value.selection,
     baseline: UNMEASURED_EXCEPTION_BASELINE,
     fileExceptionWhyChains: selection.value.fileExceptionWhyChains,

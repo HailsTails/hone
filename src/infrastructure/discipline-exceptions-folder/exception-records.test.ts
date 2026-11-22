@@ -5,7 +5,7 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries } from "./exception-records.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, singleFileExceptionReading } from "./exception-records.ts";
 import { authorisationStandingOf, type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { type ImportEvidence, legacyChainsIn, type PlacedEntry, recordImportOf, type StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
@@ -1572,5 +1572,37 @@ const RECORD_IMPORT_CASES: readonly RecordImportCase[] = [
 describe("recordImportOf names the provenance source of an imported record, and of no other", () => {
   it.each(RECORD_IMPORT_CASES)("reads $label", ({ record, recordImport }) => {
     expect(recordImportOf({ record })).toEqual(recordImport);
+  });
+});
+
+describe("singleFileExceptionReading", () => {
+  it("reads the entries of a discipline-exceptions.json text as records placed by their position in that file", () => {
+    expect(
+      singleFileExceptionReading({
+        text: `{ "version": 1, "exceptions": [${JSON.stringify(LOCATION)}, ${JSON.stringify(FILE_CARVE_OUT)}] }`,
+        selection: SELECTION,
+        fileExceptionWhyChains: "required",
+        baseline: UNMEASURED_EXCEPTION_BASELINE,
+      }),
+    ).toEqual({
+      records: [
+        { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/factory.ts", reason: LOCATION.reason, provenance: LOCATION.provenance },
+        { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
+      ],
+      invalid: [],
+    });
+  });
+
+  it("places an entry the selection does not hold at its index in the file", () => {
+    const unselected = { ...FILE_CARVE_OUT, clause: "CD-99#other" };
+
+    expect(
+      singleFileExceptionReading({
+        text: `{ "version": 1, "exceptions": [${JSON.stringify(LOCATION)}, ${JSON.stringify(unselected)}] }`,
+        selection: SELECTION,
+        fileExceptionWhyChains: "required",
+        baseline: UNMEASURED_EXCEPTION_BASELINE,
+      }),
+    ).toMatchObject({ invalid: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 } }] });
   });
 });
