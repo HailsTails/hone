@@ -48,6 +48,8 @@
     "delivery/install-proof/consumer-proof",
     "delivery/adopter-repositories/cd1-cascade",
     "delivery/adopter-repositories/cd1-exempted",
+    "src/infrastructure/command-line/documentation/walkthrough/after",
+    "src/infrastructure/command-line/documentation/walkthrough/before",
     "src/composition/settings-pair/before",
     "src/infrastructure/content-files/rule-sets/team-rule-set/repo",
     "src/infrastructure/engines/eslint/runner/native-exceptions/command-line-options",
