@@ -1,5 +1,4 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { pathToFileURL } from "node:url";
 import type { ExceptionRepository, ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
 import {
@@ -242,7 +241,7 @@ const checkOf = (request: {
     fileText: request.fileText,
     modules: request.modules,
     git,
-    moduleUrl: pathToFileURL(`${INSTALL_ROOT}/src/hone.ts`).href,
+    moduleUrl: new URL("../hone.ts", import.meta.url).href,
     locations: {
       arguments: { repo: REPO_ROOT, baseRevision: undefined, reportOutput: undefined, forfeiture: undefined },
       repoRoot: REPO_ROOT,
