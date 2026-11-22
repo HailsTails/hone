@@ -295,7 +295,7 @@ type SpiritBelow = "rule-pages" | "symptom-rules" | "none";
 
 const SPIRIT_LEADS: Readonly<Record<SpiritBelow, string>> = {
   "rule-pages": "Start from each rule's Spirit below. ",
-  "symptom-rules": "Start from the Spirit of each rule its symptom may indicate. ",
+  "symptom-rules": "Start from what must hold for each rule its symptom may indicate. ",
   none: "",
 };
 
