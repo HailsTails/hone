@@ -4,14 +4,15 @@ import { carriedStandingOf } from "../hone-records-folder/reading/carried-standi
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { baseStandingRecordsSource, versionOneAwareRecordsSourceOf } from "./base-standing-records-source.ts";
 import type { VersionOneEntries } from "./version-one-entries.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -40,11 +41,11 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT], forms: [] };
 
@@ -81,9 +82,9 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
 
 const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }];
 
-const LOOP_KEYWORD_AUTHORISED = repoPathSchema.parse("hone-records/authorised-locations/loop-keyword.json");
+const LOOP_KEYWORD_AUTHORISED = repoPathOf("hone-records/authorised-locations/loop-keyword.json");
 
-const REBINDING_AUTHORISED = repoPathSchema.parse("hone-records/authorised-locations/rebinding.json");
+const REBINDING_AUTHORISED = repoPathOf("hone-records/authorised-locations/rebinding.json");
 
 const LOOPS_ENTRY = { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "kept" } as const;
 
@@ -289,9 +290,9 @@ describe("baseStandingRecordsSource and what a carried record stands on", () => 
 describe("baseStandingRecordsSource establishing the carried debt of the base's file carve-outs", () => {
   const CARVE_OUT = { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop", whyChain: ["a", "b", "c", "d", "e"] };
 
-  const DEBT_FILE = repoPathSchema.parse("hone-records/debt/loop-keyword.json");
+  const DEBT_FILE = repoPathOf("hone-records/debt/loop-keyword.json");
 
-  const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/loop-keyword.json");
+  const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/loop-keyword.json");
 
   const HEAD_DEBT = { answers: "loop-keyword#loops", file: "src/a.ts", carried: CARVE_OUT };
 
@@ -334,7 +335,7 @@ describe("baseStandingRecordsSource establishing the carried debt of the base's 
 
 describe("versionOneAwareRecordsSourceOf", () => {
   it("builds the source for a repository from the factory it wraps, the version 1 repository of the same root and the catalogue given", () => {
-    const repoRoot = absolutePathSchema.parse("/repo");
+    const repoRoot = absoluteRootOf("/repo");
     const repository: Pick<ExceptionRepository, "readAt"> = {
       readAt: vi.fn<ExceptionRepository["readAt"]>().mockReturnValue({ outcome: "ok", value: [LOOPS_ENTRY] }),
     };

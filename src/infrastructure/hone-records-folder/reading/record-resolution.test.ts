@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Case, Check, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../repo-path.ts";
 import type { RecordsAtBase, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import { owedBy, recordOf } from "./record-resolution.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const THE_TYPE_CHECKER_PROVES_IT: Principle = { name: "the-type-checker-proves-it", title: "The type checker proves it" };
 
@@ -86,9 +88,9 @@ const DOUBLE_WITH_A_BODY: Symptom = {
   correctUses: [],
 };
 
-const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#cast-expressions"), engines: [], forms: [] };
+const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, engines: [], forms: [] };
 
-const TEST_BODY_CHECK: Check = { name: "test-body", symptom: BRANCH_IN_A_TEST, clause: clauseAddressSchema.parse("CD-27#test-body-logic"), engines: [], forms: ["branching-with-if"] };
+const TEST_BODY_CHECK: Check = { name: "test-body", symptom: BRANCH_IN_A_TEST, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, engines: [], forms: ["branching-with-if"] };
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -142,15 +144,15 @@ const WHY_CHAIN = {
 
 const UNMEASURED: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/text-past-its-reader.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/text-past-its-reader.json");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const BOUNDARIES_FILE = repoPathSchema.parse("hone-records/boundary-records.json");
+const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
 
-const DEVIATIONS_FILE = repoPathSchema.parse("hone-records/deviations/stub-with-vifn.json");
+const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/stub-with-vifn.json");
 
-const DEPENDENCIES_FILE = repoPathSchema.parse("hone-records/dependency-records.json");
+const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
 const STATED_AUTHORISED_LOCATION = {
   answers: "claimed-type",
@@ -202,10 +204,10 @@ describe("recordOf, debt", () => {
   });
 
   it.each([
-    { symptom: CLAIMED_TYPE, file: repoPathSchema.parse("hone-records/debt/claimed-type.json") },
-    { symptom: TEXT_PAST_ITS_READER, file: repoPathSchema.parse("hone-records/debt/text-past-its-reader.json") },
-    { symptom: BRANCH_IN_A_TEST, file: repoPathSchema.parse("hone-records/debt/branch-in-a-test.json") },
-    { symptom: DOUBLE_WITH_A_BODY, file: repoPathSchema.parse("hone-records/debt/double-with-a-body.json") },
+    { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/debt/claimed-type.json") },
+    { symptom: TEXT_PAST_ITS_READER, file: repoPathOf("hone-records/debt/text-past-its-reader.json") },
+    { symptom: BRANCH_IN_A_TEST, file: repoPathOf("hone-records/debt/branch-in-a-test.json") },
+    { symptom: DOUBLE_WITH_A_BODY, file: repoPathOf("hone-records/debt/double-with-a-body.json") },
   ])("accepts debt on $symptom.name, since every symptom accepts debt", ({ symptom, file }) => {
     expect(recordOf({ catalogue: CATALOGUE, base: UNMEASURED, file, filedUnder: { kind: "debt" }, entry: { answers: symptom.name, file: "src/held.ts" } })).toEqual({
       outcome: "ok",
@@ -214,7 +216,7 @@ describe("recordOf, debt", () => {
   });
 
   it("refuses debt on a symptom the catalogue does not hold", () => {
-    const file = repoPathSchema.parse("hone-records/debt/unheard-of.json");
+    const file = repoPathOf("hone-records/debt/unheard-of.json");
     expect(recordOf({ catalogue: CATALOGUE, base: UNMEASURED, file, filedUnder: { kind: "debt" }, entry: { answers: "unheard-of", file: "src/held.ts" } })).toEqual({
       outcome: "failed",
       error: [{ kind: "unknown-symptom", symptom: "unheard-of" }],
@@ -255,7 +257,7 @@ describe("recordOf, authorised locations", () => {
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathSchema.parse("hone-records/authorised-locations/branch-in-a-test.json"),
+        file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"),
         filedUnder: { kind: "authorised-locations" },
         entry: { ...STATED_AUTHORISED_LOCATION, answers: "branch-in-a-test", case: "states-what-the-unit-gives-back-for-one-case-or-several", owes: "straight-through-tests" },
       }),
@@ -336,7 +338,7 @@ describe("recordOf, authorised locations", () => {
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathSchema.parse("hone-records/authorised-locations/text-past-its-reader.json"),
+        file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json"),
         filedUnder: { kind: "authorised-locations" },
         entry: {
           ...STATED_AUTHORISED_LOCATION,
@@ -376,7 +378,7 @@ describe("recordOf, authorised locations", () => {
 });
 
 describe("recordOf, a record naming one check of its symptom", () => {
-  const DEBT_ON_CLAIMED_TYPE_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+  const DEBT_ON_CLAIMED_TYPE_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
   it("reads debt on <symptom>#<check> as reaching that check, filed in its symptom's file", () => {
     expect(
@@ -509,7 +511,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathSchema.parse("hone-records/debt/unheard-of.json"),
+        file: repoPathOf("hone-records/debt/unheard-of.json"),
         filedUnder: { kind: "debt" },
         entry: { answers: "unheard-of#cast-expressions", file: "src/held.ts" },
       }),
@@ -811,7 +813,7 @@ describe("recordOf, deviations", () => {
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathSchema.parse("hone-records/deviations/hand-rolled-fakes.json"),
+        file: repoPathOf("hone-records/deviations/hand-rolled-fakes.json"),
         filedUnder: { kind: "deviations" },
         entry: { ...DEVIATION, recipe: "hand-rolled-fakes" },
       }),
@@ -823,7 +825,7 @@ describe("recordOf, deviations", () => {
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathSchema.parse("hone-records/deviations/whole-written-out-expectation.json"),
+        file: repoPathOf("hone-records/deviations/whole-written-out-expectation.json"),
         filedUnder: { kind: "deviations" },
         entry: DEVIATION,
       }),
@@ -938,7 +940,7 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
       recordOf({
         catalogue: CATALOGUE,
         base: UNMEASURED,
-        file: repoPathSchema.parse("hone-records/debt/claimed-type.json"),
+        file: repoPathOf("hone-records/debt/claimed-type.json"),
         filedUnder: { kind: "debt" },
         entry: { answers: "claimed-type", file: "src/collections/lodash-grouping.ts" },
       }),

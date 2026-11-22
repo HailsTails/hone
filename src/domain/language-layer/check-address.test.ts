@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { checkAddressOf, checkAt, checkNamedAt, checksOf } from "./check-address.ts";
 import type { Check, Engine, Principle, Recipe, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -34,13 +37,13 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-13#layer-boundaries");
+const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layer-boundaries") };
 
-const RESULT_FAILURES_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-9#result-failures");
+const RESULT_FAILURES_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") };
 
 const FAILURES_AS_VALUES: Recipe = {
   name: "failures-as-values",
@@ -78,7 +81,7 @@ const CATALOGUE: SymptomCatalogue = {
     },
     { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
     { clause: RESULT_FAILURES_CLAUSE, sight: { kind: "method", recipe: FAILURES_AS_VALUES, outcomeSeenBy: [REBINDING] } },
-    { clause: clauseAddressSchema.parse("CD-32#pii-redaction"), sight: { kind: "outside-the-cases" } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, sight: { kind: "outside-the-cases" } },
   ],
   checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
   namedBans: [],
@@ -122,12 +125,12 @@ describe("checksOf", () => {
   it.each<ClauseRow>([
     { name: "a clause that sees one symptom", clause: LOOPS_CLAUSE, checks: [LOOP_KEYWORD_LOOPS] },
     { name: "a clause that sees a symptom by each form", clause: TEST_BODY_CLAUSE, checks: [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY] },
-    { name: "a clause named with its rule set", clause: clauseAddressSchema.parse("hone/CD-15#loops"), checks: [LOOP_KEYWORD_LOOPS] },
+    { name: "a clause named with its rule set", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, checks: [LOOP_KEYWORD_LOOPS] },
     { name: "a judgement clause, which sees a symptom but has no check", clause: LAYERING_CLAUSE, checks: [] },
     { name: "a clause that demands a method", clause: RESULT_FAILURES_CLAUSE, checks: [] },
-    { name: "a team rule set's clause of the same id as one of Hone's", clause: clauseAddressSchema.parse("team/CD-15#loops"), checks: [] },
-    { name: "a clause outside the cases", clause: clauseAddressSchema.parse("CD-32#pii-redaction"), checks: [] },
-    { name: "a clause the catalogue does not hold", clause: clauseAddressSchema.parse("CD-99#unheld"), checks: [] },
+    { name: "a team rule set's clause of the same id as one of Hone's", clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, checks: [] },
+    { name: "a clause outside the cases", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, checks: [] },
+    { name: "a clause the catalogue does not hold", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-99"), clause: clauseIdOf("unheld") }, checks: [] },
   ])("gives the checks of $name", ({ clause, checks }) => {
     expect(checksOf({ catalogue: CATALOGUE, clause })).toEqual(checks);
   });

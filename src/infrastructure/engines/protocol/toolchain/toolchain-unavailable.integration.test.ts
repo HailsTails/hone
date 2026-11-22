@@ -16,6 +16,7 @@ import { loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
@@ -23,7 +24,7 @@ const ESLINT = "eslint" as const;
 
 const AUDIT = "audit" as const;
 
-const REPO = absolutePathSchema.parse("/repository");
+const REPO = absoluteRootOf("/repository");
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 

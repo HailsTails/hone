@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
@@ -9,11 +8,14 @@ import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { RecordsReading, SymptomReach } from "../domain/records/hone-records/hone-record.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import type { SettingsReading } from "../application/run/settings/read-settings.ts";
-import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -132,11 +134,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -162,9 +164,9 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const INSTALL = absolutePathSchema.parse("/install");
+const INSTALL = absoluteRootOf("/install");
 
 const NOTHING_PRESENT: Pick<FileTextPort, "exists" | "read"> = {
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
@@ -251,12 +253,12 @@ describe("versionTwoStagesOver", () => {
 
   it("measures the files changed since the base revision when a record is debt", () => {
     const git = gitListing({ tracked: vi.fn<GitPort["trackedPaths"]>() });
-    vi.mocked(git.changedSince).mockReturnValue({ outcome: "ok", value: [repoPathSchema.parse("src/a.ts")] });
+    vi.mocked(git.changedSince).mockReturnValue({ outcome: "ok", value: [repoPathOf("src/a.ts")] });
     const records: RecordsReading = {
       records: [
         {
-          place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
-          record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: repoPathSchema.parse("src/a.ts"), holding: { held: "stated" } },
+          place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+          record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: repoPathOf("src/a.ts"), holding: { held: "stated" } },
         },
       ],
       refused: [],
@@ -265,7 +267,7 @@ describe("versionTwoStagesOver", () => {
     };
     expect(stagesOver({ git, baseRevision: "origin/main" }).touched({ assessment: { forfeiture: "this-run" }, measuring: "when-debt-held", records })).toEqual({
       measured: "yes",
-      paths: new Set([repoPathSchema.parse("src/a.ts")]),
+      paths: new Set([repoPathOf("src/a.ts")]),
     });
   });
 });

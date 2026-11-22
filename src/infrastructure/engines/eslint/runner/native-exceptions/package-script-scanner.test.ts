@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
   commandLineOptionsOf,
   eslintInvocationsOf,
@@ -11,12 +9,17 @@ import {
   scriptCommandsOf,
   suppressionsLocationValuesOf,
 } from "./package-script-scanner.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const noTmpFiles = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const noTmpFiles = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
 const noClassAuthoring = "hone/no-class-authoring";
-const rootPackageJson = repoPathSchema.parse("package.json");
-const nestedPackageJson = repoPathSchema.parse("packages/a/package.json");
+const rootPackageJson = repoPathOf("package.json");
+const nestedPackageJson = repoPathOf("packages/a/package.json");
 
 const WEAKENS: OptionEffect = { kind: "weakens" };
 

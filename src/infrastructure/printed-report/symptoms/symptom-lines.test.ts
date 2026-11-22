@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { findingSymptomsOf, symptomLine } from "./symptom-lines.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 
 const AUDIT = "audit" as const;
 
@@ -124,13 +127,13 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
-const TEAM_CLAUSE = clauseAddressSchema.parse("acme/AC-1#no-moment");
+const TEAM_CLAUSE = { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("AC-1"), clause: clauseIdOf("no-moment") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -156,7 +159,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const FILE = repoPathOf("src/orders/charge-order.ts");
 
 const CLOCK_FINDING: Finding = { clause: CLOCK_SOURCES, mechanism: AUDIT, file: FILE, anchor: { line: 14, column: 0 }, snippet: "clock.now()" };
 

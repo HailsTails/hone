@@ -3,20 +3,21 @@ import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } 
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 import { proofDifferencesOf } from "./proof-differences.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 
 const AUDIT = "audit" as const;
 
 const ESLINT = "eslint" as const;
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -53,11 +54,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -143,12 +144,12 @@ const CARVE_OUT: ExceptionRecord = { kind: "file-carve-out", clause: LOOPS_CLAUS
 const AUTHORISED: ExceptionRecord = { kind: "authorised-location", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "kept" };
 
 const DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/loop-keyword.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 },
   record: { kind: "debt", symptom: LOOP_KEYWORD_LOOPS.symptom, reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS }, file: SRC_A, holding: { held: "stated" } },
 };
 
 const AUTHORISED_LOCATION: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/authorised-locations/loop-keyword.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"), index: 0 },
   record: {
     kind: "authorised-location",
     symptom: LOOP_KEYWORD_LOOPS.symptom,
@@ -319,7 +320,7 @@ describe("proofDifferencesOf", () => {
   });
 
   it("names a file excluded on one side only", () => {
-    expect(differencesBetween({ before: { excluded: [SRC_A] }, after: { excluded: [repoPathSchema.parse("generated")] } })).toEqual([
+    expect(differencesBetween({ before: { excluded: [SRC_A] }, after: { excluded: [repoPathOf("generated")] } })).toEqual([
       { section: "excluded", onlyBefore: ["src/a.ts"], onlyAfter: ["generated"] },
     ]);
   });
@@ -335,7 +336,7 @@ describe("proofDifferencesOf", () => {
     expect(
       differencesBetween({
         before: { invalidRecords: [{ place: { layout: "single-file", file: SRC_A, index: 1 }, problem: { kind: "clause-unparseable", detail: "x" } }] },
-        after: { refused: [{ place: { file: repoPathSchema.parse("hone-records/debt/loop-keyword.json"), index: 0 }, refusals: [{ kind: "unknown-symptom", symptom: "x" }] }] },
+        after: { refused: [{ place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 }, refusals: [{ kind: "unknown-symptom", symptom: "x" }] }] },
       }),
     ).toEqual([{ section: "invalid-records", onlyBefore: ["src/a.ts 1"], onlyAfter: ["hone-records/debt/loop-keyword.json 0"] }]);
   });
@@ -343,8 +344,8 @@ describe("proofDifferencesOf", () => {
   it("reads each side's editions at the clause its checks serve", () => {
     expect(
       differencesBetween({
-        before: { editions: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, edition: FIRST_EDITION, latest: FIRST_EDITION }] },
-        after: { editions: [{ check: LOOP_KEYWORD_LOOPS, engine: { name: "walker", mechanism: AUDIT }, edition: FIRST_EDITION, latest: FIRST_EDITION }] },
+        before: { editions: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, edition: editionOf("1"), latest: editionOf("1") }] },
+        after: { editions: [{ check: LOOP_KEYWORD_LOOPS, engine: { name: "walker", mechanism: AUDIT }, edition: editionOf("1"), latest: editionOf("1") }] },
       }),
     ).toEqual([]);
   });

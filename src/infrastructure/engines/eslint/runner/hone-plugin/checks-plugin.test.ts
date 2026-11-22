@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import cd2Plugin from "../../CD-2/cd2/cd2.eslint-plugin.ts";
 import CD_2_PIECE from "../../CD-2/piece.json" with { type: "json" };
@@ -9,6 +8,9 @@ import CD_27_PIECE from "../../CD-27/piece.json" with { type: "json" };
 import cd40Plugin from "../../CD-40/cd40/cd40.eslint-plugin.ts";
 import CD_40_PIECE from "../../CD-40/piece.json" with { type: "json" };
 import { checksPluginOf, inSymptomWords, reportInSymptomWords } from "./checks-plugin.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const DECLARATION_TEXT = "declare const projection: readonly unknown[];\nexport default projection;\n";
 
@@ -71,7 +73,7 @@ const REBINDING: Symptom = {
 const SKIPPED_TESTS_CHECK: Check = {
   name: "skipped-tests",
   symptom: TEST_SWITCHED_OFF,
-  clause: clauseAddressSchema.parse("CD-27#skipped-tests"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("skipped-tests") },
   engines: [ESLINT],
   forms: [],
 };
@@ -79,7 +81,7 @@ const SKIPPED_TESTS_CHECK: Check = {
 const NON_NULL_ASSERTIONS_CHECK: Check = {
   name: "non-null-assertions",
   symptom: CLAIMED_TYPE,
-  clause: clauseAddressSchema.parse("CD-2#non-null-assertions"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") },
   engines: [ESLINT],
   forms: [],
 };
@@ -87,7 +89,7 @@ const NON_NULL_ASSERTIONS_CHECK: Check = {
 const PARAMETER_COUNT_CHECK: Check = {
   name: "parameter-count",
   symptom: POSITIONAL_PARAMETERS,
-  clause: clauseAddressSchema.parse("CD-40#parameter-count"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-40"), clause: clauseIdOf("parameter-count") },
   engines: [ESLINT],
   forms: [],
 };
@@ -95,7 +97,7 @@ const PARAMETER_COUNT_CHECK: Check = {
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
-  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
   engines: [WALKER],
   forms: ["a-let"],
 };

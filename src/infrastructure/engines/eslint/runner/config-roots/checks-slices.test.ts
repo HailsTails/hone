@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { answeredWithin, slicesOf } from "./checks-slices.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const TRACKED = [
-  repoPathSchema.parse("eslint.config.mjs"),
-  repoPathSchema.parse("packages/b/tools/eslint.config.ts"),
-  repoPathSchema.parse("packages/a/eslint.config.js"),
-  repoPathSchema.parse("packages/a/src/a.ts"),
+  repoPathOf("eslint.config.mjs"),
+  repoPathOf("packages/b/tools/eslint.config.ts"),
+  repoPathOf("packages/a/eslint.config.js"),
+  repoPathOf("packages/a/src/a.ts"),
 ];
 
-const ROOT_SLICE = { directory: undefined, file: repoPathSchema.parse("hone.eslint.mjs") };
+const ROOT_SLICE = { directory: undefined, file: repoPathOf("hone.eslint.mjs") };
 
-const PACKAGE_A_SLICE = { directory: repoPathSchema.parse("packages/a"), file: repoPathSchema.parse("packages/a/hone.eslint.mjs") };
+const PACKAGE_A_SLICE = { directory: repoPathOf("packages/a"), file: repoPathOf("packages/a/hone.eslint.mjs") };
 
-const PACKAGE_B_TOOLS_SLICE = { directory: repoPathSchema.parse("packages/b/tools"), file: repoPathSchema.parse("packages/b/tools/hone.eslint.mjs") };
+const PACKAGE_B_TOOLS_SLICE = { directory: repoPathOf("packages/b/tools"), file: repoPathOf("packages/b/tools/hone.eslint.mjs") };
 
-const PACKAGE_C_SLICE = { directory: repoPathSchema.parse("packages/c"), file: repoPathSchema.parse("packages/c/hone.eslint.mjs") };
+const PACKAGE_C_SLICE = { directory: repoPathOf("packages/c"), file: repoPathOf("packages/c/hone.eslint.mjs") };
 
 describe("slicesOf", () => {
   it("names the root slice and one slice per package config, in code unit order, when each file looks up its nearest config", () => {
@@ -40,7 +40,7 @@ describe("slicesOf", () => {
     expect(
       slicesOf({
         trackedPaths: TRACKED,
-        declared: [repoPathSchema.parse("packages/c"), repoPathSchema.parse("packages/a")],
+        declared: [repoPathOf("packages/c"), repoPathOf("packages/a")],
         lookup: "nearest-to-file",
         nestedRepositories: [],
       }),
@@ -53,7 +53,7 @@ describe("slicesOf, declared folders and nested repositories", () => {
     expect(
       slicesOf({
         trackedPaths: [],
-        declared: [repoPathSchema.parse("vendor/lib"), repoPathSchema.parse("vendor/lib/tools"), repoPathSchema.parse("packages/c")],
+        declared: [repoPathOf("vendor/lib"), repoPathOf("vendor/lib/tools"), repoPathOf("packages/c")],
         lookup: "repository-root",
         nestedRepositories: ["vendor/lib"],
       }),
@@ -62,9 +62,9 @@ describe("slicesOf, declared folders and nested repositories", () => {
 });
 
 const ANSWERED = [
-  { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathSchema.parse("packages/a/src/a.ts") },
-  { symptom: "authored-class-or-this", file: repoPathSchema.parse("packages/ab/src/a.ts") },
-  { symptom: "authored-class-or-this", file: repoPathSchema.parse("kept.ts") },
+  { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("packages/a/src/a.ts") },
+  { symptom: "authored-class-or-this", file: repoPathOf("packages/ab/src/a.ts") },
+  { symptom: "authored-class-or-this", file: repoPathOf("kept.ts") },
 ];
 
 describe("answeredWithin", () => {

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { allOffIn, type CheckedFile, enabledEverywhere, ignoreExceptionsOf, overrideExceptionsOf, type RuleTarget } from "./checks-rule-effects.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
-const CLAUSE = clauseAddressSchema.parse("CD-1#explicit-any");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("explicit-any") };
 
-const FILE = repoPathSchema.parse("src/a.ts");
+const FILE = repoPathOf("src/a.ts");
 
 const NAMED: RuleTarget = { ruleId: "hone/a", clause: CLAUSE, check: "untyped-value#explicit-any" };
 

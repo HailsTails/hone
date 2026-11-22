@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authorisingOf } from "./authorising.ts";
 import type { AuthoriseRequest } from "../ports/authorising.ts";
 import type { RecordPlace, RecordRefusal, RecordsDocument, RecordsDocumentRefusal } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -44,7 +46,7 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
   owner: "capture 01a0b421",
 };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
@@ -101,13 +103,13 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const OTHER_FILE = repoPathSchema.parse("src/adapters/other-webhook.ts");
+const OTHER_FILE = repoPathOf("src/adapters/other-webhook.ts");
 
-const RECORDS_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const RECORDS_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const UNRELATED_RECORDS_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const UNRELATED_RECORDS_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const REQUEST: AuthoriseRequest = {
   answers: "claimed-type",

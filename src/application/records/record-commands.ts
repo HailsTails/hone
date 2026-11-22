@@ -3,7 +3,6 @@ import type { RunReport } from "../../domain/report/run-report.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { type AuthorisingPorts, authorisingOf } from "./authorising.ts";
@@ -21,6 +20,7 @@ import { namedRecordsFileOf } from "../../domain/records/hone-records/records-la
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { RecordsStore, RecordsUnwritable } from "../ports/records/records-store.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 export type RecordCommandFailure = HoneRecordsFailure | RecordsUnwritable | { readonly kind: "git-failed"; readonly detail: string };
 
@@ -56,7 +56,7 @@ type Commanded<Value> = Result<Value, RecordCommandFailure>;
 
 const UNMEASURED_BASE: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const DEBT_FOLDER = fixedRepoPath("hone-records/debt");
+const DEBT_FOLDER = repoPathOf("hone-records/debt");
 
 const documentsOf = (request: { readonly source: Pick<RecordsSource, "read"> }): Commanded<readonly RecordsDocument[]> => {
   const read = request.source.read();

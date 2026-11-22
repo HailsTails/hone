@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../../ports/git-port.ts";
@@ -8,12 +7,15 @@ import type { PathPort } from "../../ports/host/path-port.ts";
 import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
 import type { FoundTreeRecordsSourceOf, RecordsSourceOf } from "../../ports/records/records-source-of.ts";
 import type { RecordsSource } from "../../ports/records/records-source.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import { FOUND_TREE_REVISION, foundTreeCheckReachOf, foundTreeRunReachOf } from "./found-tree-reach.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const AUDIT = "audit" as const;
 
@@ -54,11 +56,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -93,7 +95,7 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const PATH: PathPort = {
   join: vi.fn<PathPort["join"]>(),
@@ -109,10 +111,10 @@ const loadFailureDetail: LoadFailureDetail = () => "the failure in words";
 
 const ENTRY = { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "kept" } as const;
 
-const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
+const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
 
 const AUTHORISED_DOCUMENT: RecordsDocument = {
-  file: repoPathSchema.parse("hone-records/authorised-locations/loop-keyword.json"),
+  file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"),
   document: { version: 2, records: [{ answers: "loop-keyword#loops", file: "src/a.ts", carried: ENTRY }] },
 };
 

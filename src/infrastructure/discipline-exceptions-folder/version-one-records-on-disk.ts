@@ -3,16 +3,17 @@ import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../domain/repository/file-presence.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordsOnDisk } from "../../application/ports/records/version-one-reading.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteWithin } from "../../domain/repository/absolute-within.ts";
 
-const SINGLE_RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
-const SPLIT_RECORDS_FOLDER = repoPathSchema.parse("discipline-exceptions");
+const SPLIT_RECORDS_FOLDER = repoPathOf("discipline-exceptions");
 
 const RECORDS_FILE_EXTENSION = ".json";
 
@@ -34,12 +35,6 @@ const unreadable = (request: { readonly path: string; readonly detail: string })
   error: { kind: "file-unreadable", path: request.path, detail: request.detail },
 });
 
-const absoluteOf = (request: RecordsOnDiskRequest & { readonly shown: RepoPath }): Result<AbsolutePath, LoadFailure> => {
-  const joined = request.path.join({ segments: [request.repoRoot, request.shown] });
-  const parsed = absolutePathSchema.safeParse(joined);
-  return parsed.success ? { outcome: "ok", value: parsed.data } : unreadable({ path: joined, detail: "not an absolute path" });
-};
-
 const joinedTrees = (request: { readonly trees: readonly Tree[] }): Tree => ({
   files: request.trees.flatMap(({ files }) => files),
   folders: request.trees.flatMap(({ folders }) => folders),
@@ -59,21 +54,17 @@ const entryTreeOf = (request: RecordsOnDiskRequest & { readonly folder: RepoPath
 };
 
 const folderTreeOf = (request: RecordsOnDiskRequest & { readonly folder: RepoPath }): Result<Tree, LoadFailure> => {
-  const absolute = absoluteOf({ ...request, shown: request.folder });
-  if (absolute.outcome === "failed") {
-    return absolute;
-  }
-  const listed = request.directory.list({ path: absolute.value });
+  const absolute = absoluteWithin({ root: request.repoRoot, file: request.folder });
+  const listed = request.directory.list({ path: absolute });
   if (listed.outcome === "failed") {
-    return unreadable({ path: absolute.value, detail: listed.error.detail });
+    return unreadable({ path: absolute, detail: listed.error.detail });
   }
   const below = allOk({ results: listed.value.map((entry) => entryTreeOf({ ...request, entry })) });
   return below.outcome === "failed" ? below : { outcome: "ok", value: joinedTrees({ trees: [{ files: [], folders: [request.folder] }, ...below.value] }) };
 };
 
 const presenceOf = (request: RecordsOnDiskRequest & { readonly shown: RepoPath }): FilePresence => {
-  const absolute = absoluteOf(request);
-  return absolute.outcome === "ok" ? request.fileText.exists({ path: absolute.value }) : "absent";
+  return request.fileText.exists({ path: absoluteWithin({ root: request.repoRoot, file: request.shown }) });
 };
 
 export const recordsOnDiskOf = (request: RecordsOnDiskRequest): Result<RecordsOnDisk, LoadFailure> => {

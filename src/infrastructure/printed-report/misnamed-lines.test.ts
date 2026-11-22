@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { misnamedLine } from "./misnamed-lines.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
-const FILE = repoPathSchema.parse("src/a.ts");
+const FILE = repoPathOf("src/a.ts");
 
 describe("misnamedLine", () => {
   it("gives the file and line, the kind, the rule id the disable names, the version 2 id to write and the comment", () => {

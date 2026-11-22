@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { loadFailureDetail, loadFailureText } from "./load-failure-text.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const WALKER = "audit" as const;
 
@@ -22,7 +22,7 @@ describe("loadFailureText", () => {
   });
 
   it("prints an untracked ESLint config root with what the entry must be", () => {
-    expect(loadFailureText({ failure: { kind: "config-root-untracked", root: repoPathSchema.parse("packages/Web") } })).toBe(
+    expect(loadFailureText({ failure: { kind: "config-root-untracked", root: repoPathOf("packages/Web") } })).toBe(
       "load failure: config-root-untracked packages/Web: an eslintConfigRoots entry is a folder git tracks files under outside every excluded path, spelled exactly as git spells it; fix or remove it in disciplines.json\n",
     );
   });
@@ -80,7 +80,7 @@ describe("loadFailureText", () => {
         failure: {
           kind: "runner-failed",
           mechanism: WALKER,
-          failure: { kind: "file-unparseable", file: repoPathSchema.parse("src/a.ts"), detail: "unexpected token" },
+          failure: { kind: "file-unparseable", file: repoPathOf("src/a.ts"), detail: "unexpected token" },
         },
       }),
     ).toBe("load failure: runner-failed audit file-unparseable src/a.ts unexpected token\n");

@@ -2,19 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { checksRepositoryOver } from "./checks-repository.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" });
 
-const PACKAGE_JSON = repoPathSchema.parse("packages/a/package.json");
+const PACKAGE_JSON = repoPathOf("packages/a/package.json");
 
-const SUPPRESSIONS = repoPathSchema.parse("ci/lint-suppressions.json");
+const SUPPRESSIONS = repoPathOf("ci/lint-suppressions.json");
 
-const SOURCE = repoPathSchema.parse("src/a.ts");
+const SOURCE = repoPathOf("src/a.ts");
 
 const REMOVED: FileRemovalPort = { remove: vi.fn<FileRemovalPort["remove"]>().mockReturnValue({ outcome: "ok", value: undefined }) };
 
@@ -49,7 +49,7 @@ describe("checksRepositoryOver", () => {
   it("reads the projection files through the file text port under the repository root", () => {
     const fileText = fileTextReading("export default [];\n");
     const repository = checksRepositoryOver({ fileText, fileRemoval: REMOVED, path: posixPath, repoRoot: REPO_ROOT });
-    repository.projectionFiles.currentOf({ files: [repoPathSchema.parse("disciplines.eslint.mjs")] });
+    repository.projectionFiles.currentOf({ files: [repoPathOf("disciplines.eslint.mjs")] });
     expect(fileText.read).toHaveBeenCalledExactlyOnceWith({ path: "/repo/disciplines.eslint.mjs" });
   });
 });

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { checkAddressOf } from "../../../../../domain/language-layer/check-address.ts";
 import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { CHECKS_PLUGIN_NAMESPACE, checkOfRuleId, checkRuleIdOf, checkRuleNameOf, eslintRuleIdsOf, runsOnEslint } from "./check-rule-id.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
@@ -31,7 +33,7 @@ const SETTINGS_REBINDING: Symptom = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
-  clause: clauseAddressSchema.parse("CD-15#loops"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
   engines: [WALKER, ESLINT],
   forms: [],
 };
@@ -39,7 +41,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
-  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
   engines: [WALKER],
   forms: ["a-for-loop"],
 };
@@ -47,7 +49,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 const SETTINGS_REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: SETTINGS_REBINDING,
-  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
   engines: [WALKER],
   forms: ["a-let"],
 };
@@ -95,10 +97,10 @@ const PLUGIN_REBINDING: Symptom = {
 };
 
 const PLUGIN_CHECKS: readonly Check[] = [
-  { name: "skipped-tests", symptom: TEST_SWITCHED_OFF, clause: clauseAddressSchema.parse("CD-27#skipped-tests"), engines: [ESLINT], forms: [] },
-  { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#non-null-assertions"), engines: [ESLINT], forms: [] },
-  { name: "parameter-count", symptom: POSITIONAL_PARAMETERS, clause: clauseAddressSchema.parse("CD-40#parameter-count"), engines: [ESLINT], forms: [] },
-  { name: "test-body", symptom: PLUGIN_REBINDING, clause: clauseAddressSchema.parse("CD-27#test-body-logic"), engines: [WALKER], forms: ["a-let"] },
+  { name: "skipped-tests", symptom: TEST_SWITCHED_OFF, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("skipped-tests") }, engines: [ESLINT], forms: [] },
+  { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") }, engines: [ESLINT], forms: [] },
+  { name: "parameter-count", symptom: POSITIONAL_PARAMETERS, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-40"), clause: clauseIdOf("parameter-count") }, engines: [ESLINT], forms: [] },
+  { name: "test-body", symptom: PLUGIN_REBINDING, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, engines: [WALKER], forms: ["a-let"] },
 ];
 
 describe("checkRuleIdOf", () => {

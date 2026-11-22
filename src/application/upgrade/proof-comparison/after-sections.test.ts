@@ -4,10 +4,11 @@ import type { Finding } from "../../../domain/finding/governance.ts";
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { afterSectionsOf } from "./after-sections.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
 const AUDIT = "audit" as const;
 
@@ -48,11 +49,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -87,7 +88,7 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
 const EMPTY_AFTER: RunReport = {
   excluded: [],
@@ -122,7 +123,7 @@ const NAMED_LOOP_FINDING: Finding = {
 };
 
 const DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/loop-keyword.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 },
   record: { kind: "debt", symptom: LOOP_KEYWORD_LOOPS.symptom, reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS }, file: SRC_A, holding: { held: "stated" } },
 };
 
@@ -161,7 +162,7 @@ describe("afterSectionsOf", () => {
       sectionsOf({
         report: {
           ...EMPTY_AFTER,
-          excluded: [repoPathSchema.parse("generated")],
+          excluded: [repoPathOf("generated")],
           findings: [{ ...NAMED_LOOP_FINDING, check: "rebinding#test-body" }],
           answered: [{ finding: NAMED_LOOP_FINDING, by: [DEBT] }],
           misnamed: [{ kind: "names-no-check", ruleId: "hone/loop-keyword#none", file: SRC_A, line: 4, text: "eslint-disable" }],
@@ -170,7 +171,7 @@ describe("afterSectionsOf", () => {
           forfeited: [DEBT],
           uncovered: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_LOOPS],
           "not-run": [LOOP_KEYWORD_LOOPS],
-          "projection-problems": [{ scope: "slice", engine: { name: "walker", mechanism: AUDIT }, state: "missing", slice: repoPathSchema.parse("packages/web") }],
+          "projection-problems": [{ scope: "slice", engine: { name: "walker", mechanism: AUDIT }, state: "missing", slice: repoPathOf("packages/web") }],
           unmeasured: [{ kind: "engine-not-run", engine: { name: "walker", mechanism: AUDIT }, projection: "missing" }],
           assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 1 }],
         },

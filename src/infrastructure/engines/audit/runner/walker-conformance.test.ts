@@ -7,7 +7,6 @@ import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-s
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
@@ -22,6 +21,7 @@ import { createWalkerRunner } from "./create-walker-runner.ts";
 import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
 import { loadParsePort, typeScriptPeersNamed } from "./toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "./runner.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 type RawTable = Readonly<Record<string, string>>;
 
@@ -31,7 +31,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+const RULE_SET_ROOT = absoluteRootOf("/install");
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 

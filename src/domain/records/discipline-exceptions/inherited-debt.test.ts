@@ -1,23 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type InheritedDebtOutcome, inheritedDebtEntriesOf, inheritedDebtOf, type InheritedDebtRequest, reachedDebtOf } from "./inherited-debt.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
-const CASTS = clauseAddressSchema.parse("CD-2#cast-expressions");
-const TEAM_CLAUSE = clauseAddressSchema.parse("team/TM-1#no-tmp-files");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const CASTS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
+const TEAM_CLAUSE = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("no-tmp-files") };
 const AUDIT = "audit" as const;
 const ESLINT = "eslint" as const;
-const LEGACY_FOLDER = repoPathSchema.parse("src/legacy");
-const SOURCE_FOLDER = repoPathSchema.parse("src");
-const BASKET = repoPathSchema.parse("src/basket.ts");
-const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
-const FRESH = repoPathSchema.parse("src/fresh.ts");
-const MOVED_BASKET = repoPathSchema.parse("src/checkout/basket.ts");
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
-const LOCATIONS_FILE = repoPathSchema.parse("discipline-exceptions/authorised-locations/cd-15.json");
-const CARVE_OUTS_FILE = repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-15.json");
+const LEGACY_FOLDER = repoPathOf("src/legacy");
+const SOURCE_FOLDER = repoPathOf("src");
+const BASKET = repoPathOf("src/basket.ts");
+const LEGACY = repoPathOf("src/legacy/report.ts");
+const FRESH = repoPathOf("src/fresh.ts");
+const MOVED_BASKET = repoPathOf("src/checkout/basket.ts");
+const SINGLE_FILE = repoPathOf("discipline-exceptions.json");
+const LOCATIONS_FILE = repoPathOf("discipline-exceptions/authorised-locations/cd-15.json");
+const CARVE_OUTS_FILE = repoPathOf("discipline-exceptions/file-carve-outs/cd-15.json");
 
 const findingAt = (request: { readonly clause: Finding["clause"]; readonly file: Finding["file"]; readonly line: number }): Finding => ({
   clause: request.clause,
@@ -89,7 +92,7 @@ describe("inheritedDebtOf choosing pairs", () => {
             kind: "command-line-option",
             clause: LOOPS,
             mechanism: AUDIT,
-            location: repoPathSchema.parse("package.json"),
+            location: repoPathOf("package.json"),
             script: "lint",
             option: "--rule",
             cause: { kind: "weakens-run" },
@@ -170,11 +173,11 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
       inheritedDebtOf({
         ...NOTHING,
         findings: [findingAt({ clause: LOOPS, file: LEGACY, line: 3 }), findingAt({ clause: LOOPS, file: BASKET, line: 3 })],
-        leave: [repoPathSchema.parse("src/legacy"), repoPathSchema.parse("src/basket.ts")],
+        leave: [repoPathOf("src/legacy"), repoPathOf("src/basket.ts")],
       }),
     ).toEqual([
-      { clause: LOOPS, file: BASKET, effect: "left", under: repoPathSchema.parse("src/basket.ts") },
-      { clause: LOOPS, file: LEGACY, effect: "left", under: repoPathSchema.parse("src/legacy") },
+      { clause: LOOPS, file: BASKET, effect: "left", under: repoPathOf("src/basket.ts") },
+      { clause: LOOPS, file: LEGACY, effect: "left", under: repoPathOf("src/legacy") },
     ]);
   });
 
@@ -183,7 +186,7 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
       inheritedDebtOf({
         ...NOTHING,
         findings: [findingAt({ clause: LOOPS, file: LEGACY, line: 3 })],
-        leave: [repoPathSchema.parse("src/leg")],
+        leave: [repoPathOf("src/leg")],
       }),
     ).toEqual([{ clause: LOOPS, file: LEGACY, effect: "recorded" }]);
   });

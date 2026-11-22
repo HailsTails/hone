@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { WhyChain } from "../why-chain.ts";
 import type { Case, Pointed, Principle, Recipe, RecordKind, Rule, Symptom } from "../../language-layer/symptom-catalogue.ts";
 import { prunableDebtOf } from "./prunable-debt.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -114,20 +114,20 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
 const DATE_DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/date-used-directly.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/date-used-directly.json"), index: 0 },
   record: { kind: "debt", symptom: DATE_USED_DIRECTLY, reach: WHOLE_SYMPTOM, file: ORDER_FILE, holding: { held: "stated" } },
 };
 
 const CLAIMED_TYPE_DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: ORDER_FILE, holding: { held: "stated" } },
 };
 
 const AUTHORISED_LOCATION_PLACED: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/authorised-locations/claimed-type.json"), index: 0 },
   record: {
     kind: "authorised-location",
     symptom: CLAIMED_TYPE,
@@ -138,7 +138,7 @@ const AUTHORISED_LOCATION_PLACED: PlacedRecord = {
 };
 
 const DEPENDENCY_PLACED: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/dependency-records.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/dependency-records.json"), index: 0 },
   record: { kind: "dependency-record", dependency: "zod", nativeWay: "hand-written parsing", whyNotEnough: "it repeats at each adapter" },
 };
 

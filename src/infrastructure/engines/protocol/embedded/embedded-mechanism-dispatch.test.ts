@@ -2,17 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { LoadedRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { projectMechanism, runMechanismWithRecords } from "./embedded-mechanism-dispatch.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const WALKER = "audit" as const;
-const REPO_ROOT = absolutePathSchema.parse("/repo");
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
+const REPO_ROOT = absoluteRootOf("/repo");
+const INSTALL_ROOT = absoluteRootOf("/install");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 const ABSTRACT_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "abstract-syntax" };
 
@@ -21,15 +23,15 @@ const CLASS_SYNTAX_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
 
 const RUN_REQUEST: RunRequest = {
   repoRoot: REPO_ROOT,
   installRoot: INSTALL_ROOT,
-  files: [repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("src/b.ts")],
-  trackedPaths: [repoPathSchema.parse("README.md"), repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("src/b.ts")],
+  files: [repoPathOf("src/a.ts"), repoPathOf("src/b.ts")],
+  trackedPaths: [repoPathOf("README.md"), repoPathOf("src/a.ts"), repoPathOf("src/b.ts")],
   clauses: [CLASS_SYNTAX_CLAUSE],
 };
 
@@ -38,7 +40,7 @@ const CARVE_OUT: ExceptionRecord = {
   provenance: { kind: "existing-authorisation", source: "fictional unit fixture core/check/mechanism-dispatch.test.ts#CARVE_OUT; not historical authorisation" },
   clause: CLASS_SYNTAX,
   mechanism: WALKER,
-  file: repoPathSchema.parse("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   reason: "the wrapping factory for the library",
 };
 
@@ -100,7 +102,7 @@ const ESLINT_LOCATION: ExceptionRecord = {
   provenance: { kind: "existing-authorisation", source: "fictional unit fixture core/check/mechanism-dispatch.test.ts#ESLINT_LOCATION; not historical authorisation" },
   clause: CLASS_SYNTAX,
   mechanism: ESLINT,
-  file: repoPathSchema.parse("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   reason: "the wrapping factory for the library",
 };
 

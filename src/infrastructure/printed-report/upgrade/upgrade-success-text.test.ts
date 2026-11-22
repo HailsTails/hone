@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { ruleSetNameSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { upgradeSuccessOutcomeOf } from "./upgrade-success-text.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
@@ -19,11 +20,11 @@ describe("upgradeSuccessOutcomeOf", () => {
         path: PATH,
         carried: {
           markedNotAdopted: [],
-          written: [repoPathSchema.parse("hone.config.json"), repoPathSchema.parse("hone-records/debt/loop-keyword.json")],
-          replaced: [repoPathSchema.parse("eslint.config.mjs"), repoPathSchema.parse("packages/a/eslint.config.mjs")],
+          written: [repoPathOf("hone.config.json"), repoPathOf("hone-records/debt/loop-keyword.json")],
+          replaced: [repoPathOf("eslint.config.mjs"), repoPathOf("packages/a/eslint.config.mjs")],
           removed: {
-            files: [absolutePathSchema.parse("/repo/discipline-exceptions/cd-15.json"), absolutePathSchema.parse("/repo/disciplines.json")],
-            folders: [absolutePathSchema.parse("/repo/discipline-exceptions")],
+            files: [absoluteRootOf("/repo/discipline-exceptions/cd-15.json"), absoluteRootOf("/repo/disciplines.json")],
+            folders: [absoluteRootOf("/repo/discipline-exceptions")],
           },
         },
       }),
@@ -40,9 +41,9 @@ describe("upgradeSuccessOutcomeOf", () => {
         path: PATH,
         carried: {
           markedNotAdopted: [],
-          written: [repoPathSchema.parse("hone.config.json")],
+          written: [repoPathOf("hone.config.json")],
           replaced: [],
-          removed: { files: [absolutePathSchema.parse("/repo/disciplines.json")], folders: [] },
+          removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
         },
       }),
     ).toEqual({ code: 0, text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\n" });
@@ -55,12 +56,12 @@ describe("upgradeSuccessOutcomeOf", () => {
         path: PATH,
         carried: {
           markedNotAdopted: [
-            { check: { ruleSet: TOOL_RULE_SET, check: "claimed-type#claimed-type" }, clause: clauseAddressSchema.parse("CD-2#cast-expressions"), reason: "discipline-not-selected" },
-            { check: { ruleSet: { name: ruleSetNameSchema.parse("team") }, check: "claimed-type#claimed-members" }, clause: clauseAddressSchema.parse("team/CD-2#members"), reason: "discipline-not-selected" },
+            { check: { ruleSet: TOOL_RULE_SET, check: "claimed-type#claimed-type" }, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, reason: "discipline-not-selected" },
+            { check: { ruleSet: { name: ruleSetNameOf("team") }, check: "claimed-type#claimed-members" }, clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("members") }, reason: "discipline-not-selected" },
           ],
-          written: [repoPathSchema.parse("hone.config.json")],
+          written: [repoPathOf("hone.config.json")],
           replaced: [],
-          removed: { files: [absolutePathSchema.parse("/repo/disciplines.json")], folders: [] },
+          removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
         },
       }),
     ).toEqual({

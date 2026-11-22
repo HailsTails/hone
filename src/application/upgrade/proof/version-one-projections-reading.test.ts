@@ -1,18 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import { type VersionOneProjectionSources, versionOneProjectionsOver } from "./version-one-projections-reading.ts";
 
-const path = (text: string) => repoPathSchema.parse(text);
+const ROOT_WRITE: ProjectionWrite = { path: repoPathOf("disciplines.eslint.mjs"), effect: "unchanged" };
 
-const ROOT_WRITE: ProjectionWrite = { path: path("disciplines.eslint.mjs"), effect: "unchanged" };
+const SLICE_WRITE: ProjectionWrite = { path: repoPathOf("packages/a/disciplines.eslint.mjs"), effect: "unchanged" };
 
-const SLICE_WRITE: ProjectionWrite = { path: path("packages/a/disciplines.eslint.mjs"), effect: "unchanged" };
+const REMOVED_WRITE: ProjectionWrite = { path: repoPathOf("gone/disciplines.eslint.mjs"), effect: "removed" };
 
-const REMOVED_WRITE: ProjectionWrite = { path: path("gone/disciplines.eslint.mjs"), effect: "removed" };
-
-const FOUND: readonly VersionOneProjection[] = [{ projection: path("disciplines.eslint.mjs"), teamConfigs: [{ file: path("eslint.config.mjs"), text: "config" }] }];
+const FOUND: readonly VersionOneProjection[] = [{ projection: repoPathOf("disciplines.eslint.mjs"), teamConfigs: [{ file: repoPathOf("eslint.config.mjs"), text: "config" }] }];
 
 const sourcesOver = (request: { readonly writes: readonly ProjectionWrite[] }): VersionOneProjectionSources => ({
   project: vi.fn<VersionOneProjectionSources["project"]>().mockResolvedValue({ outcome: "ok", value: request.writes }),
@@ -42,7 +40,7 @@ describe("versionOneProjectionsOver", () => {
   });
 
   it("refuses naming each slice version 1 left in place, and still reports what it removed", async () => {
-    const sources = sourcesOver({ writes: [ROOT_WRITE, { path: path("old/disciplines.eslint.mjs"), effect: "left-in-place" }, REMOVED_WRITE] });
+    const sources = sourcesOver({ writes: [ROOT_WRITE, { path: repoPathOf("old/disciplines.eslint.mjs"), effect: "left-in-place" }, REMOVED_WRITE] });
     expect(await versionOneProjectionsOver(sources)()).toEqual({
       removed: ["gone/disciplines.eslint.mjs"],
       outcome: { outcome: "failed", error: { kind: "slice-left-in-place", files: ["old/disciplines.eslint.mjs"] } },
@@ -55,7 +53,7 @@ describe("versionOneProjectionsOver", () => {
       project: vi.fn<VersionOneProjectionSources["project"]>().mockResolvedValue({ outcome: "ok", value: [ROOT_WRITE, REMOVED_WRITE] }),
       teamConfigsOf: vi
         .fn<VersionOneProjectionSources["teamConfigsOf"]>()
-        .mockReturnValue({ outcome: "failed", error: { kind: "no-file-imports-projection", projection: path("disciplines.eslint.mjs") } }),
+        .mockReturnValue({ outcome: "failed", error: { kind: "no-file-imports-projection", projection: repoPathOf("disciplines.eslint.mjs") } }),
     };
     expect(await versionOneProjectionsOver(sources)()).toEqual({
       removed: ["gone/disciplines.eslint.mjs"],

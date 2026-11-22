@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ConventionKey } from "../../domain/settings/conventions.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
 import { assessmentLine, projectionProblemLine, settingsNoteLine, settingsNoteText, unmeasuredLine } from "./run-state-lines.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
@@ -14,9 +14,9 @@ const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.
 
 const GIT_FAILED: BaseRevisionAvailability = { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" };
 
-const SLICE = repoPathSchema.parse("packages/web/hone.eslint.mjs");
+const SLICE = repoPathOf("packages/web/hone.eslint.mjs");
 
-const LEGACY = repoPathSchema.parse("packages/legacy");
+const LEGACY = repoPathOf("packages/legacy");
 
 const NOT_INCLUDED_TEXT =
   "engine-not-run eslint not-included: the eslint configuration leaves the projection out of effect for a file under check; spread the default export of hone.eslint.mjs, or of a package's own hone.eslint.mjs in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), or, where a tool such as sku generates the configuration, last in the configuration the tool takes";
@@ -94,7 +94,7 @@ describe("projectionProblemLine", () => {
     },
     {
       name: "a missing declaration of a slice's type",
-      problem: { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: repoPathSchema.parse("packages/web/hone.eslint.d.mts") },
+      problem: { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: repoPathOf("packages/web/hone.eslint.d.mts") },
       line: `eslint missing packages/web/hone.eslint.d.mts: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
     },
     {

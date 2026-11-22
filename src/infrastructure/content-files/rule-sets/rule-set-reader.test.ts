@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
-import { editionSchema } from "../edition.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { parsedJson, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 
-const ROOT = absolutePathSchema.parse("/install");
-const INSTALL_ROOT = absolutePathSchema.parse("/running-install");
-const CD_14 = disciplineIdSchema.parse("CD-14");
+const ROOT = absoluteRootOf("/install");
+const INSTALL_ROOT = absoluteRootOf("/running-install");
+const CD_14 = disciplineIdOf("CD-14");
 const WALKER = "audit" as const;
 const DISCIPLINE_PATH = "/install/rules/CD-14/discipline.json";
 const PIECE_PATH = "/install/mechanisms/audit/CD-14/piece.json";
@@ -97,7 +98,7 @@ const LOADED_DISCIPLINE: DisciplineFile = {
   clauses: [
     {
       kind: "mechanical",
-      id: clauseIdSchema.parse("class-syntax"),
+      id: clauseIdOf("class-syntax"),
       summary: CLASS_SYNTAX.summary,
       mechanisms: [WALKER, "eslint"],
       anchor: { kind: "keyword", keyword: "class" },
@@ -112,13 +113,13 @@ const SECOND_EDITION_DISCIPLINE: DisciplineFile = {
   clauses: [
     {
       kind: "mechanical",
-      id: clauseIdSchema.parse("class-syntax"),
+      id: clauseIdOf("class-syntax"),
       summary: CLASS_SYNTAX.summary,
       mechanisms: [WALKER],
       anchor: { kind: "keyword", keyword: "class" },
       exceptions: "allowed",
       cases: {
-        flag: [{ name: FLAG_CASE.name, fileName: repoPathSchema.parse(FLAG_CASE.fileName), source: FLAG_CASE.source, expectedLines: [1], edition: editionSchema.parse("2") }],
+        flag: [{ name: FLAG_CASE.name, fileName: repoPathSchema.parse(FLAG_CASE.fileName), source: FLAG_CASE.source, expectedLines: [1], edition: editionOf("2") }],
         allow: [],
       },
     },

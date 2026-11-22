@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import { baseRevisionAvailabilityOf, computeTouchedSet } from "./touched-set.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
-const A = repoPathSchema.parse("a.ts");
-const B = repoPathSchema.parse("src/b.md");
+const REPO_ROOT = absoluteRootOf("/repo");
+const A = repoPathOf("a.ts");
+const B = repoPathOf("src/b.md");
 
 const FAILURE: GitFailure = {
   kind: "git-failed",

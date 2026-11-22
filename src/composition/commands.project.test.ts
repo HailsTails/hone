@@ -7,10 +7,8 @@ import type { GitPort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
@@ -20,6 +18,8 @@ import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engi
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 
 const runProjectCommand = (command: VersionOneCommandRequest) => commandOf({ tool: PROJECT, ports: command })(command);
 
@@ -71,7 +71,7 @@ const singleFileRepositoriesOver = (request: {
         create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
       },
       fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
-      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathOf("discipline-exceptions.json")] }) },
     });
 const NOT_A_FILE_URL = "https://example.invalid/src/hone.ts";
 
@@ -123,7 +123,7 @@ type FileUrlResult = Result<
 >;
 
 const FILE_URLS: Readonly<Record<string, FileUrlResult>> = {
-  [ENTRY_URL]: { outcome: "ok", value: absolutePathSchema.parse("/install/src/hone.ts") },
+  [ENTRY_URL]: { outcome: "ok", value: absoluteRootOf("/install/src/hone.ts") },
   [NOT_A_FILE_URL]: {
     outcome: "failed",
     error: { kind: "not-a-file-url", url: NOT_A_FILE_URL, detail: "the text is not a file: URL" },
@@ -280,7 +280,7 @@ describe("runProjectCommand", () => {
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
     await runProjectCommand(
-      commandRequest({ process: processPort, fileText: fileTextOver(CLASS_SYNTAX_SELECTED), git: gitTracking([repoPathSchema.parse("src/a.ts")]) }),
+      commandRequest({ process: processPort, fileText: fileTextOver(CLASS_SYNTAX_SELECTED), git: gitTracking([repoPathOf("src/a.ts")]) }),
     );
 
     expect(outputOf({ process: processPort })).toEqual({

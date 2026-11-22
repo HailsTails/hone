@@ -3,22 +3,25 @@ import type { FileTextPort } from "../../../../../application/ports/file-system/
 import {
   createPathPort,
 } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { SelectedRule } from "./package-script-scanner.ts";
 import { scriptSuppressionEntries, suppressionEntriesOf } from "./suppressions-scanner.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const noTmpFiles = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
-const defaultLocation = repoPathSchema.parse("eslint-suppressions.json");
-const scriptLocation = repoPathSchema.parse("ci/lint-suppressions.json");
-const repoRoot = absolutePathSchema.parse("/repo");
-const windowsRepoRoot = absolutePathSchema.parse("C:\\repo");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const noTmpFiles = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const defaultLocation = repoPathOf("eslint-suppressions.json");
+const scriptLocation = repoPathOf("ci/lint-suppressions.json");
+const repoRoot = absoluteRootOf("/repo");
+const windowsRepoRoot = absoluteRootOf("C:\\repo");
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 const windowsPath = createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" });
-const nestedLocation = repoPathSchema.parse("packages/a/eslint-suppressions.json");
-const packageDirectory = repoPathSchema.parse("packages/a");
+const nestedLocation = repoPathOf("packages/a/eslint-suppressions.json");
+const packageDirectory = repoPathOf("packages/a");
 
 const classRule: SelectedRule = { ruleId: "hone/no-class-authoring", clause: classSyntax };
 const tmpRule: SelectedRule = { ruleId: "probe-lint/no-tmp-files", clause: noTmpFiles };

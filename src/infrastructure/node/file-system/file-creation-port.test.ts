@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createFileCreationPort, type FileCreationSurface } from "./file-creation-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const FILE = absolutePathSchema.parse("/repo/hone.eslint.mjs");
+const FILE = absoluteRootOf("/repo/hone.eslint.mjs");
 
 const NAME_TAKEN = Object.assign(new Error("EEXIST: file already exists"), { code: "EEXIST" });
 

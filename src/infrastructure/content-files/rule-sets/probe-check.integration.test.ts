@@ -10,11 +10,14 @@ import { createDefaultPathPort } from "../../node/path-port.ts";
 import { selectionFrom } from "../../disciplines-file/consumer-selection.ts";
 import { selectionFileOf } from "../../disciplines-file/selection-file.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import * as exportTestSibling from "../../engines/audit/CD-23/export-test-sibling.ts";
 import { createWalkerRunner } from "../../engines/audit/runner/create-walker-runner.ts";
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -94,15 +97,15 @@ const pieceModules: ModuleLoaderPort = {
     Promise.resolve({ outcome: "ok", value: PIECE_MODULES[modulePath] }),
 };
 
-const PROBE_ADDRESS = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
-const EXPORT_TEST_SIBLING_ADDRESS = clauseAddressSchema.parse("CD-23#export-test-sibling");
+const PROBE_ADDRESS = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const EXPORT_TEST_SIBLING_ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-23"), clause: clauseIdOf("export-test-sibling") };
 
 const TRACKED = [
-  repoPathSchema.parse("src/scratch.tmp.ts"),
-  repoPathSchema.parse("src/kept.ts"),
-  repoPathSchema.parse("src/plain.ts"),
-  repoPathSchema.parse("src/plain.test.ts"),
-  repoPathSchema.parse("README.md"),
+  repoPathOf("src/scratch.tmp.ts"),
+  repoPathOf("src/kept.ts"),
+  repoPathOf("src/plain.ts"),
+  repoPathOf("src/plain.test.ts"),
+  repoPathOf("README.md"),
 ];
 
 const RUN: RunRequest = {

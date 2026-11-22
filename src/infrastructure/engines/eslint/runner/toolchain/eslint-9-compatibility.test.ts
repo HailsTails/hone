@@ -13,7 +13,6 @@ import { createDefaultFileTextPort } from "../../../../node/file-system/file-tex
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
@@ -23,6 +22,7 @@ import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/c
 import { createEslintPort, type EslintToolchain } from "./eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainPeers, loadEslintToolchain } from "./eslint-toolchain.ts";
 import { ESLINT_9_VERSION, eslint9CaseMismatches, eslint9PieceModules, eslint9ToolchainModules } from "./eslint-9/eslint-9-engine.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
 const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
 
@@ -58,7 +58,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+const RULE_SET_ROOT = absoluteRootOf("/install");
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 

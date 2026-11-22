@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { AnsweredFile } from "../projection/checks-projection.ts";
 import { projectionEffectOf, queriedFilesOf, queryExceptionsOf } from "./checks-queried-files.ts";
@@ -12,14 +9,19 @@ import type { SelectedCheck } from "../checks-runner/checks-run-types.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";
 import type { ConfigFileSearch, IgnoredState, QueryInstance } from "../toolchain/eslint-instance.ts";
 import type { GoverningIgnores } from "../config-roots/governing-config.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
-const CLAUSE = clauseAddressSchema.parse("CD-1#explicit-any");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("explicit-any") };
 
 const EXPLICIT_ANY: SelectedCheck = { address: "untyped-value#explicit-any", symptom: "untyped-value", ruleId: "hone/untyped-value#explicit-any", clause: CLAUSE, options: [] };
 
-const A = repoPathSchema.parse("src/a.ts");
+const A = repoPathOf("src/a.ts");
 
-const B = repoPathSchema.parse("src/b.ts");
+const B = repoPathOf("src/b.ts");
 
 const ENFORCED: RuleState = { state: "configured", severity: 2, options: [] };
 
@@ -38,9 +40,9 @@ type Outcome<Value> = Result<Value, RunnerFailure>;
 
 const ignoredOutcome = (request: { readonly state: IgnoredState }): Outcome<IgnoredState> => ({ outcome: "ok", value: request.state });
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const BROKEN_FIXTURE_FILE = repoPathSchema.parse("fixtures/bad/b.ts");
+const BROKEN_FIXTURE_FILE = repoPathOf("fixtures/bad/b.ts");
 
 const BROKEN_CONFIG: ConfigFileSearch = { kind: "found", path: "/repo/fixtures/bad/eslint.config.mjs" };
 

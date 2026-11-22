@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { lintedFindingsOf, measuredOn, parseableFile } from "./checks-lint-findings.ts";
 import type { MisnamedRuleId, SelectedCheck } from "../checks-runner/checks-run-types.ts";
 import type { LintedFile } from "../toolchain/eslint-instance.ts";
 import type { LinesReader } from "./source-lines.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
-const CLAUSE = clauseAddressSchema.parse("CD-1#explicit-any");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("explicit-any") };
 
 const EXPLICIT_ANY: SelectedCheck = { address: "untyped-value#explicit-any", symptom: "untyped-value", ruleId: "hone/untyped-value#explicit-any", clause: CLAUSE, options: [] };
 
@@ -18,7 +20,7 @@ const findingsOf = (request: { readonly linted: LintedFile }) =>
   lintedFindingsOf({
     linted: request.linted,
     path: POSIX,
-    repoRoot: absolutePathSchema.parse("/repo"),
+    repoRoot: absoluteRootOf("/repo"),
     sourceLines: vi.fn<LinesReader>().mockReturnValue({ outcome: "ok", value: ["", "", "  const a: any = 1;"] }),
     selected: [EXPLICIT_ANY],
     checkRuleIds: [EXPLICIT_ANY.ruleId],
@@ -64,7 +66,7 @@ describe("lintedFindingsOf", () => {
 
 describe("parseableFile", () => {
   it("gives the repository path of a linted file with no fatal message", () => {
-    expect(parseableFile({ linted: { filePath: "/repo/src/a.ts", messages: [] }, path: POSIX, repoRoot: absolutePathSchema.parse("/repo") })).toEqual({
+    expect(parseableFile({ linted: { filePath: "/repo/src/a.ts", messages: [] }, path: POSIX, repoRoot: absoluteRootOf("/repo") })).toEqual({
       outcome: "ok",
       value: "src/a.ts",
     });
@@ -75,7 +77,7 @@ describe("parseableFile", () => {
       parseableFile({
         linted: { filePath: "/repo/src/a.ts", messages: [{ ruleId: null, line: 1, column: 1, message: "Parsing error", fatal: true }] },
         path: POSIX,
-        repoRoot: absolutePathSchema.parse("/repo"),
+        repoRoot: absoluteRootOf("/repo"),
       }),
     ).toEqual({ outcome: "failed", error: { kind: "file-unparseable", file: "src/a.ts", detail: "Parsing error" } });
   });
@@ -83,7 +85,7 @@ describe("parseableFile", () => {
 
 describe("measuredOn", () => {
   it("measures each distinct clause once on the file", () => {
-    expect(measuredOn({ file: repoPathSchema.parse("src/a.ts"), linted: { filePath: "/repo/src/a.ts", messages: [] }, clauses: [CLAUSE, CLAUSE] })).toEqual([
+    expect(measuredOn({ file: repoPathOf("src/a.ts"), linted: { filePath: "/repo/src/a.ts", messages: [] }, clauses: [CLAUSE, CLAUSE] })).toEqual([
       { clause: CLAUSE, file: "src/a.ts" },
     ]);
   });
@@ -91,7 +93,7 @@ describe("measuredOn", () => {
   it("measures nothing when a message names no rule", () => {
     expect(
       measuredOn({
-        file: repoPathSchema.parse("src/a.ts"),
+        file: repoPathOf("src/a.ts"),
         linted: { filePath: "/repo/src/a.ts", messages: [{ ruleId: null, line: 1, column: 1, message: "odd" }] },
         clauses: [CLAUSE],
       }),

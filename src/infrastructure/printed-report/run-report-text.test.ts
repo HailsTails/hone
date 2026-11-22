@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import type { Finding } from "../../domain/finding/governance.ts";
 import type { PlacedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { editionSchema } from "../content-files/edition.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import { renderRunReportText } from "./run-report-text.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -164,11 +166,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -198,18 +200,18 @@ const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.
 
 const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop";
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const CLOCK_FINDING: Finding = { clause: CLOCK_SOURCES, mechanism: AUDIT, file: ORDER_FILE, anchor: { line: 14, column: 0 }, snippet: "clock.now()" };
 
 const CAST_FINDING: Finding = { clause: CAST_EXPRESSIONS, mechanism: ESLINT, file: WEBHOOK_FILE, anchor: { line: 4, column: 9 }, snippet: "body as Event" };
 
 const DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: WEBHOOK_FILE, holding: { held: "stated" } },
 };
 
@@ -248,10 +250,10 @@ const EMPTY_REPORT: RunReport = {
 };
 
 const EVERY_SECTION: RunReport = {
-  excluded: [repoPathSchema.parse("dist")],
+  excluded: [repoPathOf("dist")],
   "not-adopted": [CAST_CHECK],
   "not-run": [TEST_BODY_CHECK],
-  editions: [{ check: CLOCK_CHECK, engine: WALKER, edition: editionSchema.parse("1"), latest: editionSchema.parse("2") }],
+  editions: [{ check: CLOCK_CHECK, engine: WALKER, edition: editionOf("1"), latest: editionOf("2") }],
   findings: [CLOCK_FINDING],
   answered: [{ finding: CAST_FINDING, by: [NOTED_LOCATION] }],
   uncovered: [CLOCK_CHECK],

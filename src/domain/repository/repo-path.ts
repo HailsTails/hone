@@ -20,10 +20,3 @@ export const isRepoPathText = (request: { readonly text: string }): RepoPathVerd
     : "not-repo-path";
 
 export const isRepoPath = (text: string): text is RepoPath => isRepoPathText({ text }) === "repo-path";
-
-export const fixedRepoPath = (text: string): RepoPath => {
-  if (isRepoPath(text)) {
-    return text;
-  }
-  throw new Error(`${text}: ${NOT_A_REPO_PATH}`);
-};

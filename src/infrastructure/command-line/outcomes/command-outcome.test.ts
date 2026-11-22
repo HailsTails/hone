@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { loadFailureOutcome, projectCommandOutcome, versionCommandOutcome } from "./command-outcome.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const WALKER = "audit" as const;
 
@@ -38,8 +38,8 @@ describe("projectCommandOutcome", () => {
         result: {
           outcome: "ok",
           value: [
-            { path: repoPathSchema.parse("eslint.discipline.config.mjs"), effect: "written" },
-            { path: repoPathSchema.parse("config/eslint.discipline.mjs"), effect: "unchanged" },
+            { path: repoPathOf("eslint.discipline.config.mjs"), effect: "written" },
+            { path: repoPathOf("config/eslint.discipline.mjs"), effect: "unchanged" },
           ],
         },
       }),

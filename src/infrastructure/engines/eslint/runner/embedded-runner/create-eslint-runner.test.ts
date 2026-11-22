@@ -9,7 +9,6 @@ import {
   createPathPort,
 } from "../../../../node/path-port.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
@@ -28,11 +27,17 @@ import type {
   LintedMessage,
   QueryInstance,
 } from "../toolchain/eslint-instance.ts";
-import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import type { PackageScripts } from "../native-exceptions/package-script-scanner.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
 import type { ProjectionStates } from "../projection/projection-states.ts";
 import type { SuppressionsFile } from "../native-exceptions/suppressions-scanner.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
@@ -81,24 +86,24 @@ type EslintFakeParts = {
   readonly lintSourceCases: EslintPort["lintSourceCases"];
 };
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
-const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
+const REPO_ROOT = absoluteRootOf("/repo");
+const INSTALL_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 const PIECE_ROOT = "/repo/node_modules/@hailstails/hone/mechanisms/eslint/CD-14";
 const LOOPS_PIECE_ROOT = "/repo/node_modules/@hailstails/hone/mechanisms/eslint/CD-15";
 const PLUGIN_MODULE_PATH = "/repo/node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
 const LOOPS_MODULE_PATH = "/repo/node_modules/@hailstails/hone/mechanisms/eslint/CD-15/loops/loops.eslint-plugin.ts";
-const PROJECTION_FILE = repoPathSchema.parse("disciplines.eslint.mjs");
+const PROJECTION_FILE = repoPathOf("disciplines.eslint.mjs");
 const RULE_ID = "hone/no-class-authoring";
 const LOOPS_RULE_ID = "loops/no-for-of";
 
 const ESLINT = "eslint" as const;
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
-const FOR_OF = clauseAddressSchema.parse("CD-15#for-of");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const FOR_OF = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("for-of") };
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 const FOR_OF_OBJECT = { ruleSet: "hone", discipline: "CD-15", clause: "for-of" };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
-const FACTORY = repoPathSchema.parse("src/factory.ts");
+const FILE_A = repoPathOf("src/a.ts");
+const FACTORY = repoPathOf("src/factory.ts");
 const FILES = [FILE_A, FACTORY];
 
 const CLASS_SETTINGS = {
@@ -112,7 +117,7 @@ const CLASS_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: CLASS_SETTINGS,
 };
 
@@ -121,7 +126,7 @@ const LOOPS_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "for" },
   pieceRoot: LOOPS_PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { pluginNamespace: "loops", pluginModule: "loops/loops.eslint-plugin.ts", rule: "no-for-of" },
 };
 
@@ -161,7 +166,7 @@ const GONE_LOCATION: ExceptionRecord = {
   provenance: { kind: "existing-authorisation", source: "fictional unit fixture mechanisms/eslint/runner/create-eslint-runner.test.ts#GONE_LOCATION; not historical authorisation" },
   clause: CLASS_SYNTAX,
   mechanism: ESLINT,
-  file: repoPathSchema.parse("src/gone.ts"),
+  file: repoPathOf("src/gone.ts"),
   reason: "the wrapping factory for the library",
 };
 
@@ -486,7 +491,7 @@ const SHARED_MODULE_FOR_OF_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "for" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { ...CLASS_SETTINGS, rule: "no-for-of" },
 };
 
@@ -540,7 +545,7 @@ const NOT_INCLUDED = { outcome: "ok", value: { hits: [], nativeExceptions: [], p
 
 const CLASS_CASE: SourceCase = {
   name: "class",
-  fileName: repoPathSchema.parse("cases/class.ts"),
+  fileName: repoPathOf("cases/class.ts"),
   source: "class A {}\n",
   expectedLines: [1],
 };
@@ -730,8 +735,8 @@ describe("the governance run, step 2: the projection's presence and bytes", () =
   });
 });
 
-const FIXTURE_B = repoPathSchema.parse("fixtures/bad/b.ts");
-const FIXTURE_C = repoPathSchema.parse("fixtures/bad/c.ts");
+const FIXTURE_B = repoPathOf("fixtures/bad/b.ts");
+const FIXTURE_C = repoPathOf("fixtures/bad/c.ts");
 
 const ROOT_CONFIG: ConfigFileSearch = { kind: "found", path: "/repo/eslint.config.mjs" };
 const BROKEN_FIXTURE_CONFIG: ConfigFileSearch = { kind: "found", path: "/repo/fixtures/bad/eslint.config.mjs" };
@@ -1775,7 +1780,7 @@ describe("native exceptions: package.json scripts over tracked paths", () => {
   it("passes on that a tracked package.json cannot be read", async () => {
     const failure: Result<never, RunnerFailure> = {
       outcome: "failed",
-      error: { kind: "file-unreadable", file: repoPathSchema.parse("package.json"), detail: "EACCES" },
+      error: { kind: "file-unreadable", file: repoPathOf("package.json"), detail: "EACCES" },
     };
     await expect(
       runnerOver({
@@ -2024,7 +2029,7 @@ describe("the governance run, settled message handling", () => {
         }),
       }).run({
         ...CLASS_RUN,
-        trackedPaths: [repoPathSchema.parse("package.json"), repoPathSchema.parse("eslint-suppressions.json"), FILE_A, FACTORY],
+        trackedPaths: [repoPathOf("package.json"), repoPathOf("eslint-suppressions.json"), FILE_A, FACTORY],
       }),
     ).resolves.toEqual({
       outcome: "ok",
@@ -2063,7 +2068,7 @@ describe("the governance run with nothing to lint", () => {
     const report = await runnerOver({
       repository: repositoryHolding({ packageScriptsAt: scriptsAnswering({ lint: "eslint --rule 'hone/no-class-authoring: off' src" }) }),
       eslint,
-    }).run({ ...CLASS_RUN, files: [], trackedPaths: [repoPathSchema.parse("package.json")] });
+    }).run({ ...CLASS_RUN, files: [], trackedPaths: [repoPathOf("package.json")] });
     expect({
       report,
       governanceInstances: vi.mocked(eslint.createGovernanceInstance).mock.calls,
@@ -2095,8 +2100,8 @@ describe("the governance run with nothing to lint", () => {
   });
 });
 
-const WINDOWS_REPO_ROOT = absolutePathSchema.parse("C:\\repo");
-const WINDOWS_INSTALL_ROOT = absolutePathSchema.parse("C:\\repo\\node_modules\\@hailstails\\hone");
+const WINDOWS_REPO_ROOT = absoluteRootOf("C:\\repo");
+const WINDOWS_INSTALL_ROOT = absoluteRootOf("C:\\repo\\node_modules\\@hailstails\\hone");
 const WINDOWS_PIECE_ROOT = "C:\\repo\\node_modules\\@hailstails\\hone\\mechanisms\\eslint\\CD-14";
 const WINDOWS_PLUGIN_MODULE_PATH =
   "C:\\repo\\node_modules\\@hailstails\\hone\\mechanisms\\eslint\\CD-14\\cd14\\cd14.eslint-plugin.ts";
@@ -2163,7 +2168,7 @@ describe("the governance run on Windows paths", () => {
       eslint: eslintOver({ lintFiles: lintResolving({ outcome: "ok", value: [] }) }),
     }).run({
       ...windowsRun({ pieceRoot: WINDOWS_PIECE_ROOT }),
-      trackedPaths: [repoPathSchema.parse("src/eslint-suppressions.json")],
+      trackedPaths: [repoPathOf("src/eslint-suppressions.json")],
     });
     expect({
       repositories: repositoryAt.mock.calls,
@@ -2183,7 +2188,7 @@ describe("plugin namespace ownership", () => {
       clauses: [
         {
           ...CLASS_CLAUSE,
-          address: clauseAddressSchema.parse("acme/CD-14#class-syntax"),
+          address: { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
           settings: { ...CLASS_SETTINGS, pluginNamespace: request.pluginNamespace },
         },
       ],
@@ -2266,10 +2271,10 @@ describe("plugin namespace ownership", () => {
   });
 });
 
-const PACKAGE_A_CONFIG = repoPathSchema.parse("packages/a/eslint.config.mjs");
-const PACKAGE_A_SLICE_FILE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
-const PACKAGE_FILE_A = repoPathSchema.parse("packages/a/src/a.ts");
-const PACKAGE_FACTORY = repoPathSchema.parse("packages/a/src/factory.ts");
+const PACKAGE_A_CONFIG = repoPathOf("packages/a/eslint.config.mjs");
+const PACKAGE_A_SLICE_FILE = repoPathOf("packages/a/disciplines.eslint.mjs");
+const PACKAGE_FILE_A = repoPathOf("packages/a/src/a.ts");
+const PACKAGE_FACTORY = repoPathOf("packages/a/src/factory.ts");
 
 const PACKAGE_FACTORY_LOCATION: ExceptionRecord = { ...FACTORY_LOCATION, file: PACKAGE_FACTORY };
 
@@ -2400,8 +2405,8 @@ describe("package projection slices, applied by the team's config", () => {
   });
 });
 
-const PACKAGE_B_CONFIG = repoPathSchema.parse("packages/b/eslint.config.mjs");
-const PACKAGE_B_FACTORY = repoPathSchema.parse("packages/b/src/factory.ts");
+const PACKAGE_B_CONFIG = repoPathOf("packages/b/eslint.config.mjs");
+const PACKAGE_B_FACTORY = repoPathOf("packages/b/src/factory.ts");
 
 const ROOT_PROJECTION_WITH_TWO_PACKAGE_LOCATIONS = `import piece0 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
 
@@ -2438,7 +2443,7 @@ describe("package projection slices, not applied in one package of several", () 
             new Map([
               [PROJECTION_FILE, present(ROOT_PROJECTION_WITH_TWO_PACKAGE_LOCATIONS)],
               [PACKAGE_A_SLICE_FILE, present(PACKAGE_A_SLICE)],
-              [repoPathSchema.parse("packages/b/disciplines.eslint.mjs"), present(PACKAGE_A_SLICE)],
+              [repoPathOf("packages/b/disciplines.eslint.mjs"), present(PACKAGE_A_SLICE)],
             ]),
           ),
         }),
@@ -2486,9 +2491,9 @@ describe("package projection slices, projected", () => {
   });
 });
 
-const PACKAGE_WEB = repoPathSchema.parse("packages/web");
+const PACKAGE_WEB = repoPathOf("packages/web");
 
-const PACKAGE_WEB_SLICE_FILE = repoPathSchema.parse("packages/web/disciplines.eslint.mjs");
+const PACKAGE_WEB_SLICE_FILE = repoPathOf("packages/web/disciplines.eslint.mjs");
 
 describe("package projection slices, which roots they cover", () => {
   it("requires no slice for a folder with a tracked config when ESLint resolves every file from the root config", async () => {
@@ -2644,9 +2649,9 @@ describe("package projection slices, projected under a folder the repository roo
   });
 });
 
-const NESTED_SELECTION = repoPathSchema.parse("packages/b/disciplines.json");
-const NESTED_CONFIG = repoPathSchema.parse("packages/b/eslint.config.mjs");
-const NESTED_FILE = repoPathSchema.parse("packages/b/src/old.ts");
+const NESTED_SELECTION = repoPathOf("packages/b/disciplines.json");
+const NESTED_CONFIG = repoPathOf("packages/b/eslint.config.mjs");
+const NESTED_FILE = repoPathOf("packages/b/src/old.ts");
 
 const NESTED_RUN = {
   ...runRequest({ clauses: [CLASS_CLAUSE], records: [{ ...FACTORY_LOCATION, file: NESTED_FILE }] }),
@@ -2699,7 +2704,7 @@ describe("package projection slices, a run that cannot finish", () => {
   it("writes and removes nothing when one slice cannot be read", async () => {
     const projectionFiles = projectionFilesAnswering(unreadableProjection(PACKAGE_A_SLICE_FILE));
     const write = await runnerOver({ repository: repositoryHolding({ projectionFiles }) }).project(
-      projectRequest({ trackedPaths: [PACKAGE_A_CONFIG, repoPathSchema.parse("packages/old/disciplines.eslint.mjs")], records: [] }),
+      projectRequest({ trackedPaths: [PACKAGE_A_CONFIG, repoPathOf("packages/old/disciplines.eslint.mjs")], records: [] }),
     );
     expect({ write, writes: projectionFiles.writeAt.mock.calls, removals: projectionFiles.removeAt.mock.calls }).toEqual({
       write: { outcome: "failed", error: { kind: "file-unreadable", file: "packages/a/disciplines.eslint.mjs", detail: "EACCES" } },

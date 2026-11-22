@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { UNLINKED } from "./package-link.ts";
 import { shownFailureOf, shownPathOf } from "./shown-path.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const WINDOWS = createPathPort({ flavour: "windows", workingDirectory: () => "C:\\work" });
 
-const REPO_ROOT = absolutePathSchema.parse("C:\\work\\my repo");
+const REPO_ROOT = absoluteRootOf("C:\\work\\my repo");
 
-const STORE_ROOT = absolutePathSchema.parse("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone");
+const STORE_ROOT = absoluteRootOf("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone");
 
 const LINKED = { kind: "linked", installRoot: STORE_ROOT, linkRoot: "C:\\work\\my repo\\node_modules\\@hailstails\\hone" } as const;
 
@@ -113,7 +113,7 @@ describe("shownFailureOf", () => {
     const failure = {
       kind: "runner-failed",
       mechanism: "audit",
-      failure: { kind: "file-unreadable", file: repoPathSchema.parse("src/a.ts"), detail: "EACCES" },
+      failure: { kind: "file-unreadable", file: repoPathOf("src/a.ts"), detail: "EACCES" },
     } as const;
 
     expect(shownFailureOf({ failure, path: WINDOWS, repoRoot: REPO_ROOT, link: UNLINKED })).toEqual(failure);

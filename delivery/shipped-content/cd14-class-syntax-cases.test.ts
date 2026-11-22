@@ -3,11 +3,11 @@ import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-sy
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import { readDisciplineFile } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { disciplineIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.ts";
 import classAuthoringPlugin from "../../src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../src/infrastructure/engines/eslint/CD-14`);
 
@@ -15,7 +15,7 @@ const loadedDiscipline = readDisciplineFile({
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
   ruleSetRoot: absolutePathSchema.parse(`${import.meta.dirname}/../..`),
-  discipline: disciplineIdSchema.parse("CD-14"),
+  discipline: disciplineIdOf("CD-14"),
 });
 assert(loadedDiscipline.outcome === "ok", "CD-14 discipline.json reads through the rule-set reader");
 const [classSyntax] = loadedDiscipline.value.clauses;

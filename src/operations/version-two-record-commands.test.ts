@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
-import { fixedRepoPath } from "../domain/repository/repo-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
@@ -15,7 +15,7 @@ const absolute = (text: string): AbsolutePath => {
 
 const AUTHORISING: AuthoriseRequest = {
   answers: "CD#CD-1#any-cast",
-  file: fixedRepoPath("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   case: "a cast at a boundary",
   owes: "the boundary type",
   whys: [],

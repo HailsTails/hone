@@ -25,6 +25,7 @@ import { type ExceptionBaseline, type MeasuredBaseline, judgedAtBase } from "../
 import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
 import type { RecordedWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { ExceptionEntryParser } from "../../application/ports/records/exception-entries.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 type IndexedRecord = { readonly index: number; readonly place: RecordPlace; readonly record: ExceptionRecord };
 
@@ -617,7 +618,7 @@ export const exceptionEntriesOfText = (request: { readonly text: string }): read
 
 export const exceptionEntryParser: ExceptionEntryParser = { parseExceptionEntries, importedEntriesIn, importSourcesOf };
 
-const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
 
 export const placedInSingleFile = (request: { readonly entries: readonly StructuralExceptionEntry[] }): readonly PlacedEntry[] =>
   request.entries.map((entry, index) => ({ place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index }, entry }));

@@ -1,23 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { RunnerClause } from "./runner-module-types.ts";
 import type { SourceCase } from "../rule-set/rule-set-types.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { editionSchema, FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { editionRunsOf } from "./edition-runs.ts";
+import { repoPathOf } from "../repository/repo-path-of.ts";
+import { editionOf } from "../rule-set/edition-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
 const CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("CD-27#test-body-logic"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-27",
   settings: { module: "test-body-logic.ts" },
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
 };
-const SECOND = editionSchema.parse("2");
-const UNSTATED: SourceCase = { name: "if statement", fileName: repoPathSchema.parse("a.test.ts"), source: "if (x) {}\n", expectedLines: [1] };
-const FIRST: SourceCase = { name: "plain", fileName: repoPathSchema.parse("b.test.ts"), source: "expect(1).toBe(1);\n", expectedLines: [], edition: FIRST_EDITION };
-const LATER: SourceCase = { name: "nullish", fileName: repoPathSchema.parse("c.test.ts"), source: "a ?? b;\n", expectedLines: [1], edition: SECOND };
+const SECOND = editionOf("2");
+const UNSTATED: SourceCase = { name: "if statement", fileName: repoPathOf("a.test.ts"), source: "if (x) {}\n", expectedLines: [1] };
+const FIRST: SourceCase = { name: "plain", fileName: repoPathOf("b.test.ts"), source: "expect(1).toBe(1);\n", expectedLines: [], edition: editionOf("1") };
+const LATER: SourceCase = { name: "nullish", fileName: repoPathOf("c.test.ts"), source: "a ?? b;\n", expectedLines: [1], edition: SECOND };
 
 describe("editionRunsOf", () => {
   it("runs every case under the clause's own edition when no case names another", () => {

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { reportedChecksRefusal } from "./reported-checks.ts";
 import type { Check, Symptom } from "./symptom-catalogue.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

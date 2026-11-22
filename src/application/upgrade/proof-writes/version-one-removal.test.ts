@@ -3,8 +3,8 @@ import type { DirectoryRemovalPort } from "../../ports/file-system/directory-rem
 import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { removedVersionOneFiles, type VersionOneRemoval, type VersionOneRemovalPorts } from "./version-one-removal.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -23,33 +23,33 @@ const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, Recor
     .toSorted((left, right) => left.order - right.order)
     .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
-const ROOT = absolutePathSchema.parse("/repo/discipline-exceptions");
+const ROOT = absoluteRootOf("/repo/discipline-exceptions");
 
-const AUTHORISED_FOLDER = absolutePathSchema.parse("/repo/discipline-exceptions/authorised-locations");
+const AUTHORISED_FOLDER = absoluteRootOf("/repo/discipline-exceptions/authorised-locations");
 
-const CARVE_OUT_FILE = absolutePathSchema.parse("/repo/discipline-exceptions/file-carve-outs/cd-15.json");
+const CARVE_OUT_FILE = absoluteRootOf("/repo/discipline-exceptions/file-carve-outs/cd-15.json");
 
-const CARVE_OUT_FOLDER = absolutePathSchema.parse("/repo/discipline-exceptions/file-carve-outs");
+const CARVE_OUT_FOLDER = absoluteRootOf("/repo/discipline-exceptions/file-carve-outs");
 
-const AUTHORISED_FILE = absolutePathSchema.parse("/repo/discipline-exceptions/authorised-locations/cd-15.json");
+const AUTHORISED_FILE = absoluteRootOf("/repo/discipline-exceptions/authorised-locations/cd-15.json");
 
-const PROJECTION = absolutePathSchema.parse("/repo/disciplines.eslint.mjs");
+const PROJECTION = absoluteRootOf("/repo/disciplines.eslint.mjs");
 
-const SETTINGS = absolutePathSchema.parse("/repo/disciplines.json");
+const SETTINGS = absoluteRootOf("/repo/disciplines.json");
 
 const REMOVAL: VersionOneRemoval = { recordsFiles: [CARVE_OUT_FILE, AUTHORISED_FILE], recordsFolders: [], recordsRoot: { kind: "folder", path: ROOT }, projections: [PROJECTION], settings: SETTINGS };
 
-const SLICE = absolutePathSchema.parse("/repo/packages/a/disciplines.eslint.mjs");
+const SLICE = absoluteRootOf("/repo/packages/a/disciplines.eslint.mjs");
 
-const DIRECT = absolutePathSchema.parse("/repo/discipline-exceptions/records.json");
+const DIRECT = absoluteRootOf("/repo/discipline-exceptions/records.json");
 
-const SINGLE = absolutePathSchema.parse("/repo/discipline-exceptions.json");
+const SINGLE = absoluteRootOf("/repo/discipline-exceptions.json");
 
-const REPOSITORY = absolutePathSchema.parse("/repo");
+const REPOSITORY = absoluteRootOf("/repo");
 
-const OUTSIDE = absolutePathSchema.parse("/repo/tools/x.json");
+const OUTSIDE = absoluteRootOf("/repo/tools/x.json");
 
-const OTHER_CASE = absolutePathSchema.parse("/repo/Discipline-Exceptions/file-carve-outs/cd-15.json");
+const OTHER_CASE = absoluteRootOf("/repo/Discipline-Exceptions/file-carve-outs/cd-15.json");
 
 const ok = { outcome: "ok", value: undefined } as const;
 

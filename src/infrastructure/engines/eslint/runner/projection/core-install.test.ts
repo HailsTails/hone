@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { coreInstallOf } from "./core-install.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
+const INSTALL_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 
 const MANIFEST = "/repo/node_modules/@hailstails/hone/package.json";
 

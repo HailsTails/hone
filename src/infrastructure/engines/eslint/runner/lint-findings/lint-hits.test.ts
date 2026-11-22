@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { CUT_MARK } from "../../../protocol/runner-module/snippet.ts";
 import { hitsCutFrom, type LintedClause, lineSnippet, messageReadingOf } from "./lint-hits.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
-const FILE = repoPathSchema.parse("src/a.ts");
+const FILE = repoPathOf("src/a.ts");
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const abstractSyntax = clauseAddressSchema.parse("CD-14#abstract-syntax");
+const abstractSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
 
 const FORTY_BUNDLED = "var a=1;var b=2;var c=3;var d=4;var e=5;";
 

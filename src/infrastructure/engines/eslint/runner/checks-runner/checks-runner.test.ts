@@ -6,8 +6,6 @@ import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-l
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
 import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };
@@ -20,6 +18,11 @@ import type { RuleState } from "../toolchain/eslint-config-schema.ts";
 import type { EslintPort, GovernanceInstance, QueryInstance } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const DECLARATION_TEXT = "declare const projection: readonly unknown[];\nexport default projection;\n";
 
@@ -67,10 +70,10 @@ const runner = checksRunnerOver({
 });
 
 const REQUEST: ChecksRunRequest = {
-  repoRoot: absolutePathSchema.parse("/repo"),
-  installRoot: absolutePathSchema.parse("/install"),
-  files: [repoPathSchema.parse("src/a.ts")],
-  trackedPaths: [repoPathSchema.parse("src/a.ts")],
+  repoRoot: absoluteRootOf("/repo"),
+  installRoot: absoluteRootOf("/install"),
+  files: [repoPathOf("src/a.ts")],
+  trackedPaths: [repoPathOf("src/a.ts")],
   checks: [],
   bindings: [],
   answered: [],
@@ -85,8 +88,8 @@ describe("checksRunnerOver", () => {
     expect(
       await runner.run({
         ...REQUEST,
-        files: [repoPathSchema.parse("vendor/lib/src/a.ts")],
-        trackedPaths: [repoPathSchema.parse("vendor/lib/hone.config.json"), repoPathSchema.parse("vendor/lib/src/a.ts")],
+        files: [repoPathOf("vendor/lib/src/a.ts")],
+        trackedPaths: [repoPathOf("vendor/lib/hone.config.json"), repoPathOf("vendor/lib/src/a.ts")],
       }),
     ).toEqual(NOT_READY_NESTED);
   });
@@ -95,11 +98,11 @@ describe("checksRunnerOver", () => {
     expect(
       await runner.run({
         ...REQUEST,
-        files: [repoPathSchema.parse("vendor/lib/src/a.ts")],
+        files: [repoPathOf("vendor/lib/src/a.ts")],
         trackedPaths: [
-          repoPathSchema.parse("vendor/lib/hone.config.json"),
-          repoPathSchema.parse("vendor/lib/eslint.config.mjs"),
-          repoPathSchema.parse("vendor/lib/src/a.ts"),
+          repoPathOf("vendor/lib/hone.config.json"),
+          repoPathOf("vendor/lib/eslint.config.mjs"),
+          repoPathOf("vendor/lib/src/a.ts"),
         ],
       }),
     ).toEqual(NOT_READY_NESTED);
@@ -122,7 +125,7 @@ const INSTALLED_ESLINT_PACKAGE_JSON = path.join({ segments: [SCRATCH_REPO_ROOT, 
 const CLASS_KEYWORD_CHECK: RuledCheck = {
   name: "class-keyword",
   symptom: { name: "authored-class-or-this", title: "Authored class or this" },
-  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
   engines: [{ mechanism: "audit" }, { mechanism: "eslint" }],
 };
 
@@ -134,7 +137,7 @@ const CLASS_BINDINGS: ChecksRunRequest["bindings"] = [
   {
     mechanism: "eslint",
     clause: {
-      address: clauseAddressSchema.parse("CD-14#class-syntax"),
+      address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
       pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/CD-14`,
       settings: ESLINT_CD_14_PIECE.clauses[0].settings,
     },
@@ -144,8 +147,8 @@ const CLASS_BINDINGS: ChecksRunRequest["bindings"] = [
 const SELECTING_THE_CLASS_CHECK: ChecksRunRequest = {
   repoRoot: SCRATCH_REPO_ROOT,
   installRoot: REAL_INSTALL_ROOT,
-  files: [repoPathSchema.parse("kept.ts")],
-  trackedPaths: [repoPathSchema.parse("kept.ts")],
+  files: [repoPathOf("kept.ts")],
+  trackedPaths: [repoPathOf("kept.ts")],
   checks: [CLASS_KEYWORD_CHECK],
   bindings: CLASS_BINDINGS,
   answered: [],
@@ -267,9 +270,9 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
   });
 });
 
-const PACKAGE_SLICE_PATH = repoPathSchema.parse("packages/web/hone.eslint.mjs");
+const PACKAGE_SLICE_PATH = repoPathOf("packages/web/hone.eslint.mjs");
 
-const PACKAGE_DECLARATION_PATH = repoPathSchema.parse("packages/web/hone.eslint.d.mts");
+const PACKAGE_DECLARATION_PATH = repoPathOf("packages/web/hone.eslint.d.mts");
 
 const ROOT_DECLARATION = { file: CHECKS_DECLARATION_PATH, text: DECLARATION_TEXT };
 
@@ -281,7 +284,7 @@ const PACKAGE_PROJECTION_PRESENT: CurrentProjection = { presence: "present", tex
 
 const WITH_A_PACKAGE_CONFIG: ChecksRunRequest = {
   ...SELECTING_THE_CLASS_CHECK,
-  trackedPaths: [repoPathSchema.parse("kept.ts"), repoPathSchema.parse("packages/web/eslint.config.mjs")],
+  trackedPaths: [repoPathOf("kept.ts"), repoPathOf("packages/web/eslint.config.mjs")],
 };
 
 const slicesHolding = (request: { readonly root: CurrentProjection; readonly web: CurrentProjection }): ReadonlyMap<RepoPath, CurrentProjection> =>
@@ -394,7 +397,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
   });
 
   it("names a declared folder's file missing, and unconfigured, when it holds no eslint.config.* on disk and its file is not written", async () => {
-    const request = { ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathSchema.parse("packages/web")] };
+    const request = { ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathOf("packages/web")] };
     const outcome = await runnerOverProjection({
       currents: slicesHolding({ root: PROJECTION_WRITTEN_AS_PROJECT_WOULD, web: PROJECTION_NOT_WRITTEN }),
       ruleState: CONFIGURED_ON,
@@ -418,7 +421,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
 
   it("names a declared folder's file unconfigured, and still lints, when the file is written but the folder holds no eslint.config.* on disk", async () => {
     const governance = lintingNothing();
-    const request = { ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathSchema.parse("packages/web")] };
+    const request = { ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathOf("packages/web")] };
     const outcome = await runnerOverProjection({
       currents: slicesHolding({ root: PROJECTION_WRITTEN_AS_PROJECT_WOULD, web: PACKAGE_PROJECTION_PRESENT }),
       ruleState: CONFIGURED_ON,
@@ -432,7 +435,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
 
   it("names no declared folder unconfigured when it holds an eslint.config.* on disk, whatever the lookup", async () => {
     const present = { ...createDefaultFileTextPort({}), exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present") };
-    const request = { ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathSchema.parse("packages/web")] };
+    const request = { ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathOf("packages/web")] };
     const outcome = await runnerOverProjectionReading({
       currents: slicesHolding({ root: PROJECTION_WRITTEN_AS_PROJECT_WOULD, web: PACKAGE_PROJECTION_PRESENT }),
       ruleState: CONFIGURED_ON,
@@ -459,8 +462,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
   it("reads no slice for a declared folder that is a nested repository", async () => {
     const request = {
       ...SELECTING_THE_CLASS_CHECK,
-      declaredConfigRoots: [repoPathSchema.parse("vendor/lib")],
-      trackedPaths: [repoPathSchema.parse("kept.ts"), repoPathSchema.parse("vendor/lib/hone.config.json")],
+      declaredConfigRoots: [repoPathOf("vendor/lib")],
+      trackedPaths: [repoPathOf("kept.ts"), repoPathOf("vendor/lib/hone.config.json")],
     };
     const outcome = await runnerOverProjection({ currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD), ruleState: CONFIGURED_ON, governance: lintingNothing() }).run(request);
     expect(outcome).toEqual({ outcome: "ok", value: { hits: [], nativeExceptions: [], measured: [], misnamedRuleIds: [], projection: "current", slices: [] } });
@@ -469,7 +472,7 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
   it("reads no slice for a nested repository's lint config, when the nested repository holds no file to check", async () => {
     const request = {
       ...SELECTING_THE_CLASS_CHECK,
-      trackedPaths: [repoPathSchema.parse("kept.ts"), repoPathSchema.parse("vendor/lib/hone.config.json"), repoPathSchema.parse("vendor/lib/eslint.config.mjs")],
+      trackedPaths: [repoPathOf("kept.ts"), repoPathOf("vendor/lib/hone.config.json"), repoPathOf("vendor/lib/eslint.config.mjs")],
     };
     const outcome = await runnerOverProjection({ currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD), ruleState: CONFIGURED_ON, governance: lintingNothing() }).run(request);
     expect(outcome).toEqual({ outcome: "ok", value: { hits: [], nativeExceptions: [], measured: [], misnamedRuleIds: [], projection: "current", slices: [] } });
@@ -503,7 +506,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
 
   it("gives the answered files as off blocks, so records change the projection", async () => {
     const { runnerOver } = projectingRunner();
-    const answered = [{ symptom: "authored-class-or-this", check: "class-keyword", file: repoPathSchema.parse("kept.ts") }];
+    const answered = [{ symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("kept.ts") }];
     expect(await runnerOver.project({ ...SELECTING_THE_CLASS_CHECK, answered })).toEqual({
       outcome: "ok",
       value: [{ file: CHECKS_PROJECTION_PATH, text: checksProjectionText({ pluginImport: "../../src/eslint-plugin.ts", checks: [CLASS_PROJECTED], answered }) }, ROOT_DECLARATION],
@@ -524,10 +527,10 @@ describe("checksRunnerOver, giving the projection as project", () => {
 
   it("gives each package's file only the answers under that package, relative to it, and the root file all of them", async () => {
     const answered = [
-      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathSchema.parse("kept.ts") },
-      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathSchema.parse("packages/web/src/a.ts") },
+      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("kept.ts") },
+      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("packages/web/src/a.ts") },
     ];
-    const rooted = [{ symptom: "authored-class-or-this", check: "class-keyword", file: repoPathSchema.parse("src/a.ts") }];
+    const rooted = [{ symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("src/a.ts") }];
     expect(await projectingRunner().runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, answered })).toEqual({
       outcome: "ok",
       value: [
@@ -551,7 +554,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
   });
 
   it("gives a file in a declared folder that holds no eslint.config.*, beside the root file", async () => {
-    expect(await projectingRunner().runnerOver.project({ ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathSchema.parse("packages/web")] })).toEqual({
+    expect(await projectingRunner().runnerOver.project({ ...SELECTING_THE_CLASS_CHECK, declaredConfigRoots: [repoPathOf("packages/web")] })).toEqual({
       outcome: "ok",
       value: [
         { file: CHECKS_PROJECTION_PATH, text: CURRENT_PROJECTION_TEXT },
@@ -563,7 +566,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
   });
 
   it("gives one file for a folder that is both declared and holds an eslint.config.*", async () => {
-    expect(await projectingRunner().runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, declaredConfigRoots: [repoPathSchema.parse("packages/web")] })).toEqual({
+    expect(await projectingRunner().runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, declaredConfigRoots: [repoPathOf("packages/web")] })).toEqual({
       outcome: "ok",
       value: [
         { file: CHECKS_PROJECTION_PATH, text: CURRENT_PROJECTION_TEXT },
@@ -578,8 +581,8 @@ describe("checksRunnerOver, giving the projection as project", () => {
     expect(
       await projectingRunner().runnerOver.project({
         ...SELECTING_THE_CLASS_CHECK,
-        declaredConfigRoots: [repoPathSchema.parse("vendor/lib")],
-        trackedPaths: [repoPathSchema.parse("kept.ts"), repoPathSchema.parse("vendor/lib/hone.config.json")],
+        declaredConfigRoots: [repoPathOf("vendor/lib")],
+        trackedPaths: [repoPathOf("kept.ts"), repoPathOf("vendor/lib/hone.config.json")],
       }),
     ).toEqual({ outcome: "ok", value: [{ file: CHECKS_PROJECTION_PATH, text: CURRENT_PROJECTION_TEXT }, ROOT_DECLARATION] });
   });

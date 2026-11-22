@@ -1,14 +1,17 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { SyntaxTree } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import type { SourceObservers, WalkerRepository } from "../runner/pieces/walker-piece.ts";
 import { check } from "./throws-in-tests.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
@@ -18,14 +21,14 @@ assert(loadedParsePort.outcome === "ok", "the typescript line loads from the dev
 assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 const defaultParsePort = loadedParsePort.value;
 
-const ADDRESS = clauseAddressSchema.parse("CD-10#throws-in-tests");
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-10"), clause: clauseIdOf("throws-in-tests") };
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-10",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "throws-in-tests.ts" },
 };
 
@@ -99,7 +102,7 @@ describe("CD-10 existing test throw observation", () => {
   });
 
   it("retains an eligible test under a nested root-only directory without reading during preparation", () => {
-    const file = repoPathSchema.parse("src/vendor/example.test.ts");
+    const file = repoPathOf("src/vendor/example.test.ts");
     const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
     assert(prepared.outcome === "ok");
     const readText = vi.fn().mockReturnValue({ outcome: "failed", error: { kind: "file-unreadable", file, detail: "unexpected read" } });

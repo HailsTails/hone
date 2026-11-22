@@ -5,14 +5,16 @@ import type { EntryKindPort } from "../../../../application/ports/file-system/en
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import { CASE_ROOT } from "./pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const loadedParsePort = await loadParsePort({
   peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
@@ -22,17 +24,17 @@ assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript lin
 const defaultParsePort = loadedParsePort.value;
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
-const ALPHA = repoPathSchema.parse("src/alpha.ts");
-const CONFIG = repoPathSchema.parse("tsconfig.json");
-const FIRST = clauseAddressSchema.parse("XX-1#first-check");
-const SECOND = clauseAddressSchema.parse("XX-1#second-check");
+const ALPHA = repoPathOf("src/alpha.ts");
+const CONFIG = repoPathOf("tsconfig.json");
+const FIRST = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("first-check") };
+const SECOND = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("second-check") };
 
 const clauseFor = (request: { readonly address: typeof FIRST; readonly module: string }): RunnerClause => ({
   address: request.address,
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: request.module },
 });
 
@@ -40,8 +42,8 @@ const FIRST_CLAUSE = clauseFor({ address: FIRST, module: "shared.ts" });
 const SECOND_CLAUSE = clauseFor({ address: SECOND, module: "shared.ts" });
 
 const RUN: RunRequest = {
-  repoRoot: absolutePathSchema.parse("/repo"),
-  installRoot: absolutePathSchema.parse("/install"),
+  repoRoot: absoluteRootOf("/repo"),
+  installRoot: absoluteRootOf("/install"),
   files: [ALPHA],
   trackedPaths: [ALPHA, CONFIG],
   clauses: [FIRST_CLAUSE, SECOND_CLAUSE],
@@ -260,8 +262,8 @@ describe("createWalkerRunner run", () => {
 const EXPECTATION = "@ts-expect-" + "error";
 const IGNORE = "@ts-" + "ignore";
 const NOCHECK = "@ts-" + "nocheck";
-const BETA = repoPathSchema.parse("src/beta.ts");
-const SKIPPED = repoPathSchema.parse("src/skipped.ts");
+const BETA = repoPathOf("src/beta.ts");
+const SKIPPED = repoPathOf("src/skipped.ts");
 
 const DIRECTIVE_SOURCE = `// ${NOCHECK}\n// ${EXPECTATION} legacy\nexport const a: number = "x";\n// ${IGNORE} reason (#42)\nexport const b = 1;\n// ordinary\n`;
 

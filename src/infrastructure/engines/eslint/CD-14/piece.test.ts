@@ -3,10 +3,11 @@ import type { FileTextPort } from "../../../../application/ports/file-system/fil
 import { createPathPort } from "../../../node/path-port.ts";
 import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile } from "../../../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseIdSchema, disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { eslintPieceSettingsSchema } from "../runner/pieces/eslint-piece-settings-schema.ts";
 import piece from "./piece.json" with { type: "json" };
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 
 const fileText: FileTextPort = {
   read: () => ({ outcome: "ok", value: JSON.stringify(piece) }),
@@ -16,17 +17,17 @@ const fileText: FileTextPort = {
 
 const CD14: DisciplineFile = {
   version: 1,
-  id: disciplineIdSchema.parse("CD-14"),
+  id: disciplineIdOf("CD-14"),
   clauses: [
     {
       kind: "judgement",
-      id: clauseIdSchema.parse("class-syntax"),
+      id: clauseIdOf("class-syntax"),
       summary: "no authored class syntax",
       enforcedBy: "review",
     },
     {
       kind: "judgement",
-      id: clauseIdSchema.parse("static-only-class"),
+      id: clauseIdOf("static-only-class"),
       summary: "no class holding only static members",
       enforcedBy: "review",
     },
@@ -39,8 +40,8 @@ describe("CD-14 ESLint piece.json", () => {
       readPieceFile({
         fileText,
         path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
-        ruleSetRoot: absolutePathSchema.parse("/install"),
-        installRoot: absolutePathSchema.parse("/install"),
+        ruleSetRoot: absoluteRootOf("/install"),
+        installRoot: absoluteRootOf("/install"),
         mechanism: "eslint",
         discipline: CD14,
       }),

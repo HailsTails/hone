@@ -18,7 +18,6 @@ import type { PackageLocationPort } from "../infrastructure/node/modules/package
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { installFormOf } from "../infrastructure/node/modules/install-layout.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
 import {
   defaultTypeScriptPeers,
@@ -33,6 +32,7 @@ import { defaultEslintToolchainPeers, loadEslintToolchain } from "../infrastruct
 import { checkRunAt } from "./check-command.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { installedPortsOver } from "./installed-ports.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -137,9 +137,9 @@ const git: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
     outcome: "ok",
     value: [
-      repoPathSchema.parse("discipline-exceptions.json"),
-      repoPathSchema.parse("disciplines.json"),
-      repoPathSchema.parse("src/greeting.ts"),
+      repoPathOf("discipline-exceptions.json"),
+      repoPathOf("disciplines.json"),
+      repoPathOf("src/greeting.ts"),
     ],
   }),
   changedSince: vi.fn<GitPort["changedSince"]>(),

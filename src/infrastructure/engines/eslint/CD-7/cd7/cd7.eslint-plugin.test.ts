@@ -1,11 +1,11 @@
 import { assert, describe, expect, it } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import cd7Plugin from "./cd7.eslint-plugin.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -22,37 +22,37 @@ const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 const flagCases: readonly SourceCase[] = [
   {
     name: "snake case with an interior underscore",
-    fileName: repoPathSchema.parse("src/snake_case.ts"),
+    fileName: repoPathOf("src/snake_case.ts"),
     source: "export {};\n",
     expectedLines: [1],
   },
   {
     name: "camel case",
-    fileName: repoPathSchema.parse("src/camelCase.ts"),
+    fileName: repoPathOf("src/camelCase.ts"),
     source: "export {};\n",
     expectedLines: [1],
   },
   {
     name: "all capitals",
-    fileName: repoPathSchema.parse("src/UPPER.ts"),
+    fileName: repoPathOf("src/UPPER.ts"),
     source: "export {};\n",
     expectedLines: [1],
   },
   {
     name: "a space in the name",
-    fileName: repoPathSchema.parse("src/my file.ts"),
+    fileName: repoPathOf("src/my file.ts"),
     source: "export {};\n",
     expectedLines: [1],
   },
   {
     name: "a non-conventional second extension segment",
-    fileName: repoPathSchema.parse("src/widget.Test_Spec.ts"),
+    fileName: repoPathOf("src/widget.Test_Spec.ts"),
     source: "export {};\n",
     expectedLines: [1],
   },
   {
     name: "a route group followed by garbage",
-    fileName: repoPathSchema.parse("src/(group)extra.ts"),
+    fileName: repoPathOf("src/(group)extra.ts"),
     source: "export {};\n",
     expectedLines: [1],
   },
@@ -61,49 +61,49 @@ const flagCases: readonly SourceCase[] = [
 const allowCases: readonly SourceCase[] = [
   {
     name: "kebab case with a test extension",
-    fileName: repoPathSchema.parse("src/kebab-case.test.ts"),
+    fileName: repoPathOf("src/kebab-case.test.ts"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "pascal case component",
-    fileName: repoPathSchema.parse("src/Component.tsx"),
+    fileName: repoPathOf("src/Component.tsx"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "edge underscores are stripped",
-    fileName: repoPathSchema.parse("src/__init__.ts"),
+    fileName: repoPathOf("src/__init__.ts"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "a leading dot marker is stripped",
-    fileName: repoPathSchema.parse("src/.config-file.ts"),
+    fileName: repoPathOf("src/.config-file.ts"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "a leading plus marker is stripped",
-    fileName: repoPathSchema.parse("src/+page.ts"),
+    fileName: repoPathOf("src/+page.ts"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "a dynamic route segment",
-    fileName: repoPathSchema.parse("src/[id].ts"),
+    fileName: repoPathOf("src/[id].ts"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "a catch-all route segment with extensions",
-    fileName: repoPathSchema.parse("src/[...slug].page.ts"),
+    fileName: repoPathOf("src/[...slug].page.ts"),
     source: "export {};\n",
     expectedLines: [],
   },
   {
     name: "only the basename is judged, not its directories",
-    fileName: repoPathSchema.parse("src/Bad_Directory/ok-name.ts"),
+    fileName: repoPathOf("src/Bad_Directory/ok-name.ts"),
     source: "export {};\n",
     expectedLines: [],
   },

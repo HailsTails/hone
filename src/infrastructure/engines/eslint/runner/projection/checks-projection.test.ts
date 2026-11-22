@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { CHECKS_PROJECTION_PATH, type ProjectedCheck, checksProjectionText } from "./checks-projection.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PACKAGE_IMPORT = "@hailstails/hone/eslint-plugin";
 
@@ -42,10 +42,10 @@ describe("checksProjectionText", () => {
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS, FOCUSED_TESTS, NON_NULL_ASSERTIONS],
         answered: [
-          { symptom: "test-switched-off", file: repoPathSchema.parse("src/b.test.ts") },
-          { symptom: "claimed-type", file: repoPathSchema.parse("src/c.ts") },
-          { symptom: "test-switched-off", file: repoPathSchema.parse("src/c.ts") },
-          { symptom: "test-switched-off", file: repoPathSchema.parse("src/a.test.ts") },
+          { symptom: "test-switched-off", file: repoPathOf("src/b.test.ts") },
+          { symptom: "claimed-type", file: repoPathOf("src/c.ts") },
+          { symptom: "test-switched-off", file: repoPathOf("src/c.ts") },
+          { symptom: "test-switched-off", file: repoPathOf("src/a.test.ts") },
         ],
       }),
     ).toBe(
@@ -63,8 +63,8 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS, FOCUSED_TESTS],
         answered: [
-          { symptom: "test-switched-off", check: "skipped-tests", file: repoPathSchema.parse("src/a.test.ts") },
-          { symptom: "test-switched-off", file: repoPathSchema.parse("src/b.test.ts") },
+          { symptom: "test-switched-off", check: "skipped-tests", file: repoPathOf("src/a.test.ts") },
+          { symptom: "test-switched-off", file: repoPathOf("src/b.test.ts") },
         ],
       }),
     ).toBe(
@@ -81,7 +81,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
       checksProjectionText({
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS],
-        answered: [{ symptom: "test-switched-off", check: "test-body", file: repoPathSchema.parse("src/a.test.ts") }],
+        answered: [{ symptom: "test-switched-off", check: "test-body", file: repoPathOf("src/a.test.ts") }],
       }),
     ).toBe(
       'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',
@@ -93,7 +93,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
       checksProjectionText({
         pluginImport: PACKAGE_IMPORT,
         checks: [NON_NULL_ASSERTIONS],
-        answered: [{ symptom: "claimed-type", file: repoPathSchema.parse("app/[id]/page.ts") }],
+        answered: [{ symptom: "claimed-type", file: repoPathOf("app/[id]/page.ts") }],
       }),
     ).toContain('{ name: "hone/answered/claimed-type", files: ["app/\\\\[id\\\\]/page.ts"], rules: { "hone/claimed-type#non-null-assertions": "off" } }];');
   });
@@ -103,7 +103,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
       checksProjectionText({
         pluginImport: PACKAGE_IMPORT,
         checks: [SKIPPED_TESTS],
-        answered: [{ symptom: "loop-keyword", file: repoPathSchema.parse("src/a.ts") }],
+        answered: [{ symptom: "loop-keyword", file: repoPathOf("src/a.ts") }],
       }),
     ).toBe(
       'import hone from "@hailstails/hone/eslint-plugin";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone }, rules: { "hone/test-switched-off#skipped-tests": "error" } }];\n',

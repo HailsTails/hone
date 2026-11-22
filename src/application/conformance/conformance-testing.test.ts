@@ -5,17 +5,18 @@ import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { clauseIdSchema, disciplineIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { type ConformanceTestingPorts, createConformanceTesting } from "./conformance-testing.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const AUDIT = "audit" as const;
-const ACME_2 = disciplineIdSchema.parse("ACME-2");
-const SCRATCH_FILES_ID = clauseIdSchema.parse("scratch-files");
+const ACME_2 = disciplineIdOf("ACME-2");
+const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 const BUILT_ENTRY_URL = "file:///install/api/testing.js";
 const DISCIPLINE_PATH = "/install/acme/rules/ACME-2/discipline.json";
 const PIECE_ROOT = "/install/acme/mechanisms/audit/ACME-2";
@@ -32,8 +33,8 @@ const DISCIPLINE: DisciplineFile = {
       anchor: { kind: "file" },
       exceptions: "allowed",
       cases: {
-        flag: [{ name: "scratch file", fileName: repoPathSchema.parse("src/draft.scratch.ts"), source: "", expectedLines: [1] }],
-        allow: [{ name: "ordinary file", fileName: repoPathSchema.parse("src/kept.ts"), source: "", expectedLines: [] }],
+        flag: [{ name: "scratch file", fileName: repoPathOf("src/draft.scratch.ts"), source: "", expectedLines: [1] }],
+        allow: [{ name: "ordinary file", fileName: repoPathOf("src/kept.ts"), source: "", expectedLines: [] }],
       },
     },
   ],
@@ -48,7 +49,7 @@ const PIECE: PieceFile = {
       clause: SCRATCH_FILES_ID,
       settings: { module: "scratch-files.ts" },
       clauseSettings: {},
-      editions: { declared: [FIRST_EDITION], default: FIRST_EDITION, latest: FIRST_EDITION },
+      editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
     },
   ],
 };
@@ -156,6 +157,6 @@ describe("createConformanceTesting", () => {
     const testing = createConformanceTesting(
       portsOver({ installRoot: { outcome: "ok", value: INSTALL_ROOT }, ruleSetFiles: UNREADABLE_FILES, engine: engineRefusingTheRunner(), loadFailureDetail: NO_LOAD_FAILURE_DETAIL }),
     );
-    expect(testing.repoPathOf({ file: "src/kept.ts" })).toEqual({ outcome: "ok", value: repoPathSchema.parse("src/kept.ts") });
+    expect(testing.repoPathOf({ file: "src/kept.ts" })).toEqual({ outcome: "ok", value: repoPathOf("src/kept.ts") });
   });
 });

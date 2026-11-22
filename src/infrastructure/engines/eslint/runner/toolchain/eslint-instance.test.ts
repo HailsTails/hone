@@ -1,6 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules, type EslintToolchainPeers, loadEslintToolchain } from "./eslint-toolchain.ts";
 import {
   type CreateEslint,
@@ -14,6 +13,8 @@ import {
 } from "./eslint-instance.ts";
 import { eslintPluginModuleSchema } from "../pieces/eslint-plugin-schema.ts";
 import { eslint9ToolchainModules } from "./eslint-9/eslint-9-engine.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -76,30 +77,30 @@ const tmpFilePlugin = eslintPluginModuleSchema.parse({
   },
 }).default;
 
-const repoRoot = absolutePathSchema.parse("/repo");
+const repoRoot = absoluteRootOf("/repo");
 const inlineConfigCwd = absolutePathSchema.parse(import.meta.dirname);
 
 const conformanceRoot = absolutePathSchema.parse(`${import.meta.dirname}/../../CD-14`);
-const fileA = repoPathSchema.parse("src/a.ts");
-const fileB = repoPathSchema.parse("src/b.ts");
+const fileA = repoPathOf("src/a.ts");
+const fileB = repoPathOf("src/b.ts");
 
 const classCase = {
   name: "class",
-  fileName: repoPathSchema.parse("cases/class.ts"),
+  fileName: repoPathOf("cases/class.ts"),
   source: "const a = 1;\nclass A {}\n",
   expectedLines: [2],
 };
 
 const functionAndClassCase = {
   name: "function-and-class",
-  fileName: repoPathSchema.parse("cases/function-and-class.ts"),
+  fileName: repoPathOf("cases/function-and-class.ts"),
   source: "function f() {}\nclass A {}\n",
   expectedLines: [2],
 };
 
 const disabledClassCase = {
   name: "disabled-class",
-  fileName: repoPathSchema.parse("cases/disabled-class.ts"),
+  fileName: repoPathOf("cases/disabled-class.ts"),
   source: "/* eslint-disable */\nclass A {}\n",
   expectedLines: [2],
 };
@@ -108,7 +109,7 @@ const REFUSED_CONFIG_DETAIL = "✖ Invalid input";
 
 const noClassCase = {
   name: "no-class",
-  fileName: repoPathSchema.parse("cases/no-class.ts"),
+  fileName: repoPathOf("cases/no-class.ts"),
   source: "const a = 1;\n",
   expectedLines: [],
 };
@@ -702,7 +703,7 @@ describe("lintSourceCases", () => {
   });
 });
 
-const OPTIONS_CWD = absolutePathSchema.parse("/repo");
+const OPTIONS_CWD = absoluteRootOf("/repo");
 
 const NO_LOOKUP = { flags: [] };
 
@@ -795,7 +796,7 @@ describe("ignoredByPatterns, whether ignore patterns given on a command line ign
       .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(true);
     const createEslint = vi.fn<CreateEslint>().mockReturnValue({ ...idleSurface, isPathIgnored });
-    const packageFolder = absolutePathSchema.parse("/repo/packages/a");
+    const packageFolder = absoluteRootOf("/repo/packages/a");
     const ignored = await portWith({ createEslint }).ignoredByPatterns({
       cwd: packageFolder,
       patterns: ["dist/**"],

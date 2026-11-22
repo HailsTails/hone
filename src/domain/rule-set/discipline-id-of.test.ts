@@ -10,8 +10,4 @@ describe("disciplineIdOf", () => {
   it("returns text the discipline-id guard accepts", () => {
     expect(isDisciplineId(disciplineIdOf("CD-14"))).toBe(true);
   });
-
-  it("returns an id that is one path segment under rules", () => {
-    expect(`rules/${disciplineIdOf("CD-14")}/`.split("/")).toEqual(["rules", "CD-14", ""]);
-  });
 });

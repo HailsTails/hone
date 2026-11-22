@@ -3,13 +3,13 @@ import type { DirectoryPort } from "../../../application/ports/file-system/direc
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../../../application/ports/git-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../repo-path.ts";
 import { createRecordsFolder } from "./records-folder.ts";
 import type { RecordsFolderPorts } from "../../../application/ports/records/records-source-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
 const path = createPathPort({ flavour: "posix", workingDirectory: vi.fn<(request: Record<string, never>) => string>().mockReturnValue("/repo") });
 
@@ -112,7 +112,7 @@ describe("createRecordsFolder, read", () => {
       ...portsWith({
         exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
         read: vi.fn<FileTextPort["read"]>(),
-        list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absolutePathSchema.parse("/repo/hone-records"), detail: "EACCES" } }),
+        list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/hone-records"), detail: "EACCES" } }),
         ...UNUSED_BASE,
       }),
       repoRoot: REPO,
@@ -151,7 +151,7 @@ describe("createRecordsFolder, readAt", () => {
   it("reads the records files the base revision holds, and nothing else it holds", () => {
     const pathsAt = vi
       .fn<GitTreePort["pathsAt"]>()
-      .mockReturnValue({ outcome: "ok", value: [repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("hone-records/debt/claimed-type.json"), repoPathSchema.parse("hone-records/README.md")] });
+      .mockReturnValue({ outcome: "ok", value: [repoPathOf("src/a.ts"), repoPathOf("hone-records/debt/claimed-type.json"), repoPathOf("hone-records/README.md")] });
     const textInBase = vi.fn<GitPort["textInBase"]>().mockReturnValue({ outcome: "ok", value: { presence: "present-in-base", text: DEBT_TEXT } });
     const folder = createRecordsFolder({
       ...portsWith({ exists: vi.fn<FileTextPort["exists"]>(), read: vi.fn<FileTextPort["read"]>(), list: vi.fn<DirectoryPort["list"]>(), pathsAt, textInBase }),
@@ -183,7 +183,7 @@ describe("createRecordsFolder, readAt", () => {
         exists: vi.fn<FileTextPort["exists"]>(),
         read: vi.fn<FileTextPort["read"]>(),
         list: vi.fn<DirectoryPort["list"]>(),
-        pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [repoPathSchema.parse("hone-records/dependency-records.json")] }),
+        pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [repoPathOf("hone-records/dependency-records.json")] }),
         textInBase: vi.fn<GitPort["textInBase"]>().mockReturnValue({ outcome: "ok", value: { presence: "present-in-base", text: "[" } }),
       }),
       repoRoot: REPO,

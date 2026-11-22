@@ -1,13 +1,16 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../runner/pieces/walker-piece.ts";
 import { check } from "./switch-defaults.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
@@ -17,8 +20,8 @@ assert(loadedParsePort.outcome === "ok", "the typescript line loads from the dev
 assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 const defaultParsePort = loadedParsePort.value;
 
-const FILE = repoPathSchema.parse("src/state.ts");
-const ADDRESS = clauseAddressSchema.parse("CD-8#switch-defaults");
+const FILE = repoPathOf("src/state.ts");
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-8"), clause: clauseIdOf("switch-defaults") };
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const SWITCH = "sw" + "itch";
 const DEFAULT = "def" + "ault";
@@ -29,7 +32,7 @@ const CLAUSE: RunnerClause = {
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-8",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "switch-defaults.ts" },
 };
 

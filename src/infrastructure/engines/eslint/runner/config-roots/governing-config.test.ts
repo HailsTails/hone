@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ConfigFileSearch, EslintPort, IgnoredState, QueryInstance } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
@@ -13,6 +11,8 @@ import {
   type GoverningLookup,
   governingConfigIgnores,
 } from "./governing-config.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
@@ -20,12 +20,12 @@ const SILENT_BOUNDARY: EslintMajorBoundary = {
   declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
 };
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
-const PACKAGE_FOLDER = absolutePathSchema.parse("/repo/packages/a");
+const REPO_ROOT = absoluteRootOf("/repo");
+const PACKAGE_FOLDER = absoluteRootOf("/repo/packages/a");
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" });
 
-const FIXTURE_FILE = repoPathSchema.parse("fixtures/bad/b.ts");
-const PACKAGE_FIXTURE_FILE = repoPathSchema.parse("packages/a/fixtures/bad/p.ts");
+const FIXTURE_FILE = repoPathOf("fixtures/bad/b.ts");
+const PACKAGE_FIXTURE_FILE = repoPathOf("packages/a/fixtures/bad/p.ts");
 
 const BROKEN_FIXTURE_CONFIG = "/repo/fixtures/bad/eslint.config.mjs";
 const BROKEN_PACKAGE_FIXTURE_CONFIG = "/repo/packages/a/fixtures/bad/eslint.config.mjs";
@@ -74,7 +74,7 @@ describe("governingConfigIgnores, whether a governing config really ignores a pa
     const answer = await governingConfigIgnores({
       eslint: portOver(ignoredByConfig),
       governing: ROOT_GOVERNING,
-      target: { kind: "folder", path: repoPathSchema.parse("fixtures/bad") },
+      target: { kind: "folder", path: repoPathOf("fixtures/bad") },
     });
     expect({ answer, asked: ignoredByConfig.mock.calls }).toEqual({
       answer: "ignored",
@@ -87,7 +87,7 @@ describe("governingConfigIgnores, whether a governing config really ignores a pa
     const answer = await governingConfigIgnores({
       eslint: portOver(ignoredByConfig),
       governing: PACKAGE_GOVERNING,
-      target: { kind: "file", path: repoPathSchema.parse("src/w.ts") },
+      target: { kind: "file", path: repoPathOf("src/w.ts") },
     });
     expect({ answer, asked: ignoredByConfig.mock.calls }).toEqual({
       answer: "not-ignored",
@@ -110,7 +110,7 @@ describe("cachedGoverningIgnores", () => {
   it("asks each governing config about each path once and reuses the answer", async () => {
     const ignoredByConfig = vi.fn<EslintPort["ignoredByConfig"]>().mockResolvedValue(FILE_IGNORED);
     const governingIgnoreOf = cachedGoverningIgnores({ eslint: portOver(ignoredByConfig) });
-    const folder = { kind: "folder", path: repoPathSchema.parse("fixtures/bad") } as const;
+    const folder = { kind: "folder", path: repoPathOf("fixtures/bad") } as const;
     await governingIgnoreOf({ governing: ROOT_GOVERNING, target: folder });
     await governingIgnoreOf({ governing: PACKAGE_GOVERNING, target: folder });
     await governingIgnoreOf({ governing: ROOT_GOVERNING, target: folder });
@@ -239,7 +239,7 @@ describe("brokenConfigVerdict where no config governs above the broken one", () 
     const verdict = await brokenConfigVerdict({
       lookup: lookupOver({ query, governingIgnoreOf }),
       brokenConfig: "/repo/eslint.config.mjs",
-      file: repoPathSchema.parse("src/a.ts"),
+      file: repoPathOf("src/a.ts"),
     });
     expect({ verdict, lookups: query.configFileOf.mock.calls, asked: governingIgnoreOf.mock.calls }).toEqual({
       verdict: "not-ignored",

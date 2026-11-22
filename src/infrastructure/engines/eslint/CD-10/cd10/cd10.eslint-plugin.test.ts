@@ -1,11 +1,11 @@
 import { assert, describe, expect, it } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import cd10Plugin from "./cd10.eslint-plugin.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -22,43 +22,43 @@ const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 const flagCases: readonly SourceCase[] = [
   {
     name: "a logical expression with a literal operand",
-    fileName: repoPathSchema.parse("logical-literal.ts"),
+    fileName: repoPathOf("logical-literal.ts"),
     source: "export function fail(cause: Error | undefined): never {\n  throw cause || \"unknown\";\n}\n",
     expectedLines: [2],
   },
   {
     name: "a conditional with a literal branch",
-    fileName: repoPathSchema.parse("conditional-literal.ts"),
+    fileName: repoPathOf("conditional-literal.ts"),
     source: "export function fail(urgent: boolean): never {\n  throw urgent ? new Error(\"urgent\") : \"routine\";\n}\n",
     expectedLines: [2],
   },
   {
     name: "an assignment of a literal",
-    fileName: repoPathSchema.parse("assigned-literal.ts"),
+    fileName: repoPathOf("assigned-literal.ts"),
     source: "let latest: unknown;\nexport function fail(): never {\n  throw (latest = \"stale\");\n}\n",
     expectedLines: [3],
   },
   {
     name: "the last operand of a sequence",
-    fileName: repoPathSchema.parse("sequence-literal.ts"),
+    fileName: repoPathOf("sequence-literal.ts"),
     source: "export function fail(): never {\n  throw (console.log(\"failing\"), 42);\n}\n",
     expectedLines: [2],
   },
   {
     name: "a binary expression",
-    fileName: repoPathSchema.parse("binary-expression.ts"),
+    fileName: repoPathOf("binary-expression.ts"),
     source: "export function fail(code: number): never {\n  throw code + 1;\n}\n",
     expectedLines: [2],
   },
   {
     name: "a tagged template",
-    fileName: repoPathSchema.parse("tagged-template.ts"),
+    fileName: repoPathOf("tagged-template.ts"),
     source: "declare const tag: (parts: TemplateStringsArray) => string;\nexport function fail(): never {\n  throw tag`broken`;\n}\n",
     expectedLines: [3],
   },
   {
     name: "the undefined identifier",
-    fileName: repoPathSchema.parse("thrown-undefined.ts"),
+    fileName: repoPathOf("thrown-undefined.ts"),
     source: "export function fail(): never {\n  throw undefined;\n}\n",
     expectedLines: [2],
   },
@@ -67,37 +67,37 @@ const flagCases: readonly SourceCase[] = [
 const allowCases: readonly SourceCase[] = [
   {
     name: "a constructed error",
-    fileName: repoPathSchema.parse("constructed-error.ts"),
+    fileName: repoPathOf("constructed-error.ts"),
     source: "export function fail(): never {\n  throw new TypeError(\"bad\");\n}\n",
     expectedLines: [],
   },
   {
     name: "a caught identifier rethrown",
-    fileName: repoPathSchema.parse("rethrown.ts"),
+    fileName: repoPathOf("rethrown.ts"),
     source: "export function guard(run: () => void): void {\n  try {\n    run();\n  } catch (caught) {\n    throw caught;\n  }\n}\n",
     expectedLines: [],
   },
   {
     name: "a call that produces an error",
-    fileName: repoPathSchema.parse("error-factory.ts"),
+    fileName: repoPathOf("error-factory.ts"),
     source: "declare const buildError: () => Error;\nexport function fail(): never {\n  throw buildError();\n}\n",
     expectedLines: [],
   },
   {
     name: "a logical expression of two possible errors",
-    fileName: repoPathSchema.parse("logical-identifiers.ts"),
+    fileName: repoPathOf("logical-identifiers.ts"),
     source: "export function fail(first: Error, second: Error): never {\n  throw first ?? second;\n}\n",
     expectedLines: [],
   },
   {
     name: "a conditional between two constructed errors",
-    fileName: repoPathSchema.parse("conditional-errors.ts"),
+    fileName: repoPathOf("conditional-errors.ts"),
     source: "export function fail(urgent: boolean): never {\n  throw urgent ? new Error(\"urgent\") : new RangeError(\"routine\");\n}\n",
     expectedLines: [],
   },
   {
     name: "an assignment of a possible error",
-    fileName: repoPathSchema.parse("assigned-error.ts"),
+    fileName: repoPathOf("assigned-error.ts"),
     source: "let latest: Error | undefined;\nexport function fail(next: Error): never {\n  throw (latest = next);\n}\n",
     expectedLines: [],
   },

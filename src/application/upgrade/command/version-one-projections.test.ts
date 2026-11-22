@@ -9,15 +9,15 @@ import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { EnginePort } from "../../ports/engine/engine-port.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import { type VersionOneProject, versionOneProjectionsOfRepository } from "./version-one-projections.ts";
 import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const path: PathPort = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/eslint.config.mjs"),
@@ -38,17 +38,17 @@ const UNUSED_ENGINE: EnginePort = {
 
 const loadFailureDetail: LoadFailureDetail = () => "git-failed git ls-files: not a git repository";
 
-const PROJECTION = repoPathSchema.parse("disciplines.eslint.mjs");
+const PROJECTION = repoPathOf("disciplines.eslint.mjs");
 
-const ORPHAN = repoPathSchema.parse("old/disciplines.eslint.mjs");
+const ORPHAN = repoPathOf("old/disciplines.eslint.mjs");
 
-const CONFIG = repoPathSchema.parse("eslint.config.mjs");
+const CONFIG = repoPathOf("eslint.config.mjs");
 
 const CONFIG_TEXT = 'import projection from "./disciplines.eslint.mjs";\nexport default [...projection];\n';
 
 const CHECK: CheckRequest = {
   repoRoot: REPO_ROOT,
-  installRoot: absolutePathSchema.parse("/install"),
+  installRoot: absoluteRootOf("/install"),
   moduleExtension: ".ts",
   baseRevision: undefined,
   assessment: { forfeiture: "this-run" },

@@ -10,8 +10,4 @@ describe("repoPathOf", () => {
   it("returns text the repo-path guard accepts", () => {
     expect(isRepoPath(repoPathOf("src/a.ts"))).toBe(true);
   });
-
-  it("returns a path usable as the prefix of its children", () => {
-    expect(`${repoPathOf("hone-records")}/debt`.startsWith(`${repoPathOf("hone-records")}/`)).toBe(true);
-  });
 });

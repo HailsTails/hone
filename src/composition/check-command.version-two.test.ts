@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
@@ -13,7 +12,6 @@ import type { RecordsSourceOf } from "../application/ports/records/records-sourc
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import type { SettingsReading } from "../application/run/settings/read-settings.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../application/ports/engine/engine-run.ts";
 import { commandOf } from "./composed-command.ts";
 import type { VersionTwoRepositoryPorts } from "./version-two-repository.ts";
@@ -22,6 +20,10 @@ import type { CommandRequest } from "../application/ports/command-request.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 
 const versionTwoCheckCommandOf = (ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>) => (command: CommandRequest) =>
   commandOf({ tool: VERSION_TWO_CHECK, ports: { ...command, ...ports } })(command);
@@ -141,11 +143,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -171,7 +173,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
 const SETTINGS: SettingsReading = {
   selection: {
@@ -210,8 +212,8 @@ const FAILING_RUN: EngineRun = {
 const SLICES_RUN: EngineRun = {
   ...CLEAN_RUN,
   slices: [
-    { slice: repoPathSchema.parse("packages/a/hone.eslint.mjs"), state: "missing" },
-    { slice: repoPathSchema.parse("packages/b/hone.eslint.mjs"), state: "out-of-date" },
+    { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
+    { slice: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
   ],
 };
 

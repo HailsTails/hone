@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsDocumentRefusal } from "../../../domain/records/hone-records/hone-record.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { runLoadFailureLine } from "./load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
@@ -13,9 +13,9 @@ type LineRow = { readonly failure: RunLoadFailure; readonly line: string };
 
 const UPGRADE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop";
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const SPACED_FILE = repoPathSchema.parse("hone-records/debt/claimed type.json");
+const SPACED_FILE = repoPathOf("hone-records/debt/claimed type.json");
 
 const DOCUMENT_REFUSED: RecordsDocumentRefusal = {
   kind: "document-refused",
@@ -81,7 +81,7 @@ describe("runLoadFailureLine, an engine that failed", () => {
       line: "load failure: engine-failed eslint tool-failed ESLint exited 2",
     },
     {
-      failure: { kind: "engine-failed", engine: { named: "engine", engine: WALKER }, failure: { kind: "file-unparseable", file: repoPathSchema.parse("src/a.ts"), detail: "line 1\nline 2" } },
+      failure: { kind: "engine-failed", engine: { named: "engine", engine: WALKER }, failure: { kind: "file-unparseable", file: repoPathOf("src/a.ts"), detail: "line 1\nline 2" } },
       line: "load failure: engine-failed walker file-unparseable src/a.ts line 1\\nline 2",
     },
     {
@@ -123,7 +123,7 @@ describe("runLoadFailureLine, a check choice the settings refuse", () => {
 describe("runLoadFailureLine, records that could not be read", () => {
   it.each<LineRow>([
     {
-      failure: { kind: "records-folder-unreadable", folder: repoPathSchema.parse("hone-records/debt"), detail: "EACCES" },
+      failure: { kind: "records-folder-unreadable", folder: repoPathOf("hone-records/debt"), detail: "EACCES" },
       line: "load failure: records-folder-unreadable hone-records/debt EACCES",
     },
     { failure: { kind: "records-file-unreadable", file: DEBT_FILE, detail: "EACCES" }, line: "load failure: records-file-unreadable hone-records/debt/claimed-type.json EACCES" },
@@ -132,11 +132,11 @@ describe("runLoadFailureLine, records that could not be read", () => {
       line: 'load failure: records-file-not-json "hone-records/debt/claimed type.json" Unexpected token',
     },
     {
-      failure: { kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.md") },
+      failure: { kind: "not-a-records-file", file: repoPathOf("hone-records/notes.md") },
       line: "load failure: not-a-records-file hone-records/notes.md: a records file is boundary-records.json or dependency-records.json, or a .json file named for its symptom, or for its recipe in deviations, inside the folder authorised-locations, debt or deviations of hone-records; move this file to where its kind belongs, or out of hone-records if it holds no records",
     },
     {
-      failure: { kind: "not-a-records-name", folder: repoPathSchema.parse("hone-records/debt"), name: "a\\b.json" },
+      failure: { kind: "not-a-records-name", folder: repoPathOf("hone-records/debt"), name: "a\\b.json" },
       line: 'load failure: not-a-records-name hone-records/debt "a\\\\b.json": no repository path can hold that name; rename it',
     },
     {
@@ -214,7 +214,7 @@ describe("runLoadFailureLine, a failure version 2 keeps", () => {
     { failure: { kind: "file-malformed", path: "hone.config.json", detail: "checks: expected an array" }, line: "load failure: file-malformed hone.config.json checks: expected an array" },
     { failure: { kind: "unsupported-version", path: "rules/CD-1/discipline.json", found: 3 }, line: "load failure: unsupported-version rules/CD-1/discipline.json 3" },
     {
-      failure: { kind: "config-root-untracked", root: repoPathSchema.parse("packages/gone") },
+      failure: { kind: "config-root-untracked", root: repoPathOf("packages/gone") },
       line: "load failure: config-root-untracked packages/gone: an eslintConfigRoots entry is a folder git tracks files under outside every excluded path, spelled exactly as git spells it; fix or remove it in hone.config.json",
     },
   ])("prints $failure.kind", ({ failure, line }) => {

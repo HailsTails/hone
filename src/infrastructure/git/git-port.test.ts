@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { createGitHistoryPort, createGitPort, createGitTreePort, type GitRun, type GitSpawn } from "./git-port.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const AMBIENT_ENVIRONMENT = {
   GIT_DIR: "/elsewhere/.git",
@@ -227,7 +227,7 @@ const CANDIDATE_HASH = "0123456789abcdef0123456789abcdef01234567";
 const OTHER_HASH = "abcdef0123456789abcdef0123456789abcdef01";
 const SHA256_HASH = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 const OTHER_SHA256_HASH = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
-const CONTENT_FILE = repoPathSchema.parse("src/example.ts");
+const CONTENT_FILE = repoPathOf("src/example.ts");
 
 describe("createGitPort contentInBase", () => {
   it("finds exact candidate content in the selected tree using option-safe arguments and Git policy", () => {
@@ -235,7 +235,7 @@ describe("createGitPort contentInBase", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: `${CANDIDATE_HASH}\r\n` })
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: `${OTHER_HASH}\0${CANDIDATE_HASH}\0` });
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "-selected-base", file: repoPathSchema.parse("-candidate.ts") });
+    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "-selected-base", file: repoPathOf("-candidate.ts") });
 
     expect(membership).toEqual({ outcome: "ok", value: "present-in-base" });
     expect(spawn.mock.calls).toEqual([

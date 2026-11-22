@@ -15,8 +15,6 @@ import { createRecordsStore } from "../../src/infrastructure/hone-records-folder
 import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../src/domain/result.ts";
 import type { ReadonlyJsonValue } from "../../src/domain/settings/json-values/json-value.ts";
 import type { WhyChain } from "../../src/domain/records/why-chain.ts";
@@ -29,6 +27,10 @@ import {
 } from "../install-proof/install-proof-ports.ts";
 import { recordsReader } from "../../src/infrastructure/hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../../src/infrastructure/hone-records-folder/writing/records-edit.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -179,14 +181,14 @@ const source = createRecordsFolder({
 
 const store = createRecordsStore({ fileText, removal: createDefaultFileRemovalPort({}), directory: createDefaultDirectoryPort({}), path, repoRoot: REPO_ROOT });
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const CAST_IN_ORDERS: Finding = {
-  clause: clauseAddressSchema.parse("CD-2#cast-expressions"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") },
   file: ORDER_FILE,
   anchor: { line: 3, column: 9 },
   snippet: "body as Event",

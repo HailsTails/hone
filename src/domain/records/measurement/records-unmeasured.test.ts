@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { carriedJudgementOf, recordsUnmeasuredOf } from "./records-unmeasured.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
 
 const CLAIMED_TYPE: Symptom = { name: "claimed-type", title: "Claimed type", seen: "A cast.", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
 const STATED_DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "whole-symptom" }, file: FILE_A, holding: { held: "stated" } },
 };
 
 const CARRIED_LOCATION: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/authorised-locations/claimed-type.json"), index: 0 },
   record: {
     kind: "authorised-location",
     symptom: CLAIMED_TYPE,
@@ -26,7 +26,7 @@ const CARRIED_LOCATION: PlacedRecord = {
 };
 
 const ZOD_DEPENDENCY: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/dependency-records.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/dependency-records.json"), index: 0 },
   record: { kind: "dependency-record", dependency: "zod", nativeWay: "hand-written parsing", whyNotEnough: "Each adapter would repeat its checks." },
 };
 

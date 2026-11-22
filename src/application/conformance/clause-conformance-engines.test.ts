@@ -7,24 +7,25 @@ import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { clauseIdSchema, disciplineIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 const MECHANISM = "audit" as const;
-const ACME_2 = disciplineIdSchema.parse("ACME-2");
-const SCRATCH_FILES_ID = clauseIdSchema.parse("scratch-files");
+const ACME_2 = disciplineIdOf("ACME-2");
+const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/repo/tools/disciplines/acme");
+const RULE_SET_ROOT = absoluteRootOf("/repo/tools/disciplines/acme");
 const PIECE_ROOT = "/repo/tools/disciplines/acme/mechanisms/audit/ACME-2";
 
-const ALLOW_CASE = { name: "ordinary file", fileName: repoPathSchema.parse("src/kept.ts"), source: "export const kept = 1;\n", expectedLines: [] };
+const ALLOW_CASE = { name: "ordinary file", fileName: repoPathOf("src/kept.ts"), source: "export const kept = 1;\n", expectedLines: [] };
 
-const FLAG_CASE = { name: "scratch file", fileName: repoPathSchema.parse("src/draft.scratch.ts"), source: "export const draft = 1;\n", expectedLines: [1] };
+const FLAG_CASE = { name: "scratch file", fileName: repoPathOf("src/draft.scratch.ts"), source: "export const draft = 1;\n", expectedLines: [1] };
 
 const DISCIPLINE: DisciplineFile = {
   version: 1,
@@ -51,13 +52,13 @@ const PIECE: PieceFile = {
       clause: SCRATCH_FILES_ID,
       settings: { module: "scratch-files.ts" },
       clauseSettings: {},
-      editions: { declared: [FIRST_EDITION], default: FIRST_EDITION, latest: FIRST_EDITION },
+      editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
     },
   ],
 };
 
 const BOUND_CLAUSE = {
-  address: clauseAddressSchema.parse("acme/ACME-2#scratch-files"),
+  address: { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("ACME-2"), clause: clauseIdOf("scratch-files") },
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
   settings: { module: "scratch-files.ts" },
@@ -153,7 +154,7 @@ describe("clauseConformanceOf, by the kind of engine the runner module declares"
       loaded: { outcome: "ok", value: { mechanism: MECHANISM, runner: embeddedRunner(), checksRunner: checksRunner() } },
       conformed: {
         outcome: "ok",
-        value: [{ caseName: "scratch file", clause: clauseAddressSchema.parse("acme/ACME-2#scratch-files"), expectedLines: [1], flaggedLines: [] }],
+        value: [{ caseName: "scratch file", clause: { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("ACME-2"), clause: clauseIdOf("scratch-files") }, expectedLines: [1], flaggedLines: [] }],
       },
     });
     await expect(conformanceOver({ engine, loadFailureDetail: NO_LOAD_FAILURE_DETAIL })).resolves.toEqual({

@@ -2,32 +2,34 @@ import { describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
 import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { checkConformance } from "./conformance.ts";
-import { FIRST_EDITION } from "../../content-files/edition.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 
 const CLASS_SYNTAX_CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("CD-14#class-syntax"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
 
 const CLASS_ON_LINES_1_AND_3: SourceCase = {
   name: "two classes",
-  fileName: repoPathSchema.parse("src/two-classes.ts"),
+  fileName: repoPathOf("src/two-classes.ts"),
   source: "class A {}\nconst b = 1;\nclass C {}\n",
   expectedLines: [1, 3],
 };
 
 const NO_CLASS: SourceCase = {
   name: "no class",
-  fileName: repoPathSchema.parse("src/no-class.ts"),
+  fileName: repoPathOf("src/no-class.ts"),
   source: "const b = 1;\n",
   expectedLines: [],
 };

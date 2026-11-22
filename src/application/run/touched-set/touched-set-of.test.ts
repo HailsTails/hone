@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { PlacedRecord, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { touchedSetOf } from "./touched-set-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -47,7 +47,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: FILE_A, holding: { held: "stated" } },
 };
 

@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import type { Case, Engine, Principle, RecordKind, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+const RULE_SET_ROOT = absoluteRootOf("/install");
 
 const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
 
@@ -58,7 +60,7 @@ const MAKES_A_NEW_VALUE: Case = {
 
 const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
-const PARAMETER_REASSIGNMENT = clauseAddressSchema.parse("CD-44#parameter-reassignment");
+const PARAMETER_REASSIGNMENT = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") };
 
 const REBINDING: Symptom = {
   name: "rebinding",

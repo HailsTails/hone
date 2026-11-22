@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../finding/governance.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import {
   type Case,
   type Principle,
@@ -13,6 +12,10 @@ import {
   indicatedNamesOf,
   symptomReadingOf,
 } from "./symptom-catalogue.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -87,9 +90,9 @@ const CATALOGUE: SymptomCatalogue = {
   engines: [],
   symptoms: [BRANCH_IN_A_TEST, REBINDING],
   clauses: [
-    { clause: clauseAddressSchema.parse("CD-44#parameter-reassignment"), sight: { kind: "one-symptom", symptom: REBINDING } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") }, sight: { kind: "one-symptom", symptom: REBINDING } },
     {
-      clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
       sight: {
         kind: "symptom-by-form",
         forms: [
@@ -98,8 +101,8 @@ const CATALOGUE: SymptomCatalogue = {
         ],
       },
     },
-    { clause: clauseAddressSchema.parse("CD-9#result-failures"), sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [REBINDING] } },
-    { clause: clauseAddressSchema.parse("CD-32#pii-redaction"), sight: { kind: "outside-the-cases" } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") }, sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [REBINDING] } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, sight: { kind: "outside-the-cases" } },
   ],
   checks: [],
   namedBans: [],
@@ -115,50 +118,50 @@ describe("symptomReadingOf", () => {
   it.each<ReadingRow>([
     {
       name: "names the one symptom a clause sees",
-      finding: { clause: clauseAddressSchema.parse("CD-44#parameter-reassignment") },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") } },
       reading: { reading: "named", symptom: REBINDING },
     },
     {
       name: "names the symptom of the form a by-form clause's finding gives as its section",
       finding: {
-        clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+        clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
         remedy: { fix: "write one test per case", page: "CHECKS.md", section: "branching-with-if" },
       },
       reading: { reading: "named", symptom: BRANCH_IN_A_TEST },
     },
     {
       name: "names another form's symptom for another section of the same clause",
-      finding: { clause: clauseAddressSchema.parse("CD-27#test-body-logic"), remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-let" } },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-let" } },
       reading: { reading: "named", symptom: REBINDING },
     },
     {
       name: "is not in the catalogue for a by-form clause's section the catalogue does not list",
-      finding: { clause: clauseAddressSchema.parse("CD-27#test-body-logic"), remedy: { fix: "write it out", page: "CHECKS.md", section: "a-new-form" } },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, remedy: { fix: "write it out", page: "CHECKS.md", section: "a-new-form" } },
       reading: { reading: "not-in-catalogue" },
     },
     {
       name: "is not in the catalogue for a by-form clause's finding with no section",
-      finding: { clause: clauseAddressSchema.parse("CD-27#test-body-logic") },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") } },
       reading: { reading: "not-in-catalogue" },
     },
     {
       name: "sees no symptom for a clause that demands a method",
-      finding: { clause: clauseAddressSchema.parse("CD-9#result-failures") },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") } },
       reading: { reading: "sees-no-symptom" },
     },
     {
       name: "sees no symptom for a clause outside the cases",
-      finding: { clause: clauseAddressSchema.parse("CD-32#pii-redaction") },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") } },
       reading: { reading: "sees-no-symptom" },
     },
     {
       name: "is not in the catalogue for a clause the catalogue does not list",
-      finding: { clause: clauseAddressSchema.parse("CD-17#clock-sources") },
+      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") } },
       reading: { reading: "not-in-catalogue" },
     },
     {
       name: "is not in the catalogue for the same clause in a team's rule set",
-      finding: { clause: clauseAddressSchema.parse("team/CD-44#parameter-reassignment") },
+      finding: { clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") } },
       reading: { reading: "not-in-catalogue" },
     },
   ])("$name", ({ finding, reading }) => {

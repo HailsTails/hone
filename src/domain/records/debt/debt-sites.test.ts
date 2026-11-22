@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../finding/governance.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { debtSitesOf, unrecordableSitesOf } from "./debt-sites.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const AUDIT = "audit" as const;
 
@@ -120,11 +122,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -150,16 +152,16 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
 const CLOCK_FINDING: Finding = { clause: CLOCK_SOURCES, mechanism: AUDIT, file: ORDER_FILE, anchor: { line: 14, column: 0 }, snippet: "chargedAt" };
 
 const CAST_FINDING: Finding = { clause: CAST_EXPRESSIONS, mechanism: ESLINT, file: WEBHOOK_FILE, anchor: { line: 4, column: 9 }, snippet: "body as Event" };
 
 const UNCATALOGUED_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-99#nowhere"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-99"), clause: clauseIdOf("nowhere") },
   mechanism: AUDIT,
   file: ORDER_FILE,
   anchor: { line: 1, column: 0 },

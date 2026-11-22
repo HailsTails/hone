@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type DebtEffectsRequest, debtOutcomesOf } from "./debt-effects.ts";
 import type { PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -86,7 +88,7 @@ const CLAIMED_TYPE: Symptom = {
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
-  clause: clauseAddressSchema.parse("CD-17#clock-sources"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
   engines: [WALKER],
   forms: [],
 };
@@ -94,22 +96,22 @@ const CLOCK_CHECK: Check = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
-  clause: clauseAddressSchema.parse("CD-2#cast-expressions"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") },
   engines: [ESLINT_ENGINE],
   forms: [],
 };
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const NEW_FILE = repoPathSchema.parse("src/orders/refund-order.ts");
+const NEW_FILE = repoPathOf("src/orders/refund-order.ts");
 
-const TOUCHED_FILE = repoPathSchema.parse("src/orders/edited-order.ts");
+const TOUCHED_FILE = repoPathOf("src/orders/edited-order.ts");
 
-const LEFT_FOLDER = repoPathSchema.parse("src/legacy");
+const LEFT_FOLDER = repoPathOf("src/legacy");
 
-const LEFT_FILE = repoPathSchema.parse("src/legacy/old-order.ts");
+const LEFT_FILE = repoPathOf("src/legacy/old-order.ts");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
 const CLOCK_ADDRESS = "date-used-directly#clock-sources";
 

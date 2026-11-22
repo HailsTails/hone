@@ -3,13 +3,15 @@ import type { Finding, GovernedRun } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { Check, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { answerFindings, type RaisedFinding, type StaleReason, type StaleRecord } from "./answering.ts";
 import type { AuthorisedLocation, Debt, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { RunMeasurement } from "../measurement/measured-at.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { WhyChain } from "../why-chain.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -77,15 +79,15 @@ const LOOP_KEYWORD = symptomOf({ name: "loop-keyword", recipes: [] });
 
 const OUTSIDE_IMPORT = symptomOf({ name: "outside-import-past-a-boundary", recipes: [ADAPTER_PER_OUTSIDE_PARTY] });
 
-const NO_CLASS = clauseAddressSchema.parse("CD-14#no-class-syntax");
+const NO_CLASS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
 
-const NO_THIS = clauseAddressSchema.parse("CD-14#no-this");
+const NO_THIS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-this") };
 
-const NO_FOR_OF = clauseAddressSchema.parse("CD-15#no-for-of");
+const NO_FOR_OF = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") };
 
-const IMPORT_BOUNDARIES = clauseAddressSchema.parse("CD-19#import-boundaries");
+const IMPORT_BOUNDARIES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-19"), clause: clauseIdOf("import-boundaries") };
 
-const UNCATALOGUED = clauseAddressSchema.parse("CD-99#nowhere");
+const UNCATALOGUED = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-99"), clause: clauseIdOf("nowhere") };
 
 const checkOf = (request: { readonly name: string; readonly symptom: Symptom; readonly clause: Check["clause"] }): Check => ({
   ...request,
@@ -123,23 +125,23 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
-const FILE_B = repoPathSchema.parse("src/b.ts");
+const FILE_B = repoPathOf("src/b.ts");
 
-const IDS_ADAPTER = repoPathSchema.parse("src/adapters/ids/make-id.ts");
+const IDS_ADAPTER = repoPathOf("src/adapters/ids/make-id.ts");
 
-const PACKAGE_JSON = repoPathSchema.parse("package.json");
+const PACKAGE_JSON = repoPathOf("package.json");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/authored-class-or-this.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/authored-class-or-this.json");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/authored-class-or-this.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/authored-class-or-this.json");
 
-const BOUNDARIES_FILE = repoPathSchema.parse("hone-records/boundary-records.json");
+const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
 
-const DEVIATIONS_FILE = repoPathSchema.parse("hone-records/deviations/adapter-per-outside-party.json");
+const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/adapter-per-outside-party.json");
 
-const DEPENDENCIES_FILE = repoPathSchema.parse("hone-records/dependency-records.json");
+const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
 const NO_CLASS_IN_A: Finding = { clause: NO_CLASS, file: FILE_A, anchor: { line: 3, column: 5 }, snippet: "class A {}", mechanism: AUDIT };
 
@@ -230,12 +232,12 @@ const LOCATED_UNKNOWN_CHECK_IN_A: PlacedRecord = {
 };
 
 const DEBT_ON_IMPORTS_IN_IDS: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/outside-import-past-a-boundary.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/outside-import-past-a-boundary.json"), index: 0 },
   record: { kind: "debt", symptom: OUTSIDE_IMPORT, reach: WHOLE_SYMPTOM, file: IDS_ADAPTER, holding: { held: "stated" } },
 };
 
 const LOCATED_UUID_IN_IDS: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/authorised-locations/outside-import-past-a-boundary.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"), index: 0 },
   record: {
     kind: "authorised-location",
     symptom: OUTSIDE_IMPORT,
@@ -249,7 +251,7 @@ const IDS_BOUNDARY: PlacedRecord = {
   place: { file: BOUNDARIES_FILE, index: 0 },
   record: {
     kind: "boundary-record",
-    module: repoPathSchema.parse("src/adapters/ids"),
+    module: repoPathOf("src/adapters/ids"),
     outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" },
     holding: { held: "stated", ports: ["IdSource"] },
   },
@@ -906,9 +908,9 @@ describe("answerFindings, a finding or exception that names its check", () => {
   });
 });
 
-const CLASS_IN_TYPES = clauseAddressSchema.parse("CD-14#no-class-in-types");
+const CLASS_IN_TYPES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-in-types") };
 
-const IMPORT_IN_TYPES = clauseAddressSchema.parse("CD-19#no-import-in-types");
+const IMPORT_IN_TYPES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-19"), clause: clauseIdOf("no-import-in-types") };
 
 const ESLINT_ENGINE = { name: "eslint", mechanism: ESLINT };
 
@@ -989,7 +991,7 @@ describe("answerFindings, what the runs measured", () => {
 
   it("lists a record as stale when a folder the settings exclude holds its file", () => {
     expect(
-      staleAmong({ tracked: [FILE_B], excluded: [repoPathSchema.parse("src")], record: DEBT_ON_CLASS_IN_A, measurements: [walkerMeasured({ file: FILE_B }), ESLINT_SELECTED_MEASURING_NOTHING] }),
+      staleAmong({ tracked: [FILE_B], excluded: [repoPathOf("src")], record: DEBT_ON_CLASS_IN_A, measurements: [walkerMeasured({ file: FILE_B }), ESLINT_SELECTED_MEASURING_NOTHING] }),
     ).toEqual([staleFor({ placed: DEBT_ON_CLASS_IN_A, reason: "file-excluded" })]);
   });
 

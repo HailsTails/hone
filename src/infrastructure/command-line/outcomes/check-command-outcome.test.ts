@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { Case, Principle, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../printed-report/symptoms/symptom-notes.ts";
 import { checkCommandOutcome, guidedCheckCommandOutcome } from "./check-command-outcome.ts";
 import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -34,8 +36,8 @@ const EMPTY_REPORT: CheckReport = {
 };
 
 const CLASS_IN_A: Finding = {
-  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
-  file: repoPathSchema.parse("src/a.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
   mechanism: WALKER,
@@ -80,7 +82,7 @@ describe("checkCommandOutcome", () => {
   it.each(REPORT_OUTPUTS)("exits 0 for a passing report whatever the %s output prints", (output) => {
     expect(
       checkCommandOutcome({
-        result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, excluded: [repoPathSchema.parse("generated")] }, output, projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },
+        result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, excluded: [repoPathOf("generated")] }, output, projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },
       }).code,
     ).toBe(0);
   });
@@ -91,7 +93,7 @@ describe("checkCommandOutcome", () => {
         result: {
           outcome: "ok",
           value: {
-            report: { ...EMPTY_REPORT, excluded: [repoPathSchema.parse("generated")], findings: [CLASS_IN_A] },
+            report: { ...EMPTY_REPORT, excluded: [repoPathOf("generated")], findings: [CLASS_IN_A] },
             output: "failures-only", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND,
           },
         },
@@ -177,7 +179,7 @@ const CLASS_GUIDE: SymptomGuide = {
     alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
     engines: [],
     symptoms: [CLASS_DECLARED],
-    clauses: [{ clause: clauseAddressSchema.parse("CD-14#class-syntax"), sight: { kind: "one-symptom", symptom: CLASS_DECLARED } }],
+    clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, sight: { kind: "one-symptom", symptom: CLASS_DECLARED } }],
     checks: [],
     namedBans: [],
   },

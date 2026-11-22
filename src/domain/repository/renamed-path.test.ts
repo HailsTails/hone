@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { basePathOf } from "./renamed-path.ts";
+import { repoPathOf } from "./repo-path-of.ts";
 
-const BASKET = repoPathSchema.parse("src/basket.ts");
-const CART = repoPathSchema.parse("src/cart.ts");
-const TOTAL = repoPathSchema.parse("src/total.ts");
+const BASKET = repoPathOf("src/basket.ts");
+const CART = repoPathOf("src/cart.ts");
+const TOTAL = repoPathOf("src/total.ts");
 
 describe("basePathOf", () => {
   it("gives the path git saw a renamed file at in the base", () => {

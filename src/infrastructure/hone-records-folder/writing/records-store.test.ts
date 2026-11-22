@@ -3,15 +3,15 @@ import type { DirectoryPort } from "../../../application/ports/file-system/direc
 import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../repo-path.ts";
 import { createRecordsStore } from "./records-store.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/work/shop");
+const REPO_ROOT = absoluteRootOf("/work/shop");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const OTHER_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
+const OTHER_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
 const OK = { outcome: "ok", value: undefined } as const;
 
@@ -57,7 +57,7 @@ describe("the store that writes and removes the files of hone-records", () => {
 
   it("says which folder it could not make", () => {
     const { create, ports } = portsOf();
-    create.mockReturnValue({ outcome: "failed", error: { kind: "directory-uncreatable", path: absolutePathSchema.parse("/work/shop/hone-records/debt"), detail: "EROFS" } });
+    create.mockReturnValue({ outcome: "failed", error: { kind: "directory-uncreatable", path: absoluteRootOf("/work/shop/hone-records/debt"), detail: "EROFS" } });
     expect(createRecordsStore(ports).apply({ edit: { write: [{ file: DEBT_FILE, document: { version: 2, records: [] } }], remove: [] } })).toEqual({
       outcome: "failed",
       error: { kind: "file-unwritable", path: "/work/shop/hone-records/debt", detail: "EROFS" },

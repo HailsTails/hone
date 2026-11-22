@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
 import { mappedRecords } from "./records-mapping.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -34,11 +36,11 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT], forms: [] };
 
@@ -77,9 +79,9 @@ const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: S
 
 const AUDIT = "audit" as const;
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
-const SRC_B = repoPathSchema.parse("src/b.ts");
+const SRC_B = repoPathOf("src/b.ts");
 
 const REBINDING_CHECK: Check = {
   ...LOOP_KEYWORD_LOOPS,

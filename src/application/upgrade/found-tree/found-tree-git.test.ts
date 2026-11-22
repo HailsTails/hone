@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { foundTreeGitOf } from "./found-tree-git.ts";
 import { FOUND_TREE_REVISION } from "./found-tree-reach.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const FILE = repoPathSchema.parse("src/a.ts");
+const FILE = repoPathOf("src/a.ts");
 
 const PATH: PathPort = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),

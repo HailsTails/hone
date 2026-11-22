@@ -1,22 +1,24 @@
 import { createPathPort } from "../../node/path-port.ts";
 import { describe, expect, it } from "vitest";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { type UpgradeFailureOutcome, upgradeFailureOutcomeOf } from "./upgrade-refusal-text.ts";
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const ISSUES = "https://github.com/HailsTails/hone/issues";
 
 const FAULT = `This is a fault in hone, not in your repository. Report it at ${ISSUES}, with this output.`;
 
-const SETTINGS = absolutePathSchema.parse("/repo/hone.config.json");
+const SETTINGS = absoluteRootOf("/repo/hone.config.json");
 
-const OLD_FILE = absolutePathSchema.parse("/repo/disciplines.eslint.mjs");
+const OLD_FILE = absoluteRootOf("/repo/disciplines.eslint.mjs");
 
-const RECORDS_FOLDER = absolutePathSchema.parse("/repo/hone-records");
+const RECORDS_FOLDER = absoluteRootOf("/repo/hone-records");
 
-const OLD_SETTINGS = absolutePathSchema.parse("/repo/disciplines.json");
+const OLD_SETTINGS = absoluteRootOf("/repo/disciplines.json");
 
 type Row = { readonly name: string; readonly failure: UpgradeFailure; readonly outcome: UpgradeFailureOutcome };
 
@@ -31,7 +33,7 @@ const ROWS: readonly Row[] = [
   },
   {
     name: "a carve-out is held twice",
-    failure: { kind: "oracle-failed", failure: { kind: "record-doubly-held", clause: "CD-14#class-syntax", file: repoPathSchema.parse("src/a.ts") } },
+    failure: { kind: "oracle-failed", failure: { kind: "record-doubly-held", clause: "CD-14#class-syntax", file: repoPathOf("src/a.ts") } },
     outcome: {
       code: 1,
       text: "upgrade refused:\nCD-14#class-syntax in src/a.ts is held by both a file carve-out and an authorised location. Remove one of them first, then run the upgrade again.\nNothing was changed.\n",
@@ -41,7 +43,7 @@ const ROWS: readonly Row[] = [
     name: "a carve-out answers nothing",
     failure: {
       kind: "plan-refused",
-      refusal: { kind: "mapping-refused", refusals: [{ kind: "record-answers-nothing", clause: "CD-15#loops", file: repoPathSchema.parse("src/a.ts"), credited: "nothing" }] },
+      refusal: { kind: "mapping-refused", refusals: [{ kind: "record-answers-nothing", clause: "CD-15#loops", file: repoPathOf("src/a.ts"), credited: "nothing" }] },
       removedByVersionOne: [],
     },
     outcome: {
@@ -72,7 +74,7 @@ const ROWS: readonly Row[] = [
       kind: "plan-refused",
       refusal: {
         kind: "projections-unpaired",
-        refusal: { kind: "version-one-projection-unpaired", projection: repoPathSchema.parse("packages/a/disciplines.eslint.mjs"), config: repoPathSchema.parse("packages/a/eslint.config.mjs"), folder: "packages/a" },
+        refusal: { kind: "version-one-projection-unpaired", projection: repoPathOf("packages/a/disciplines.eslint.mjs"), config: repoPathOf("packages/a/eslint.config.mjs"), folder: "packages/a" },
       },
       removedByVersionOne: [],
     },
@@ -85,7 +87,7 @@ const ROWS: readonly Row[] = [
     name: "version 2 would project a file no version 1 projection stands behind",
     failure: {
       kind: "plan-refused",
-      refusal: { kind: "projections-unpaired", refusal: { kind: "version-two-projection-unpaired", file: repoPathSchema.parse("packages/a/hone.eslint.mjs"), folder: "packages/a" } },
+      refusal: { kind: "projections-unpaired", refusal: { kind: "version-two-projection-unpaired", file: repoPathOf("packages/a/hone.eslint.mjs"), folder: "packages/a" } },
       removedByVersionOne: [],
     },
     outcome: {
@@ -97,7 +99,7 @@ const ROWS: readonly Row[] = [
     name: "version 2 would project a file at the repository root that version 1 has no projection for",
     failure: {
       kind: "plan-refused",
-      refusal: { kind: "projections-unpaired", refusal: { kind: "version-two-projection-unpaired", file: repoPathSchema.parse("hone.eslint.mjs"), folder: "" } },
+      refusal: { kind: "projections-unpaired", refusal: { kind: "version-two-projection-unpaired", file: repoPathOf("hone.eslint.mjs"), folder: "" } },
       removedByVersionOne: [],
     },
     outcome: {
@@ -107,7 +109,7 @@ const ROWS: readonly Row[] = [
   },
   {
     name: "a version 1 slice belongs to no config root and is out of date",
-    failure: { kind: "plan-refused", refusal: { kind: "slice-left-in-place", files: [repoPathSchema.parse("old/disciplines.eslint.mjs"), repoPathSchema.parse("older/disciplines.eslint.mjs")] }, removedByVersionOne: [] },
+    failure: { kind: "plan-refused", refusal: { kind: "slice-left-in-place", files: [repoPathOf("old/disciplines.eslint.mjs"), repoPathOf("older/disciplines.eslint.mjs")] }, removedByVersionOne: [] },
     outcome: {
       code: 1,
       text: "upgrade refused:\nthe version 1 projection old/disciplines.eslint.mjs belongs to no config root and is out of date. Delete it or restore its config root, commit, then run the upgrade again.\nthe version 1 projection older/disciplines.eslint.mjs belongs to no config root and is out of date. Delete it or restore its config root, commit, then run the upgrade again.\nNothing was changed.\n",
@@ -117,8 +119,8 @@ const ROWS: readonly Row[] = [
     name: "a refusal comes after version 1's project removed a slice",
     failure: {
       kind: "plan-refused",
-      refusal: { kind: "team-config-refused", refusal: { kind: "no-file-imports-projection", projection: repoPathSchema.parse("disciplines.eslint.mjs") } },
-      removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")],
+      refusal: { kind: "team-config-refused", refusal: { kind: "no-file-imports-projection", projection: repoPathOf("disciplines.eslint.mjs") } },
+      removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
     },
     outcome: {
       code: 1,
@@ -127,7 +129,7 @@ const ROWS: readonly Row[] = [
   },
   {
     name: "a version 1 projection is out of date",
-    failure: { kind: "oracle-failed", failure: { kind: "projection-not-current", file: repoPathSchema.parse("packages/a/disciplines.eslint.mjs"), state: "out-of-date" } },
+    failure: { kind: "oracle-failed", failure: { kind: "projection-not-current", file: repoPathOf("packages/a/disciplines.eslint.mjs"), state: "out-of-date" } },
     outcome: {
       code: 1,
       text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is out-of-date. Run hone project with your version 1 release, commit what it writes, then run the upgrade again.\nNothing was changed.\n",
@@ -135,7 +137,7 @@ const ROWS: readonly Row[] = [
   },
   {
     name: "the root projection is missing",
-    failure: { kind: "oracle-failed", failure: { kind: "projection-not-current", file: repoPathSchema.parse("disciplines.eslint.mjs"), state: "missing" } },
+    failure: { kind: "oracle-failed", failure: { kind: "projection-not-current", file: repoPathOf("disciplines.eslint.mjs"), state: "missing" } },
     outcome: {
       code: 1,
       text: "upgrade refused:\nthe version 1 projection disciplines.eslint.mjs is missing. Run hone project with your version 1 release, commit what it writes, then run the upgrade again.\nNothing was changed.\n",
@@ -143,7 +145,7 @@ const ROWS: readonly Row[] = [
   },
   {
     name: "a version 1 slice is not applied by its config",
-    failure: { kind: "oracle-failed", failure: { kind: "projection-not-current", file: repoPathSchema.parse("packages/a/disciplines.eslint.mjs"), state: "not-applied" } },
+    failure: { kind: "oracle-failed", failure: { kind: "projection-not-current", file: repoPathOf("packages/a/disciplines.eslint.mjs"), state: "not-applied" } },
     outcome: {
       code: 1,
       text: "upgrade refused:\nthe version 1 projection packages/a/disciplines.eslint.mjs is not-applied. Run hone check with your version 1 release, fix what it reports, then run the upgrade again.\nNothing was changed.\n",
@@ -151,7 +153,7 @@ const ROWS: readonly Row[] = [
   },
   {
     name: "an authorised location was given no answer",
-    failure: { kind: "plan-refused", refusal: { kind: "location-unanswered", clause: "CD-27#test-body-logic", file: repoPathSchema.parse("src/a.ts") }, removedByVersionOne: [] },
+    failure: { kind: "plan-refused", refusal: { kind: "location-unanswered", clause: "CD-27#test-body-logic", file: repoPathOf("src/a.ts") }, removedByVersionOne: [] },
     outcome: { code: 1, text: `upgrade refused:
 the authorised location for CD-27#test-body-logic in src/a.ts was given no answer. ${FAULT}
 Nothing was changed.
@@ -161,7 +163,7 @@ Nothing was changed.
     name: "the team config's import is not static",
     failure: {
       kind: "plan-refused",
-      refusal: { kind: "config-import-refused", refusal: { kind: "no-projection-import", file: repoPathSchema.parse("packages/a/eslint.config.mjs"), projection: repoPathSchema.parse("packages/a/disciplines.eslint.mjs") } },
+      refusal: { kind: "config-import-refused", refusal: { kind: "no-projection-import", file: repoPathOf("packages/a/eslint.config.mjs"), projection: repoPathOf("packages/a/disciplines.eslint.mjs") } },
       removedByVersionOne: [],
     },
     outcome: {
@@ -171,7 +173,7 @@ Nothing was changed.
   },
   {
     name: "a config names the version 1 projection outside its import",
-    failure: { kind: "plan-refused", refusal: { kind: "config-import-refused", refusal: { kind: "projection-named-elsewhere", file: repoPathSchema.parse("eslint.config.mjs") } }, removedByVersionOne: [] },
+    failure: { kind: "plan-refused", refusal: { kind: "config-import-refused", refusal: { kind: "projection-named-elsewhere", file: repoPathOf("eslint.config.mjs") } }, removedByVersionOne: [] },
     outcome: {
       code: 1,
       text: "upgrade refused:\neslint.config.mjs names a version 1 projection outside the imports the upgrade rewrites, or imports one version 1 did not write. Remove the other mention or import, then run the upgrade again.\nNothing was changed.\n",
@@ -189,7 +191,7 @@ Nothing was changed.
     name: "no file imports the version 1 projection",
     failure: {
       kind: "plan-refused",
-      refusal: { kind: "team-config-refused", refusal: { kind: "no-file-imports-projection", projection: repoPathSchema.parse("packages/a/disciplines.eslint.mjs") } },
+      refusal: { kind: "team-config-refused", refusal: { kind: "no-file-imports-projection", projection: repoPathOf("packages/a/disciplines.eslint.mjs") } },
       removedByVersionOne: [],
     },
     outcome: {
@@ -209,8 +211,8 @@ Nothing was changed.
     name: "version 1's own project rewrote projections and removed a slice",
     failure: {
       kind: "version-one-project-rewrote",
-      files: [repoPathSchema.parse("disciplines.eslint.mjs"), repoPathSchema.parse("packages/a/disciplines.eslint.mjs")],
-      removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")],
+      files: [repoPathOf("disciplines.eslint.mjs"), repoPathOf("packages/a/disciplines.eslint.mjs")],
+      removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
     },
     outcome: {
       code: 1,
@@ -219,7 +221,7 @@ Nothing was changed.
   },
   {
     name: "a slice version 1 removed cannot be placed in the repository",
-    failure: { kind: "unplaceable-path", file: repoPathSchema.parse("old/disciplines.eslint.mjs"), removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")] },
+    failure: { kind: "unplaceable-path", file: repoPathOf("old/disciplines.eslint.mjs"), removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")] },
     outcome: {
       code: 1,
       text: `upgrade refused:\nold/disciplines.eslint.mjs cannot be placed in the repository. ${FAULT}\nversion 1's own project removed these files, and the upgrade does not put them back; restore them from version control:\n  /repo/old/disciplines.eslint.mjs\n`,
@@ -231,7 +233,7 @@ Nothing was changed.
       kind: "version-two-run-failed",
       failure: { kind: "run-failed", detail: "config unreadable" },
       unrestored: [{ written: "file-created", path: SETTINGS, detail: "EBUSY" }],
-      removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")],
+      removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
     },
     outcome: {
       code: 1,
@@ -240,7 +242,7 @@ Nothing was changed.
   },
   {
     name: "version 1 already reports clauses uncovered",
-    failure: { kind: "version-one-uncovered", clauses: [clauseAddressSchema.parse("CD-1#claimed-type"), clauseAddressSchema.parse("CD-2#claimed-members")], removedByVersionOne: [] },
+    failure: { kind: "version-one-uncovered", clauses: [{ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("claimed-type") }, { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("claimed-members") }], removedByVersionOne: [] },
     outcome: {
       code: 1,
       text: "upgrade refused:\nversion 1 already reports CD-1#claimed-type, CD-2#claimed-members as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.\nNothing was changed.\n",
@@ -298,18 +300,18 @@ Nothing was changed.
     failure: {
       kind: "directives-name-no-check",
       directives: [
-        { kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathSchema.parse("src/a.ts"), line: 3, text: "the text" },
+        { kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathOf("src/a.ts"), line: 3, text: "the text" },
         {
           kind: "version-1-id",
           ruleId: "hone/no-class-authoring",
-          file: repoPathSchema.parse("src/b.ts"),
+          file: repoPathOf("src/b.ts"),
           line: 7,
           text: "the text",
           replacedBy: ["hone/authored-class-or-this#class-keyword"],
         },
       ],
       unrestored: [],
-      removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")],
+      removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
     },
     outcome: {
       code: 1,
@@ -320,7 +322,7 @@ Nothing was changed.
     name: "an inline directive naming a hone rule id that version 2 has no check under, with nothing changed",
     failure: {
       kind: "directives-name-no-check",
-      directives: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathSchema.parse("src/a.ts"), line: 3, text: "the text" }],
+      directives: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathOf("src/a.ts"), line: 3, text: "the text" }],
       unrestored: [],
       removedByVersionOne: [],
     },
@@ -334,7 +336,7 @@ Nothing was changed.
     failure: {
       kind: "directives-name-no-check",
       directives: [
-        { kind: "version-1-id", ruleId: "hone/no-class-authoring", file: repoPathSchema.parse("src/a.ts"), line: 3, text: "the text", replacedBy: ["hone/a#first", "hone/a#second"] },
+        { kind: "version-1-id", ruleId: "hone/no-class-authoring", file: repoPathOf("src/a.ts"), line: 3, text: "the text", replacedBy: ["hone/a#first", "hone/a#second"] },
       ],
       unrestored: [],
       removedByVersionOne: [],
@@ -349,8 +351,8 @@ Nothing was changed.
     failure: {
       kind: "removal-failed",
       failure: { kind: "unremovable", path: OLD_FILE, detail: "EBUSY", removed: { files: [], folders: [] } },
-      written: [repoPathSchema.parse("hone.config.json"), repoPathSchema.parse("hone.eslint.mjs")],
-      replaced: [repoPathSchema.parse("eslint.config.mjs"), repoPathSchema.parse("packages/a/eslint.config.mjs")],
+      written: [repoPathOf("hone.config.json"), repoPathOf("hone.eslint.mjs")],
+      replaced: [repoPathOf("eslint.config.mjs"), repoPathOf("packages/a/eslint.config.mjs")],
       remaining: [OLD_FILE, OLD_SETTINGS],
     },
     outcome: {
@@ -368,7 +370,7 @@ Nothing was changed.
   },
 ];
 
-const PLACEMENT = { repoRoot: absolutePathSchema.parse("/repo"), path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }) };
+const PLACEMENT = { repoRoot: absoluteRootOf("/repo"), path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }) };
 
 describe("upgradeFailureOutcomeOf", () => {
   it.each(ROWS)("says what to do when $name", ({ failure, outcome }) => {

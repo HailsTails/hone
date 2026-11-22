@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDirectoryPort, createEntryKindPort, type DirectorySurface, type EntryKindSurface } from "./file-system-port.ts";
 import type { DirectoryEntry } from "../../../application/ports/file-system/directory-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const DIRECTORY = absolutePathSchema.parse("D:\\work\\project files\\src");
+const DIRECTORY = absoluteRootOf("D:\\work\\project files\\src");
 
 describe("createDirectoryPort", () => {
   it("forwards the unchanged native path once and returns all entries in UTF16 name order without mutating input", () => {

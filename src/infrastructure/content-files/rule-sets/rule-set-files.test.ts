@@ -5,6 +5,7 @@ import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts"
 import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 
 const PATH = createDefaultPathPort({});
 
@@ -44,14 +45,14 @@ const TM_1 = mechanicalDiscipline({ id: "TM-1", clause: "no-tmp-files", mechanis
 
 describe("createRuleSetFiles discipline", () => {
   it("reads a discipline file present on disk", () => {
-    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, discipline: disciplineIdSchema.parse("TM-1") })).toMatchObject({
+    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, discipline: disciplineIdOf("TM-1") })).toMatchObject({
       outcome: "ok",
       value: { held: "present", file: { id: "TM-1", clauses: [{ id: "no-tmp-files", kind: "mechanical" }] } },
     });
   });
 
   it("holds nothing for a discipline file absent from disk", () => {
-    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, discipline: disciplineIdSchema.parse("CD-99") })).toEqual({
+    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, discipline: disciplineIdOf("CD-99") })).toEqual({
       outcome: "ok",
       value: { held: "absent" },
     });

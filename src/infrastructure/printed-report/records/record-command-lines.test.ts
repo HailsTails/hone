@@ -3,8 +3,8 @@ import type { Authorising } from "../../../application/ports/authorising.ts";
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Debt, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "./record-command-lines.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -79,9 +79,9 @@ const DATE_USED_DIRECTLY: Symptom = {
   ],
 };
 
-const FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const FILE = repoPathOf("src/orders/charge-order.ts");
 
-const RECORDS_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
+const RECORDS_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
 const SITE = { address: "date-used-directly#clock-sources", file: FILE } as const;
 
@@ -92,7 +92,7 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
     "date-used-directly#clock-sources already-recorded src/orders/charge-order.ts: hone-records/debt/date-used-directly.json already holds debt on this symptom and file; the check says why it does not answer",
   ],
   [
-    { ...SITE, effect: "left", under: repoPathSchema.parse("src/orders") },
+    { ...SITE, effect: "left", under: repoPathOf("src/orders") },
     "date-used-directly#clock-sources left src/orders/charge-order.ts: under --leave src/orders; record it as an authorised location with its own reason, or fix it",
   ],
   [

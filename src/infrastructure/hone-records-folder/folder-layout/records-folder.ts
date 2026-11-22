@@ -1,6 +1,5 @@
 import type { DirectoryEntry } from "../../../application/ports/file-system/directory-port.ts";
 import type { RecordsFolderPorts } from "../../../application/ports/records/records-source-of.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { parsedJson } from "../../content-files/parsed-json.ts";
 import { repoPathSchema } from "../repo-path.ts";
@@ -10,6 +9,8 @@ import type { RecordsDocument } from "../../../domain/records/hone-records/hone-
 import { RECORDS_FOLDER, recordsFileStandingOf } from "../../../domain/records/hone-records/records-layout.ts";
 import type { RecordsSource } from "../../../application/ports/records/records-source.ts";
 import type { RecordsFolderFailure } from "../../../domain/records/records-folder-failure.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteWithin } from "../../../domain/repository/absolute-within.ts";
 
 type FolderRequest = RecordsFolderPorts & { readonly repoRoot: AbsolutePath };
 
@@ -17,10 +18,7 @@ type Listed = Result<readonly RepoPath[], RecordsFolderFailure>;
 
 type Documents = Result<readonly RecordsDocument[], RecordsFolderFailure>;
 
-const RECORDS_FOLDER_PATH = repoPathSchema.parse(RECORDS_FOLDER);
-
-const absoluteOf = (request: FolderRequest & { readonly file: RepoPath }): AbsolutePath =>
-  absolutePathSchema.parse(request.path.join({ segments: [request.repoRoot, request.file] }));
+const RECORDS_FOLDER_PATH = repoPathOf(RECORDS_FOLDER);
 
 const childOf = (request: { readonly folder: RepoPath; readonly entry: DirectoryEntry }): Result<RepoPath, RecordsFolderFailure> => {
   const child = repoPathSchema.safeParse(`${request.folder}/${request.entry.name}`);
@@ -43,7 +41,7 @@ const joined = (request: { readonly listings: readonly Listed[] }): Listed => {
 };
 
 const entriesIn = (request: FolderRequest & { readonly folder: RepoPath }): Result<readonly DirectoryEntry[], RecordsFolderFailure> => {
-  const listed = request.directory.list({ path: absoluteOf({ ...request, file: request.folder }) });
+  const listed = request.directory.list({ path: absoluteWithin({ root: request.repoRoot, file: request.folder }) });
   return listed.outcome === "failed" ? { outcome: "failed", error: { kind: "records-folder-unreadable", folder: request.folder, detail: listed.error.detail } } : listed;
 };
 
@@ -93,14 +91,14 @@ const workingDocumentsAt = (request: FolderRequest & { readonly file: RepoPath }
   if (recordsFileStandingOf({ file: request.file }).standing === "not-a-records-file") {
     return { outcome: "failed", error: { kind: "not-a-records-file", file: request.file } };
   }
-  const text = request.fileText.read({ path: absoluteOf(request) });
+  const text = request.fileText.read({ path: absoluteWithin({ root: request.repoRoot, file: request.file }) });
   return text.outcome === "failed"
     ? { outcome: "failed", error: { kind: "records-file-unreadable", file: request.file, detail: text.error.detail } }
     : listedDocument({ file: request.file, text: text.value });
 };
 
 const workingDocuments = (request: FolderRequest): Documents => {
-  if (request.fileText.exists({ path: absoluteOf({ ...request, file: RECORDS_FOLDER_PATH }) }) === "absent") {
+  if (request.fileText.exists({ path: absoluteWithin({ root: request.repoRoot, file: RECORDS_FOLDER_PATH }) }) === "absent") {
     return { outcome: "ok", value: [] };
   }
   const files = recordsFolderFiles(request);

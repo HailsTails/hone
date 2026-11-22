@@ -2,9 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
 import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
@@ -12,6 +10,9 @@ import type { RecordInput } from "../../../domain/records/upgrade/records-mappin
 import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf } from "./upgrade-plan.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
 const AUDIT = "audit" as const;
 
@@ -52,11 +53,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -93,7 +94,7 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
 
 const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: TOOL_RULE_SET, catalogue: { ...SETTINGS_CATALOGUE, checks: [LOOP_KEYWORD_LOOPS] } }];
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
 const SELECTION: ConsumerSelectionFile = {
   version: 1,
@@ -147,7 +148,7 @@ const LOOPS_SETTINGS = {
   conventions: { conventions: { generated: [], layers: [] }, declared: [] },
 };
 
-const PLANNED_PROJECTION = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "projection text" };
+const PLANNED_PROJECTION = { file: repoPathOf("hone.eslint.mjs"), text: "projection text" };
 
 const projecting = (request: { readonly files: readonly (typeof PLANNED_PROJECTION)[] }) =>
   vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value: { files: request.files, projections: request.files } });
@@ -210,7 +211,7 @@ describe("upgradePlanOf", () => {
     const projectionFilesOf = projecting({ files: [PLANNED_PROJECTION] });
     const settingsFormat = settingsFormatWriting();
     const planned = await upgradePlanOf(
-      requestOver({ projectionFilesOf, settingsFormat, reading: { ...READING, selection: { ...SELECTION, eslintConfigRoots: [repoPathSchema.parse("packages/a")] } } }),
+      requestOver({ projectionFilesOf, settingsFormat, reading: { ...READING, selection: { ...SELECTION, eslintConfigRoots: [repoPathOf("packages/a")] } } }),
     );
     expect({ planned, written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
       planned: {

@@ -1,11 +1,11 @@
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { enabledRuleEntry, reservedNamespace } from "../toolchain/eslint-instance.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import { escapedGlobPath } from "./projection.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 export type ProjectedClause = {
   readonly address: ClauseAddress;
@@ -37,7 +37,7 @@ type FileRecordGroup = {
   readonly files: readonly RepoPath[];
 };
 
-export const PROJECTION_PATH: RepoPath = repoPathSchema.parse("disciplines.eslint.mjs");
+export const PROJECTION_PATH: RepoPath = repoPathOf("disciplines.eslint.mjs");
 
 const SOURCE_FILES = "**/*.{ts,tsx,mts,cts}";
 

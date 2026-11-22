@@ -9,14 +9,16 @@ import type { EnginePort } from "../../application/ports/engine/engine-port.ts";
 import type { LoadedRunner } from "../../application/ports/engine/runner-module.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { isAbsolutePath } from "../../domain/repository/absolute-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { adoptionDebt } from "./run-record-debt-command.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const absolute = (text: string): AbsolutePath => {
   assert(isAbsolutePath(text), `${text} is absolute`);
@@ -61,13 +63,13 @@ const NOTHING_SELECTED: SelectionReading = {
   fileExceptionWhyChains: "optional",
 };
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const AUDIT = "audit" as const;
 
-const BASKET = repoPathSchema.parse("src/basket.ts");
+const BASKET = repoPathOf("src/basket.ts");
 
-const MOVED_BASKET = repoPathSchema.parse("src/checkout/basket.ts");
+const MOVED_BASKET = repoPathOf("src/checkout/basket.ts");
 
 const LOOPS_SELECTED: SelectionReading = {
   ...NOTHING_SELECTED,
@@ -75,7 +77,7 @@ const LOOPS_SELECTED: SelectionReading = {
   bindings: [
     {
       mechanism: AUDIT,
-      clause: { address: LOOPS, anchor: { kind: "keyword", keyword: "for" }, pieceRoot: "/install/src/infrastructure/engines/audit/CD-15", settings: {}, clauseSettings: {}, edition: FIRST_EDITION },
+      clause: { address: LOOPS, anchor: { kind: "keyword", keyword: "for" }, pieceRoot: "/install/src/infrastructure/engines/audit/CD-15", settings: {}, clauseSettings: {}, edition: editionOf("1") },
     },
   ],
 };

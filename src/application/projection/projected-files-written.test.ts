@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { projectedFilesWrittenOf } from "./projected-files-written.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const FILE: ProjectedFile = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
+const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 const POSIX_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.mjs") };
 

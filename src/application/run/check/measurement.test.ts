@@ -7,9 +7,6 @@ import type { ExceptionRecord } from "../../../domain/records/discipline-excepti
 import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import {
   baselineAtBase,
   baselineNeedOf,
@@ -21,8 +18,13 @@ import {
 } from "./measurement.ts";
 import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const LEGACY_WHY = {
   why: "why is the exception taken",
@@ -71,13 +73,13 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
 const AUDIT = "audit" as const;
 
-const LEGACY_FILE = repoPathSchema.parse("src/legacy.ts");
+const LEGACY_FILE = repoPathOf("src/legacy.ts");
 
-const LEGACY_SOURCE_FILE = repoPathSchema.parse(".constitution-authorised-locations/cd-14.json");
+const LEGACY_SOURCE_FILE = repoPathOf(".constitution-authorised-locations/cd-14.json");
 
 const FILE_CARVE_OUT: ExceptionRecord = {
   kind: "file-carve-out",
@@ -100,7 +102,7 @@ const AUTHORISED_LOCATION: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
@@ -109,7 +111,7 @@ const REASON_ONLY_LOCATION: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
 };
 
@@ -117,7 +119,7 @@ const IMPORTED_LOCATION: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
   provenance: { kind: "existing-authorisation", source: ".constitution-authorised-locations/cd-14.json#0" },
 };
@@ -126,7 +128,7 @@ const LEGACY_CHAIN_LOCATION: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
   whyChain: LEGACY_WHY_CHAIN,
 };
@@ -430,7 +432,7 @@ describe("baselineAtBase", () => {
   it("reads the records, each source and the renames since the base revision, keeping the sources present there", () => {
     const git = baseGitAnswering({
       text: { outcome: "ok", value: { presence: "present-in-base", text: "[]" } },
-      renames: { outcome: "ok", value: new Map([[repoPathSchema.parse("src/moved/legacy.ts"), LEGACY_FILE]]) },
+      renames: { outcome: "ok", value: new Map([[repoPathOf("src/moved/legacy.ts"), LEGACY_FILE]]) },
     });
     const exceptionRepository = exceptionRepositoryAnswering({ outcome: "ok", value: [CARVE_OUT_ENTRY] });
     expect({

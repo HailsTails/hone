@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { TouchedSet } from "../../repository/touched-set.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const OTHER_FILE = repoPathSchema.parse("src/orders/refund-order.ts");
+const OTHER_FILE = repoPathOf("src/orders/refund-order.ts");
 
 const ORDER_TOUCHED: TouchedSet = { measured: "yes", paths: new Set([ORDER_FILE]) };
 

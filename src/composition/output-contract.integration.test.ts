@@ -24,10 +24,7 @@ import { WAIVED_CLAUSES_REPLACEMENT } from "../domain/settings/assessment.ts";
 import type { BaseRevisionAvailability } from "../domain/repository/base-revision-availability.ts";
 import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
-import { editionSchema } from "../infrastructure/content-files/edition.ts";
 import type { ClauseEditionReading } from "../domain/rule-set/edition-types.ts";
-import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../domain/records/why-chain.ts";
 import type { VersionOneWhyChain } from "../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { REPORT_OUTPUTS, type ReportOutput, VERSION_TWO_REPORT_OUTPUTS, type VersionTwoReportOutput } from "../domain/settings/report-output.ts";
@@ -85,6 +82,12 @@ import type { VersionOneCommandRequest as ToolCommandRequest } from "../applicat
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
+import { editionOf } from "../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
 
 const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
@@ -352,13 +355,13 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
-const TEAM_CLAUSE = clauseAddressSchema.parse("acme/AC-1#no-moment");
+const TEAM_CLAUSE = { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("AC-1"), clause: clauseIdOf("no-moment") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -428,27 +431,27 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 };
 
 const UPGRADE_LINES: readonly PrintedLine[] = (() => {
-  const REPO = absolutePathSchema.parse("/repo");
+  const REPO = absoluteRootOf("/repo");
 
-  const SETTINGS = absolutePathSchema.parse("/repo/hone.config.json");
+  const SETTINGS = absoluteRootOf("/repo/hone.config.json");
 
-  const OLD_FILE = absolutePathSchema.parse("/repo/disciplines.eslint.mjs");
+  const OLD_FILE = absoluteRootOf("/repo/disciplines.eslint.mjs");
 
   const CLAUSE = "CD-15#loops";
 
   const MARKED_CHECK = "claimed-type#claimed-type";
 
-  const FILE = repoPathSchema.parse("src/a.ts");
+  const FILE = repoPathOf("src/a.ts");
 
   const MECHANISM = "eslint" as const;
 
-  const CONFIG = repoPathSchema.parse("eslint.config.mjs");
+  const CONFIG = repoPathOf("eslint.config.mjs");
 
-  const PROJECTION = repoPathSchema.parse("disciplines.eslint.mjs");
+  const PROJECTION = repoPathOf("disciplines.eslint.mjs");
 
-  const SLICE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
+  const SLICE = repoPathOf("packages/a/disciplines.eslint.mjs");
 
-  const SLICE_CONFIG = repoPathSchema.parse("packages/a/eslint.config.mjs");
+  const SLICE_CONFIG = repoPathOf("packages/a/eslint.config.mjs");
 
   const UNREADABLE: LoadFailure = { kind: "git-failed", detail: "git ls-files: not a git repository" };
 
@@ -508,7 +511,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
       fills: { projection: SLICE, folder: "packages/a", "config file": SLICE_CONFIG },
     },
     {
-      failure: planRefused({ refusal: { kind: "projections-unpaired", refusal: { kind: "version-two-projection-unpaired", file: repoPathSchema.parse("packages/a/hone.eslint.mjs"), folder: "packages/a" } } }),
+      failure: planRefused({ refusal: { kind: "projections-unpaired", refusal: { kind: "version-two-projection-unpaired", file: repoPathOf("packages/a/hone.eslint.mjs"), folder: "packages/a" } } }),
       fills: { file: "packages/a/hone.eslint.mjs", folder: "packages/a" },
     },
     { failure: planRefused({ refusal: { kind: "slice-left-in-place", files: [SLICE] } }), fills: { projection: SLICE } },
@@ -522,23 +525,23 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
       failure: {
         kind: "plan-refused",
         refusal: { kind: "slice-left-in-place", files: [SLICE] },
-        removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")],
+        removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")],
       },
       fills: { projection: SLICE, "removed path": "/repo/old/disciplines.eslint.mjs" },
     },
     { failure: { kind: "version-one-run-failed", failure: { kind: "run-failed", detail: "the detail" }, removedByVersionOne: [] }, fills: {} },
     {
-      failure: { kind: "version-one-uncovered", clauses: [clauseAddressSchema.parse(CLAUSE), clauseAddressSchema.parse("CD-2#claimed-type")], removedByVersionOne: [] },
+      failure: { kind: "version-one-uncovered", clauses: [clauseAddressSchema.parse(CLAUSE), { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("claimed-type") }], removedByVersionOne: [] },
       fills: { clauses: "CD-15#loops, CD-2#claimed-type" },
     },
     { failure: { kind: "version-one-project-failed", detail: "the detail", removedByVersionOne: [] }, fills: {} },
     { failure: { kind: "version-one-project-rewrote", files: [PROJECTION, SLICE], removedByVersionOne: [] }, fills: { files: "disciplines.eslint.mjs, packages/a/disciplines.eslint.mjs" } },
     {
-      failure: { kind: "version-one-project-rewrote", files: [PROJECTION], removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")] },
+      failure: { kind: "version-one-project-rewrote", files: [PROJECTION], removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")] },
       fills: { files: "disciplines.eslint.mjs", "removed path": "/repo/old/disciplines.eslint.mjs" },
     },
     { failure: { kind: "unplaceable-path", file: FILE, removedByVersionOne: [] }, fills: {} },
-    { failure: { kind: "unplaceable-path", file: FILE, removedByVersionOne: [repoPathSchema.parse("old/disciplines.eslint.mjs")] }, fills: { "removed path": "/repo/old/disciplines.eslint.mjs" } },
+    { failure: { kind: "unplaceable-path", file: FILE, removedByVersionOne: [repoPathOf("old/disciplines.eslint.mjs")] }, fills: { "removed path": "/repo/old/disciplines.eslint.mjs" } },
     { failure: { kind: "removal-refused", failure: { kind: "records-file-outside-root", path: OLD_FILE, root: REPO }, removedByVersionOne: [] }, fills: { root: REPO, path: OLD_FILE } },
     { failure: { kind: "write-refused", refusal: { failure: { kind: "path-already-exists", path: SETTINGS }, unrestored: [] }, removedByVersionOne: [] }, fills: {} },
     { failure: { kind: "write-refused", refusal: { failure: { kind: "replaced-file-unreadable", path: SETTINGS, detail: "the detail" }, unrestored: [] }, removedByVersionOne: [] }, fills: {} },
@@ -597,12 +600,12 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
     {
       failure: {
         kind: "records-refused",
-        refusal: { kind: "invalid-records", invalid: [{ place: { layout: "split", file: repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-15.json"), index: 1 }, problem: { kind: "clause-unparseable", detail: "the detail" } }] },
+        refusal: { kind: "invalid-records", invalid: [{ place: { layout: "split", file: repoPathOf("discipline-exceptions/file-carve-outs/cd-15.json"), index: 1 }, problem: { kind: "clause-unparseable", detail: "the detail" } }] },
       },
       fills: { "records file": "discipline-exceptions/file-carve-outs/cd-15.json", index: "1", problem: "clause-unparseable" },
     },
     {
-      failure: { kind: "records-refused", refusal: { kind: "entry-not-json", place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 } } },
+      failure: { kind: "records-refused", refusal: { kind: "entry-not-json", place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 } } },
       fills: { "records file": "discipline-exceptions.json" },
     },
     { failure: { kind: "version-one-unreadable", failure: UNREADABLE }, fills: { detail: loadFailureDetail({ failure: UNREADABLE }) } },
@@ -610,7 +613,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
       failure: {
         kind: "removal-failed",
         failure: { kind: "unremovable", path: OLD_FILE, detail: "the detail", removed: { files: [], folders: [] } },
-        written: [repoPathSchema.parse("hone.config.json"), repoPathSchema.parse("hone.eslint.mjs")],
+        written: [repoPathOf("hone.config.json"), repoPathOf("hone.eslint.mjs")],
         replaced: [CONFIG, SLICE_CONFIG],
         remaining: [OLD_FILE],
       },
@@ -620,7 +623,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
       failure: {
         kind: "removal-failed",
         failure: { kind: "records-file-outside-root", path: OLD_FILE, root: REPO },
-        written: [repoPathSchema.parse("hone.config.json")],
+        written: [repoPathOf("hone.config.json")],
         replaced: [],
         remaining: [OLD_FILE],
       },
@@ -640,10 +643,10 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
     repoRoot: REPO,
     path: PATH,
     carried: {
-      markedNotAdopted: [{ check: { ruleSet: TOOL_RULE_SET, check: MARKED_CHECK }, clause: clauseAddressSchema.parse("CD-2#cast-expressions"), reason: "discipline-not-selected" }],
-      written: [repoPathSchema.parse("hone.config.json")],
+      markedNotAdopted: [{ check: { ruleSet: TOOL_RULE_SET, check: MARKED_CHECK }, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, reason: "discipline-not-selected" }],
+      written: [repoPathOf("hone.config.json")],
       replaced: [CONFIG],
-      removed: { files: [absolutePathSchema.parse("/repo/disciplines.json")], folders: [absolutePathSchema.parse("/repo/discipline-exceptions")] },
+      removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [absoluteRootOf("/repo/discipline-exceptions")] },
     },
   }).text;
 
@@ -665,9 +668,9 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     readonly [Name in SectionName]: readonly Filled<CheckReport[Name][number]>[];
   };
 
-  const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+  const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
   const MECHANISM = "eslint" as const;
-  const FILE = repoPathSchema.parse("src/basket.ts");
+  const FILE = repoPathOf("src/basket.ts");
   const RULE_PAGE = "node_modules/@hailstails/hone/rules/CD-15/README.md";
   const ADOPTION_GUIDE = "node_modules/@hailstails/hone/ADOPTING.md";
 
@@ -691,8 +694,8 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   const EDITION_READING: ClauseEditionReading = {
     address: LOOPS,
     mechanism: MECHANISM,
-    edition: editionSchema.parse("1"),
-    latest: editionSchema.parse("2"),
+    edition: editionOf("1"),
+    latest: editionOf("2"),
   };
 
   const FINDING: Finding = { clause: LOOPS, mechanism: MECHANISM, file: FILE, anchor: { line: 15, column: 0 }, snippet: "const total = 0;\nreturn total;" };
@@ -758,7 +761,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
         kind: "command-line-option",
         clause: LOOPS,
         mechanism: MECHANISM,
-        location: repoPathSchema.parse("package.json"),
+        location: repoPathOf("package.json"),
         script: "lint",
         option: "--no-inline-config",
         cause: { kind: "weakens-run" },
@@ -770,7 +773,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
         kind: "command-line-option",
         clause: LOOPS,
         mechanism: MECHANISM,
-        location: repoPathSchema.parse("package.json"),
+        location: repoPathOf("package.json"),
         script: "lint",
         option: "-c eslint.config.mjs",
         cause: { kind: "after-another-command", command: "eslint", invocation: SCRIPT_OPTION_INVOCATION },
@@ -788,7 +791,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
         kind: "command-line-option",
         clause: LOOPS,
         mechanism: MECHANISM,
-        location: repoPathSchema.parse("package.json"),
+        location: repoPathOf("package.json"),
         script: "lint",
         option: "--ignore-pattern legacy/**",
         cause: { kind: "wrapped", command: "eslint", wrapper: SCRIPT_OPTION_WRAPPER },
@@ -806,7 +809,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
         kind: "command-line-option",
         clause: LOOPS,
         mechanism: MECHANISM,
-        location: repoPathSchema.parse("package.json"),
+        location: repoPathOf("package.json"),
         script: "lint",
         option: "eslint --ignore-pattern 'legacy/**",
         cause: { kind: "unreadable", command: "eslint" },
@@ -822,7 +825,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     "config-override": [{ entry: { kind: "config-override", clause: LOOPS, mechanism: MECHANISM, file: FILE }, fills: {} }],
     "suppression-entry": [
       {
-        entry: { kind: "suppression-entry", clause: LOOPS, mechanism: MECHANISM, file: FILE, location: repoPathSchema.parse("eslint-suppressions.json") },
+        entry: { kind: "suppression-entry", clause: LOOPS, mechanism: MECHANISM, file: FILE, location: repoPathOf("eslint-suppressions.json") },
         fills: { "suppressions file": "eslint-suppressions.json" },
       },
     ],
@@ -836,11 +839,11 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     "command-line-option": Object.values(SCRIPT_OPTIONS),
   };
 
-  const SINGLE_RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
+  const SINGLE_RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
-  const SPLIT_RECORDS_FOLDER = repoPathSchema.parse("discipline-exceptions");
+  const SPLIT_RECORDS_FOLDER = repoPathOf("discipline-exceptions");
 
-  const SPLIT_RECORDS_FILE = repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-15.json");
+  const SPLIT_RECORDS_FILE = repoPathOf("discipline-exceptions/file-carve-outs/cd-15.json");
 
   const RECORD_PROBLEMS: { readonly [Kind in InvalidRecord["problem"]["kind"]]: Filled<Extract<InvalidRecord["problem"], { readonly kind: Kind }>> } = {
     "clause-unparseable": { entry: { kind: "clause-unparseable", detail: "not a clause address" }, fills: { detail: "not a clause address" } },
@@ -877,7 +880,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       kind: "mechanism-not-run",
       mechanism: MECHANISM,
       projection: "not-included",
-      nestedConfigurations: [repoPathSchema.parse("packages/legacy"), repoPathSchema.parse("packages/tools")],
+      nestedConfigurations: [repoPathOf("packages/legacy"), repoPathOf("packages/tools")],
     },
     fills: { folders: "packages/legacy, packages/tools" },
   };
@@ -903,7 +906,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
 
   const UNSLICED_UNRUN: readonly Filled<Unmeasured>[] = [{ entry: UNRUN_PROJECTIONS["not-included"], fills: {} }, NESTED_UNRUN];
 
-  const SLICE = repoPathSchema.parse("packages/web/disciplines.eslint.mjs");
+  const SLICE = repoPathOf("packages/web/disciplines.eslint.mjs");
 
   const PROJECTION_PROBLEMS: {
     readonly [Scope in ProjectionProblem["scope"]]: Readonly<
@@ -968,7 +971,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   const unfilled = <Entry>(entries: readonly Entry[]): readonly Filled<Entry>[] => entries.map((entry) => ({ entry, fills: {} }));
 
   const SECTION_SAMPLES: SectionSamples = {
-    excluded: [{ entry: repoPathSchema.parse("generated"), fills: { path: "generated" } }],
+    excluded: [{ entry: repoPathOf("generated"), fills: { path: "generated" } }],
     notAdopted: unfilled([LOOPS]),
     notRun: unfilled([LOOPS]),
     editions: [{ entry: EDITION_READING, fills: { edition: "1", latest: "2" } }],
@@ -1064,9 +1067,9 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
 
   const AUDIT = "audit" as const;
 
-  const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+  const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-  const TEST_FILE = repoPathSchema.parse("src/orders/charge-order.test.ts");
+  const TEST_FILE = repoPathOf("src/orders/charge-order.test.ts");
 
   const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -1193,7 +1196,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       engines: [],
       symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, DOUBLE_WITH_A_BODY],
       clauses: [
-        { clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+        { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
         {
           clause: TEST_BODY_LOGIC,
           sight: {
@@ -1213,9 +1216,9 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   const SYMPTOM_FINDINGS: readonly Filled<Finding>[] = [
     {
       entry: {
-        clause: clauseAddressSchema.parse("CD-17#clock-sources"),
+        clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
         mechanism: AUDIT,
-        file: repoPathSchema.parse("src/orders/charge-order.ts"),
+        file: repoPathOf("src/orders/charge-order.ts"),
         anchor: { line: 14, column: 0 },
         snippet: "const chargedAt = clock.now();",
       },
@@ -1438,7 +1441,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       fills: { path: "team/rules/TM-1/discipline.json", detail: "no clauses" },
     },
     "git-failed": { entry: { kind: "git-failed", detail: "not a git repository" }, fills: { detail: "not a git repository" } },
-    "config-root-untracked": { entry: { kind: "config-root-untracked", root: repoPathSchema.parse("packages/gone") }, fills: { "config root": "packages/gone" } },
+    "config-root-untracked": { entry: { kind: "config-root-untracked", root: repoPathOf("packages/gone") }, fills: { "config root": "packages/gone" } },
     "selection-absent": { entry: { kind: "selection-absent", repo: "src" }, fills: { dir: "src" } },
     "unexpected-error": {
       entry: { kind: "unexpected-error", detail: "Cannot read properties of undefined" },
@@ -1486,10 +1489,10 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   ];
 
   const PROJECTION_EFFECTS: Readonly<Record<ProjectionWrite["effect"], ProjectionWrite>> = {
-    written: { path: repoPathSchema.parse("disciplines.eslint.mjs"), effect: "written" },
-    unchanged: { path: repoPathSchema.parse("disciplines.eslint.mjs"), effect: "unchanged" },
-    removed: { path: repoPathSchema.parse("disciplines.eslint.mjs"), effect: "removed" },
-    "left-in-place": { path: repoPathSchema.parse("disciplines.eslint.mjs"), effect: "left-in-place" },
+    written: { path: repoPathOf("disciplines.eslint.mjs"), effect: "written" },
+    unchanged: { path: repoPathOf("disciplines.eslint.mjs"), effect: "unchanged" },
+    removed: { path: repoPathOf("disciplines.eslint.mjs"), effect: "removed" },
+    "left-in-place": { path: repoPathOf("disciplines.eslint.mjs"), effect: "left-in-place" },
   };
 
   const linesOf = (request: { readonly label: string; readonly text: string; readonly fills: Fills }): readonly PrintedLine[] =>
@@ -1504,11 +1507,11 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     fills: { path: "disciplines.eslint.mjs" },
   });
 
-  const LEFT_UNDER = repoPathSchema.parse("src");
+  const LEFT_UNDER = repoPathOf("src");
 
-  const OWN_DISCIPLINES_FOLDER = repoPathSchema.parse("packages/legacy");
+  const OWN_DISCIPLINES_FOLDER = repoPathOf("packages/legacy");
 
-  const OWN_CONFIGURATION_FOLDER = repoPathSchema.parse("packages/legacy/tools");
+  const OWN_CONFIGURATION_FOLDER = repoPathOf("packages/legacy/tools");
 
   const INHERITED_DEBT_EFFECTS: Readonly<Record<InheritedDebtOutcome["effect"], InheritedDebtOutcome>> = {
     recorded: { clause: LOOPS, file: FILE, effect: "recorded" },
@@ -1589,25 +1592,25 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
 
   const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
-  const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+  const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-  const TEST_FILE = repoPathSchema.parse("src/orders/charge-order.test.ts");
+  const TEST_FILE = repoPathOf("src/orders/charge-order.test.ts");
 
-  const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+  const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-  const PACKAGE_FILE = repoPathSchema.parse("package.json");
+  const PACKAGE_FILE = repoPathOf("package.json");
 
-  const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+  const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-  const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+  const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-  const DEVIATIONS_FILE = repoPathSchema.parse("hone-records/deviations/world-values-through-a-port.json");
+  const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/world-values-through-a-port.json");
 
-  const BOUNDARIES_FILE = repoPathSchema.parse("hone-records/boundary-records.json");
+  const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
 
-  const DEPENDENCIES_FILE = repoPathSchema.parse("hone-records/dependency-records.json");
+  const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
-  const SLICE = repoPathSchema.parse("packages/web/hone.eslint.mjs");
+  const SLICE = repoPathOf("packages/web/hone.eslint.mjs");
 
   const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop";
 
@@ -1655,14 +1658,14 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
 
   const CLOCK_BOUNDARY: BoundaryRecord = {
     kind: "boundary-record",
-    module: repoPathSchema.parse("src/adapters/system-clock.ts"),
+    module: repoPathOf("src/adapters/system-clock.ts"),
     outsideParty: { kind: "runtime", facility: "clock" },
     holding: { held: "stated", ports: ["Clock"] },
   };
 
   const FILES_BOUNDARY: BoundaryRecord = {
     kind: "boundary-record",
-    module: repoPathSchema.parse("src/adapters/files"),
+    module: repoPathOf("src/adapters/files"),
     outsideParty: { kind: "scheme-module", specifier: "node:fs" },
     holding: { held: "carried", entry: {}, lacks: ["ports"], standing: "established" },
   };
@@ -1790,7 +1793,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
       fills: { "records file": "hone-records/boundary-records.json", index: "3", "outside party": "runtime:env" },
     },
     misplaced: {
-      entry: { place: { file: DEBT_FILE, index: 2 }, refusals: [{ kind: "misplaced", belongsIn: repoPathSchema.parse("hone-records/debt/date-used-directly.json") }] },
+      entry: { place: { file: DEBT_FILE, index: 2 }, refusals: [{ kind: "misplaced", belongsIn: repoPathOf("hone-records/debt/date-used-directly.json") }] },
       fills: { "records file": "hone-records/debt/claimed-type.json", index: "2", "belongs in": "hone-records/debt/date-used-directly.json" },
     },
     "not-a-records-name": {
@@ -1813,7 +1816,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
     ignore: { entry: { kind: "ignore", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, mechanism: ESLINT }, fills: WEBHOOK_SITE_FILLS },
     "config-override": { entry: { kind: "config-override", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, mechanism: ESLINT }, fills: WEBHOOK_SITE_FILLS },
     "suppression-entry": {
-      entry: { kind: "suppression-entry", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, location: repoPathSchema.parse("eslint-suppressions.json"), mechanism: ESLINT },
+      entry: { kind: "suppression-entry", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, location: repoPathOf("eslint-suppressions.json"), mechanism: ESLINT },
       fills: { ...WEBHOOK_SITE_FILLS, "suppressions file": "eslint-suppressions.json" },
     },
     "inline-rule-config": {
@@ -1925,7 +1928,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
     "not-included": [
       { entry: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "not-included", nestedConfigurations: [] }, fills: { engine: "eslint" } },
       {
-        entry: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "not-included", nestedConfigurations: [repoPathSchema.parse("packages/legacy")] },
+        entry: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "not-included", nestedConfigurations: [repoPathOf("packages/legacy")] },
         fills: { engine: "eslint", folders: "packages/legacy" },
       },
     ],
@@ -1939,7 +1942,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
   });
 
   const DECLARATION_SLICE_PROBLEM: Filled<RunProjectionProblem> = {
-    entry: { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: repoPathSchema.parse("packages/web/hone.eslint.d.mts") },
+    entry: { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: repoPathOf("packages/web/hone.eslint.d.mts") },
     fills: { engine: "eslint", slice: "packages/web/hone.eslint.d.mts", folder: "packages/web" },
   };
 
@@ -1950,7 +1953,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
   };
 
   const SPACED_RECORDS_FILE: Filled<RunReport["refused"][number]> = {
-    entry: { place: { file: repoPathSchema.parse("hone-records/debt/claimed type.json"), index: 0 }, refusals: [{ kind: "misplaced", belongsIn: DEBT_FILE }] },
+    entry: { place: { file: repoPathOf("hone-records/debt/claimed type.json"), index: 0 }, refusals: [{ kind: "misplaced", belongsIn: DEBT_FILE }] },
     fills: { "records file": '"hone-records/debt/claimed type.json"', index: "0", "belongs in": "hone-records/debt/claimed-type.json" },
   };
 
@@ -1975,10 +1978,10 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
   };
 
   const SECTION_SAMPLES: SectionSamples = {
-    excluded: [{ entry: repoPathSchema.parse("dist"), fills: { path: "dist" } }],
+    excluded: [{ entry: repoPathOf("dist"), fills: { path: "dist" } }],
     "not-adopted": [{ entry: CAST_CHECK, fills: CAST_SITE_FILLS }],
     "not-run": [{ entry: TEST_BODY_CHECK, fills: { check: "branch-in-a-test#test-body" } }],
-    editions: [{ entry: { check: CLOCK_CHECK, engine: WALKER, edition: editionSchema.parse("1"), latest: editionSchema.parse("2") }, fills: { ...CLOCK_FILLS, edition: "1", latest: "2" } }],
+    editions: [{ entry: { check: CLOCK_CHECK, engine: WALKER, edition: editionOf("1"), latest: editionOf("2") }, fills: { ...CLOCK_FILLS, edition: "1", latest: "2" } }],
     findings: [
       { entry: { clause: CLOCK_SOURCES, mechanism: AUDIT, file: ORDER_FILE, anchor: { line: 14, column: 0 }, snippet: "const chargedAt = clock.now();" }, fills: CLOCK_FILLS },
       {
@@ -2156,11 +2159,11 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
 
   const CATALOGUE_PATH = "node_modules/@hailstails/hone/rules/typescript/symptoms.json";
 
-  const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+  const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-  const DEBT_FOLDER = repoPathSchema.parse("hone-records/debt");
+  const DEBT_FOLDER = repoPathOf("hone-records/debt");
 
-  const STRAY_FILE = repoPathSchema.parse("hone-records/notes.md");
+  const STRAY_FILE = repoPathOf("hone-records/notes.md");
 
   const CAST_CHECK_ADDRESS = "claimed-type#cast-expressions";
 
@@ -2190,7 +2193,7 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
     "unknown-rule-set": [{ entry: { kind: "unknown-rule-set", name: "team" }, fills: { "rule set": "team" } }],
     "rule-set-invalid": [{ entry: { kind: "rule-set-invalid", path: "team/rules", detail: "no clauses" }, fills: { path: "team/rules", detail: "no clauses" } }],
     "git-failed": [{ entry: { kind: "git-failed", detail: "not a git repository" }, fills: { detail: "not a git repository" } }],
-    "config-root-untracked": [{ entry: { kind: "config-root-untracked", root: repoPathSchema.parse("packages/gone") }, fills: { "config root": "packages/gone" } }],
+    "config-root-untracked": [{ entry: { kind: "config-root-untracked", root: repoPathOf("packages/gone") }, fills: { "config root": "packages/gone" } }],
     "unexpected-error": [{ entry: { kind: "unexpected-error", detail: "boom" }, fills: { detail: "boom" } }],
     "config-absent": [{ entry: { kind: "config-absent", repo: "/work/shop" }, fills: { dir: "/work/shop" } }],
     "settings-in-both-versions": [{ entry: { kind: "settings-in-both-versions", repo: "/work/shop" }, fills: { dir: "/work/shop" } }],
@@ -2248,7 +2251,7 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
     "records-file-unreadable": [{ entry: { kind: "records-file-unreadable", file: DEBT_FILE, detail: "EACCES" }, fills: { "records file": "hone-records/debt/claimed-type.json", detail: "EACCES" } }],
     "records-file-not-json": [
       {
-        entry: { kind: "records-file-not-json", file: repoPathSchema.parse("hone-records/debt/claimed type.json"), detail: "Unexpected token" },
+        entry: { kind: "records-file-not-json", file: repoPathOf("hone-records/debt/claimed type.json"), detail: "Unexpected token" },
         fills: { "records file": '"hone-records/debt/claimed type.json"', detail: "Unexpected token" },
       },
     ],
@@ -2294,15 +2297,15 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
 })();
 
 const RECORD_COMMAND_LINES: readonly PrintedLine[] = (() => {
-  const FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+  const FILE = repoPathOf("src/orders/charge-order.ts");
 
-  const RECORDS_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
+  const RECORDS_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
   const ADDRESS = "date-used-directly#clock-sources";
 
   const SITE = { address: ADDRESS, file: FILE } as const;
 
-  const LEFT_UNDER = repoPathSchema.parse("src/orders");
+  const LEFT_UNDER = repoPathOf("src/orders");
 
   const DEBT: Debt = { kind: "debt", symptom: DATE_USED_DIRECTLY, reach: WHOLE_SYMPTOM, file: FILE, holding: { held: "stated" } };
 

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { LintedMessage } from "../toolchain/eslint-instance.ts";
 import { MISNAMED_DISABLE_RULE_ID } from "./misnamed-disable-rule.ts";
 import { misnamedRuleIdsIn } from "./misnamed-rule-ids.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
-const FILE = repoPathSchema.parse("src/kept.ts");
+const FILE = repoPathOf("src/kept.ts");
 
 const CHECK_RULE_IDS = ["hone/untyped-value#explicit-any"];
 

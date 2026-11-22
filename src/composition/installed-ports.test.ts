@@ -9,8 +9,8 @@ import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { EnginePort } from "../application/ports/engine/engine-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
 import { installedPortsOver, type NodePorts } from "./installed-ports.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 
 const nodePorts = (): NodePorts => ({
   path: {
@@ -68,7 +68,7 @@ describe("installedPortsOver", () => {
 
   it("reads a repository's exceptions at a base revision through the node git tree it was given", () => {
     const node = nodePorts();
-    const repoRoot = absolutePathSchema.parse("/repo");
+    const repoRoot = absoluteRootOf("/repo");
     const read = installedPortsOver(node).exceptionRepositoryOf({ repoRoot }).readAt({ revision: "origin/main" });
     expect({ read, asked: vi.mocked(node.gitTree.pathsAt).mock.calls }).toEqual({
       read: { outcome: "ok", value: [] },

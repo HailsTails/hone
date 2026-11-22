@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { conventionsOf, conventionsWireOf } from "./conventions.ts";
 import { type ConventionsReading, DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 describe("conventionsOf", () => {
   it("gives the defaults, and names no key as declared, when the file declares none", () => {
@@ -25,9 +25,9 @@ describe("conventionsOf", () => {
         conventions: {
           generated: [{ files: ["src/graphql/generated/**", "src/api/*.gen.ts"], outsideParty: "@graphql-codegen/cli" }],
           layers: [
-            { layer: "domain", folders: [repoPathSchema.parse("src/domain")] },
-            { layer: "application", folders: [repoPathSchema.parse("src/application")] },
-            { layer: "adapters", folders: [repoPathSchema.parse("src/adapters"), repoPathSchema.parse("web/adapters")] },
+            { layer: "domain", folders: [repoPathOf("src/domain")] },
+            { layer: "application", folders: [repoPathOf("src/application")] },
+            { layer: "adapters", folders: [repoPathOf("src/adapters"), repoPathOf("web/adapters")] },
           ],
         },
         declared: ["generated", "layers"],
@@ -124,7 +124,7 @@ describe("conventionsWireOf", () => {
         reading: {
           conventions: {
             generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
-            layers: [{ layer: "domain", folders: [repoPathSchema.parse("src/domain")] }],
+            layers: [{ layer: "domain", folders: [repoPathOf("src/domain")] }],
           },
           declared: ["generated", "layers"],
         },

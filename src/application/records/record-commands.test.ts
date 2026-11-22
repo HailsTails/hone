@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../domain/finding/governance.ts";
 import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { PlacedRecord, RecordsDocument, RecordsDocumentRefusal, RefusedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsEdit } from "../../domain/records/hone-records/records-edit.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
@@ -12,6 +10,10 @@ import type { RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { RecordsStore } from "../ports/records/records-store.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -58,9 +60,9 @@ const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
 const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 
@@ -155,23 +157,23 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const NEW_FILE = repoPathSchema.parse("src/orders/refund-order.ts");
+const NEW_FILE = repoPathOf("src/orders/refund-order.ts");
 
-const TOUCHED_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const TOUCHED_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
-const WEBHOOK_DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const WEBHOOK_DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const RECORDS_FOLDER = repoPathSchema.parse("hone-records");
+const RECORDS_FOLDER = repoPathOf("hone-records");
 
 const CLOCK_FINDING: Finding = { clause: CLOCK_SOURCES, mechanism: AUDIT, file: ORDER_FILE, anchor: { line: 14, column: 0 }, snippet: "chargedAt" };
 
-const UNCATALOGUED_FINDING: Finding = { ...CLOCK_FINDING, clause: clauseAddressSchema.parse("CD-99#nowhere") };
+const UNCATALOGUED_FINDING: Finding = { ...CLOCK_FINDING, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-99"), clause: clauseIdOf("nowhere") } };
 
 const NEW_FILE_FINDING: Finding = { ...CLOCK_FINDING, file: NEW_FILE };
 

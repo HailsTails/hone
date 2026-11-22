@@ -31,6 +31,7 @@ import {
   type EslintToolchainPeers,
   loadEslintToolchain,
 } from "../toolchain/eslint-toolchain.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -85,7 +86,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+const RULE_SET_ROOT = absoluteRootOf("/install");
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 

@@ -4,14 +4,14 @@ import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { headRecordsOf } from "../discipline-exceptions-folder/head-records.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { RecordsOnDisk, VersionOneRead, VersionOneReadFailure } from "../../application/ports/records/version-one-reading.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
-const VERSION_ONE_SETTINGS = repoPathSchema.parse("disciplines.json");
+const VERSION_ONE_SETTINGS = repoPathOf("disciplines.json");
 
 export type VersionOneReadRequest = {
   readonly repoRoot: AbsolutePath;

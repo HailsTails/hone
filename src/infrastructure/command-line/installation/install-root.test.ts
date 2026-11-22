@@ -4,6 +4,7 @@ import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { installRootOf, installRootOfApiEntry } from "./install-root.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
   const entry = request.table[request.key];
@@ -22,11 +23,11 @@ type FileUrlResult = Result<
 >;
 
 const FILE_URLS: Readonly<Record<string, FileUrlResult>> = {
-  [ENTRY_URL]: { outcome: "ok", value: absolutePathSchema.parse("/install/src/hone.ts") },
-  [API_ENTRY_URL]: { outcome: "ok", value: absolutePathSchema.parse("/install/api/testing.js") },
+  [ENTRY_URL]: { outcome: "ok", value: absoluteRootOf("/install/src/hone.ts") },
+  [API_ENTRY_URL]: { outcome: "ok", value: absoluteRootOf("/install/api/testing.js") },
   [WINDOWS_ENTRY_URL]: {
     outcome: "ok",
-    value: absolutePathSchema.parse("C:\\repo\\packages\\hone\\src\\hone.ts"),
+    value: absoluteRootOf("C:\\repo\\packages\\hone\\src\\hone.ts"),
   },
   [NOT_A_FILE_URL]: {
     outcome: "failed",

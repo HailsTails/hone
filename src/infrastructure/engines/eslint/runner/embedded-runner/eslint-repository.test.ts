@@ -2,26 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { eslintRepositoryOver } from "./eslint-repository.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" });
 
-const PACKAGE_JSON = repoPathSchema.parse("packages/a/package.json");
+const PACKAGE_JSON = repoPathOf("packages/a/package.json");
 
-const SUPPRESSIONS = repoPathSchema.parse("ci/lint-suppressions.json");
+const SUPPRESSIONS = repoPathOf("ci/lint-suppressions.json");
 
-const PACKAGE_A = repoPathSchema.parse("packages/a");
+const PACKAGE_A = repoPathOf("packages/a");
 
-const SLICE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
+const SLICE = repoPathOf("packages/a/disciplines.eslint.mjs");
 
-const ROOT_PROJECTION = repoPathSchema.parse("disciplines.eslint.mjs");
+const ROOT_PROJECTION = repoPathOf("disciplines.eslint.mjs");
 
-const SOURCE = repoPathSchema.parse("src/a.ts");
+const SOURCE = repoPathOf("src/a.ts");
 
 const ESLINT_9_PACKAGE = '{ "version": "9.39.5" }';
 
@@ -197,10 +197,10 @@ describe("eslintRepositoryOver, projection files", () => {
       fileText,
       fileRemoval: REMOVED,
       path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }),
-      repoRoot: absolutePathSchema.parse("C:\\repo"),
+      repoRoot: absoluteRootOf("C:\\repo"),
     });
     repository.projectionFiles.currentOf({ files: [ROOT_PROJECTION] });
-    repository.suppressionsAt({ location: repoPathSchema.parse("src/eslint-suppressions.json") });
+    repository.suppressionsAt({ location: repoPathOf("src/eslint-suppressions.json") });
     expect(fileText.read.mock.calls).toEqual([
       [{ path: "C:\\repo\\disciplines.eslint.mjs" }],
       [{ path: "C:\\repo\\src\\eslint-suppressions.json" }],
@@ -213,7 +213,7 @@ describe("eslintRepositoryOver, projection files", () => {
       fileText,
       fileRemoval: REMOVED,
       path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }),
-      repoRoot: absolutePathSchema.parse("C:\\repo"),
+      repoRoot: absoluteRootOf("C:\\repo"),
     });
     repository.projectionFiles.writeAt({ file: SLICE, text: "export default [];\n" });
     expect(fileText.write.mock.calls).toEqual([[{ path: "C:\\repo\\packages\\a\\disciplines.eslint.mjs", text: "export default [];\n" }]]);

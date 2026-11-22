@@ -3,7 +3,6 @@ import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
-import { fixedRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RecordAnswered } from "../../ports/upgrade/record-answer-oracle.ts";
 import { recordInputsOf } from "../record-answers/record-inputs.ts";
@@ -14,8 +13,9 @@ import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 import type { PlanRefusal, ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const SETTINGS_FILE = fixedRepoPath(SETTINGS_FILE_NAME);
+const SETTINGS_FILE = repoPathOf(SETTINGS_FILE_NAME);
 
 export type PlannedProjection = { readonly files: readonly PlannedRepoFile[]; readonly projections: readonly PlannedRepoFile[] };
 

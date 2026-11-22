@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { ClauseSettingDeclarations } from "../../rule-set/rule-set-types.ts";
-import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
 import type { ClauseEditions } from "../../rule-set/edition-types.ts";
 import { type SettledCheckSettings, settledCheckSettings } from "./check-settings.ts";
 import type { GivenCheckSettings } from "../settings-file.ts";
+import { editionOf } from "../../rule-set/edition-of.ts";
 
-const FIRST = editionSchema.parse("1");
+const FIRST = editionOf("1");
 
-const SECOND = editionSchema.parse("2");
+const SECOND = editionOf("2");
 
 const TWO_EDITIONS: ClauseEditions = { declared: [FIRST, SECOND], default: FIRST, latest: SECOND };
 

@@ -17,24 +17,26 @@ import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts
 import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
 
 const AUDIT = "audit" as const;
 const LINT = "eslint" as const;
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
-const ABSTRACT_SYNTAX = clauseAddressSchema.parse("CD-14#abstract-syntax");
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
-const SRC_A = repoPathSchema.parse("src/a.ts");
-const ESLINT_PROJECTION = repoPathSchema.parse("disciplines.eslint.mjs");
-const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
-const SPLIT_LOCATIONS = repoPathSchema.parse("discipline-exceptions/authorised-locations/cd-14.json");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const ABSTRACT_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
+const INSTALL_ROOT = absoluteRootOf("/install");
+const SRC_A = repoPathOf("src/a.ts");
+const ESLINT_PROJECTION = repoPathOf("disciplines.eslint.mjs");
+const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
+const SPLIT_LOCATIONS = repoPathOf("discipline-exceptions/authorised-locations/cd-14.json");
 
 const FIXTURE_SOURCE = "fictional unit fixture core/check/run-project.test.ts; not historical authorisation";
 
@@ -44,7 +46,7 @@ const CLASS_SYNTAX_CLAUSE = {
   pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
   settings: { module: "class-syntax.ts" },
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
 } as const;
 
 const ABSTRACT_SYNTAX_CLAUSE = {
@@ -53,7 +55,7 @@ const ABSTRACT_SYNTAX_CLAUSE = {
   pieceRoot: "/install/src/infrastructure/engines/lint/CD-14",
   settings: { module: "abstract-syntax.ts" },
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
 } as const;
 
 const SELECTION_READING: SelectionReading = {
@@ -101,7 +103,7 @@ const WALKER_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/walker.ts"),
+  file: repoPathOf("src/walker.ts"),
   reason: "audit location",
   provenance: { kind: "existing-authorisation", source: FIXTURE_SOURCE },
 };
@@ -110,7 +112,7 @@ const LINT_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: ABSTRACT_SYNTAX,
   mechanism: LINT,
-  file: repoPathSchema.parse("src/lint.ts"),
+  file: repoPathOf("src/lint.ts"),
   reason: "lint location",
   provenance: { kind: "existing-authorisation", source: FIXTURE_SOURCE },
 };
@@ -131,7 +133,7 @@ const LEGACY_WALKER_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/walker.ts"),
+  file: repoPathOf("src/walker.ts"),
   reason: "audit location",
   whyChain: LEGACY_WHY_CHAIN,
 };
@@ -197,7 +199,7 @@ const parserReading = (reading: ExceptionReading): ExceptionEntryParser => ({
 });
 
 const projectRequest = (overrides: Partial<ProjectRequest>): ProjectRequest => ({
-  repoRoot: absolutePathSchema.parse("/repo"),
+  repoRoot: absoluteRootOf("/repo"),
   installRoot: INSTALL_ROOT,
   moduleExtension: ".ts",
   fileText: fileTextOfPresentFiles(),
@@ -247,7 +249,7 @@ describe("runProject", () => {
         projectRequest({
           exceptionEntryParser: parserReading({
             records: [],
-            invalid: [{ place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index: 0 }, problem: { kind: "clause-not-selected", clause: clauseAddressSchema.parse("CD-15#no-for-of") } }],
+            invalid: [{ place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index: 0 }, problem: { kind: "clause-not-selected", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") } } }],
           }),
         }),
       ),
@@ -384,7 +386,7 @@ describe("runProject for a repository with a package config and a clause it does
     await runProject(
       projectRequest({
         engine,
-        git: gitTracking([SRC_A, repoPathSchema.parse("packages/a/eslint.config.mjs")]),
+        git: gitTracking([SRC_A, repoPathOf("packages/a/eslint.config.mjs")]),
         selectionRepositoryOf: selectionReading({ outcome: "ok", value: ABSTRACT_NOT_ADOPTED_READING }),
       }),
     );
@@ -408,7 +410,7 @@ describe("runProject with an ESLint config root git does not track", () => {
     const outcome = await runProject(
       projectRequest({
         engine,
-        selectionRepositoryOf: selectionReading({ outcome: "ok", value: { ...SELECTION_READING, eslintConfigRoots: [repoPathSchema.parse("packages/missing")] } }),
+        selectionRepositoryOf: selectionReading({ outcome: "ok", value: { ...SELECTION_READING, eslintConfigRoots: [repoPathOf("packages/missing")] } }),
       }),
     );
     expect({ outcome, projectCalls: vi.mocked(engine.project.withRecords).mock.calls }).toEqual({
@@ -422,7 +424,7 @@ describe("runProject with an ESLint config root git does not track", () => {
     await runProject(
       projectRequest({
         engine,
-        selectionRepositoryOf: selectionReading({ outcome: "ok", value: { ...SELECTION_READING, eslintConfigRoots: [repoPathSchema.parse("src")] } }),
+        selectionRepositoryOf: selectionReading({ outcome: "ok", value: { ...SELECTION_READING, eslintConfigRoots: [repoPathOf("src")] } }),
       }),
     );
     expect(vi.mocked(engine.project.withRecords).mock.calls).toEqual([[{ runner: AUDIT_RUNNER, request: expect.objectContaining({ declaredConfigRoots: ["src"] }) }]]);

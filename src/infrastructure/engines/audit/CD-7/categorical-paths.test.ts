@@ -1,12 +1,15 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../runner/pieces/walker-piece.ts";
 import { check } from "./categorical-paths.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
@@ -16,14 +19,14 @@ assert(loadedParsePort.outcome === "ok", "the typescript line loads from the dev
 assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 const defaultParsePort = loadedParsePort.value;
 
-const ADDRESS = clauseAddressSchema.parse("CD-7#categorical-paths");
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-7"), clause: clauseIdOf("categorical-paths") };
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-7",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "categorical-paths.ts" },
 };
 
@@ -35,7 +38,7 @@ const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWa
 
 describe("CD-7 existing categorical path checks", () => {
   it("completes both filename and first-folder findings in order without reading content", () => {
-    const file = repoPathSchema.parse("src/common/helpers/types.ts");
+    const file = repoPathOf("src/common/helpers/types.ts");
     const prepared = preparedFor({ file });
     const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "failed", error: { kind: "file-unreadable", file, detail: "unexpected read" } });
 

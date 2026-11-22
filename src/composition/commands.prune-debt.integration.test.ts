@@ -6,8 +6,6 @@ import type { GitPort } from "../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import { commandOf } from "./composed-command.ts";
@@ -17,6 +15,10 @@ import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engi
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 
 const runPruneDebtCommand = (command: PruneCommand) => commandOf({ tool: PRUNE_DEBT, ports: command })(command);
 
@@ -24,25 +26,25 @@ const FIXTURE = `${import.meta.dirname}/../operations/prune-debt/prune-debt`;
 
 const TOOL_COMMAND_URL = new URL("../hone.ts", import.meta.url).href;
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const GONE_PAIR = { clause: LOOPS, file: repoPathSchema.parse("src/gone.ts") };
+const GONE_PAIR = { clause: LOOPS, file: repoPathOf("src/gone.ts") };
 
-const KEPT_PAIR = { clause: LOOPS, file: repoPathSchema.parse("src/kept.ts") };
+const KEPT_PAIR = { clause: LOOPS, file: repoPathOf("src/kept.ts") };
 
 const FIXTURE_TRACKED = [
-  repoPathSchema.parse("discipline-exceptions.json"),
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("src/kept.ts"),
+  repoPathOf("discipline-exceptions.json"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("src/kept.ts"),
 ];
 
-const TRACKED_WITHOUT_KEPT = [repoPathSchema.parse("discipline-exceptions.json"), repoPathSchema.parse("disciplines.json")];
+const TRACKED_WITHOUT_KEPT = [repoPathOf("discipline-exceptions.json"), repoPathOf("disciplines.json")];
 
 const TRACKED_WITH_LEGACY_SCRIPT = [
-  repoPathSchema.parse("discipline-exceptions.json"),
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("src/kept.ts"),
-  repoPathSchema.parse("src/legacy.js"),
+  repoPathOf("discipline-exceptions.json"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("src/kept.ts"),
+  repoPathOf("src/legacy.js"),
 ];
 
 const processGiven = (argumentsGiven: readonly string[]): ProcessPort => ({

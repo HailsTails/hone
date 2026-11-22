@@ -4,7 +4,6 @@ import { createDefaultFileTextPort } from "../infrastructure/node/file-system/fi
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
@@ -12,6 +11,9 @@ import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
 import { versionTwoStagesOver } from "./version-two-stages.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 
 const path = createDefaultPathPort({});
 
@@ -106,10 +108,10 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
 
   it("names as uncovered, per symptom, every clause whose check of a listed symptom is listed nowhere", () => {
     expect(readAfter().selection.selection.uncovered).toEqual([
-      clauseAddressSchema.parse("CD-1#any-cast"),
-      clauseAddressSchema.parse("CD-10#throws-in-tests"),
-      clauseAddressSchema.parse("CD-25#dependency-isolation"),
-      clauseAddressSchema.parse("CD-44#parameter-reassignment"),
+      { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") },
+      { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-10"), clause: clauseIdOf("throws-in-tests") },
+      { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-25"), clause: clauseIdOf("dependency-isolation") },
+      { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") },
     ]);
   });
 

@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../records/discipline-exceptions/exception-record.ts";
 import type { Finding } from "../finding/governance.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "./check-report.ts";
 import { verdictOf } from "./verdict.ts";
+import { repoPathOf } from "../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
-const RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
-const noClass = clauseAddressSchema.parse("CD-14#no-class-syntax");
-const fileA = repoPathSchema.parse("src/a.ts");
+const noClass = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
+const fileA = repoPathOf("src/a.ts");
 const audit = "audit" as const;
 const eslint = "eslint" as const;
 
@@ -55,7 +57,7 @@ describe("verdictOf", () => {
   });
 
   it("passes a report whose only entries are excluded paths", () => {
-    expect(verdictOf({ report: { ...emptyReport, excluded: [repoPathSchema.parse("generated")] } })).toBe("pass");
+    expect(verdictOf({ report: { ...emptyReport, excluded: [repoPathOf("generated")] } })).toBe("pass");
   });
 
   it("passes a report whose only entries are exempted findings", () => {

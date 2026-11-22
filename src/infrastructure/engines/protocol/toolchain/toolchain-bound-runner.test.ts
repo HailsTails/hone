@@ -6,11 +6,13 @@ import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts"
 import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner, toolchainBoundStandaloneRunner } from "./toolchain-bound-runner.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 type Toolchain = { readonly name: "loaded-toolchain" };
 
@@ -21,14 +23,14 @@ const UNAVAILABLE: Result<Toolchain, RunnerFailure> = {
   error: { kind: "toolchain-unavailable", peers: [{ packageName: "eslint", peer: "optional", supported: "^9.39.5 || ^10.15.0", found: "not installed" }] },
 };
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
 const CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("CD-14#class-syntax"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/eslint/CD-14",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: {},
 };
 
@@ -52,7 +54,7 @@ const embeddedOver = (): EmbeddedRunner => ({
   conform: vi.fn<EmbeddedRunner["conform"]>().mockResolvedValue({ outcome: "ok", value: [] }),
   project: vi.fn<EmbeddedRunner["project"]>().mockResolvedValue({
     outcome: "ok",
-    value: [{ path: repoPathSchema.parse("disciplines.eslint.mjs"), effect: "written" }],
+    value: [{ path: repoPathOf("disciplines.eslint.mjs"), effect: "written" }],
   }),
 });
 
@@ -134,7 +136,7 @@ const CHECKS_RUN: ChecksRunRequest = { repoRoot: REPO, installRoot: REPO, files:
 
 const CHECKS_REPORT = { hits: [], nativeExceptions: [], measured: [], projection: "current", slices: [], misnamedRuleIds: [] } as const;
 
-const WRITTEN = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
+const WRITTEN = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 const checksOver = (): ChecksRunner => ({
   run: vi.fn<ChecksRunner["run"]>().mockResolvedValue({ outcome: "ok", value: CHECKS_REPORT }),

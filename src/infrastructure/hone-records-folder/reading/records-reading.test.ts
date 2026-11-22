@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Check, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../repo-path.ts";
 import type { RecordsAtBase, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import { recordsReadingOf } from "./records-reading.ts";
 import { carriedListingOf } from "../../../domain/records/hone-records/record-listings.ts";
 import { sameRecordIdentity } from "../../../domain/records/hone-records/record-identity.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 
@@ -13,9 +15,9 @@ const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", tod
 
 const CLAIMED_TYPE: Symptom = { name: "claimed-type", title: "Claimed type", seen: "A cast.", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 
-const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#cast-expressions"), engines: [], forms: [] };
+const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, engines: [], forms: [] };
 
-const NON_NULL_CHECK: Check = { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#non-null-assertions"), engines: [], forms: [] };
+const NON_NULL_CHECK: Check = { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") }, engines: [], forms: [] };
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -39,13 +41,13 @@ const CATALOGUE_OF_TWO_SYMPTOMS: SymptomCatalogue = { ...CATALOGUE, symptoms: [C
 
 const UNMEASURED: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const BOUNDARIES_FILE = repoPathSchema.parse("hone-records/boundary-records.json");
+const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
 
-const ADAPTER = repoPathSchema.parse("src/adapters/ids.ts");
+const ADAPTER = repoPathOf("src/adapters/ids.ts");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const WHY_CHAIN = {
   whys: [
@@ -312,8 +314,8 @@ describe("recordsReadingOf", () => {
   it("holds two records the same only when each field of their identity is the same, never by joined text", () => {
     expect(
       sameRecordIdentity({
-        left: { kind: "boundary-record", module: repoPathSchema.parse("src/a b"), outsideParty: { kind: "package", specifier: "c", dependency: "c" }, holding: { held: "stated", ports: ["P"] } },
-        right: { kind: "boundary-record", module: repoPathSchema.parse("src/a"), outsideParty: { kind: "package", specifier: "b c", dependency: "b c" }, holding: { held: "stated", ports: ["P"] } },
+        left: { kind: "boundary-record", module: repoPathOf("src/a b"), outsideParty: { kind: "package", specifier: "c", dependency: "c" }, holding: { held: "stated", ports: ["P"] } },
+        right: { kind: "boundary-record", module: repoPathOf("src/a"), outsideParty: { kind: "package", specifier: "b c", dependency: "b c" }, holding: { held: "stated", ports: ["P"] } },
       }),
     ).toBe("different");
   });
@@ -339,7 +341,7 @@ describe("recordsReadingOf", () => {
       recordsReadingOf({
         documents: [
           {
-            file: repoPathSchema.parse(`hone-records/debt/${symptom.name}.json`),
+            file: repoPathOf(`hone-records/debt/${symptom.name}.json`),
             document: { version: 2, records: [{ answers: symptom.name, file: "src/held.ts" }] },
           },
         ],
@@ -354,7 +356,7 @@ describe("recordsReadingOf", () => {
       recordsReadingOf({
         documents: [
           {
-            file: repoPathSchema.parse(`hone-records/authorised-locations/${symptom.name}.json`),
+            file: repoPathOf(`hone-records/authorised-locations/${symptom.name}.json`),
             document: {
               version: 2,
               records: [{ answers: symptom.name, file: "src/held.ts", case: "gives-a-value-its-type", owes: "declared-not-asserted", whyChain: WHY_CHAIN }],
@@ -401,7 +403,7 @@ describe("recordsReadingOf", () => {
   });
 
   it("refuses a file that is not a records file", () => {
-    const file = repoPathSchema.parse("hone-records/carve-outs/claimed-type.json");
+    const file = repoPathOf("hone-records/carve-outs/claimed-type.json");
     expect(recordsReadingOf({ documents: [{ file, document: { version: 2, records: [] } }], catalogue: CATALOGUE, base: UNMEASURED })).toEqual({
       outcome: "failed",
       error: [{ kind: "not-a-records-file", file }],

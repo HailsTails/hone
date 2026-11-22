@@ -1,13 +1,16 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 import type { ClauseSettingValues, RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, SourceObservers } from "../runner/pieces/walker-piece.ts";
 import { check } from "./comments-directives.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
@@ -17,8 +20,8 @@ assert(loadedParsePort.outcome === "ok", "the typescript line loads from the dev
 assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 const defaultParsePort = loadedParsePort.value;
 
-const FILE = repoPathSchema.parse("src/annotations.ts");
-const ADDRESS = clauseAddressSchema.parse("CD-5#comments-directives");
+const FILE = repoPathOf("src/annotations.ts");
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-5"), clause: clauseIdOf("comments-directives") };
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const TODO_ANNOTATION = "TO" + "DO";
 const TYPE_EXPECTATION = "@ts-expect-" + "error";
@@ -37,7 +40,7 @@ const CLAUSE_WITH_NO_SETTINGS: RunnerClause = {
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-5",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "comments-directives.ts" },
 };
 const clauseWith = (request: { readonly clauseSettings: ClauseSettingValues }): RunnerClause => ({

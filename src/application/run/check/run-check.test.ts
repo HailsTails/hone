@@ -17,16 +17,19 @@ import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { Assessment } from "../../../domain/settings/assessment.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { editionSchema, FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { type CheckRequest, runCheck, runReachedCheck } from "./run-check.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const LEGACY_WHY = {
   why: "why is the exception taken",
@@ -74,18 +77,18 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
 };
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
-const TEAM_ROOT = absolutePathSchema.parse("/repo/rules/team");
+const INSTALL_ROOT = absoluteRootOf("/install");
+const TEAM_ROOT = absoluteRootOf("/repo/rules/team");
 const ASSESSMENT_PATH = "/repo/disciplines.assessment.md";
 const RULE_PAGE_PATH = "/install/rules/CD-14/README.md";
 
 const AUDIT = "audit" as const;
 const LINT = "eslint" as const;
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
-const ABSTRACT_SYNTAX = clauseAddressSchema.parse("CD-14#abstract-syntax");
-const NO_FOR_OF = clauseAddressSchema.parse("CD-15#no-for-of");
-const SECOND_EDITION = editionSchema.parse("2");
-const TEAM_CLASS_SYNTAX = clauseAddressSchema.parse("team/CD-14#class-syntax");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const ABSTRACT_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
+const NO_FOR_OF = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") };
+const SECOND_EDITION = editionOf("2");
+const TEAM_CLASS_SYNTAX = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 const ABSTRACT_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "abstract-syntax" };
@@ -169,7 +172,7 @@ const classSyntaxBinding = { mechanism: AUDIT, clause: {
   pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
   settings: { module: "class-syntax.ts" },
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
 } } as const;
 
 const abstractSyntaxBinding = { mechanism: AUDIT, clause: {
@@ -178,7 +181,7 @@ const abstractSyntaxBinding = { mechanism: AUDIT, clause: {
   pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
   settings: { module: "abstract-syntax.ts" },
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
 } } as const;
 
 const SELECTED_CLASS_SYNTAX = { address: CLASS_SYNTAX, mechanism: AUDIT, exceptions: "allowed" } as const;
@@ -235,12 +238,12 @@ const AUTHORISED_FACTORY: StructuralExceptionEntry = {
 };
 
 const firstInSingleFile = (entry: StructuralExceptionEntry): PlacedEntry => ({
-  place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 },
+  place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 },
   entry,
 });
 
 const secondInSingleFile = (entry: StructuralExceptionEntry): PlacedEntry => ({
-  place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 1 },
+  place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 1 },
   entry,
 });
 
@@ -275,14 +278,14 @@ const parserRefusing = (invalid: readonly InvalidRecord[]): ExceptionEntryParser
   parserReading({ reading: { records: [], invalid }, imported: "absent" });
 
 const TRACKED_PATHS: readonly RepoPath[] = [
-  repoPathSchema.parse("README.md"),
-  repoPathSchema.parse("package.json"),
-  repoPathSchema.parse("src/a.ts"),
-  repoPathSchema.parse("src/b.tsx"),
-  repoPathSchema.parse("src/c.mts"),
-  repoPathSchema.parse("src/d.cts"),
-  repoPathSchema.parse("src/e.js"),
-  repoPathSchema.parse("src/f.json"),
+  repoPathOf("README.md"),
+  repoPathOf("package.json"),
+  repoPathOf("src/a.ts"),
+  repoPathOf("src/b.tsx"),
+  repoPathOf("src/c.mts"),
+  repoPathOf("src/d.cts"),
+  repoPathOf("src/e.js"),
+  repoPathOf("src/f.json"),
 ];
 
 const CLASS_SYNTAX_READING_FIRST = {
@@ -296,7 +299,7 @@ const ASSESSMENT_NOT_WRITTEN = { kind: "assessment-file", state: "not-written", 
 
 const HIT_IN_A: Hit = {
   clause: CLASS_SYNTAX,
-  file: repoPathSchema.parse("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
 };
@@ -395,7 +398,7 @@ const gitMeasuring = (request: {
 
 const TRACKED_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS } });
 
-const FACTORY_ONLY_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: [repoPathSchema.parse("src/factory.ts")] } });
+const FACTORY_ONLY_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: [repoPathOf("src/factory.ts")] } });
 
 const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
   repoRoot: REPO_ROOT,
@@ -419,25 +422,25 @@ const AUTHORISED_FACTORY_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
   provenance: { kind: "existing-authorisation", source: FIXTURE_SOURCE },
 };
 
-const carveOutRecordOn = (file: string): ExceptionRecord => ({
+const carveOutRecordOn = (file: RepoPath): ExceptionRecord => ({
   kind: "file-carve-out",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse(file),
+  file,
   reason: "legacy class awaiting paydown",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 });
 
-const CARVE_OUT_RECORD_ON_GONE = carveOutRecordOn("src/gone.ts");
+const CARVE_OUT_RECORD_ON_GONE = carveOutRecordOn(repoPathOf("src/gone.ts"));
 
-const FIRST_PLACE = { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 } as const;
+const FIRST_PLACE = { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 } as const;
 
-const SECOND_PLACE = { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 1 } as const;
+const SECOND_PLACE = { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 1 } as const;
 
 describe("runCheck reports", () => {
   it("is a pass report when the runner flags nothing", async () => {
@@ -472,7 +475,7 @@ describe("runCheck reports", () => {
           ),
           exceptionRepository: exceptionRepositoryAtBase({ working: [firstInSingleFile(AUTHORISED_FACTORY)], base: { outcome: "ok", value: [AUTHORISED_FACTORY] } }),
           exceptionEntryParser: parserReading({ reading: { records: [AUTHORISED_FACTORY_RECORD], invalid: [] }, imported: "present" }),
-          engine: standaloneEngine({ hits: [{ ...HIT_IN_A, file: repoPathSchema.parse("src/factory.ts") }], nativeExceptions: [], measured: [] }),
+          engine: standaloneEngine({ hits: [{ ...HIT_IN_A, file: repoPathOf("src/factory.ts") }], nativeExceptions: [], measured: [] }),
           git: FACTORY_ONLY_GIT,
         }),
       ),
@@ -507,7 +510,7 @@ describe("runCheck reports", () => {
         checkRequest({
           selectionRepository: selectionRepositoryReading({
             ...SELECTION_READING,
-            selection: { ...SELECTION_READING.selection, editions: [{ address: CLASS_SYNTAX, mechanism: AUDIT, edition: FIRST_EDITION, latest: SECOND_EDITION }] },
+            selection: { ...SELECTION_READING.selection, editions: [{ address: CLASS_SYNTAX, mechanism: AUDIT, edition: editionOf("1"), latest: SECOND_EDITION }] },
           }),
         }),
       ),
@@ -597,7 +600,7 @@ describe("runCheck runner dispatch", () => {
         ),
         engine,
         git: gitReporting({
-          trackedPaths: { outcome: "ok", value: [repoPathSchema.parse("README.md"), repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("src/gone.ts")] },
+          trackedPaths: { outcome: "ok", value: [repoPathOf("README.md"), repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")] },
         }),
       }),
     );
@@ -617,17 +620,17 @@ describe("runCheck runner dispatch", () => {
         ),
         selectionRepository: selectionRepositoryReading({
           ...SELECTION_READING,
-          excluded: [repoPathSchema.parse("vendor"), repoPathSchema.parse("src/generated.ts")],
+          excluded: [repoPathOf("vendor"), repoPathOf("src/generated.ts")],
         }),
         engine,
         git: gitReporting({
           trackedPaths: {
             outcome: "ok",
             value: [
-              repoPathSchema.parse("src/a.ts"),
-              repoPathSchema.parse("src/generated.ts"),
-              repoPathSchema.parse("vendor/lib.ts"),
-              repoPathSchema.parse("vendored/kept.ts"),
+              repoPathOf("src/a.ts"),
+              repoPathOf("src/generated.ts"),
+              repoPathOf("vendor/lib.ts"),
+              repoPathOf("vendored/kept.ts"),
             ],
           },
         }),
@@ -668,8 +671,8 @@ describe("runCheck runner dispatch", () => {
         exceptionEntryParser: parserHolding([CARVE_OUT_RECORD_ON_GONE]),
         engine,
         git: gitMeasuring({
-          trackedPaths: { outcome: "ok", value: [repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("src/gone.ts")] },
-          changedSince: { outcome: "ok", value: [repoPathSchema.parse("src/gone.ts")] },
+          trackedPaths: { outcome: "ok", value: [repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")] },
+          changedSince: { outcome: "ok", value: [repoPathOf("src/gone.ts")] },
         }),
       }),
     );
@@ -792,7 +795,7 @@ describe("runCheck load failures", () => {
 
   it("is runner-failed carrying the runner's own failure", async () => {
     await expect(
-      runCheck(checkRequest({ engine: engineFailing({ kind: "file-unparseable", file: repoPathSchema.parse("src/a.ts"), detail: "unexpected token" }) })),
+      runCheck(checkRequest({ engine: engineFailing({ kind: "file-unparseable", file: repoPathOf("src/a.ts"), detail: "unexpected token" }) })),
     ).resolves.toEqual({
       outcome: "failed",
       error: {
@@ -843,7 +846,7 @@ const WALKER_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/walker.ts"),
+  file: repoPathOf("src/walker.ts"),
   reason: "audit location",
   provenance: { kind: "existing-authorisation", source: FIXTURE_SOURCE },
 };
@@ -852,7 +855,7 @@ const LINT_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: ABSTRACT_SYNTAX,
   mechanism: LINT,
-  file: repoPathSchema.parse("src/lint.ts"),
+  file: repoPathOf("src/lint.ts"),
   reason: "lint location",
   provenance: { kind: "existing-authorisation", source: FIXTURE_SOURCE },
 };
@@ -895,8 +898,8 @@ describe("runCheck with an embedded runner", () => {
           nativeExceptions: [],
           projection: "current",
           slices: [
-            { slice: repoPathSchema.parse("packages/a/disciplines.eslint.mjs"), state: "out-of-date" },
-            { slice: repoPathSchema.parse("packages/b/disciplines.eslint.mjs"), state: "missing" },
+            { slice: repoPathOf("packages/a/disciplines.eslint.mjs"), state: "out-of-date" },
+            { slice: repoPathOf("packages/b/disciplines.eslint.mjs"), state: "missing" },
           ],
         }),
       ),
@@ -919,7 +922,7 @@ describe("runCheck with an embedded runner", () => {
           hits: [],
           nativeExceptions: [],
           projection: "not-included",
-          slices: [{ slice: repoPathSchema.parse("packages/a/disciplines.eslint.mjs"), state: "not-applied" }],
+          slices: [{ slice: repoPathOf("packages/a/disciplines.eslint.mjs"), state: "not-applied" }],
         }),
       ),
     ).resolves.toEqual({
@@ -939,7 +942,7 @@ describe("runCheck with an embedded runner", () => {
           hits: [],
           nativeExceptions: [],
           projection: "not-included",
-          slices: [{ slice: repoPathSchema.parse("packages/b/disciplines.eslint.mjs"), state: "nested-configuration" }],
+          slices: [{ slice: repoPathOf("packages/b/disciplines.eslint.mjs"), state: "nested-configuration" }],
         }),
       ),
     ).resolves.toEqual({
@@ -956,7 +959,7 @@ describe("runCheck with an embedded runner", () => {
       runCheck(
         embeddedCheck({
           hits: [],
-          nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/a.ts") }],
+          nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
           projection: "current",
         }),
       ),
@@ -978,7 +981,7 @@ describe("runCheck with an embedded runner", () => {
           exceptionEntryParser: parserReading({ reading: { records: [AUTHORISED_FACTORY_RECORD], invalid: [] }, imported: "present" }),
           engine: embeddedEngine({
             hits: [],
-            nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/factory.ts") }],
+            nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: repoPathOf("src/factory.ts") }],
             projection: "current",
           }),
           git: FACTORY_ONLY_GIT,
@@ -1053,17 +1056,17 @@ const CURRENT_REPORT: EmbeddedReport = { hits: [], nativeExceptions: [], project
 describe("runCheck with ESLint config roots declared in disciplines.json", () => {
   it("hands an embedded runner each declared folder git tracks, spelled as git spells it", async () => {
     const engine = embeddedEngine(CURRENT_REPORT);
-    await runCheck(declaringCheck({ roots: [repoPathSchema.parse("src")], excluded: [], engine }));
+    await runCheck(declaringCheck({ roots: [repoPathOf("src")], excluded: [], engine }));
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ declaredConfigRoots: ["src"] }));
   });
 
   it.each([
-    { name: "a folder git does not track", root: "packages/missing" },
-    { name: "a tracked file rather than a folder", root: "src/a.ts" },
-    { name: "a tracked folder spelled in another case", root: "SRC" },
+    { name: "a folder git does not track", root: repoPathOf("packages/missing") },
+    { name: "a tracked file rather than a folder", root: repoPathOf("src/a.ts") },
+    { name: "a tracked folder spelled in another case", root: repoPathOf("SRC") },
   ])("is the load failure config-root-untracked for $name, running nothing", async ({ root }) => {
     const engine = embeddedEngine(CURRENT_REPORT);
-    await expect(runCheck(declaringCheck({ roots: [repoPathSchema.parse(root)], excluded: [], engine }))).resolves.toEqual({
+    await expect(runCheck(declaringCheck({ roots: [root], excluded: [], engine }))).resolves.toEqual({
       outcome: "failed",
       error: { kind: "config-root-untracked", root },
     });
@@ -1072,7 +1075,7 @@ describe("runCheck with ESLint config roots declared in disciplines.json", () =>
 
   it("is the load failure config-root-untracked for a tracked folder the selection excludes", async () => {
     const engine = embeddedEngine(CURRENT_REPORT);
-    const src = repoPathSchema.parse("src");
+    const src = repoPathOf("src");
     await expect(runCheck(declaringCheck({ roots: [src], excluded: [src], engine }))).resolves.toEqual({
       outcome: "failed",
       error: { kind: "config-root-untracked", root: "src" },
@@ -1142,7 +1145,7 @@ const LEGACY_CHAIN_FACTORY_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
   whyChain: LEGACY_WHY_CHAIN,
 };
@@ -1158,7 +1161,7 @@ const REASON_ONLY_FACTORY_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/factory.ts"),
+  file: repoPathOf("src/factory.ts"),
   reason: "the wrapping factory for the library",
 };
 
@@ -1310,7 +1313,7 @@ const CLAUSE_WIDE_CLASS_SYNTAX_RECORD: ExceptionRecord = {
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const STALE_CARVE_OUT_ON_A = carveOutRecordOn("src/a.ts");
+const STALE_CARVE_OUT_ON_A = carveOutRecordOn(repoPathOf("src/a.ts"));
 
 describe("runReachedCheck handing on debt on a file still on disk from what its runner measured", () => {
   it("hands on a stale file carve-out whose clause its runner measured on that file, pointing at it", async () => {
@@ -1323,7 +1326,7 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
           ),
           exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A] }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A]),
-          engine: runnerMeasuring([{ clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/a.ts") }]),
+          engine: runnerMeasuring([{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }]),
           git: unchangedGitTracking(TRACKED_PATHS),
         }),
       ),
@@ -1374,7 +1377,7 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
               .mockReturnValueOnce("/repo/README.md")
               .mockReturnValueOnce("/repo/package.json"),
           ),
-          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathSchema.parse("src")] }),
+          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathOf("src")] }),
           exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A] }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A]),
           engine,
@@ -1406,11 +1409,11 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A, CLAUSE_WIDE_CLASS_SYNTAX_RECORD]),
           engine: embeddedEngine({
             hits: [],
-            nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/a.ts") }],
+            nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
             projection: "current",
-            measured: [{ clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/a.ts") }],
+            measured: [{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
           }),
-          git: gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [repoPathSchema.parse("src/a.ts")] } }),
+          git: gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [repoPathOf("src/a.ts")] } }),
         }),
       ),
     ).resolves.toEqual({
@@ -1428,8 +1431,8 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
               .mockReturnValueOnce("/repo/src/e.js"),
           ),
           exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("src/e.js"))] }),
-          exceptionEntryParser: parserHolding([carveOutRecordOn("src/e.js")]),
-          engine: runnerMeasuring([{ clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/a.ts") }]),
+          exceptionEntryParser: parserHolding([carveOutRecordOn(repoPathOf("src/e.js"))]),
+          engine: runnerMeasuring([{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }]),
           git: unchangedGitTracking(TRACKED_PATHS),
         }),
       ),
@@ -1448,10 +1451,10 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
               .mockReturnValueOnce("/repo/src/a.ts")
               .mockReturnValueOnce("/repo/vendored/kept.ts"),
           ),
-          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathSchema.parse("vendored")] }),
+          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathOf("vendored")] }),
           exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("vendored/kept.ts"))] }),
-          exceptionEntryParser: parserHolding([carveOutRecordOn("vendored/kept.ts")]),
-          git: unchangedGitTracking([repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("vendored/kept.ts")]),
+          exceptionEntryParser: parserHolding([carveOutRecordOn(repoPathOf("vendored/kept.ts"))]),
+          git: unchangedGitTracking([repoPathOf("src/a.ts"), repoPathOf("vendored/kept.ts")]),
         }),
       ),
     ).resolves.toEqual({
@@ -1482,7 +1485,7 @@ const AUTHORISED_ON_A_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   reason: "the one class the library's extension point requires",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
@@ -1491,7 +1494,7 @@ const LEGACY_AUTHORISED_ON_A_RECORD: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLASS_SYNTAX,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   reason: "the one class the library's extension point requires",
   whyChain: LEGACY_WHY_CHAIN,
 };
@@ -1499,10 +1502,10 @@ const LEGACY_AUTHORISED_ON_A_RECORD: ExceptionRecord = {
 const runnerHittingAndMeasuringA = standaloneEngine({
   hits: [HIT_IN_A],
   nativeExceptions: [],
-  measured: [{ clause: CLASS_SYNTAX, file: repoPathSchema.parse("src/a.ts") }],
+  measured: [{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
 });
 
-const gitChangingA = gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [repoPathSchema.parse("src/a.ts")] } });
+const gitChangingA = gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [repoPathOf("src/a.ts")] } });
 
 describe("runReachedCheck handing on debt whose every finding an authorised location answers", () => {
   it("hands on a forfeited file carve-out on a measured pair whose finding an authorised location in force exempts", async () => {
@@ -1701,8 +1704,8 @@ describe("runReachedCheck handing on debt on a file no longer on disk", () => {
           exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(CARVE_OUT_ON_GONE)] }),
           exceptionEntryParser: parserHolding([CARVE_OUT_RECORD_ON_GONE]),
           git: gitMeasuring({
-            trackedPaths: { outcome: "ok", value: [repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("src/gone.ts")] },
-            changedSince: { outcome: "ok", value: [repoPathSchema.parse("src/gone.ts")] },
+            trackedPaths: { outcome: "ok", value: [repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")] },
+            changedSince: { outcome: "ok", value: [repoPathOf("src/gone.ts")] },
           }),
         }),
       ),
@@ -1740,7 +1743,7 @@ describe("runReachedCheck handing on debt on a file no longer on disk", () => {
               .mockReturnValueOnce("/repo/src/factory.ts"),
           ),
           exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("src/factory.ts"))] }),
-          exceptionEntryParser: parserHolding([carveOutRecordOn("src/factory.ts")]),
+          exceptionEntryParser: parserHolding([carveOutRecordOn(repoPathOf("src/factory.ts"))]),
           git: unchangedGitTracking(TRACKED_PATHS),
         }),
       ),

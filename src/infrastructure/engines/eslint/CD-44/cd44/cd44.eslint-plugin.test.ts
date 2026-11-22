@@ -1,11 +1,11 @@
 import { assert, describe, expect, it } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import cd44Plugin from "./cd44.eslint-plugin.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -22,25 +22,25 @@ const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 const flagCases: readonly SourceCase[] = [
   {
     name: "a compound assignment to a parameter",
-    fileName: repoPathSchema.parse("compound-assignment.ts"),
+    fileName: repoPathOf("compound-assignment.ts"),
     source: "export function grow(size: number): number {\n  size += 1;\n  return size;\n}\n",
     expectedLines: [2],
   },
   {
     name: "an increment of an arrow parameter",
-    fileName: repoPathSchema.parse("arrow-increment.ts"),
+    fileName: repoPathOf("arrow-increment.ts"),
     source: "export const bump = (count: number): number => {\n  count++;\n  return count;\n};\n",
     expectedLines: [2],
   },
   {
     name: "a destructured parameter being reassigned",
-    fileName: repoPathSchema.parse("destructured-param.ts"),
+    fileName: repoPathOf("destructured-param.ts"),
     source: "export function read({ label }: { label: string }): string {\n  label = label.trim();\n  return label;\n}\n",
     expectedLines: [2],
   },
   {
     name: "a default valued parameter being reassigned",
-    fileName: repoPathSchema.parse("default-param.ts"),
+    fileName: repoPathOf("default-param.ts"),
     source: "export function grow(size: number = 1): number {\n  size = size * 2;\n  return size;\n}\n",
     expectedLines: [2],
   },
@@ -49,25 +49,25 @@ const flagCases: readonly SourceCase[] = [
 const allowCases: readonly SourceCase[] = [
   {
     name: "mutating a property of a parameter",
-    fileName: repoPathSchema.parse("property-write.ts"),
+    fileName: repoPathOf("property-write.ts"),
     source: "export function rename(target: { label: string }, label: string): void {\n  target.label = label;\n}\n",
     expectedLines: [],
   },
   {
     name: "reassigning a local variable",
-    fileName: repoPathSchema.parse("local-reassign.ts"),
+    fileName: repoPathOf("local-reassign.ts"),
     source: "export function grow(size: number): number {\n  let grown = size;\n  grown += 1;\n  return grown;\n}\n",
     expectedLines: [],
   },
   {
     name: "a shadowing local with the parameter name",
-    fileName: repoPathSchema.parse("shadowed-local.ts"),
+    fileName: repoPathOf("shadowed-local.ts"),
     source: "export function grow(size: number): number {\n  {\n    let size = 2;\n    size = 3;\n  }\n  return size;\n}\n",
     expectedLines: [],
   },
   {
     name: "reading a parameter",
-    fileName: repoPathSchema.parse("read-only.ts"),
+    fileName: repoPathOf("read-only.ts"),
     source: "export const double = (size: number): number => size * 2;\n",
     expectedLines: [],
   },

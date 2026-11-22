@@ -1,7 +1,6 @@
 import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
-import { editionSchema } from "../../../content-files/edition.ts";
 import { editionReaches } from "../../../../domain/rule-set/edition-reach.ts";
 import type { Edition } from "../../../../domain/rule-set/edition-types.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
@@ -11,8 +10,9 @@ import { folderScope } from "../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../runner/pieces/walker-piece.ts";
 import type { CompilerOptionsResolution, CompilerOptionsResolutionOf, OptionSettings, ResolvedConfig, StrictOption } from "./compiler-options-resolution.ts";
 import { typeScriptCompilerOptionsOf } from "./typescript-compiler-options.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
-const RESOLVING_EDITION: Edition = editionSchema.parse("2");
+const RESOLVING_EDITION: Edition = editionOf("2");
 
 const IMPLIED_BY_STRICT: readonly StrictOption[] = ["useUnknownInCatchVariables"];
 

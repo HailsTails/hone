@@ -4,11 +4,9 @@ import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts
 import { createDefaultPathPort, createPathPort } from "../node/path-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseEditionsSchema } from "../content-files/edition.ts";
-import { clauseIdSchema, disciplineIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import {
   createSelectionRepository,
@@ -19,9 +17,13 @@ import {
 import type { Held, RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
 import { selectionFileOf } from "./selection-file.ts";
 import type { ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const REPO_ROOT = absoluteRootOf("/repo");
+const INSTALL_ROOT = absoluteRootOf("/install");
 const SELECTION_PATH = "/repo/disciplines.json";
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
@@ -51,7 +53,7 @@ const auditClause = (id: string): ClauseDefinition => mechanical({ id, mechanism
 
 const LIBRARY_CONSTRUCTION: ClauseDefinition = {
   kind: "judgement",
-  id: clauseIdSchema.parse("library-construction"),
+  id: clauseIdOf("library-construction"),
   summary: "wrap libraries",
   enforcedBy: "review",
 };
@@ -929,7 +931,7 @@ describe("selectionFrom with clauses adopted but not run", () => {
 });
 
 const TEAM_RULE_SETS: Readonly<Record<string, RuleSetLocation>> = {
-  team: { location: "folder", path: repoPathSchema.parse("rules/team") },
+  team: { location: "folder", path: repoPathOf("rules/team") },
 };
 
 const UNRESOLVABLE_PATH: PathPort = {
@@ -950,7 +952,7 @@ describe("ruleSetRootOf", () => {
   it("roots a named rule set at the resolved join of the repo root and its declared directory", () => {
     expect(
       ruleSetRootOf({
-        ruleSet: { name: ruleSetNameSchema.parse("team") },
+        ruleSet: { name: ruleSetNameOf("team") },
         ruleSets: TEAM_RULE_SETS,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
@@ -962,7 +964,7 @@ describe("ruleSetRootOf", () => {
   it("is unknown-rule-set for a named rule set the consumer file does not declare", () => {
     expect(
       ruleSetRootOf({
-        ruleSet: { name: ruleSetNameSchema.parse("ghost") },
+        ruleSet: { name: ruleSetNameOf("ghost") },
         ruleSets: TEAM_RULE_SETS,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
@@ -974,7 +976,7 @@ describe("ruleSetRootOf", () => {
   it("is rule-set-invalid at the joined directory when a named rule set's directory resolves to no absolute path", () => {
     expect(
       ruleSetRootOf({
-        ruleSet: { name: ruleSetNameSchema.parse("team") },
+        ruleSet: { name: ruleSetNameOf("team") },
         ruleSets: TEAM_RULE_SETS,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,

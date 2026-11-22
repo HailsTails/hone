@@ -3,14 +3,16 @@ import type { ConsumerSelectionFile } from "../../../domain/settings/selection/s
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { ruleSetNameSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { mappedSettings, type SettingsMappingRequest } from "./settings-mapping.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const AUDIT = "audit" as const;
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOPS_CHECK = { ruleSet: "hone", check: "loop-count#loops" } as const;
 
@@ -48,9 +50,9 @@ const BASE_SETTINGS: SettingsFile = {
 
 const ESLINT = "eslint" as const;
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -152,15 +154,15 @@ const okWith = (request: { readonly settings: Partial<SettingsFile> }) => ({
 
 describe("mappedSettings carrying the settings that keep their name", () => {
   it("keeps a declared rule set and its location", () => {
-    const team = ruleSetNameSchema.parse("team");
-    const location = { location: "folder", path: repoPathSchema.parse("team-rules") } as const;
+    const team = ruleSetNameOf("team");
+    const location = { location: "folder", path: repoPathOf("team-rules") } as const;
     expect(mappedSettings({ ...BASE_REQUEST, selection: { ...BASE_SELECTION, ruleSets: [[team, location]] } })).toEqual(
       okWith({ settings: { ruleSets: [{ name: team, location }] } }),
     );
   });
 
   it("keeps the excluded paths", () => {
-    const vendor = repoPathSchema.parse("vendor");
+    const vendor = repoPathOf("vendor");
     expect(mappedSettings({ ...BASE_REQUEST, selection: { ...BASE_SELECTION, exclude: [vendor] } })).toEqual(
       okWith({ settings: { exclude: [vendor] } }),
     );
@@ -231,7 +233,7 @@ describe("mappedSettings marking the checks version 2 would call uncovered", () 
   });
 
   it("marks again over what the marking listed, until a marked clause's other symptoms reach no further unselected discipline", () => {
-    const parameterReassignment = clauseAddressSchema.parse("CD-44#parameter-reassignment");
+    const parameterReassignment = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") };
     const rebindingParameterReassignment: Check = { ...TEST_BODY_REBINDING_CHECK, name: "parameter-reassignment", clause: parameterReassignment };
     expect(
       mappedSettings({
@@ -260,7 +262,7 @@ describe("mappedSettings marking the checks version 2 would call uncovered", () 
   });
 
   it("never marks a check of a discipline version 1 selected, though version 2 would call it uncovered", () => {
-    const otherTestClause = clauseAddressSchema.parse("CD-27#other-test-rule");
+    const otherTestClause = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("other-test-rule") };
     const sameSymptomInSelectedDiscipline: Check = { ...LOOP_KEYWORD_LOOPS, name: "other-test-rule", clause: otherTestClause };
     expect(
       mappedSettings({
@@ -382,8 +384,8 @@ describe("mappedSettings turning clauses into checks", () => {
 
 describe("mappedSettings carrying ESLint config roots", () => {
   it("carries a non-empty list over as it is", () => {
-    expect(mappedSettings({ ...BASE_REQUEST, selection: { ...BASE_SELECTION, eslintConfigRoots: [repoPathSchema.parse("packages/a")] } })).toEqual(
-      okWith({ settings: { eslintConfigRoots: [repoPathSchema.parse("packages/a")] } }),
+    expect(mappedSettings({ ...BASE_REQUEST, selection: { ...BASE_SELECTION, eslintConfigRoots: [repoPathOf("packages/a")] } })).toEqual(
+      okWith({ settings: { eslintConfigRoots: [repoPathOf("packages/a")] } }),
     );
   });
 

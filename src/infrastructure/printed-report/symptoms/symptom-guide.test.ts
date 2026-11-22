@@ -3,15 +3,15 @@ import type { FileTextPort } from "../../../application/ports/file-system/file-t
 import { createPathPort } from "../../node/path-port.ts";
 import type { RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { symptomGuideIn } from "./symptom-guide.ts";
 import type { SymptomCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
+const INSTALL_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 
 const FILE_TEXT: FileTextPort = {
   read: vi.fn<FileTextPort["read"]>(),
