@@ -1,14 +1,8 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
-import { isAbsolutePath } from "../domain/repository/absolute-path.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { versionOneRunAt } from "./version-one-runs.ts";
-
-const absolute = (text: string): AbsolutePath => {
-  assert(isAbsolutePath(text), `${text} is absolute`);
-  return text;
-};
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });
 
@@ -26,7 +20,7 @@ describe("versionOneRunAt", () => {
       outcome: "ok",
       value: "ran",
     });
-    expect(run).toHaveBeenCalledExactlyOnceWith({ repoRoot: absolute("/repo"), installRoot: absolute("/install") });
+    expect(run).toHaveBeenCalledExactlyOnceWith({ repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") });
   });
 
   it("gives the selection-absent load failure and runs nothing when the folder holds no disciplines.json", async () => {

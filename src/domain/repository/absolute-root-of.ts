@@ -8,11 +8,9 @@ type DriveLetter =
 
 type Backslash = "\\";
 
-export type StaticAbsoluteRoot<Text extends string> = string extends Text
-  ? never
-  : Text extends `/${string}` | `${DriveLetter}:${Backslash}${string}` | `${DriveLetter}:/${string}`
-    ? Text
-    : never;
+export type AbsoluteRootText = `/${string}` | `${DriveLetter}:${Backslash}${string}` | `${DriveLetter}:/${string}` | `${Backslash}${Backslash}${string}`;
+
+export type StaticAbsoluteRoot<Text extends string> = string extends Text ? never : Text extends AbsoluteRootText ? Text : never;
 
 export const absoluteRootOf = <Text extends string>(text: StaticAbsoluteRoot<Text>): AbsolutePath => {
   const plain: string = text;

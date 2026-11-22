@@ -3,7 +3,7 @@ import { isAbsolutePath } from "./absolute-path.ts";
 import { absoluteRootOf } from "./absolute-root-of.ts";
 
 describe("absoluteRootOf", () => {
-  it.each(["/repo", "C:\\repo", "c:/repo", "/"] as const)("returns %s unchanged as an absolute path", (text) => {
+  it.each(["/repo", "C:\\repo", "c:/repo", "/", "\\\\host\\share\\a"] as const)("returns %s unchanged as an absolute path", (text) => {
     expect(absoluteRootOf(text)).toBe(text);
   });
 

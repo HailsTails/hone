@@ -9,8 +9,16 @@ describe("absoluteWithin", () => {
     expect(absoluteWithin({ root: absoluteRootOf("/repo"), file: repoPathOf("src/a.ts") })).toBe("/repo/src/a.ts");
   });
 
-  it("places a repo path under a drive root", () => {
-    expect(absoluteWithin({ root: absoluteRootOf("C:\\repo"), file: repoPathOf("a.ts") })).toBe("C:\\repo/a.ts");
+  it("places a repo path under a root with a trailing slash", () => {
+    expect(absoluteWithin({ root: absoluteRootOf("/repo/"), file: repoPathOf("a.ts") })).toBe("/repo/a.ts");
+  });
+
+  it("places a repo path under a drive root written with forward slashes", () => {
+    expect(absoluteWithin({ root: absoluteRootOf("C:/repo"), file: repoPathOf("src/a.ts") })).toBe("C:/repo/src/a.ts");
+  });
+
+  it("places a repo path under a drive root written with backslashes, in backslashes", () => {
+    expect(absoluteWithin({ root: absoluteRootOf("C:\\repo"), file: repoPathOf("src/a.ts") })).toBe("C:\\repo\\src\\a.ts");
   });
 
   it("returns text the absolute-path guard accepts", () => {

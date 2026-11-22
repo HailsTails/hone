@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { SelectionRepositoryOf } from "../../application/ports/selection/selection-repository.ts";
@@ -10,8 +10,7 @@ import type { LoadedRunner } from "../../application/ports/engine/runner-module.
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
-import { isAbsolutePath } from "../../domain/repository/absolute-path.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { adoptionDebt } from "./run-record-debt-command.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
@@ -20,14 +19,9 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
-const absolute = (text: string): AbsolutePath => {
-  assert(isAbsolutePath(text), `${text} is absolute`);
-  return text;
-};
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const REPO_ROOT = absolute("/repo");
-
-const INSTALL_ROOT = absolute("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
 const SELECTION_ABSENT: LoadFailure = { kind: "selection-absent", repo: "/repo" };
 

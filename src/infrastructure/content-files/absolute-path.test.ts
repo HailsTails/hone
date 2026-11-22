@@ -6,6 +6,10 @@ describe("absolutePathSchema", () => {
     expect(absolutePathSchema.safeParse(text).success).toBe(true);
   });
 
+  it("keeps a drive path as given", () => {
+    expect(absolutePathSchema.parse("D:\\repo\\a.ts")).toBe("D:\\repo\\a.ts");
+  });
+
   it.each(["", "x/y", "./x", "../x", "repo", "x\\y"])("refuses %j", (text) => {
     expect(absolutePathSchema.safeParse(text).success).toBe(false);
   });

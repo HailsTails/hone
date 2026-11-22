@@ -1,19 +1,13 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { GitPort } from "../../application/ports/git-port.ts";
 import type { RecordsOnDiskOf, VersionOneReadOf } from "../../application/ports/records/version-one-reading.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
-import { isAbsolutePath } from "../../domain/repository/absolute-path.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { type UpgradeInput, type UpgradePorts, upgradeOf } from "./run-upgrade-command.ts";
 
-const absolute = (text: string): AbsolutePath => {
-  assert(isAbsolutePath(text), `${text} is absolute`);
-  return text;
-};
-
-const REPO_ROOT = absolute("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const SELECTION_ABSENT: LoadFailure = { kind: "selection-absent", repo: "/repo" };
 
@@ -56,7 +50,7 @@ const PORTS: UpgradePorts = {
 const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): UpgradeInput => ({
   command: commandOver({ git: request.git }),
   ports: PORTS,
-  located: { repoRoot: REPO_ROOT, installRoot: absolute("/install") },
+  located: { repoRoot: REPO_ROOT, installRoot: absoluteRootOf("/install") },
   runSettingsOf: SETTINGS_READ,
   catalogues: () => ({ outcome: "ok", value: [] }),
   recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),

@@ -1,17 +1,11 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
-import { isAbsolutePath } from "../domain/repository/absolute-path.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { type RecordsSourceFor, type VersionTwoRecordInput, versionTwoAuthoriseOf, versionTwoPruneDebtOf, versionTwoRecordDebtOf } from "./version-two-record-commands.ts";
-
-const absolute = (text: string): AbsolutePath => {
-  assert(isAbsolutePath(text), `${text} is absolute`);
-  return text;
-};
 
 const AUTHORISING: AuthoriseRequest = {
   answers: "CD#CD-1#any-cast",
@@ -37,7 +31,7 @@ const inputFailingCatalogue = (): VersionTwoRecordInput => ({
     projections: vi.fn<VersionTwoStages["projections"]>(),
     touched: vi.fn<VersionTwoStages["touched"]>(),
   },
-  repoRoot: absolute("/repo"),
+  repoRoot: absoluteRootOf("/repo"),
   recordsSourceFor: vi.fn<RecordsSourceFor>(),
   recordsStoreOf: vi.fn<RecordsStoreOf>(),
   recordsReader: { recordsReadingOf: vi.fn() },
