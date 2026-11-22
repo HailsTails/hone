@@ -17,7 +17,6 @@ type SourceFile = { readonly path: string; readonly text: string };
 
 type ProsedItem = { readonly placed: PlacedItem; readonly path: string; readonly prose: string };
 
-
 const RULES_FOLDER = "rules/";
 
 const NAMES_PATH = VERSION_ONE_NAMES_SEGMENTS.join("/");
