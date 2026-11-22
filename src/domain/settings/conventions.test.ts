@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { DEFAULT_CONVENTIONS } from "./conventions.ts";
 
 describe("DEFAULT_CONVENTIONS", () => {

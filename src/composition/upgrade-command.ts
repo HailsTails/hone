@@ -9,16 +9,33 @@ import { proofRunsOf } from "../infrastructure/command-line/proof-runs.ts";
 import { shippedCataloguesOf } from "../infrastructure/content-files/symptom-catalogues/shipped-catalogues.ts";
 import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/version-one-records-on-disk.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
-import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
-import { type UpgradeInput, type UpgradePorts, upgradeOf } from "../operations/upgrade/run-upgrade-command.ts";
+import {
+  ALREADY_ON_VERSION_TWO,
+  upgradeSuccessOutcomeOf,
+} from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
+import {
+  type UpgradeInput,
+  type UpgradePorts,
+  upgradeOf,
+} from "../operations/upgrade/run-upgrade-command.ts";
 import { type CommandHandler, loadFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
 import { runSettingsOver } from "./version-one-runs.ts";
-import { repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "./version-two-repository.ts";
+import {
+  repositoryLocatedOf,
+  stagesOverRepository,
+  type VersionTwoRepositoryPorts,
+} from "./version-two-repository.ts";
 
-export type UpgradeCommandPorts = VersionOneToolPorts & VersionTwoRepositoryPorts & Pick<ToolPorts, keyof UpgradePorts | "foundTreeRecordsSourceOf">;
+export type UpgradeCommandPorts = VersionOneToolPorts &
+  VersionTwoRepositoryPorts &
+  Pick<ToolPorts, keyof UpgradePorts | "foundTreeRecordsSourceOf">;
 
-type Placed = { readonly ports: UpgradeCommandPorts; readonly command: ToolInvocation; readonly located: RepositoryLocated };
+type Placed = {
+  readonly ports: UpgradeCommandPorts;
+  readonly command: ToolInvocation;
+  readonly located: RepositoryLocated;
+};
 
 type Upgraded = { readonly located: RepositoryLocated; readonly carried: ProofCarriedOver };
 
@@ -46,8 +63,15 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
     ports,
     located,
     runSettingsOf: runSettingsOver(ports),
-    catalogues: () => shippedCataloguesOf({ fileText, directory: ports.directory, path, installRoot: located.installRoot }),
-    recordsOnDiskOf: ({ repoRoot }) => recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),
+    catalogues: () =>
+      shippedCataloguesOf({
+        fileText,
+        directory: ports.directory,
+        path,
+        installRoot: located.installRoot,
+      }),
+    recordsOnDiskOf: ({ repoRoot }) =>
+      recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),
     proofRunsOf,
     foundTreeStages: () => foundTreeStagesOf(request),
@@ -57,7 +81,11 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
 export const UPGRADE: ToolCommand<UpgradeArguments, Upgraded, UpgradeCommandPorts> = {
   parse: parseUpgradeArguments,
   run: async ({ command, ports, parsed }) => {
-    const located = repositoryLocatedOf({ path: ports.path, moduleUrl: command.moduleUrl, repo: parsed.repo });
+    const located = repositoryLocatedOf({
+      path: ports.path,
+      moduleUrl: command.moduleUrl,
+      repo: parsed.repo,
+    });
     if (located.outcome === "failed") {
       return loadFailed({ failure: located.error });
     }
@@ -67,9 +95,21 @@ export const UPGRADE: ToolCommand<UpgradeArguments, Upgraded, UpgradeCommandPort
     }
     return upgraded.error.stopped === "load-failed"
       ? loadFailed({ failure: upgraded.error.failure })
-      : { outcome: "failed", error: { failed: "upgrade", failure: upgraded.error.failure, repoRoot: located.value.repoRoot } };
+      : {
+          outcome: "failed",
+          error: {
+            failed: "upgrade",
+            failure: upgraded.error.failure,
+            repoRoot: located.value.repoRoot,
+          },
+        };
   },
-  print: ({ ports, produced }) => upgradeSuccessOutcomeOf({ carried: produced.carried, repoRoot: produced.located.repoRoot, path: ports.path }),
+  print: ({ ports, produced }) =>
+    upgradeSuccessOutcomeOf({
+      carried: produced.carried,
+      repoRoot: produced.located.repoRoot,
+      path: ports.path,
+    }),
 };
 
 export const alreadyUpgradedCommand: CommandHandler = (command) => {

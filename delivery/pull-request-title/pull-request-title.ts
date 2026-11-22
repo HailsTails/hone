@@ -1,11 +1,19 @@
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
-import { CHANGE_TYPES, type ConventionalSubject, conventionalSubjectOf, type SubjectRejection } from "../commit-subject/conventional-subject.ts";
+import {
+  CHANGE_TYPES,
+  type ConventionalSubject,
+  conventionalSubjectOf,
+  type SubjectRejection,
+} from "../commit-subject/conventional-subject.ts";
 
 const USAGE = "usage: pull-request-title <title>\n";
 
 const EXPECTED_FORM = `A pull request title is its squash commit's subject on main, so it must read type(scope)!: description, with an optional lowercase scope, ! only for a breaking change, and type one of ${CHANGE_TYPES.join(", ")}.`;
 
-const rejectionText = (request: { readonly title: string; readonly rejection: SubjectRejection }): string => {
+const rejectionText = (request: {
+  readonly title: string;
+  readonly rejection: SubjectRejection;
+}): string => {
   switch (request.rejection.kind) {
     case "unshaped":
       return `pull request title ${JSON.stringify(request.title)} is not a conventional commit subject.`;
@@ -26,7 +34,9 @@ export const runPullRequestTitleCheck = (request: { readonly process: ProcessPor
   }
   const subject = conventionalSubjectOf({ subject: title });
   if (subject.outcome === "failed") {
-    request.process.writeError({ text: `${rejectionText({ title, rejection: subject.error })} ${EXPECTED_FORM}\n` });
+    request.process.writeError({
+      text: `${rejectionText({ title, rejection: subject.error })} ${EXPECTED_FORM}\n`,
+    });
     request.process.exitWith({ code: 1 });
     return;
   }

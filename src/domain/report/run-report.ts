@@ -1,29 +1,61 @@
 import type { AttributedNativeException, Finding } from "../finding/governance.ts";
-import type { MisnamedRuleId } from "../runner/checks-run-report.ts";
-import type { AnsweredFinding, PaidDebt, StaleRecord } from "../records/answering/answering.ts";
-import type { CarriedListing, PlacedRecord, RecordNote, RefusedRecord } from "../records/hone-records/hone-record.ts";
-import type { RecordsUnmeasured } from "../records/measurement/records-unmeasured.ts";
-import type { SettingsNote } from "../settings/settings-note.ts";
 import type { Check, Engine, Symptom } from "../language-layer/symptom-catalogue.ts";
-import type { Edition } from "../rule-set/edition-types.ts";
+import type { AnsweredFinding, PaidDebt, StaleRecord } from "../records/answering/answering.ts";
+import type {
+  CarriedListing,
+  PlacedRecord,
+  RecordNote,
+  RefusedRecord,
+} from "../records/hone-records/hone-record.ts";
+import type { RecordsUnmeasured } from "../records/measurement/records-unmeasured.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
+import type { Edition } from "../rule-set/edition-types.ts";
+import type { MisnamedRuleId } from "../runner/checks-run-report.ts";
+import type { SettingsNote } from "../settings/settings-note.ts";
 
-export type CheckEdition = { readonly check: Check; readonly engine: Engine; readonly edition: Edition; readonly latest: Edition };
+export type CheckEdition = {
+  readonly check: Check;
+  readonly engine: Engine;
+  readonly edition: Edition;
+  readonly latest: Edition;
+};
 
 export type EngineNotRun =
   | { readonly kind: "engine-not-run"; readonly engine: Engine; readonly projection: "missing" }
-  | { readonly kind: "engine-not-run"; readonly engine: Engine; readonly projection: "not-included"; readonly nestedConfigurations: readonly RepoPath[] }
-  | { readonly kind: "engine-not-run"; readonly engine: Engine; readonly projection: "measured-nothing" };
+  | {
+      readonly kind: "engine-not-run";
+      readonly engine: Engine;
+      readonly projection: "not-included";
+      readonly nestedConfigurations: readonly RepoPath[];
+    }
+  | {
+      readonly kind: "engine-not-run";
+      readonly engine: Engine;
+      readonly projection: "measured-nothing";
+    };
 
 export type RunUnmeasured = RecordsUnmeasured | EngineNotRun;
 
 export type RunProjectionProblem =
   | { readonly scope: "projection"; readonly engine: Engine; readonly state: "out-of-date" }
-  | { readonly scope: "slice"; readonly engine: Engine; readonly state: "out-of-date" | "missing" | "unconfigured"; readonly slice: RepoPath };
+  | {
+      readonly scope: "slice";
+      readonly engine: Engine;
+      readonly state: "out-of-date" | "missing" | "unconfigured";
+      readonly slice: RepoPath;
+    };
 
-export type ForfeitureElsewhere = { readonly concern: "forfeiture"; readonly assessedBy: "elsewhere"; readonly debts: number };
+export type ForfeitureElsewhere = {
+  readonly concern: "forfeiture";
+  readonly assessedBy: "elsewhere";
+  readonly debts: number;
+};
 
-export type CarriedStandingElsewhere = { readonly concern: "carried-standing"; readonly assessedBy: "elsewhere"; readonly carried: number };
+export type CarriedStandingElsewhere = {
+  readonly concern: "carried-standing";
+  readonly assessedBy: "elsewhere";
+  readonly carried: number;
+};
 
 export type AssessmentLeftElsewhere = ForfeitureElsewhere | CarriedStandingElsewhere;
 

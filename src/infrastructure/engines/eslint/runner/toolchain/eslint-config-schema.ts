@@ -21,7 +21,11 @@ export type ResolvedConfig = z.output<typeof resolvedConfigSchema>;
 export type RuleState =
   | { readonly state: "file-ignored" }
   | { readonly state: "rule-absent" }
-  | { readonly state: "configured"; readonly severity: 0 | 1 | 2; readonly options: readonly unknown[] };
+  | {
+      readonly state: "configured";
+      readonly severity: 0 | 1 | 2;
+      readonly options: readonly unknown[];
+    };
 
 export const ruleStateOf = (request: {
   readonly resolved: ResolvedConfig;

@@ -4,33 +4,25 @@
       "name": "for-of loop",
       "fileName": "for-of.ts",
       "source": "declare const orders: readonly { readonly total: number }[];\nconst totals: number[] = [];\nfor (const order of orders) {\n  totals.push(order.total);\n}\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     },
     {
       "name": "for-await loop",
       "fileName": "for-await.ts",
       "source": "declare const stream: AsyncIterable<number>;\nfor await (const entry of stream) console.log(entry);\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "counted for loop",
       "fileName": "counted.ts",
       "source": "for (let index = 0; index < 2; index++) console.log(index);\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "while loop",
       "fileName": "while.ts",
       "source": "declare const queue: number[];\nwhile (queue.length) queue.pop();\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

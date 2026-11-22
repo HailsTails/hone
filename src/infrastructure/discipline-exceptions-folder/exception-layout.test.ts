@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { type ExceptionLayoutPorts, createExceptionRepository, placementOf } from "./exception-layout.ts";
-import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+
 import type { DirectoryEntry } from "../../application/ports/file-system/directory-port.ts";
-import { createPathPort } from "../node/path-port.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { absolutePathSchema } from "../content-files/absolute-path.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { createPathPort } from "../node/path-port.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import {
+  type ExceptionLayoutPorts,
+  createExceptionRepository,
+  placementOf,
+} from "./exception-layout.ts";
 
 type RecordsDisk = {
   readonly repoRoot: AbsolutePath;
@@ -20,12 +25,18 @@ const REPO_ROOT = absolutePathSchema.parse(ROOT);
 
 const absoluteKey = (request: { readonly file: string }): string => `${ROOT}/${request.file}`;
 
-const childEntryOf = (request: { readonly path: string; readonly folder: string }): DirectoryEntry => {
+const childEntryOf = (request: {
+  readonly path: string;
+  readonly folder: string;
+}): DirectoryEntry => {
   const [name, ...rest] = request.path.slice(request.folder.length + 1).split("/");
   return { name, kind: rest.length === 0 ? "file" : "directory" };
 };
 
-const childrenOf = (request: { readonly paths: readonly string[]; readonly folder: string }): readonly DirectoryEntry[] => {
+const childrenOf = (request: {
+  readonly paths: readonly string[];
+  readonly folder: string;
+}): readonly DirectoryEntry[] => {
   const children = request.paths
     .filter((path) => path.startsWith(`${request.folder}/`))
     .map((path) => childEntryOf({ path, folder: request.folder }));
@@ -36,27 +47,45 @@ const recordsDisk = (request: {
   readonly working: Readonly<Record<string, string>>;
   readonly base: Readonly<Record<string, string>>;
 }): RecordsDisk => {
-  const files = new Map(Object.entries(request.working).map(([file, text]) => [absoluteKey({ file }), text]));
+  const files = new Map(
+    Object.entries(request.working).map(([file, text]) => [absoluteKey({ file }), text]),
+  );
   const folders = new Set<string>();
-  const occupied = (): readonly string[] => [...files.keys(), ...[...folders].map((folder) => `${folder}/`)];
+  const occupied = (): readonly string[] => [
+    ...files.keys(),
+    ...[...folders].map((folder) => `${folder}/`),
+  ];
   return {
     repoRoot: REPO_ROOT,
-    texts: () => Object.fromEntries([...files.entries()].map(([path, text]) => [path.slice(ROOT.length + 1), text])),
+    texts: () =>
+      Object.fromEntries(
+        [...files.entries()].map(([path, text]) => [path.slice(ROOT.length + 1), text]),
+      ),
     ports: {
       path: createPathPort({ flavour: "posix", workingDirectory: () => ROOT }),
       fileText: {
         read: ({ path }) => {
           const text = files.get(path);
-          return text === undefined ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } } : { outcome: "ok", value: text };
+          return text === undefined
+            ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
+            : { outcome: "ok", value: text };
         },
-        exists: ({ path }) => (files.has(path) || occupied().some((candidate) => candidate.startsWith(`${path}/`)) ? "present" : "absent"),
+        exists: ({ path }) =>
+          files.has(path) || occupied().some((candidate) => candidate.startsWith(`${path}/`))
+            ? "present"
+            : "absent",
         write: ({ path, text }) => {
           files.set(path, text);
           return { outcome: "ok", value: undefined };
         },
       },
       directory: {
-        list: ({ path }) => ({ outcome: "ok", value: childrenOf({ paths: [...files.keys()], folder: path }).toSorted((left, right) => (left.name < right.name ? -1 : 1)) }),
+        list: ({ path }) => ({
+          outcome: "ok",
+          value: childrenOf({ paths: [...files.keys()], folder: path }).toSorted((left, right) =>
+            left.name < right.name ? -1 : 1,
+          ),
+        }),
         create: ({ path }) => {
           folders.add(path);
           return { outcome: "ok", value: undefined };
@@ -71,15 +100,27 @@ const recordsDisk = (request: {
       git: {
         trackedPaths: () => ({ outcome: "ok", value: [] }),
         changedSince: () => ({ outcome: "ok", value: [] }),
-        contentInBase: ({ file }) => ({ outcome: "ok", value: file in request.base ? "present-in-base" : "absent-from-base" }),
+        contentInBase: ({ file }) => ({
+          outcome: "ok",
+          value: file in request.base ? "present-in-base" : "absent-from-base",
+        }),
         textInBase: ({ file }) => {
           const text = request.base[file];
-          return { outcome: "ok", value: text === undefined ? { presence: "absent-from-base" } : { presence: "present-in-base", text } };
+          return {
+            outcome: "ok",
+            value:
+              text === undefined
+                ? { presence: "absent-from-base" }
+                : { presence: "present-in-base", text },
+          };
         },
         renamedSince: () => ({ outcome: "ok", value: new Map() }),
       },
       gitTree: {
-        pathsAt: () => ({ outcome: "ok", value: Object.keys(request.base).map((file) => repoPathSchema.parse(file)) }),
+        pathsAt: () => ({
+          outcome: "ok",
+          value: Object.keys(request.base).map((file) => repoPathSchema.parse(file)),
+        }),
       },
     },
   };
@@ -282,15 +323,40 @@ const ANNOTATED_TEXT = `{
 const EMPTY_TEXT = `{ "version": 1, "exceptions": [] }
 `;
 
-const ADAPTER = {"kind": "file-carve-out", "clause": "CD-19#import-boundaries", "file": "src/a.ts", "reason": "held by the adapter"} as const;
+const ADAPTER = {
+  kind: "file-carve-out",
+  clause: "CD-19#import-boundaries",
+  file: "src/a.ts",
+  reason: "held by the adapter",
+} as const;
 
-const WIRE = {"kind": "file-carve-out", "clause": "CD-6#identifier-names", "file": "src/d.ts", "reason": "names from the wire format, “quoted” and \\ escaped"} as const;
+const WIRE = {
+  kind: "file-carve-out",
+  clause: "CD-6#identifier-names",
+  file: "src/d.ts",
+  reason: "names from the wire format, “quoted” and \\ escaped",
+} as const;
 
-const WRAPPING = {"kind": "authorised-location", "clause": "CD-19#import-boundaries", "file": "src/c.ts", "reason": "the one wrapping site"} as const;
+const WRAPPING = {
+  kind: "authorised-location",
+  clause: "CD-19#import-boundaries",
+  file: "src/c.ts",
+  reason: "the one wrapping site",
+} as const;
 
-const PORT = {"kind": "file-carve-out", "clause": "hone/CD-19#import-boundaries", "file": "src/b.ts", "reason": "awaiting the port"} as const;
+const PORT = {
+  kind: "file-carve-out",
+  clause: "hone/CD-19#import-boundaries",
+  file: "src/b.ts",
+  reason: "awaiting the port",
+} as const;
 
-const TEAM_WIDE = {"kind": "clause-wide-carve-out", "clause": "team/TM-1#no-tmp-files", "reason": "the whole clause is held", "whyChain": {"whys": ["one"]}} as const;
+const TEAM_WIDE = {
+  kind: "clause-wide-carve-out",
+  clause: "team/TM-1#no-tmp-files",
+  reason: "the whole clause is held",
+  whyChain: { whys: ["one"] },
+} as const;
 
 const SPLIT_FILES = {
   "discipline-exceptions/authorised-locations/cd-19.json": LOCATIONS_19_TEXT,
@@ -306,7 +372,10 @@ const repositoryOver = (request: {
   readonly base: Readonly<Record<string, string>>;
 }): { readonly repository: ExceptionRepository; readonly disk: RecordsDisk } => {
   const disk = recordsDisk(request);
-  return { repository: createExceptionRepository({ ...disk.ports, repoRoot: disk.repoRoot }), disk };
+  return {
+    repository: createExceptionRepository({ ...disk.ports, repoRoot: disk.repoRoot }),
+    disk,
+  };
 };
 
 const INHERITED = {
@@ -328,27 +397,59 @@ describe("createExceptionRepository read in the single file", () => {
     expect(repositoryOver({ working: SINGLE_FILES, base: {} }).repository.read()).toEqual({
       outcome: "ok",
       value: [
-        { place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, entry: ADAPTER },
-        { place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 }, entry: WIRE },
-        { place: { layout: "single-file", file: "discipline-exceptions.json", index: 2 }, entry: WRAPPING },
-        { place: { layout: "single-file", file: "discipline-exceptions.json", index: 3 }, entry: PORT },
-        { place: { layout: "single-file", file: "discipline-exceptions.json", index: 4 }, entry: TEAM_WIDE },
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
+          entry: ADAPTER,
+        },
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 },
+          entry: WIRE,
+        },
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 2 },
+          entry: WRAPPING,
+        },
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 3 },
+          entry: PORT,
+        },
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 4 },
+          entry: TEAM_WIDE,
+        },
       ],
     });
   });
 
   it("reads no records when neither layout is present", () => {
-    expect(repositoryOver({ working: {}, base: {} }).repository.read()).toEqual({ outcome: "ok", value: [] });
+    expect(repositoryOver({ working: {}, base: {} }).repository.read()).toEqual({
+      outcome: "ok",
+      value: [],
+    });
   });
 
   it("is file-malformed when an entry does not match the records format", () => {
     expect(
-      repositoryOver({ working: { "discipline-exceptions.json": '{ "version": 1, "exceptions": [{ "kind": "blanket-waiver" }] }' }, base: {} }).repository.read(),
-    ).toMatchObject({ outcome: "failed", error: { kind: "file-malformed", path: "/repo/discipline-exceptions.json" } });
+      repositoryOver({
+        working: {
+          "discipline-exceptions.json":
+            '{ "version": 1, "exceptions": [{ "kind": "blanket-waiver" }] }',
+        },
+        base: {},
+      }).repository.read(),
+    ).toMatchObject({
+      outcome: "failed",
+      error: { kind: "file-malformed", path: "/repo/discipline-exceptions.json" },
+    });
   });
 
   it("is unsupported-version with the found value for a version other than 1", () => {
-    expect(repositoryOver({ working: { "discipline-exceptions.json": '{ "version": 0, "exceptions": [] }' }, base: {} }).repository.read()).toEqual({
+    expect(
+      repositoryOver({
+        working: { "discipline-exceptions.json": '{ "version": 0, "exceptions": [] }' },
+        base: {},
+      }).repository.read(),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "unsupported-version", path: "/repo/discipline-exceptions.json", found: 0 },
     });
@@ -360,30 +461,74 @@ describe("createExceptionRepository read in the split layout", () => {
     expect(repositoryOver({ working: SPLIT_FILES, base: {} }).repository.read()).toEqual({
       outcome: "ok",
       value: [
-        { place: { layout: "split", file: "discipline-exceptions/authorised-locations/cd-19.json", index: 0 }, entry: WRAPPING },
-        { place: { layout: "split", file: "discipline-exceptions/clause-wide-carve-outs/team/tm-1.json", index: 0 }, entry: TEAM_WIDE },
-        { place: { layout: "split", file: "discipline-exceptions/file-carve-outs/cd-19.json", index: 0 }, entry: ADAPTER },
-        { place: { layout: "split", file: "discipline-exceptions/file-carve-outs/cd-19.json", index: 1 }, entry: PORT },
-        { place: { layout: "split", file: "discipline-exceptions/file-carve-outs/cd-6.json", index: 0 }, entry: WIRE },
+        {
+          place: {
+            layout: "split",
+            file: "discipline-exceptions/authorised-locations/cd-19.json",
+            index: 0,
+          },
+          entry: WRAPPING,
+        },
+        {
+          place: {
+            layout: "split",
+            file: "discipline-exceptions/clause-wide-carve-outs/team/tm-1.json",
+            index: 0,
+          },
+          entry: TEAM_WIDE,
+        },
+        {
+          place: {
+            layout: "split",
+            file: "discipline-exceptions/file-carve-outs/cd-19.json",
+            index: 0,
+          },
+          entry: ADAPTER,
+        },
+        {
+          place: {
+            layout: "split",
+            file: "discipline-exceptions/file-carve-outs/cd-19.json",
+            index: 1,
+          },
+          entry: PORT,
+        },
+        {
+          place: {
+            layout: "split",
+            file: "discipline-exceptions/file-carve-outs/cd-6.json",
+            index: 0,
+          },
+          entry: WIRE,
+        },
       ],
     });
   });
 
   it("refuses a record kept in another rule's or kind's file, naming where it belongs", () => {
     expect(
-      repositoryOver({ working: { "discipline-exceptions/file-carve-outs/cd-6.json": CARVE_OUTS_19_TEXT }, base: {} }).repository.read(),
+      repositoryOver({
+        working: { "discipline-exceptions/file-carve-outs/cd-6.json": CARVE_OUTS_19_TEXT },
+        base: {},
+      }).repository.read(),
     ).toEqual({
       outcome: "failed",
       error: {
         kind: "file-malformed",
         path: "/repo/discipline-exceptions/file-carve-outs/cd-6.json",
-        detail: "exceptions[0] is a file-carve-out on CD-19#import-boundaries, which belongs in discipline-exceptions/file-carve-outs/cd-19.json",
+        detail:
+          "exceptions[0] is a file-carve-out on CD-19#import-boundaries, which belongs in discipline-exceptions/file-carve-outs/cd-19.json",
       },
     });
   });
 
   it("refuses a file the layout has no place for", () => {
-    expect(repositoryOver({ working: { ...SPLIT_FILES, "discipline-exceptions/notes.md": "notes" }, base: {} }).repository.read()).toEqual({
+    expect(
+      repositoryOver({
+        working: { ...SPLIT_FILES, "discipline-exceptions/notes.md": "notes" },
+        base: {},
+      }).repository.read(),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "file-malformed",
@@ -395,26 +540,54 @@ describe("createExceptionRepository read in the split layout", () => {
   });
 
   it("refuses a repository holding both layouts rather than merging them", () => {
-    expect(repositoryOver({ working: { ...SINGLE_FILES, ...SPLIT_FILES }, base: {} }).repository.read()).toEqual({
+    expect(
+      repositoryOver({ working: { ...SINGLE_FILES, ...SPLIT_FILES }, base: {} }).repository.read(),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "records-in-both-layouts", path: "/repo/discipline-exceptions.json", folder: "/repo/discipline-exceptions" },
+      error: {
+        kind: "records-in-both-layouts",
+        path: "/repo/discipline-exceptions.json",
+        folder: "/repo/discipline-exceptions",
+      },
     });
   });
 });
 
 describe("createExceptionRepository readAt reads the base revision in whichever layout it holds", () => {
   it.each([
-    { layout: "single file", base: SINGLE_FILES, entries: [ADAPTER, WIRE, WRAPPING, PORT, TEAM_WIDE] },
-    { layout: "split layout", base: SPLIT_FILES, entries: [WRAPPING, TEAM_WIDE, ADAPTER, PORT, WIRE] },
-  ])("reads the records of a base in the $layout, whatever the working tree holds", ({ base, entries }) => {
-    expect({
-      underSingle: repositoryOver({ working: SINGLE_FILES, base }).repository.readAt({ revision: "main" }),
-      underSplit: repositoryOver({ working: SPLIT_FILES, base }).repository.readAt({ revision: "main" }),
-    }).toEqual({ underSingle: { outcome: "ok", value: entries }, underSplit: { outcome: "ok", value: entries } });
-  });
+    {
+      layout: "single file",
+      base: SINGLE_FILES,
+      entries: [ADAPTER, WIRE, WRAPPING, PORT, TEAM_WIDE],
+    },
+    {
+      layout: "split layout",
+      base: SPLIT_FILES,
+      entries: [WRAPPING, TEAM_WIDE, ADAPTER, PORT, WIRE],
+    },
+  ])(
+    "reads the records of a base in the $layout, whatever the working tree holds",
+    ({ base, entries }) => {
+      expect({
+        underSingle: repositoryOver({ working: SINGLE_FILES, base }).repository.readAt({
+          revision: "main",
+        }),
+        underSplit: repositoryOver({ working: SPLIT_FILES, base }).repository.readAt({
+          revision: "main",
+        }),
+      }).toEqual({
+        underSingle: { outcome: "ok", value: entries },
+        underSplit: { outcome: "ok", value: entries },
+      });
+    },
+  );
 
   it("reads no records from a base that holds neither layout", () => {
-    expect(repositoryOver({ working: SINGLE_FILES, base: { "src/a.ts": "a" } }).repository.readAt({ revision: "main" })).toEqual({
+    expect(
+      repositoryOver({ working: SINGLE_FILES, base: { "src/a.ts": "a" } }).repository.readAt({
+        revision: "main",
+      }),
+    ).toEqual({
       outcome: "ok",
       value: [],
     });
@@ -423,7 +596,10 @@ describe("createExceptionRepository readAt reads the base revision in whichever 
 
 describe("createExceptionRepository add", () => {
   it("appends to discipline-exceptions.json in the single-file layout", () => {
-    const { repository, disk } = repositoryOver({ working: { "discipline-exceptions.json": CARVE_OUTS_6_TEXT }, base: {} });
+    const { repository, disk } = repositoryOver({
+      working: { "discipline-exceptions.json": CARVE_OUTS_6_TEXT },
+      base: {},
+    });
 
     expect(repository.add({ entries: [INHERITED] })).toEqual({ outcome: "ok", value: undefined });
     expect(disk.texts()).toEqual({ "discipline-exceptions.json": WIRE_AND_INHERITED_TEXT });
@@ -440,7 +616,10 @@ describe("createExceptionRepository add", () => {
   it("appends each record to its rule's file in the split layout, writing a new rule file where none is", () => {
     const { repository, disk } = repositoryOver({ working: SPLIT_FILES, base: {} });
 
-    expect(repository.add({ entries: [INHERITED, SECOND_ADAPTER] })).toEqual({ outcome: "ok", value: undefined });
+    expect(repository.add({ entries: [INHERITED, SECOND_ADAPTER] })).toEqual({
+      outcome: "ok",
+      value: undefined,
+    });
     expect(disk.texts()).toEqual({
       ...SPLIT_FILES,
       "discipline-exceptions/file-carve-outs/cd-19.json": CARVE_OUTS_19_AND_SECOND_TEXT,
@@ -496,7 +675,10 @@ describe("createExceptionRepository remove", () => {
   it("removes each pair's file carve-out from its rule's file in the split layout, keeping every other record's text, and deletes a rule's file once its last record is gone", () => {
     const { repository, disk } = repositoryOver({ working: SPLIT_FILES, base: {} });
 
-    expect(repository.remove({ pairs: [ADAPTER_PAIR, WIRE_PAIR] })).toEqual({ outcome: "ok", value: [ADAPTER_PAIR, WIRE_PAIR] });
+    expect(repository.remove({ pairs: [ADAPTER_PAIR, WIRE_PAIR] })).toEqual({
+      outcome: "ok",
+      value: [ADAPTER_PAIR, WIRE_PAIR],
+    });
     expect(disk.texts()).toEqual({
       "discipline-exceptions/authorised-locations/cd-19.json": LOCATIONS_19_TEXT,
       "discipline-exceptions/clause-wide-carve-outs/team/tm-1.json": TEAM_WIDE_TEXT,
@@ -505,16 +687,28 @@ describe("createExceptionRepository remove", () => {
   });
 
   it("removes a pair's file carve-out from discipline-exceptions.json, its clause written with the hone rule set named", () => {
-    const { repository, disk } = repositoryOver({ working: { "discipline-exceptions.json": CARVE_OUTS_19_TEXT }, base: {} });
+    const { repository, disk } = repositoryOver({
+      working: { "discipline-exceptions.json": CARVE_OUTS_19_TEXT },
+      base: {},
+    });
 
-    expect(repository.remove({ pairs: [PORT_PAIR] })).toEqual({ outcome: "ok", value: [PORT_PAIR] });
+    expect(repository.remove({ pairs: [PORT_PAIR] })).toEqual({
+      outcome: "ok",
+      value: [PORT_PAIR],
+    });
     expect(disk.texts()).toEqual({ "discipline-exceptions.json": CARVE_OUTS_19_ONLY_ADAPTER_TEXT });
   });
 
   it("keeps discipline-exceptions.json, holding an empty list, once its last record is gone", () => {
-    const { repository, disk } = repositoryOver({ working: { "discipline-exceptions.json": CARVE_OUTS_19_TEXT }, base: {} });
+    const { repository, disk } = repositoryOver({
+      working: { "discipline-exceptions.json": CARVE_OUTS_19_TEXT },
+      base: {},
+    });
 
-    expect(repository.remove({ pairs: [ADAPTER_PAIR, PORT_PAIR] })).toEqual({ outcome: "ok", value: [ADAPTER_PAIR, PORT_PAIR] });
+    expect(repository.remove({ pairs: [ADAPTER_PAIR, PORT_PAIR] })).toEqual({
+      outcome: "ok",
+      value: [ADAPTER_PAIR, PORT_PAIR],
+    });
     expect(disk.texts()).toEqual({ "discipline-exceptions.json": EMPTIED_TEXT });
   });
 
@@ -522,17 +716,29 @@ describe("createExceptionRepository remove", () => {
     const { repository, disk } = repositoryOver({ working: SPLIT_FILES, base: {} });
 
     expect(
-      repository.remove({ pairs: [pairOf({ clause: "CD-19#import-boundaries", file: "src/c.ts" }), pairOf({ clause: "CD-15#loops", file: "src/a.ts" })] }),
+      repository.remove({
+        pairs: [
+          pairOf({ clause: "CD-19#import-boundaries", file: "src/c.ts" }),
+          pairOf({ clause: "CD-15#loops", file: "src/a.ts" }),
+        ],
+      }),
     ).toEqual({ outcome: "ok", value: [] });
     expect(disk.texts()).toEqual(SPLIT_FILES);
   });
 
   it("refuses a repository holding both layouts, writing nothing", () => {
-    const { repository, disk } = repositoryOver({ working: { ...SINGLE_FILES, ...SPLIT_FILES }, base: {} });
+    const { repository, disk } = repositoryOver({
+      working: { ...SINGLE_FILES, ...SPLIT_FILES },
+      base: {},
+    });
 
     expect(repository.remove({ pairs: [ADAPTER_PAIR] })).toEqual({
       outcome: "failed",
-      error: { kind: "records-in-both-layouts", path: "/repo/discipline-exceptions.json", folder: "/repo/discipline-exceptions" },
+      error: {
+        kind: "records-in-both-layouts",
+        path: "/repo/discipline-exceptions.json",
+        folder: "/repo/discipline-exceptions",
+      },
     });
     expect(disk.texts()).toEqual({ ...SINGLE_FILES, ...SPLIT_FILES });
   });
@@ -543,9 +749,21 @@ const LEFT_AS_THEY_ARE: readonly {
   readonly working: Readonly<Record<string, string>>;
   readonly outcome: { readonly effect: string; readonly path: string };
 }[] = [
-  { state: "already split", working: SPLIT_FILES, outcome: { effect: "already-split", path: "discipline-exceptions" } },
-  { state: "without records", working: {}, outcome: { effect: "no-records", path: "discipline-exceptions.json" } },
-  { state: "with an empty records file", working: { "discipline-exceptions.json": EMPTY_TEXT }, outcome: { effect: "no-records", path: "discipline-exceptions.json" } },
+  {
+    state: "already split",
+    working: SPLIT_FILES,
+    outcome: { effect: "already-split", path: "discipline-exceptions" },
+  },
+  {
+    state: "without records",
+    working: {},
+    outcome: { effect: "no-records", path: "discipline-exceptions.json" },
+  },
+  {
+    state: "with an empty records file",
+    working: { "discipline-exceptions.json": EMPTY_TEXT },
+    outcome: { effect: "no-records", path: "discipline-exceptions.json" },
+  },
 ];
 
 describe("createExceptionRepository moveToSplitLayout", () => {
@@ -558,7 +776,10 @@ describe("createExceptionRepository moveToSplitLayout", () => {
         effect: "split",
         writes: [
           { path: "discipline-exceptions/authorised-locations/cd-19.json", effect: "written" },
-          { path: "discipline-exceptions/clause-wide-carve-outs/team/tm-1.json", effect: "written" },
+          {
+            path: "discipline-exceptions/clause-wide-carve-outs/team/tm-1.json",
+            effect: "written",
+          },
           { path: "discipline-exceptions/file-carve-outs/cd-19.json", effect: "written" },
           { path: "discipline-exceptions/file-carve-outs/cd-6.json", effect: "written" },
           { path: "discipline-exceptions.json", effect: "removed" },
@@ -569,7 +790,10 @@ describe("createExceptionRepository moveToSplitLayout", () => {
   });
 
   it("refuses a record whose clause names no discipline, writing nothing", () => {
-    const { repository, disk } = repositoryOver({ working: { "discipline-exceptions.json": UNPLACEABLE_TEXT }, base: {} });
+    const { repository, disk } = repositoryOver({
+      working: { "discipline-exceptions.json": UNPLACEABLE_TEXT },
+      base: {},
+    });
 
     expect(repository.moveToSplitLayout()).toEqual({
       outcome: "failed",
@@ -584,7 +808,10 @@ describe("createExceptionRepository moveToSplitLayout", () => {
   });
 
   it("refuses a records file holding keys beside version and exceptions, naming them and writing nothing", () => {
-    const { repository, disk } = repositoryOver({ working: { "discipline-exceptions.json": ANNOTATED_TEXT }, base: {} });
+    const { repository, disk } = repositoryOver({
+      working: { "discipline-exceptions.json": ANNOTATED_TEXT },
+      base: {},
+    });
 
     expect(repository.moveToSplitLayout()).toEqual({
       outcome: "failed",
@@ -601,11 +828,19 @@ describe("createExceptionRepository moveToSplitLayout", () => {
   it.each(LEFT_AS_THEY_ARE)("leaves a repository $state as it is", ({ working, outcome }) => {
     const { repository, disk } = repositoryOver({ working, base: {} });
 
-    expect({ split: repository.moveToSplitLayout(), texts: disk.texts() }).toEqual({ split: { outcome: "ok", value: outcome }, texts: working });
+    expect({ split: repository.moveToSplitLayout(), texts: disk.texts() }).toEqual({
+      split: { outcome: "ok", value: outcome },
+      texts: working,
+    });
   });
 
   it("refuses to split while both layouts are present", () => {
-    expect(repositoryOver({ working: { ...SINGLE_FILES, ...SPLIT_FILES }, base: {} }).repository.moveToSplitLayout()).toMatchObject({
+    expect(
+      repositoryOver({
+        working: { ...SINGLE_FILES, ...SPLIT_FILES },
+        base: {},
+      }).repository.moveToSplitLayout(),
+    ).toMatchObject({
       outcome: "failed",
       error: { kind: "records-in-both-layouts" },
     });
@@ -618,7 +853,10 @@ describe("placementOf", () => {
     { entry: PORT, file: "discipline-exceptions/file-carve-outs/cd-19.json" },
     { entry: WRAPPING, file: "discipline-exceptions/authorised-locations/cd-19.json" },
     { entry: TEAM_WIDE, file: "discipline-exceptions/clause-wide-carve-outs/team/tm-1.json" },
-    { entry: { ...ADAPTER, clause: "CD-7a#nesting" }, file: "discipline-exceptions/file-carve-outs/cd-7a.json" },
+    {
+      entry: { ...ADAPTER, clause: "CD-7a#nesting" },
+      file: "discipline-exceptions/file-carve-outs/cd-7a.json",
+    },
   ])("keeps a $entry.kind on $entry.clause in $file", ({ entry, file }) => {
     expect(placementOf({ entry })).toEqual({ placed: "yes", file });
   });

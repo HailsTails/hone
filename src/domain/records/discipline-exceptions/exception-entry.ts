@@ -27,11 +27,17 @@ export type StructuralExceptionEntry =
 
 export type PlacedEntry = { readonly place: RecordPlace; readonly entry: StructuralExceptionEntry };
 
-export type ImportEvidence = { readonly imported: "no" } | { readonly imported: "yes"; readonly source: string };
+export type ImportEvidence =
+  | { readonly imported: "no" }
+  | { readonly imported: "yes"; readonly source: string };
 
 export const recordImportOf = (request: { readonly record: ExceptionRecord }): ImportEvidence => {
   const { record } = request;
-  if (record.kind === "clause-wide-carve-out" || record.whyChain !== undefined || record.provenance === undefined) {
+  if (
+    record.kind === "clause-wide-carve-out" ||
+    record.whyChain !== undefined ||
+    record.provenance === undefined
+  ) {
     return { imported: "no" };
   }
   return { imported: "yes", source: record.provenance.source };

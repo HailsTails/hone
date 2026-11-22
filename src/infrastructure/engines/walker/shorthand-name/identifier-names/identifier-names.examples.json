@@ -4,25 +4,19 @@
       "name": "shorthand parameter",
       "fileName": "bad-shorthand.ts",
       "source": "export const handleRequest = (req: { readonly path: string }): string => {\n  return req.path;\n};\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "filler variable",
       "fileName": "filler.ts",
       "source": "declare const loadAccount: () => string;\nexport const data = loadAccount();\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "destructured filler binding",
       "fileName": "bad-destructure.ts",
       "source": "export const summariseIncident = (report: { readonly body: string }): string => {\n  const { body } = report;\n  return body;\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

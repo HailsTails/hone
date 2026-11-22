@@ -1,24 +1,39 @@
 import { describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { CUT_MARK } from "../../../protocol/runner-module/snippet.ts";
 import { hitsCutFrom, type LintedClause, lineSnippet, messageReadingOf } from "./lint-hits.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const FILE = repoPathOf("src/a.ts");
 
-const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const classSyntax = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
 
-const abstractSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
+const abstractSyntax = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("abstract-syntax"),
+};
 
 const FORTY_BUNDLED = "var a=1;var b=2;var c=3;var d=4;var e=5;";
 
 const LIMIT_LONG_LINE = `${FORTY_BUNDLED}${FORTY_BUNDLED}${FORTY_BUNDLED}${FORTY_BUNDLED}${FORTY_BUNDLED}`;
 
-const CLASS_SYNTAX: LintedClause = { ruleId: "hone/no-class-authoring", clause: { address: classSyntax } };
+const CLASS_SYNTAX: LintedClause = {
+  ruleId: "hone/no-class-authoring",
+  clause: { address: classSyntax },
+};
 
-const ABSTRACT_SYNTAX: LintedClause = { ruleId: "hone/no-abstract-authoring", clause: { address: abstractSyntax } };
+const ABSTRACT_SYNTAX: LintedClause = {
+  ruleId: "hone/no-abstract-authoring",
+  clause: { address: abstractSyntax },
+};
 
 const SAME_RULE_ON_ABSTRACT_SYNTAX: LintedClause = {
   ruleId: "hone/no-class-authoring",
@@ -30,7 +45,14 @@ describe("messageReadingOf", () => {
     expect(
       messageReadingOf({
         file: FILE,
-        messages: [{ ruleId: "hone/no-class-authoring", line: 3, column: 5, message: "classes are not authored" }],
+        messages: [
+          {
+            ruleId: "hone/no-class-authoring",
+            line: 3,
+            column: 5,
+            message: "classes are not authored",
+          },
+        ],
         selected: [CLASS_SYNTAX, ABSTRACT_SYNTAX],
       }),
     ).toEqual({
@@ -53,7 +75,14 @@ describe("messageReadingOf", () => {
     expect(
       messageReadingOf({
         file: FILE,
-        messages: [{ ruleId: "hone/no-class-authoring", line: 2, column: 1, message: "classes are not authored" }],
+        messages: [
+          {
+            ruleId: "hone/no-class-authoring",
+            line: 2,
+            column: 1,
+            message: "classes are not authored",
+          },
+        ],
         selected: [CLASS_SYNTAX, SAME_RULE_ON_ABSTRACT_SYNTAX],
       }),
     ).toEqual({
@@ -185,7 +214,10 @@ describe("messageReadingOf", () => {
       }),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "tool-failed", detail: "src/a.ts: inline configuration comments could not be read" },
+      error: {
+        kind: "tool-failed",
+        detail: "src/a.ts: inline configuration comments could not be read",
+      },
     });
   });
 
@@ -234,7 +266,9 @@ describe("lineSnippet", () => {
   });
 
   it("cuts a line past the snippet limit at the column, behind the cut mark", () => {
-    expect(lineSnippet({ line: `  ${LIMIT_LONG_LINE}class Flagged {}`, column: 203 })).toBe(`${CUT_MARK}class Flagged {}`);
+    expect(lineSnippet({ line: `  ${LIMIT_LONG_LINE}class Flagged {}`, column: 203 })).toBe(
+      `${CUT_MARK}class Flagged {}`,
+    );
   });
 });
 
@@ -250,14 +284,28 @@ describe("hitsCutFrom", () => {
         lines: ["class Widget {}", "  abstract class Shape {}"],
       }),
     ).toEqual([
-      { clause: classSyntax, file: FILE, anchor: { line: 1, column: 0 }, snippet: "class Widget {}" },
-      { clause: abstractSyntax, file: FILE, anchor: { line: 2, column: 2 }, snippet: "abstract class Shape {}" },
+      {
+        clause: classSyntax,
+        file: FILE,
+        anchor: { line: 1, column: 0 },
+        snippet: "class Widget {}",
+      },
+      {
+        clause: abstractSyntax,
+        file: FILE,
+        anchor: { line: 2, column: 2 },
+        snippet: "abstract class Shape {}",
+      },
     ]);
   });
 
   it("cuts the empty snippet for a hit on a line past the end of the source", () => {
     expect(
-      hitsCutFrom({ file: FILE, ruleHits: [{ clause: classSyntax, line: 3, column: 1 }], lines: ["first;"] }),
+      hitsCutFrom({
+        file: FILE,
+        ruleHits: [{ clause: classSyntax, line: 3, column: 1 }],
+        lines: ["first;"],
+      }),
     ).toEqual([{ clause: classSyntax, file: FILE, anchor: { line: 3, column: 0 }, snippet: "" }]);
   });
 });

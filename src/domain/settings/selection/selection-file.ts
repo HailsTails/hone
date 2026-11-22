@@ -1,6 +1,6 @@
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import type { EngineId, RuleSetName } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { Assessment } from "../assessment.ts";
 import type { CheckEditions } from "../clause-settings/check-editions.ts";
 import type { ClauseSettings } from "../clause-settings/clause-settings.ts";

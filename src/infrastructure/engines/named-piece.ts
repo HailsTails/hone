@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { PieceClause } from "../../application/ports/settings-sources.ts";
@@ -15,7 +16,10 @@ const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
 
 const catalogueNameSchema = z.string().refine(isCatalogueName);
 
-export const namedPieceImplementationSchema = z.strictObject({ symptom: catalogueNameSchema, check: catalogueNameSchema });
+export const namedPieceImplementationSchema = z.strictObject({
+  symptom: catalogueNameSchema,
+  check: catalogueNameSchema,
+});
 
 export type NamedPiece = PieceClause & {
   readonly forms: Readonly<Record<string, CheckNames>>;
@@ -53,39 +57,89 @@ const readPieceDeclaration = (request: {
 }): Result<z.output<typeof namedPieceSchema>, VersionTwoLoadFailure> => {
   const text = request.fileText.read({ path: request.path });
   if (text.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "file-unreadable", path: request.path, detail: `${request.address}: ${text.error.detail}` } };
+    return {
+      outcome: "failed",
+      error: {
+        kind: "file-unreadable",
+        path: request.path,
+        detail: `${request.address}: ${text.error.detail}`,
+      },
+    };
   }
   const document = parsedJson({ text: text.value });
   if (document.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "file-malformed", path: request.path, detail: `${request.address}: ${document.error}` } };
+    return {
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path: request.path,
+        detail: `${request.address}: ${document.error}`,
+      },
+    };
   }
   const piece = namedPieceSchema.safeParse(document.value);
-  return piece.success ? { outcome: "ok", value: piece.data } : {
-    outcome: "failed", error: { kind: "file-malformed", path: request.path, detail: `${request.address}: ${z.prettifyError(piece.error)}` },
-  };
+  return piece.success
+    ? { outcome: "ok", value: piece.data }
+    : {
+        outcome: "failed",
+        error: {
+          kind: "file-malformed",
+          path: request.path,
+          detail: `${request.address}: ${z.prettifyError(piece.error)}`,
+        },
+      };
 };
 
 export const namedPiecePathOf = (request: Omit<NamedPieceRequest, "fileText">): string =>
   request.path.join({ segments: [...namedPieceFolderSegmentsOf(request), "piece.json"] });
 
-export const readNamedPiece = (request: NamedPieceRequest): Result<NamedPiece, VersionTwoLoadFailure> => {
+export const readNamedPiece = (
+  request: NamedPieceRequest,
+): Result<NamedPiece, VersionTwoLoadFailure> => {
   const address = `${request.symptom}#${request.check}`;
   const path = namedPiecePathOf(request);
   if (request.fileText.exists({ path }) === "absent") {
-    return { outcome: "failed", error: { kind: "piece-missing", address, mechanism: request.mechanism } };
+    return {
+      outcome: "failed",
+      error: { kind: "piece-missing", address, mechanism: request.mechanism },
+    };
   }
   const declared = readPieceDeclaration({ fileText: request.fileText, path, address });
   if (declared.outcome === "failed") return declared;
-  const { anchor, exceptions, settings, checkSettings, editions, forms, implementation, examples } = declared.value;
+  const { anchor, exceptions, settings, checkSettings, editions, forms, implementation, examples } =
+    declared.value;
   const implementationRoot = namedPieceFolderSegmentsOf({ ...request, ...implementation });
   const localCheck = { symptom: request.symptom, check: request.check };
   const exampleOwner = examples === "with-implementation" ? implementation : localCheck;
   if (exampleOwner === undefined) {
-    return { outcome: "failed", error: { kind: "file-malformed", path, detail: `${address}: shared examples require an implementation` } };
+    return {
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path,
+        detail: `${address}: shared examples require an implementation`,
+      },
+    };
   }
-  const examplesPath = request.path.join({ segments: [...namedPieceFolderSegmentsOf({ ...request, ...exampleOwner }), `${exampleOwner.check}.examples.json`] });
-  return { outcome: "ok", value: {
-    anchor, exceptions, settings, declarations: checkSettings, editions, forms, declarationPath: path, exampleOwner, examplesPath,
-    pieceRoot: request.path.join({ segments: implementationRoot }),
-  } };
+  const examplesPath = request.path.join({
+    segments: [
+      ...namedPieceFolderSegmentsOf({ ...request, ...exampleOwner }),
+      `${exampleOwner.check}.examples.json`,
+    ],
+  });
+  return {
+    outcome: "ok",
+    value: {
+      anchor,
+      exceptions,
+      settings,
+      declarations: checkSettings,
+      editions,
+      forms,
+      declarationPath: path,
+      exampleOwner,
+      examplesPath,
+      pieceRoot: request.path.join({ segments: implementationRoot }),
+    },
+  };
 };

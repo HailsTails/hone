@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { runnerFailureSchema } from "./runner-failure-schema.ts";
 
 describe("runnerFailureSchema", () => {
@@ -18,9 +19,9 @@ describe("runnerFailureSchema", () => {
   });
 
   it("refuses an unknown failure kind", () => {
-    expect(
-      runnerFailureSchema.safeParse({ kind: "disk-full", detail: "no space" }).success,
-    ).toBe(false);
+    expect(runnerFailureSchema.safeParse({ kind: "disk-full", detail: "no space" }).success).toBe(
+      false,
+    );
   });
 
   it("refuses a failure with no detail", () => {
@@ -29,8 +30,7 @@ describe("runnerFailureSchema", () => {
 
   it("refuses a piece-invalid failure with no piece root", () => {
     expect(
-      runnerFailureSchema.safeParse({ kind: "piece-invalid", detail: "no check export" })
-        .success,
+      runnerFailureSchema.safeParse({ kind: "piece-invalid", detail: "no check export" }).success,
     ).toBe(false);
   });
 

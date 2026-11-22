@@ -7,11 +7,16 @@ import type { ContentHolding } from "../../../domain/language-layer/symptom-cata
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import { NO_VERSION_ONE_NAMES, readVersionOneNames, type VersionOneNames, VERSION_ONE_NAMES_SEGMENTS } from "../../disciplines-file/version-one-names.ts";
+import {
+  NO_VERSION_ONE_NAMES,
+  readVersionOneNames,
+  type VersionOneNames,
+  VERSION_ONE_NAMES_SEGMENTS,
+} from "../../disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../engines/engine-registry.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
-import { catalogueClausesOf } from "../rule-sets/installed-pieces.ts";
 import { createItemFolderCatalogueRepository } from "../item-folders/read-item-folder-catalogue.ts";
+import { catalogueClausesOf } from "../rule-sets/installed-pieces.ts";
 
 type CatalogueSource = {
   readonly fileText: FileTextPort;
@@ -23,27 +28,54 @@ type CatalogueSource = {
 
 const namesOfRuleSet = (request: CatalogueSource): Result<VersionOneNames, VersionTwoLoadFailure> =>
   request.ruleSetRoot === request.installRoot
-    ? readVersionOneNames({ fileText: request.fileText, path: request.path.join({ segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS] }) })
+    ? readVersionOneNames({
+        fileText: request.fileText,
+        path: request.path.join({ segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS] }),
+      })
     : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
 
-const readSymptomCatalogue = (request: CatalogueSource): Result<ContentHolding, VersionTwoLoadFailure> => {
-  const itemRoot = request.path.join({ segments: [request.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] });
+const readSymptomCatalogue = (
+  request: CatalogueSource,
+): Result<ContentHolding, VersionTwoLoadFailure> => {
+  const itemRoot = request.path.join({
+    segments: [request.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS],
+  });
   const root = absolutePathSchema.safeParse(itemRoot);
   if (!root.success) {
-    return { outcome: "failed", error: { kind: "file-unreadable", path: itemRoot, detail: "is not an absolute path" } };
+    return {
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: itemRoot, detail: "is not an absolute path" },
+    };
   }
   const names = namesOfRuleSet(request);
   if (names.outcome === "failed") {
     return names;
   }
-  const clauses = catalogueClausesOf({ ...request, installRoot: request.ruleSetRoot, names: names.value });
+  const clauses = catalogueClausesOf({
+    ...request,
+    installRoot: request.ruleSetRoot,
+    names: names.value,
+  });
   if (clauses.outcome === "failed") {
     return clauses;
   }
-  const beside = { engines: ENGINE_REGISTRY, clauses: clauses.value, clauseOfCheck: names.value.clauseOfCheck, formatsOfToday: names.value.formatsOfToday };
-  return createItemFolderCatalogueRepository({ fileText: request.fileText, directory: request.directory, path: request.path, root: root.data, beside }).read({});
+  const beside = {
+    engines: ENGINE_REGISTRY,
+    clauses: clauses.value,
+    clauseOfCheck: names.value.clauseOfCheck,
+    formatsOfToday: names.value.formatsOfToday,
+  };
+  return createItemFolderCatalogueRepository({
+    fileText: request.fileText,
+    directory: request.directory,
+    path: request.path,
+    root: root.data,
+    beside,
+  }).read({});
 };
 
-export const createSymptomCatalogueRepository = (options: CatalogueSource): SymptomCatalogueRepository => ({
+export const createSymptomCatalogueRepository = (
+  options: CatalogueSource,
+): SymptomCatalogueRepository => ({
   read: (_request) => readSymptomCatalogue(options),
 });

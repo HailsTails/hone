@@ -4,17 +4,13 @@
       "name": "assigning to a parameter",
       "fileName": "src/bump.ts",
       "source": "export const bump = (count: number): number => {\n  count = count + 1;\n  return count;\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "incrementing a parameter",
       "fileName": "src/bump.ts",
       "source": "export const bump = (count: number): number => {\n  count++;\n  return count;\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

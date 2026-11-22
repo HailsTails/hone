@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { recipesPageOf } from "./recipes-page.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+import { recipesPageOf } from "./recipes-page.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
@@ -12,7 +13,12 @@ const FILE: CatalogueFile = {
     { name: "tests-are-ours", title: "Tests are ours" },
   ],
   rules: [
-    { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: "one-place-decides", standing: "accepted" },
+    {
+      name: "doer-or-orchestrator",
+      title: "Doer or orchestrator",
+      principle: "one-place-decides",
+      standing: "accepted",
+    },
     { name: "one-job", title: "One job", principle: "one-place-decides", standing: "accepted" },
   ],
   cases: [],
@@ -24,7 +30,13 @@ const FILE: CatalogueFile = {
       standing: "accepted",
       reason: { text: "Adapters are built once.", standing: "accepted" },
     },
-    { name: "seam", title: "Seam", serves: { principle: "one-place-decides" }, standing: "accepted", reason: { text: "Seams split.", standing: "proposed" } },
+    {
+      name: "seam",
+      title: "Seam",
+      serves: { principle: "one-place-decides" },
+      standing: "accepted",
+      reason: { text: "Seams split.", standing: "proposed" },
+    },
   ],
   recordKinds: [],
   engines: [],
@@ -40,7 +52,12 @@ describe("recipesPageOf", () => {
       recipesPageOf({
         file: FILE,
         path: PATH,
-        prose: new Map([["typescript/recipes/composition-root.md", "- **Method:** One entry builds; see [the port](port-in-the-domain.md)."]]),
+        prose: new Map([
+          [
+            "typescript/recipes/composition-root.md",
+            "- **Method:** One entry builds; see [the port](port-in-the-domain.md).",
+          ],
+        ]),
       }),
     ).toEqual({
       path: "rules/typescript/recipes.md",

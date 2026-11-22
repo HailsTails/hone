@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { runPathOf } from "./run-path.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -13,9 +14,18 @@ const VERSION_ONE_FILE = { path: "/repo/disciplines.json" };
 
 const VERSION_TWO_FILE = { path: "/repo/hone.config.json" };
 
-const runPathWith = (request: { readonly versionOne: FilePresence; readonly versionTwo: FilePresence }) => {
-  const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce(request.versionOne).mockReturnValueOnce(request.versionTwo);
-  return { result: runPathOf({ fileText: { exists }, path: POSIX, repoRoot: REPO_ROOT }), asked: exists.mock.calls };
+const runPathWith = (request: {
+  readonly versionOne: FilePresence;
+  readonly versionTwo: FilePresence;
+}) => {
+  const exists = vi
+    .fn<FileTextPort["exists"]>()
+    .mockReturnValueOnce(request.versionOne)
+    .mockReturnValueOnce(request.versionTwo);
+  return {
+    result: runPathOf({ fileText: { exists }, path: POSIX, repoRoot: REPO_ROOT }),
+    asked: exists.mock.calls,
+  };
 };
 
 describe("runPathOf", () => {

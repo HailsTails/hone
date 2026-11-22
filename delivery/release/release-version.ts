@@ -43,7 +43,10 @@ export const versionOf = (request: { readonly text: string }): Result<Version, s
       major: Number(groups.major),
       minor: Number(groups.minor),
       patch: Number(groups.patch),
-      preRelease: groups.identifier === undefined ? undefined : { identifier: groups.identifier, number: Number(groups.number) },
+      preRelease:
+        groups.identifier === undefined
+          ? undefined
+          : { identifier: groups.identifier, number: Number(groups.number) },
     },
   };
 };
@@ -65,7 +68,10 @@ const asciiOrder = (request: { readonly left: string; readonly right: string }):
   return request.left < request.right ? -1 : 1;
 };
 
-const preReleasePrecedence = (request: { readonly left: PreRelease | undefined; readonly right: PreRelease | undefined }): number => {
+const preReleasePrecedence = (request: {
+  readonly left: PreRelease | undefined;
+  readonly right: PreRelease | undefined;
+}): number => {
   if (request.left === undefined || request.right === undefined) {
     return Number(request.left === undefined) - Number(request.right === undefined);
   }
@@ -88,14 +94,21 @@ const releaseOfTag = (request: { readonly tag: string }): readonly Release[] => 
   return version.outcome === "ok" ? [{ tag: request.tag, version: version.value }] : [];
 };
 
-export const releaseLineOf = (request: { readonly tags: readonly string[] }): Result<ReleaseLine, string> => {
+export const releaseLineOf = (request: {
+  readonly tags: readonly string[];
+}): Result<ReleaseLine, string> => {
   const releases = request.tags
     .flatMap((tag) => releaseOfTag({ tag }))
     .toSorted((left, right) => precedence({ left: right.version, right: left.version }));
   const [latest] = releases;
-  const start = releases.find((release) => channelOf({ version: release.version }) === "stable") ?? releases.at(-1);
+  const start =
+    releases.find((release) => channelOf({ version: release.version }) === "stable") ??
+    releases.at(-1);
   return latest === undefined || start === undefined
-    ? { outcome: "failed", error: `no release tag ${RELEASE_TAG_PREFIX}<version> is merged into HEAD` }
+    ? {
+        outcome: "failed",
+        error: `no release tag ${RELEASE_TAG_PREFIX}<version> is merged into HEAD`,
+      }
     : { outcome: "ok", value: { latest, start } };
 };
 
@@ -109,7 +122,9 @@ export const changeSizeOf = (request: { readonly entry: ChangeEntry }): ReleaseS
   return request.entry.subject.type === "feat" ? "minor" : "patch";
 };
 
-export const releaseSizeOf = (request: { readonly entries: readonly ChangeEntry[] }): ReleaseSize | "nothing" => {
+export const releaseSizeOf = (request: {
+  readonly entries: readonly ChangeEntry[];
+}): ReleaseSize | "nothing" => {
   const sizes = new Set(request.entries.map((entry) => changeSizeOf({ entry })));
   return SIZES_LARGEST_FIRST.find((size) => sizes.has(size)) ?? "nothing";
 };
@@ -123,35 +138,73 @@ const sizeTargetedBy = (request: { readonly version: Version }): ReleaseSize => 
 
 type TargetFit = "within-target" | "beyond-target";
 
-const targetFitOf = (request: { readonly size: ReleaseSize; readonly target: ReleaseSize }): TargetFit =>
-  SIZES_LARGEST_FIRST.indexOf(request.size) >= SIZES_LARGEST_FIRST.indexOf(request.target) ? "within-target" : "beyond-target";
+const targetFitOf = (request: {
+  readonly size: ReleaseSize;
+  readonly target: ReleaseSize;
+}): TargetFit =>
+  SIZES_LARGEST_FIRST.indexOf(request.size) >= SIZES_LARGEST_FIRST.indexOf(request.target)
+    ? "within-target"
+    : "beyond-target";
 
-const incremented = (request: { readonly version: Version; readonly size: ReleaseSize }): Version => {
+const incremented = (request: {
+  readonly version: Version;
+  readonly size: ReleaseSize;
+}): Version => {
   switch (request.size) {
     case "major":
       return { major: request.version.major + 1, minor: 0, patch: 0, preRelease: undefined };
     case "minor":
-      return { major: request.version.major, minor: request.version.minor + 1, patch: 0, preRelease: undefined };
+      return {
+        major: request.version.major,
+        minor: request.version.minor + 1,
+        patch: 0,
+        preRelease: undefined,
+      };
     case "patch":
-      return { major: request.version.major, minor: request.version.minor, patch: request.version.patch + 1, preRelease: undefined };
+      return {
+        major: request.version.major,
+        minor: request.version.minor,
+        patch: request.version.patch + 1,
+        preRelease: undefined,
+      };
   }
 };
 
-const onChannel = (request: { readonly version: Version; readonly channel: ReleaseChannel; readonly preRelease: PreRelease }): Version =>
-  request.channel === "stable" ? { ...request.version, preRelease: undefined } : { ...request.version, preRelease: request.preRelease };
+const onChannel = (request: {
+  readonly version: Version;
+  readonly channel: ReleaseChannel;
+  readonly preRelease: PreRelease;
+}): Version =>
+  request.channel === "stable"
+    ? { ...request.version, preRelease: undefined }
+    : { ...request.version, preRelease: request.preRelease };
 
-export const nextVersionOf = (request: { readonly current: Version; readonly size: ReleaseSize; readonly channel: ReleaseChannel }): Version => {
+export const nextVersionOf = (request: {
+  readonly current: Version;
+  readonly size: ReleaseSize;
+  readonly channel: ReleaseChannel;
+}): Version => {
   const currentPreRelease = request.current.preRelease;
-  if (currentPreRelease !== undefined && targetFitOf({ size: request.size, target: sizeTargetedBy({ version: request.current }) }) === "within-target") {
+  if (
+    currentPreRelease !== undefined &&
+    targetFitOf({ size: request.size, target: sizeTargetedBy({ version: request.current }) }) ===
+      "within-target"
+  ) {
     return onChannel({
       version: request.current,
       channel: request.channel,
-      preRelease: { identifier: currentPreRelease.identifier, number: currentPreRelease.number + 1 },
+      preRelease: {
+        identifier: currentPreRelease.identifier,
+        number: currentPreRelease.number + 1,
+      },
     });
   }
   return onChannel({
     version: incremented({ version: request.current, size: request.size }),
     channel: request.channel,
-    preRelease: { identifier: currentPreRelease?.identifier ?? NEW_PRE_RELEASE_IDENTIFIER, number: FIRST_PRE_RELEASE_NUMBER },
+    preRelease: {
+      identifier: currentPreRelease?.identifier ?? NEW_PRE_RELEASE_IDENTIFIER,
+      number: FIRST_PRE_RELEASE_NUMBER,
+    },
   });
 };

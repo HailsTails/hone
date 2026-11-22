@@ -4,17 +4,13 @@
       "name": "vi.fn with an implementation",
       "fileName": "clock.test.ts",
       "source": "const clock = { now: vi.fn(() => 1) };\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "mockImplementation call",
       "fileName": "port.test.ts",
       "source": "const port = vi.fn();\nport.mockImplementation(() => 2);\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

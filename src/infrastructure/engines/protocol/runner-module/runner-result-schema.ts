@@ -1,11 +1,17 @@
 import { z } from "zod";
-import { anchorSchema } from "./anchor-schema.ts";
+
+import type {
+  CaseVerdict,
+  Hit,
+  MeasuredPair,
+  ProjectionWrite,
+} from "../../../../domain/runner/runner-result-types.ts";
 import { clauseAddressObjectSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import { anchorSchema } from "./anchor-schema.ts";
+import { runnerFailureSchema } from "./runner-failure-schema.ts";
 import { snippetSchema } from "./snippet.ts";
 import type { DeepReadonly, Equal } from "./type-equality.ts";
-import { runnerFailureSchema } from "./runner-failure-schema.ts";
-import type { CaseVerdict, Hit, MeasuredPair, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
 
 export const reportedCheckSchema = z.string().min(1);
 
@@ -20,7 +26,8 @@ export const nativeExceptionKindSchema = z.enum([
 
 const PAGE_SECTION = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const PAGE_UNDER_ITS_FOLDER = /^(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*\/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.md$/;
+const PAGE_UNDER_ITS_FOLDER =
+  /^(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*\/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.md$/;
 
 export const remedySchema = z
   .object({
@@ -51,7 +58,10 @@ export const measuredPairSchema = z
   })
   .readonly();
 
-export const isMeasuredPairSchemaEqual: Equal<DeepReadonly<z.output<typeof measuredPairSchema>>, MeasuredPair> = true;
+export const isMeasuredPairSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof measuredPairSchema>>,
+  MeasuredPair
+> = true;
 
 export const measuredSchema = z.array(measuredPairSchema).readonly().optional();
 
@@ -62,7 +72,10 @@ export const caseVerdictSchema = z
   })
   .readonly();
 
-export const isCaseVerdictSchemaEqual: Equal<DeepReadonly<z.output<typeof caseVerdictSchema>>, CaseVerdict> = true;
+export const isCaseVerdictSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof caseVerdictSchema>>,
+  CaseVerdict
+> = true;
 
 export const projectionWriteSchema = z
   .object({
@@ -71,11 +84,12 @@ export const projectionWriteSchema = z
   })
   .readonly();
 
-export const isProjectionWriteSchemaEqual: Equal<DeepReadonly<z.output<typeof projectionWriteSchema>>, ProjectionWrite> = true;
+export const isProjectionWriteSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof projectionWriteSchema>>,
+  ProjectionWrite
+> = true;
 
-export const runnerResultSchema = <Value extends z.ZodType>(request: {
-  readonly value: Value;
-}) =>
+export const runnerResultSchema = <Value extends z.ZodType>(request: { readonly value: Value }) =>
   z.union([
     z.object({ outcome: z.literal("ok"), value: request.value }).readonly(),
     z.object({ outcome: z.literal("failed"), error: runnerFailureSchema }).readonly(),

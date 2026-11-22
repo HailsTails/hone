@@ -1,9 +1,14 @@
 import platformPath, { posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
+
+import type {
+  PathPort,
+  RelativeLocation,
+  UnresolvablePath,
+} from "../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { PathPort, RelativeLocation, UnresolvablePath } from "../../application/ports/host/path-port.ts";
+import { absolutePathSchema } from "../content-files/absolute-path.ts";
 
 type FileUrlFailure = {
   readonly outcome: "failed";
@@ -42,7 +47,10 @@ const absolutePathOfFileUrl = (request: {
   }
 };
 
-const absolutePathOf = (request: { readonly path: string; readonly resolved: string }): Result<AbsolutePath, UnresolvablePath> => {
+const absolutePathOf = (request: {
+  readonly path: string;
+  readonly resolved: string;
+}): Result<AbsolutePath, UnresolvablePath> => {
   const parsed = absolutePathSchema.safeParse(request.resolved);
   if (!parsed.success) {
     return { outcome: "failed", error: { kind: "working-directory-unusable", path: request.path } };
@@ -51,7 +59,9 @@ const absolutePathOf = (request: { readonly path: string; readonly resolved: str
 };
 
 const fileUrlForm = (request: { readonly url: string }): "file-url" | "not-a-file-url" =>
-  URL.canParse(request.url) && new URL(request.url).protocol === "file:" ? "file-url" : "not-a-file-url";
+  URL.canParse(request.url) && new URL(request.url).protocol === "file:"
+    ? "file-url"
+    : "not-a-file-url";
 
 export type WorkingDirectory = (request: Record<string, never>) => string;
 
@@ -79,7 +89,10 @@ type RootForm = "fully-rooted" | "rooted-without-drive" | "drive-relative" | "re
 
 const DRIVE_LESS_ROOTS: readonly string[] = ["\\", "/"];
 
-const rootFormOf = (request: { readonly path: string; readonly surface: PathSurface }): RootForm => {
+const rootFormOf = (request: {
+  readonly path: string;
+  readonly surface: PathSurface;
+}): RootForm => {
   const root = request.surface.parse(request.path).root;
   if (root === "") {
     return "relative";
@@ -110,7 +123,9 @@ const driveRelationOf = (request: {
   readonly surface: PathSurface;
 }): "same-drive" | "another-drive" =>
   request.reading.usability === "usable" &&
-  rootOf({ path: request.reading.directory, surface: request.surface }).startsWith(request.driveRoot.toLowerCase())
+  rootOf({ path: request.reading.directory, surface: request.surface }).startsWith(
+    request.driveRoot.toLowerCase(),
+  )
     ? "same-drive"
     : "another-drive";
 
@@ -121,7 +136,10 @@ const driveRelativeFormOf = (request: {
 }): string => {
   const driveRoot = request.surface.parse(request.path).root;
   const reading = workingDirectoryReadingOf(request);
-  if (reading.usability === "unusable" || driveRelationOf({ driveRoot, reading, surface: request.surface }) === "another-drive") {
+  if (
+    reading.usability === "unusable" ||
+    driveRelationOf({ driveRoot, reading, surface: request.surface }) === "another-drive"
+  ) {
     return request.surface.resolve(`${driveRoot}${request.surface.sep}`, request.path);
   }
   return request.surface.resolve(reading.directory, request.path);
@@ -171,8 +189,13 @@ const absoluteFormOf = (request: {
 
 type DriveForm = "drive-carrying" | "drive-less";
 
-const driveFormOf = (request: { readonly path: string; readonly surface: PathSurface }): DriveForm =>
-  request.surface === win32 && rootFormOf(request) === "fully-rooted" ? "drive-carrying" : "drive-less";
+const driveFormOf = (request: {
+  readonly path: string;
+  readonly surface: PathSurface;
+}): DriveForm =>
+  request.surface === win32 && rootFormOf(request) === "fully-rooted"
+    ? "drive-carrying"
+    : "drive-less";
 
 const relativeLocationBetween = (request: {
   readonly from: string;
@@ -199,15 +222,21 @@ const relativeLocationOf = (request: {
   readonly to: string;
   readonly surface: PathSurface;
 }): RelativeLocation =>
-  rootOf({ path: request.from, surface: request.surface }) === rootOf({ path: request.to, surface: request.surface })
+  rootOf({ path: request.from, surface: request.surface }) ===
+  rootOf({ path: request.to, surface: request.surface })
     ? {
         relation: "within-root",
-        path: repositoryFormOf({ surface: request.surface, path: request.surface.relative(request.from, request.to) }),
+        path: repositoryFormOf({
+          surface: request.surface,
+          path: request.surface.relative(request.from, request.to),
+        }),
       }
     : { relation: "different-root" };
 
-const repositoryFormOf = (request: { readonly path: string; readonly surface: PathSurface }): string =>
-  request.path.split(request.surface.sep).join(REPOSITORY_SEPARATOR);
+const repositoryFormOf = (request: {
+  readonly path: string;
+  readonly surface: PathSurface;
+}): string => request.path.split(request.surface.sep).join(REPOSITORY_SEPARATOR);
 
 type PathSurface = typeof posix;
 
@@ -233,15 +262,27 @@ const portOver = (options: {
   relative: (request) =>
     relativeLocationBetween({
       surface: options.surface,
-      from: absoluteFormOf({ path: request.from, surface: options.surface, workingDirectory: options.workingDirectory }),
-      to: absoluteFormOf({ path: request.to, surface: options.surface, workingDirectory: options.workingDirectory }),
+      from: absoluteFormOf({
+        path: request.from,
+        surface: options.surface,
+        workingDirectory: options.workingDirectory,
+      }),
+      to: absoluteFormOf({
+        path: request.to,
+        surface: options.surface,
+        workingDirectory: options.workingDirectory,
+      }),
     }),
   directoryOf: (request) => options.surface.dirname(request.path),
   repositoryDirectoryOf: (request) => posix.dirname(request.path),
   resolve: (request) =>
     absolutePathOf({
       path: request.path,
-      resolved: absoluteFormOf({ path: request.path, surface: options.surface, workingDirectory: options.workingDirectory }),
+      resolved: absoluteFormOf({
+        path: request.path,
+        surface: options.surface,
+        workingDirectory: options.workingDirectory,
+      }),
     }),
   fromFileUrl: (request) =>
     fileUrlForm({ url: request.url }) === "not-a-file-url"
@@ -252,7 +293,11 @@ const portOver = (options: {
 export const createPathPort = (options: {
   readonly flavour: PathFlavour;
   readonly workingDirectory: WorkingDirectory;
-}): PathPort => portOver({ surface: surfaceOf({ flavour: options.flavour }), workingDirectory: options.workingDirectory });
+}): PathPort =>
+  portOver({
+    surface: surfaceOf({ flavour: options.flavour }),
+    workingDirectory: options.workingDirectory,
+  });
 
 export const defaultWorkingDirectory: WorkingDirectory = () => process.cwd();
 

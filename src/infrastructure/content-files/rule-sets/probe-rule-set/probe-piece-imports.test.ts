@@ -1,8 +1,12 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { pieceImportFindings } from "../../import-boundaries/piece-import-rules.ts";
-import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 
-const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
+import type { PathPort } from "../../../../application/ports/host/path-port.ts";
+import { pieceImportFindings } from "../../import-boundaries/piece-import-rules.ts";
+
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
   const entry = request.table[request.key];
   assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
   return entry;
@@ -12,46 +16,66 @@ declare global {
   interface ImportMeta {
     readonly glob: (
       patterns: readonly string[],
-      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
+      options: {
+        readonly base: string;
+        readonly query: "?raw";
+        readonly import: "default";
+        readonly eager: true;
+      },
     ) => Readonly<Record<string, string>>;
   }
 }
 
 const sources = import.meta.glob(
-  ["./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/*/*/**/*.ts", "!./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/*/*/**/*.test.ts"],
+  [
+    "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/*/*/**/*.ts",
+    "!./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/*/*/**/*.test.ts",
+  ],
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
 );
 
-const typePackageTexts = import.meta.glob(["./src/infrastructure/engines/*/runner/piece-type-packages.json"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const typePackageTexts = import.meta.glob(
+  ["./src/infrastructure/engines/*/runner/piece-type-packages.json"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
 const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
-  '["./src/infrastructure/engines/eslint/runner/piece-type-packages.json"]': "src/infrastructure/engines/eslint/runner/piece-type-packages.json",
-  '[".","src","infrastructure","engines","walker","runner","piece-type-packages.json"]': "src/infrastructure/engines/walker/runner/piece-type-packages.json",
-  '["./src/infrastructure/engines/walker/runner/piece-type-packages.json"]': "src/infrastructure/engines/walker/runner/piece-type-packages.json",
-  '["./src/infrastructure/content-files/rule-sets/probe-rule-set","mechanisms","audit","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
-  '["./src/infrastructure/content-files/rule-sets/probe-rule-set","rules","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/rules/PD-1",
-  '[".","src","infrastructure","engines","walker","runner"]': "src/infrastructure/engines/walker/runner",
+  '["./src/infrastructure/engines/eslint/runner/piece-type-packages.json"]':
+    "src/infrastructure/engines/eslint/runner/piece-type-packages.json",
+  '[".","src","infrastructure","engines","walker","runner","piece-type-packages.json"]':
+    "src/infrastructure/engines/walker/runner/piece-type-packages.json",
+  '["./src/infrastructure/engines/walker/runner/piece-type-packages.json"]':
+    "src/infrastructure/engines/walker/runner/piece-type-packages.json",
+  '["./src/infrastructure/content-files/rule-sets/probe-rule-set","mechanisms","audit","PD-1"]':
+    "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
+  '["./src/infrastructure/content-files/rule-sets/probe-rule-set","rules","PD-1"]':
+    "src/infrastructure/content-files/rule-sets/probe-rule-set/rules/PD-1",
+  '[".","src","infrastructure","engines","walker","runner"]':
+    "src/infrastructure/engines/walker/runner",
   '[".","src","domain"]': "src/domain",
   '[".","src","application","ports"]': "src/application/ports",
   '[".","src","infrastructure","content-files"]': "src/infrastructure/content-files",
-  '[".","src","infrastructure","discipline-exceptions-folder"]': "src/infrastructure/discipline-exceptions-folder",
+  '[".","src","infrastructure","discipline-exceptions-folder"]':
+    "src/infrastructure/discipline-exceptions-folder",
   '["./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1","../../../../../../engines/walker/runner/pieces/walker-piece.ts"]':
     "src/infrastructure/engines/walker/runner/pieces/walker-piece.ts",
 };
 
 const REPOSITORY_DIRECTORIES: Readonly<Record<string, string>> = {
-  "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts": "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
+  "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts":
+    "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
 };
 
 const TABLE_PATH: PathPort = {
   join: vi.fn<PathPort["join"]>(),
   relative: vi.fn<PathPort["relative"]>(),
-  joinRepository: ({ segments }) => requiredEntry({ table: JOINED_REPOSITORY_PATHS, key: JSON.stringify(segments) }),
+  joinRepository: ({ segments }) =>
+    requiredEntry({ table: JOINED_REPOSITORY_PATHS, key: JSON.stringify(segments) }),
   directoryOf: vi.fn<PathPort["directoryOf"]>(),
   repositoryDirectoryOf: ({ path }) => requiredEntry({ table: REPOSITORY_DIRECTORIES, key: path }),
   resolve: vi.fn<PathPort["resolve"]>(),

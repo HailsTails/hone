@@ -1,17 +1,38 @@
-import { AUTHORISE_COMMAND_OPTIONS, COMMANDS, type CommandOption, type CommandSpec, HELP_FLAGS, UPGRADE_SUBCOMMAND, VERSION_FLAG } from "./command-line.ts";
 import { RECORDS_FOLDER } from "../../../domain/records/hone-records/records-layout.ts";
-import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import { FORFEITURE_ASSESSMENTS } from "../../../domain/settings/assessment.ts";
 import { VERSION_TWO_REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
+import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import {
+  AUTHORISE_COMMAND_OPTIONS,
+  COMMANDS,
+  type CommandOption,
+  type CommandSpec,
+  HELP_FLAGS,
+  UPGRADE_SUBCOMMAND,
+  VERSION_FLAG,
+} from "./command-line.ts";
 
-export type RunSubcommand = "check" | "project" | "record-debt" | "prune-debt" | "authorise" | "upgrade";
+export type RunSubcommand =
+  | "check"
+  | "project"
+  | "record-debt"
+  | "prune-debt"
+  | "authorise"
+  | "upgrade";
 
 export type RunHelpTopic = "tool" | RunSubcommand;
 
 type HelpEntry = { readonly term: string; readonly text: string };
 
-export const RUN_SUBCOMMANDS: readonly RunSubcommand[] = ["check", "project", "record-debt", "prune-debt", "authorise", "upgrade"];
+export const RUN_SUBCOMMANDS: readonly RunSubcommand[] = [
+  "check",
+  "project",
+  "record-debt",
+  "prune-debt",
+  "authorise",
+  "upgrade",
+];
 
 const COMMAND = TOOL_IDENTITY.command;
 
@@ -27,7 +48,8 @@ const HELP_TERM = HELP_FLAGS.join(", ");
 
 const LOAD_FAILURE_EXIT = "a load failure: an input could not be loaded, an engine failed";
 
-const choiceValue = (request: { readonly choices: readonly string[] }): string => `<${request.choices.join("|")}>`;
+const choiceValue = (request: { readonly choices: readonly string[] }): string =>
+  `<${request.choices.join("|")}>`;
 
 const REPO_OPTION: CommandOption = {
   name: "--repo",
@@ -42,7 +64,8 @@ const BASE_REVISION_OPTION: CommandOption = {
   value: "<revision>",
   need: "optional",
   occurrence: "once",
-  summary: "the revision the change is measured from; without it no debt can be forfeited and no carried record is checked against it",
+  summary:
+    "the revision the change is measured from; without it no debt can be forfeited and no carried record is checked against it",
 };
 
 const REPORT_OUTPUT_OPTION: CommandOption = {
@@ -74,7 +97,8 @@ const LEAVE_OPTION: CommandOption = {
   value: "<path>",
   need: "optional",
   occurrence: "repeated",
-  summary: "a file or folder, relative to --repo, that gets no debt because a person records it as an authorised location; give it once for each path",
+  summary:
+    "a file or folder, relative to --repo, that gets no debt because a person records it as an authorised location; give it once for each path",
 };
 
 export const RUN_COMMANDS: Readonly<Record<RunSubcommand, CommandSpec>> = {
@@ -88,7 +112,8 @@ export const RUN_COMMANDS: Readonly<Record<RunSubcommand, CommandSpec>> = {
     ],
   },
   project: {
-    summary: "write the native configuration, hone.<engine>.mjs, and any file that types it beside it, for each engine that runs a listed check through one, printing each file as written or unchanged",
+    summary:
+      "write the native configuration, hone.<engine>.mjs, and any file that types it beside it, for each engine that runs a listed check through one, printing each file as written or unchanged",
     options: [REPO_OPTION],
     exits: [
       { code: 0, meaning: "every projection was written or already current" },
@@ -100,23 +125,40 @@ export const RUN_COMMANDS: Readonly<Record<RunSubcommand, CommandSpec>> = {
     options: [REPO_OPTION, ADOPTION_BASE_REVISION_OPTION, LEAVE_OPTION],
     exits: [
       { code: 0, meaning: "every debt needed was written, or none was needed" },
-      { code: 2, meaning: `${LOAD_FAILURE_EXIT}, the records could not be written, or Hone failed unexpectedly` },
+      {
+        code: 2,
+        meaning: `${LOAD_FAILURE_EXIT}, the records could not be written, or Hone failed unexpectedly`,
+      },
     ],
   },
   "prune-debt": {
     summary: `remove from ${RECORDS_FOLDER} the debt a run shows is paid, stale or forfeited, printing each debt removed`,
     options: [REPO_OPTION, BASE_REVISION_OPTION, FORFEITURE_OPTION],
     exits: [
-      { code: 0, meaning: "every debt the run showed paid, stale or forfeited was removed, or none was shown" },
-      { code: 2, meaning: `${LOAD_FAILURE_EXIT}, the records could not be written, or Hone failed unexpectedly` },
+      {
+        code: 0,
+        meaning:
+          "every debt the run showed paid, stale or forfeited was removed, or none was shown",
+      },
+      {
+        code: 2,
+        meaning: `${LOAD_FAILURE_EXIT}, the records could not be written, or Hone failed unexpectedly`,
+      },
     ],
   },
   authorise: {
     summary: `write one authorised location to ${RECORDS_FOLDER} from the arguments given, with the why chain given, printing what was done`,
     options: [REPO_OPTION, ...AUTHORISE_COMMAND_OPTIONS],
     exits: [
-      { code: 0, meaning: "the location was written, was already held, or was refused with each reason printed" },
-      { code: 2, meaning: `${LOAD_FAILURE_EXIT}, the records could not be written, or Hone failed unexpectedly` },
+      {
+        code: 0,
+        meaning:
+          "the location was written, was already held, or was refused with each reason printed",
+      },
+      {
+        code: 2,
+        meaning: `${LOAD_FAILURE_EXIT}, the records could not be written, or Hone failed unexpectedly`,
+      },
     ],
   },
   upgrade: COMMANDS[UPGRADE_SUBCOMMAND],
@@ -128,7 +170,10 @@ const alignedEntries = (request: { readonly entries: readonly HelpEntry[] }): re
 };
 
 const stackedEntries = (request: { readonly entries: readonly HelpEntry[] }): readonly string[] =>
-  request.entries.flatMap((entry) => [`${INDENT}${entry.term}`, `${DESCRIPTION_INDENT}${entry.text}`]);
+  request.entries.flatMap((entry) => [
+    `${INDENT}${entry.term}`,
+    `${DESCRIPTION_INDENT}${entry.text}`,
+  ]);
 
 const usageTerm = (request: { readonly option: CommandOption }): string => {
   const term = `${request.option.name} ${request.option.value}`;
@@ -139,20 +184,35 @@ const usageTerm = (request: { readonly option: CommandOption }): string => {
 const commandUsage = (request: { readonly subcommand: RunSubcommand }): string =>
   `${COMMAND} ${request.subcommand} ${RUN_COMMANDS[request.subcommand].options.map((option) => usageTerm({ option })).join(" ")}`;
 
-const helpLines = (request: { readonly blocks: readonly (readonly string[])[] }): string => `${request.blocks.map((block) => block.join("\n")).join("\n\n")}\n`;
+const helpLines = (request: { readonly blocks: readonly (readonly string[])[] }): string =>
+  `${request.blocks.map((block) => block.join("\n")).join("\n\n")}\n`;
 
 const toolHelp = (): string =>
   helpLines({
     blocks: [
       [`usage: ${COMMAND} <command> [options]`],
       [DESCRIPTION],
-      ["commands:", ...alignedEntries({ entries: RUN_SUBCOMMANDS.map((subcommand) => ({ term: subcommand, text: RUN_COMMANDS[subcommand].summary })) })],
+      [
+        "commands:",
+        ...alignedEntries({
+          entries: RUN_SUBCOMMANDS.map((subcommand) => ({
+            term: subcommand,
+            text: RUN_COMMANDS[subcommand].summary,
+          })),
+        }),
+      ],
       [
         "options:",
         ...alignedEntries({
           entries: [
-            { term: HELP_TERM, text: "print this help; after a command, print that command's help" },
-            { term: VERSION_FLAG, text: `print the installed version of ${TOOL_IDENTITY.packageName}` },
+            {
+              term: HELP_TERM,
+              text: "print this help; after a command, print that command's help",
+            },
+            {
+              term: VERSION_FLAG,
+              text: `print the installed version of ${TOOL_IDENTITY.packageName}`,
+            },
           ],
         }),
       ],
@@ -169,10 +229,21 @@ const subcommandHelp = (request: { readonly subcommand: RunSubcommand }): string
       [
         "options:",
         ...stackedEntries({
-          entries: [...spec.options.map((option) => ({ term: `${option.name} ${option.value}`, text: option.summary })), { term: HELP_TERM, text: "print this help" }],
+          entries: [
+            ...spec.options.map((option) => ({
+              term: `${option.name} ${option.value}`,
+              text: option.summary,
+            })),
+            { term: HELP_TERM, text: "print this help" },
+          ],
         }),
       ],
-      ["exit codes:", ...alignedEntries({ entries: spec.exits.map((exit) => ({ term: String(exit.code), text: exit.meaning })) })],
+      [
+        "exit codes:",
+        ...alignedEntries({
+          entries: spec.exits.map((exit) => ({ term: String(exit.code), text: exit.meaning })),
+        }),
+      ],
     ],
   });
 };

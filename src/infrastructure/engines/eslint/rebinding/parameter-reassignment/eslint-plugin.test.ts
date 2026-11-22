@@ -1,21 +1,34 @@
 import { assert, describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../runner/toolchain/eslint-toolchain.ts";
 import cd44Plugin from "./eslint-plugin.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: cd44Plugin }).default;
 
 const loadedToolchain = await loadEslintToolchain({
-  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultEslintToolchainPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
-assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
-assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+assert(
+  loadedToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
+assert(
+  /^10\./.test(loadedToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
+);
 
 const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
@@ -35,13 +48,15 @@ const flagCases: readonly SourceCase[] = [
   {
     name: "a destructured parameter being reassigned",
     fileName: repoPathOf("destructured-param.ts"),
-    source: "export function read({ label }: { label: string }): string {\n  label = label.trim();\n  return label;\n}\n",
+    source:
+      "export function read({ label }: { label: string }): string {\n  label = label.trim();\n  return label;\n}\n",
     expectedLines: [2],
   },
   {
     name: "a default valued parameter being reassigned",
     fileName: repoPathOf("default-param.ts"),
-    source: "export function grow(size: number = 1): number {\n  size = size * 2;\n  return size;\n}\n",
+    source:
+      "export function grow(size: number = 1): number {\n  size = size * 2;\n  return size;\n}\n",
     expectedLines: [2],
   },
 ];
@@ -50,19 +65,22 @@ const allowCases: readonly SourceCase[] = [
   {
     name: "mutating a property of a parameter",
     fileName: repoPathOf("property-write.ts"),
-    source: "export function rename(target: { label: string }, label: string): void {\n  target.label = label;\n}\n",
+    source:
+      "export function rename(target: { label: string }, label: string): void {\n  target.label = label;\n}\n",
     expectedLines: [],
   },
   {
     name: "reassigning a local variable",
     fileName: repoPathOf("local-reassign.ts"),
-    source: "export function grow(size: number): number {\n  let grown = size;\n  grown += 1;\n  return grown;\n}\n",
+    source:
+      "export function grow(size: number): number {\n  let grown = size;\n  grown += 1;\n  return grown;\n}\n",
     expectedLines: [],
   },
   {
     name: "a shadowing local with the parameter name",
     fileName: repoPathOf("shadowed-local.ts"),
-    source: "export function grow(size: number): number {\n  {\n    let size = 2;\n    size = 3;\n  }\n  return size;\n}\n",
+    source:
+      "export function grow(size: number): number {\n  {\n    let size = 2;\n    size = 3;\n  }\n  return size;\n}\n",
     expectedLines: [],
   },
   {
@@ -74,19 +92,22 @@ const allowCases: readonly SourceCase[] = [
 ];
 
 describe("CD-44 no-param-reassign rule through the ESLint runner's lintSourceCases", () => {
-  it.each([...flagCases, ...allowCases])("flags exactly the expected lines of the case $name", async (sourceCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone-cd44",
-        rule: "no-param-reassign",
-        options: [{ props: false }],
-        cases: [sourceCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
-    });
-  });
+  it.each([...flagCases, ...allowCases])(
+    "flags exactly the expected lines of the case $name",
+    async (sourceCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone-cd44",
+          rule: "no-param-reassign",
+          options: [{ props: false }],
+          cases: [sourceCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
+      });
+    },
+  );
 });

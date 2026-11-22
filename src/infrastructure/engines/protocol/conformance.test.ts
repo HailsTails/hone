@@ -1,18 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+
 import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
-import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
-import { checkConformance } from "./conformance.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
+import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+import { checkConformance } from "./conformance.ts";
 
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 
 const CLASS_SYNTAX_CLAUSE: RunnerClause = {
-  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  address: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",
   clauseSettings: {},
@@ -121,7 +126,14 @@ describe("checkConformance", () => {
       }),
     ).resolves.toEqual({
       outcome: "ok",
-      value: [{ clause: CLASS_SYNTAX_OBJECT, caseName: "two classes", expectedLines: [1, 3], flaggedLines: [1] }],
+      value: [
+        {
+          clause: CLASS_SYNTAX_OBJECT,
+          caseName: "two classes",
+          expectedLines: [1, 3],
+          flaggedLines: [1],
+        },
+      ],
     });
   });
 
@@ -138,7 +150,9 @@ describe("checkConformance", () => {
       }),
     ).resolves.toEqual({
       outcome: "ok",
-      value: [{ clause: CLASS_SYNTAX_OBJECT, caseName: "no class", expectedLines: [], flaggedLines: [1] }],
+      value: [
+        { clause: CLASS_SYNTAX_OBJECT, caseName: "no class", expectedLines: [], flaggedLines: [1] },
+      ],
     });
   });
 
@@ -147,20 +161,39 @@ describe("checkConformance", () => {
       checkConformance({
         clause: CLASS_SYNTAX_CLAUSE,
         cases: [{ ...CLASS_ON_LINES_1_AND_3, expectedLines: [3, 1, 3] }],
-        runner: conformingWith({ outcome: "ok", value: [{ caseName: "two classes", flaggedLines: [5, 1, 5, 2] }] }),
+        runner: conformingWith({
+          outcome: "ok",
+          value: [{ caseName: "two classes", flaggedLines: [5, 1, 5, 2] }],
+        }),
       }),
     ).resolves.toEqual({
       outcome: "ok",
-      value: [{ clause: CLASS_SYNTAX_OBJECT, caseName: "two classes", expectedLines: [1, 3], flaggedLines: [1, 2, 5] }],
+      value: [
+        {
+          clause: CLASS_SYNTAX_OBJECT,
+          caseName: "two classes",
+          expectedLines: [1, 3],
+          flaggedLines: [1, 2, 5],
+        },
+      ],
     });
   });
 
   it("is runner-invalid-output when the verdicts miss a case", async () => {
     await expect(
       conformanceOf({
-        runner: conformingWith({ outcome: "ok", value: [{ caseName: "two classes", flaggedLines: [1, 3] }] }),
+        runner: conformingWith({
+          outcome: "ok",
+          value: [{ caseName: "two classes", flaggedLines: [1, 3] }],
+        }),
       }),
-    ).resolves.toMatchObject({ outcome: "failed", error: { kind: "runner-invalid-output", detail: expect.stringContaining("case no class has no single verdict") } });
+    ).resolves.toMatchObject({
+      outcome: "failed",
+      error: {
+        kind: "runner-invalid-output",
+        detail: expect.stringContaining("case no class has no single verdict"),
+      },
+    });
   });
 
   it("is runner-invalid-output when two verdicts name the same case", async () => {
@@ -175,7 +208,13 @@ describe("checkConformance", () => {
           ],
         }),
       }),
-    ).resolves.toMatchObject({ outcome: "failed", error: { kind: "runner-invalid-output", detail: expect.stringContaining("case two classes has no single verdict") } });
+    ).resolves.toMatchObject({
+      outcome: "failed",
+      error: {
+        kind: "runner-invalid-output",
+        detail: expect.stringContaining("case two classes has no single verdict"),
+      },
+    });
   });
 
   it("is runner-invalid-output when a verdict names an unknown case", async () => {
@@ -190,7 +229,13 @@ describe("checkConformance", () => {
           ],
         }),
       }),
-    ).resolves.toMatchObject({ outcome: "failed", error: { kind: "runner-invalid-output", detail: expect.stringContaining("a verdict names the unknown case three classes") } });
+    ).resolves.toMatchObject({
+      outcome: "failed",
+      error: {
+        kind: "runner-invalid-output",
+        detail: expect.stringContaining("a verdict names the unknown case three classes"),
+      },
+    });
   });
 
   it("is runner-invalid-output when a verdict flags line 0", async () => {
@@ -204,7 +249,13 @@ describe("checkConformance", () => {
           ],
         }),
       }),
-    ).resolves.toMatchObject({ outcome: "failed", error: { kind: "runner-invalid-output", detail: expect.stringContaining("→ at value[0].flaggedLines[0]") } });
+    ).resolves.toMatchObject({
+      outcome: "failed",
+      error: {
+        kind: "runner-invalid-output",
+        detail: expect.stringContaining("→ at value[0].flaggedLines[0]"),
+      },
+    });
   });
 
   it("is runner-invalid-output when conform throws synchronously", async () => {
@@ -214,7 +265,10 @@ describe("checkConformance", () => {
     };
     await expect(conformanceOf({ runner })).resolves.toMatchObject({
       outcome: "failed",
-      error: { kind: "runner-invalid-output", detail: expect.stringContaining("the runner call threw or rejected: the runner threw") },
+      error: {
+        kind: "runner-invalid-output",
+        detail: expect.stringContaining("the runner call threw or rejected: the runner threw"),
+      },
     });
   });
 
@@ -225,7 +279,10 @@ describe("checkConformance", () => {
     };
     await expect(conformanceOf({ runner })).resolves.toMatchObject({
       outcome: "failed",
-      error: { kind: "runner-invalid-output", detail: expect.stringContaining("the runner call threw or rejected: the runner rejected") },
+      error: {
+        kind: "runner-invalid-output",
+        detail: expect.stringContaining("the runner call threw or rejected: the runner rejected"),
+      },
     });
   });
 
@@ -234,12 +291,20 @@ describe("checkConformance", () => {
       conformanceOf({
         runner: conformingWith({
           outcome: "failed",
-          error: { kind: "piece-invalid", pieceRoot: "/install/mechanisms/audit/CD-14", detail: "no check export" },
+          error: {
+            kind: "piece-invalid",
+            pieceRoot: "/install/mechanisms/audit/CD-14",
+            detail: "no check export",
+          },
         }),
       }),
     ).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "piece-invalid", pieceRoot: "/install/mechanisms/audit/CD-14", detail: "no check export" },
+      error: {
+        kind: "piece-invalid",
+        pieceRoot: "/install/mechanisms/audit/CD-14",
+        detail: "no check export",
+      },
     });
   });
 });

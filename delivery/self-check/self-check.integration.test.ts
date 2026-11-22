@@ -1,13 +1,20 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
+import {
+  createDefaultCommandRunPort,
+  createDefaultScratchFilesPort,
+  type ScratchFilesPort,
+} from "../install-proof/install-proof-ports.ts";
 
 type ScratchRepositories = {
-  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly repositoryWith: (request: {
+    readonly files: Readonly<Record<string, string>>;
+  }) => AbsolutePath;
   readonly removeAll: () => void;
 };
 
@@ -19,10 +26,14 @@ const scratchRepositoriesUnder = (request: {
   const made: AbsolutePath[] = [];
   return {
     repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const folder = absolutePathSchema.parse(
+        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
+      );
       const directory = request.scratch.makeDirectory({ path: folder });
       if (directory.outcome !== "ok") {
-        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+        throw new Error(
+          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
+        );
       }
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
@@ -55,13 +66,17 @@ const repositoryWithSubfolder = (request: {
   Object.entries(request.subfolderFiles).forEach(([name, text]) => {
     const written = request.fileText.write({ path: `${folder}/${name}`, text });
     if (written.outcome !== "ok") {
-      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+      throw new Error(
+        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
+      );
     }
   });
   return repo;
 };
 
-const INSTALL_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }));
+const INSTALL_ROOT = absolutePathSchema.parse(
+  createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }),
+);
 
 const SELF_CHECK_FILE = `${INSTALL_ROOT}/delivery/self-check/self-check.ts`;
 
@@ -71,7 +86,11 @@ const fileText = createDefaultFileTextPort({});
 
 const scratch = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({ parent: `${INSTALL_ROOT}/artefacts`, fileText, scratch });
+const repositories = scratchRepositoriesUnder({
+  parent: `${INSTALL_ROOT}/artefacts`,
+  fileText,
+  scratch,
+});
 
 afterAll(() => {
   repositories.removeAll();
@@ -101,9 +120,17 @@ const CLASS_SOURCE = "export class Kept {}\n";
 
 const CAST_SOURCE = "export const parsed = JSON.parse(text) as any;\n";
 
-const GIT_IDENTITY = ["-c", "user.name=adopter", "-c", "user.email=adopter@example.test", "-c", "commit.gpgsign=false"];
+const GIT_IDENTITY = [
+  "-c",
+  "user.name=adopter",
+  "-c",
+  "user.email=adopter@example.test",
+  "-c",
+  "commit.gpgsign=false",
+];
 
-const NOT_ADOPTED = "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#unlisted-cast-site\nclaimed-type#non-null-assertions\n";
+const NOT_ADOPTED =
+  "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#unlisted-cast-site\nclaimed-type#non-null-assertions\n";
 
 const CLASS_SYMPTOM =
   "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
@@ -136,15 +163,23 @@ const MEASURED_TEXT = `${NOT_ADOPTED}${ANSWERED_BY_DEBT}verdict: pass
 self-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated
 `;
 
-type Printed ={ readonly text: string; readonly code: number };
+type Printed = { readonly text: string; readonly code: number };
 
 const git = (request: { readonly repo: string; readonly arguments: readonly string[] }): void => {
-  const run = commands.run({ command: "git", arguments: [...GIT_IDENTITY, ...request.arguments], directory: request.repo });
+  const run = commands.run({
+    command: "git",
+    arguments: [...GIT_IDENTITY, ...request.arguments],
+    directory: request.repo,
+  });
   assert(run.outcome === "exited", "a git step in the scratch repository ran to an exit");
   assert(run.exitCode === 0, "a git step in the scratch repository succeeded");
 };
 
-const selfCheckIn = (request: { readonly repo: string; readonly subcommand: string; readonly options: readonly string[] }): Printed => {
+const selfCheckIn = (request: {
+  readonly repo: string;
+  readonly subcommand: string;
+  readonly options: readonly string[];
+}): Printed => {
   const run = commands.run({
     command: "node",
     arguments: [SELF_CHECK_FILE, request.subcommand, "--repo", request.repo, ...request.options],
@@ -154,7 +189,9 @@ const selfCheckIn = (request: { readonly repo: string; readonly subcommand: stri
   return { text: run.output, code: run.exitCode };
 };
 
-const adopterRepository = (request: { readonly sources: Readonly<Record<string, string>> }): string => {
+const adopterRepository = (request: {
+  readonly sources: Readonly<Record<string, string>>;
+}): string => {
   const repo = repositoryWithSubfolder({
     repositories,
     scratch,
@@ -172,17 +209,27 @@ describe("self-check over a version 2 repository, run as the real script", () =>
   it(
     "reports findings without gating them, and gates debt whose forfeiture cannot be judged",
     () => {
-      const repo = adopterRepository({ sources: { "kept.ts": CLASS_SOURCE, "cast.ts": CAST_SOURCE } });
+      const repo = adopterRepository({
+        sources: { "kept.ts": CLASS_SOURCE, "cast.ts": CAST_SOURCE },
+      });
       selfCheckIn({ repo, subcommand: "project", options: [] });
       git({ repo, arguments: ["add", "."] });
       git({ repo, arguments: ["commit", "-q", "-m", "commit"] });
-      const findingsOnly = selfCheckIn({ repo, subcommand: "check", options: ["--forfeiture", "elsewhere"] });
+      const findingsOnly = selfCheckIn({
+        repo,
+        subcommand: "check",
+        options: ["--forfeiture", "elsewhere"],
+      });
       selfCheckIn({ repo, subcommand: "record-debt", options: ["--base-revision", "HEAD"] });
       selfCheckIn({ repo, subcommand: "project", options: [] });
       git({ repo, arguments: ["add", "."] });
       git({ repo, arguments: ["commit", "-q", "-m", "debt"] });
       const unmeasured = selfCheckIn({ repo, subcommand: "check", options: [] });
-      const measured = selfCheckIn({ repo, subcommand: "check", options: ["--base-revision", "HEAD"] });
+      const measured = selfCheckIn({
+        repo,
+        subcommand: "check",
+        options: ["--base-revision", "HEAD"],
+      });
       expect({ findingsOnly, unmeasured, measured }).toEqual({
         findingsOnly: { text: FINDINGS_ONLY_TEXT, code: 0 },
         unmeasured: { text: UNMEASURED_TEXT, code: 1 },

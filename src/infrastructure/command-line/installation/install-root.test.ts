@@ -1,12 +1,16 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { Result } from "../../../domain/result.ts";
-import { installRootOf, installRootOfApiEntry } from "./install-root.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const requiredEntry = <Entry>(request: { readonly table: Readonly<Record<string, Entry>>; readonly key: string }): Entry => {
+import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import type { Result } from "../../../domain/result.ts";
+import { absolutePathSchema } from "../../content-files/absolute-path.ts";
+import { installRootOf, installRootOfApiEntry } from "./install-root.ts";
+
+const requiredEntry = <Entry>(request: {
+  readonly table: Readonly<Record<string, Entry>>;
+  readonly key: string;
+}): Entry => {
   const entry = request.table[request.key];
   assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
   return entry;
@@ -56,7 +60,10 @@ const TABLE_PATH: PathPort = {
 
 const UNRESOLVABLE_PATH: PathPort = {
   ...TABLE_PATH,
-  resolve: ({ path }) => ({ outcome: "failed", error: { kind: "working-directory-unusable", path } }),
+  resolve: ({ path }) => ({
+    outcome: "failed",
+    error: { kind: "working-directory-unusable", path },
+  }),
 };
 
 describe("installRootOf", () => {
@@ -99,7 +106,10 @@ describe("installRootOf", () => {
 
 describe("installRootOfApiEntry", () => {
   it("is the directory two levels above a public entry file under api/", () => {
-    expect(installRootOfApiEntry({ path: TABLE_PATH, moduleUrl: API_ENTRY_URL })).toEqual({ outcome: "ok", value: "/install" });
+    expect(installRootOfApiEntry({ path: TABLE_PATH, moduleUrl: API_ENTRY_URL })).toEqual({
+      outcome: "ok",
+      value: "/install",
+    });
   });
 
   it("is install-root-unresolvable with the module URL when the directory above the entry file resolves to no absolute path", () => {

@@ -6,7 +6,11 @@ export type CheckNames = { readonly symptom: CatalogueName; readonly check: Cata
 
 export const checkNamesOf = (request: { readonly text: string }): CheckNames | undefined => {
   const [symptom, check, trailingSegment] = request.text.split(CHECK_ADDRESS_SEPARATOR);
-  return trailingSegment === undefined && symptom !== undefined && check !== undefined && isCatalogueName(symptom) && isCatalogueName(check)
+  return trailingSegment === undefined &&
+    symptom !== undefined &&
+    check !== undefined &&
+    isCatalogueName(symptom) &&
+    isCatalogueName(check)
     ? { symptom, check }
     : undefined;
 };

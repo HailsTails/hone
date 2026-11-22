@@ -1,11 +1,18 @@
-import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { ProofCarriedOver } from "../../../application/ports/upgrade/proof-outcome.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
 
-export const ALREADY_ON_VERSION_TWO: CommandOutcome = { code: 0, text: "already on version 2; nothing to upgrade\n" };
+export const ALREADY_ON_VERSION_TWO: CommandOutcome = {
+  code: 0,
+  text: "already on version 2; nothing to upgrade\n",
+};
 
-const shownOf = (request: { readonly path: Pick<PathPort, "relative">; readonly repoRoot: AbsolutePath; readonly target: AbsolutePath }): string => {
+const shownOf = (request: {
+  readonly path: Pick<PathPort, "relative">;
+  readonly repoRoot: AbsolutePath;
+  readonly target: AbsolutePath;
+}): string => {
   const location = request.path.relative({ from: request.repoRoot, to: request.target });
   return location.relation === "within-root" ? location.path : request.target;
 };

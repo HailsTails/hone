@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import { versionOneEntriesOf } from "./version-one-entries.ts";
 
-const repositoryReading = (request: { readonly read: ReturnType<ExceptionRepository["readAt"]> }): Pick<ExceptionRepository, "readAt"> => ({
+const repositoryReading = (request: {
+  readonly read: ReturnType<ExceptionRepository["readAt"]>;
+}): Pick<ExceptionRepository, "readAt"> => ({
   readAt: vi.fn<ExceptionRepository["readAt"]>().mockReturnValue(request.read),
 });
 
@@ -14,8 +17,19 @@ describe("versionOneEntriesOf", () => {
           read: {
             outcome: "ok",
             value: [
-              { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" },
-              { kind: "authorised-location", clause: "CD-2#cast", file: "src/b.ts", reason: "kept", provenance: { kind: "inherited-debt", source: "old" } },
+              {
+                kind: "file-carve-out",
+                clause: "CD-15#loops",
+                file: "src/a.ts",
+                reason: "legacy loop",
+              },
+              {
+                kind: "authorised-location",
+                clause: "CD-2#cast",
+                file: "src/b.ts",
+                reason: "kept",
+                provenance: { kind: "inherited-debt", source: "old" },
+              },
             ],
           },
         }),
@@ -24,7 +38,13 @@ describe("versionOneEntriesOf", () => {
       outcome: "ok",
       value: [
         { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" },
-        { kind: "authorised-location", clause: "CD-2#cast", file: "src/b.ts", reason: "kept", provenance: { kind: "inherited-debt", source: "old" } },
+        {
+          kind: "authorised-location",
+          clause: "CD-2#cast",
+          file: "src/b.ts",
+          reason: "kept",
+          provenance: { kind: "inherited-debt", source: "old" },
+        },
       ],
     });
   });
@@ -39,7 +59,17 @@ describe("versionOneEntriesOf", () => {
     expect(
       versionOneEntriesOf({
         repository: repositoryReading({
-          read: { outcome: "ok", value: [{ kind: "clause-wide-carve-out", clause: "CD-15#loops", reason: "generated", whyChain: () => "not json" }] },
+          read: {
+            outcome: "ok",
+            value: [
+              {
+                kind: "clause-wide-carve-out",
+                clause: "CD-15#loops",
+                reason: "generated",
+                whyChain: () => "not json",
+              },
+            ],
+          },
         }),
       }).atBase({ revision: "origin/main" }),
     ).toEqual({ outcome: "ok", value: [] });
@@ -48,8 +78,16 @@ describe("versionOneEntriesOf", () => {
   it("passes on the git failure that stopped the repository reading the revision", () => {
     expect(
       versionOneEntriesOf({
-        repository: repositoryReading({ read: { outcome: "failed", error: { kind: "git-failed", command: "git ls-tree", detail: "unknown revision" } } }),
+        repository: repositoryReading({
+          read: {
+            outcome: "failed",
+            error: { kind: "git-failed", command: "git ls-tree", detail: "unknown revision" },
+          },
+        }),
       }).atBase({ revision: "origin/main" }),
-    ).toEqual({ outcome: "failed", error: { kind: "git-failed", command: "git ls-tree", detail: "unknown revision" } });
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "git-failed", command: "git ls-tree", detail: "unknown revision" },
+    });
   });
 });

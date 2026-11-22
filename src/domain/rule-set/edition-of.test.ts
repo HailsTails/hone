@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { editionOf } from "./edition-of.ts";
 import { isEdition } from "./edition-reach.ts";
 

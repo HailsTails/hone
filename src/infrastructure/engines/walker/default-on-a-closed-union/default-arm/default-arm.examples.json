@@ -4,17 +4,13 @@
       "name": "default arm",
       "fileName": "dispatch.ts",
       "source": "export const dispatch = (kind: \"opened\" | \"closed\"): number => {\n  switch (kind) {\n    case \"opened\": return 1;\n    default: return 0;\n  }\n};\n",
-      "expectedLines": [
-        4
-      ]
+      "expectedLines": [4]
     },
     {
       "name": "default arm on the switch line",
       "fileName": "inline.ts",
       "source": "declare const stop: () => void;\ndeclare const kind: string;\nswitch (kind) { default: stop(); }\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     }
   ],
   "allow": [

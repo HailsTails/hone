@@ -1,17 +1,28 @@
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { Hit, InlineReach, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type {
+  Hit,
+  InlineReach,
+  NativeException,
+} from "../../../../../domain/runner/runner-result-types.ts";
 import { CUT_MARK, SNIPPET_LIMIT } from "../../../protocol/runner-module/snippet.ts";
-import { commentValueOf } from "./checks-comment-value.ts";
-import { INLINE_CONFIG_RULE_ID, type LintedMessage } from "../toolchain/eslint-instance.ts";
 import { parseInlineConfigComment } from "../native-exceptions/inline-config-parser.ts";
+import { INLINE_CONFIG_RULE_ID, type LintedMessage } from "../toolchain/eslint-instance.ts";
+import { commentValueOf } from "./checks-comment-value.ts";
 
-export type LintedClause = { readonly ruleId: string; readonly clause: { readonly address: ClauseAddress } };
+export type LintedClause = {
+  readonly ruleId: string;
+  readonly clause: { readonly address: ClauseAddress };
+};
 
-export type RuleHit = { readonly clause: ClauseAddress; readonly line: number; readonly column: number };
+export type RuleHit = {
+  readonly clause: ClauseAddress;
+  readonly line: number;
+  readonly column: number;
+};
 
 export type MessageReading = {
   readonly ruleHits: readonly RuleHit[];
@@ -60,7 +71,12 @@ const inlineNativeException = (request: {
   readonly file: RepoPath;
   readonly message: LintedMessage;
 }): NativeException => {
-  const located = { clause: request.clause.clause.address, file: request.file, line: request.message.line, text: request.message.message };
+  const located = {
+    clause: request.clause.clause.address,
+    file: request.file,
+    line: request.message.line,
+    text: request.message.message,
+  };
   switch (request.kind) {
     case INLINE_DISABLE:
       return { kind: request.kind, ...located, reach: request.reach };
@@ -117,7 +133,13 @@ const messageReadings = (request: {
     outcome: "ok",
     value: [
       {
-        ruleHits: [{ clause: clause.clause.address, line: request.message.line, column: request.message.column }],
+        ruleHits: [
+          {
+            clause: clause.clause.address,
+            line: request.message.line,
+            column: request.message.column,
+          },
+        ],
         nativeExceptions: [],
       },
     ],
@@ -145,9 +167,14 @@ export const messageReadingOf = (request: {
       };
 };
 
-export const lineSnippet = (request: { readonly line: string; readonly column: number }): string => {
+export const lineSnippet = (request: {
+  readonly line: string;
+  readonly column: number;
+}): string => {
   const trimmed = request.line.trim();
-  return trimmed.length > SNIPPET_LIMIT ? `${CUT_MARK}${request.line.slice(request.column - 1)}` : trimmed;
+  return trimmed.length > SNIPPET_LIMIT
+    ? `${CUT_MARK}${request.line.slice(request.column - 1)}`
+    : trimmed;
 };
 
 export const hitsCutFrom = (request: {

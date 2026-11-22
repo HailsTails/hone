@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import type { Branded } from "../../domain/repository/branded.ts";
-import { brandedTextSchema } from "./branded-schema.ts";
 import { repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
+import { brandedTextSchema } from "./branded-schema.ts";
 
 type EntryPath = Branded<string, "EntryPath">;
 
@@ -9,7 +10,11 @@ const ENTRY_PATH = "src/index.ts";
 
 const isEntryPath = (text: string): text is EntryPath => text === ENTRY_PATH;
 
-const entryPathSchema = brandedTextSchema({ text: repoPathTextSchema, isBranded: isEntryPath, refusal: "not the entry path" });
+const entryPathSchema = brandedTextSchema({
+  text: repoPathTextSchema,
+  isBranded: isEntryPath,
+  refusal: "not the entry path",
+});
 
 describe("brandedTextSchema", () => {
   it("brands text that passes the text schema and the brand's own test", () => {

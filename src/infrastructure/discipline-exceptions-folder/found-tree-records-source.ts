@@ -1,6 +1,6 @@
+import type { FoundTreeExceptions } from "../../application/ports/records/exception-repository.ts";
 import type { FoundTreeRecordsSourceOf } from "../../application/ports/records/records-source-of.ts";
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
-import type { FoundTreeExceptions } from "../../application/ports/records/exception-repository.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { baseStandingRecordsSource } from "./base-standing-records-source.ts";
@@ -18,4 +18,8 @@ export const foundTreeRecordsSourceOver = (request: {
   });
 
 export const foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf = (request) => (folder) =>
-  foundTreeRecordsSourceOver({ source: request.recordsSourceOf(folder), exceptions: request.exceptionsOf({ repoRoot: folder.repoRoot }), catalogue: folder.catalogue });
+  foundTreeRecordsSourceOver({
+    source: request.recordsSourceOf(folder),
+    exceptions: request.exceptionsOf({ repoRoot: folder.repoRoot }),
+    catalogue: folder.catalogue,
+  });

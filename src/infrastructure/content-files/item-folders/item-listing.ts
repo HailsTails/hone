@@ -1,4 +1,8 @@
-import type { DirectoryEntry, DirectoryFailure, DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
+import type {
+  DirectoryEntry,
+  DirectoryFailure,
+  DirectoryPort,
+} from "../../../application/ports/file-system/directory-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -16,19 +20,32 @@ type Listed = Result<readonly string[], DirectoryFailure>;
 
 const PATH_SEPARATOR = "/";
 
-const byCodePoint = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+const byCodePoint = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0;
 
 const folderAt = (request: Within): Result<AbsolutePath, DirectoryFailure> => {
   const joined = request.path.join({ segments: [request.root, ...request.within] });
   const folder = absolutePathSchema.safeParse(joined);
   return folder.success
     ? { outcome: "ok", value: folder.data }
-    : { outcome: "failed", error: { kind: "directory-unreadable", path: request.root, detail: `${joined} is not an absolute path` } };
+    : {
+        outcome: "failed",
+        error: {
+          kind: "directory-unreadable",
+          path: request.root,
+          detail: `${joined} is not an absolute path`,
+        },
+      };
 };
 
 const joinedLists = (lists: readonly Listed[]): Listed => {
   const failure = lists.find((list) => list.outcome === "failed");
-  return failure ?? { outcome: "ok", value: lists.flatMap((list) => (list.outcome === "ok" ? list.value : [])) };
+  return (
+    failure ?? {
+      outcome: "ok",
+      value: lists.flatMap((list) => (list.outcome === "ok" ? list.value : [])),
+    }
+  );
 };
 
 const listedEntry = (request: Within & { readonly entry: DirectoryEntry }): Listed =>
@@ -42,10 +59,14 @@ const listedWithin = (request: Within): Listed => {
     return folder;
   }
   const entries = request.directory.list({ path: folder.value });
-  return entries.outcome === "failed" ? entries : joinedLists(entries.value.map((entry) => listedEntry({ ...request, entry })));
+  return entries.outcome === "failed"
+    ? entries
+    : joinedLists(entries.value.map((entry) => listedEntry({ ...request, entry })));
 };
 
 export const filesUnder = (request: Listing): Listed => {
   const listed = listedWithin({ ...request, within: [] });
-  return listed.outcome === "failed" ? listed : { outcome: "ok", value: [...listed.value].sort(byCodePoint) };
+  return listed.outcome === "failed"
+    ? listed
+    : { outcome: "ok", value: [...listed.value].sort(byCodePoint) };
 };

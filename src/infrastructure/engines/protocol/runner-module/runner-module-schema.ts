@@ -1,14 +1,22 @@
 import { z } from "zod";
-import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
+
+import type {
+  LoadedRunner,
+  LoadedStandaloneRunner,
+  RunRequest,
+} from "../../../../application/ports/engine/runner-module.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { DeepReadonly, Equal } from "./type-equality.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { nativeExceptionKindSchema } from "./runner-result-schema.ts";
-import type { CaseVerdict, NativeException } from "../../../../domain/runner/runner-result-types.ts";
-import { nativeExceptionKindSchema as projectedKindSchema } from "./runner-result-schema.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
-import type { LoadedRunner, LoadedStandaloneRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
+import type {
+  CaseVerdict,
+  NativeException,
+} from "../../../../domain/runner/runner-result-types.ts";
+import type { nativeExceptionKindSchema } from "./runner-result-schema.ts";
+import { nativeExceptionKindSchema as projectedKindSchema } from "./runner-result-schema.ts";
 import type { StandaloneRunReport } from "./standalone-run-report-schema.ts";
+import type { DeepReadonly, Equal } from "./type-equality.ts";
 
 export type StandaloneRunner = {
   readonly exceptionPath: "standalone";
@@ -43,7 +51,10 @@ export const runnerModuleSchema = z.discriminatedUnion("exceptionPath", [
   embeddedRunnerModuleSchema,
 ]);
 
-export const isLoadedRunnerSchemaEqual: Equal<DeepReadonly<z.output<typeof runnerModuleSchema>>, LoadedRunner> = true;
+export const isLoadedRunnerSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof runnerModuleSchema>>,
+  LoadedRunner
+> = true;
 
 export const isLoadedStandaloneRunnerSchemaEqual: Equal<
   DeepReadonly<z.output<typeof standaloneRunnerModuleSchema>>,

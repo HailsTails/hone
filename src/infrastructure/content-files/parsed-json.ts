@@ -1,8 +1,6 @@
 import type { Result } from "../../domain/result.ts";
 
-export const parsedJson = (request: {
-  readonly text: string;
-}): Result<unknown, string> => {
+export const parsedJson = (request: { readonly text: string }): Result<unknown, string> => {
   try {
     const parsed: unknown = JSON.parse(request.text);
     return { outcome: "ok", value: parsed };

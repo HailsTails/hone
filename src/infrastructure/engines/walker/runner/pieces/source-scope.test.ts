@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { folderScope } from "./source-scope.ts";
 
 describe("folderScope", () => {

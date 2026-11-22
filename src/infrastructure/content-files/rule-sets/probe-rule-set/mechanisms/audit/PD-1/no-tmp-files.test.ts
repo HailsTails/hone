@@ -1,22 +1,38 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerClause } from "../../../../../../../domain/runner/runner-module-types.ts";
-import { repoPathSchema } from "../../../../../../hone-records-folder/repo-path.ts";
-import { textsDisk } from "../../../../../../engines/walker/runner/pieces/walker-disk.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../../../../engines/walker/runner/toolchain/typescript-toolchain.ts";
-import { check } from "./no-tmp-files.ts";
-import { disciplineIdOf } from "../../../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../../../domain/rule-set/clause-id-of.ts";
-import { ruleSetNameOf } from "../../../../../../../domain/rule-set/rule-set-name-of.ts";
-import { editionOf } from "../../../../../../../domain/rule-set/edition-of.ts";
 
-const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../../../..`, installForm: "source" }) });
+import { clauseIdOf } from "../../../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../../../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../../../../../domain/rule-set/rule-set-name-of.ts";
+import type { RunnerClause } from "../../../../../../../domain/runner/runner-module-types.ts";
+import { textsDisk } from "../../../../../../engines/walker/runner/pieces/walker-disk.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../../../../../engines/walker/runner/toolchain/typescript-toolchain.ts";
+import { repoPathSchema } from "../../../../../../hone-records-folder/repo-path.ts";
+import { check } from "./no-tmp-files.ts";
+
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../../../..`,
+    installForm: "source",
+  }),
+});
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const SYNTAX_API = loadedParsePort.value.syntaxApi;
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 
-const ADDRESS = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const ADDRESS = {
+  ruleSet: { name: ruleSetNameOf("probe") },
+  discipline: disciplineIdOf("PD-1"),
+  clause: clauseIdOf("no-tmp-files"),
+};
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
   anchor: { kind: "file" },

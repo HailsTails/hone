@@ -1,20 +1,38 @@
 import { describe, expect, it } from "vitest";
-import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { symptomsPageOf } from "./symptoms-page.ts";
+
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
+import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+import { symptomsPageOf } from "./symptoms-page.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
 const FILE: CatalogueFile = {
   version: 1,
   principles: [{ name: "one-place-decides", title: "One place decides" }],
-  rules: [{ name: "declared-not-asserted", title: "Declared, not asserted", principle: "one-place-decides", standing: "accepted" }],
+  rules: [
+    {
+      name: "declared-not-asserted",
+      title: "Declared, not asserted",
+      principle: "one-place-decides",
+      standing: "accepted",
+    },
+  ],
   cases: [
-    { name: "gives-a-value-its-type", title: "Gives a value its type", standing: "accepted", owes: [{ rule: "declared-not-asserted" }] },
-    { name: "does-one-job", title: "Does one job", standing: "accepted", owes: [{ principle: "one-place-decides" }] },
+    {
+      name: "gives-a-value-its-type",
+      title: "Gives a value its type",
+      standing: "accepted",
+      owes: [{ rule: "declared-not-asserted" }],
+    },
+    {
+      name: "does-one-job",
+      title: "Does one job",
+      standing: "accepted",
+      owes: [{ principle: "one-place-decides" }],
+    },
   ],
   recipes: [
     {
@@ -26,8 +44,18 @@ const FILE: CatalogueFile = {
     },
   ],
   recordKinds: [
-    { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
-    { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "none-yet" },
+    {
+      name: "authorised-location",
+      title: "Authorised location",
+      phrase: "an authorised location",
+      todaysFormat: "authorised-location",
+    },
+    {
+      name: "boundary-record",
+      title: "Boundary record",
+      phrase: "a boundary record",
+      todaysFormat: "none-yet",
+    },
   ],
   engines: [],
   symptoms: [
@@ -66,8 +94,27 @@ const FILE: CatalogueFile = {
       correctUses: [],
     },
   ],
-  clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, sight: { kind: "one-symptom", symptom: "claimed-type" } }],
-  checks: [{ symptom: "claimed-type", name: "cast-to-any", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") } }],
+  clauses: [
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-1"),
+        clause: clauseIdOf("any-cast"),
+      },
+      sight: { kind: "one-symptom", symptom: "claimed-type" },
+    },
+  ],
+  checks: [
+    {
+      symptom: "claimed-type",
+      name: "cast-to-any",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-1"),
+        clause: clauseIdOf("any-cast"),
+      },
+    },
+  ],
   namedBans: [],
 };
 
@@ -77,13 +124,18 @@ describe("symptomsPageOf", () => {
       symptomsPageOf({
         file: FILE,
         path: PATH,
-        prose: new Map([["typescript/symptoms/claimed-type.md", "- **How it is seen:** syntax. See [the recipe](../recipes/fix-the-declaration.md)."]]),
+        prose: new Map([
+          [
+            "typescript/symptoms/claimed-type.md",
+            "- **How it is seen:** syntax. See [the recipe](../recipes/fix-the-declaration.md).",
+          ],
+        ]),
       }),
     ).toEqual({
       outcome: "ok",
       value: {
-          path: "rules/typescript/symptoms.md",
-          text: "# Symptoms in TypeScript\n\n## Claimed types\n\n### Claimed type\n\n- **Seen:** An `as T` cast.\n- **May indicate:** Gives a value its type: in a test → Declared, not asserted, One place decides (\"casts hide a problem\"); Does one job → Declared, not asserted.\n- **Breach usually sits:** in the declaration.\n- **Covered by a record:** correct use: an authorised location in the adapter; the unit's output: a boundary record.\n- **Seen by:** syntax, types.\n- **Reports:** seen → breach.\n- **Check today:** reuse.\n- **Checks:** [cast-to-any](symptoms/claimed-type/cast-to-any.md).\n- **Recipes:** [Fix the declaration](recipes.md#fix-the-declaration).\n\n- **How it is seen:** syntax. See [the recipe](recipes/fix-the-declaration.md).\n\n## Loose types\n\n### Absence as state\n\n- **Seen:** A null.\n- **May indicate:** Does one job → One place decides.\n- **Breach usually sits:** in the type.\n- **Seen by:** person.\n- **Check today:** only review.\n",
+        path: "rules/typescript/symptoms.md",
+        text: '# Symptoms in TypeScript\n\n## Claimed types\n\n### Claimed type\n\n- **Seen:** An `as T` cast.\n- **May indicate:** Gives a value its type: in a test → Declared, not asserted, One place decides ("casts hide a problem"); Does one job → Declared, not asserted.\n- **Breach usually sits:** in the declaration.\n- **Covered by a record:** correct use: an authorised location in the adapter; the unit\'s output: a boundary record.\n- **Seen by:** syntax, types.\n- **Reports:** seen → breach.\n- **Check today:** reuse.\n- **Checks:** [cast-to-any](symptoms/claimed-type/cast-to-any.md).\n- **Recipes:** [Fix the declaration](recipes.md#fix-the-declaration).\n\n- **How it is seen:** syntax. See [the recipe](recipes/fix-the-declaration.md).\n\n## Loose types\n\n### Absence as state\n\n- **Seen:** A null.\n- **May indicate:** Does one job → One place decides.\n- **Breach usually sits:** in the type.\n- **Seen by:** person.\n- **Check today:** only review.\n',
       },
     });
   });
@@ -105,7 +157,10 @@ describe("symptomsPageOf", () => {
         },
       ],
     };
-    expect(symptomsPageOf({ file, path: PATH, prose: new Map() })).toEqual({ outcome: "failed", error: "the cases hold no unheld-case" });
+    expect(symptomsPageOf({ file, path: PATH, prose: new Map() })).toEqual({
+      outcome: "failed",
+      error: "the cases hold no unheld-case",
+    });
   });
 
   it("fails naming a record kind a correct use names that the record kinds do not hold", () => {
@@ -125,7 +180,10 @@ describe("symptomsPageOf", () => {
         },
       ],
     };
-    expect(symptomsPageOf({ file, path: PATH, prose: new Map() })).toEqual({ outcome: "failed", error: "the record kinds hold no deviation" });
+    expect(symptomsPageOf({ file, path: PATH, prose: new Map() })).toEqual({
+      outcome: "failed",
+      error: "the record kinds hold no deviation",
+    });
   });
 
   it("lists how the symptom is seen and what a check would need to name its breach, after its reports", () => {

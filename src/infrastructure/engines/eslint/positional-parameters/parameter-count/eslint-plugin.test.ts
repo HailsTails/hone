@@ -1,21 +1,34 @@
 import { assert, describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../runner/toolchain/eslint-toolchain.ts";
 import cd40Plugin from "./eslint-plugin.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: cd40Plugin }).default;
 
 const loadedToolchain = await loadEslintToolchain({
-  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultEslintToolchainPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
-assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
-assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+assert(
+  loadedToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
+assert(
+  /^10\./.test(loadedToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
+);
 
 const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
@@ -23,31 +36,36 @@ const flagCases: readonly SourceCase[] = [
   {
     name: "a function declaration with three parameters",
     fileName: repoPathOf("three-params.ts"),
-    source: "export function combine(first: number, second: number, third: number): number {\n  return first + second + third;\n}\n",
+    source:
+      "export function combine(first: number, second: number, third: number): number {\n  return first + second + third;\n}\n",
     expectedLines: [1],
   },
   {
     name: "an arrow function with three parameters",
     fileName: repoPathOf("arrow-three.ts"),
-    source: "export const combine = (first: number, second: number, third: number): number => first + second + third;\n",
+    source:
+      "export const combine = (first: number, second: number, third: number): number => first + second + third;\n",
     expectedLines: [1],
   },
   {
     name: "a method with three parameters",
     fileName: repoPathOf("method-three.ts"),
-    source: "export const holder = {\n  combine(first: number, second: number, third: number): number {\n    return first + second + third;\n  },\n};\n",
+    source:
+      "export const holder = {\n  combine(first: number, second: number, third: number): number {\n    return first + second + third;\n  },\n};\n",
     expectedLines: [2],
   },
   {
     name: "a typed this parameter counts towards the limit",
     fileName: repoPathOf("typed-this.ts"),
-    source: "interface Counter {\n  total: number;\n}\nexport function combine(this: Counter, first: number, second: number): number {\n  return this.total + first + second;\n}\n",
+    source:
+      "interface Counter {\n  total: number;\n}\nexport function combine(this: Counter, first: number, second: number): number {\n  return this.total + first + second;\n}\n",
     expectedLines: [4],
   },
   {
     name: "a void this parameter counts towards the limit",
     fileName: repoPathOf("void-this.ts"),
-    source: "export function combine(this: void, first: number, second: number): number {\n  return first + second;\n}\n",
+    source:
+      "export function combine(this: void, first: number, second: number): number {\n  return first + second;\n}\n",
     expectedLines: [1],
   },
 ];
@@ -62,13 +80,15 @@ const allowCases: readonly SourceCase[] = [
   {
     name: "two parameters",
     fileName: repoPathOf("two-params.ts"),
-    source: "export function combine(first: number, second: number): number {\n  return first + second;\n}\n",
+    source:
+      "export function combine(first: number, second: number): number {\n  return first + second;\n}\n",
     expectedLines: [],
   },
   {
     name: "a single options object",
     fileName: repoPathOf("options-object.ts"),
-    source: "export function combine(request: { first: number; second: number; third: number }): number {\n  return request.first + request.second + request.third;\n}\n",
+    source:
+      "export function combine(request: { first: number; second: number; third: number }): number {\n  return request.first + request.second + request.third;\n}\n",
     expectedLines: [],
   },
   {
@@ -80,19 +100,22 @@ const allowCases: readonly SourceCase[] = [
 ];
 
 describe("CD-40 max-params rule through the ESLint runner's lintSourceCases", () => {
-  it.each([...flagCases, ...allowCases])("flags exactly the expected lines of the case $name", async (sourceCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone-cd40",
-        rule: "max-params",
-        options: [{ max: 2, countVoidThis: true }],
-        cases: [sourceCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
-    });
-  });
+  it.each([...flagCases, ...allowCases])(
+    "flags exactly the expected lines of the case $name",
+    async (sourceCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone-cd40",
+          rule: "max-params",
+          options: [{ max: 2, countVoidThis: true }],
+          cases: [sourceCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
+      });
+    },
+  );
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { clauseEditionsSchema, editionSchema, FIRST_EDITION } from "./edition.ts";
 
 describe("editionSchema", () => {
@@ -19,15 +20,27 @@ describe("FIRST_EDITION", () => {
 
 describe("clauseEditionsSchema", () => {
   it("is the first edition alone when a piece declares none", () => {
-    expect(clauseEditionsSchema.parse(undefined)).toEqual({ declared: ["1"], default: "1", latest: "1" });
+    expect(clauseEditionsSchema.parse(undefined)).toEqual({
+      declared: ["1"],
+      default: "1",
+      latest: "1",
+    });
   });
 
   it("defaults to the first declared edition and reaches the last", () => {
-    expect(clauseEditionsSchema.parse(["1", "2", "3"])).toEqual({ declared: ["1", "2", "3"], default: "1", latest: "3" });
+    expect(clauseEditionsSchema.parse(["1", "2", "3"])).toEqual({
+      declared: ["1", "2", "3"],
+      default: "1",
+      latest: "3",
+    });
   });
 
   it("keeps a single declared edition as both default and latest", () => {
-    expect(clauseEditionsSchema.parse(["2"])).toEqual({ declared: ["2"], default: "2", latest: "2" });
+    expect(clauseEditionsSchema.parse(["2"])).toEqual({
+      declared: ["2"],
+      default: "2",
+      latest: "2",
+    });
   });
 
   it.each([

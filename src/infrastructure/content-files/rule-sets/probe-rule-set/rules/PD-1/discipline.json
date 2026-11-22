@@ -10,10 +10,20 @@
       "anchor": { "kind": "file" },
       "cases": {
         "flag": [
-          { "name": "temporary file", "fileName": "src/scratch.tmp.ts", "source": "export const scratch = 1;\n", "expectedLines": [1] }
+          {
+            "name": "temporary file",
+            "fileName": "src/scratch.tmp.ts",
+            "source": "export const scratch = 1;\n",
+            "expectedLines": [1]
+          }
         ],
         "allow": [
-          { "name": "ordinary file", "fileName": "src/kept.ts", "source": "export const kept = 1;\n", "expectedLines": [] }
+          {
+            "name": "ordinary file",
+            "fileName": "src/kept.ts",
+            "source": "export const kept = 1;\n",
+            "expectedLines": []
+          }
         ]
       }
     }

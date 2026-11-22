@@ -1,13 +1,16 @@
+import type {
+  CheckArguments,
+  CheckLocations,
+} from "../../application/ports/command/command-arguments.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import { REPORT_OUTPUTS, type ReportOutput } from "../../domain/settings/report-output.ts";
 import { argumentsInvalid } from "../command-line/arguments/argument-problem.ts";
 import { parseCheckArguments } from "../command-line/arguments/command-arguments.ts";
-import type { CheckArguments, CheckLocations } from "../../application/ports/command/command-arguments.ts";
-import { REPORT_OUTPUTS, type ReportOutput } from "../../domain/settings/report-output.ts";
 import { installRootOf } from "../command-line/installation/install-root.ts";
-import type { LoadFailure } from "../../domain/report/load-failure.ts";
 
 const SELECTION_FILE_NAME = "disciplines.json";
 
@@ -32,14 +35,25 @@ export const checkLocationsOf = (request: {
   readonly fileText: Pick<FileTextPort, "exists">;
   readonly moduleUrl: string;
 }): Result<CheckLocations, LoadFailure> => {
-  const repoRoot = repoRootOf({ path: request.path, fileText: request.fileText, repo: request.arguments.repo });
+  const repoRoot = repoRootOf({
+    path: request.path,
+    fileText: request.fileText,
+    repo: request.arguments.repo,
+  });
   if (repoRoot.outcome === "failed") {
     return repoRoot;
   }
   const installRoot = installRootOf({ path: request.path, moduleUrl: request.moduleUrl });
   return installRoot.outcome === "failed"
     ? installRoot
-    : { outcome: "ok", value: { arguments: request.arguments, repoRoot: repoRoot.value, installRoot: installRoot.value } };
+    : {
+        outcome: "ok",
+        value: {
+          arguments: request.arguments,
+          repoRoot: repoRoot.value,
+          installRoot: installRoot.value,
+        },
+      };
 };
 
 export const checkLocationsFor = (request: {
@@ -48,6 +62,11 @@ export const checkLocationsFor = (request: {
   readonly fileText: Pick<FileTextPort, "exists">;
   readonly moduleUrl: string;
 }): Result<CheckLocations, LoadFailure> => {
-  const parsed = parseCheckArguments({ arguments: request.arguments, reportOutputs: REPORT_OUTPUTS });
-  return parsed.outcome === "failed" ? parsed : checkLocationsOf({ ...request, arguments: parsed.value });
+  const parsed = parseCheckArguments({
+    arguments: request.arguments,
+    reportOutputs: REPORT_OUTPUTS,
+  });
+  return parsed.outcome === "failed"
+    ? parsed
+    : checkLocationsOf({ ...request, arguments: parsed.value });
 };

@@ -1,4 +1,5 @@
 import { parse, type ParseError } from "jsonc-parser";
+
 import type { Result } from "../../../../../domain/result.ts";
 
 export type JsoncParsePort = {
@@ -43,11 +44,15 @@ const defaultProviderCallOf =
   (options: { readonly trailingCommas: TrailingCommas }): JsoncProviderCall =>
   (request) => {
     const errors: ParseError[] = [];
-    const parsedValue: unknown = parse(request.source, errors, { allowTrailingComma: options.trailingCommas === "allowed" });
+    const parsedValue: unknown = parse(request.source, errors, {
+      allowTrailingComma: options.trailingCommas === "allowed",
+    });
     return { value: parsedValue, errors };
   };
 
-export const createDefaultJsoncParsePort = (options: { readonly trailingCommas: TrailingCommas }): JsoncParsePort =>
+export const createDefaultJsoncParsePort = (options: {
+  readonly trailingCommas: TrailingCommas;
+}): JsoncParsePort =>
   createJsoncParsePort({
     parseProvider: defaultProviderCallOf(options),
   });

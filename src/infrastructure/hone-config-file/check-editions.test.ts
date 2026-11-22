@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { checkEditionsSchema } from "./check-editions.ts";
 
 describe("checkEditionsSchema", () => {
@@ -10,4 +11,3 @@ describe("checkEditionsSchema", () => {
     expect(checkEditionsSchema.safeParse(policy).success).toBe(false);
   });
 });
-

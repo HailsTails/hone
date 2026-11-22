@@ -1,14 +1,14 @@
-import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
-import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
-import { LEAVE_OPTION } from "../arguments/command-line.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import { RECORD_DEBT_SUBCOMMAND } from "../arguments/subcommand-names.ts";
-import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import type { Result } from "../../../domain/result.ts";
-import { NESTED_CONFIGURATION_ISSUE } from "../nested-configuration-issue.ts";
-import type { DebtPair } from "../../../domain/records/discipline-exceptions/debt-pair.ts";
 import type { RecordsSplit } from "../../../application/ports/records/exception-repository.ts";
+import type { DebtPair } from "../../../domain/records/discipline-exceptions/debt-pair.ts";
 import type { InheritedDebtOutcome } from "../../../domain/records/discipline-exceptions/inherited-debt.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { Result } from "../../../domain/result.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
+import { LEAVE_OPTION } from "../arguments/command-line.ts";
+import { RECORD_DEBT_SUBCOMMAND } from "../arguments/subcommand-names.ts";
+import { NESTED_CONFIGURATION_ISSUE } from "../nested-configuration-issue.ts";
+import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
 
 const inheritedDebtNote = (request: { readonly outcome: InheritedDebtOutcome }): string => {
   const { outcome } = request;
@@ -37,7 +37,10 @@ export const recordDebtCommandOutcome = (request: {
 }): CommandOutcome =>
   request.result.outcome === "failed"
     ? loadFailureOutcome({ failure: request.result.error })
-    : { code: 0, text: request.result.value.map((outcome) => inheritedDebtLine({ outcome })).join("") };
+    : {
+        code: 0,
+        text: request.result.value.map((outcome) => inheritedDebtLine({ outcome })).join(""),
+      };
 
 export const pruneDebtCommandOutcome = (request: {
   readonly result: Result<readonly DebtPair[], LoadFailure>;
@@ -46,7 +49,9 @@ export const pruneDebtCommandOutcome = (request: {
     ? loadFailureOutcome({ failure: request.result.error })
     : {
         code: 0,
-        text: request.result.value.map((pair) => `${clauseAddressText({ address: pair.clause })} removed ${pair.file}\n`).join(""),
+        text: request.result.value
+          .map((pair) => `${clauseAddressText({ address: pair.clause })} removed ${pair.file}\n`)
+          .join(""),
       };
 
 const recordsSplitText = (request: { readonly split: RecordsSplit }): string => {

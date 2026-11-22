@@ -1,8 +1,12 @@
-import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
-import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../domain/runner/runner-failure.ts";
-import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
-import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
+import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
+import type {
+  RunnerFailure,
+  UnavailablePeer,
+  UnavailablePeers,
+} from "../../../domain/runner/runner-failure.ts";
+import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 
 const escapedLineBreaks = (request: { readonly text: string }): string =>
   request.text.replaceAll("\n", "\\n").replaceAll("\r", "\\r");
@@ -13,15 +17,18 @@ const JUDGEMENT_CLAUSE_LISTED_REPAIR =
 const CONFIG_ROOT_REPAIR =
   "an eslintConfigRoots entry is a folder git tracks files under outside every excluded path, spelled exactly as git spells it; fix or remove it in disciplines.json";
 
-const SELECTION_ABSENT_REPAIR = "holds no disciplines.json; give the folder that holds it, usually the repository root";
+const SELECTION_ABSENT_REPAIR =
+  "holds no disciplines.json; give the folder that holds it, usually the repository root";
 
 const WHY_CHAINS_REQUIRED_REPAIR = `${TOOL_IDENTITY.command} record-debt writes records that give only a reason, and this file requires a whyChain on every record; set "fileExceptionWhyChains": "optional" in it to accept them`;
 
 const BOTH_LAYOUTS_REPAIR = `${TOOL_IDENTITY.name} reads exception records from one layout; keep each record in one of them and remove the other`;
 
-const SUPPORTED_VERSION_REPAIR = "add a supported version to the devDependencies of the repository root";
+const SUPPORTED_VERSION_REPAIR =
+  "add a supported version to the devDependencies of the repository root";
 
-const EACH_SUPPORTED_VERSION_REPAIR = "add a supported version of each to the devDependencies of the repository root";
+const EACH_SUPPORTED_VERSION_REPAIR =
+  "add a supported version of each to the devDependencies of the repository root";
 
 const unavailablePeerRepair = (request: { readonly peer: UnavailablePeer }): string =>
   request.peer.peer === "required" && request.peer.found === NOT_INSTALLED
@@ -107,12 +114,17 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
     case "runner-invalid":
       return [versionOneEngineNameOf(request.failure.mechanism), request.failure.detail];
     case "runner-failed":
-      return [versionOneEngineNameOf(request.failure.mechanism), ...runnerFailureFields({ failure: request.failure.failure })];
+      return [
+        versionOneEngineNameOf(request.failure.mechanism),
+        ...runnerFailureFields({ failure: request.failure.failure }),
+      ];
   }
 };
 
 export const loadFailureDetail = (request: { readonly failure: LoadFailure }): string =>
-  [request.failure.kind, ...loadFailureFields(request)].map((text) => escapedLineBreaks({ text })).join(" ");
+  [request.failure.kind, ...loadFailureFields(request)]
+    .map((text) => escapedLineBreaks({ text }))
+    .join(" ");
 
 export const loadFailureText = (request: { readonly failure: LoadFailure }): string =>
   `load failure: ${loadFailureDetail(request)}\n`;

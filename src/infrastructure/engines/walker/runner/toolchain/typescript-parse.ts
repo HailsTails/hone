@@ -20,6 +20,10 @@ export type TypeScriptParsePort = {
   readonly children: (request: { readonly node: SyntaxNode }) => readonly SyntaxNode[];
 };
 
-export type TypeScriptModules = { readonly typescript: () => Promise<{ readonly default: SyntaxApi }> };
+export type TypeScriptModules = {
+  readonly typescript: () => Promise<{ readonly default: SyntaxApi }>;
+};
 
-export const defaultTypeScriptModules: TypeScriptModules = { typescript: () => import("typescript") };
+export const defaultTypeScriptModules: TypeScriptModules = {
+  typescript: () => import("typescript"),
+};

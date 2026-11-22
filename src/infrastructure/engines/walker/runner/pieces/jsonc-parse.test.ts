@@ -1,17 +1,24 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { createDefaultJsoncParsePort, createJsoncParsePort, type JsoncProviderCall } from "./jsonc-parse.ts";
+
+import {
+  createDefaultJsoncParsePort,
+  createJsoncParsePort,
+  type JsoncProviderCall,
+} from "./jsonc-parse.ts";
 
 describe("createJsoncParsePort", () => {
   it("forwards the exact source once and preserves the provider value with no diagnostics", () => {
-    const source = " { \"value\": false } \r\n";
+    const source = ' { "value": false } \r\n';
     const parsedValue = { marker: "unchanged" };
-    const parseProvider = vi.fn<JsoncProviderCall>().mockReturnValue({ value: parsedValue, errors: [] });
+    const parseProvider = vi
+      .fn<JsoncProviderCall>()
+      .mockReturnValue({ value: parsedValue, errors: [] });
 
     const parseOutcome = createJsoncParsePort({ parseProvider }).parse({ source });
 
     assert(parseOutcome.outcome === "ok");
     expect(parseOutcome.value).toBe(parsedValue);
-    expect(parseProvider).toHaveBeenCalledExactlyOnceWith({ source: " { \"value\": false } \r\n" });
+    expect(parseProvider).toHaveBeenCalledExactlyOnceWith({ source: ' { "value": false } \r\n' });
   });
 
   it("refuses a recovered provider value when parsing returned diagnostics", () => {
@@ -20,7 +27,9 @@ describe("createJsoncParsePort", () => {
       errors: [{ error: 3, offset: 8, length: 1 }],
     });
 
-    const parseOutcome = createJsoncParsePort({ parseProvider }).parse({ source: "diagnostic-bearing input" });
+    const parseOutcome = createJsoncParsePort({ parseProvider }).parse({
+      source: "diagnostic-bearing input",
+    });
 
     expect(parseOutcome).toEqual({
       outcome: "failed",
@@ -31,10 +40,15 @@ describe("createJsoncParsePort", () => {
   it("maps only the first diagnostic's code, offset and length to deterministic failure detail", () => {
     const parseProvider = vi.fn<JsoncProviderCall>().mockReturnValue({
       value: undefined,
-      errors: [{ error: 4, offset: 12, length: 2 }, { error: 7, offset: 20, length: 1 }],
+      errors: [
+        { error: 4, offset: 12, length: 2 },
+        { error: 7, offset: 20, length: 1 },
+      ],
     });
 
-    const parseOutcome = createJsoncParsePort({ parseProvider }).parse({ source: "multiple-diagnostic input" });
+    const parseOutcome = createJsoncParsePort({ parseProvider }).parse({
+      source: "multiple-diagnostic input",
+    });
 
     expect(parseOutcome).toEqual({
       outcome: "failed",
@@ -45,7 +59,9 @@ describe("createJsoncParsePort", () => {
   it("returns unexpected provider failure as owned detail without escaping the result", () => {
     const parseProvider: JsoncProviderCall = () => assert.fail("provider failed");
 
-    const parseOutcome = createJsoncParsePort({ parseProvider }).parse({ source: "provider input" });
+    const parseOutcome = createJsoncParsePort({ parseProvider }).parse({
+      source: "provider input",
+    });
 
     expect(parseOutcome).toEqual({ outcome: "failed", error: { detail: "provider failed" } });
   });
@@ -58,7 +74,10 @@ describe("createDefaultJsoncParsePort", () => {
       refused: createDefaultJsoncParsePort({ trailingCommas: "refused" }).parse({ source }),
       allowed: createDefaultJsoncParsePort({ trailingCommas: "allowed" }).parse({ source }),
     }).toEqual({
-      refused: { outcome: "failed", error: { detail: expect.stringContaining("JSONC parse error") } },
+      refused: {
+        outcome: "failed",
+        error: { detail: expect.stringContaining("JSONC parse error") },
+      },
       allowed: { outcome: "ok", value: { packages: { zod: ["zod@4.4.3"] } } },
     });
   });

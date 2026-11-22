@@ -1,5 +1,5 @@
-import type { Hit, NativeException } from "../runner/runner-result-types.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
+import type { Hit, NativeException } from "../runner/runner-result-types.ts";
 
 export type Finding = Hit & { readonly mechanism: EngineId };
 

@@ -1,12 +1,18 @@
 import { z } from "zod";
+
+import type { PeerKind, RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { Equal } from "./type-equality.ts";
-import type { PeerKind, RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 
 export const peerKindSchema = z.enum(["required", "optional"]);
 
 const unavailablePeerSchema = z
-  .object({ packageName: z.string(), peer: peerKindSchema, supported: z.string(), found: z.string() })
+  .object({
+    packageName: z.string(),
+    peer: peerKindSchema,
+    supported: z.string(),
+    found: z.string(),
+  })
   .readonly();
 
 export const runnerFailureSchema = z.discriminatedUnion("kind", [
@@ -41,4 +47,7 @@ export const runnerFailureSchema = z.discriminatedUnion("kind", [
 
 export const isPeerKindSchemaEqual: Equal<z.output<typeof peerKindSchema>, PeerKind> = true;
 
-export const isRunnerFailureSchemaEqual: Equal<z.output<typeof runnerFailureSchema>, RunnerFailure> = true;
+export const isRunnerFailureSchemaEqual: Equal<
+  z.output<typeof runnerFailureSchema>,
+  RunnerFailure
+> = true;

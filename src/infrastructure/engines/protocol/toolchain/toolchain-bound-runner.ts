@@ -1,9 +1,9 @@
 import type { Result } from "../../../../domain/result.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
 import type { ChecksRunner, LoadedChecksRunner } from "../checks/checks-runner-types.ts";
 import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
-import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
-import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
 
 type ToolchainLoad<Loaded> = Promise<Result<Loaded, RunnerFailure>>;
 
@@ -11,7 +11,9 @@ const builtOnce = <Toolchain, Runner>(request: {
   readonly toolchain: ToolchainLoad<Toolchain>;
   readonly runnerOf: (toolchain: Toolchain) => Runner;
 }): ToolchainLoad<Runner> =>
-  request.toolchain.then((loaded) => (loaded.outcome === "failed" ? loaded : { outcome: "ok", value: request.runnerOf(loaded.value) }));
+  request.toolchain.then((loaded) =>
+    loaded.outcome === "failed" ? loaded : { outcome: "ok", value: request.runnerOf(loaded.value) },
+  );
 
 const withRunner = <Runner, Value>(request: {
   readonly runner: ToolchainLoad<Runner>;
@@ -57,6 +59,7 @@ export const toolchainBoundChecksRunner = <Toolchain>(request: {
     run: (run) =>
       runner.then((built) => (built.outcome === "failed" ? built : built.value.run(run))),
     conform: (conform) => withRunner({ runner, act: (built) => built.conform(conform) }),
-    project: (project) => runner.then((built) => (built.outcome === "failed" ? built : built.value.project(project))),
+    project: (project) =>
+      runner.then((built) => (built.outcome === "failed" ? built : built.value.project(project))),
   };
 };

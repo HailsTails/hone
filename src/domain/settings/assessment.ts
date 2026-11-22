@@ -19,5 +19,7 @@ export const assessmentInEffect = (request: {
 
 export const WAIVED_CLAUSES_REPLACEMENT = `in clauses, mark a clause "${NOT_RUN}" when its mechanism does not run, or "${NOT_ADOPTED}" when its rule does not apply; see MIGRATING.md section 12`;
 
-export const removedText = (request: { readonly removed: string; readonly instead: string }): string =>
-  `removed: ${JSON.stringify(request.removed)}; ${request.instead}`;
+export const removedText = (request: {
+  readonly removed: string;
+  readonly instead: string;
+}): string => `removed: ${JSON.stringify(request.removed)}; ${request.instead}`;

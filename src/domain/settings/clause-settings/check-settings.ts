@@ -1,16 +1,22 @@
-import { defaultClauseSettings } from "./default-clause-settings.ts";
-import { editionPinOf } from "./edition-pin.ts";
-import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
-import type { ClauseSettingDeclaration, ClauseSettingDeclarations } from "../../rule-set/rule-set-types.ts";
-import type { CheckEditions } from "./check-editions.ts";
+import type { Result } from "../../result.ts";
 import type { ClauseEditions, Edition } from "../../rule-set/edition-types.ts";
+import type {
+  ClauseSettingDeclaration,
+  ClauseSettingDeclarations,
+} from "../../rule-set/rule-set-types.ts";
+import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../json-values/json-kind.ts";
 import type { ReadonlyJsonValue } from "../json-values/json-value.ts";
-import type { Result } from "../../result.ts";
 import { listedAddressText } from "../listed-address.ts";
 import { type GivenCheckSettings, RENAMED_SETTINGS } from "../settings-file.ts";
+import type { CheckEditions } from "./check-editions.ts";
+import { defaultClauseSettings } from "./default-clause-settings.ts";
+import { editionPinOf } from "./edition-pin.ts";
 
-export type SettledCheckSettings = { readonly clauseSettings: ClauseSettingValues; readonly edition: Edition };
+export type SettledCheckSettings = {
+  readonly clauseSettings: ClauseSettingValues;
+  readonly edition: Edition;
+};
 
 type SettingsRequest = {
   readonly given: GivenCheckSettings | undefined;
@@ -23,12 +29,16 @@ const pieceNameOf = (request: { readonly name: string }): string =>
   RENAMED_SETTINGS.find((renamed) => renamed.name === request.name)?.pieceName ?? request.name;
 
 const fileNameOf = (request: { readonly pieceName: string }): string =>
-  RENAMED_SETTINGS.find((renamed) => renamed.pieceName === request.pieceName)?.name ?? request.pieceName;
+  RENAMED_SETTINGS.find((renamed) => renamed.pieceName === request.pieceName)?.name ??
+  request.pieceName;
 
 const listed = (request: { readonly values: readonly ReadonlyJsonValue[] }): string =>
   request.values.map((choice) => JSON.stringify(choice)).join(", ");
 
-const refused = (request: { readonly given: GivenCheckSettings; readonly detail: string }): Result<never, string> => ({
+const refused = (request: {
+  readonly given: GivenCheckSettings;
+  readonly detail: string;
+}): Result<never, string> => ({
   outcome: "failed",
   error: `checkSettings for ${listedAddressText({ address: request.given.address })}: ${request.detail}`,
 });
@@ -38,18 +48,26 @@ const UNPINNED_EDITIONS: Readonly<Record<CheckEditions, (editions: ClauseEdition
   latest: (editions) => editions.latest,
 };
 
-const unpinnedEditionOf = (request: { readonly editions: ClauseEditions; readonly checkEditions: CheckEditions }): Edition =>
-  UNPINNED_EDITIONS[request.checkEditions](request.editions);
+const unpinnedEditionOf = (request: {
+  readonly editions: ClauseEditions;
+  readonly checkEditions: CheckEditions;
+}): Edition => UNPINNED_EDITIONS[request.checkEditions](request.editions);
 
 const settledEditionOf = (
-  request: SettingsRequest & { readonly given: GivenCheckSettings; readonly pin: ReadonlyJsonValue | undefined },
+  request: SettingsRequest & {
+    readonly given: GivenCheckSettings;
+    readonly pin: ReadonlyJsonValue | undefined;
+  },
 ): Result<Edition, string> => {
   if (request.pin === undefined) {
     return { outcome: "ok", value: unpinnedEditionOf(request) };
   }
   const pinned = request.editions.declared.find((edition) => edition === request.pin);
   return pinned === undefined
-    ? refused({ given: request.given, detail: `edition must be one of ${listed({ values: request.editions.declared })}` })
+    ? refused({
+        given: request.given,
+        detail: `edition must be one of ${listed({ values: request.editions.declared })}`,
+      })
     : { outcome: "ok", value: pinned };
 };
 
@@ -68,13 +86,17 @@ const settingRefusalOf = (request: {
     return `${request.name} must be ${JSON_KIND_NAMES[kind]}, as its default is`;
   }
   const choices = request.declaration.choices;
-  return choices === undefined || choices.some((choice) => sameJsonValue({ left: choice, right: request.given }) === "same")
+  return choices === undefined ||
+    choices.some((choice) => sameJsonValue({ left: choice, right: request.given }) === "same")
     ? undefined
     : `${request.name} must be one of ${listed({ values: choices })}`;
 };
 
 const pieceSettingsOf = (
-  request: SettingsRequest & { readonly given: GivenCheckSettings; readonly rest: ClauseSettingValues | undefined },
+  request: SettingsRequest & {
+    readonly given: GivenCheckSettings;
+    readonly rest: ClauseSettingValues | undefined;
+  },
 ): Result<ClauseSettingValues, string> => {
   const defaults = defaultClauseSettings({ declarations: request.declarations });
   if (request.rest === undefined) {
@@ -83,26 +105,46 @@ const pieceSettingsOf = (
   if (Object.keys(request.declarations).length === 0) {
     return refused({ given: request.given, detail: "its check takes no settings" });
   }
-  const given = Object.entries(request.rest).map(([name, setting]) => ({ name, pieceName: pieceNameOf({ name }), setting }));
+  const given = Object.entries(request.rest).map(([name, setting]) => ({
+    name,
+    pieceName: pieceNameOf({ name }),
+    setting,
+  }));
   const detail = given
     .map(({ name, pieceName, setting }) =>
       settingRefusalOf({
         name,
         given: setting,
-        declaration: Object.hasOwn(request.declarations, pieceName) ? request.declarations[pieceName] : undefined,
+        declaration: Object.hasOwn(request.declarations, pieceName)
+          ? request.declarations[pieceName]
+          : undefined,
         declarations: request.declarations,
       }),
     )
     .find((refusal) => refusal !== undefined);
   return detail === undefined
-    ? { outcome: "ok", value: { ...defaults, ...Object.fromEntries(given.map(({ pieceName, setting }) => [pieceName, setting])) } }
+    ? {
+        outcome: "ok",
+        value: {
+          ...defaults,
+          ...Object.fromEntries(given.map(({ pieceName, setting }) => [pieceName, setting])),
+        },
+      }
     : refused({ given: request.given, detail });
 };
 
-export const settledCheckSettings = (request: SettingsRequest): Result<SettledCheckSettings, string> => {
+export const settledCheckSettings = (
+  request: SettingsRequest,
+): Result<SettledCheckSettings, string> => {
   const given = request.given;
   if (given === undefined) {
-    return { outcome: "ok", value: { clauseSettings: defaultClauseSettings({ declarations: request.declarations }), edition: unpinnedEditionOf(request) } };
+    return {
+      outcome: "ok",
+      value: {
+        clauseSettings: defaultClauseSettings({ declarations: request.declarations }),
+        edition: unpinnedEditionOf(request),
+      },
+    };
   }
   const { pin, rest } = editionPinOf({ given: given.values });
   const edition = settledEditionOf({ ...request, given, pin });
@@ -110,5 +152,7 @@ export const settledCheckSettings = (request: SettingsRequest): Result<SettledCh
     return edition;
   }
   const clauseSettings = pieceSettingsOf({ ...request, given, rest });
-  return clauseSettings.outcome === "failed" ? clauseSettings : { outcome: "ok", value: { clauseSettings: clauseSettings.value, edition: edition.value } };
+  return clauseSettings.outcome === "failed"
+    ? clauseSettings
+    : { outcome: "ok", value: { clauseSettings: clauseSettings.value, edition: edition.value } };
 };

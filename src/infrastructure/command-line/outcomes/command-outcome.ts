@@ -1,7 +1,7 @@
-import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import type { ExitCode } from "../../../application/ports/host/process-port.ts";
-import type { Result } from "../../../domain/result.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { Result } from "../../../domain/result.ts";
+import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
 import { loadFailureText } from "../../printed-report/load-failures/load-failure-text.ts";
 
 export type CommandOutcome = {
@@ -11,7 +11,7 @@ export type CommandOutcome = {
 
 const LOAD_FAILURE_CODE = 2;
 
-export const loadFailureOutcome =(request: { readonly failure: LoadFailure }): CommandOutcome => ({
+export const loadFailureOutcome = (request: { readonly failure: LoadFailure }): CommandOutcome => ({
   code: LOAD_FAILURE_CODE,
   text: loadFailureText(request),
 });
@@ -28,8 +28,9 @@ export const projectCommandOutcome = (request: {
   };
 };
 
-export const versionCommandOutcome = (request: { readonly result: Result<string, LoadFailure> }): CommandOutcome =>
+export const versionCommandOutcome = (request: {
+  readonly result: Result<string, LoadFailure>;
+}): CommandOutcome =>
   request.result.outcome === "failed"
     ? loadFailureOutcome({ failure: request.result.error })
     : { code: 0, text: `${request.result.value}\n` };
-

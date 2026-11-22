@@ -9,7 +9,10 @@ type JsonShape =
   | { readonly shape: "opaque" };
 
 const scalarOf = (candidate: unknown): JsonScalar | undefined =>
-  candidate === null || typeof candidate === "string" || typeof candidate === "number" || typeof candidate === "boolean"
+  candidate === null ||
+  typeof candidate === "string" ||
+  typeof candidate === "number" ||
+  typeof candidate === "boolean"
     ? candidate
     : undefined;
 
@@ -39,12 +42,19 @@ const jsonShapeOf = (candidate: unknown): JsonShape => {
   if (scalar !== undefined) {
     return { shape: "scalar", scalar };
   }
-  return typeof candidate === "object" && candidate !== null ? objectShapeOf(candidate) : { shape: "opaque" };
+  return typeof candidate === "object" && candidate !== null
+    ? objectShapeOf(candidate)
+    : { shape: "opaque" };
 };
 
-const sameLists = (request: { readonly left: readonly unknown[]; readonly right: readonly unknown[] }): JsonComparison =>
+const sameLists = (request: {
+  readonly left: readonly unknown[];
+  readonly right: readonly unknown[];
+}): JsonComparison =>
   request.left.length === request.right.length &&
-  request.left.every((element, index) => sameJsonValue({ left: element, right: request.right[index] }) === "same")
+  request.left.every(
+    (element, index) => sameJsonValue({ left: element, right: request.right[index] }) === "same",
+  )
     ? "same"
     : "different";
 
@@ -61,11 +71,16 @@ const sameRecords = (request: {
   readonly right: readonly (readonly [string, unknown])[];
 }): JsonComparison =>
   request.left.length === request.right.length &&
-  request.left.every((entry, index) => sameEntry({ left: entry, right: request.right[index] }) === "same")
+  request.left.every(
+    (entry, index) => sameEntry({ left: entry, right: request.right[index] }) === "same",
+  )
     ? "same"
     : "different";
 
-const sameShapes = (request: { readonly left: JsonShape; readonly right: JsonShape }): JsonComparison => {
+const sameShapes = (request: {
+  readonly left: JsonShape;
+  readonly right: JsonShape;
+}): JsonComparison => {
   const { left, right } = request;
   if (left.shape === "scalar" && right.shape === "scalar") {
     return Object.is(left.scalar, right.scalar) ? "same" : "different";
@@ -79,5 +94,8 @@ const sameShapes = (request: { readonly left: JsonShape; readonly right: JsonSha
   return "different";
 };
 
-export const sameJsonValue = (request: { readonly left: unknown; readonly right: unknown }): JsonComparison =>
+export const sameJsonValue = (request: {
+  readonly left: unknown;
+  readonly right: unknown;
+}): JsonComparison =>
   sameShapes({ left: jsonShapeOf(request.left), right: jsonShapeOf(request.right) });

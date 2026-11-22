@@ -1,11 +1,15 @@
 import { z } from "zod";
+
+import type {
+  ModuleLoad,
+  ModuleLoaderPort,
+} from "../../../../application/ports/host/module-loader-port.ts";
+import type { Result } from "../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
-import type { Result } from "../../../../domain/result.ts";
-import type { SyntaxApi } from "./toolchain/typescript-parse.ts";
 import type { WalkerFile, WalkerRepository } from "./pieces/walker-piece.ts";
+import type { SyntaxApi } from "./toolchain/typescript-parse.ts";
 
 export type SelectedWalkerClause = {
   readonly modulePath: string;

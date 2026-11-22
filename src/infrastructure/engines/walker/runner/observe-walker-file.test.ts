@@ -1,34 +1,47 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
-import { observeWalkerFile } from "./observe-walker-file.ts";
-import type {
-  LoadedPreparedWalkerCheck,
-  PreparedWalkerPiece,
-} from "./prepare-walker-pieces.ts";
-import type { CommentRange, SyntaxNode, SyntaxTree, TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
-import type { PieceHit, SourceObservers, WalkerFile } from "./pieces/walker-piece.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import { observeWalkerFile } from "./observe-walker-file.ts";
+import type { PieceHit, SourceObservers, WalkerFile } from "./pieces/walker-piece.ts";
+import type { LoadedPreparedWalkerCheck, PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
+import type {
+  CommentRange,
+  SyntaxNode,
+  SyntaxTree,
+  TypeScriptParsePort,
+} from "./toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 
 const FILE = repoPathOf("src/example.tsx");
 const SOURCE = "{ { /* note */ } }\n";
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const SYNTAX_API = loadedParsePort.value.syntaxApi;
 const TREE = SYNTAX_API.createSourceFile(FILE, SOURCE, SYNTAX_API.ScriptTarget.Latest, true);
 const OUTER_BLOCK = TREE.getChildAt(0, TREE).getChildAt(0, TREE);
 const INNER_BLOCK = OUTER_BLOCK.getChildAt(1, TREE).getChildAt(0, TREE);
 
 const FIRST_CLAUSE: RunnerClause = {
-  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("first-check") },
+  address: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("XX-1"),
+    clause: clauseIdOf("first-check"),
+  },
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
   clauseSettings: {},
@@ -36,7 +49,11 @@ const FIRST_CLAUSE: RunnerClause = {
   settings: { module: "first.ts" },
 };
 const SECOND_CLAUSE: RunnerClause = {
-  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("second-check") },
+  address: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("XX-1"),
+    clause: clauseIdOf("second-check"),
+  },
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
   clauseSettings: {},
@@ -44,7 +61,11 @@ const SECOND_CLAUSE: RunnerClause = {
   settings: { module: "second.ts" },
 };
 const THIRD_CLAUSE: RunnerClause = {
-  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("third-check") },
+  address: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("XX-1"),
+    clause: clauseIdOf("third-check"),
+  },
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
   clauseSettings: {},
@@ -83,7 +104,8 @@ const preparedPiece = (request: {
 const parseFixture = (): TypeScriptParsePort => ({
   syntaxApi: SYNTAX_API,
   parse: vi.fn<TypeScriptParsePort["parse"]>().mockReturnValue(TREE),
-  children: vi.fn<TypeScriptParsePort["children"]>()
+  children: vi
+    .fn<TypeScriptParsePort["children"]>()
     .mockReturnValueOnce([OUTER_BLOCK, TREE.endOfFileToken])
     .mockReturnValueOnce([INNER_BLOCK])
     .mockReturnValue([]),
@@ -162,7 +184,9 @@ describe("observeWalkerFile", () => {
     const first = preparedPiece({
       modulePath: "first.ts",
       clauses: [FIRST_CLAUSE],
-      prepareFile: vi.fn().mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [FIRST_HIT] } }),
+      prepareFile: vi
+        .fn()
+        .mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [FIRST_HIT] } }),
     });
     const skipped = preparedPiece({
       modulePath: "second.ts",
@@ -171,11 +195,20 @@ describe("observeWalkerFile", () => {
     });
     const parse = parseFixture();
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first, skipped], parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first, skipped],
+      parse,
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "ok",
-      value: { hits: [{ ...FIRST_HIT, file: FILE }], nativeExceptions: [], applicable: [FIRST_CLAUSE.address] },
+      value: {
+        hits: [{ ...FIRST_HIT, file: FILE }],
+        nativeExceptions: [],
+        applicable: [FIRST_CLAUSE.address],
+      },
     });
     expect(readText).not.toHaveBeenCalled();
     expect(parse.parse).not.toHaveBeenCalled();
@@ -183,7 +216,9 @@ describe("observeWalkerFile", () => {
   });
 
   it("preserves an explicit prepareFile failure without reading or beginning syntax", () => {
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
     const begin = vi.fn().mockReturnValue({ finish: () => [] });
     const first = preparedPiece({
       modulePath: "first.ts",
@@ -200,7 +235,12 @@ describe("observeWalkerFile", () => {
     });
     const parse = parseFixture();
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first, second], parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first, second],
+      parse,
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "failed",
@@ -240,7 +280,12 @@ describe("observeWalkerFile", () => {
     });
     const parse = parseFixture();
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first, skipped, third], parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first, skipped, third],
+      parse,
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "ok",
@@ -263,7 +308,9 @@ describe("observeWalkerFile", () => {
   });
 
   it("shares one parse and nested semantic observation stream, deduplicates comments and finishes sources before assembling piece-ordered hits", () => {
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
     const observe = vi.fn<(event: ObserverEvent) => void>();
     const recordAnchor = vi.fn<(anchor: Anchor) => void>();
     const recordSource = vi.fn<(request: { readonly sourceFile: SyntaxTree }) => void>();
@@ -274,7 +321,10 @@ describe("observeWalkerFile", () => {
         outcome: "ok",
         value: {
           kind: "syntax",
-          begin: ({ sourceFile, anchorAt }: {
+          begin: ({
+            sourceFile,
+            anchorAt,
+          }: {
             readonly sourceFile: SyntaxTree;
             readonly anchorAt: (request: { readonly position: number }) => Anchor;
           }) => {
@@ -288,7 +338,9 @@ describe("observeWalkerFile", () => {
     const complete = preparedPiece({
       modulePath: "second.ts",
       clauses: [SECOND_CLAUSE],
-      prepareFile: vi.fn().mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [SECOND_HIT] } }),
+      prepareFile: vi
+        .fn()
+        .mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [SECOND_HIT] } }),
     });
     const third = preparedPiece({
       modulePath: "third.ts",
@@ -303,7 +355,12 @@ describe("observeWalkerFile", () => {
     });
     const parse = parseFixture();
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first, complete, third], parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first, complete, third],
+      parse,
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "ok",
@@ -364,7 +421,12 @@ describe("observeWalkerFile", () => {
     });
     const parse = parseFixture();
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first],
+      parse,
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "failed",
@@ -397,39 +459,60 @@ describe("observeWalkerFile", () => {
     },
   ])("refuses malformed actual output from $boundary as piece-invalid", ({ prepareFile }) => {
     const first = preparedPiece({ modulePath: "first.ts", clauses: [FIRST_CLAUSE], prepareFile });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse: parseFixture(), escapes: [] });
-
-    expect(observed).toEqual({
-      outcome: "failed",
-      error: { kind: "piece-invalid", pieceRoot: FIRST_CLAUSE.pieceRoot, detail: expect.any(String) },
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first],
+      parse: parseFixture(),
+      escapes: [],
     });
-  });
-
-  it.each(["enter", "leave", "comment", "finish"])("refuses a non-function %s observer as piece-invalid naming the observer", (observer) => {
-    const first = preparedPiece({
-      modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
-      prepareFile: () => ({
-        outcome: "ok",
-        value: { kind: "syntax", begin: () => ({ finish: () => [], [observer]: 7 }) },
-      }),
-    });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
-
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse: parseFixture(), escapes: [] });
 
     expect(observed).toEqual({
       outcome: "failed",
       error: {
         kind: "piece-invalid",
         pieceRoot: FIRST_CLAUSE.pieceRoot,
-        detail: expect.stringContaining("Invalid input: expected function, received number"),
+        detail: expect.any(String),
       },
     });
-    expect(JSON.stringify(observed)).toContain(observer);
   });
+
+  it.each(["enter", "leave", "comment", "finish"])(
+    "refuses a non-function %s observer as piece-invalid naming the observer",
+    (observer) => {
+      const first = preparedPiece({
+        modulePath: "first.ts",
+        clauses: [FIRST_CLAUSE],
+        prepareFile: () => ({
+          outcome: "ok",
+          value: { kind: "syntax", begin: () => ({ finish: () => [], [observer]: 7 }) },
+        }),
+      });
+      const readText = vi
+        .fn<WalkerFile["readText"]>()
+        .mockReturnValue({ outcome: "ok", value: SOURCE });
+
+      const observed = observeWalkerFile({
+        file: { file: FILE, readText },
+        pieces: [first],
+        parse: parseFixture(),
+        escapes: [],
+      });
+
+      expect(observed).toEqual({
+        outcome: "failed",
+        error: {
+          kind: "piece-invalid",
+          pieceRoot: FIRST_CLAUSE.pieceRoot,
+          detail: expect.stringContaining("Invalid input: expected function, received number"),
+        },
+      });
+      expect(JSON.stringify(observed)).toContain(observer);
+    },
+  );
 
   it("hands each observer the node the walk is visiting and publishes what finish returns", () => {
     const entered = vi.fn();
@@ -441,9 +524,16 @@ describe("observeWalkerFile", () => {
         value: { kind: "syntax", begin: () => ({ enter: entered, finish: () => [FIRST_HIT] }) },
       }),
     });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse: parseFixture(), escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first],
+      parse: parseFixture(),
+      escapes: [],
+    });
 
     expect(entered).toHaveBeenCalledWith({ node: expect.objectContaining({ pos: 0 }) });
     expect(observed.outcome).toBe("ok");
@@ -465,13 +555,24 @@ describe("observeWalkerFile", () => {
         },
       }),
     });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse: parseFixture(), escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first],
+      parse: parseFixture(),
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "failed",
-      error: { kind: "piece-invalid", pieceRoot: FIRST_CLAUSE.pieceRoot, detail: "observer failed" },
+      error: {
+        kind: "piece-invalid",
+        pieceRoot: FIRST_CLAUSE.pieceRoot,
+        detail: "observer failed",
+      },
     });
     expect(finish).not.toHaveBeenCalled();
   });
@@ -483,13 +584,20 @@ describe("observeWalkerFile", () => {
       clauses: [FIRST_CLAUSE],
       prepareFile: () => ({ outcome: "ok", value: { kind: "syntax", begin } }),
     });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
     const parse: TypeScriptParsePort = {
       ...parseFixture(),
       parse: () => assert.fail("parser failed"),
     };
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first],
+      parse,
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "failed",
@@ -501,30 +609,38 @@ describe("observeWalkerFile", () => {
   it.each([
     { kind: "complete", completion: { kind: "complete", hits: [FIRST_HIT] } },
     { kind: "skipped", completion: { kind: "skipped" } },
-  ])("refuses an ignored requested read failure even when a piece returns successful $kind", ({ completion }) => {
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({
-      outcome: "failed",
-      error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
-    });
-    const first = preparedPiece({
-      modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
-      prepareFile: ({ readText: read }) => {
-        read();
-        return { outcome: "ok", value: completion };
-      },
-    });
-    const parse = parseFixture();
+  ])(
+    "refuses an ignored requested read failure even when a piece returns successful $kind",
+    ({ completion }) => {
+      const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
+      });
+      const first = preparedPiece({
+        modulePath: "first.ts",
+        clauses: [FIRST_CLAUSE],
+        prepareFile: ({ readText: read }) => {
+          read();
+          return { outcome: "ok", value: completion };
+        },
+      });
+      const parse = parseFixture();
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse, escapes: [] });
+      const observed = observeWalkerFile({
+        file: { file: FILE, readText },
+        pieces: [first],
+        parse,
+        escapes: [],
+      });
 
-    expect(observed).toEqual({
-      outcome: "failed",
-      error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
-    });
-    expect(readText).toHaveBeenCalledTimes(1);
-    expect(parse.parse).not.toHaveBeenCalled();
-  });
+      expect(observed).toEqual({
+        outcome: "failed",
+        error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
+      });
+      expect(readText).toHaveBeenCalledTimes(1);
+      expect(parse.parse).not.toHaveBeenCalled();
+    },
+  );
 
   it("refuses a piece emitting another selected piece's clause", () => {
     const first = preparedPiece({
@@ -537,13 +653,24 @@ describe("observeWalkerFile", () => {
       clauses: [SECOND_CLAUSE],
       prepareFile: () => ({ outcome: "ok", value: { kind: "complete", hits: [] } }),
     });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: SOURCE });
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first, second], parse: parseFixture(), escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first, second],
+      parse: parseFixture(),
+      escapes: [],
+    });
 
     expect(observed).toEqual({
       outcome: "failed",
-      error: { kind: "piece-invalid", pieceRoot: FIRST_CLAUSE.pieceRoot, detail: expect.any(String) },
+      error: {
+        kind: "piece-invalid",
+        pieceRoot: FIRST_CLAUSE.pieceRoot,
+        detail: expect.any(String),
+      },
     });
   });
 
@@ -558,7 +685,9 @@ describe("observeWalkerFile", () => {
         outcome: "ok",
         value: {
           kind: "syntax",
-          begin: ({ anchorAt }: {
+          begin: ({
+            anchorAt,
+          }: {
             readonly anchorAt: (request: { readonly position: number }) => Anchor;
           }) => {
             recordAnchor(anchorAt({ position: 40 }));
@@ -570,11 +699,21 @@ describe("observeWalkerFile", () => {
         },
       }),
     });
-    const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: fixture.source });
+    const readText = vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: fixture.source });
 
-    const observed = observeWalkerFile({ file: { file: FILE, readText }, pieces: [first], parse: fixture.parse, escapes: [] });
+    const observed = observeWalkerFile({
+      file: { file: FILE, readText },
+      pieces: [first],
+      parse: fixture.parse,
+      escapes: [],
+    });
 
-    expect(observed).toEqual({ outcome: "ok", value: { hits: [], nativeExceptions: [], applicable: [FIRST_CLAUSE.address] } });
+    expect(observed).toEqual({
+      outcome: "ok",
+      value: { hits: [], nativeExceptions: [], applicable: [FIRST_CLAUSE.address] },
+    });
     expect(recordAnchor.mock.calls).toEqual([[{ line: 2, column: 6 }]]);
     expect(enter.mock.calls).toEqual([
       [{ node: fixture.tree }],

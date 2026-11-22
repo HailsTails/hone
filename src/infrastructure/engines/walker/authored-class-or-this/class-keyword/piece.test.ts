@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { walkerPieceSettingsSchema } from "../../runner/pieces/walker-check-schema.ts";
 import piece from "./piece.json" with { type: "json" };
 

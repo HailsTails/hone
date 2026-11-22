@@ -1,6 +1,6 @@
 import { anyBearingOf, assertionOf, castSnippetAt } from "../../runner/pieces/cast-shape.ts";
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -30,7 +30,9 @@ export const check: WalkerPiece = {
                   const position = node.getStart(sourceFile);
                   const snippet = castSnippetAt({ sourceFile, position });
                   const anchor = anchorAt({ position });
-                  hits.push(...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })));
+                  hits.push(
+                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                  );
                 },
                 finish: () => hits,
               };

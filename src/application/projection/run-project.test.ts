@@ -1,44 +1,57 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepository } from "../ports/records/exception-repository.ts";
-import type { ExceptionEntryParser } from "../ports/records/exception-entries.ts";
-import type { LegacyWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
-import type { ExceptionReading, ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
+import type {
+  ExceptionReading,
+  ExceptionRecord,
+} from "../../domain/records/discipline-exceptions/exception-record.ts";
+import type { LegacyWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
+import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
+import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { LoadedRunner, RunnerCall } from "../ports/engine/runner-module.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../ports/git-port.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
+import type { ExceptionEntryParser } from "../ports/records/exception-entries.ts";
+import type { ExceptionRepository } from "../ports/records/exception-repository.ts";
 import type { SelectionRepositoryOf } from "../ports/selection/selection-repository.ts";
-import type { LoadFailure } from "../../domain/report/load-failure.ts";
-import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
-import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
-import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
-import type { Result } from "../../domain/result.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
 
 const AUDIT = "walker" as const;
 const LINT = "eslint" as const;
-const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
-const ABSTRACT_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
+const CLASS_SYNTAX = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
+const ABSTRACT_SYNTAX = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("abstract-syntax"),
+};
 const INSTALL_ROOT = absoluteRootOf("/install");
 const SRC_A = repoPathOf("src/a.ts");
 const ESLINT_PROJECTION = repoPathOf("disciplines.eslint.mjs");
 const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
 const SPLIT_LOCATIONS = repoPathOf("discipline-exceptions/authorised-locations/cd-14.json");
 
-const FIXTURE_SOURCE = "fictional unit fixture core/check/run-project.test.ts; not historical authorisation";
+const FIXTURE_SOURCE =
+  "fictional unit fixture core/check/run-project.test.ts; not historical authorisation";
 
 const CLASS_SYNTAX_CLAUSE = {
   address: CLASS_SYNTAX,
@@ -59,7 +72,13 @@ const ABSTRACT_SYNTAX_CLAUSE = {
 } as const;
 
 const SELECTION_READING: SelectionReading = {
-  selection: { selected: [{ address: CLASS_SYNTAX, mechanism: AUDIT, exceptions: "allowed" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+  selection: {
+    selected: [{ address: CLASS_SYNTAX, mechanism: AUDIT, exceptions: "allowed" }],
+    uncovered: [],
+    notAdopted: [],
+    notRun: [],
+    editions: [],
+  },
   bindings: [{ mechanism: AUDIT, clause: CLASS_SYNTAX_CLAUSE }],
   clauseRoots: [{ clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] }],
   excluded: [],
@@ -148,15 +167,33 @@ const AUDIT_RUNNER: LoadedRunner = {
   project: vi.fn<RunnerCall>(),
 };
 
-const LINT_RUNNER: LoadedRunner = { exceptionPath: "standalone", run: vi.fn<RunnerCall>(), conform: vi.fn<RunnerCall>() };
+const LINT_RUNNER: LoadedRunner = {
+  exceptionPath: "standalone",
+  run: vi.fn<RunnerCall>(),
+  conform: vi.fn<RunnerCall>(),
+};
 
-const engineProjecting = (writes: Result<readonly ProjectionWrite[], RunnerFailure>): EnginePort => ({
+const engineProjecting = (
+  writes: Result<readonly ProjectionWrite[], RunnerFailure>,
+): EnginePort => ({
   load: vi
     .fn<EnginePort["load"]>()
-    .mockResolvedValueOnce({ outcome: "ok", value: { mechanism: AUDIT, runner: AUDIT_RUNNER, checksRunner: undefined } })
-    .mockResolvedValueOnce({ outcome: "ok", value: { mechanism: LINT, runner: LINT_RUNNER, checksRunner: undefined } }),
-  run: { checks: vi.fn<EnginePort["run"]["checks"]>(), withRecords: vi.fn<EnginePort["run"]["withRecords"]>() },
-  project: { checks: vi.fn<EnginePort["project"]["checks"]>(), withRecords: vi.fn<EnginePort["project"]["withRecords"]>().mockResolvedValue(writes) },
+    .mockResolvedValueOnce({
+      outcome: "ok",
+      value: { mechanism: AUDIT, runner: AUDIT_RUNNER, checksRunner: undefined },
+    })
+    .mockResolvedValueOnce({
+      outcome: "ok",
+      value: { mechanism: LINT, runner: LINT_RUNNER, checksRunner: undefined },
+    }),
+  run: {
+    checks: vi.fn<EnginePort["run"]["checks"]>(),
+    withRecords: vi.fn<EnginePort["run"]["withRecords"]>(),
+  },
+  project: {
+    checks: vi.fn<EnginePort["project"]["checks"]>(),
+    withRecords: vi.fn<EnginePort["project"]["withRecords"]>().mockResolvedValue(writes),
+  },
   conform: vi.fn<EnginePort["conform"]>(),
 });
 
@@ -187,13 +224,17 @@ const gitTracking = (tracked: readonly RepoPath[]): GitPort => ({
 const selectionReading = (reading: Result<SelectionReading, LoadFailure>): SelectionRepositoryOf =>
   vi.fn<SelectionRepositoryOf>().mockReturnValue({ read: () => reading });
 
-const exceptionRepositoryReading = (entries: Result<readonly PlacedEntry[], LoadFailure>): Pick<ExceptionRepository, "read" | "readAt"> => ({
+const exceptionRepositoryReading = (
+  entries: Result<readonly PlacedEntry[], LoadFailure>,
+): Pick<ExceptionRepository, "read" | "readAt"> => ({
   read: vi.fn<ExceptionRepository["read"]>().mockReturnValue(entries),
   readAt: vi.fn<ExceptionRepository["readAt"]>(),
 });
 
 const parserReading = (reading: ExceptionReading): ExceptionEntryParser => ({
-  parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>().mockReturnValue(reading),
+  parseExceptionEntries: vi
+    .fn<ExceptionEntryParser["parseExceptionEntries"]>()
+    .mockReturnValue(reading),
   importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
   importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
 });
@@ -239,7 +280,17 @@ describe("runProject", () => {
     const writes = await runProject(projectRequest({ engine, modules }));
     expect({ writes, loads: vi.mocked(engine.load).mock.calls }).toEqual({
       writes: { outcome: "ok", value: [] },
-      loads: [[expect.objectContaining({ installRoot: "/install", moduleExtension: ".ts", modules, path: POSIX_JOIN, mechanism: "walker" })]],
+      loads: [
+        [
+          expect.objectContaining({
+            installRoot: "/install",
+            moduleExtension: ".ts",
+            modules,
+            path: POSIX_JOIN,
+            mechanism: "walker",
+          }),
+        ],
+      ],
     });
   });
 
@@ -249,7 +300,19 @@ describe("runProject", () => {
         projectRequest({
           exceptionEntryParser: parserReading({
             records: [],
-            invalid: [{ place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index: 0 }, problem: { kind: "clause-not-selected", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") } } }],
+            invalid: [
+              {
+                place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index: 0 },
+                problem: {
+                  kind: "clause-not-selected",
+                  clause: {
+                    ruleSet: TOOL_RULE_SET,
+                    discipline: disciplineIdOf("CD-15"),
+                    clause: clauseIdOf("no-for-of"),
+                  },
+                },
+              },
+            ],
           }),
         }),
       ),
@@ -258,26 +321,59 @@ describe("runProject", () => {
 
   it("is file-malformed for a disciplines.json that is not JSON", async () => {
     await expect(
-      runProject(projectRequest({ selectionRepositoryOf: selectionReading({ outcome: "failed", error: { kind: "file-malformed", path: SELECTION_PATH, detail: "not JSON" } }) })),
-    ).resolves.toEqual({ outcome: "failed", error: { kind: "file-malformed", path: SELECTION_PATH, detail: "not JSON" } });
+      runProject(
+        projectRequest({
+          selectionRepositoryOf: selectionReading({
+            outcome: "failed",
+            error: { kind: "file-malformed", path: SELECTION_PATH, detail: "not JSON" },
+          }),
+        }),
+      ),
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: { kind: "file-malformed", path: SELECTION_PATH, detail: "not JSON" },
+    });
   });
 
   it("is file-malformed for a discipline-exceptions.json with an unknown exception kind", async () => {
     await expect(
       runProject(
-        projectRequest({ exceptionRepository: exceptionRepositoryReading({ outcome: "failed", error: { kind: "file-malformed", path: EXCEPTIONS_PATH, detail: "unknown exception kind" } }) }),
+        projectRequest({
+          exceptionRepository: exceptionRepositoryReading({
+            outcome: "failed",
+            error: {
+              kind: "file-malformed",
+              path: EXCEPTIONS_PATH,
+              detail: "unknown exception kind",
+            },
+          }),
+        }),
       ),
-    ).resolves.toEqual({ outcome: "failed", error: { kind: "file-malformed", path: EXCEPTIONS_PATH, detail: "unknown exception kind" } });
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: { kind: "file-malformed", path: EXCEPTIONS_PATH, detail: "unknown exception kind" },
+    });
   });
 
   it("is runner-invalid for a runner export whose exception path is outside every path", async () => {
     const engine: EnginePort = {
       ...engineProjecting({ outcome: "ok", value: [] }),
-      load: vi.fn<EnginePort["load"]>().mockResolvedValue({ outcome: "failed", error: { kind: "runner-invalid", mechanism: AUDIT, detail: "exceptionPath is unknown-path" } }),
+      load: vi.fn<EnginePort["load"]>().mockResolvedValue({
+        outcome: "failed",
+        error: {
+          kind: "runner-invalid",
+          mechanism: AUDIT,
+          detail: "exceptionPath is unknown-path",
+        },
+      }),
     };
     await expect(runProject(projectRequest({ engine }))).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "runner-invalid", mechanism: "walker", detail: "exceptionPath is unknown-path" },
+      error: {
+        kind: "runner-invalid",
+        mechanism: "walker",
+        detail: "exceptionPath is unknown-path",
+      },
     });
   });
 });
@@ -294,7 +390,10 @@ describe("runProject with an embedded runner", () => {
 
   it("hands the runner's projection only the records of its own mechanism", async () => {
     const engine = engineProjecting({ outcome: "ok", value: [] });
-    vi.mocked(engine.project.withRecords).mockResolvedValueOnce({ outcome: "ok", value: ESLINT_WRITTEN });
+    vi.mocked(engine.project.withRecords).mockResolvedValueOnce({
+      outcome: "ok",
+      value: ESLINT_WRITTEN,
+    });
     const writes = await runProject(
       projectRequest({
         engine,
@@ -313,10 +412,18 @@ describe("runProject with an embedded runner", () => {
 
   it("hands the parser the entries the exception repository reads, and the runner's projection the records it parses", async () => {
     const engine = engineProjecting({ outcome: "ok", value: [] });
-    const splitEntries: readonly PlacedEntry[] = [{ place: { layout: "split", file: SPLIT_LOCATIONS, index: 0 }, entry: WALKER_LOCATION }];
+    const splitEntries: readonly PlacedEntry[] = [
+      { place: { layout: "split", file: SPLIT_LOCATIONS, index: 0 }, entry: WALKER_LOCATION },
+    ];
     const exceptionEntryParser = parserReading({ records: [WALKER_RECORD], invalid: [] });
 
-    await runProject(projectRequest({ engine, exceptionRepository: exceptionRepositoryReading({ outcome: "ok", value: splitEntries }), exceptionEntryParser }));
+    await runProject(
+      projectRequest({
+        engine,
+        exceptionRepository: exceptionRepositoryReading({ outcome: "ok", value: splitEntries }),
+        exceptionEntryParser,
+      }),
+    );
 
     expect({
       parsed: vi.mocked(exceptionEntryParser.parseExceptionEntries).mock.calls,
@@ -325,22 +432,43 @@ describe("runProject with an embedded runner", () => {
       parsed: [
         [
           {
-            entries: [{ place: { layout: "split", file: "discipline-exceptions/authorised-locations/cd-14.json", index: 0 }, entry: WALKER_LOCATION }],
+            entries: [
+              {
+                place: {
+                  layout: "split",
+                  file: "discipline-exceptions/authorised-locations/cd-14.json",
+                  index: 0,
+                },
+                entry: WALKER_LOCATION,
+              },
+            ],
             selection: SELECTION_READING.selection,
             baseline: { measured: "no", base: { state: "not-given" } },
             fileExceptionWhyChains: "required",
           },
         ],
       ],
-      projectCalls: [[{ runner: AUDIT_RUNNER, request: expect.objectContaining({ records: [WALKER_RECORD] }) }]],
+      projectCalls: [
+        [{ runner: AUDIT_RUNNER, request: expect.objectContaining({ records: [WALKER_RECORD] }) }],
+      ],
     });
   });
 
   it("projects a record whose why-chain predates the causal contract, reading no base revision", async () => {
     const engine = engineProjecting({ outcome: "ok", value: ESLINT_WRITTEN });
     const exceptionRepository = exceptionRepositoryReading({ outcome: "ok", value: [] });
-    const writes = await runProject(projectRequest({ engine, exceptionRepository, exceptionEntryParser: parserReading({ records: [LEGACY_WALKER_RECORD], invalid: [] }) }));
-    expect({ writes, baseReads: vi.mocked(exceptionRepository.readAt).mock.calls, projectCalls: vi.mocked(engine.project.withRecords).mock.calls }).toEqual({
+    const writes = await runProject(
+      projectRequest({
+        engine,
+        exceptionRepository,
+        exceptionEntryParser: parserReading({ records: [LEGACY_WALKER_RECORD], invalid: [] }),
+      }),
+    );
+    expect({
+      writes,
+      baseReads: vi.mocked(exceptionRepository.readAt).mock.calls,
+      projectCalls: vi.mocked(engine.project.withRecords).mock.calls,
+    }).toEqual({
       writes: { outcome: "ok", value: [{ path: "disciplines.eslint.mjs", effect: "written" }] },
       baseReads: [],
       projectCalls: [
@@ -369,12 +497,36 @@ describe("runProject with an embedded runner", () => {
 describe("runProject for a repository that does not adopt a clause", () => {
   it("projects only the adopted clause and never loads the mechanism of the clause not adopted", async () => {
     const engine = engineProjecting({ outcome: "ok", value: ESLINT_WRITTEN });
-    const writes = await runProject(projectRequest({ engine, selectionRepositoryOf: selectionReading({ outcome: "ok", value: ABSTRACT_NOT_ADOPTED_READING }) }));
-    expect({ writes, loads: vi.mocked(engine.load).mock.calls, projectCalls: vi.mocked(engine.project.withRecords).mock.calls }).toEqual({
+    const writes = await runProject(
+      projectRequest({
+        engine,
+        selectionRepositoryOf: selectionReading({
+          outcome: "ok",
+          value: ABSTRACT_NOT_ADOPTED_READING,
+        }),
+      }),
+    );
+    expect({
+      writes,
+      loads: vi.mocked(engine.load).mock.calls,
+      projectCalls: vi.mocked(engine.project.withRecords).mock.calls,
+    }).toEqual({
       writes: { outcome: "ok", value: [{ path: "disciplines.eslint.mjs", effect: "written" }] },
       loads: [[expect.objectContaining({ mechanism: "walker" })]],
       projectCalls: [
-        [{ runner: AUDIT_RUNNER, request: expect.objectContaining({ clauses: [expect.objectContaining({ address: { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" } })], records: [] }) }],
+        [
+          {
+            runner: AUDIT_RUNNER,
+            request: expect.objectContaining({
+              clauses: [
+                expect.objectContaining({
+                  address: { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" },
+                }),
+              ],
+              records: [],
+            }),
+          },
+        ],
       ],
     });
   });
@@ -387,7 +539,10 @@ describe("runProject for a repository with a package config and a clause it does
       projectRequest({
         engine,
         git: gitTracking([SRC_A, repoPathOf("packages/a/eslint.config.mjs")]),
-        selectionRepositoryOf: selectionReading({ outcome: "ok", value: ABSTRACT_NOT_ADOPTED_READING }),
+        selectionRepositoryOf: selectionReading({
+          outcome: "ok",
+          value: ABSTRACT_NOT_ADOPTED_READING,
+        }),
       }),
     );
     expect(vi.mocked(engine.project.withRecords).mock.calls).toEqual([
@@ -396,7 +551,11 @@ describe("runProject for a repository with a package config and a clause it does
           runner: AUDIT_RUNNER,
           request: expect.objectContaining({
             trackedPaths: ["src/a.ts", "packages/a/eslint.config.mjs"],
-            clauses: [expect.objectContaining({ address: { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" } })],
+            clauses: [
+              expect.objectContaining({
+                address: { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" },
+              }),
+            ],
           }),
         },
       ],
@@ -410,11 +569,17 @@ describe("runProject with an ESLint config root git does not track", () => {
     const outcome = await runProject(
       projectRequest({
         engine,
-        selectionRepositoryOf: selectionReading({ outcome: "ok", value: { ...SELECTION_READING, eslintConfigRoots: [repoPathOf("packages/missing")] } }),
+        selectionRepositoryOf: selectionReading({
+          outcome: "ok",
+          value: { ...SELECTION_READING, eslintConfigRoots: [repoPathOf("packages/missing")] },
+        }),
       }),
     );
     expect({ outcome, projectCalls: vi.mocked(engine.project.withRecords).mock.calls }).toEqual({
-      outcome: { outcome: "failed", error: { kind: "config-root-untracked", root: "packages/missing" } },
+      outcome: {
+        outcome: "failed",
+        error: { kind: "config-root-untracked", root: "packages/missing" },
+      },
       projectCalls: [],
     });
   });
@@ -424,10 +589,19 @@ describe("runProject with an ESLint config root git does not track", () => {
     await runProject(
       projectRequest({
         engine,
-        selectionRepositoryOf: selectionReading({ outcome: "ok", value: { ...SELECTION_READING, eslintConfigRoots: [repoPathOf("src")] } }),
+        selectionRepositoryOf: selectionReading({
+          outcome: "ok",
+          value: { ...SELECTION_READING, eslintConfigRoots: [repoPathOf("src")] },
+        }),
       }),
     );
-    expect(vi.mocked(engine.project.withRecords).mock.calls).toEqual([[{ runner: AUDIT_RUNNER, request: expect.objectContaining({ declaredConfigRoots: ["src"] }) }]]);
+    expect(vi.mocked(engine.project.withRecords).mock.calls).toEqual([
+      [
+        {
+          runner: AUDIT_RUNNER,
+          request: expect.objectContaining({ declaredConfigRoots: ["src"] }),
+        },
+      ],
+    ]);
   });
 });
-

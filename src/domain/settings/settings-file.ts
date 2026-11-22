@@ -12,17 +12,27 @@ export const SETTINGS_FILE_NAME = "hone.config.json";
 
 export const VERSION_ONE_SETTINGS_FILE_NAME = "disciplines.json";
 
-export type RuleSetLocation = { readonly location: "repo-root" } | { readonly location: "folder"; readonly path: RepoPath };
+export type RuleSetLocation =
+  | { readonly location: "repo-root" }
+  | { readonly location: "folder"; readonly path: RepoPath };
 
 export type DeclaredRuleSet = { readonly name: RuleSetName; readonly location: RuleSetLocation };
 
-export type CheckState = { readonly state: "run"; readonly engine: string } | { readonly state: "not-run" } | { readonly state: "not-adopted" };
+export type CheckState =
+  | { readonly state: "run"; readonly engine: string }
+  | { readonly state: "not-run" }
+  | { readonly state: "not-adopted" };
 
 export type ListedCheck = { readonly address: ListedAddress; readonly state: CheckState };
 
-export type GivenCheckSettings = { readonly address: ListedAddress; readonly values: ClauseSettingValues };
+export type GivenCheckSettings = {
+  readonly address: ListedAddress;
+  readonly values: ClauseSettingValues;
+};
 
-export type EslintConfigLookupChoice = { readonly lookup: "detected" } | { readonly lookup: "declared"; readonly value: EslintConfigLookup };
+export type EslintConfigLookupChoice =
+  | { readonly lookup: "detected" }
+  | { readonly lookup: "declared"; readonly value: EslintConfigLookup };
 
 export type SettingsFile = {
   readonly exclude: readonly RepoPath[];
@@ -42,7 +52,13 @@ export type SettingsFileFault =
   | { readonly kind: "reserved-rule-set-name"; readonly name: string }
   | { readonly kind: "rule-set-name-collision"; readonly name: string; readonly other: string };
 
-export const RENAMED_SETTINGS = [{ name: "confinedOutsideDependencies", pieceName: "confinedPackages" }] as const;
+export const RENAMED_SETTINGS = [
+  { name: "confinedOutsideDependencies", pieceName: "confinedPackages" },
+] as const;
 
-export const eslintConfigLookupOf = (request: { readonly declared: EslintConfigLookup | undefined }): EslintConfigLookupChoice =>
-  request.declared === undefined ? { lookup: "detected" } : { lookup: "declared", value: request.declared };
+export const eslintConfigLookupOf = (request: {
+  readonly declared: EslintConfigLookup | undefined;
+}): EslintConfigLookupChoice =>
+  request.declared === undefined
+    ? { lookup: "detected" }
+    : { lookup: "declared", value: request.declared };

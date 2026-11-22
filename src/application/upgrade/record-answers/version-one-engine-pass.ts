@@ -1,44 +1,86 @@
-import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
-import { type CheckRequest, findingsOf, loadInputs, mechanismRuns, projectionOutcome, sliceProblemsOf, treeOf } from "../../run/check/run-check.ts";
-import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { EngineFindings, EnginePass, EnginePassFailure } from "../../ports/upgrade/engine-pass.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { Result } from "../../../domain/result.ts";
+import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
+import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
+import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
+import type {
+  EngineFindings,
+  EnginePass,
+  EnginePassFailure,
+} from "../../ports/upgrade/engine-pass.ts";
+import {
+  type CheckRequest,
+  findingsOf,
+  loadInputs,
+  mechanismRuns,
+  projectionOutcome,
+  sliceProblemsOf,
+  treeOf,
+} from "../../run/check/run-check.ts";
 
-const failureOf = (request: { readonly failure: LoadFailure; readonly loadFailureDetail: LoadFailureDetail }): Result<EngineFindings, EnginePassFailure> => ({
+const failureOf = (request: {
+  readonly failure: LoadFailure;
+  readonly loadFailureDetail: LoadFailureDetail;
+}): Result<EngineFindings, EnginePassFailure> => ({
   outcome: "failed",
-  error: { kind: "version-one-run-failed", detail: request.loadFailureDetail({ failure: request.failure }) },
+  error: {
+    kind: "version-one-run-failed",
+    detail: request.loadFailureDetail({ failure: request.failure }),
+  },
 });
 
-const projectionFileOf = (request: { readonly mechanism: EngineId }): RepoPath => repoPathOf(`disciplines.${versionOneEngineNameOf(request.mechanism)}.mjs`);
+const projectionFileOf = (request: { readonly mechanism: EngineId }): RepoPath =>
+  repoPathOf(`disciplines.${versionOneEngineNameOf(request.mechanism)}.mjs`);
 
-const projectionFailureOf = (request: { readonly runs: readonly MechanismRun[] }): EnginePassFailure | undefined => {
+const projectionFailureOf = (request: {
+  readonly runs: readonly MechanismRun[];
+}): EnginePassFailure | undefined => {
   const outcomes = request.runs.map((run) => projectionOutcome({ run }));
   const slice = request.runs.flatMap((run) => sliceProblemsOf({ run }))[0];
-  const notRun = outcomes.flatMap((outcome) => outcome.unmeasured).find((unmeasured) => unmeasured.kind === "mechanism-not-run");
-  if (notRun?.kind === "mechanism-not-run" && !(notRun.projection === "not-included" && slice !== undefined)) {
-    return { kind: "projection-not-current", file: projectionFileOf({ mechanism: notRun.mechanism }), state: notRun.projection };
+  const notRun = outcomes
+    .flatMap((outcome) => outcome.unmeasured)
+    .find((unmeasured) => unmeasured.kind === "mechanism-not-run");
+  if (
+    notRun?.kind === "mechanism-not-run" &&
+    !(notRun.projection === "not-included" && slice !== undefined)
+  ) {
+    return {
+      kind: "projection-not-current",
+      file: projectionFileOf({ mechanism: notRun.mechanism }),
+      state: notRun.projection,
+    };
   }
-  const problem = [...outcomes.flatMap((outcome) => outcome.problems), ...(slice === undefined ? [] : [slice])][0];
+  const problem = [
+    ...outcomes.flatMap((outcome) => outcome.problems),
+    ...(slice === undefined ? [] : [slice]),
+  ][0];
   if (problem === undefined) {
     return undefined;
   }
   return {
     kind: "projection-not-current",
-    file: problem.scope === "slice" ? problem.slice : projectionFileOf({ mechanism: problem.mechanism }),
+    file:
+      problem.scope === "slice"
+        ? problem.slice
+        : projectionFileOf({ mechanism: problem.mechanism }),
     state: problem.state,
   };
 };
 
-export const createVersionOneEnginePass = (request: { readonly check: CheckRequest; readonly loadFailureDetail: LoadFailureDetail }): EnginePass => ({
+export const createVersionOneEnginePass = (request: {
+  readonly check: CheckRequest;
+  readonly loadFailureDetail: LoadFailureDetail;
+}): EnginePass => ({
   findingsFor: async ({ records }) => {
     const { check, loadFailureDetail } = request;
-    const inputs = await loadInputs({ ...check, exceptionBaselineOf: () => UNMEASURED_EXCEPTION_BASELINE });
+    const inputs = await loadInputs({
+      ...check,
+      exceptionBaselineOf: () => UNMEASURED_EXCEPTION_BASELINE,
+    });
     if (inputs.outcome === "failed") {
       return failureOf({ failure: inputs.error, loadFailureDetail });
     }
@@ -46,7 +88,11 @@ export const createVersionOneEnginePass = (request: { readonly check: CheckReque
     if (tree.outcome === "failed") {
       return failureOf({ failure: tree.error, loadFailureDetail });
     }
-    const runs = await mechanismRuns({ check, tree: tree.value, inputs: { ...inputs.value, records } });
+    const runs = await mechanismRuns({
+      check,
+      tree: tree.value,
+      inputs: { ...inputs.value, records },
+    });
     if (runs.outcome === "failed") {
       return failureOf({ failure: runs.error, loadFailureDetail });
     }

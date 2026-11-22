@@ -1,28 +1,35 @@
+import type { EnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
+import type { ModuleExtension } from "../application/ports/host/module-extension.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
-import type { EnginePort } from "../application/ports/engine/engine-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
 import { readHoneRecords } from "../application/records/read-hone-records.ts";
-import type { RecordsReading } from "../domain/records/hone-records/hone-record.ts";
-import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
-import { createSettingsRepository, type SettingsReading } from "../application/run/settings/read-settings.ts";
-import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
-import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
-import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { createBoundCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import type { ModuleExtension } from "../application/ports/host/module-extension.ts";
-import type { Result } from "../domain/result.ts";
 import { type CheckedTree, checkedTreeOf } from "../application/run/checked-tree-of.ts";
-import { type EnginesRunRequest, enginesProjectionOf, enginesRunOf } from "../application/run/engines/engines-run.ts";
-import { runFailureOf } from "../domain/report/run-failure.ts";
+import {
+  type EnginesRunRequest,
+  enginesProjectionOf,
+  enginesRunOf,
+} from "../application/run/engines/engines-run.ts";
+import {
+  createSettingsRepository,
+  type SettingsReading,
+} from "../application/run/settings/read-settings.ts";
 import { toolCatalogueOf } from "../application/run/tool-catalogue.ts";
 import { touchedSetOf } from "../application/run/touched-set/touched-set-of.ts";
 import type { EngineStageRequest, VersionTwoStages } from "../application/run/version-two-run.ts";
+import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import type { RecordsReading } from "../domain/records/hone-records/hone-record.ts";
+import { runFailureOf } from "../domain/report/run-failure.ts";
+import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { Result } from "../domain/result.ts";
+import { createBoundCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
+import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
+import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 
 export type VersionTwoPorts = {
   readonly fileText: FileTextPort;
@@ -46,25 +53,58 @@ type StagesRequest = { readonly ports: VersionTwoPorts; readonly locations: Vers
 
 export type StagesOver = (request: StagesRequest) => VersionTwoStages;
 
-const settingsStage = (request: StagesRequest & { readonly catalogue: SymptomCatalogue }): Result<SettingsReading, RunLoadFailure> => {
+const settingsStage = (
+  request: StagesRequest & { readonly catalogue: SymptomCatalogue },
+): Result<SettingsReading, RunLoadFailure> => {
   const { fileText, path } = request.ports;
   const { repoRoot, installRoot, moduleExtension } = request.locations;
-  const read = createSettingsRepository({ sources: createSettingsSources({ fileText, directory: request.ports.directory, path, repoRoot, installRoot, moduleExtension }), settingsFormat: SETTINGS_FILE_FORMAT }).read({});
-  return read.outcome === "failed" ? { outcome: "failed", error: runFailureOf({ engines: request.catalogue.engines, source: read.error }) } : read;
+  const read = createSettingsRepository({
+    sources: createSettingsSources({
+      fileText,
+      directory: request.ports.directory,
+      path,
+      repoRoot,
+      installRoot,
+      moduleExtension,
+    }),
+    settingsFormat: SETTINGS_FILE_FORMAT,
+  }).read({});
+  return read.outcome === "failed"
+    ? {
+        outcome: "failed",
+        error: runFailureOf({ engines: request.catalogue.engines, source: read.error }),
+      }
+    : read;
 };
 
-const recordsStage = (request: StagesRequest & { readonly catalogue: SymptomCatalogue }): Result<RecordsReading, RunLoadFailure> => {
+const recordsStage = (
+  request: StagesRequest & { readonly catalogue: SymptomCatalogue },
+): Result<RecordsReading, RunLoadFailure> => {
   const { fileText, directory, git, gitTree, recordsSourceOf } = request.ports;
   const read = readHoneRecords({
-    source: recordsSourceOf({ fileText, directory, git, gitTree, repoRoot: request.locations.repoRoot, catalogue: request.catalogue }),
+    source: recordsSourceOf({
+      fileText,
+      directory,
+      git,
+      gitTree,
+      repoRoot: request.locations.repoRoot,
+      catalogue: request.catalogue,
+    }),
     recordsReader,
     catalogue: request.catalogue,
     baseRevision: request.locations.baseRevision,
   });
-  return read.outcome === "failed" ? { outcome: "failed", error: runFailureOf({ engines: request.catalogue.engines, source: read.error }) } : read;
+  return read.outcome === "failed"
+    ? {
+        outcome: "failed",
+        error: runFailureOf({ engines: request.catalogue.engines, source: read.error }),
+      }
+    : read;
 };
 
-const treeStage = (request: StagesRequest & { readonly settings: SettingsReading }): Result<CheckedTree, RunLoadFailure> => {
+const treeStage = (
+  request: StagesRequest & { readonly settings: SettingsReading },
+): Result<CheckedTree, RunLoadFailure> => {
   const { git, fileText, path } = request.ports;
   const tree = checkedTreeOf({
     git,
@@ -74,10 +114,14 @@ const treeStage = (request: StagesRequest & { readonly settings: SettingsReading
     excluded: request.settings.selection.excluded,
     eslintConfigRoots: request.settings.selection.eslintConfigRoots,
   });
-  return tree.outcome === "failed" ? { outcome: "failed", error: runFailureOf({ engines: [], source: tree.error }) } : tree;
+  return tree.outcome === "failed"
+    ? { outcome: "failed", error: runFailureOf({ engines: [], source: tree.error }) }
+    : tree;
 };
 
-const enginesRequestOf = (request: StagesRequest & { readonly stage: EngineStageRequest }): EnginesRunRequest => ({
+const enginesRequestOf = (
+  request: StagesRequest & { readonly stage: EngineStageRequest },
+): EnginesRunRequest => ({
   ...request.stage,
   repoRoot: request.locations.repoRoot,
   installRoot: request.locations.installRoot,
@@ -101,5 +145,12 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
   engines: (stage) => enginesRunOf(enginesRequestOf({ ...request, stage })),
   projections: (stage) => enginesProjectionOf(enginesRequestOf({ ...request, stage })),
   touched: (stage) =>
-    touchedSetOf({ assessment: stage.assessment, measuring: stage.measuring, records: stage.records.records, repoRoot: request.locations.repoRoot, baseRevision: request.locations.baseRevision, git: request.ports.git }),
+    touchedSetOf({
+      assessment: stage.assessment,
+      measuring: stage.measuring,
+      records: stage.records.records,
+      repoRoot: request.locations.repoRoot,
+      baseRevision: request.locations.baseRevision,
+      git: request.ports.git,
+    }),
 });

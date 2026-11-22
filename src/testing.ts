@@ -1,13 +1,22 @@
-import { checkConformanceOf as conformNamedCheck, checkUnderTestOf as namedCheckUnderTest } from "./application/conformance/check-conformance.ts";
-import { moduleExtensionOf } from "./application/ports/host/module-extension.ts";
-import { createNamedCheckExamplesRepository } from "./infrastructure/content-files/rule-sets/named-check-examples.ts";
+import {
+  checkConformanceOf as conformNamedCheck,
+  checkUnderTestOf as namedCheckUnderTest,
+} from "./application/conformance/check-conformance.ts";
+import type {
+  CheckConformanceOf,
+  CheckUnderTestOf,
+  ClauseConformanceOf,
+  ClauseUnderTestOf,
+  RepoPathOf,
+} from "./application/conformance/conformance-testing-types.ts";
 import { createConformanceTesting } from "./application/conformance/conformance-testing.ts";
-import type { CheckConformanceOf, CheckUnderTestOf, ClauseConformanceOf, ClauseUnderTestOf, RepoPathOf } from "./application/conformance/conformance-testing-types.ts";
+import { moduleExtensionOf } from "./application/ports/host/module-extension.ts";
 import { installRootOfApiEntry } from "./infrastructure/command-line/installation/install-root.ts";
+import { createNamedCheckExamplesRepository } from "./infrastructure/content-files/rule-sets/named-check-examples.ts";
 import { createRuleSetFileReader } from "./infrastructure/content-files/rule-sets/rule-set-file-reader.ts";
+import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
-import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
 import { loadFailureDetail } from "./infrastructure/printed-report/load-failures/load-failure-text.ts";
 
@@ -51,10 +60,36 @@ export const repoPathOf: RepoPathOf = testing.repoPathOf;
 
 export const checkUnderTestOf: CheckUnderTestOf = (request) =>
   installRoot.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "rule-set-unloadable", detail: loadFailureDetail({ failure: installRoot.error }) } }
-    : namedCheckUnderTest({ ...request, installRoot: installRoot.value, examples, loadFailureDetail });
+    ? {
+        outcome: "failed",
+        error: {
+          kind: "rule-set-unloadable",
+          detail: loadFailureDetail({ failure: installRoot.error }),
+        },
+      }
+    : namedCheckUnderTest({
+        ...request,
+        installRoot: installRoot.value,
+        examples,
+        loadFailureDetail,
+      });
 
 export const checkConformanceOf: CheckConformanceOf = (request) =>
   installRoot.outcome === "failed"
-    ? Promise.resolve({ outcome: "failed", error: { kind: "runner-unloadable", detail: loadFailureDetail({ failure: installRoot.error }) } })
-    : conformNamedCheck({ ...request, installRoot: installRoot.value, examples, loadFailureDetail, path, modules, enginePort, moduleExtension: moduleExtensionOf({ moduleUrl }) });
+    ? Promise.resolve({
+        outcome: "failed",
+        error: {
+          kind: "runner-unloadable",
+          detail: loadFailureDetail({ failure: installRoot.error }),
+        },
+      })
+    : conformNamedCheck({
+        ...request,
+        installRoot: installRoot.value,
+        examples,
+        loadFailureDetail,
+        path,
+        modules,
+        enginePort,
+        moduleExtension: moduleExtensionOf({ moduleUrl }),
+      });

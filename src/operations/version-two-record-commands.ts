@@ -3,7 +3,12 @@ import type { RecordsEditor } from "../application/ports/records/records-editor.
 import type { RecordsReader } from "../application/ports/records/records-reader.ts";
 import type { RecordsSource } from "../application/ports/records/records-source.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
-import { authoriseOf, pruneDebtOf, type RecordCommandFailure, recordDebtOf } from "../application/records/record-commands.ts";
+import {
+  authoriseOf,
+  pruneDebtOf,
+  type RecordCommandFailure,
+  recordDebtOf,
+} from "../application/records/record-commands.ts";
 import { type VersionTwoStages, versionTwoRunOver } from "../application/run/version-two-run.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
@@ -25,13 +30,23 @@ export type VersionTwoRecordInput = {
   readonly recordsEditor: RecordsEditor;
 };
 
-const recordFailureOf = <Value>(request: { readonly recorded: Result<Value, RecordCommandFailure> }): Result<Value, RunLoadFailure> =>
-  request.recorded.outcome === "failed" ? { outcome: "failed", error: runLoadFailureOf({ engines: [], source: request.recorded.error }) } : request.recorded;
+const recordFailureOf = <Value>(request: {
+  readonly recorded: Result<Value, RecordCommandFailure>;
+}): Result<Value, RunLoadFailure> =>
+  request.recorded.outcome === "failed"
+    ? {
+        outcome: "failed",
+        error: runLoadFailureOf({ engines: [], source: request.recorded.error }),
+      }
+    : request.recorded;
 
 export const versionTwoRecordDebtOf = async (
   request: VersionTwoRecordInput & { readonly leave: readonly RepoPath[] },
 ): Promise<Result<readonly DebtOutcome[], RunLoadFailure>> => {
-  const run = await versionTwoRunOver({ stages: request.stages, arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" } });
+  const run = await versionTwoRunOver({
+    stages: request.stages,
+    arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "always" },
+  });
   if (run.outcome === "failed") {
     return run;
   }
@@ -45,7 +60,13 @@ export const versionTwoRecordDebtOf = async (
         recordsReader: request.recordsReader,
         recordsEditor: request.recordsEditor,
       },
-      run: { findings: report.findings, unrecorded: report.unrecorded, runs, touched, leave: request.leave },
+      run: {
+        findings: report.findings,
+        unrecorded: report.unrecorded,
+        runs,
+        touched,
+        leave: request.leave,
+      },
     }),
   });
 };
@@ -53,7 +74,14 @@ export const versionTwoRecordDebtOf = async (
 export const versionTwoPruneDebtOf = async (
   request: VersionTwoRecordInput & { readonly forfeiture: ForfeitureAssessment | undefined },
 ): Promise<Result<readonly PrunableDebt[], RunLoadFailure>> => {
-  const run = await versionTwoRunOver({ stages: request.stages, arguments: { forfeiture: request.forfeiture, reportOutput: undefined, measuring: "when-debt-held" } });
+  const run = await versionTwoRunOver({
+    stages: request.stages,
+    arguments: {
+      forfeiture: request.forfeiture,
+      reportOutput: undefined,
+      measuring: "when-debt-held",
+    },
+  });
   if (run.outcome === "failed") {
     return run;
   }
@@ -69,7 +97,9 @@ export const versionTwoPruneDebtOf = async (
   });
 };
 
-export const versionTwoAuthoriseOf = (request: VersionTwoRecordInput & { readonly authorising: AuthoriseRequest }): Result<Authorising, RunLoadFailure> => {
+export const versionTwoAuthoriseOf = (
+  request: VersionTwoRecordInput & { readonly authorising: AuthoriseRequest },
+): Result<Authorising, RunLoadFailure> => {
   const catalogue = request.stages.catalogue();
   if (catalogue.outcome === "failed") {
     return catalogue;

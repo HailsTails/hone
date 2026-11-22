@@ -1,4 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { LoadedEngine } from "../ports/engine/engine-run.ts";
 import type { LoadedRunner } from "../ports/engine/runner-module.ts";
@@ -6,14 +14,7 @@ import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { LocatedPieceFile, RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
-import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { type ClauseConformanceRequest, clauseConformanceOf } from "./clause-conformance.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
-import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
-import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 const AUDIT = "walker" as const;
@@ -23,8 +24,18 @@ const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 const RULE_SET_ROOT = absoluteRootOf("/repo/tools/disciplines/acme");
 const PIECE_ROOT = "/repo/tools/disciplines/acme/mechanisms/audit/ACME-2";
 
-const FLAG_CASE = { name: "scratch file", fileName: repoPathOf("src/draft.scratch.ts"), source: "export const draft = 1;\n", expectedLines: [1] };
-const ALLOW_CASE = { name: "ordinary file", fileName: repoPathOf("src/kept.ts"), source: "export const kept = 1;\n", expectedLines: [] };
+const FLAG_CASE = {
+  name: "scratch file",
+  fileName: repoPathOf("src/draft.scratch.ts"),
+  source: "export const draft = 1;\n",
+  expectedLines: [1],
+};
+const ALLOW_CASE = {
+  name: "ordinary file",
+  fileName: repoPathOf("src/kept.ts"),
+  source: "export const kept = 1;\n",
+  expectedLines: [],
+};
 
 const DISCIPLINE: DisciplineFile = {
   version: 1,
@@ -56,7 +67,11 @@ const PIECE: LocatedPieceFile = {
   ],
 };
 
-const SCRATCH_FILES = { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("ACME-2"), clause: clauseIdOf("scratch-files") };
+const SCRATCH_FILES = {
+  ruleSet: { name: ruleSetNameOf("acme") },
+  discipline: disciplineIdOf("ACME-2"),
+  clause: clauseIdOf("scratch-files"),
+};
 
 const BOUND_CLAUSE = {
   address: SCRATCH_FILES,
@@ -70,7 +85,9 @@ const BOUND_CLAUSE = {
 const BOUND_CASES = [FLAG_CASE, ALLOW_CASE];
 
 const acmeFiles = (): RuleSetFiles => ({
-  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "present", file: DISCIPLINE } }),
+  disciplineFile: vi
+    .fn<RuleSetFiles["disciplineFile"]>()
+    .mockReturnValue({ outcome: "ok", value: { held: "present", file: DISCIPLINE } }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>().mockReturnValue({ outcome: "ok", value: PIECE }),
 });
 
@@ -90,7 +107,11 @@ const STANDALONE_RUNNER: LoadedRunner = {
   conform: vi.fn<LoadedRunner["conform"]>(),
 };
 
-const AUDIT_ENGINE: LoadedEngine = { mechanism: AUDIT, runner: STANDALONE_RUNNER, checksRunner: undefined };
+const AUDIT_ENGINE: LoadedEngine = {
+  mechanism: AUDIT,
+  runner: STANDALONE_RUNNER,
+  checksRunner: undefined,
+};
 
 const engineLoading = (request: {
   readonly loaded: Awaited<ReturnType<EnginePort["load"]>>;
@@ -128,14 +149,25 @@ const NO_LOAD_FAILURE_DETAIL: LoadFailureDetail = vi.fn<LoadFailureDetail>();
 describe("clauseConformanceOf", () => {
   it("passes when the audit runner reproduces every case", async () => {
     await expect(
-      clauseConformanceOf(conformanceRequest({ engine: conformingEngine({ outcome: "ok", value: [] }), loadFailureDetail: NO_LOAD_FAILURE_DETAIL })),
+      clauseConformanceOf(
+        conformanceRequest({
+          engine: conformingEngine({ outcome: "ok", value: [] }),
+          loadFailureDetail: NO_LOAD_FAILURE_DETAIL,
+        }),
+      ),
     ).resolves.toEqual({ outcome: "ok", value: [] });
   });
 
   it("hands the audit runner the clause bound as hone check binds it and every case", async () => {
     const engine = conformingEngine({ outcome: "ok", value: [] });
-    await clauseConformanceOf(conformanceRequest({ engine, loadFailureDetail: NO_LOAD_FAILURE_DETAIL }));
-    expect(engine.conform).toHaveBeenCalledWith({ clause: BOUND_CLAUSE, cases: BOUND_CASES, runner: STANDALONE_RUNNER });
+    await clauseConformanceOf(
+      conformanceRequest({ engine, loadFailureDetail: NO_LOAD_FAILURE_DETAIL }),
+    );
+    expect(engine.conform).toHaveBeenCalledWith({
+      clause: BOUND_CLAUSE,
+      cases: BOUND_CASES,
+      runner: STANDALONE_RUNNER,
+    });
   });
 
   it("loads the installed audit runner from the install root with the module extension it is given", async () => {
@@ -149,41 +181,70 @@ describe("clauseConformanceOf", () => {
     await expect(
       clauseConformanceOf(
         conformanceRequest({
-          engine: conformingEngine({ outcome: "ok", value: [{ clause: SCRATCH_FILES, caseName: "scratch file", expectedLines: [1], flaggedLines: [] }] }),
+          engine: conformingEngine({
+            outcome: "ok",
+            value: [
+              {
+                clause: SCRATCH_FILES,
+                caseName: "scratch file",
+                expectedLines: [1],
+                flaggedLines: [],
+              },
+            ],
+          }),
           loadFailureDetail: NO_LOAD_FAILURE_DETAIL,
         }),
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: [{ clause: SCRATCH_FILES, caseName: "scratch file", expectedLines: [1], flaggedLines: [] }],
+      value: [
+        { clause: SCRATCH_FILES, caseName: "scratch file", expectedLines: [1], flaggedLines: [] },
+      ],
     });
   });
 
   it("refuses with the runner's own failure when the piece cannot run", async () => {
-    const loadFailureDetail = vi.fn<LoadFailureDetail>().mockReturnValue(`runner-failed audit piece-invalid ${PIECE_ROOT} no check export`);
+    const loadFailureDetail = vi
+      .fn<LoadFailureDetail>()
+      .mockReturnValue(`runner-failed audit piece-invalid ${PIECE_ROOT} no check export`);
     await expect(
       clauseConformanceOf(
         conformanceRequest({
-          engine: conformingEngine({ outcome: "failed", error: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "no check export" } }),
+          engine: conformingEngine({
+            outcome: "failed",
+            error: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "no check export" },
+          }),
           loadFailureDetail,
         }),
       ),
     ).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "runner-refused", detail: `runner-failed audit piece-invalid ${PIECE_ROOT} no check export` },
+      error: {
+        kind: "runner-refused",
+        detail: `runner-failed audit piece-invalid ${PIECE_ROOT} no check export`,
+      },
     });
     expect(loadFailureDetail).toHaveBeenCalledWith({
-      failure: { kind: "runner-failed", mechanism: AUDIT, failure: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "no check export" } },
+      failure: {
+        kind: "runner-failed",
+        mechanism: AUDIT,
+        failure: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "no check export" },
+      },
     });
   });
 
   it("refuses when the module at the runner's path exports no runner", async () => {
-    const loadFailureDetail = vi.fn<LoadFailureDetail>().mockReturnValue("runner-invalid audit no runner export");
+    const loadFailureDetail = vi
+      .fn<LoadFailureDetail>()
+      .mockReturnValue("runner-invalid audit no runner export");
     await expect(
       clauseConformanceOf(
         conformanceRequest({
           engine: engineLoading({
-            loaded: { outcome: "failed", error: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" } },
+            loaded: {
+              outcome: "failed",
+              error: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" },
+            },
             conformed: { outcome: "ok", value: [] },
           }),
           loadFailureDetail,
@@ -193,14 +254,22 @@ describe("clauseConformanceOf", () => {
       outcome: "failed",
       error: { kind: "runner-unloadable", detail: "runner-invalid audit no runner export" },
     });
-    expect(loadFailureDetail).toHaveBeenCalledWith({ failure: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" } });
+    expect(loadFailureDetail).toHaveBeenCalledWith({
+      failure: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" },
+    });
   });
 
   it("refuses before loading the runner when the clause cannot be bound", async () => {
     const engine = conformingEngine({ outcome: "ok", value: [] });
     await expect(
-      clauseConformanceOf({ ...conformanceRequest({ engine, loadFailureDetail: NO_LOAD_FAILURE_DETAIL }), clause: "not an address" }),
-    ).resolves.toEqual({ outcome: "failed", error: { kind: "address-invalid", detail: "not an address" } });
+      clauseConformanceOf({
+        ...conformanceRequest({ engine, loadFailureDetail: NO_LOAD_FAILURE_DETAIL }),
+        clause: "not an address",
+      }),
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: { kind: "address-invalid", detail: "not an address" },
+    });
     expect(engine.load).not.toHaveBeenCalled();
   });
 });

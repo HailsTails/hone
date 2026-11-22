@@ -1,28 +1,36 @@
 import { assert, describe, expect, it, vi } from "vitest";
+
+import type { PathPort } from "../../application/ports/host/path-port.ts";
+import type { LocatedPieceFile } from "../../application/ports/rule-set/rule-set-files.ts";
+import type { Held } from "../../application/ports/rule-set/rule-set-files.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { Result } from "../../domain/result.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import type {
+  ClauseDefinition,
+  ClauseSettingDeclarations,
+  DisciplineFile,
+} from "../../domain/rule-set/rule-set-types.ts";
+import type {
+  ConsumerSelectionFile,
+  RuleSetLocation,
+} from "../../domain/settings/selection/selection-file.ts";
+import { clauseEditionsSchema } from "../content-files/edition.ts";
+import type { RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../hone-config-file/identifiers.ts";
 import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
 import { createDefaultPathPort, createPathPort } from "../node/path-port.ts";
-import type { LocatedPieceFile } from "../../application/ports/rule-set/rule-set-files.ts";
-import type { PathPort } from "../../application/ports/host/path-port.ts";
-import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
-import { clauseEditionsSchema } from "../content-files/edition.ts";
-import { clauseIdSchema, disciplineIdSchema } from "../hone-config-file/identifiers.ts";
-import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import type { Result } from "../../domain/result.ts";
 import {
   createSelectionRepository,
   readRunSettings,
   ruleSetRootOf,
   selectionFrom,
 } from "./consumer-selection.ts";
-import type { RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
-import type { Held } from "../../application/ports/rule-set/rule-set-files.ts";
 import { selectionFileOf } from "./selection-file.ts";
-import type { ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
-import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
-import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 const INSTALL_ROOT = absoluteRootOf("/install");
@@ -50,7 +58,8 @@ const mechanical = (request: {
   cases: { flag: [], allow: [] },
 });
 
-const auditClause = (id: string): ClauseDefinition => mechanical({ id, mechanisms: [AUDIT], keyword: "class" });
+const auditClause = (id: string): ClauseDefinition =>
+  mechanical({ id, mechanisms: [AUDIT], keyword: "class" });
 
 const LIBRARY_CONSTRUCTION: ClauseDefinition = {
   kind: "judgement",
@@ -58,7 +67,10 @@ const LIBRARY_CONSTRUCTION: ClauseDefinition = {
   enforcedBy: "review",
 };
 
-const disciplineFile = (request: { readonly id: string; readonly clauses: readonly ClauseDefinition[] }): DisciplineFile => ({
+const disciplineFile = (request: {
+  readonly id: string;
+  readonly clauses: readonly ClauseDefinition[];
+}): DisciplineFile => ({
   version: 1,
   id: disciplineIdSchema.parse(request.id),
   clauses: request.clauses,
@@ -89,7 +101,11 @@ const pieceClause = (request: {
   editions: request.editions,
 });
 
-const moduleClause = (request: { readonly clause: string; readonly module: string; readonly pieceRoot: string }): LocatedPieceFile["clauses"][number] =>
+const moduleClause = (request: {
+  readonly clause: string;
+  readonly module: string;
+  readonly pieceRoot: string;
+}): LocatedPieceFile["clauses"][number] =>
   pieceClause({
     clause: request.clause,
     pieceRoot: request.pieceRoot,
@@ -98,19 +114,35 @@ const moduleClause = (request: { readonly clause: string; readonly module: strin
     editions: ONE_EDITION,
   });
 
-const CD_14 = disciplineFile({ id: "CD-14", clauses: [auditClause("class-syntax"), auditClause("abstract-syntax"), LIBRARY_CONSTRUCTION] });
+const CD_14 = disciplineFile({
+  id: "CD-14",
+  clauses: [auditClause("class-syntax"), auditClause("abstract-syntax"), LIBRARY_CONSTRUCTION],
+});
 
 const CD_14_WITH_THREE_MECHANICAL = disciplineFile({
   id: "CD-14",
-  clauses: [auditClause("class-syntax"), auditClause("abstract-syntax"), auditClause("decorator-syntax"), LIBRARY_CONSTRUCTION],
+  clauses: [
+    auditClause("class-syntax"),
+    auditClause("abstract-syntax"),
+    auditClause("decorator-syntax"),
+    LIBRARY_CONSTRUCTION,
+  ],
 });
 
 const CD_14_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: AUDIT,
   clauses: [
-    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "class-syntax", module: "class-syntax.ts" }),
-    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" }),
+    moduleClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+      clause: "class-syntax",
+      module: "class-syntax.ts",
+    }),
+    moduleClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+      clause: "abstract-syntax",
+      module: "abstract-syntax.ts",
+    }),
   ],
 });
 
@@ -125,13 +157,27 @@ const CD_14_ON_TWO_MECHANISMS = disciplineFile({
 const CD_14_ESLINT_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: ESLINT,
-  clauses: [pieceClause({ pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14", clause: "abstract-syntax", settings: { rule: "no-abstract" }, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
+  clauses: [
+    pieceClause({
+      pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14",
+      clause: "abstract-syntax",
+      settings: { rule: "no-abstract" },
+      clauseSettings: NO_DECLARATIONS,
+      editions: ONE_EDITION,
+    }),
+  ],
 });
 
 const CD_14_WITHOUT_CLASS_SYNTAX_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: AUDIT,
-  clauses: [moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" })],
+  clauses: [
+    moduleClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+      clause: "abstract-syntax",
+      module: "abstract-syntax.ts",
+    }),
+  ],
 });
 
 const TEAM_CD_14 = disciplineFile({
@@ -142,7 +188,13 @@ const TEAM_CD_14 = disciplineFile({
 const TEAM_CD_14_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: AUDIT,
-  clauses: [moduleClause({ pieceRoot: "/repo/team-rules/mechanisms/audit/CD-14", clause: "class-syntax", module: "team-class-syntax.ts" })],
+  clauses: [
+    moduleClause({
+      pieceRoot: "/repo/team-rules/mechanisms/audit/CD-14",
+      clause: "class-syntax",
+      module: "team-class-syntax.ts",
+    }),
+  ],
 });
 
 const TM_1 = disciplineFile({ id: "TM-1", clauses: [auditClause("no-tmp-files")] });
@@ -150,7 +202,13 @@ const TM_1 = disciplineFile({ id: "TM-1", clauses: [auditClause("no-tmp-files")]
 const TM_1_PIECE = pieceFile({
   discipline: "TM-1",
   mechanism: AUDIT,
-  clauses: [moduleClause({ pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1", clause: "no-tmp-files", module: "no-tmp-files.ts" })],
+  clauses: [
+    moduleClause({
+      pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1",
+      clause: "no-tmp-files",
+      module: "no-tmp-files.ts",
+    }),
+  ],
 });
 
 const CD_14_SETTABLE_PIECE = pieceFile({
@@ -161,10 +219,17 @@ const CD_14_SETTABLE_PIECE = pieceFile({
       pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
       clause: "class-syntax",
       settings: { module: "class-syntax.ts" },
-      clauseSettings: { allowedNames: { default: [] }, style: { default: "plain", choices: ["plain", "strict"] } },
+      clauseSettings: {
+        allowedNames: { default: [] },
+        style: { default: "plain", choices: ["plain", "strict"] },
+      },
       editions: ONE_EDITION,
     }),
-    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" }),
+    moduleClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+      clause: "abstract-syntax",
+      module: "abstract-syntax.ts",
+    }),
   ],
 });
 
@@ -179,16 +244,31 @@ const CD_14_EDITIONED_PIECE = pieceFile({
       clauseSettings: { style: { default: "plain", choices: ["plain", "strict"] } },
       editions: EDITIONS_ONE_AND_TWO,
     }),
-    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" }),
+    moduleClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+      clause: "abstract-syntax",
+      module: "abstract-syntax.ts",
+    }),
   ],
 });
 
-const CD_6 = disciplineFile({ id: "CD-6", clauses: [mechanical({ id: "naming-convention", mechanisms: [ESLINT], keyword: "class" })] });
+const CD_6 = disciplineFile({
+  id: "CD-6",
+  clauses: [mechanical({ id: "naming-convention", mechanisms: [ESLINT], keyword: "class" })],
+});
 
 const CD_6_PIECE = pieceFile({
   discipline: "CD-6",
   mechanism: ESLINT,
-  clauses: [pieceClause({ pieceRoot: "/install/src/infrastructure/engines/eslint/CD-6", clause: "naming-convention", settings: {}, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
+  clauses: [
+    pieceClause({
+      pieceRoot: "/install/src/infrastructure/engines/eslint/CD-6",
+      clause: "naming-convention",
+      settings: {},
+      clauseSettings: NO_DECLARATIONS,
+      editions: ONE_EDITION,
+    }),
+  ],
 });
 
 const TD_1 = disciplineFile({ id: "TD-1", clauses: [auditClause("x")] });
@@ -197,23 +277,36 @@ const TD_1_PIECE = pieceFile({
   discipline: "TD-1",
   mechanism: AUDIT,
   clauses: [
-    pieceClause({ pieceRoot: "/install/src/infrastructure/engines/walker/TD-1", clause: "x", settings: { module: "x.ts" }, clauseSettings: { limit: { default: 3 } }, editions: ONE_EDITION }),
+    pieceClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/TD-1",
+      clause: "x",
+      settings: { module: "x.ts" },
+      clauseSettings: { limit: { default: 3 } },
+      editions: ONE_EDITION,
+    }),
   ],
 });
 
 type FileRead<File> = Result<Held<File>, LoadFailure>;
 
-const present = <File>(file: File): FileRead<File> => ({ outcome: "ok", value: { held: "present", file } });
+const present = <File>(file: File): FileRead<File> => ({
+  outcome: "ok",
+  value: { held: "present", file },
+});
 
 const ABSENT: FileRead<never> = { outcome: "ok", value: { held: "absent" } };
 
 const NO_CHECKS: ReturnType<RuleSetFiles["checks"]> = { outcome: "ok", value: [] };
 
-const disciplineReads = (first: FileRead<DisciplineFile>, second: FileRead<DisciplineFile> = first) =>
-  vi.fn<RuleSetFiles["discipline"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
+const disciplineReads = (
+  first: FileRead<DisciplineFile>,
+  second: FileRead<DisciplineFile> = first,
+) => vi.fn<RuleSetFiles["discipline"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
 
-const pieceReads = (first: FileRead<LocatedPieceFile>, second: FileRead<LocatedPieceFile> = first) =>
-  vi.fn<RuleSetFiles["piece"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
+const pieceReads = (
+  first: FileRead<LocatedPieceFile>,
+  second: FileRead<LocatedPieceFile> = first,
+) => vi.fn<RuleSetFiles["piece"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
 
 const rulesReturning = (request: {
   readonly disciplines: readonly [FileRead<DisciplineFile>, FileRead<DisciplineFile>?];
@@ -230,13 +323,31 @@ const rulesReturning = (request: {
   };
 };
 
-const installRules = () => rulesReturning({ disciplines: [present(CD_14)], pieces: [present(CD_14_PIECE)], runner: "present" });
+const installRules = () =>
+  rulesReturning({
+    disciplines: [present(CD_14)],
+    pieces: [present(CD_14_PIECE)],
+    runner: "present",
+  });
 
-const settableRules = () => rulesReturning({ disciplines: [present(CD_14)], pieces: [present(CD_14_SETTABLE_PIECE)], runner: "present" });
+const settableRules = () =>
+  rulesReturning({
+    disciplines: [present(CD_14)],
+    pieces: [present(CD_14_SETTABLE_PIECE)],
+    runner: "present",
+  });
 
-const editionedRules = () => rulesReturning({ disciplines: [present(CD_14)], pieces: [present(CD_14_EDITIONED_PIECE)], runner: "present" });
+const editionedRules = () =>
+  rulesReturning({
+    disciplines: [present(CD_14)],
+    pieces: [present(CD_14_EDITIONED_PIECE)],
+    runner: "present",
+  });
 
-const listingRules = (first: FileRead<DisciplineFile>, second: FileRead<DisciplineFile> = first) => ({
+const listingRules = (
+  first: FileRead<DisciplineFile>,
+  second: FileRead<DisciplineFile> = first,
+) => ({
   discipline: disciplineReads(first, second),
   piece: vi.fn<RuleSetFiles["piece"]>(),
   checks: vi.fn<RuleSetFiles["checks"]>(),
@@ -260,7 +371,11 @@ const selectionOver = (ruleSetFiles: RuleSetFiles, document: unknown) =>
     filePath: SELECTION_PATH,
   });
 
-const withDocument = (clauses: Readonly<Record<string, string>>) => ({ version: 1, ruleSets: {}, clauses });
+const withDocument = (clauses: Readonly<Record<string, string>>) => ({
+  version: 1,
+  ruleSets: {},
+  clauses,
+});
 
 const HONE_CLASS_SYNTAX = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 const HONE_ABSTRACT_SYNTAX = { ruleSet: "hone", discipline: "CD-14", clause: "abstract-syntax" };
@@ -376,9 +491,15 @@ describe("selectionFrom selecting clauses", () => {
   });
 
   it("selects a hone-prefixed clause as the same bare-addressed hone clause", () => {
-    expect(selectionOver(installRules(), withDocument({ "hone/CD-14#class-syntax": "walker" }))).toMatchObject({
+    expect(
+      selectionOver(installRules(), withDocument({ "hone/CD-14#class-syntax": "walker" })),
+    ).toMatchObject({
       outcome: "ok",
-      value: { selection: { selected: [{ address: HONE_CLASS_SYNTAX, mechanism: "walker", exceptions: "allowed" }] } },
+      value: {
+        selection: {
+          selected: [{ address: HONE_CLASS_SYNTAX, mechanism: "walker", exceptions: "allowed" }],
+        },
+      },
     });
   });
 
@@ -392,52 +513,111 @@ describe("selectionFrom selecting clauses", () => {
       }),
     ).toMatchObject({
       outcome: "ok",
-      value: { excluded: ["vendor", "src/generated.ts"], eslintConfigRoots: ["packages/a"], fileExceptionWhyChains: "optional" },
+      value: {
+        excluded: ["vendor", "src/generated.ts"],
+        eslintConfigRoots: ["packages/a"],
+        fileExceptionWhyChains: "optional",
+      },
     });
   });
 
   it("selects a named rule set's clause from a directory relative to the repo root", () => {
-    const rules = rulesReturning({ disciplines: [present(TM_1)], pieces: [present(TM_1_PIECE)], runner: "present" });
+    const rules = rulesReturning({
+      disciplines: [present(TM_1)],
+      pieces: [present(TM_1_PIECE)],
+      runner: "present",
+    });
     expect(
-      selectionOver(rules, { version: 1, ruleSets: { team: "team-rules" }, clauses: { "team/TM-1#no-tmp-files": "walker" } }),
+      selectionOver(rules, {
+        version: 1,
+        ruleSets: { team: "team-rules" },
+        clauses: { "team/TM-1#no-tmp-files": "walker" },
+      }),
     ).toMatchObject({
       outcome: "ok",
       value: {
-        selection: { selected: [{ address: TEAM_NO_TMP_FILES, mechanism: "walker", exceptions: "allowed" }], uncovered: [] },
-        bindings: [{ clause: { pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1", settings: { module: "no-tmp-files.ts" } } }],
+        selection: {
+          selected: [{ address: TEAM_NO_TMP_FILES, mechanism: "walker", exceptions: "allowed" }],
+          uncovered: [],
+        },
+        bindings: [
+          {
+            clause: {
+              pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1",
+              settings: { module: "no-tmp-files.ts" },
+            },
+          },
+        ],
         clauseRoots: [{ clause: TEAM_NO_TMP_FILES, ruleSetRoot: "/repo/team-rules", checks: [] }],
       },
     });
   });
 
   it("roots a named rule set declared as . at the repo root", () => {
-    const piece = pieceFile({ discipline: "TM-1", mechanism: "walker", clauses: [moduleClause({ pieceRoot: "/repo/mechanisms/audit/TM-1", clause: "no-tmp-files", module: "no-tmp-files.ts" })] });
-    const rules = rulesReturning({ disciplines: [present(TM_1)], pieces: [present(piece)], runner: "present" });
+    const piece = pieceFile({
+      discipline: "TM-1",
+      mechanism: "walker",
+      clauses: [
+        moduleClause({
+          pieceRoot: "/repo/mechanisms/audit/TM-1",
+          clause: "no-tmp-files",
+          module: "no-tmp-files.ts",
+        }),
+      ],
+    });
+    const rules = rulesReturning({
+      disciplines: [present(TM_1)],
+      pieces: [present(piece)],
+      runner: "present",
+    });
     expect(
-      selectionOver(rules, { version: 1, ruleSets: { team: "." }, clauses: { "team/TM-1#no-tmp-files": "walker" } }),
+      selectionOver(rules, {
+        version: 1,
+        ruleSets: { team: "." },
+        clauses: { "team/TM-1#no-tmp-files": "walker" },
+      }),
     ).toMatchObject({
       outcome: "ok",
       value: { bindings: [{ clause: { pieceRoot: "/repo/mechanisms/audit/TM-1" } }] },
     });
-    expect(rules.discipline.mock.calls).toEqual([[{ ruleSetRoot: "/repo", installRoot: "/install", discipline: "TM-1" }]]);
+    expect(rules.discipline.mock.calls).toEqual([
+      [{ ruleSetRoot: "/repo", installRoot: "/install", discipline: "TM-1" }],
+    ]);
   });
 
   it("roots each clause with the checks its rule set gives it", () => {
     const rules = {
       ...installRules(),
-      checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValueOnce({ outcome: "ok", value: [{ name: "class-keyword", symptom: { name: "authored-class-or-this" } }] }),
+      checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValueOnce({
+        outcome: "ok",
+        value: [{ name: "class-keyword", symptom: { name: "authored-class-or-this" } }],
+      }),
     };
     expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit" }))).toMatchObject({
       outcome: "ok",
-      value: { clauseRoots: [{ clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [{ name: "class-keyword", symptom: { name: "authored-class-or-this" } }] }] },
+      value: {
+        clauseRoots: [
+          {
+            clause: HONE_CLASS_SYNTAX,
+            ruleSetRoot: "/install",
+            checks: [{ name: "class-keyword", symptom: { name: "authored-class-or-this" } }],
+          },
+        ],
+      },
     });
-    expect(rules.checks).toHaveBeenCalledExactlyOnceWith({ installRoot: "/install", clause: HONE_CLASS_SYNTAX });
+    expect(rules.checks).toHaveBeenCalledExactlyOnceWith({
+      installRoot: "/install",
+      clause: HONE_CLASS_SYNTAX,
+    });
   });
 
   it("fails as the rule set fails when a clause's checks cannot be read", () => {
     const rules = {
       ...installRules(),
-      checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "file-unreadable", path: "/install/names.json", detail: "EACCES" } }),
+      checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValueOnce({
+        outcome: "failed",
+        error: { kind: "file-unreadable", path: "/install/names.json", detail: "EACCES" },
+      }),
     };
     expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit" }))).toEqual({
       outcome: "failed",
@@ -446,23 +626,25 @@ describe("selectionFrom selecting clauses", () => {
   });
 
   it("lists the unlisted mechanical clauses of an adopted discipline as uncovered, never its judgement clauses", () => {
-    expect(selectionOver(installRules(), withDocument({ "CD-14#class-syntax": "walker" }))).toEqual({
-      outcome: "ok",
-      value: {
-        selection: {
-          selected: [{ address: HONE_CLASS_SYNTAX, mechanism: "walker", exceptions: "allowed" }],
-          uncovered: [HONE_ABSTRACT_SYNTAX],
-          notAdopted: [],
-          notRun: [],
-          editions: [],
+    expect(selectionOver(installRules(), withDocument({ "CD-14#class-syntax": "walker" }))).toEqual(
+      {
+        outcome: "ok",
+        value: {
+          selection: {
+            selected: [{ address: HONE_CLASS_SYNTAX, mechanism: "walker", exceptions: "allowed" }],
+            uncovered: [HONE_ABSTRACT_SYNTAX],
+            notAdopted: [],
+            notRun: [],
+            editions: [],
+          },
+          bindings: [expect.objectContaining({ mechanism: "walker" })],
+          eslintConfigRoots: [],
+          clauseRoots: [{ clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [] }],
+          excluded: [],
+          fileExceptionWhyChains: "required",
         },
-        bindings: [expect.objectContaining({ mechanism: "walker" })],
-        eslintConfigRoots: [],
-        clauseRoots: [{ clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [] }],
-        excluded: [],
-        fileExceptionWhyChains: "required",
       },
-    });
+    );
   });
 
   it("lists an unlisted mechanical clause once when two clauses of its discipline are selected", () => {
@@ -478,9 +660,17 @@ describe("selectionFrom selecting clauses", () => {
   });
 
   it("adopts no discipline none of whose clauses is listed", () => {
-    const rules = rulesReturning({ disciplines: [present(TM_1)], pieces: [present(TM_1_PIECE)], runner: "present" });
+    const rules = rulesReturning({
+      disciplines: [present(TM_1)],
+      pieces: [present(TM_1_PIECE)],
+      runner: "present",
+    });
     expect(
-      selectionOver(rules, { version: 1, ruleSets: { team: "team-rules" }, clauses: { "team/TM-1#no-tmp-files": "walker" } }),
+      selectionOver(rules, {
+        version: 1,
+        ruleSets: { team: "team-rules" },
+        clauses: { "team/TM-1#no-tmp-files": "walker" },
+      }),
     ).toMatchObject({ outcome: "ok", value: { selection: { uncovered: [] } } });
   });
 });
@@ -489,7 +679,10 @@ describe("selectionFrom reading each rule-set file", () => {
   it("reads a discipline's discipline file and piece file once each when two of its clauses are selected", () => {
     const rules = installRules();
     selectionOver(rules, withDocument(BOTH_CD_14_CLAUSES));
-    expect({ disciplines: rules.discipline.mock.calls.length, pieces: rules.piece.mock.calls.length }).toEqual({
+    expect({
+      disciplines: rules.discipline.mock.calls.length,
+      pieces: rules.piece.mock.calls.length,
+    }).toEqual({
       disciplines: 1,
       pieces: 1,
     });
@@ -501,12 +694,23 @@ describe("selectionFrom reading each rule-set file", () => {
       pieces: [present(CD_14_PIECE), present(CD_14_ESLINT_PIECE)],
       runner: "present",
     });
-    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "eslint" }))).toMatchObject({
+    expect(
+      selectionOver(
+        rules,
+        withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "eslint" }),
+      ),
+    ).toMatchObject({
       outcome: "ok",
       value: {
         bindings: [
           { mechanism: "walker", clause: { settings: { module: "class-syntax.ts" } } },
-          { mechanism: "eslint", clause: { pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14", settings: { rule: "no-abstract" } } },
+          {
+            mechanism: "eslint",
+            clause: {
+              pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14",
+              settings: { rule: "no-abstract" },
+            },
+          },
         ],
       },
     });
@@ -518,7 +722,12 @@ describe("selectionFrom reading each rule-set file", () => {
       pieces: [present(CD_14_PIECE), ABSENT],
       runner: "present",
     });
-    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "eslint" }))).toEqual({
+    expect(
+      selectionOver(
+        rules,
+        withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "eslint" }),
+      ),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "piece-missing", address: "CD-14#abstract-syntax", mechanism: "eslint" },
     });
@@ -573,49 +782,71 @@ describe("selectionFrom reading each rule-set file", () => {
 
 describe("selectionFrom refusing a selection the rule sets cannot meet", () => {
   it("is unknown-rule-set for a clause naming a rule set the file does not declare", () => {
-    expect(selectionOver(listingRules(ABSENT), withDocument({ "team/TM-1#no-tmp-files": "walker" }))).toEqual({
+    expect(
+      selectionOver(listingRules(ABSENT), withDocument({ "team/TM-1#no-tmp-files": "walker" })),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "unknown-rule-set", name: "team" },
     });
   });
 
   it("is unknown-discipline for a discipline the rule set does not hold", () => {
-    expect(selectionOver(listingRules(ABSENT), withDocument({ "CD-99#class-syntax": "walker" }))).toEqual({
+    expect(
+      selectionOver(listingRules(ABSENT), withDocument({ "CD-99#class-syntax": "walker" })),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "unknown-discipline", address: "CD-99#class-syntax" },
     });
   });
 
   it("is unknown-clause for a clause the discipline does not declare", () => {
-    expect(selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#no-such-clause": "walker" }))).toEqual({
+    expect(
+      selectionOver(
+        listingRules(present(CD_14)),
+        withDocument({ "CD-14#no-such-clause": "walker" }),
+      ),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "unknown-clause", address: "CD-14#no-such-clause" },
     });
   });
 
   it("is judgement-clause-selected for a judgement clause", () => {
-    expect(selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#library-construction": "walker" }))).toEqual({
+    expect(
+      selectionOver(
+        listingRules(present(CD_14)),
+        withDocument({ "CD-14#library-construction": "walker" }),
+      ),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "judgement-clause-selected", address: "CD-14#library-construction" },
     });
   });
 
   it("is mechanism-not-allowed for a mechanism the clause does not list", () => {
-    expect(selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#class-syntax": "eslint" }))).toEqual({
+    expect(
+      selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#class-syntax": "eslint" })),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "mechanism-not-allowed", address: "CD-14#class-syntax", mechanism: "eslint" },
     });
   });
 
   it("is runner-missing when the mechanism's runner module is absent from the install", () => {
-    expect(selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#class-syntax": "walker" }))).toEqual({
+    expect(
+      selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#class-syntax": "walker" })),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "runner-missing", mechanism: "walker" },
     });
   });
 
   it("is piece-missing when the clause's rule set has no piece for the mechanism and discipline", () => {
-    const rules = rulesReturning({ disciplines: [present(CD_14)], pieces: [ABSENT], runner: "present" });
+    const rules = rulesReturning({
+      disciplines: [present(CD_14)],
+      pieces: [ABSENT],
+      runner: "present",
+    });
     expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "walker" }))).toEqual({
       outcome: "failed",
       error: { kind: "piece-missing", address: "CD-14#class-syntax", mechanism: "walker" },
@@ -641,7 +872,10 @@ describe("selectionFrom refusing a selection the rule sets cannot meet", () => {
       detail: "the file names discipline CD-15, not CD-14",
     } as const;
     const rules = listingRules({ outcome: "failed", error: refusal });
-    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "walker" }))).toEqual({ outcome: "failed", error: refusal });
+    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "walker" }))).toEqual({
+      outcome: "failed",
+      error: refusal,
+    });
   });
 });
 
@@ -681,7 +915,11 @@ describe("selectionFrom with clauseSettings", () => {
   });
 
   it("settles a team rule set's clause from its own piece's declarations", () => {
-    const rules = rulesReturning({ disciplines: [present(TD_1)], pieces: [present(TD_1_PIECE)], runner: "present" });
+    const rules = rulesReturning({
+      disciplines: [present(TD_1)],
+      pieces: [present(TD_1_PIECE)],
+      runner: "present",
+    });
     expect(
       selectionOver(rules, {
         version: 1,
@@ -689,19 +927,26 @@ describe("selectionFrom with clauseSettings", () => {
         clauses: { "team/TD-1#x": "walker" },
         clauseSettings: { "team/TD-1#x": { limit: 5 } },
       }),
-    ).toMatchObject({ outcome: "ok", value: { bindings: [{ clause: { settings: { module: "x.ts" }, clauseSettings: { limit: 5 } } }] } });
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        bindings: [{ clause: { settings: { module: "x.ts" }, clauseSettings: { limit: 5 } } }],
+      },
+    });
   });
 
   it.each([
     {
       name: "a key the piece does not declare",
       clauseSettings: { "CD-14#class-syntax": { module: "elsewhere.ts" } },
-      detail: "clauseSettings for CD-14#class-syntax: its piece takes no module; it takes allowedNames, style",
+      detail:
+        "clauseSettings for CD-14#class-syntax: its piece takes no module; it takes allowedNames, style",
     },
     {
       name: "a value of another JSON kind than the default",
       clauseSettings: { "CD-14#class-syntax": { allowedNames: "Widget" } },
-      detail: "clauseSettings for CD-14#class-syntax: allowedNames must be an array, as its default is",
+      detail:
+        "clauseSettings for CD-14#class-syntax: allowedNames must be an array, as its default is",
     },
     {
       name: "a value outside the declared choices",
@@ -713,15 +958,24 @@ describe("selectionFrom with clauseSettings", () => {
       clauseSettings: { "CD-14#abstract-syntax": { limit: 1 } },
       detail: "clauseSettings for CD-14#abstract-syntax: its piece takes no settings",
     },
-  ])("is file-malformed for $name, naming the clause, the key and what is accepted", ({ clauseSettings, detail }) => {
-    expect(selectionOver(settableRules(), { ...withDocument(BOTH_CD_14_CLAUSES), clauseSettings })).toEqual({
-      outcome: "failed",
-      error: { kind: "file-malformed", path: SELECTION_PATH, detail },
-    });
-  });
+  ])(
+    "is file-malformed for $name, naming the clause, the key and what is accepted",
+    ({ clauseSettings, detail }) => {
+      expect(
+        selectionOver(settableRules(), { ...withDocument(BOTH_CD_14_CLAUSES), clauseSettings }),
+      ).toEqual({
+        outcome: "failed",
+        error: { kind: "file-malformed", path: SELECTION_PATH, detail },
+      });
+    },
+  );
 
   it("refuses settings for Hone's ESLint naming clause, whose piece declares no keys, as file-malformed", () => {
-    const rules = rulesReturning({ disciplines: [present(CD_6)], pieces: [present(CD_6_PIECE)], runner: "present" });
+    const rules = rulesReturning({
+      disciplines: [present(CD_6)],
+      pieces: [present(CD_6_PIECE)],
+      runner: "present",
+    });
     expect(
       selectionOver(rules, {
         ...withDocument({ "CD-6#naming-convention": "eslint" }),
@@ -743,7 +997,14 @@ describe("selectionFrom settling each clause's edition", () => {
     outcome: "ok",
     value: {
       selection: {
-        editions: [{ address: HONE_CLASS_SYNTAX, mechanism: "walker", edition: request.classSyntax, latest: "2" }],
+        editions: [
+          {
+            address: HONE_CLASS_SYNTAX,
+            mechanism: "walker",
+            edition: request.classSyntax,
+            latest: "2",
+          },
+        ],
       },
       bindings: [
         { clause: { clauseSettings: { style: request.style }, edition: request.classSyntax } },
@@ -759,9 +1020,12 @@ describe("selectionFrom settling each clause's edition", () => {
   });
 
   it("runs the latest edition of every clause when checkEditions is latest", () => {
-    expect(selectionOver(editionedRules(), { ...withDocument(BOTH_CD_14_CLAUSES), checkEditions: "latest" })).toMatchObject(
-      ranEditions({ classSyntax: "2", style: "plain" }),
-    );
+    expect(
+      selectionOver(editionedRules(), {
+        ...withDocument(BOTH_CD_14_CLAUSES),
+        checkEditions: "latest",
+      }),
+    ).toMatchObject(ranEditions({ classSyntax: "2", style: "plain" }));
   });
 
   it("runs the edition a clause's settings give, keeping the piece's own settings apart", () => {
@@ -812,7 +1076,10 @@ describe("selectionFrom settling each clause's edition", () => {
 describe("selectionFrom with clauses not adopted", () => {
   it("lists a not-adopted clause apart from the selected ones and binds no mechanism for it", () => {
     expect(
-      selectionOver(installRules(), withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "not-adopted" })),
+      selectionOver(
+        installRules(),
+        withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "not-adopted" }),
+      ),
     ).toMatchObject({
       outcome: "ok",
       value: {
@@ -821,7 +1088,11 @@ describe("selectionFrom with clauses not adopted", () => {
           uncovered: [],
           notAdopted: [HONE_ABSTRACT_SYNTAX],
         },
-        bindings: [expect.objectContaining({ clause: expect.objectContaining({ address: HONE_CLASS_SYNTAX }) })],
+        bindings: [
+          expect.objectContaining({
+            clause: expect.objectContaining({ address: HONE_CLASS_SYNTAX }),
+          }),
+        ],
       },
     });
   });
@@ -829,11 +1100,23 @@ describe("selectionFrom with clauses not adopted", () => {
   it("reads no runner and no piece when no clause of a discipline is adopted", () => {
     const rules = listingRules(present(CD_14));
     expect(
-      selectionOver(rules, withDocument({ "CD-14#class-syntax": "not-adopted", "CD-14#abstract-syntax": "not-adopted" })),
+      selectionOver(
+        rules,
+        withDocument({
+          "CD-14#class-syntax": "not-adopted",
+          "CD-14#abstract-syntax": "not-adopted",
+        }),
+      ),
     ).toEqual({
       outcome: "ok",
       value: {
-        selection: { selected: [], uncovered: [], notAdopted: [HONE_CLASS_SYNTAX, HONE_ABSTRACT_SYNTAX], notRun: [], editions: [] },
+        selection: {
+          selected: [],
+          uncovered: [],
+          notAdopted: [HONE_CLASS_SYNTAX, HONE_ABSTRACT_SYNTAX],
+          notRun: [],
+          editions: [],
+        },
         bindings: [],
         eslintConfigRoots: [],
         clauseRoots: [],
@@ -841,23 +1124,41 @@ describe("selectionFrom with clauses not adopted", () => {
         fileExceptionWhyChains: "required",
       },
     });
-    expect({ pieces: rules.piece.mock.calls.length, runners: rules.runner.mock.calls.length }).toEqual({ pieces: 0, runners: 0 });
+    expect({
+      pieces: rules.piece.mock.calls.length,
+      runners: rules.runner.mock.calls.length,
+    }).toEqual({ pieces: 0, runners: 0 });
   });
 
   it("still lists a clause missing from the selection as uncovered beside a not-adopted one", () => {
     expect(
-      selectionOver(listingRules(present(CD_14_WITH_THREE_MECHANICAL)), withDocument({ "CD-14#class-syntax": "not-adopted" })),
+      selectionOver(
+        listingRules(present(CD_14_WITH_THREE_MECHANICAL)),
+        withDocument({ "CD-14#class-syntax": "not-adopted" }),
+      ),
     ).toMatchObject({
       outcome: "ok",
-      value: { selection: { uncovered: [HONE_ABSTRACT_SYNTAX, HONE_DECORATOR_SYNTAX], notAdopted: [HONE_CLASS_SYNTAX] } },
+      value: {
+        selection: {
+          uncovered: [HONE_ABSTRACT_SYNTAX, HONE_DECORATOR_SYNTAX],
+          notAdopted: [HONE_CLASS_SYNTAX],
+        },
+      },
     });
   });
 
   it("reads a team rule set's not-adopted clause from its own discipline, reading no piece", () => {
     const rules = listingRules(present(TM_1));
     expect(
-      selectionOver(rules, { version: 1, ruleSets: { team: "team-rules" }, clauses: { "team/TM-1#no-tmp-files": "not-adopted" } }),
-    ).toMatchObject({ outcome: "ok", value: { selection: { notAdopted: [TEAM_NO_TMP_FILES] }, bindings: [] } });
+      selectionOver(rules, {
+        version: 1,
+        ruleSets: { team: "team-rules" },
+        clauses: { "team/TM-1#no-tmp-files": "not-adopted" },
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: { selection: { notAdopted: [TEAM_NO_TMP_FILES] }, bindings: [] },
+    });
     expect(rules.piece).not.toHaveBeenCalled();
   });
 
@@ -887,14 +1188,20 @@ describe("selectionFrom with clauses not adopted", () => {
       error: { kind: "unknown-rule-set", name: "team" },
     },
   ])("refuses not adopting $name", ({ clause, read, error }) => {
-    expect(selectionOver(listingRules(read), withDocument({ [clause]: "not-adopted" }))).toEqual({ outcome: "failed", error });
+    expect(selectionOver(listingRules(read), withDocument({ [clause]: "not-adopted" }))).toEqual({
+      outcome: "failed",
+      error,
+    });
   });
 });
 
 describe("selectionFrom with clauses adopted but not run", () => {
   it("lists a not-run clause apart from the selected and not-adopted ones and binds no mechanism for it", () => {
     expect(
-      selectionOver(installRules(), withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "not-run" })),
+      selectionOver(
+        installRules(),
+        withDocument({ "CD-14#class-syntax": "walker", "CD-14#abstract-syntax": "not-run" }),
+      ),
     ).toMatchObject({
       outcome: "ok",
       value: {
@@ -905,7 +1212,11 @@ describe("selectionFrom with clauses adopted but not run", () => {
           notRun: [HONE_ABSTRACT_SYNTAX],
           editions: [],
         },
-        bindings: [expect.objectContaining({ clause: expect.objectContaining({ address: HONE_CLASS_SYNTAX }) })],
+        bindings: [
+          expect.objectContaining({
+            clause: expect.objectContaining({ address: HONE_CLASS_SYNTAX }),
+          }),
+        ],
       },
     });
   });
@@ -913,11 +1224,20 @@ describe("selectionFrom with clauses adopted but not run", () => {
   it("reads no runner and no piece when no clause of a discipline runs", () => {
     const rules = listingRules(present(CD_14));
     expect(
-      selectionOver(rules, withDocument({ "CD-14#class-syntax": "not-run", "CD-14#abstract-syntax": "not-adopted" })),
+      selectionOver(
+        rules,
+        withDocument({ "CD-14#class-syntax": "not-run", "CD-14#abstract-syntax": "not-adopted" }),
+      ),
     ).toEqual({
       outcome: "ok",
       value: {
-        selection: { selected: [], uncovered: [], notAdopted: [HONE_ABSTRACT_SYNTAX], notRun: [HONE_CLASS_SYNTAX], editions: [] },
+        selection: {
+          selected: [],
+          uncovered: [],
+          notAdopted: [HONE_ABSTRACT_SYNTAX],
+          notRun: [HONE_CLASS_SYNTAX],
+          editions: [],
+        },
         bindings: [],
         eslintConfigRoots: [],
         clauseRoots: [],
@@ -925,16 +1245,26 @@ describe("selectionFrom with clauses adopted but not run", () => {
         fileExceptionWhyChains: "required",
       },
     });
-    expect({ pieces: rules.piece.mock.calls.length, runners: rules.runner.mock.calls.length }).toEqual({ pieces: 0, runners: 0 });
+    expect({
+      pieces: rules.piece.mock.calls.length,
+      runners: rules.runner.mock.calls.length,
+    }).toEqual({ pieces: 0, runners: 0 });
   });
 
   it("still lists a clause missing from the selection as uncovered beside a not-run one", () => {
     expect(
-      selectionOver(listingRules(present(CD_14_WITH_THREE_MECHANICAL)), withDocument({ "CD-14#class-syntax": "not-run" })),
+      selectionOver(
+        listingRules(present(CD_14_WITH_THREE_MECHANICAL)),
+        withDocument({ "CD-14#class-syntax": "not-run" }),
+      ),
     ).toMatchObject({
       outcome: "ok",
       value: {
-        selection: { uncovered: [HONE_ABSTRACT_SYNTAX, HONE_DECORATOR_SYNTAX], notRun: [HONE_CLASS_SYNTAX], editions: [] },
+        selection: {
+          uncovered: [HONE_ABSTRACT_SYNTAX, HONE_DECORATOR_SYNTAX],
+          notRun: [HONE_CLASS_SYNTAX],
+          editions: [],
+        },
       },
     });
   });
@@ -956,7 +1286,9 @@ describe("selectionFrom with clauses adopted but not run", () => {
       error: { kind: "unknown-rule-set", name: "team" },
     },
   ])("refuses not running $name", ({ clause, error }) => {
-    expect(selectionOver(listingRules(present(CD_14)), withDocument({ [clause]: "not-run" }))).toEqual({
+    expect(
+      selectionOver(listingRules(present(CD_14)), withDocument({ [clause]: "not-run" })),
+    ).toEqual({
       outcome: "failed",
       error,
     });
@@ -978,7 +1310,13 @@ const UNRESOLVABLE_PATH: PathPort = {
 describe("ruleSetRootOf", () => {
   it("roots the hone rule set at the install root", () => {
     expect(
-      ruleSetRootOf({ ruleSet: "hone", ruleSets: TEAM_RULE_SETS, repoRoot: REPO_ROOT, installRoot: INSTALL_ROOT, path: POSIX_PATH }),
+      ruleSetRootOf({
+        ruleSet: "hone",
+        ruleSets: TEAM_RULE_SETS,
+        repoRoot: REPO_ROOT,
+        installRoot: INSTALL_ROOT,
+        path: POSIX_PATH,
+      }),
     ).toEqual({ outcome: "ok", value: "/install" });
   });
 
@@ -1056,7 +1394,16 @@ describe("reading the selection from disk", () => {
           notRun: [],
           editions: [],
         },
-        bindings: [{ mechanism: "walker", clause: { address: TEAM_NO_TMP_FILES, settings: { module: "no-tmp-files.ts" }, edition: "1" } }],
+        bindings: [
+          {
+            mechanism: "walker",
+            clause: {
+              address: TEAM_NO_TMP_FILES,
+              settings: { module: "no-tmp-files.ts" },
+              edition: "1",
+            },
+          },
+        ],
         excluded: ["vendor"],
         fileExceptionWhyChains: "required",
       },
@@ -1071,14 +1418,26 @@ describe("reading the selection from disk", () => {
   });
 
   it("is file-unreadable when disciplines.json cannot be read, so no default output is guessed", () => {
-    expect(readRunSettings({ fileText: createDefaultFileTextPort({}), path: DISK_PATH, repoRoot: fixtureRoot("install") })).toMatchObject({
+    expect(
+      readRunSettings({
+        fileText: createDefaultFileTextPort({}),
+        path: DISK_PATH,
+        repoRoot: fixtureRoot("install"),
+      }),
+    ).toMatchObject({
       outcome: "failed",
       error: { kind: "file-unreadable" },
     });
   });
 
   it("reads the run settings of a disciplines.json on disk without resolving its clauses", () => {
-    expect(readRunSettings({ fileText: createDefaultFileTextPort({}), path: DISK_PATH, repoRoot: fixtureRoot("repo") })).toEqual({
+    expect(
+      readRunSettings({
+        fileText: createDefaultFileTextPort({}),
+        path: DISK_PATH,
+        repoRoot: fixtureRoot("repo"),
+      }),
+    ).toEqual({
       outcome: "ok",
       value: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
     });

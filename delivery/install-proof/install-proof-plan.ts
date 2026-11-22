@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { parsedJson } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+
 import type { Result } from "../../src/domain/result.ts";
 import { TOOL_IDENTITY, type ToolIdentity } from "../../src/domain/rule-set/tool-identity.ts";
+import { parsedJson } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
 
 export type EntryKind = "folder" | "file";
 
@@ -58,7 +59,11 @@ const ESLINT_CONSUMER_ACTIONS: readonly ProofAction[] = [
   { kind: "commit", message: "project" },
   {
     kind: "check",
-    expectation: { exitCode: 1, output: "findings (1)\nCD-14#class-syntax eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this, may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted\nreadFirst (3)\nauthored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; node_modules/@hailstails/hone/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/class-keyword.md#fix\nverdict: fail\n" },
+    expectation: {
+      exitCode: 1,
+      output:
+        "findings (1)\nCD-14#class-syntax eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this, may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted\nreadFirst (3)\nauthored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; node_modules/@hailstails/hone/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/class-keyword.md#fix\nverdict: fail\n",
+    },
   },
 ];
 
@@ -67,7 +72,8 @@ const AUDIT_CONSUMER_ACTIONS: readonly ProofAction[] = [
     kind: "check",
     expectation: {
       exitCode: 1,
-      output: "findings (1)\nCD-23#export-test-sibling audit src/kept.ts:1:0 missing co-located *.test.ts(x) sibling symptom: unit-without-a-running-test, may indicate: tested-where-its-owned\nreadFirst (3)\nunit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Recipe: Companion test file. Known debt: debt (today: file-carve-out). Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; node_modules/@hailstails/hone/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-23#export-test-sibling: read node_modules/@hailstails/hone/rules/typescript/symptoms/unit-without-a-running-test/companion-test-file.md#fix\nverdict: fail\n",
+      output:
+        "findings (1)\nCD-23#export-test-sibling audit src/kept.ts:1:0 missing co-located *.test.ts(x) sibling symptom: unit-without-a-running-test, may indicate: tested-where-its-owned\nreadFirst (3)\nunit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Recipe: Companion test file. Known debt: debt (today: file-carve-out). Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; node_modules/@hailstails/hone/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-23#export-test-sibling: read node_modules/@hailstails/hone/rules/typescript/symptoms/unit-without-a-running-test/companion-test-file.md#fix\nverdict: fail\n",
     },
   },
 ];
@@ -118,7 +124,10 @@ verdict: fail
 const WORKSPACE_ACTIONS: readonly ProofAction[] = [
   {
     kind: "project",
-    expectation: { exitCode: 0, output: "disciplines.eslint.mjs written\npackages/web/disciplines.eslint.mjs written\n" },
+    expectation: {
+      exitCode: 0,
+      output: "disciplines.eslint.mjs written\npackages/web/disciplines.eslint.mjs written\n",
+    },
   },
   { kind: "read", path: "packages/web/disciplines.eslint.mjs", text: WORKSPACE_SLICE },
   { kind: "commit", message: "project" },
@@ -129,7 +138,11 @@ const WORKSPACE_ACTIONS: readonly ProofAction[] = [
       output: WORKSPACE_REPORT,
     },
   },
-  { kind: "lint", directory: "packages/web", expectation: { exitCode: 1, output: "src/kept.ts:1:8 hone/no-class-authoring\n" } },
+  {
+    kind: "lint",
+    directory: "packages/web",
+    expectation: { exitCode: 1, output: "src/kept.ts:1:8 hone/no-class-authoring\n" },
+  },
 ];
 
 const SILENT_SUCCESS: StepExpectation = { exitCode: 0, output: "" };
@@ -161,8 +174,16 @@ verdict: fail
 const TEAM_FLOOR_ACTIONS: readonly ProofAction[] = [WRONG_FIELD_TYPES_REJECTED];
 
 const TEAM_ACTIONS: readonly ProofAction[] = [
-  { kind: "typecheck", project: `${TEAM_RULE_SET}/tsconfig.pieces.json`, expectation: SILENT_SUCCESS },
-  { kind: "typecheck", project: `${TEAM_RULE_SET}/tsconfig.bundler.json`, expectation: SILENT_SUCCESS },
+  {
+    kind: "typecheck",
+    project: `${TEAM_RULE_SET}/tsconfig.pieces.json`,
+    expectation: SILENT_SUCCESS,
+  },
+  {
+    kind: "typecheck",
+    project: `${TEAM_RULE_SET}/tsconfig.bundler.json`,
+    expectation: SILENT_SUCCESS,
+  },
   { kind: "typecheck", project: "typing/tsconfig.commonjs.json", expectation: SILENT_SUCCESS },
   WRONG_FIELD_TYPES_REJECTED,
   { kind: "run", script: `${TEAM_RULE_SET}/proof/testing-proof.ts`, expectation: SILENT_SUCCESS },
@@ -171,16 +192,60 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
 ];
 
 export const PROOF_CASES: readonly ProofCase[] = [
-  { consumer: "audit", fixture: "audit", toolchain: "typescript-floor", typeStripping: "disabled", actions: AUDIT_CONSUMER_ACTIONS },
-  { consumer: "eslint-10", fixture: "eslint", toolchain: "current", typeStripping: "disabled", actions: ESLINT_CONSUMER_ACTIONS },
-  { consumer: "eslint-9", fixture: "eslint", toolchain: "eslint-9", typeStripping: "disabled", actions: ESLINT_CONSUMER_ACTIONS },
-  { consumer: "eslint-missing", fixture: "eslint", toolchain: "typescript-floor", typeStripping: "disabled", actions: ESLINT_MISSING_ACTIONS },
-  { consumer: "team-floor", fixture: "team", toolchain: "typescript-floor", typeStripping: "disabled", actions: TEAM_FLOOR_ACTIONS },
-  { consumer: "team", fixture: "team", toolchain: "current", typeStripping: "enabled", actions: TEAM_ACTIONS },
-  { consumer: "workspace", fixture: "workspace", toolchain: "current", typeStripping: "disabled", actions: WORKSPACE_ACTIONS },
+  {
+    consumer: "audit",
+    fixture: "audit",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    actions: AUDIT_CONSUMER_ACTIONS,
+  },
+  {
+    consumer: "eslint-10",
+    fixture: "eslint",
+    toolchain: "current",
+    typeStripping: "disabled",
+    actions: ESLINT_CONSUMER_ACTIONS,
+  },
+  {
+    consumer: "eslint-9",
+    fixture: "eslint",
+    toolchain: "eslint-9",
+    typeStripping: "disabled",
+    actions: ESLINT_CONSUMER_ACTIONS,
+  },
+  {
+    consumer: "eslint-missing",
+    fixture: "eslint",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    actions: ESLINT_MISSING_ACTIONS,
+  },
+  {
+    consumer: "team-floor",
+    fixture: "team",
+    toolchain: "typescript-floor",
+    typeStripping: "disabled",
+    actions: TEAM_FLOOR_ACTIONS,
+  },
+  {
+    consumer: "team",
+    fixture: "team",
+    toolchain: "current",
+    typeStripping: "enabled",
+    actions: TEAM_ACTIONS,
+  },
+  {
+    consumer: "workspace",
+    fixture: "workspace",
+    toolchain: "current",
+    typeStripping: "disabled",
+    actions: WORKSPACE_ACTIONS,
+  },
 ];
 
-export const packagedScriptsOf = (request: { readonly identity: ToolIdentity }): Readonly<Record<CommandScript, string>> => ({
+export const packagedScriptsOf = (request: {
+  readonly identity: ToolIdentity;
+}): Readonly<Record<CommandScript, string>> => ({
   check: `${request.identity.command}:check`,
   project: `${request.identity.command}:project`,
 });
@@ -220,10 +285,17 @@ export const judgedStep = (request: {
 }): Result<string, string> => {
   const expected = `expected exit ${request.expectation.exitCode} and output ${JSON.stringify(request.expectation.output)}`;
   if (request.run.outcome === "not-exited") {
-    return { outcome: "failed", error: `FAIL: ${request.label}: ${expected}, but it did not exit: ${request.run.detail}` };
+    return {
+      outcome: "failed",
+      error: `FAIL: ${request.label}: ${expected}, but it did not exit: ${request.run.detail}`,
+    };
   }
-  return request.run.exitCode === request.expectation.exitCode && request.run.output === request.expectation.output
-    ? { outcome: "ok", value: `ok: ${request.label} -> exit ${request.run.exitCode}, output exactly as expected` }
+  return request.run.exitCode === request.expectation.exitCode &&
+    request.run.output === request.expectation.output
+    ? {
+        outcome: "ok",
+        value: `ok: ${request.label} -> exit ${request.run.exitCode}, output exactly as expected`,
+      }
     : {
         outcome: "failed",
         error: `FAIL: ${request.label}: ${expected}, got exit ${request.run.exitCode} and output ${JSON.stringify(request.run.output)}`,
@@ -265,12 +337,16 @@ const floorVersion = (request: {
 }): Result<string, ManifestFailure> => {
   const pin = request.manifest.devDependencies[request.pinName];
   if (pin === undefined) {
-    return manifestInvalid({ detail: `no development pin ${request.pinName} for the peer ${request.peer}` });
+    return manifestInvalid({
+      detail: `no development pin ${request.pinName} for the peer ${request.peer}`,
+    });
   }
   const aliasPrefix = `npm:${request.peer}@`;
   const aliasedPin = request.pinName === request.peer ? `${aliasPrefix}${pin}` : pin;
   if (!aliasedPin.startsWith(aliasPrefix)) {
-    return manifestInvalid({ detail: `the development pin ${request.pinName} is ${pin}, not an alias of ${request.peer}` });
+    return manifestInvalid({
+      detail: `the development pin ${request.pinName} is ${pin}, not an alias of ${request.peer}`,
+    });
   }
   return request.peer in request.manifest.peerDependencies
     ? { outcome: "ok", value: aliasedPin.slice(aliasPrefix.length) }
@@ -281,13 +357,18 @@ const floorVersions = (request: {
   readonly manifest: ToolchainManifest;
   readonly toolchain: ProofToolchain;
 }): Result<FloorPins, ManifestFailure> =>
-  Object.entries(FLOOR_PINS[request.toolchain]).reduce<Result<FloorPins, ManifestFailure>>((sofar, [peer, pinName]) => {
-    if (sofar.outcome === "failed") {
-      return sofar;
-    }
-    const version = floorVersion({ manifest: request.manifest, peer, pinName });
-    return version.outcome === "failed" ? version : { outcome: "ok", value: { ...sofar.value, [peer]: version.value } };
-  }, { outcome: "ok", value: {} });
+  Object.entries(FLOOR_PINS[request.toolchain]).reduce<Result<FloorPins, ManifestFailure>>(
+    (sofar, [peer, pinName]) => {
+      if (sofar.outcome === "failed") {
+        return sofar;
+      }
+      const version = floorVersion({ manifest: request.manifest, peer, pinName });
+      return version.outcome === "failed"
+        ? version
+        : { outcome: "ok", value: { ...sofar.value, [peer]: version.value } };
+    },
+    { outcome: "ok", value: {} },
+  );
 
 export const toolchainPinsOf = (request: {
   readonly developmentManifest: string;
@@ -305,7 +386,9 @@ export const toolchainPinsOf = (request: {
 
 const packageManagerPinSchema = z.object({ packageManager: z.string().min(1) });
 
-export const packageManagerPinOf = (request: { readonly developmentManifest: string }): Result<string, ManifestFailure> => {
+export const packageManagerPinOf = (request: {
+  readonly developmentManifest: string;
+}): Result<string, ManifestFailure> => {
   const parsed = parsedJson({ text: request.developmentManifest });
   if (parsed.outcome === "failed") {
     return manifestInvalid({ detail: parsed.error });
@@ -313,30 +396,42 @@ export const packageManagerPinOf = (request: { readonly developmentManifest: str
   const manifest = packageManagerPinSchema.safeParse(parsed.value);
   return manifest.success
     ? { outcome: "ok", value: manifest.data.packageManager }
-    : manifestInvalid({ detail: "the package pins no packageManager for a consumer to install with" });
+    : manifestInvalid({
+        detail: "the package pins no packageManager for a consumer to install with",
+      });
 };
 
 const MINIMUM_RELEASE_AGE_SETTING = /^minimumReleaseAge: (\d+)$/m;
 
-export const minimumReleaseAgeOf = (request: { readonly workspaceSettings: string }): Result<number, ManifestFailure> => {
+export const minimumReleaseAgeOf = (request: {
+  readonly workspaceSettings: string;
+}): Result<number, ManifestFailure> => {
   const setting = MINIMUM_RELEASE_AGE_SETTING.exec(request.workspaceSettings);
   return setting === null
-    ? manifestInvalid({ detail: "pnpm-workspace.yaml sets no minimumReleaseAge for a consumer to install under" })
+    ? manifestInvalid({
+        detail: "pnpm-workspace.yaml sets no minimumReleaseAge for a consumer to install under",
+      })
     : { outcome: "ok", value: Number(setting[1]) };
 };
 
 const installedManifestSchema = z.object({ version: z.string().min(1) });
 
-export const installedVersionOf = (request: { readonly manifestText: string }): Result<string, ManifestFailure> => {
+export const installedVersionOf = (request: {
+  readonly manifestText: string;
+}): Result<string, ManifestFailure> => {
   const parsed = parsedJson({ text: request.manifestText });
   if (parsed.outcome === "failed") {
     return manifestInvalid({ detail: parsed.error });
   }
   const manifest = installedManifestSchema.safeParse(parsed.value);
-  return manifest.success ? { outcome: "ok", value: manifest.data.version } : manifestInvalid({ detail: "its package.json names no version" });
+  return manifest.success
+    ? { outcome: "ok", value: manifest.data.version }
+    : manifestInvalid({ detail: "its package.json names no version" });
 };
 
 export const environmentWithoutGit = (request: {
   readonly environment: Readonly<Record<string, string | undefined>>;
 }): Readonly<Record<string, string | undefined>> =>
-  Object.fromEntries(Object.entries(request.environment).filter(([name]) => !name.startsWith("GIT_")));
+  Object.fromEntries(
+    Object.entries(request.environment).filter(([name]) => !name.startsWith("GIT_")),
+  );

@@ -17,14 +17,26 @@ type DisciplineRequest = {
   readonly discipline: DisciplineId;
 };
 
-const readTeamDiscipline = (request: DisciplineRequest): Result<Held<DisciplineFile>, VersionTwoLoadFailure> => {
+const readTeamDiscipline = (
+  request: DisciplineRequest,
+): Result<Held<DisciplineFile>, VersionTwoLoadFailure> => {
   const path = disciplineFilePath(request);
   if (request.fileText.exists({ path }) === "absent") {
     return { outcome: "ok", value: { held: "absent" } };
   }
-  const read = readDisciplineFile({ fileText: request.fileText, path, discipline: request.discipline });
-  return read.outcome === "failed" ? read : { outcome: "ok", value: { held: "present", file: read.value } };
+  const read = readDisciplineFile({
+    fileText: request.fileText,
+    path,
+    discipline: request.discipline,
+  });
+  return read.outcome === "failed"
+    ? read
+    : { outcome: "ok", value: { held: "present", file: read.value } };
 };
 
-export const readHeldDiscipline = (request: DisciplineRequest): Result<Held<DisciplineFile>, VersionTwoLoadFailure> =>
-  request.ruleSetRoot === request.installRoot ? readInstallDiscipline(request) : readTeamDiscipline(request);
+export const readHeldDiscipline = (
+  request: DisciplineRequest,
+): Result<Held<DisciplineFile>, VersionTwoLoadFailure> =>
+  request.ruleSetRoot === request.installRoot
+    ? readInstallDiscipline(request)
+    : readTeamDiscipline(request);

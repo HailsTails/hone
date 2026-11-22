@@ -6,5 +6,8 @@ export type FileCreationFailure =
   | { readonly kind: "uncreatable"; readonly path: AbsolutePath; readonly detail: string };
 
 export type FileCreationPort = {
-  readonly createNew: (request: { readonly path: AbsolutePath; readonly text: string }) => Result<void, FileCreationFailure>;
+  readonly createNew: (request: {
+    readonly path: AbsolutePath;
+    readonly text: string;
+  }) => Result<void, FileCreationFailure>;
 };

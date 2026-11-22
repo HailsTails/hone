@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
+
 import { jsonKindOf, sameJsonValue } from "./json-kind.ts";
 import type { ReadonlyJsonValue } from "./json-value.ts";
 
-type SamenessCase = { readonly name: string; readonly left: ReadonlyJsonValue; readonly right: ReadonlyJsonValue };
+type SamenessCase = {
+  readonly name: string;
+  readonly left: ReadonlyJsonValue;
+  readonly right: ReadonlyJsonValue;
+};
 
 describe("jsonKindOf", () => {
   it.each([
@@ -21,7 +26,11 @@ describe("sameJsonValue", () => {
   it.each<SamenessCase>([
     { name: "equal strings", left: "camelCase", right: "camelCase" },
     { name: "equal arrays", left: ["a", 1], right: ["a", 1] },
-    { name: "objects with keys in another order", left: { a: 1, b: [null] }, right: { b: [null], a: 1 } },
+    {
+      name: "objects with keys in another order",
+      left: { a: 1, b: [null] },
+      right: { b: [null], a: 1 },
+    },
   ])("is same for $name", ({ left, right }) => {
     expect(sameJsonValue({ left, right })).toBe("same");
   });

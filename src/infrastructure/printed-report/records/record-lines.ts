@@ -1,3 +1,5 @@
+import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
+import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type {
   AuthorisedReach,
   CarriedListing,
@@ -12,8 +14,6 @@ import type {
   RefusedRecord,
 } from "../../../domain/records/hone-records/hone-record.ts";
 import { catalogueNotesOf } from "../../../domain/records/hone-records/record-listings.ts";
-import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
-import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { onOneLine, quoted } from "../printed-text.ts";
 
@@ -21,9 +21,11 @@ const WHOLE_RECORD = "record";
 
 const SPLITS_A_FIELD = /[\s"]/;
 
-export const recordsFileText = (request: { readonly file: RepoPath }): string => (SPLITS_A_FIELD.test(request.file) ? quoted({ text: request.file }) : request.file);
+export const recordsFileText = (request: { readonly file: RepoPath }): string =>
+  SPLITS_A_FIELD.test(request.file) ? quoted({ text: request.file }) : request.file;
 
-export const recordPlaceText = (request: { readonly place: RecordPlace }): string => `${recordsFileText(request.place)} records[${request.place.index}]`;
+export const recordPlaceText = (request: { readonly place: RecordPlace }): string =>
+  `${recordsFileText(request.place)} records[${request.place.index}]`;
 
 export const outsidePartyText = (request: { readonly party: OutsideParty }): string => {
   switch (request.party.kind) {
@@ -46,7 +48,9 @@ const catalogueNoteWords = (request: { readonly note: CatalogueNote }): string =
   }
 };
 
-const carriedText = (request: { readonly holding: { readonly held: "stated" | "carried" } }): string => (request.holding.held === "carried" ? " carried" : "");
+const carriedText = (request: {
+  readonly holding: { readonly held: "stated" | "carried" };
+}): string => (request.holding.held === "carried" ? " carried" : "");
 
 const heldText = (request: { readonly record: HoneRecord }): string => {
   const { record } = request;
@@ -64,7 +68,10 @@ const heldText = (request: { readonly record: HoneRecord }): string => {
   }
 };
 
-const reachedText = (request: { readonly symptom: Symptom; readonly reach: AuthorisedReach }): string => {
+const reachedText = (request: {
+  readonly symptom: Symptom;
+  readonly reach: AuthorisedReach;
+}): string => {
   const { symptom, reach } = request;
   switch (reach.reaches) {
     case "whole-symptom":
@@ -106,12 +113,19 @@ const referenceOf = (request: { readonly record: HoneRecord }): string => {
   }
 };
 
-export const recordSubjectText = (request: { readonly record: HoneRecord }): string => `${subjectOf(request)}${heldText(request)}`;
+export const recordSubjectText = (request: { readonly record: HoneRecord }): string =>
+  `${subjectOf(request)}${heldText(request)}`;
 
-export const recordReferenceText = (request: { readonly record: HoneRecord }): string => `${referenceOf(request)}${heldText(request)}`;
+export const recordReferenceText = (request: { readonly record: HoneRecord }): string =>
+  `${referenceOf(request)}${heldText(request)}`;
 
-export const referencesText = (request: { readonly lead: string; readonly records: readonly PlacedRecord[] }): string =>
-  request.records.map((placed) => ` ${request.lead} ${recordReferenceText({ record: placed.record })}`).join("");
+export const referencesText = (request: {
+  readonly lead: string;
+  readonly records: readonly PlacedRecord[];
+}): string =>
+  request.records
+    .map((placed) => ` ${request.lead} ${recordReferenceText({ record: placed.record })}`)
+    .join("");
 
 export const recordNoteLine = (request: { readonly recordNote: RecordNote }): string =>
   `${recordPlaceText(request.recordNote)} ${request.recordNote.note.kind}: ${catalogueNoteWords(request.recordNote)}`;
@@ -149,12 +163,16 @@ const refusalDetail = (request: { readonly refusal: RecordRefusal }): string => 
   }
 };
 
-export const refusalText = (request: { readonly refusal: RecordRefusal }): string => `${request.refusal.kind}${refusalDetail(request)}`;
+export const refusalText = (request: { readonly refusal: RecordRefusal }): string =>
+  `${request.refusal.kind}${refusalDetail(request)}`;
 
 export const refusedLines = (request: { readonly refused: RefusedRecord }): readonly string[] =>
-  request.refused.refusals.map((refusal) => `${recordPlaceText(request.refused)} ${refusal.kind}${refusalDetail({ refusal })}`);
+  request.refused.refusals.map(
+    (refusal) => `${recordPlaceText(request.refused)} ${refusal.kind}${refusalDetail({ refusal })}`,
+  );
 
 export const carriedLine = (request: { readonly listing: CarriedListing }): string => {
-  const lacks = request.listing.lacks.length === 0 ? "" : ` lacks ${request.listing.lacks.join(", ")}`;
+  const lacks =
+    request.listing.lacks.length === 0 ? "" : ` lacks ${request.listing.lacks.join(", ")}`;
   return `${recordPlaceText(request.listing)} ${request.listing.standing}${lacks}`;
 };

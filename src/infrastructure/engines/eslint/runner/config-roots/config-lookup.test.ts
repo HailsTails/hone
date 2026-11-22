@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../../node/path-port.ts";
-import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
-import { configLookupDeclaring, teamConfigLookupFor } from "./config-lookup.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
+import { createPathPort } from "../../../../node/path-port.ts";
+import { configLookupDeclaring, teamConfigLookupFor } from "./config-lookup.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -22,7 +23,8 @@ const overlaidFileText = (request: {
       const text = overlaid(reading.path);
       return text === undefined ? request.base.read(reading) : { outcome: "ok", value: text };
     },
-    exists: (probing) => (overlaid(probing.path) === undefined ? request.base.exists(probing) : "present"),
+    exists: (probing) =>
+      overlaid(probing.path) === undefined ? request.base.exists(probing) : "present",
   };
 };
 
@@ -33,7 +35,10 @@ const NEAREST = { outcome: "ok", value: { kind: "nearest-to-file" } };
 const ROOT_CONFIG = { "/repo/eslint.config.mjs": "" };
 
 const noFiles: FileTextPort = {
-  read: ({ path: requested }) => ({ outcome: "failed", error: { kind: "unreadable", path: requested, detail: "absent" } }),
+  read: ({ path: requested }) => ({
+    outcome: "failed",
+    error: { kind: "unreadable", path: requested, detail: "absent" },
+  }),
   exists: () => "absent",
   write: vi.fn<FileTextPort["write"]>(),
 };
@@ -46,7 +51,10 @@ const lintScript = (request: { readonly command: string }) => ({
   "/repo/package.json": `{ "scripts": { "lint": "${request.command}" } }`,
 });
 
-const lookupDeclaring = (request: { readonly files: Readonly<Record<string, string>>; readonly declared: EslintConfigLookup | undefined }) => {
+const lookupDeclaring = (request: {
+  readonly files: Readonly<Record<string, string>>;
+  readonly declared: EslintConfigLookup | undefined;
+}) => {
   const lookupRequest = {
     fileText: overlaidFileText({ base: noFiles, files: request.files }),
     path,
@@ -60,11 +68,14 @@ const lookupDeclaring = (request: { readonly files: Readonly<Record<string, stri
   });
 };
 
-const lookupOver = (request: { readonly files: Readonly<Record<string, string>> }) => lookupDeclaring({ ...request, declared: undefined });
+const lookupOver = (request: { readonly files: Readonly<Record<string, string>> }) =>
+  lookupDeclaring({ ...request, declared: undefined });
 
 describe("teamConfigLookupFor", () => {
   it("names the settings file it was given when the repository root has no config for a root-only lookup", () => {
-    expect(lookupDeclaring({ files: eslintInstalled({ version: "9.39.5" }), declared: undefined })).toEqual({
+    expect(
+      lookupDeclaring({ files: eslintInstalled({ version: "9.39.5" }), declared: undefined }),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "team-config-unloadable",
@@ -99,7 +110,13 @@ describe("teamConfigLookupFor", () => {
 
   it("looks only at the root config for ESLint 9 started without the lookup flag", () => {
     expect(
-      lookupOver({ files: { ...eslintInstalled({ version: "9.39.5" }), ...lintScript({ command: "eslint ." }), ...ROOT_CONFIG } }),
+      lookupOver({
+        files: {
+          ...eslintInstalled({ version: "9.39.5" }),
+          ...lintScript({ command: "eslint ." }),
+          ...ROOT_CONFIG,
+        },
+      }),
     ).toEqual({
       outcome: "ok",
       value: { kind: "repository-root", configFile: "/repo/eslint.config.mjs" },
@@ -107,7 +124,14 @@ describe("teamConfigLookupFor", () => {
   });
 
   it("fails as an unloadable team config when ESLint 9 would find no root config", () => {
-    expect(lookupOver({ files: { ...eslintInstalled({ version: "9.39.5" }), ...lintScript({ command: "eslint ." }) } })).toMatchObject({
+    expect(
+      lookupOver({
+        files: {
+          ...eslintInstalled({ version: "9.39.5" }),
+          ...lintScript({ command: "eslint ." }),
+        },
+      }),
+    ).toMatchObject({
       outcome: "failed",
       error: { kind: "team-config-unloadable" },
     });
@@ -116,7 +140,11 @@ describe("teamConfigLookupFor", () => {
   it("lets a declared nearest-to-file win over detecting a plain ESLint 9 run", () => {
     expect(
       lookupDeclaring({
-        files: { ...eslintInstalled({ version: "9.39.5" }), ...lintScript({ command: "turbo run lint" }), ...ROOT_CONFIG },
+        files: {
+          ...eslintInstalled({ version: "9.39.5" }),
+          ...lintScript({ command: "turbo run lint" }),
+          ...ROOT_CONFIG,
+        },
         declared: "nearest-to-file",
       }),
     ).toEqual(NEAREST);
@@ -125,7 +153,11 @@ describe("teamConfigLookupFor", () => {
   it("lets a declared repository-root win over detecting ESLint 10", () => {
     expect(
       lookupDeclaring({
-        files: { ...eslintInstalled({ version: "10.11.0" }), ...lintScript({ command: "eslint ." }), ...ROOT_CONFIG },
+        files: {
+          ...eslintInstalled({ version: "10.11.0" }),
+          ...lintScript({ command: "eslint ." }),
+          ...ROOT_CONFIG,
+        },
         declared: "repository-root",
       }),
     ).toEqual({

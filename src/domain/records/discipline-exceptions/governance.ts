@@ -1,10 +1,10 @@
 import type { AttributedNativeException, Finding, GovernedRun } from "../../finding/governance.ts";
-import type { NativeException } from "../../runner/runner-result-types.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 
 export type ExemptedFinding = {
@@ -117,7 +117,9 @@ const coverageKeysIn = (request: {
   readonly run: GovernedRun;
   readonly exception: NativeException;
 }): readonly string[] =>
-  request.run.coverableKinds.includes(request.exception.kind) ? nativeCoverageKeys({ exception: request.exception }) : [];
+  request.run.coverableKinds.includes(request.exception.kind)
+    ? nativeCoverageKeys({ exception: request.exception })
+    : [];
 
 const recordingOf = (request: {
   readonly run: GovernedRun;
@@ -170,7 +172,9 @@ const recordsHoldingNative = (request: {
   readonly exempting: readonly ExceptionRecord[];
 }): readonly ExceptionRecord[] =>
   request.runs.flatMap((run) => {
-    const coverageKeys = new Set(run.nativeExceptions.flatMap((exception) => coverageKeysIn({ run, exception })));
+    const coverageKeys = new Set(
+      run.nativeExceptions.flatMap((exception) => coverageKeysIn({ run, exception })),
+    );
     return request.exempting.filter(
       (record) => record.mechanism === run.mechanism && coverageKeys.has(coverageKeyOf({ record })),
     );

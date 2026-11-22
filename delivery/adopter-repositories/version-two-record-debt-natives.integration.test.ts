@@ -1,14 +1,24 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { projectCommandOf, pruneCommandOf } from "../../src/infrastructure/command-line/arguments/tool-invocations.ts";
-import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
+import {
+  projectCommandOf,
+  pruneCommandOf,
+} from "../../src/infrastructure/command-line/arguments/tool-invocations.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import {
+  createDefaultCommandRunPort,
+  createDefaultScratchFilesPort,
+  type ScratchFilesPort,
+} from "../install-proof/install-proof-ports.ts";
 
 type ScratchRepositories = {
-  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly repositoryWith: (request: {
+    readonly files: Readonly<Record<string, string>>;
+  }) => AbsolutePath;
   readonly removeAll: () => void;
 };
 
@@ -20,10 +30,14 @@ const scratchRepositoriesUnder = (request: {
   const made: AbsolutePath[] = [];
   return {
     repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const folder = absolutePathSchema.parse(
+        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
+      );
       const directory = request.scratch.makeDirectory({ path: folder });
       if (directory.outcome !== "ok") {
-        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+        throw new Error(
+          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
+        );
       }
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
@@ -56,13 +70,17 @@ const repositoryWithSubfolder = (request: {
   Object.entries(request.subfolderFiles).forEach(([name, text]) => {
     const written = request.fileText.write({ path: `${folder}/${name}`, text });
     if (written.outcome !== "ok") {
-      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+      throw new Error(
+        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
+      );
     }
   });
   return repo;
 };
 
-const INSTALL_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }));
+const INSTALL_ROOT = absolutePathSchema.parse(
+  createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }),
+);
 
 const TOOL_COMMAND_FILE = `${INSTALL_ROOT}/src/hone.ts`;
 
@@ -72,7 +90,11 @@ const fileText = createDefaultFileTextPort({});
 
 const scratch = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({ parent: `${INSTALL_ROOT}/artefacts`, fileText, scratch });
+const repositories = scratchRepositoriesUnder({
+  parent: `${INSTALL_ROOT}/artefacts`,
+  fileText,
+  scratch,
+});
 
 afterAll(() => {
   repositories.removeAll();
@@ -110,7 +132,8 @@ const FIXED_CLASS_LEGACY_SOURCE = "export const legacy = 1;\n";
 
 const CLASS_SOURCE = "export class Kept {}\n";
 
-const INLINE_DISABLE_SOURCE = "// eslint-disable-next-line hone/authored-class-or-this#class-keyword\nexport const inherited = 1;\n";
+const INLINE_DISABLE_SOURCE =
+  "// eslint-disable-next-line hone/authored-class-or-this#class-keyword\nexport const inherited = 1;\n";
 
 const TYPE_DIRECTIVE_SOURCE = '// @ts-expect-error\nexport const wrong: number = "a";\n';
 
@@ -120,17 +143,32 @@ const FIXED_DISABLE_SOURCE = "export const inherited = 1;\n";
 
 const FIXED_DIRECTIVE_SOURCE = "export const wrong = 1;\n";
 
-const GIT_IDENTITY = ["-c", "user.name=adopter", "-c", "user.email=adopter@example.test", "-c", "commit.gpgsign=false"];
+const GIT_IDENTITY = [
+  "-c",
+  "user.name=adopter",
+  "-c",
+  "user.email=adopter@example.test",
+  "-c",
+  "commit.gpgsign=false",
+];
 
 type Printed = { readonly text: string; readonly code: number };
 
 const git = (request: { readonly repo: string; readonly arguments: readonly string[] }): void => {
-  const run = commands.run({ command: "git", arguments: [...GIT_IDENTITY, ...request.arguments], directory: request.repo });
+  const run = commands.run({
+    command: "git",
+    arguments: [...GIT_IDENTITY, ...request.arguments],
+    directory: request.repo,
+  });
   assert(run.outcome === "exited", "a git step in the scratch repository ran to an exit");
   assert(run.exitCode === 0, "a git step in the scratch repository succeeded");
 };
 
-const toolIn = (request: { readonly repo: string; readonly subcommand: string; readonly options: readonly string[] }): Printed => {
+const toolIn = (request: {
+  readonly repo: string;
+  readonly subcommand: string;
+  readonly options: readonly string[];
+}): Printed => {
   const run = commands.run({
     command: "node",
     arguments: [TOOL_COMMAND_FILE, request.subcommand, "--repo", request.repo, ...request.options],
@@ -149,7 +187,11 @@ const commitEverything = (request: { readonly repo: string }): void => {
   git({ repo: request.repo, arguments: ["commit", "-q", "-m", "commit"] });
 };
 
-const writeIn = (request: { readonly repo: string; readonly file: string; readonly text: string }): void => {
+const writeIn = (request: {
+  readonly repo: string;
+  readonly file: string;
+  readonly text: string;
+}): void => {
   const written = fileText.write({ path: `${request.repo}/${request.file}`, text: request.text });
   assert(written.outcome === "ok", "the scratch file is written");
 };
@@ -161,7 +203,13 @@ const inheritingRepository = (): string => {
     fileText,
     files: { "hone.config.json": CONFIG, "eslint.config.mjs": ESLINT_CONFIG_WITH_OVERRIDE },
     subfolder: "src",
-    subfolderFiles: { "kept.ts": CLASS_SOURCE, "disabled.ts": INLINE_DISABLE_SOURCE, "directive.ts": TYPE_DIRECTIVE_SOURCE, "legacy-clean.ts": CLEAN_LEGACY_SOURCE, "legacy-class.ts": CLASS_LEGACY_SOURCE },
+    subfolderFiles: {
+      "kept.ts": CLASS_SOURCE,
+      "disabled.ts": INLINE_DISABLE_SOURCE,
+      "directive.ts": TYPE_DIRECTIVE_SOURCE,
+      "legacy-clean.ts": CLEAN_LEGACY_SOURCE,
+      "legacy-class.ts": CLASS_LEGACY_SOURCE,
+    },
   });
   git({ repo, arguments: ["init", "-q"] });
   trackEverything({ repo });
@@ -175,18 +223,29 @@ const PATH = createDefaultPathPort({});
 const ENTRY_URL = new URL("../../src/hone.ts", import.meta.url).href;
 
 const pruneCommandIn = (request: { readonly repo: string }): string => {
-  const command = pruneCommandOf({ path: PATH, moduleUrl: ENTRY_URL, repoRoot: absolutePathSchema.parse(request.repo), baseRevision: undefined, forfeiture: "elsewhere" });
+  const command = pruneCommandOf({
+    path: PATH,
+    moduleUrl: ENTRY_URL,
+    repoRoot: absolutePathSchema.parse(request.repo),
+    baseRevision: undefined,
+    forfeiture: "elsewhere",
+  });
   assert(command.outcome === "ok", "the prune command is made");
   return command.value;
 };
 
 const projectCommandIn = (request: { readonly repo: string }): string => {
-  const command = projectCommandOf({ path: PATH, moduleUrl: ENTRY_URL, repoRoot: absolutePathSchema.parse(request.repo) });
+  const command = projectCommandOf({
+    path: PATH,
+    moduleUrl: ENTRY_URL,
+    repoRoot: absolutePathSchema.parse(request.repo),
+  });
   assert(command.outcome === "ok", "the project command is made");
   return command.value;
 };
 
-const NOT_ADOPTED = "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#cast-to-any\nclaimed-type#non-null-assertions\n";
+const NOT_ADOPTED =
+  "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#cast-to-any\nclaimed-type#non-null-assertions\n";
 
 const CLASS_SYMPTOM =
   "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
@@ -208,7 +267,9 @@ ${CLASS_SYMPTOM}verdict: fail (partial assessment)
 const OVERRIDE_DETAIL =
   "an override in the ESLint configuration turns the check down for this file, which no record can hold; where debt holds the check the projection already turns it off, so remove the override or narrow it to the files that need it";
 
-const recordedText = (request: { readonly repo: string }): string => `claimed-type#unlisted-cast-site recorded src/directive.ts
+const recordedText = (request: {
+  readonly repo: string;
+}): string => `claimed-type#unlisted-cast-site recorded src/directive.ts
 authored-class-or-this#class-keyword recorded src/disabled.ts
 authored-class-or-this#class-keyword recorded src/kept.ts
 authored-class-or-this#class-keyword recorded src/legacy-class.ts
@@ -223,7 +284,11 @@ authored-class-or-this#class-keyword eslint src/legacy-class.ts:1:7 export class
 verdict: pass
 `;
 
-const stale = (request: { readonly repo: string; readonly check: string; readonly file: string }): string =>
+const stale = (request: {
+  readonly repo: string;
+  readonly check: string;
+  readonly file: string;
+}): string =>
   `${request.check} debt ${request.file}; nothing it holds is found: run ${pruneCommandIn({ repo: request.repo })} to remove it\n`;
 
 const paidText = (request: { readonly repo: string }): string =>
@@ -247,7 +312,11 @@ describe("hone record-debt over a repository that inherits a finding, an inline 
       toolIn({ repo, subcommand: "project", options: [] });
       commitEverything({ repo });
       const inherited = toolIn({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
-      const recorded = toolIn({ repo, subcommand: "record-debt", options: ["--base-revision", "HEAD"] });
+      const recorded = toolIn({
+        repo,
+        subcommand: "record-debt",
+        options: ["--base-revision", "HEAD"],
+      });
       writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
       const projected = toolIn({ repo, subcommand: "project", options: [] });
       trackEverything({ repo });
@@ -285,7 +354,11 @@ const hidingRepository = (): string => {
     repositories,
     scratch,
     fileText,
-    files: { "hone.config.json": CONFIG, "eslint.config.mjs": ESLINT_CONFIG_IGNORING, "eslint-suppressions.json": SUPPRESSIONS },
+    files: {
+      "hone.config.json": CONFIG,
+      "eslint.config.mjs": ESLINT_CONFIG_IGNORING,
+      "eslint-suppressions.json": SUPPRESSIONS,
+    },
     subfolder: "src",
     subfolderFiles: { "ignored.ts": CLASS_SOURCE, "suppressed.ts": CLASS_SOURCE },
   });
@@ -320,7 +393,9 @@ const IGNORE_DETAIL =
 const SUPPRESSION_DETAIL =
   "an entry in the suppressions file hides a finding from the team's lint run, which no record can hold; Hone's run still finds it and records it as debt, so remove the entry from the suppressions file";
 
-const hiddenRecordedText = (request: { readonly repo: string }): string => `authored-class-or-this#class-keyword recorded src/ignored.ts
+const hiddenRecordedText = (request: {
+  readonly repo: string;
+}): string => `authored-class-or-this#class-keyword recorded src/ignored.ts
 authored-class-or-this#class-keyword unrecordable src/ignored.ts: ${IGNORE_DETAIL}
 authored-class-or-this#class-keyword recorded src/suppressed.ts
 authored-class-or-this#class-keyword unrecordable src/suppressed.ts: ${SUPPRESSION_DETAIL}
@@ -362,9 +437,16 @@ const excludingRepository = (): string => {
     repositories,
     scratch,
     fileText,
-    files: { "hone.config.json": CONFIG_EXCLUDING_SOME_IGNORED, "eslint.config.mjs": ESLINT_CONFIG_IGNORING_VENDORED },
+    files: {
+      "hone.config.json": CONFIG_EXCLUDING_SOME_IGNORED,
+      "eslint.config.mjs": ESLINT_CONFIG_IGNORING_VENDORED,
+    },
     subfolder: "src",
-    subfolderFiles: { "ignored.ts": CLASS_SOURCE, "vendor-a.ts": CLASS_SOURCE, "vendor-b.ts": CLASS_SOURCE },
+    subfolderFiles: {
+      "ignored.ts": CLASS_SOURCE,
+      "vendor-a.ts": CLASS_SOURCE,
+      "vendor-b.ts": CLASS_SOURCE,
+    },
   });
   git({ repo, arguments: ["init", "-q"] });
   trackEverything({ repo });
@@ -386,7 +468,9 @@ symptoms (1)
 ${CLASS_SYMPTOM}verdict: fail
 `;
 
-const excludedRecordedText = (request: { readonly repo: string }): string => `authored-class-or-this#class-keyword recorded src/vendor-b.ts
+const excludedRecordedText = (request: {
+  readonly repo: string;
+}): string => `authored-class-or-this#class-keyword recorded src/vendor-b.ts
 authored-class-or-this#class-keyword unrecordable src/vendor-b.ts: ${IGNORE_DETAIL}
 run ${projectCommandIn({ repo: request.repo })} to put the recorded debt into effect
 `;
@@ -399,7 +483,11 @@ describe("hone over a repository whose ESLint configuration ignores files that H
       toolIn({ repo, subcommand: "project", options: [] });
       commitEverything({ repo });
       const checked = toolIn({ repo, subcommand: "check", options: [] });
-      const recorded = toolIn({ repo, subcommand: "record-debt", options: ["--base-revision", "HEAD"] });
+      const recorded = toolIn({
+        repo,
+        subcommand: "record-debt",
+        options: ["--base-revision", "HEAD"],
+      });
       expect({ checked, recorded }).toEqual({
         checked: { text: EXCLUDED_CHECK_TEXT, code: 1 },
         recorded: { text: excludedRecordedText({ repo }), code: 0 },
@@ -417,10 +505,18 @@ describe("hone record-debt over a repository whose ESLint configuration ignores 
       toolIn({ repo, subcommand: "project", options: [] });
       commitEverything({ repo });
       const inherited = toolIn({ repo, subcommand: "check", options: FORFEITURE_ELSEWHERE });
-      const recorded = toolIn({ repo, subcommand: "record-debt", options: ["--base-revision", "HEAD"] });
+      const recorded = toolIn({
+        repo,
+        subcommand: "record-debt",
+        options: ["--base-revision", "HEAD"],
+      });
       const projected = toolIn({ repo, subcommand: "project", options: [] });
       trackEverything({ repo });
-      const stillHidden = toolIn({ repo, subcommand: "check", options: ["--base-revision", "HEAD"] });
+      const stillHidden = toolIn({
+        repo,
+        subcommand: "check",
+        options: ["--base-revision", "HEAD"],
+      });
       writeIn({ repo, file: "eslint.config.mjs", text: ESLINT_CONFIG });
       git({ repo, arguments: ["rm", "-q", "-f", "eslint-suppressions.json"] });
       const reprojected = toolIn({ repo, subcommand: "project", options: [] });

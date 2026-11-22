@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { TYPESCRIPT_REQUIREMENT } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
+
+import developmentManifest from "../../../package.json" with { type: "json" };
 import {
   ESLINT_REQUIREMENT,
   TYPESCRIPT_ESLINT_PARSER_REQUIREMENT,
   TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT,
 } from "../../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import developmentManifest from "../../../package.json" with { type: "json" };
+import { TYPESCRIPT_REQUIREMENT } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { peerKindsOf } from "./published-manifest.ts";
 
 describe("the package manifest's peers", () => {
@@ -29,8 +30,10 @@ describe("the package manifest's peers", () => {
       value: {
         [TYPESCRIPT_REQUIREMENT.packageName]: TYPESCRIPT_REQUIREMENT.peer,
         [ESLINT_REQUIREMENT.packageName]: ESLINT_REQUIREMENT.peer,
-        [TYPESCRIPT_ESLINT_PARSER_REQUIREMENT.packageName]: TYPESCRIPT_ESLINT_PARSER_REQUIREMENT.peer,
-        [TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT.packageName]: TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT.peer,
+        [TYPESCRIPT_ESLINT_PARSER_REQUIREMENT.packageName]:
+          TYPESCRIPT_ESLINT_PARSER_REQUIREMENT.peer,
+        [TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT.packageName]:
+          TYPESCRIPT_ESLINT_PLUGIN_REQUIREMENT.peer,
       },
     });
   });

@@ -1,1 +1,4 @@
-{ "files": [], "references": [{ "path": "./packages/inherits" }, { "path": "./packages/loosened" }] }
+{
+  "files": [],
+  "references": [{ "path": "./packages/inherits" }, { "path": "./packages/loosened" }]
+}

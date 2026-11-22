@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { caretFitOf, caretRangeOf } from "./caret-range.ts";
 
 describe("caretRangeOf", () => {

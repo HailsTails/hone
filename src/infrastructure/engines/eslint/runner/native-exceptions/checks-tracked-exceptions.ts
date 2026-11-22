@@ -1,11 +1,20 @@
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { NativeException, ScriptOptionCause } from "../../../../../domain/runner/runner-result-types.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { filesNamed, repositoryDirectoryOf } from "../config-roots/checks-paths.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type {
+  NativeException,
+  ScriptOptionCause,
+} from "../../../../../domain/runner/runner-result-types.ts";
 import type { SelectedCheck } from "../checks-runner/checks-run-types.ts";
-import { type PackageJsonScan, type PackageScriptsReader, type ScriptOption, scannedPackageScripts, type SelectedRule } from "./package-script-scanner.ts";
+import { filesNamed, repositoryDirectoryOf } from "../config-roots/checks-paths.ts";
+import {
+  type PackageJsonScan,
+  type PackageScriptsReader,
+  type ScriptOption,
+  scannedPackageScripts,
+  type SelectedRule,
+} from "./package-script-scanner.ts";
 import type { OptionVerdict, ScriptOptionJudge } from "./script-option-effect.ts";
 import { type SuppressionsReader, suppressionEntriesIn } from "./suppressions-scanner.ts";
 
@@ -24,10 +33,18 @@ const suppressionsExceptions = (request: {
   const suppressions = request.suppressionsAt({ location: request.location });
   return suppressions.outcome === "failed"
     ? suppressions
-    : suppressionEntriesIn({ location: request.location, keysRelativeTo: request.keysRelativeTo, suppressions: suppressions.value, selectedRules: request.selectedRules });
+    : suppressionEntriesIn({
+        location: request.location,
+        keysRelativeTo: request.keysRelativeTo,
+        suppressions: suppressions.value,
+        selectedRules: request.selectedRules,
+      });
 };
 
-const causeOf = (request: { readonly verdict: OptionVerdict; readonly option: ScriptOption }): ScriptOptionCause | undefined => {
+const causeOf = (request: {
+  readonly verdict: OptionVerdict;
+  readonly option: ScriptOption;
+}): ScriptOptionCause | undefined => {
   switch (request.verdict.kind) {
     case "weakens":
       return { kind: "weakens-run" };
@@ -38,20 +55,46 @@ const causeOf = (request: { readonly verdict: OptionVerdict; readonly option: Sc
   }
 };
 
-const weakeningExceptions = (request: { readonly option: ScriptOption; readonly judge: ScriptOptionJudge }): Promise<Outcome<readonly NativeException[]>> =>
+const weakeningExceptions = (request: {
+  readonly option: ScriptOption;
+  readonly judge: ScriptOptionJudge;
+}): Promise<Outcome<readonly NativeException[]>> =>
   request.judge({ option: request.option }).then((verdict) => {
     if (verdict.outcome === "failed") {
       return verdict;
     }
     const cause = causeOf({ verdict: verdict.value, option: request.option });
-    return { outcome: "ok", value: cause === undefined ? [] : request.option.exceptions.map((exception): NativeException => ({ ...exception, cause })) };
+    return {
+      outcome: "ok",
+      value:
+        cause === undefined
+          ? []
+          : request.option.exceptions.map((exception): NativeException => ({
+              ...exception,
+              cause,
+            })),
+    };
   });
 
-const judgedScriptExceptions = (request: { readonly scan: PackageJsonScan; readonly judge: ScriptOptionJudge }): Promise<Outcome<readonly NativeException[]>> =>
-  Promise.all(request.scan.scriptOptions.map((option) => weakeningExceptions({ option, judge: request.judge }))).then((outcomes) => gatheredOutcomes({ outcomes }));
+const judgedScriptExceptions = (request: {
+  readonly scan: PackageJsonScan;
+  readonly judge: ScriptOptionJudge;
+}): Promise<Outcome<readonly NativeException[]>> =>
+  Promise.all(
+    request.scan.scriptOptions.map((option) =>
+      weakeningExceptions({ option, judge: request.judge }),
+    ),
+  ).then((outcomes) => gatheredOutcomes({ outcomes }));
 
-const unreadableScriptExceptions = (request: { readonly scan: PackageJsonScan }): readonly NativeException[] =>
-  request.scan.unreadableScripts.flatMap((unreadable) => unreadable.exceptions.map((exception): NativeException => ({ ...exception, cause: { kind: "unreadable", command: unreadable.command } })));
+const unreadableScriptExceptions = (request: {
+  readonly scan: PackageJsonScan;
+}): readonly NativeException[] =>
+  request.scan.unreadableScripts.flatMap((unreadable) =>
+    unreadable.exceptions.map((exception): NativeException => ({
+      ...exception,
+      cause: { kind: "unreadable", command: unreadable.command },
+    })),
+  );
 
 const scannedPackageExceptions = (request: {
   readonly suppressionsAt: SuppressionsReader;
@@ -66,7 +109,12 @@ const scannedPackageExceptions = (request: {
         scriptExceptions,
         { outcome: "ok", value: unreadableScriptExceptions({ scan: request.scan }) },
         ...request.scan.suppressionsLocations.map((scripted) =>
-          suppressionsExceptions({ suppressionsAt: request.suppressionsAt, location: scripted.location, keysRelativeTo: repositoryDirectoryOf({ path: request.packagePath }), selectedRules: request.selectedRules }),
+          suppressionsExceptions({
+            suppressionsAt: request.suppressionsAt,
+            location: scripted.location,
+            keysRelativeTo: repositoryDirectoryOf({ path: request.packagePath }),
+            selectedRules: request.selectedRules,
+          }),
         ),
       ],
     }),
@@ -83,8 +131,14 @@ const packageJsonExceptions = (request: {
   if (scripts.outcome === "failed") {
     return Promise.resolve(scripts);
   }
-  const scan = scannedPackageScripts({ path: request.packagePath, scripts: scripts.value, selectedRules: request.selectedRules });
-  return scan.outcome === "failed" ? Promise.resolve(scan) : scannedPackageExceptions({ ...request, scan: scan.value });
+  const scan = scannedPackageScripts({
+    path: request.packagePath,
+    scripts: scripts.value,
+    selectedRules: request.selectedRules,
+  });
+  return scan.outcome === "failed"
+    ? Promise.resolve(scan)
+    : scannedPackageExceptions({ ...request, scan: scan.value });
 };
 
 export type TrackedRequest = {
@@ -94,22 +148,47 @@ export type TrackedRequest = {
   readonly judge: ScriptOptionJudge;
 };
 
-export const trackedExceptionsOfRules = (request: TrackedRequest & { readonly selectedRules: readonly SelectedRule[] }): Promise<Outcome<readonly NativeException[]>> =>
+export const trackedExceptionsOfRules = (
+  request: TrackedRequest & { readonly selectedRules: readonly SelectedRule[] },
+): Promise<Outcome<readonly NativeException[]>> =>
   Promise.all([
-    ...filesNamed({ trackedPaths: request.trackedPaths, name: SUPPRESSIONS_FILE_NAME }).map((location) =>
-      Promise.resolve(suppressionsExceptions({ ...request, location, keysRelativeTo: repositoryDirectoryOf({ path: location }) })),
+    ...filesNamed({ trackedPaths: request.trackedPaths, name: SUPPRESSIONS_FILE_NAME }).map(
+      (location) =>
+        Promise.resolve(
+          suppressionsExceptions({
+            ...request,
+            location,
+            keysRelativeTo: repositoryDirectoryOf({ path: location }),
+          }),
+        ),
     ),
-    ...filesNamed({ trackedPaths: request.trackedPaths, name: PACKAGE_JSON_NAME }).map((packagePath) => packageJsonExceptions({ ...request, packagePath })),
+    ...filesNamed({ trackedPaths: request.trackedPaths, name: PACKAGE_JSON_NAME }).map(
+      (packagePath) => packageJsonExceptions({ ...request, packagePath }),
+    ),
   ]).then((outcomes) => gatheredOutcomes({ outcomes }));
 
-const namedFor = (request: { readonly entry: SelectedCheck; readonly outcome: Outcome<readonly NativeException[]> }): Outcome<readonly NativeException[]> =>
+const namedFor = (request: {
+  readonly entry: SelectedCheck;
+  readonly outcome: Outcome<readonly NativeException[]>;
+}): Outcome<readonly NativeException[]> =>
   request.outcome.outcome === "failed"
     ? request.outcome
-    : { outcome: "ok", value: request.outcome.value.map((exception): NativeException => ({ ...exception, check: request.entry.address })) };
+    : {
+        outcome: "ok",
+        value: request.outcome.value.map((exception): NativeException => ({
+          ...exception,
+          check: request.entry.address,
+        })),
+      };
 
-export const trackedExceptionsOf = (request: TrackedRequest & { readonly selected: readonly SelectedCheck[] }): Promise<Outcome<readonly NativeException[]>> =>
+export const trackedExceptionsOf = (
+  request: TrackedRequest & { readonly selected: readonly SelectedCheck[] },
+): Promise<Outcome<readonly NativeException[]>> =>
   Promise.all(
     request.selected.map((entry) =>
-      trackedExceptionsOfRules({ ...request, selectedRules: [{ ruleId: entry.ruleId, clause: entry.clause }] }).then((outcome) => namedFor({ entry, outcome })),
+      trackedExceptionsOfRules({
+        ...request,
+        selectedRules: [{ ruleId: entry.ruleId, clause: entry.clause }],
+      }).then((outcome) => namedFor({ entry, outcome })),
     ),
   ).then((outcomes) => gatheredOutcomes({ outcomes }));

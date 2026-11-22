@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { createPathPort } from "../../node/path-port.ts";
 import { pieceImportFindings } from "./piece-import-rules.ts";
 
@@ -6,7 +7,12 @@ declare global {
   interface ImportMeta {
     readonly glob: (
       patterns: readonly string[],
-      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
+      options: {
+        readonly base: string;
+        readonly query: "?raw";
+        readonly import: "default";
+        readonly eager: true;
+      },
     ) => Readonly<Record<string, string>>;
   }
 }
@@ -22,12 +28,15 @@ const sources = import.meta.glob(
   { base: "../../../../", query: "?raw", import: "default", eager: true },
 );
 
-const typePackageTexts = import.meta.glob(["./src/infrastructure/engines/*/runner/piece-type-packages.json"], {
-  base: "../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const typePackageTexts = import.meta.glob(
+  ["./src/infrastructure/engines/*/runner/piece-type-packages.json"],
+  {
+    base: "../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
 const outcome = pieceImportFindings({
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
@@ -43,7 +52,13 @@ describe("FR-8 piece imports over what this repository's own piece source import
       outcome: "ok",
       value: {
         pieces: expect.arrayContaining([
-          { file: "./src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.ts", ruleSetRoot: ".", mechanism: "walker", symptom: "authored-class-or-this", check: "class-keyword" },
+          {
+            file: "./src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.ts",
+            ruleSetRoot: ".",
+            mechanism: "walker",
+            symptom: "authored-class-or-this",
+            check: "class-keyword",
+          },
         ]),
       },
     });

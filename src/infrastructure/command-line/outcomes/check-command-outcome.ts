@@ -1,10 +1,13 @@
-import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import type { Result } from "../../../domain/result.ts";
 import type { CheckOutcome } from "../../../domain/report/check-outcome.ts";
-import { renderGuidedReportText } from "../../printed-report/report-text.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../printed-report/symptoms/symptom-notes.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { verdictOf } from "../../../domain/report/verdict.ts";
+import type { Result } from "../../../domain/result.ts";
+import { renderGuidedReportText } from "../../printed-report/report-text.ts";
+import {
+  NO_SYMPTOM_GUIDE,
+  type SymptomGuide,
+} from "../../printed-report/symptoms/symptom-notes.ts";
+import { type CommandOutcome, loadFailureOutcome } from "./command-outcome.ts";
 
 export type CheckRun = CheckOutcome & {
   readonly projectCommand: string;
@@ -29,5 +32,8 @@ export const checkCommandOutcome = (request: {
   readonly result: Result<CheckRun, LoadFailure>;
 }): CommandOutcome =>
   guidedCheckCommandOutcome({
-    result: request.result.outcome === "failed" ? request.result : { outcome: "ok", value: { ...request.result.value, guide: NO_SYMPTOM_GUIDE } },
+    result:
+      request.result.outcome === "failed"
+        ? request.result
+        : { outcome: "ok", value: { ...request.result.value, guide: NO_SYMPTOM_GUIDE } },
   });

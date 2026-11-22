@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
   builtModulePath,
   documentAuthorOf,
@@ -85,12 +86,24 @@ describe("packagePlanOf", () => {
     expect(packagePlanOf({ sourcePaths, pieces })).toMatchObject({
       outcome: "ok",
       value: {
-        entryPoints: expect.arrayContaining(["src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.ts"]),
-        exported: ["src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.js"],
-        copied: ["src/infrastructure/engines/eslint/test-switched-off/skipped-tests/skipped-tests.examples.json"],
+        entryPoints: expect.arrayContaining([
+          "src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.ts",
+        ]),
+        exported: [
+          "src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.js",
+        ],
+        copied: [
+          "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/skipped-tests.examples.json",
+        ],
         pieces: [
-          { path: "src/infrastructure/engines/eslint/test-switched-off/focused-tests/piece.json", text: expect.stringContaining('"pluginModule": "test-switches.js"') },
-          { path: "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json", text: expect.stringContaining('"pluginModule": "test-switches.js"') },
+          {
+            path: "src/infrastructure/engines/eslint/test-switched-off/focused-tests/piece.json",
+            text: expect.stringContaining('"pluginModule": "test-switches.js"'),
+          },
+          {
+            path: "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json",
+            text: expect.stringContaining('"pluginModule": "test-switches.js"'),
+          },
         ],
       },
     });
@@ -168,7 +181,9 @@ describe("packagePlanOf", () => {
           },
           {
             path: "src/infrastructure/engines/eslint/CD-14/piece.json",
-            text: expect.stringContaining('"pluginModule": "cd14/cd14.eslint-plugin.js",\n        "rule": "no-class"'),
+            text: expect.stringContaining(
+              '"pluginModule": "cd14/cd14.eslint-plugin.js",\n        "rule": "no-class"',
+            ),
           },
         ],
       },
@@ -176,7 +191,10 @@ describe("packagePlanOf", () => {
   });
 
   it("exports only the built plugin modules of shipped ESLint pieces, the modules a projection imports by package name", () => {
-    expect(plan).toMatchObject({ outcome: "ok", value: { exported: ["src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js"] } });
+    expect(plan).toMatchObject({
+      outcome: "ok",
+      value: { exported: ["src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js"] },
+    });
   });
 
   it("rewrites only the module keys of each clause's settings, leaving a rule option or top-level field of that name alone", () => {
@@ -218,14 +236,24 @@ describe("packagePlanOf", () => {
   });
 
   it("is piece-invalid naming the piece when a piece.json is not JSON", () => {
-    expect(packagePlanOf({ sourcePaths: SOURCE_PATHS, pieces: [{ path: AUDIT_PIECE.path, text: "{ clauses" }] })).toMatchObject({
+    expect(
+      packagePlanOf({
+        sourcePaths: SOURCE_PATHS,
+        pieces: [{ path: AUDIT_PIECE.path, text: "{ clauses" }],
+      }),
+    ).toMatchObject({
       outcome: "failed",
       error: { kind: "piece-invalid", path: AUDIT_PIECE.path },
     });
   });
 
   it("is piece-invalid naming the piece when a piece.json has no clauses", () => {
-    expect(packagePlanOf({ sourcePaths: SOURCE_PATHS, pieces: [{ path: AUDIT_PIECE.path, text: "{}" }] })).toMatchObject({
+    expect(
+      packagePlanOf({
+        sourcePaths: SOURCE_PATHS,
+        pieces: [{ path: AUDIT_PIECE.path, text: "{}" }],
+      }),
+    ).toMatchObject({
       outcome: "failed",
       error: { kind: "piece-invalid", path: AUDIT_PIECE.path },
     });
@@ -238,13 +266,17 @@ describe("builtModulePath", () => {
   });
 
   it("keeps a path that names no source module", () => {
-    expect(builtModulePath({ path: "rules/CD-1/discipline.json" })).toBe("rules/CD-1/discipline.json");
+    expect(builtModulePath({ path: "rules/CD-1/discipline.json" })).toBe(
+      "rules/CD-1/discipline.json",
+    );
   });
 });
 
 describe("externalPackagesOf", () => {
   it("keeps each declared package and every subpath of it outside the bundle", () => {
-    expect(externalPackagesOf({ packages: ["eslint", "@typescript-eslint/parser", "zod"] })).toEqual([
+    expect(
+      externalPackagesOf({ packages: ["eslint", "@typescript-eslint/parser", "zod"] }),
+    ).toEqual([
       "eslint",
       "eslint/*",
       "@typescript-eslint/parser",

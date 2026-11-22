@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { brandedTextSchema } from "../content-files/branded-schema.ts";
+
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { NOT_A_REPO_PATH, isRepoPath, isRepoPathText } from "../../domain/repository/repo-path.ts";
+import { brandedTextSchema } from "../content-files/branded-schema.ts";
 import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
 export const repoPathTextSchema = z.string().superRefine((text, context) => {

@@ -1,37 +1,45 @@
 import { describe, expect, it } from "vitest";
-import { whyChainSchema } from "./why-chain.ts";
+
 import { causalProblemsOf, type Why, type WhyChain } from "../../domain/records/why-chain.ts";
+import { whyChainSchema } from "./why-chain.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootEvidence: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootEvidence:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
@@ -41,41 +49,53 @@ const OBJECTION_LIST: WhyChain = {
   whys: [
     {
       why: "Why does built-targets.ts import the Node file reader and YAML parser?",
-      because: "It implements BuiltTargetSource for the actual admin build, reading config.yml and decoding YAML at one outer boundary.",
+      because:
+        "It implements BuiltTargetSource for the actual admin build, reading config.yml and decoding YAML at one outer boundary.",
       evidence: "__tests__/admin-cms-browser/built-targets.ts:12",
     },
     {
       why: "Why must acceptance read the built YAML?",
-      because: "Sveltia navigation targets must come from the same generated configuration that the pinned browser runtime loads.",
+      because:
+        "Sveltia navigation targets must come from the same generated configuration that the pinned browser runtime loads.",
       evidence: "plan-313 sections 3 and 4",
     },
     {
       why: "Why keep these dependencies out of the traversal?",
-      because: "The acceptance spec consumes readonly CollectionTarget records and does not read files or parse YAML itself.",
+      because:
+        "The acceptance spec consumes readonly CollectionTarget records and does not read files or parse YAML itself.",
       evidence: "__tests__/admin-cms-browser/acceptance.spec.ts:40",
     },
     {
       why: "Why authorise this file alone?",
-      because: "BuiltTargetSource confines the platform reader and parser while readBuiltTargetsWith accepts typed fakes in its boundary tests.",
+      because:
+        "BuiltTargetSource confines the platform reader and parser while readBuiltTargetsWith accepts typed fakes in its boundary tests.",
       evidence: "__tests__/admin-cms-browser/built-targets.test.ts:9",
     },
     {
       why: "Why does this remain outside production?",
-      because: "Only the browser acceptance harness imports this built-artifact adapter; CMS startup still loads its own unchanged configuration.",
+      because:
+        "Only the browser acceptance harness imports this built-artifact adapter; CMS startup still loads its own unchanged configuration.",
       evidence: "apps/admin/src/cms/start-cms.ts:3",
     },
   ],
-  rootCause: "Acceptance derives navigation targets from a real built artifact, so its Node reader and YAML parser need one confined adapter.",
+  rootCause:
+    "Acceptance derives navigation targets from a real built artifact, so its Node reader and YAML parser need one confined adapter.",
   rootEvidence: "__tests__/admin-cms-browser/built-targets.ts:12 still reads config.yml today.",
-  readback: "The adapter is confined, therefore built-targets.ts imports the Node file reader and YAML parser.",
+  readback:
+    "The adapter is confined, therefore built-targets.ts imports the Node file reader and YAML parser.",
   owner: "Helen",
 };
 
-const at = (...path: readonly (string | number)[]): { readonly path: readonly (string | number)[] } => ({ path });
+const at = (
+  ...path: readonly (string | number)[]
+): { readonly path: readonly (string | number)[] } => ({ path });
 
 const refusedAt = (
   ...issues: readonly { readonly path: readonly (string | number)[] }[]
-): { readonly success: false; readonly error: { readonly issues: readonly { readonly path: readonly (string | number)[] }[] } } => ({
+): {
+  readonly success: false;
+  readonly error: { readonly issues: readonly { readonly path: readonly (string | number)[] }[] };
+} => ({
   success: false,
   error: { issues },
 });
@@ -95,7 +115,10 @@ const withWhy = (request: {
 
 describe("whyChainSchema accepts a chain that runs cause to cause", () => {
   it("accepts five linked whys, a root, its check and a readback", () => {
-    expect(whyChainSchema.safeParse(CAUSAL_WHY_CHAIN)).toEqual({ success: true, data: CAUSAL_WHY_CHAIN });
+    expect(whyChainSchema.safeParse(CAUSAL_WHY_CHAIN)).toEqual({
+      success: true,
+      data: CAUSAL_WHY_CHAIN,
+    });
   });
 
   it("parses the chain to the same values", () => {
@@ -113,7 +136,12 @@ describe("whyChainSchema accepts a chain that runs cause to cause", () => {
     ["a dotfile", "the repository .gitignore lists it"],
     ["a path holding a lookalike", "the index at src/n/a.ts module"],
   ])("accepts evidence that is %s", (_label, evidence) => {
-    const chain = withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "evidence", text: evidence });
+    const chain = withWhy({
+      chain: CAUSAL_WHY_CHAIN,
+      position: 2,
+      field: "evidence",
+      text: evidence,
+    });
     expect(whyChainSchema.safeParse(chain)).toEqual({ success: true, data: chain });
   });
 });
@@ -128,7 +156,12 @@ describe("whyChainSchema refuses a chain that lists objections instead of causes
   it("refuses a why that names only the symptom's own subject", () => {
     expect(
       whyChainSchema.safeParse(
-        withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "why", text: "Why does the audit refuse these names at all?" }),
+        withWhy({
+          chain: CAUSAL_WHY_CHAIN,
+          position: 2,
+          field: "why",
+          text: "Why does the audit refuse these names at all?",
+        }),
       ),
     ).toMatchObject(refusedAt(at("whys", 2, "why")));
   });
@@ -136,22 +169,40 @@ describe("whyChainSchema refuses a chain that lists objections instead of causes
   it("reports a third why that asks nothing about the second answer's cause", () => {
     expect(
       causalProblemsOf({
-        chain: withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "why", text: "Why is that enough?" }),
+        chain: withWhy({
+          chain: CAUSAL_WHY_CHAIN,
+          position: 2,
+          field: "why",
+          text: "Why is that enough?",
+        }),
       }),
     ).toMatchObject([
-      { path: ["whys", 2, "why"], message: expect.stringContaining("does not ask about the cause why 2's answer gave") },
+      {
+        path: ["whys", 2, "why"],
+        message: expect.stringContaining("does not ask about the cause why 2's answer gave"),
+      },
     ]);
   });
 
   it("refuses a why that names its subject only by pronoun", () => {
     expect(
-      whyChainSchema.safeParse(withWhy({ chain: CAUSAL_WHY_CHAIN, position: 1, field: "why", text: "Why is that the case?" })),
+      whyChainSchema.safeParse(
+        withWhy({
+          chain: CAUSAL_WHY_CHAIN,
+          position: 1,
+          field: "why",
+          text: "Why is that the case?",
+        }),
+      ),
     ).toMatchObject(refusedAt(at("whys", 1, "why")));
   });
 
   it("refuses a root cause that names nothing the fifth answer introduced", () => {
     expect(
-      whyChainSchema.safeParse({ ...CAUSAL_WHY_CHAIN, rootCause: "The audit refuses tracker ids in carve-out names by design." }),
+      whyChainSchema.safeParse({
+        ...CAUSAL_WHY_CHAIN,
+        rootCause: "The audit refuses tracker ids in carve-out names by design.",
+      }),
     ).toMatchObject(refusedAt(at("rootCause")));
   });
 });
@@ -173,12 +224,14 @@ describe("causalProblemsOf refuses the objection lists the Gate 1 and 3 pilot re
       },
       {
         why: "Why can the lead not correct them?",
-        because: "Because Step 6 says the scribe preserves each lens's reported location and requests that lens's own supplement",
+        because:
+          "Because Step 6 says the scribe preserves each lens's reported location and requests that lens's own supplement",
         evidence: "decorrelated-review.md:118",
       },
       {
         why: "Why does that leave the findings answerable?",
-        because: "Because each finding also names its case id, C-79 and C-77, which resolve uniquely",
+        because:
+          "Because each finding also names its case id, C-79 and C-77, which resolve uniquely",
         evidence: "decisions.md C-77",
       },
       {
@@ -212,7 +265,8 @@ describe("causalProblemsOf refuses the objection lists the Gate 1 and 3 pilot re
       },
       {
         why: "Why not make it consistent with FR-4 anyway?",
-        because: "Because consistency with another requirement is not a reason under PD-1 condition 1",
+        because:
+          "Because consistency with another requirement is not a reason under PD-1 condition 1",
         evidence: "pd-001 condition 1",
       },
       PADDING_ROOT,
@@ -319,7 +373,12 @@ describe("whyChainSchema refuses a why that links only by pronoun or preposition
 
   it("refuses links through negative contractions", () => {
     expect(whyChainSchema.safeParse(CONTRACTION_LINKS)).toMatchObject(
-      refusedAt(at("whys", 1, "why"), at("whys", 2, "why"), at("whys", 3, "why"), at("whys", 4, "why")),
+      refusedAt(
+        at("whys", 1, "why"),
+        at("whys", 2, "why"),
+        at("whys", 3, "why"),
+        at("whys", 4, "why"),
+      ),
     );
   });
 });
@@ -327,7 +386,9 @@ describe("whyChainSchema refuses a why that links only by pronoun or preposition
 describe("whyChainSchema refuses a first why that names no symptom", () => {
   it("refuses a first why made only of function words", () => {
     expect(
-      whyChainSchema.safeParse(withWhy({ chain: CAUSAL_WHY_CHAIN, position: 0, field: "why", text: "Why is this here?" })),
+      whyChainSchema.safeParse(
+        withWhy({ chain: CAUSAL_WHY_CHAIN, position: 0, field: "why", text: "Why is this here?" }),
+      ),
     ).toMatchObject(refusedAt(at("whys", 0, "why")));
   });
 });
@@ -336,33 +397,39 @@ const RESTATED_REASON: WhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the matcher accept only lowercase slugs?",
-      because: "Its pattern allows lowercase slugs alone, so uppercase letters in tracker ids fail it.",
+      because:
+        "Its pattern allows lowercase slugs alone, so uppercase letters in tracker ids fail it.",
       evidence: "tools/audit/name-matcher.ts:15",
     },
     {
       why: "Why does the pattern allow lowercase alone?",
-      because: "The matcher was written to take lowercase slugs, which is why uppercase tracker letters fail.",
+      because:
+        "The matcher was written to take lowercase slugs, which is why uppercase tracker letters fail.",
       evidence: "tools/audit/name-matcher.ts:16",
     },
     {
       why: "Why was the matcher written to take lowercase?",
-      because: "Lowercase slugs are what the matcher pattern takes; uppercase ids are refused by it.",
+      because:
+        "Lowercase slugs are what the matcher pattern takes; uppercase ids are refused by it.",
       evidence: "tools/audit/name-matcher.ts:17",
     },
     {
       why: "Why are uppercase ids refused by the pattern?",
-      because: "The pattern only matches lowercase slug letters, so uppercase tracker ids never match.",
+      because:
+        "The pattern only matches lowercase slug letters, so uppercase tracker ids never match.",
       evidence: "tools/audit/name-matcher.ts:18",
     },
   ],
   rootCause: "The pattern only matches lowercase slug letters.",
   rootEvidence: "tools/audit/name-matcher.ts:14 still holds the lowercase pattern today.",
-  readback: "The pattern matches only lowercase slugs, therefore the audit refuses tracker ids in carve-out names.",
+  readback:
+    "The pattern matches only lowercase slugs, therefore the audit refuses tracker ids in carve-out names.",
   owner: "Helen",
 };
 
@@ -402,7 +469,9 @@ describe("whyChainSchema refuses evidence that cannot be checked again", () => {
     ["an a.k.a. abbreviation", "a.k.a. the legacy factory"],
   ])("refuses %s", (_label, evidence) => {
     expect(
-      whyChainSchema.safeParse(withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "evidence", text: evidence })),
+      whyChainSchema.safeParse(
+        withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "evidence", text: evidence }),
+      ),
     ).toMatchObject(refusedAt(at("whys", 2, "evidence")));
   });
 });
@@ -410,16 +479,27 @@ describe("whyChainSchema refuses evidence that cannot be checked again", () => {
 describe("whyChainSchema names the right remedy for evidence", () => {
   it("asks for real evidence, not a locator, when the evidence is located but too short", () => {
     expect(
-      whyChainSchema.safeParse(withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "evidence", text: "PR #212" })),
-    ).toMatchObject({ error: { issues: [{ message: expect.stringContaining("carries no real `evidence`") }] } });
+      whyChainSchema.safeParse(
+        withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "evidence", text: "PR #212" }),
+      ),
+    ).toMatchObject({
+      error: { issues: [{ message: expect.stringContaining("carries no real `evidence`") }] },
+    });
   });
 
   it("asks for a locator when the evidence is long enough but cites nothing checkable", () => {
     expect(
       whyChainSchema.safeParse(
-        withWhy({ chain: CAUSAL_WHY_CHAIN, position: 2, field: "evidence", text: "the redirects documentation" }),
+        withWhy({
+          chain: CAUSAL_WHY_CHAIN,
+          position: 2,
+          field: "evidence",
+          text: "the redirects documentation",
+        }),
       ),
-    ).toMatchObject({ error: { issues: [{ message: expect.stringContaining("carries no checkable `evidence`") }] } });
+    ).toMatchObject({
+      error: { issues: [{ message: expect.stringContaining("carries no checkable `evidence`") }] },
+    });
   });
 });
 
@@ -429,7 +509,10 @@ describe("whyChainSchema links through a plural and its singular", () => {
     const chain: WhyChain = {
       ...CAUSAL_WHY_CHAIN,
       whys: [
-        { ...first, because: "Each finding becomes one string, and tracker ids carry uppercase letters." },
+        {
+          ...first,
+          because: "Each finding becomes one string, and tracker ids carry uppercase letters.",
+        },
         { ...second, why: "Why does each of the findings become strings?" },
         third,
         fourth,
@@ -445,7 +528,10 @@ describe("whyChainSchema links through a plural and its singular", () => {
 describe("whyChainSchema refuses a root that is not checked against today", () => {
   it.each([
     ["no root check", (({ rootEvidence: _, ...rest }) => rest)(CAUSAL_WHY_CHAIN)],
-    ["a root check with nothing to check", { ...CAUSAL_WHY_CHAIN, rootEvidence: "the monorepo move is still incomplete today" }],
+    [
+      "a root check with nothing to check",
+      { ...CAUSAL_WHY_CHAIN, rootEvidence: "the monorepo move is still incomplete today" },
+    ],
   ])("refuses %s", (_label, chain) => {
     expect(whyChainSchema.safeParse(chain)).toMatchObject(refusedAt(at("rootEvidence")));
   });
@@ -456,15 +542,26 @@ describe("whyChainSchema refuses a readback that does not name the root and the 
     ["no readback", (({ readback: _, ...rest }) => rest)(CAUSAL_WHY_CHAIN)],
     [
       "a readback with no therefore",
-      { ...CAUSAL_WHY_CHAIN, readback: "Older tools carry pre-monorepo patterns, so the audit refuses tracker ids in carve-out names." },
+      {
+        ...CAUSAL_WHY_CHAIN,
+        readback:
+          "Older tools carry pre-monorepo patterns, so the audit refuses tracker ids in carve-out names.",
+      },
     ],
     [
       "a readback that never names the symptom",
-      { ...CAUSAL_WHY_CHAIN, readback: "Older tools carry pre-monorepo patterns, therefore the matcher is lowercase." },
+      {
+        ...CAUSAL_WHY_CHAIN,
+        readback: "Older tools carry pre-monorepo patterns, therefore the matcher is lowercase.",
+      },
     ],
     [
       "a readback that never names the root",
-      { ...CAUSAL_WHY_CHAIN, readback: "The matcher is lowercase, therefore the audit refuses tracker ids in carve-out names." },
+      {
+        ...CAUSAL_WHY_CHAIN,
+        readback:
+          "The matcher is lowercase, therefore the audit refuses tracker ids in carve-out names.",
+      },
     ],
   ])("refuses %s", (_label, chain) => {
     expect(whyChainSchema.safeParse(chain)).toMatchObject(refusedAt(at("readback")));
@@ -477,8 +574,14 @@ describe("whyChainSchema keeps the five-why floor", () => {
   it.each([
     ["four whys", { ...CAUSAL_WHY_CHAIN, whys: [FIRST, SECOND, THIRD, FOURTH] }],
     ["six whys", { ...CAUSAL_WHY_CHAIN, whys: [FIRST, SECOND, THIRD, FOURTH, FIFTH, FIFTH] }],
-    ["a placeholder answer", withWhy({ chain: CAUSAL_WHY_CHAIN, position: 1, field: "because", text: "tbd" })],
-    ["a root that restates the exception", { ...CAUSAL_WHY_CHAIN, rootCause: "there was no time to pay the monorepo debt down" }],
+    [
+      "a placeholder answer",
+      withWhy({ chain: CAUSAL_WHY_CHAIN, position: 1, field: "because", text: "tbd" }),
+    ],
+    [
+      "a root that restates the exception",
+      { ...CAUSAL_WHY_CHAIN, rootCause: "there was no time to pay the monorepo debt down" },
+    ],
     ["no owner", (({ owner: _, ...rest }) => rest)(CAUSAL_WHY_CHAIN)],
   ])("refuses %s", (_label, chain) => {
     expect(whyChainSchema.safeParse(chain).success).toBe(false);

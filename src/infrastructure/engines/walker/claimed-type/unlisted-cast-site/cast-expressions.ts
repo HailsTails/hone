@@ -1,6 +1,12 @@
-import { anyBearingOf, assertionOf, type CastShape, castShapeOf, castSnippetAt } from "../../runner/pieces/cast-shape.ts";
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
+import {
+  anyBearingOf,
+  assertionOf,
+  type CastShape,
+  castShapeOf,
+  castSnippetAt,
+} from "../../runner/pieces/cast-shape.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const THROUGH_UNKNOWN_MESSAGE = "cast through unknown — check the value's shape at runtime instead";
 
@@ -10,8 +16,13 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
   return "eligible";
 };
 
-const reportedSnippet = (request: { readonly shape: CastShape; readonly snippet: string }): string =>
-  request.shape === "through-unknown" ? `${THROUGH_UNKNOWN_MESSAGE}: ${request.snippet}` : request.snippet;
+const reportedSnippet = (request: {
+  readonly shape: CastShape;
+  readonly snippet: string;
+}): string =>
+  request.shape === "through-unknown"
+    ? `${THROUGH_UNKNOWN_MESSAGE}: ${request.snippet}`
+    : request.snippet;
 
 export const check: WalkerPiece = {
   prepare: ({ clauses, syntaxApi }) => ({
@@ -31,13 +42,19 @@ export const check: WalkerPiece = {
                 enter: ({ node }) => {
                   const assertion = assertionOf({ node, syntaxApi });
                   if (assertion === undefined) return;
-                  if (anyBearingOf({ typeNode: assertion.type, syntaxApi }) === "any-bearing") return;
+                  if (anyBearingOf({ typeNode: assertion.type, syntaxApi }) === "any-bearing")
+                    return;
                   const shape = castShapeOf({ assertion, syntaxApi });
                   if (shape === "const-assertion") return;
                   const position = node.getStart(sourceFile);
-                  const snippet = reportedSnippet({ shape, snippet: castSnippetAt({ sourceFile, position }) });
+                  const snippet = reportedSnippet({
+                    shape,
+                    snippet: castSnippetAt({ sourceFile, position }),
+                  });
                   const anchor = anchorAt({ position });
-                  hits.push(...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })));
+                  hits.push(
+                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                  );
                 },
                 finish: () => hits,
               };

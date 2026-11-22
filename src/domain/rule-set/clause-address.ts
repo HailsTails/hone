@@ -12,7 +12,9 @@ export type ClauseAddressParts = {
 
 const CLAUSE_ADDRESS_TEXT = /^(?:(?<ruleSet>[^/#]+)\/)?(?<discipline>[^/#]+)#(?<clause>[^/#]+)$/;
 
-export const clauseAddressPartsOf = (request: { readonly text: string }): ClauseAddressParts | "not-a-clause-address" => {
+export const clauseAddressPartsOf = (request: {
+  readonly text: string;
+}): ClauseAddressParts | "not-a-clause-address" => {
   const parts = CLAUSE_ADDRESS_TEXT.exec(request.text)?.groups;
   const discipline = parts?.discipline;
   const clause = parts?.clause;
@@ -20,20 +22,29 @@ export const clauseAddressPartsOf = (request: { readonly text: string }): Clause
     return "not-a-clause-address";
   }
   return {
-    ruleSet: parts?.ruleSet === undefined || parts.ruleSet === TOOL_RULE_SET ? TOOL_RULE_SET : { name: parts.ruleSet },
+    ruleSet:
+      parts?.ruleSet === undefined || parts.ruleSet === TOOL_RULE_SET
+        ? TOOL_RULE_SET
+        : { name: parts.ruleSet },
     discipline,
     clause,
   };
 };
 
-const ruleSetOf = (request: { readonly ruleSet: ClauseAddressParts["ruleSet"] }): ClauseAddress["ruleSet"] | undefined => {
+const ruleSetOf = (request: {
+  readonly ruleSet: ClauseAddressParts["ruleSet"];
+}): ClauseAddress["ruleSet"] | undefined => {
   if (request.ruleSet === TOOL_RULE_SET) {
     return TOOL_RULE_SET;
   }
-  return isRuleSetName(request.ruleSet.name) && request.ruleSet.name !== TOOL_RULE_SET ? { name: request.ruleSet.name } : undefined;
+  return isRuleSetName(request.ruleSet.name) && request.ruleSet.name !== TOOL_RULE_SET
+    ? { name: request.ruleSet.name }
+    : undefined;
 };
 
-export const clauseAddressOf = (request: { readonly text: string }): ClauseAddress | "not-a-clause-address" => {
+export const clauseAddressOf = (request: {
+  readonly text: string;
+}): ClauseAddress | "not-a-clause-address" => {
   const parts = clauseAddressPartsOf(request);
   if (parts === "not-a-clause-address") {
     return parts;
@@ -44,9 +55,7 @@ export const clauseAddressOf = (request: { readonly text: string }): ClauseAddre
     : "not-a-clause-address";
 };
 
-export const clauseAddressText = (request: {
-  readonly address: ClauseAddress;
-}): string =>
+export const clauseAddressText = (request: { readonly address: ClauseAddress }): string =>
   request.address.ruleSet === TOOL_RULE_SET
     ? `${request.address.discipline}#${request.address.clause}`
     : `${request.address.ruleSet.name}/${request.address.discipline}#${request.address.clause}`;

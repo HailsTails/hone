@@ -1,23 +1,27 @@
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
-import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { pieceFilePath } from "../content-files/rule-sets/rule-set-reader.ts";
-import { readHeldDiscipline } from "../content-files/rule-sets/held-discipline.ts";
-import { readLocatedPieceFile } from "../content-files/rule-sets/located-piece-file.ts";
-import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
-import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
+import type {
+  PieceClause,
+  SettingsDocument,
+  SettingsSources,
+} from "../../application/ports/settings-sources.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../domain/result.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import { runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
-import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
-import { parsedJson } from "../content-files/parsed-json.ts";
-import type { Result } from "../../domain/result.ts";
-import type { PieceClause, SettingsDocument, SettingsSources } from "../../application/ports/settings-sources.ts";
-import { ruleSetRootOf } from "./rule-set-root.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
+import { parsedJson } from "../content-files/parsed-json.ts";
+import { readHeldDiscipline } from "../content-files/rule-sets/held-discipline.ts";
+import { readLocatedPieceFile } from "../content-files/rule-sets/located-piece-file.ts";
+import { pieceFilePath } from "../content-files/rule-sets/rule-set-reader.ts";
+import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
+import { runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
+import { ruleSetRootOf } from "./rule-set-root.ts";
 
 type SourcesOptions = {
   readonly fileText: FileTextPort;
@@ -28,13 +32,27 @@ type SourcesOptions = {
   readonly moduleExtension: ModuleExtension;
 };
 
-type PieceRequest = SourcesOptions & { readonly ruleSetRoot: AbsolutePath; readonly clause: ClauseAddress; readonly mechanism: EngineId };
+type PieceRequest = SourcesOptions & {
+  readonly ruleSetRoot: AbsolutePath;
+  readonly clause: ClauseAddress;
+  readonly mechanism: EngineId;
+};
 
-type MechanicalDefinition = Extract<DisciplineFile["clauses"][number], { readonly kind: "mechanical" }>;
+type MechanicalDefinition = Extract<
+  DisciplineFile["clauses"][number],
+  { readonly kind: "mechanical" }
+>;
 
-const failed = (error: VersionTwoLoadFailure): { readonly outcome: "failed"; readonly error: VersionTwoLoadFailure } => ({ outcome: "failed", error });
+const failed = (
+  error: VersionTwoLoadFailure,
+): { readonly outcome: "failed"; readonly error: VersionTwoLoadFailure } => ({
+  outcome: "failed",
+  error,
+});
 
-const settingsDocumentOf = (request: SourcesOptions): Result<SettingsDocument, VersionTwoLoadFailure> => {
+const settingsDocumentOf = (
+  request: SourcesOptions,
+): Result<SettingsDocument, VersionTwoLoadFailure> => {
   const path = request.path.join({ segments: [request.repoRoot, SETTINGS_FILE_NAME] });
   if (request.fileText.exists({ path }) === "absent") {
     return failed({ kind: "selection-absent", repo: request.repoRoot });
@@ -49,9 +67,20 @@ const settingsDocumentOf = (request: SourcesOptions): Result<SettingsDocument, V
     : { outcome: "ok", value: { path, document: document.value } };
 };
 
-const mechanicalDefinitionOf = (request: PieceRequest): Result<{ readonly discipline: DisciplineFile; readonly definition: MechanicalDefinition }, VersionTwoLoadFailure> => {
+const mechanicalDefinitionOf = (
+  request: PieceRequest,
+): Result<
+  { readonly discipline: DisciplineFile; readonly definition: MechanicalDefinition },
+  VersionTwoLoadFailure
+> => {
   const address = clauseAddressText({ address: request.clause });
-  const held = readHeldDiscipline({ fileText: request.fileText, path: request.path, ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.clause.discipline });
+  const held = readHeldDiscipline({
+    fileText: request.fileText,
+    path: request.path,
+    ruleSetRoot: request.ruleSetRoot,
+    installRoot: request.installRoot,
+    discipline: request.clause.discipline,
+  });
   if (held.outcome === "failed") {
     return held;
   }
@@ -78,7 +107,11 @@ const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoa
     return defined;
   }
   const runnerPath = request.path.join({
-    segments: runnerModuleSegmentsOf({ installRoot: request.installRoot, mechanism: request.mechanism, moduleExtension: request.moduleExtension }),
+    segments: runnerModuleSegmentsOf({
+      installRoot: request.installRoot,
+      mechanism: request.mechanism,
+      moduleExtension: request.moduleExtension,
+    }),
   });
   if (request.fileText.exists({ path: runnerPath }) === "absent") {
     return failed({ kind: "runner-missing", mechanism: request.mechanism });
@@ -91,10 +124,17 @@ const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoa
     discipline: request.clause.discipline,
     mechanism: request.mechanism,
   };
-  if (request.ruleSetRoot !== request.installRoot && request.fileText.exists({ path: pieceFilePath(location) }) === "absent") {
+  if (
+    request.ruleSetRoot !== request.installRoot &&
+    request.fileText.exists({ path: pieceFilePath(location) }) === "absent"
+  ) {
     return failed({ kind: "piece-missing", address, mechanism: request.mechanism });
   }
-  const piece = readLocatedPieceFile({ ...location, fileText: request.fileText, discipline: defined.value.discipline });
+  const piece = readLocatedPieceFile({
+    ...location,
+    fileText: request.fileText,
+    discipline: defined.value.discipline,
+  });
   if (piece.outcome === "failed") {
     return piece;
   }
@@ -118,7 +158,20 @@ const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoa
 export const createSettingsSources = (options: SourcesOptions): SettingsSources => ({
   settingsFile: (_request) => settingsDocumentOf(options),
   ruleSetRoot: (request) =>
-    ruleSetRootOf({ ruleSet: request.ruleSet, ruleSets: request.ruleSets, repoRoot: options.repoRoot, installRoot: options.installRoot, path: options.path }),
-  catalogue: (request) => readBoundCatalogue({ fileText: options.fileText, directory: options.directory, path: options.path, ruleSetRoot: request.ruleSetRoot, installRoot: options.installRoot }),
+    ruleSetRootOf({
+      ruleSet: request.ruleSet,
+      ruleSets: request.ruleSets,
+      repoRoot: options.repoRoot,
+      installRoot: options.installRoot,
+      path: options.path,
+    }),
+  catalogue: (request) =>
+    readBoundCatalogue({
+      fileText: options.fileText,
+      directory: options.directory,
+      path: options.path,
+      ruleSetRoot: request.ruleSetRoot,
+      installRoot: options.installRoot,
+    }),
   pieceClause: (request) => pieceClauseOf({ ...options, ...request }),
 });

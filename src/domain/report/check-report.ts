@@ -1,12 +1,15 @@
-import type { ExceptionRecord, InvalidRecord } from "../records/discipline-exceptions/exception-record.ts";
 import type { AttributedNativeException, Finding } from "../finding/governance.ts";
+import type {
+  ExceptionRecord,
+  InvalidRecord,
+} from "../records/discipline-exceptions/exception-record.ts";
 import type { DoublyHeld, ExemptedFinding } from "../records/discipline-exceptions/governance.ts";
-import type { FilePresence } from "../repository/file-presence.ts";
 import type { BaseRevisionAvailability } from "../repository/base-revision-availability.ts";
+import type { FilePresence } from "../repository/file-presence.ts";
+import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import type { ClauseEditionReading } from "../rule-set/edition-types.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
-import type { RepoPath } from "../repository/repo-path-types.ts";
 
 export type Unmeasured =
   | {

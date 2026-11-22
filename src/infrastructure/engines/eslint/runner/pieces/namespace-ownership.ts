@@ -5,7 +5,10 @@ const NAMESPACE_SEPARATOR = "-";
 
 type NamespaceClaim = "claimed" | "unclaimed";
 
-const claimOf = (request: { readonly owner: string; readonly pluginNamespace: string }): NamespaceClaim =>
+const claimOf = (request: {
+  readonly owner: string;
+  readonly pluginNamespace: string;
+}): NamespaceClaim =>
   request.pluginNamespace === request.owner ||
   request.pluginNamespace.startsWith(`${request.owner}${NAMESPACE_SEPARATOR}`)
     ? "claimed"
@@ -20,7 +23,10 @@ export const namespaceOwnershipRefusal = (request: {
   }
   const ruleSetName = request.address.ruleSet.name;
   const permitted = `${ruleSetName} or ${ruleSetName}${NAMESPACE_SEPARATOR}<name>`;
-  if (claimOf({ owner: TOOL_IDENTITY.ownRuleSet, pluginNamespace: request.pluginNamespace }) === "claimed") {
+  if (
+    claimOf({ owner: TOOL_IDENTITY.ownRuleSet, pluginNamespace: request.pluginNamespace }) ===
+    "claimed"
+  ) {
     return `the plugin namespace ${request.pluginNamespace} belongs to ${TOOL_IDENTITY.name}; the rule set ${ruleSetName} must use ${permitted}`;
   }
   return claimOf({ owner: ruleSetName, pluginNamespace: request.pluginNamespace }) === "claimed"

@@ -1,4 +1,3 @@
-import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { RepositoryLocated } from "../../application/ports/command/repository-located.ts";
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../../application/ports/file-system/directory-removal-port.ts";
@@ -6,19 +5,30 @@ import type { EntryKindPort } from "../../application/ports/file-system/entry-ki
 import type { FileCreationPort } from "../../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import { moduleExtensionOf } from "../../application/ports/host/module-extension.ts";
-import type { RecordsOnDiskOf, VersionOneRead, VersionOneReadOf } from "../../application/ports/records/version-one-reading.ts";
+import type {
+  RecordsOnDiskOf,
+  VersionOneRead,
+  VersionOneReadOf,
+} from "../../application/ports/records/version-one-reading.ts";
 import type { LoadFailureDetail } from "../../application/ports/report/load-failure-detail.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
 import type { ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
+import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import { runProject } from "../../application/projection/run-project.ts";
 import { type CheckRequest, runCheck } from "../../application/run/check/run-check.ts";
 import { type VersionTwoStages, versionTwoRunOver } from "../../application/run/version-two-run.ts";
-import { type PlannedProjectionPorts, plannedProjectionOf } from "../../application/upgrade/command/planned-projection.ts";
+import {
+  type PlannedProjectionPorts,
+  plannedProjectionOf,
+} from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
 import { foundTreeCheckReachOf } from "../../application/upgrade/found-tree/found-tree-reach.ts";
-import { type UpgradeProofRequest, upgradeProof } from "../../application/upgrade/proof/upgrade-proof.ts";
+import {
+  type UpgradeProofRequest,
+  upgradeProof,
+} from "../../application/upgrade/proof/upgrade-proof.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
 import { createVersionOneEnginePass } from "../../application/upgrade/record-answers/version-one-engine-pass.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
@@ -76,13 +86,22 @@ const checkRequestOf = (request: UpgradeInput): Result<CheckRequest, LoadFailure
       installRoot,
       moduleExtension,
       baseRevision: undefined,
-      assessment: assessmentInEffect({ requested: { forfeiture: undefined }, configured: configured.value.assessment }),
+      assessment: assessmentInEffect({
+        requested: { forfeiture: undefined },
+        configured: configured.value.assessment,
+      }),
       fileText,
       modules: command.modules,
       engine: command.engine,
       path,
       git: command.git,
-      selectionRepository: command.selectionRepositoryOf({ repoRoot, installRoot, moduleExtension, fileText, path }),
+      selectionRepository: command.selectionRepositoryOf({
+        repoRoot,
+        installRoot,
+        moduleExtension,
+        fileText,
+        path,
+      }),
       exceptionRepository: command.exceptionRepositoryOf({ repoRoot }),
       exceptionEntryParser: command.exceptionEntryParser,
       shownPathOf: command.shownPathOfRepository({ path, fileText, repoRoot, installRoot }),
@@ -98,7 +117,9 @@ const preparedOf = (request: UpgradeInput): Result<Prepared, UpgradeStop> => {
   }
   const tracked = command.git.trackedPaths({ repoRoot: located.repoRoot });
   if (tracked.outcome === "failed") {
-    return stoppedByLoad({ failure: { kind: "git-failed", detail: `${tracked.error.command}: ${tracked.error.detail}` } });
+    return stoppedByLoad({
+      failure: { kind: "git-failed", detail: `${tracked.error.command}: ${tracked.error.detail}` },
+    });
   }
   const catalogues = request.catalogues();
   if (catalogues.outcome === "failed") {
@@ -116,10 +137,20 @@ const preparedOf = (request: UpgradeInput): Result<Prepared, UpgradeStop> => {
   });
   return read.outcome === "failed"
     ? { outcome: "failed", error: { stopped: "refused", failure: read.error } }
-    : { outcome: "ok", value: { check: check.value, read: read.value, catalogues: catalogues.value, trackedPaths: tracked.value } };
+    : {
+        outcome: "ok",
+        value: {
+          check: check.value,
+          read: read.value,
+          catalogues: catalogues.value,
+          trackedPaths: tracked.value,
+        },
+      };
 };
 
-const proofRequestOf = (request: UpgradeInput & { readonly prepared: Prepared }): UpgradeProofRequest => {
+const proofRequestOf = (
+  request: UpgradeInput & { readonly prepared: Prepared },
+): UpgradeProofRequest => {
   const { ports, command, located, prepared } = request;
   return {
     ports: {
@@ -131,13 +162,30 @@ const proofRequestOf = (request: UpgradeInput & { readonly prepared: Prepared })
       entryKind: ports.entryKind,
       path: command.path,
     },
-    oracle: createAnsweringOracle({ enginePass: createVersionOneEnginePass({ check: prepared.check, loadFailureDetail: ports.loadFailureDetail }), catalogues: prepared.catalogues }),
+    oracle: createAnsweringOracle({
+      enginePass: createVersionOneEnginePass({
+        check: prepared.check,
+        loadFailureDetail: ports.loadFailureDetail,
+      }),
+      catalogues: prepared.catalogues,
+    }),
     runs: request.proofRunsOf({
-      versionOne: () => runCheck({ ...prepared.check, ...foundTreeCheckReachOf({ check: prepared.check, loadFailureDetail: ports.loadFailureDetail }) }),
+      versionOne: () =>
+        runCheck({
+          ...prepared.check,
+          ...foundTreeCheckReachOf({
+            check: prepared.check,
+            loadFailureDetail: ports.loadFailureDetail,
+          }),
+        }),
       versionTwo: () =>
         versionTwoRunOver({
           stages: request.foundTreeStages(),
-          arguments: { forfeiture: undefined, reportOutput: undefined, measuring: "when-debt-held" },
+          arguments: {
+            forfeiture: undefined,
+            reportOutput: undefined,
+            measuring: "when-debt-held",
+          },
         }),
     }),
     reading: prepared.read.reading,
@@ -168,11 +216,15 @@ const proofRequestOf = (request: UpgradeInput & { readonly prepared: Prepared })
   };
 };
 
-export const upgradeOf = async (request: UpgradeInput): Promise<Result<ProofCarriedOver, UpgradeStop>> => {
+export const upgradeOf = async (
+  request: UpgradeInput,
+): Promise<Result<ProofCarriedOver, UpgradeStop>> => {
   const prepared = preparedOf(request);
   if (prepared.outcome === "failed") {
     return prepared;
   }
   const carried = await upgradeProof(proofRequestOf({ ...request, prepared: prepared.value }));
-  return carried.outcome === "failed" ? { outcome: "failed", error: { stopped: "refused", failure: carried.error } } : carried;
+  return carried.outcome === "failed"
+    ? { outcome: "failed", error: { stopped: "refused", failure: carried.error } }
+    : carried;
 };

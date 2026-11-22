@@ -4,17 +4,13 @@
       "name": "runtime const export without sibling",
       "fileName": "src/price.ts",
       "source": "export const price = 1;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "function export without sibling",
       "fileName": "src/format.ts",
       "source": "export function format(): string {\n  return \"\";\n}\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

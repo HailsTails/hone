@@ -20,7 +20,7 @@ corepack pnpm run check
 corepack pnpm run self-check --base-revision origin/main
 ```
 
-`check` runs the type check, the linter and the tests. `self-check` runs Hone's own disciplines on this repository against the base revision.
+`check` runs the type check, the oxfmt formatting check and the tests; `format` writes the formatting. `self-check` runs Hone's own disciplines on this repository against the base revision.
 
 If you change how the package is built or what it ships, also run:
 

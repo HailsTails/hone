@@ -1,22 +1,23 @@
-import { z } from "zod";
 import type * as TypescriptParserModule from "@typescript-eslint/parser";
 import type { ESLint } from "eslint";
-import type { EslintMajorBoundary, NearestLookupOptions } from "./eslint-major-boundary.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
-import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
+import { z } from "zod";
+
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
-import { type RuleState, resolvedConfigSchema, ruleStateOf } from "./eslint-config-schema.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
+import { parseInlineConfigComment } from "../native-exceptions/inline-config-parser.ts";
+import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import {
   type InlineConfigNode,
   inlineConfigNodesSchema,
   type LoadedEslintPlugin,
 } from "../pieces/eslint-plugin-schema.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
-import { parseInlineConfigComment } from "../native-exceptions/inline-config-parser.ts";
+import { type RuleState, resolvedConfigSchema, ruleStateOf } from "./eslint-config-schema.ts";
+import type { EslintMajorBoundary, NearestLookupOptions } from "./eslint-major-boundary.ts";
 
 export type { AST, Rule, SourceCode } from "eslint";
 
@@ -137,11 +138,15 @@ export type ConfigFileSearch =
 
 const CONFIG_UNKNOWN: ConfigFileSearch = { kind: "unknown" };
 
-const searchedConfigFile = (request: { readonly found: Result<string | undefined, RunnerFailure> }): ConfigFileSearch => {
+const searchedConfigFile = (request: {
+  readonly found: Result<string | undefined, RunnerFailure>;
+}): ConfigFileSearch => {
   if (request.found.outcome === "failed") {
     return CONFIG_UNKNOWN;
   }
-  return request.found.value === undefined ? { kind: "none" } : { kind: "found", path: request.found.value };
+  return request.found.value === undefined
+    ? { kind: "none" }
+    : { kind: "found", path: request.found.value };
 };
 
 export type QueryInstance = {
@@ -218,14 +223,18 @@ const inlineConfigMessageId = (request: {
     case "disable": {
       if (
         parsed.ruleIds.length > 0 &&
-        selectionReach({ named: parsed.ruleIds, ruleIds: request.ruleIds }) === "names-no-selected-rule"
+        selectionReach({ named: parsed.ruleIds, ruleIds: request.ruleIds }) ===
+          "names-no-selected-rule"
       ) {
         return "not-reported";
       }
       return "inline-disable";
     }
     case "rule-config": {
-      if (selectionReach({ named: parsed.ruleIds, ruleIds: request.ruleIds }) === "names-no-selected-rule") {
+      if (
+        selectionReach({ named: parsed.ruleIds, ruleIds: request.ruleIds }) ===
+        "names-no-selected-rule"
+      ) {
         return "not-reported";
       }
       return "inline-rule-config";
@@ -242,7 +251,10 @@ const reportedComment = (request: {
   readonly comment: InlineConfigNode;
   readonly ruleIds: readonly string[];
 }): void => {
-  const messageId = inlineConfigMessageId({ text: request.comment.value, ruleIds: request.ruleIds });
+  const messageId = inlineConfigMessageId({
+    text: request.comment.value,
+    ruleIds: request.ruleIds,
+  });
   if (messageId === "not-reported") {
     return;
   }
@@ -258,7 +270,9 @@ const reportedProgram = (request: {
   readonly programNode: unknown;
   readonly ruleIds: readonly string[];
 }): void => {
-  const configNodes = inlineConfigNodesSchema.safeParse(request.context.sourceCode.getInlineConfigNodes?.());
+  const configNodes = inlineConfigNodesSchema.safeParse(
+    request.context.sourceCode.getInlineConfigNodes?.(),
+  );
   if (!configNodes.success) {
     request.context.report({ node: request.programNode, messageId: INLINE_CONFIG_UNREADABLE });
     return;
@@ -268,7 +282,9 @@ const reportedProgram = (request: {
   });
 };
 
-const inlineConfigPlugin = (request: { readonly ruleIds: readonly string[] }): InlineConfigPlugin => ({
+const inlineConfigPlugin = (request: {
+  readonly ruleIds: readonly string[];
+}): InlineConfigPlugin => ({
   rules: {
     [INLINE_CONFIG_RULE]: {
       meta: {
@@ -281,7 +297,8 @@ const inlineConfigPlugin = (request: { readonly ruleIds: readonly string[] }): I
         },
       },
       create: (context) => ({
-        [WHOLE_FILE_LISTENER]: (programNode) => reportedProgram({ context, programNode, ruleIds: request.ruleIds }),
+        [WHOLE_FILE_LISTENER]: (programNode) =>
+          reportedProgram({ context, programNode, ruleIds: request.ruleIds }),
       }),
     },
   },
@@ -299,11 +316,16 @@ export const governanceConfig = (request: {
   languageOptions: { parser: request.parser },
   plugins: {
     ...request.plugins,
-    [reservedNamespace]: inlineConfigPlugin({ ruleIds: request.rules.map((governed) => governed.ruleId) }),
+    [reservedNamespace]: inlineConfigPlugin({
+      ruleIds: request.rules.map((governed) => governed.ruleId),
+    }),
   },
   rules: Object.fromEntries(
     [...request.rules, { ruleId: INLINE_CONFIG_RULE_ID, options: [] }].map(
-      (governed): [string, EnabledRuleEntry] => [governed.ruleId, enabledRuleEntry({ options: governed.options })],
+      (governed): [string, EnabledRuleEntry] => [
+        governed.ruleId,
+        enabledRuleEntry({ options: governed.options }),
+      ],
     ),
   ),
 });
@@ -318,7 +340,11 @@ const governanceOptions = (request: {
   overrideConfigFile: true,
   ignore: false,
   allowInlineConfig: false,
-  overrideConfig: governanceConfig({ plugins: request.plugins, rules: request.rules, parser: request.parser }),
+  overrideConfig: governanceConfig({
+    plugins: request.plugins,
+    rules: request.rules,
+    parser: request.parser,
+  }),
 });
 
 const thrownDetail = (thrown: unknown): string =>
@@ -350,7 +376,10 @@ const builtSurface = (request: {
 }): Promise<Result<EslintSurface, RunnerFailure>> =>
   Promise.resolve()
     .then(() => request.createEslint({ options: request.options }))
-    .then((surface): Result<EslintSurface, RunnerFailure> => ({ outcome: "ok", value: surface }), toolFailed);
+    .then(
+      (surface): Result<EslintSurface, RunnerFailure> => ({ outcome: "ok", value: surface }),
+      toolFailed,
+    );
 
 const actedOn = <T>(request: {
   readonly surface: EslintSurface;
@@ -359,7 +388,10 @@ const actedOn = <T>(request: {
 }): Promise<Result<T, RunnerFailure>> =>
   Promise.resolve()
     .then(() => request.act(request.surface))
-    .then((acted): Result<T, RunnerFailure> => ({ outcome: "ok", value: acted }), request.onRejected);
+    .then(
+      (acted): Result<T, RunnerFailure> => ({ outcome: "ok", value: acted }),
+      request.onRejected,
+    );
 
 const onSurface = <T>(request: {
   readonly surface: Promise<Result<EslintSurface, RunnerFailure>>;
@@ -372,7 +404,10 @@ const onSurface = <T>(request: {
       : actedOn({ surface: built.value, act: request.act, onRejected: request.onRejected }),
   );
 
-const ignoredStateOf = (request: { readonly eslint: EslintSurface; readonly file: string }): Promise<IgnoredState> =>
+const ignoredStateOf = (request: {
+  readonly eslint: EslintSurface;
+  readonly file: string;
+}): Promise<IgnoredState> =>
   request.eslint
     .isPathIgnored({ filePath: request.file })
     .then((ignored): IgnoredState => (ignored ? "ignored" : "checked"));
@@ -432,17 +467,26 @@ const lintedCasesOf = (request: {
   readonly eslint: EslintSurface;
   readonly cases: readonly SourceCase[];
 }): Promise<readonly LintedCase[]> =>
-  Promise.all(request.cases.map((sourceCase) => lintedCaseOf({ eslint: request.eslint, sourceCase })));
+  Promise.all(
+    request.cases.map((sourceCase) => lintedCaseOf({ eslint: request.eslint, sourceCase })),
+  );
 
-const unreadableCaseOf = (request: { readonly lintedCases: readonly LintedCase[] }): LintedCase | undefined =>
+const unreadableCaseOf = (request: {
+  readonly lintedCases: readonly LintedCase[];
+}): LintedCase | undefined =>
   request.lintedCases.find((lintedCase) =>
     lintedCase.messages.some(
-      (message) => message.ruleId === INLINE_CONFIG_RULE_ID && message.messageId === INLINE_CONFIG_UNREADABLE,
+      (message) =>
+        message.ruleId === INLINE_CONFIG_RULE_ID && message.messageId === INLINE_CONFIG_UNREADABLE,
     ),
   );
 
-const ruleLessCaseOf = (request: { readonly lintedCases: readonly LintedCase[] }): LintedCase | undefined =>
-  request.lintedCases.find((lintedCase) => lintedCase.messages.some((message) => message.ruleId === null));
+const ruleLessCaseOf = (request: {
+  readonly lintedCases: readonly LintedCase[];
+}): LintedCase | undefined =>
+  request.lintedCases.find((lintedCase) =>
+    lintedCase.messages.some((message) => message.ruleId === null),
+  );
 
 const ruleLessDetail = (request: { readonly lintedCase: LintedCase }): string =>
   `case ${request.lintedCase.caseName} was not linted as a rule source: ${request.lintedCase.messages
@@ -450,7 +494,10 @@ const ruleLessDetail = (request: { readonly lintedCase: LintedCase }): string =>
     .map((message) => message.message)
     .join("; ")}`;
 
-const caseVerdictOf = (request: { readonly lintedCase: LintedCase; readonly ruleId: string }): CaseVerdict => ({
+const caseVerdictOf = (request: {
+  readonly lintedCase: LintedCase;
+  readonly ruleId: string;
+}): CaseVerdict => ({
   caseName: request.lintedCase.caseName,
   flaggedLines: request.lintedCase.messages
     .filter((message) => message.ruleId === request.ruleId)
@@ -479,7 +526,10 @@ const caseVerdicts = (request: {
   if (ruleLessCase !== undefined) {
     return {
       outcome: "failed",
-      error: { kind: "runner-invalid-output", detail: ruleLessDetail({ lintedCase: ruleLessCase }) },
+      error: {
+        kind: "runner-invalid-output",
+        detail: ruleLessDetail({ lintedCase: ruleLessCase }),
+      },
     };
   }
   return {
@@ -537,14 +587,22 @@ export const createEslintPort = (options: { readonly toolchain: EslintToolchain 
     });
     return {
       lintFiles: (lint) =>
-        onSurface({ surface, act: (eslint) => eslint.lintFiles({ filePaths: lint.files }), onRejected: toolFailed }),
+        onSurface({
+          surface,
+          act: (eslint) => eslint.lintFiles({ filePaths: lint.files }),
+          onRejected: toolFailed,
+        }),
     };
   },
   ignoredByConfig: (request) =>
     onSurface({
       surface: builtSurface({
         createEslint: options.toolchain.createEslint,
-        options: { cwd: request.cwd, overrideConfigFile: request.configFile, matchedFiles: [request.path] },
+        options: {
+          cwd: request.cwd,
+          overrideConfigFile: request.configFile,
+          matchedFiles: [request.path],
+        },
       }),
       act: (eslint) => ignoredStateOf({ eslint, file: request.path }),
       onRejected: queryFailed,
@@ -553,7 +611,12 @@ export const createEslintPort = (options: { readonly toolchain: EslintToolchain 
     onSurface({
       surface: builtSurface({
         createEslint: options.toolchain.createEslint,
-        options: { cwd: request.cwd, overrideConfigFile: true, ignorePatterns: request.patterns, matchedFiles: request.paths },
+        options: {
+          cwd: request.cwd,
+          overrideConfigFile: true,
+          ignorePatterns: request.patterns,
+          matchedFiles: request.paths,
+        },
       }),
       act: (eslint) => Promise.all(request.paths.map((file) => ignoredStateOf({ eslint, file }))),
       onRejected: toolFailed,
@@ -561,7 +624,10 @@ export const createEslintPort = (options: { readonly toolchain: EslintToolchain 
   lintSourceCases: (request) => sourceCaseVerdicts({ ...request, toolchain: options.toolchain }),
 });
 
-type EslintEngine = Pick<ESLint, "isPathIgnored" | "calculateConfigForFile" | "lintFiles" | "lintText" | "findConfigFile">;
+type EslintEngine = Pick<
+  ESLint,
+  "isPathIgnored" | "calculateConfigForFile" | "lintFiles" | "lintText" | "findConfigFile"
+>;
 
 export type EslintClass = Pick<typeof ESLint, "version"> &
   (new (...options: ConstructorParameters<typeof ESLint>) => EslintEngine);
@@ -595,9 +661,14 @@ const overrideConfigOf = (request: {
   ),
 });
 
-const lookupOptionsOf = (request: { readonly nearestLookup: NearestLookupOptions; readonly options: EslintSurfaceOptions }): ESLint.Options => {
+const lookupOptionsOf = (request: {
+  readonly nearestLookup: NearestLookupOptions;
+  readonly options: EslintSurfaceOptions;
+}): ESLint.Options => {
   const { flags } = request.nearestLookup;
-  return request.options.overrideConfigFile === undefined && flags.length > 0 ? { flags: [...flags] } : {};
+  return request.options.overrideConfigFile === undefined && flags.length > 0
+    ? { flags: [...flags] }
+    : {};
 };
 
 export const eslintOptionsOf = (request: {
@@ -609,19 +680,31 @@ export const eslintOptionsOf = (request: {
     ...sharedOptions,
     ...lookupOptionsOf(request),
     ...(ignorePatterns === undefined ? {} : { ignorePatterns: [...ignorePatterns] }),
-    ...(overrideConfig === undefined ? {} : { overrideConfig: overrideConfigOf({ overrideConfig }) }),
+    ...(overrideConfig === undefined
+      ? {}
+      : { overrideConfig: overrideConfigOf({ overrideConfig }) }),
     ...(matchedFiles === undefined ? {} : { overrideConfig: { files: [...matchedFiles] } }),
   };
 };
 
-export const createEslintOn = (request: { readonly eslintClass: EslintClass; readonly boundary: EslintMajorBoundary }): CreateEslint => (create) => {
-  const eslint = new request.eslintClass(eslintOptionsOf({ nearestLookup: request.boundary.nearestLookup, options: create.options }));
-  return {
-    isPathIgnored: (query) => eslint.isPathIgnored(query.filePath),
-    calculateConfigForFile: (query) => eslint.calculateConfigForFile(query.filePath),
-    findConfigFile: (query) => eslint.findConfigFile(query.filePath),
-    lintFiles: (lint) => eslint.lintFiles([...lint.filePaths]).then((results) => results.map(lintedFileOf)),
-    lintText: (lint) =>
-      eslint.lintText(lint.code, { filePath: lint.filePath }).then((results) => results.map(lintedFileOf)),
+export const createEslintOn =
+  (request: {
+    readonly eslintClass: EslintClass;
+    readonly boundary: EslintMajorBoundary;
+  }): CreateEslint =>
+  (create) => {
+    const eslint = new request.eslintClass(
+      eslintOptionsOf({ nearestLookup: request.boundary.nearestLookup, options: create.options }),
+    );
+    return {
+      isPathIgnored: (query) => eslint.isPathIgnored(query.filePath),
+      calculateConfigForFile: (query) => eslint.calculateConfigForFile(query.filePath),
+      findConfigFile: (query) => eslint.findConfigFile(query.filePath),
+      lintFiles: (lint) =>
+        eslint.lintFiles([...lint.filePaths]).then((results) => results.map(lintedFileOf)),
+      lintText: (lint) =>
+        eslint
+          .lintText(lint.code, { filePath: lint.filePath })
+          .then((results) => results.map(lintedFileOf)),
+    };
   };
-};

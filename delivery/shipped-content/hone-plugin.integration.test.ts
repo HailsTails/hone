@@ -1,13 +1,17 @@
-import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { assert, describe, expect, it } from "vitest";
+
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import { checkOfRuleId, eslintRuleIdsOf } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
+import {
+  checkOfRuleId,
+  eslintRuleIdsOf,
+} from "../../src/infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
+import { honePluginAt } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/hone-plugin.ts";
+import type { EslintMajorBoundary } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts";
+import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import type { EslintMajorBoundary } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts";
-import { honePluginAt } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/hone-plugin.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
@@ -15,7 +19,9 @@ const SILENT_BOUNDARY: EslintMajorBoundary = {
   declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
 };
 
-const REPOSITORY_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }));
+const REPOSITORY_ROOT = absolutePathSchema.parse(
+  createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }),
+);
 
 const CATALOGUE_HOLDING = readBoundCatalogue({
   directory: createDefaultDirectoryPort({}),
@@ -42,27 +48,90 @@ const honePlugin = await honePluginAt({
   boundary: SILENT_BOUNDARY,
 });
 
-const ESLINT_CHECKS: readonly { readonly ruleId: string; readonly symptom: string; readonly check: string }[] = [
+const ESLINT_CHECKS: readonly {
+  readonly ruleId: string;
+  readonly symptom: string;
+  readonly check: string;
+}[] = [
   { ruleId: "hone/untyped-value#explicit-any", symptom: "untyped-value", check: "explicit-any" },
-  { ruleId: "hone/untyped-value#implicit-any-let", symptom: "untyped-value", check: "implicit-any-let" },
-  { ruleId: "hone/claimed-type#non-null-assertions", symptom: "claimed-type", check: "non-null-assertions" },
-  { ruleId: "hone/name-off-its-casing#naming-convention", symptom: "name-off-its-casing", check: "naming-convention" },
-  { ruleId: "hone/name-off-its-casing#filename-case", symptom: "name-off-its-casing", check: "filename-case" },
-  { ruleId: "hone/thrown-non-error#throw-only-error", symptom: "thrown-non-error", check: "throw-only-error" },
-  { ruleId: "hone/authored-class-or-this#class-keyword", symptom: "authored-class-or-this", check: "class-keyword" },
-  { ruleId: "hone/authored-class-or-this#static-members-only", symptom: "authored-class-or-this", check: "static-members-only" },
-  { ruleId: "hone/test-switched-off#focused-tests", symptom: "test-switched-off", check: "focused-tests" },
-  { ruleId: "hone/test-switched-off#skipped-tests", symptom: "test-switched-off", check: "skipped-tests" },
-  { ruleId: "hone/positional-parameters#parameter-count", symptom: "positional-parameters", check: "parameter-count" },
-  { ruleId: "hone/tangled-function#cognitive-complexity", symptom: "tangled-function", check: "cognitive-complexity" },
-  { ruleId: "hone/long-function#function-length", symptom: "long-function", check: "function-length" },
-  { ruleId: "hone/work-inside-a-condition#else-after-an-exit", symptom: "work-inside-a-condition", check: "else-after-an-exit" },
-  { ruleId: "hone/rebinding#parameter-reassignment", symptom: "rebinding", check: "parameter-reassignment" },
+  {
+    ruleId: "hone/untyped-value#implicit-any-let",
+    symptom: "untyped-value",
+    check: "implicit-any-let",
+  },
+  {
+    ruleId: "hone/claimed-type#non-null-assertions",
+    symptom: "claimed-type",
+    check: "non-null-assertions",
+  },
+  {
+    ruleId: "hone/name-off-its-casing#naming-convention",
+    symptom: "name-off-its-casing",
+    check: "naming-convention",
+  },
+  {
+    ruleId: "hone/name-off-its-casing#filename-case",
+    symptom: "name-off-its-casing",
+    check: "filename-case",
+  },
+  {
+    ruleId: "hone/thrown-non-error#throw-only-error",
+    symptom: "thrown-non-error",
+    check: "throw-only-error",
+  },
+  {
+    ruleId: "hone/authored-class-or-this#class-keyword",
+    symptom: "authored-class-or-this",
+    check: "class-keyword",
+  },
+  {
+    ruleId: "hone/authored-class-or-this#static-members-only",
+    symptom: "authored-class-or-this",
+    check: "static-members-only",
+  },
+  {
+    ruleId: "hone/test-switched-off#focused-tests",
+    symptom: "test-switched-off",
+    check: "focused-tests",
+  },
+  {
+    ruleId: "hone/test-switched-off#skipped-tests",
+    symptom: "test-switched-off",
+    check: "skipped-tests",
+  },
+  {
+    ruleId: "hone/positional-parameters#parameter-count",
+    symptom: "positional-parameters",
+    check: "parameter-count",
+  },
+  {
+    ruleId: "hone/tangled-function#cognitive-complexity",
+    symptom: "tangled-function",
+    check: "cognitive-complexity",
+  },
+  {
+    ruleId: "hone/long-function#function-length",
+    symptom: "long-function",
+    check: "function-length",
+  },
+  {
+    ruleId: "hone/work-inside-a-condition#else-after-an-exit",
+    symptom: "work-inside-a-condition",
+    check: "else-after-an-exit",
+  },
+  {
+    ruleId: "hone/rebinding#parameter-reassignment",
+    symptom: "rebinding",
+    check: "parameter-reassignment",
+  },
 ];
 
 describe("honePluginAt, over this repository's catalogue and pieces", () => {
   it("is the one plugin, named for its export", () => {
-    expect(honePlugin).toMatchObject({ outcome: "ok", value: { meta: { name: "@hailstails/hone/eslint-plugin", version: "0.0.0-local" } } });
+    expect(honePlugin).toMatchObject({
+      outcome: "ok",
+      value: { meta: { name: "@hailstails/hone/eslint-plugin", version: "0.0.0-local" } },
+    });
   });
 
   it("gives every check the catalogue runs on ESLint exactly one rule id", () => {
@@ -112,6 +181,9 @@ describe("honePluginAt, over this repository's catalogue and pieces", () => {
   });
 
   it.each(ESLINT_CHECKS)("resolves $ruleId back to its check", ({ ruleId, symptom, check }) => {
-    expect(checkOfRuleId({ checks: CATALOGUE.checks, ruleId })).toMatchObject({ found: "check", check: { name: check, symptom: { name: symptom } } });
+    expect(checkOfRuleId({ checks: CATALOGUE.checks, ruleId })).toMatchObject({
+      found: "check",
+      check: { name: check, symptom: { name: symptom } },
+    });
   });
 });

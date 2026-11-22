@@ -1,13 +1,19 @@
-import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { eslintVersionFileSchema, packageJsonSchema } from "../native-exceptions/eslint-file-schemas.ts";
-import { eslintInvocationsOf, scriptCommandsOf } from "../native-exceptions/package-script-scanner.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
+import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import {
+  eslintVersionFileSchema,
+  packageJsonSchema,
+} from "../native-exceptions/eslint-file-schemas.ts";
+import {
+  eslintInvocationsOf,
+  scriptCommandsOf,
+} from "../native-exceptions/package-script-scanner.ts";
 
 export type ConfigLookup =
   | { readonly kind: "nearest-to-file" }
@@ -48,8 +54,12 @@ type LookupRequest = {
   readonly trackedPaths: readonly RepoPath[];
 };
 
-const installedEslintMajor = (request: Pick<LookupRequest, "fileText" | "path" | "repoRoot">): EslintMajor => {
-  const text = request.fileText.read({ path: request.path.join({ segments: [request.repoRoot, ...ESLINT_PACKAGE_JSON] }) });
+const installedEslintMajor = (
+  request: Pick<LookupRequest, "fileText" | "path" | "repoRoot">,
+): EslintMajor => {
+  const text = request.fileText.read({
+    path: request.path.join({ segments: [request.repoRoot, ...ESLINT_PACKAGE_JSON] }),
+  });
   if (text.outcome === "failed") {
     return "unknown";
   }
@@ -68,8 +78,12 @@ const flagsNamedBy = (request: { readonly options: readonly string[] }): readonl
     return option === FLAG_OPTION && next !== undefined ? [next] : [];
   });
 
-const scriptsOf = (request: LookupRequest & { readonly packagePath: RepoPath }): readonly string[] => {
-  const text = request.fileText.read({ path: request.path.join({ segments: [request.repoRoot, request.packagePath] }) });
+const scriptsOf = (
+  request: LookupRequest & { readonly packagePath: RepoPath },
+): readonly string[] => {
+  const text = request.fileText.read({
+    path: request.path.join({ segments: [request.repoRoot, request.packagePath] }),
+  });
   const json = text.outcome === "ok" ? parsedJson({ text: text.value }) : undefined;
   const parsed = json?.outcome === "ok" ? packageJsonSchema.safeParse(json.value) : undefined;
   return parsed?.success ? Object.values(parsed.data.scripts ?? {}) : [];
@@ -88,7 +102,9 @@ const lintScriptsSelectNearest = (request: LookupRequest): "selects-nearest" | "
     ? "selects-nearest"
     : "selects-root";
 
-const rootConfigFile = (request: Pick<LookupRequest, "fileText" | "path" | "repoRoot">): string | undefined =>
+const rootConfigFile = (
+  request: Pick<LookupRequest, "fileText" | "path" | "repoRoot">,
+): string | undefined =>
   CONFIG_FILE_NAMES.map((name) => request.path.join({ segments: [request.repoRoot, name] })).find(
     (candidate) => request.fileText.exists({ path: candidate }) === "present",
   );
@@ -99,18 +115,23 @@ export const folderConfigurationOf = (
   request: Pick<LookupRequest, "fileText" | "path" | "repoRoot"> & { readonly folder: RepoPath },
 ): FolderConfiguration =>
   CONFIG_FILE_NAMES.some(
-    (name) => request.fileText.exists({ path: request.path.join({ segments: [request.repoRoot, request.folder, name] }) }) === "present",
+    (name) =>
+      request.fileText.exists({
+        path: request.path.join({ segments: [request.repoRoot, request.folder, name] }),
+      }) === "present",
   )
     ? "configured"
     : "unconfigured";
 
 const detectedLookup = (request: LookupRequest): EslintConfigLookup =>
-  installedEslintMajor(request) !== ROOT_LOOKUP_MAJOR || lintScriptsSelectNearest(request) === "selects-nearest"
+  installedEslintMajor(request) !== ROOT_LOOKUP_MAJOR ||
+  lintScriptsSelectNearest(request) === "selects-nearest"
     ? "nearest-to-file"
     : "repository-root";
 
-export const configLookupDeclaring = (request: LookupRequest & { readonly declared: EslintConfigLookup | undefined }): EslintConfigLookup =>
-  request.declared ?? detectedLookup(request);
+export const configLookupDeclaring = (
+  request: LookupRequest & { readonly declared: EslintConfigLookup | undefined },
+): EslintConfigLookup => request.declared ?? detectedLookup(request);
 
 export const teamConfigLookupFor = (
   request: LookupRequest & { readonly lookup: EslintConfigLookup; readonly settingsFile: string },

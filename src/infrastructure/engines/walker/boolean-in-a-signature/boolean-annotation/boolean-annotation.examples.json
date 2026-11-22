@@ -4,25 +4,19 @@
       "name": "boolean parameter",
       "fileName": "has-bare-boolean.ts",
       "source": "export const performAction = (shouldForce: boolean): string => {\n  return shouldForce ? \"forced\" : \"lenient\";\n};\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "boolean return type",
       "fileName": "has-boolean-return.ts",
       "source": "export const isPositive = (candidate: number): boolean => candidate > 0;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "boolean property signature",
       "fileName": "property.ts",
       "source": "export interface Options {\n  readonly compact: boolean;\n}\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

@@ -1,10 +1,5 @@
-import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
 import { assert, describe, expect, it } from "vitest";
-import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../../node/path-port.ts";
-import { readBoundCatalogue } from "./bound-catalogue.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
-import { TEST_BODY_SECTIONS } from "../../engines/walker/branch-in-a-test/test-body/test-body-logic.ts";
+
 import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
 import type {
   Case,
@@ -19,35 +14,68 @@ import type {
   Symptom,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { TEST_BODY_SECTIONS } from "../../engines/walker/branch-in-a-test/test-body/test-body-logic.ts";
+import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../node/path-port.ts";
+import {
+  type CatalogueGuide,
+  symptomNoteLineOf,
+} from "../../printed-report/symptoms/symptom-notes.ts";
+import { absolutePathSchema } from "../absolute-path.ts";
+import { readBoundCatalogue } from "./bound-catalogue.ts";
 
 type CheckAddressRow = { readonly address: string; readonly clause: string };
 
-const checkAddressTableOf = (request: { readonly catalogue: SymptomCatalogue }): readonly CheckAddressRow[] =>
-  request.catalogue.checks.map((check) => ({ address: checkAddressOf({ check }), clause: clauseAddressText({ address: check.clause }) }));
+const checkAddressTableOf = (request: {
+  readonly catalogue: SymptomCatalogue;
+}): readonly CheckAddressRow[] =>
+  request.catalogue.checks.map((check) => ({
+    address: checkAddressOf({ check }),
+    clause: clauseAddressText({ address: check.clause }),
+  }));
 
-const resolutionOf = (request: { readonly catalogue: SymptomCatalogue; readonly check: Check }): "resolves" | "elsewhere" => {
-  const atAddress = checkAt({ catalogue: request.catalogue, address: checkAddressOf({ check: request.check }) });
-  return atAddress.found === "check" && atAddress.check === request.check ? "resolves" : "elsewhere";
+const resolutionOf = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly check: Check;
+}): "resolves" | "elsewhere" => {
+  const atAddress = checkAt({
+    catalogue: request.catalogue,
+    address: checkAddressOf({ check: request.check }),
+  });
+  return atAddress.found === "check" && atAddress.check === request.check
+    ? "resolves"
+    : "elsewhere";
 };
 
-const unresolvedAddressesOf = (request: { readonly catalogue: SymptomCatalogue }): readonly string[] => {
+const unresolvedAddressesOf = (request: {
+  readonly catalogue: SymptomCatalogue;
+}): readonly string[] => {
   const { catalogue } = request;
-  const fromChecks = catalogue.checks.filter((check) => resolutionOf({ catalogue, check }) === "elsewhere");
+  const fromChecks = catalogue.checks.filter(
+    (check) => resolutionOf({ catalogue, check }) === "elsewhere",
+  );
   const fromClauses = catalogue.clauses.flatMap(({ clause }) =>
-    checksOf({ catalogue, clause }).filter((check) => resolutionOf({ catalogue, check }) === "elsewhere"),
+    checksOf({ catalogue, clause }).filter(
+      (check) => resolutionOf({ catalogue, check }) === "elsewhere",
+    ),
   );
   return [...new Set([...fromChecks, ...fromClauses].map((check) => checkAddressOf({ check })))];
 };
 
-const formSectionsOf = (request: { readonly catalogue: SymptomCatalogue; readonly clause: string }): readonly string[] =>
+const formSectionsOf = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly clause: string;
+}): readonly string[] =>
   request.catalogue.clauses
     .filter(({ clause }) => clauseAddressText({ address: clause }) === request.clause)
-    .flatMap(({ sight }) => (sight.kind === "symptom-by-form" ? sight.forms.map((form) => form.section) : []));
+    .flatMap(({ sight }) =>
+      sight.kind === "symptom-by-form" ? sight.forms.map((form) => form.section) : [],
+    );
 
 const correctUseNotesOf = (request: { readonly guide: CatalogueGuide }): readonly string[] =>
   request.guide.catalogue.symptoms
@@ -55,7 +83,9 @@ const correctUseNotesOf = (request: { readonly guide: CatalogueGuide }): readonl
     .map((symptom) => symptomNoteLineOf({ ...request.guide, symptom }));
 
 const proposedReasonsOf = (request: { readonly recipes: readonly Recipe[] }): readonly string[] =>
-  request.recipes.filter((recipe) => recipe.reason.standing === "proposed").map((recipe) => recipe.name);
+  request.recipes
+    .filter((recipe) => recipe.reason.standing === "proposed")
+    .map((recipe) => recipe.name);
 
 type UnowedPointer = { readonly symptom: string; readonly case: string; readonly pointer: string };
 
@@ -64,16 +94,27 @@ const pointedName = (request: { readonly point: Pointed }): string =>
 
 type IndicatingSymptom = Pick<Symptom, "name" | "mayIndicate">;
 
-const unowedOf = (request: { readonly symptom: IndicatingSymptom; readonly indication: Indication }): readonly UnowedPointer[] => {
+const unowedOf = (request: {
+  readonly symptom: IndicatingSymptom;
+  readonly indication: Indication;
+}): readonly UnowedPointer[] => {
   const owed = request.indication.case.owes.map((point) => pointedName({ point }));
   return request.indication.points
     .map((point) => pointedName({ point }))
     .filter((pointer) => !owed.includes(pointer))
-    .map((pointer) => ({ symptom: request.symptom.name, case: request.indication.case.name, pointer }));
+    .map((pointer) => ({
+      symptom: request.symptom.name,
+      case: request.indication.case.name,
+      pointer,
+    }));
 };
 
-const unowedPointersOf = (request: { readonly catalogue: { readonly symptoms: readonly IndicatingSymptom[] } }): readonly UnowedPointer[] =>
-  request.catalogue.symptoms.flatMap((symptom) => symptom.mayIndicate.flatMap((indication) => unowedOf({ symptom, indication })));
+const unowedPointersOf = (request: {
+  readonly catalogue: { readonly symptoms: readonly IndicatingSymptom[] };
+}): readonly UnowedPointer[] =>
+  request.catalogue.symptoms.flatMap((symptom) =>
+    symptom.mayIndicate.flatMap((indication) => unowedOf({ symptom, indication })),
+  );
 
 const PARENTHETICAL = /\s*\([^)]*\)/g;
 
@@ -84,19 +125,30 @@ const caseNameOfTitle = (request: { readonly title: string }): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-const caseNamesOffTheirTitles = (request: { readonly cases: readonly Pick<Case, "name" | "title">[] }): readonly string[] =>
-  request.cases.filter((entry) => entry.name !== caseNameOfTitle({ title: entry.title })).map((entry) => entry.name);
+const caseNamesOffTheirTitles = (request: {
+  readonly cases: readonly Pick<Case, "name" | "title">[];
+}): readonly string[] =>
+  request.cases
+    .filter((entry) => entry.name !== caseNameOfTitle({ title: entry.title }))
+    .map((entry) => entry.name);
 
 declare global {
   interface ImportMeta {
     readonly glob: (
       patterns: readonly string[],
-      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
+      options: {
+        readonly base: string;
+        readonly query: "?raw";
+        readonly import: "default";
+        readonly eager: true;
+      },
     ) => Readonly<Record<string, string>>;
   }
 }
 
-const REPO_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }));
+const REPO_ROOT = absolutePathSchema.parse(
+  createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }),
+);
 
 const FILE_TEXT = createDefaultFileTextPort({});
 
@@ -158,24 +210,45 @@ const OUTSIDE_ADDRESSES = [
   { address: "double-with-a-body#logic-in-a-passed-function", clause: "CD-27#test-body-logic" },
   { address: "double-with-a-body#stub-implementation", clause: "CD-25#dependency-isolation" },
   { address: "drawer-path#drawer-names", clause: "CD-7#categorical-paths" },
-  { address: "inherited-environment-in-a-subprocess#git-spawn-environment", clause: "CD-47#hermetic-git-spawns" },
+  {
+    address: "inherited-environment-in-a-subprocess#git-spawn-environment",
+    clause: "CD-47#hermetic-git-spawns",
+  },
   { address: "long-function#function-length", clause: "CD-41#function-length" },
   { address: "loop-keyword#loop-statement", clause: "CD-15#loops" },
   { address: "module-or-global-patched#module-mock-call", clause: "CD-26#module-mocking" },
   { address: "name-off-its-casing#filename-case", clause: "CD-7#filename-case" },
   { address: "name-off-its-casing#naming-convention", clause: "CD-6#naming-convention" },
-  { address: "outside-import-past-a-boundary#import-or-require", clause: "CD-19#import-boundaries" },
+  {
+    address: "outside-import-past-a-boundary#import-or-require",
+    clause: "CD-19#import-boundaries",
+  },
   { address: "positional-parameters#parameter-count", clause: "CD-40#parameter-count" },
   { address: "rebinding#parameter-reassignment", clause: "CD-44#parameter-reassignment" },
   { address: "rebinding#test-body", clause: "CD-27#test-body-logic" },
   { address: "shorthand-name#identifier-names", clause: "CD-6#identifier-names" },
-  { address: "strictness-weakened#exact-optional-property-types", clause: "CD-3#exact-optional-property-types" },
-  { address: "strictness-weakened#no-fallthrough-cases-in-switch", clause: "CD-3#no-fallthrough-cases-in-switch" },
+  {
+    address: "strictness-weakened#exact-optional-property-types",
+    clause: "CD-3#exact-optional-property-types",
+  },
+  {
+    address: "strictness-weakened#no-fallthrough-cases-in-switch",
+    clause: "CD-3#no-fallthrough-cases-in-switch",
+  },
   { address: "strictness-weakened#no-implicit-override", clause: "CD-3#no-implicit-override" },
-  { address: "strictness-weakened#no-property-access-from-index-signature", clause: "CD-3#no-property-access-from-index-signature" },
-  { address: "strictness-weakened#no-unchecked-indexed-access", clause: "CD-3#no-unchecked-indexed-access" },
+  {
+    address: "strictness-weakened#no-property-access-from-index-signature",
+    clause: "CD-3#no-property-access-from-index-signature",
+  },
+  {
+    address: "strictness-weakened#no-unchecked-indexed-access",
+    clause: "CD-3#no-unchecked-indexed-access",
+  },
   { address: "strictness-weakened#strict", clause: "CD-3#strict" },
-  { address: "strictness-weakened#use-unknown-in-catch-variables", clause: "CD-3#use-unknown-in-catch-variables" },
+  {
+    address: "strictness-weakened#use-unknown-in-catch-variables",
+    clause: "CD-3#use-unknown-in-catch-variables",
+  },
   { address: "tangled-function#cognitive-complexity", clause: "CD-41#cognitive-complexity" },
   { address: "test-switched-off#focused-tests", clause: "CD-27#focused-tests" },
   { address: "test-switched-off#skipped-tests", clause: "CD-27#skipped-tests" },
@@ -184,7 +257,10 @@ const OUTSIDE_ADDRESSES = [
   { address: "throw-or-catch-in-a-test#try-block", clause: "CD-27#test-body-logic" },
   { address: "thrown-non-error#throw-only-error", clause: "CD-10#throw-only-error" },
   { address: "type-derived-from-code#factory-return-types", clause: "CD-7a#factory-return-types" },
-  { address: "unit-without-a-running-test#companion-test-file", clause: "CD-23#export-test-sibling" },
+  {
+    address: "unit-without-a-running-test#companion-test-file",
+    clause: "CD-23#export-test-sibling",
+  },
   { address: "untracked-escape#directive-pointers", clause: "CD-5#comments-directives" },
   { address: "untyped-value#explicit-any", clause: "CD-1#explicit-any" },
   { address: "untyped-value#implicit-any-let", clause: "CD-1#implicit-any-let" },
@@ -193,9 +269,19 @@ const OUTSIDE_ADDRESSES = [
 ];
 
 describe("the catalogue guards over written-out pages and catalogues, so each can fail", () => {
-  const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+  const DEBT: RecordKind = {
+    name: "debt",
+    title: "Debt",
+    phrase: "debt",
+    todaysFormat: "file-carve-out",
+  };
 
-  const AUTHORISED_LOCATION: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
+  const AUTHORISED_LOCATION: RecordKind = {
+    name: "authorised-location",
+    title: "Authorised location",
+    phrase: "an authorised location",
+    todaysFormat: "authorised-location",
+  };
 
   const NOTHING_CATALOGUED: SymptomCatalogue = {
     principles: [],
@@ -221,15 +307,35 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
     correctUses: [],
   };
 
-  const REBINDING: Symptom = { name: "rebinding", title: "rebinding", seen: "rebinding", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
+  const REBINDING: Symptom = {
+    name: "rebinding",
+    title: "rebinding",
+    seen: "rebinding",
+    mayIndicate: [],
+    breachUsuallySits: "in the unit",
+    recipes: [],
+    correctUses: [],
+  };
 
   const WALKER: Engine = { name: "walker" };
 
-  const MUTATION_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-mutation") };
+  const MUTATION_CLAUSE = {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-44"),
+    clause: clauseIdOf("parameter-mutation"),
+  };
 
-  const REASSIGNMENT_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") };
+  const REASSIGNMENT_CLAUSE = {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-44"),
+    clause: clauseIdOf("parameter-reassignment"),
+  };
 
-  const INTENT_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-intent") };
+  const INTENT_CLAUSE = {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-44"),
+    clause: clauseIdOf("parameter-intent"),
+  };
 
   const PARAMETER_CLAUSES: SymptomCatalogue["clauses"] = [
     { clause: MUTATION_CLAUSE, sight: { kind: "one-symptom", symptom: WRITE_INTO_A_PARAMETER } },
@@ -237,16 +343,31 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
     { clause: INTENT_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
   ];
 
-  const MUTATION_CHECK: Check = { name: "parameter-mutation", symptom: WRITE_INTO_A_PARAMETER, clause: MUTATION_CLAUSE, engines: [WALKER], forms: [] };
+  const MUTATION_CHECK: Check = {
+    name: "parameter-mutation",
+    symptom: WRITE_INTO_A_PARAMETER,
+    clause: MUTATION_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  };
 
   const ONE_PLACE: Principle = { name: "one-place-decides", title: "One place decides" };
 
-  const DOER: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE, standing: "accepted" };
+  const DOER: Rule = {
+    name: "doer-or-orchestrator",
+    title: "Doer or orchestrator",
+    principle: ONE_PLACE,
+    standing: "accepted",
+  };
 
   it("names an address that resolves to an earlier check holding the same address", () => {
     expect(
       unresolvedAddressesOf({
-        catalogue: { ...NOTHING_CATALOGUED, clauses: PARAMETER_CLAUSES, checks: [MUTATION_CHECK, { ...MUTATION_CHECK, clause: REASSIGNMENT_CLAUSE }] },
+        catalogue: {
+          ...NOTHING_CATALOGUED,
+          clauses: PARAMETER_CLAUSES,
+          checks: [MUTATION_CHECK, { ...MUTATION_CHECK, clause: REASSIGNMENT_CLAUSE }],
+        },
       }),
     ).toEqual(["write-into-a-parameter#parameter-mutation"]);
   });
@@ -256,7 +377,10 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
       caseNamesOffTheirTitles({
         cases: [
           { name: "causes", title: "Causes an effect (writes, logs, sends, exits)" },
-          { name: "gives-a-value-its-type-declares-it", title: "Gives a value its type (declares it, or needs it narrower)" },
+          {
+            name: "gives-a-value-its-type-declares-it",
+            title: "Gives a value its type (declares it, or needs it narrower)",
+          },
         ],
       }),
     ).toEqual(["causes", "gives-a-value-its-type-declares-it"]);
@@ -271,7 +395,12 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
               name: "wide-port",
               mayIndicate: [
                 {
-                  case: { name: "builds-the-real-implementations", title: "Builds the real implementations", standing: "accepted", owes: [{ kind: "principle", principle: ONE_PLACE }] },
+                  case: {
+                    name: "builds-the-real-implementations",
+                    title: "Builds the real implementations",
+                    standing: "accepted",
+                    owes: [{ kind: "principle", principle: ONE_PLACE }],
+                  },
                   points: [
                     { kind: "principle", principle: ONE_PLACE },
                     { kind: "rule", rule: DOER },
@@ -282,11 +411,23 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
           ],
         },
       }),
-    ).toEqual([{ symptom: "wide-port", case: "builds-the-real-implementations", pointer: "Doer or orchestrator" }]);
+    ).toEqual([
+      {
+        symptom: "wide-port",
+        case: "builds-the-real-implementations",
+        pointer: "Doer or orchestrator",
+      },
+    ]);
   });
 });
 
-const reading = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT, installRoot: REPO_ROOT });
+const reading = readBoundCatalogue({
+  directory: createDefaultDirectoryPort({}),
+  fileText: FILE_TEXT,
+  path: PATH,
+  ruleSetRoot: REPO_ROOT,
+  installRoot: REPO_ROOT,
+});
 
 describe("rules/typescript/symptoms.json, read from this repository through the catalogue's reader", () => {
   it("reads into the typed catalogue", () => {
@@ -297,7 +438,9 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
 
-    expect(formSectionsOf({ catalogue: reading.value.catalogue, clause: "CD-27#test-body-logic" })).toEqual(TEST_BODY_SECTIONS);
+    expect(
+      formSectionsOf({ catalogue: reading.value.catalogue, clause: "CD-27#test-body-logic" }),
+    ).toEqual(TEST_BODY_SECTIONS);
   });
 
   it("holds one outside address for each check, beside the clause it answers today", () => {
@@ -332,15 +475,23 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
 
-    expect(proposedReasonsOf({ recipes: reading.value.catalogue.recipes })).toEqual(RECIPES_WITH_A_PROPOSED_REASON);
+    expect(proposedReasonsOf({ recipes: reading.value.catalogue.recipes })).toEqual(
+      RECIPES_WITH_A_PROPOSED_REASON,
+    );
   });
 
   it("renders each symptom that has a correct use as a note that reads as sentences, in catalogue order", () => {
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
 
-    expect(correctUseNotesOf({ guide: { guide: "catalogue", catalogue: reading.value.catalogue, page: "rules/typescript/symptoms.md" } })).toEqual(
-      NOTES_OF_SYMPTOMS_WITH_A_CORRECT_USE,
-    );
+    expect(
+      correctUseNotesOf({
+        guide: {
+          guide: "catalogue",
+          catalogue: reading.value.catalogue,
+          page: "rules/typescript/symptoms.md",
+        },
+      }),
+    ).toEqual(NOTES_OF_SYMPTOMS_WITH_A_CORRECT_USE);
   });
 });

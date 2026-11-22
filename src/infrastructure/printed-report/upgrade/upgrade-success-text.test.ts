@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createPathPort } from "../../node/path-port.ts";
-import { upgradeSuccessOutcomeOf } from "./upgrade-success-text.ts";
+
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { createPathPort } from "../../node/path-port.ts";
+import { upgradeSuccessOutcomeOf } from "./upgrade-success-text.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -15,10 +16,16 @@ describe("upgradeSuccessOutcomeOf", () => {
         repoRoot: REPO,
         path: PATH,
         carried: {
-            written: [repoPathOf("hone.config.json"), repoPathOf("hone-records/debt/loop-keyword.json")],
+          written: [
+            repoPathOf("hone.config.json"),
+            repoPathOf("hone-records/debt/loop-keyword.json"),
+          ],
           replaced: [repoPathOf("eslint.config.mjs"), repoPathOf("packages/a/eslint.config.mjs")],
           removed: {
-            files: [absoluteRootOf("/repo/discipline-exceptions/cd-15.json"), absoluteRootOf("/repo/disciplines.json")],
+            files: [
+              absoluteRootOf("/repo/discipline-exceptions/cd-15.json"),
+              absoluteRootOf("/repo/disciplines.json"),
+            ],
             folders: [absoluteRootOf("/repo/discipline-exceptions")],
           },
         },
@@ -35,11 +42,14 @@ describe("upgradeSuccessOutcomeOf", () => {
         repoRoot: REPO,
         path: PATH,
         carried: {
-            written: [repoPathOf("hone.config.json")],
+          written: [repoPathOf("hone.config.json")],
           replaced: [],
           removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
         },
       }),
-    ).toEqual({ code: 0, text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\n" });
+    ).toEqual({
+      code: 0,
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\n",
+    });
   });
 });

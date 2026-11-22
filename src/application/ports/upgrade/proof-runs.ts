@@ -1,7 +1,7 @@
-import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
+import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type ProofRunFailure = { readonly kind: "run-failed"; readonly detail: string };

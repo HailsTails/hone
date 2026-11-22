@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { eslintConfigLookupSchema } from "./eslint-config-lookup.ts";
 
 describe("eslintConfigLookupSchema", () => {

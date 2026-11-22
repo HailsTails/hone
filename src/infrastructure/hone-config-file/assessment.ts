@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
   type Assessment,
   FORFEITURE_ASSESSMENTS,
@@ -14,7 +15,9 @@ const ASSESSMENT_CONCERNS = {
   forfeiture: forfeitureAssessmentSchema.default("this-run"),
 };
 
-const REMOVED_CONCERNS: ReadonlyMap<string, string> = new Map([["waivedClauses", WAIVED_CLAUSES_REPLACEMENT]]);
+const REMOVED_CONCERNS: ReadonlyMap<string, string> = new Map([
+  ["waivedClauses", WAIVED_CLAUSES_REPLACEMENT],
+]);
 
 const quotedKeys = (request: { readonly keys: readonly string[] }): string =>
   request.keys.map((key) => JSON.stringify(key)).join(", ");
@@ -29,17 +32,28 @@ const unbuiltKeyMessages = (request: { readonly keys: readonly string[] }): read
   const unbuilt = request.keys.filter((key) => !REMOVED_CONCERNS.has(key));
   return unbuilt.length === 0
     ? []
-    : [`not available in this version: ${quotedKeys({ keys: unbuilt })}; assessment takes ${quotedKeys({ keys: Object.keys(ASSESSMENT_CONCERNS) })} only`];
+    : [
+        `not available in this version: ${quotedKeys({ keys: unbuilt })}; assessment takes ${quotedKeys({ keys: Object.keys(ASSESSMENT_CONCERNS) })} only`,
+      ];
 };
 
 export const assessmentSchema = z.strictObject(ASSESSMENT_CONCERNS, {
   error: (issue) =>
     issue.code === "unrecognized_keys"
-      ? [...removedKeyMessages({ keys: issue.keys }), ...unbuiltKeyMessages({ keys: issue.keys })].join(". ")
+      ? [
+          ...removedKeyMessages({ keys: issue.keys }),
+          ...unbuiltKeyMessages({ keys: issue.keys }),
+        ].join(". ")
       : undefined,
 });
 
 export const DEFAULT_ASSESSMENT: Assessment = assessmentSchema.parse({});
 
-export const isForfeitureAssessmentSchemaEqual: Equal<z.output<typeof forfeitureAssessmentSchema>, ForfeitureAssessment> = true;
-export const isAssessmentSchemaEqual: Equal<DeepReadonly<z.output<typeof assessmentSchema>>, Assessment> = true;
+export const isForfeitureAssessmentSchemaEqual: Equal<
+  z.output<typeof forfeitureAssessmentSchema>,
+  ForfeitureAssessment
+> = true;
+export const isAssessmentSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof assessmentSchema>>,
+  Assessment
+> = true;

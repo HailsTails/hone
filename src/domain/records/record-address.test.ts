@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { symptomNameOf } from "./record-address.ts";
 
 describe("the symptom an address names", () => {

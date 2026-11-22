@@ -1,9 +1,13 @@
 import type { Authorising } from "../../../application/ports/authorising.ts";
-import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
-import { type DebtEffect, type DebtOutcome, debtAddressOf } from "../../../domain/records/debt/debt-effects.ts";
+import {
+  type DebtEffect,
+  type DebtOutcome,
+  debtAddressOf,
+} from "../../../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt, PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
 import type { UnrecordableBecause } from "../../../domain/records/debt/unrecordable-site.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { recordsFileText, refusalText } from "./record-lines.ts";
 import { scriptOptionAdviceOf } from "./script-option-advice.ts";
 
@@ -12,20 +16,27 @@ const NO_DETAIL = "";
 type RecordableOrigin = Extract<DebtEffect, { readonly effect: "touched" }>["of"];
 
 const TOUCHED_DETAIL: Readonly<Record<RecordableOrigin, string>> = {
-  finding: "this change created or changed the file, so this run would forfeit debt on it; fix the finding there",
-  "native-exception": "this change created or changed the file, so this run would forfeit debt on it; fix what the comment hides, then remove the comment",
+  finding:
+    "this change created or changed the file, so this run would forfeit debt on it; fix the finding there",
+  "native-exception":
+    "this change created or changed the file, so this run would forfeit debt on it; fix what the comment hides, then remove the comment",
 };
 
-const UNRECORDABLE_DETAIL: Readonly<Record<Exclude<UnrecordableBecause["kind"], "command-line-option">, string>> = {
-  "no-check": "the catalogue gives this finding no symptom or check to record debt against; fix the finding",
+const UNRECORDABLE_DETAIL: Readonly<
+  Record<Exclude<UnrecordableBecause["kind"], "command-line-option">, string>
+> = {
+  "no-check":
+    "the catalogue gives this finding no symptom or check to record debt against; fix the finding",
   ignore:
     "an ESLint ignore leaves the file out of the team's lint run, which no record can hold; Hone's run checked the file and recorded what it found there as debt, so what is left is the ignore: remove it, or, if the file is generated or vendored and not yours to hold to the checks, list it in exclude in hone.config.json so Hone's setting and the team's ignore agree",
-  "inline-rule-config": "a comment that sets a rule's configuration changes what the rule checks, which no record can hold; remove the comment",
+  "inline-rule-config":
+    "a comment that sets a rule's configuration changes what the rule checks, which no record can hold; remove the comment",
   "suppression-entry":
     "an entry in the suppressions file hides a finding from the team's lint run, which no record can hold; Hone's run still finds it and records it as debt, so remove the entry from the suppressions file",
   "config-override":
     "an override in the ESLint configuration turns the check down for this file, which no record can hold; where debt holds the check the projection already turns it off, so remove the override or narrow it to the files that need it",
-  "inline-disable": "no record of this engine holds this comment; fix the code, or remove the comment",
+  "inline-disable":
+    "no record of this engine holds this comment; fix the code, or remove the comment",
 };
 
 const scriptOptionDetailOf = (request: { readonly cause: ScriptOptionCause }): string => {
@@ -35,7 +46,9 @@ const scriptOptionDetailOf = (request: { readonly cause: ScriptOptionCause }): s
 
 const unrecordableDetailOf = (request: { readonly because: UnrecordableBecause }): string => {
   const { because } = request;
-  return because.kind === "command-line-option" ? scriptOptionDetailOf({ cause: because.cause }) : UNRECORDABLE_DETAIL[because.kind];
+  return because.kind === "command-line-option"
+    ? scriptOptionDetailOf({ cause: because.cause })
+    : UNRECORDABLE_DETAIL[because.kind];
 };
 
 const detailOf = (request: { readonly outcome: DebtOutcome }): string => {
@@ -54,12 +67,17 @@ const detailOf = (request: { readonly outcome: DebtOutcome }): string => {
   }
 };
 
-const withDetail = (request: { readonly head: string; readonly detail: string }): string => (request.detail === NO_DETAIL ? request.head : `${request.head}: ${request.detail}`);
+const withDetail = (request: { readonly head: string; readonly detail: string }): string =>
+  request.detail === NO_DETAIL ? request.head : `${request.head}: ${request.detail}`;
 
 export const debtOutcomeLine = (request: { readonly outcome: DebtOutcome }): string =>
-  withDetail({ head: `${request.outcome.address} ${request.outcome.effect} ${request.outcome.file}`, detail: detailOf(request) });
+  withDetail({
+    head: `${request.outcome.address} ${request.outcome.effect} ${request.outcome.file}`,
+    detail: detailOf(request),
+  });
 
-export const projectNextLine = (request: { readonly projectCommand: string }): string => `run ${request.projectCommand} to put the recorded debt into effect`;
+export const projectNextLine = (request: { readonly projectCommand: string }): string =>
+  `run ${request.projectCommand} to put the recorded debt into effect`;
 
 const PRUNED_REASON_TEXT: Readonly<Record<PrunedReason, string>> = {
   paid: "paid",
@@ -72,14 +90,22 @@ const PRUNED_REASON_TEXT: Readonly<Record<PrunedReason, string>> = {
 export const prunedDebtLine = (request: { readonly pruned: PrunableDebt }): string =>
   `${debtAddressOf({ debt: request.pruned.debt })} removed ${request.pruned.debt.file}: ${PRUNED_REASON_TEXT[request.pruned.reason]}`;
 
-export const authorisingLines = (request: { readonly address: string; readonly file: RepoPath; readonly authorising: Authorising }): readonly string[] => {
+export const authorisingLines = (request: {
+  readonly address: string;
+  readonly file: RepoPath;
+  readonly authorising: Authorising;
+}): readonly string[] => {
   const { address, file, authorising } = request;
   switch (authorising.judged) {
     case "accepted":
       return [`${address} authorised ${file}`];
     case "already-held":
-      return [`${address} already-authorised ${file}: ${recordsFileText({ file: authorising.heldIn })} already holds this record`];
+      return [
+        `${address} already-authorised ${file}: ${recordsFileText({ file: authorising.heldIn })} already holds this record`,
+      ];
     case "refused":
-      return authorising.refusals.map((refusal) => `${address} refused ${file}: ${refusalText({ refusal })}`);
+      return authorising.refusals.map(
+        (refusal) => `${address} refused ${file}: ${refusalText({ refusal })}`,
+      );
   }
 };

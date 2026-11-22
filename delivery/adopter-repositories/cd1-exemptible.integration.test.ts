@@ -1,33 +1,38 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
-import { runCheck } from "../../src/application/run/check/run-check.ts";
-import type { CheckReport } from "../../src/domain/report/check-report.ts";
-import type { Result } from "../../src/domain/result.ts";
-import { checkCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
-import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
-import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
-import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../src/application/ports/git-port.ts";
 import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
-import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
-import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
-import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
-import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
-import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
 import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
+import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
+import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
+import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
+import { runCheck } from "../../src/application/run/check/run-check.ts";
+import type { CheckReport } from "../../src/domain/report/check-report.ts";
+import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
+import type { Result } from "../../src/domain/result.ts";
+import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
+import { checkCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
+import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import {
+  createDefaultScratchFilesPort,
+  type ListedEntry,
+  type ScratchFilesPort,
+} from "../install-proof/install-proof-ports.ts";
 
 const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
 
@@ -52,13 +57,33 @@ const singleFileRepositoryOver = (request: {
     ...request,
     fileText: {
       ...request.fileText,
-      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+      exists: (query) =>
+        query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query),
     },
     directory: {
-      list: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path: folder, detail: "the single-file fake holds no folders" } }),
-      create: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path: folder, detail: "the single-file fake holds no folders" } }),
+      list: ({ path: folder }) => ({
+        outcome: "failed",
+        error: {
+          kind: "directory-unreadable",
+          path: folder,
+          detail: "the single-file fake holds no folders",
+        },
+      }),
+      create: ({ path: folder }) => ({
+        outcome: "failed",
+        error: {
+          kind: "directory-uncreatable",
+          path: folder,
+          detail: "the single-file fake holds no folders",
+        },
+      }),
     },
-    fileRemoval: { remove: ({ path: file }) => ({ outcome: "failed", error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" } }) },
+    fileRemoval: {
+      remove: ({ path: file }) => ({
+        outcome: "failed",
+        error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" },
+      }),
+    },
     gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
   });
 
@@ -85,16 +110,28 @@ const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
 const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
 
-const fullReportExitCode = (request: { readonly checked: Result<CheckReport, LoadFailure> }): ExitCode =>
+const fullReportExitCode = (request: {
+  readonly checked: Result<CheckReport, LoadFailure>;
+}): ExitCode =>
   checkCommandOutcome({
     result:
       request.checked.outcome === "failed"
         ? request.checked
-        : { outcome: "ok", value: { report: request.checked.value, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },
+        : {
+            outcome: "ok",
+            value: {
+              report: request.checked.value,
+              output: "full",
+              projectCommand: PROJECT_COMMAND,
+              pruneCommand: PRUNE_COMMAND,
+            },
+          },
   }).code;
 
 type ScratchRepositories = {
-  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly repositoryWith: (request: {
+    readonly files: Readonly<Record<string, string>>;
+  }) => AbsolutePath;
   readonly removeAll: () => void;
 };
 
@@ -106,10 +143,14 @@ const scratchRepositoriesUnder = (request: {
   const made: AbsolutePath[] = [];
   return {
     repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const folder = absolutePathSchema.parse(
+        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
+      );
       const directory = request.scratch.makeDirectory({ path: folder });
       if (directory.outcome !== "ok") {
-        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+        throw new Error(
+          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
+        );
       }
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
@@ -148,14 +189,22 @@ type RehomedImports = {
 };
 
 const leavesTheRoot = (request: { readonly path: string }): "leaves" | "stays" =>
-  request.path === OUTSIDE_THE_ROOT || request.path.startsWith(OUTSIDE_THE_ROOT_PREFIX) ? "leaves" : "stays";
+  request.path === OUTSIDE_THE_ROOT || request.path.startsWith(OUTSIDE_THE_ROOT_PREFIX)
+    ? "leaves"
+    : "stays";
 
-const placeOfTarget = (request: Omit<RehomedImports, "text"> & { readonly target: string }): "inside-the-fixture" | "outside-the-fixture" => {
+const placeOfTarget = (
+  request: Omit<RehomedImports, "text"> & { readonly target: string },
+): "inside-the-fixture" | "outside-the-fixture" => {
   const inside = request.path.relative({ from: request.fixtureRoot, to: request.target });
-  return inside.relation === "within-root" && leavesTheRoot({ path: inside.path }) === "stays" ? "inside-the-fixture" : "outside-the-fixture";
+  return inside.relation === "within-root" && leavesTheRoot({ path: inside.path }) === "stays"
+    ? "inside-the-fixture"
+    : "outside-the-fixture";
 };
 
-const rehomedSpecifier = (request: Omit<RehomedImports, "text"> & { readonly specifier: string }): string => {
+const rehomedSpecifier = (
+  request: Omit<RehomedImports, "text"> & { readonly specifier: string },
+): string => {
   const target = request.path.join({ segments: [request.from, request.specifier] });
   if (placeOfTarget({ ...request, target }) === "inside-the-fixture") {
     return request.specifier;
@@ -168,7 +217,10 @@ const rehomedSpecifier = (request: Omit<RehomedImports, "text"> & { readonly spe
 };
 
 const rehomedImports = (request: RehomedImports): string =>
-  request.text.replace(RELATIVE_IMPORT, (_whole, specifier: string) => `from "${rehomedSpecifier({ ...request, specifier })}"`);
+  request.text.replace(
+    RELATIVE_IMPORT,
+    (_whole, specifier: string) => `from "${rehomedSpecifier({ ...request, specifier })}"`,
+  );
 
 type FixtureDependencies = {
   readonly repositories: ScratchRepositories;
@@ -199,15 +251,27 @@ const failed = (request: { readonly what: string; readonly detail: string }): ne
 };
 
 const copiedFolder = (request: EntryRequest): void => {
-  const made = request.scratch.makeDirectory({ path: `${request.repo}/${slashed({ path: request.entry.path })}` });
+  const made = request.scratch.makeDirectory({
+    path: `${request.repo}/${slashed({ path: request.entry.path })}`,
+  });
   if (made.outcome !== "ok") {
-    failed({ what: `a fixture folder could not be made for ${request.entry.path}`, detail: made.error.detail });
+    failed({
+      what: `a fixture folder could not be made for ${request.entry.path}`,
+      detail: made.error.detail,
+    });
   }
 };
 
 const textOf = (request: EntryRequest): string => {
-  const read = request.fileText.read({ path: `${request.fixtureRoot}/${slashed({ path: request.entry.path })}` });
-  return read.outcome === "ok" ? read.value : failed({ what: `a fixture file could not be read at ${request.entry.path}`, detail: read.error.detail });
+  const read = request.fileText.read({
+    path: `${request.fixtureRoot}/${slashed({ path: request.entry.path })}`,
+  });
+  return read.outcome === "ok"
+    ? read.value
+    : failed({
+        what: `a fixture file could not be read at ${request.entry.path}`,
+        detail: read.error.detail,
+      });
 };
 
 const restoredText = (request: EntryRequest): string => {
@@ -229,7 +293,10 @@ const copiedFile = (request: EntryRequest): void => {
   const target = `${request.repo}/${restoredLocation({ entry: request.entry })}`;
   const written = request.fileText.write({ path: target, text: restoredText(request) });
   if (written.outcome !== "ok") {
-    failed({ what: `a fixture file could not be written at ${target}`, detail: written.error.detail });
+    failed({
+      what: `a fixture file could not be written at ${target}`,
+      detail: written.error.detail,
+    });
   }
 };
 
@@ -241,10 +308,15 @@ const copiedEntry = (request: EntryRequest): void => {
   copiedFile(request);
 };
 
-const restoredFixture = (request: FixtureDependencies & { readonly fixtureRoot: AbsolutePath }): AbsolutePath => {
+const restoredFixture = (
+  request: FixtureDependencies & { readonly fixtureRoot: AbsolutePath },
+): AbsolutePath => {
   const listed = request.scratch.listTree({ path: request.fixtureRoot });
   if (listed.outcome !== "ok") {
-    return failed({ what: `the fixture at ${request.fixtureRoot} could not be listed`, detail: listed.error.detail });
+    return failed({
+      what: `the fixture at ${request.fixtureRoot} could not be listed`,
+      detail: listed.error.detail,
+    });
   }
   const repo = request.repositories.repositoryWith({ files: {} });
   const folders = listed.value.filter(({ entryKind }) => entryKind === "folder");
@@ -253,7 +325,12 @@ const restoredFixture = (request: FixtureDependencies & { readonly fixtureRoot: 
     copiedEntry({ ...request, repo, entry });
   });
   const resolved = request.path.resolve({ path: repo });
-  return resolved.outcome === "ok" ? resolved.value : failed({ what: `the restored repository at ${repo} has no absolute path`, detail: resolved.error.path });
+  return resolved.outcome === "ok"
+    ? resolved.value
+    : failed({
+        what: `the restored repository at ${repo} has no absolute path`,
+        detail: resolved.error.path,
+      });
 };
 
 const path = createDefaultPathPort({});
@@ -282,18 +359,20 @@ const git: GitPort = {
 
 describe("the shipped CD-1 rule, read through the install's discipline reader in a full check (CD-47: the shipped rule file is the assertion's subject; nothing is spawned or written)", () => {
   it("accepts an authorised location for CD-1 and still flags an unrecorded any cast", async () => {
-    const report = await runCheck(withSingleFileRecords({
-      repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),
-      installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
-      moduleExtension: ".ts",
-      baseRevision: undefined,
-      assessment: DEFAULT_ASSESSMENT,
-      fileText: createDefaultFileTextPort({}),
-      engine: createDefaultEnginePort({}),
-      modules: createDefaultModuleLoaderPort({}),
-      path,
-      git,
-    }));
+    const report = await runCheck(
+      withSingleFileRecords({
+        repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),
+        installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+        assessment: DEFAULT_ASSESSMENT,
+        fileText: createDefaultFileTextPort({}),
+        engine: createDefaultEnginePort({}),
+        modules: createDefaultModuleLoaderPort({}),
+        path,
+        git,
+      }),
+    );
     expect(report).toMatchObject({
       outcome: "ok",
       value: {
@@ -307,7 +386,11 @@ describe("the shipped CD-1 rule, read through the install's discipline reader in
 
 const scratch = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({ parent: resolvedPath({ path: `${import.meta.dirname}/../../artefacts` }), fileText: createDefaultFileTextPort({}), scratch });
+const repositories = scratchRepositoriesUnder({
+  parent: resolvedPath({ path: `${import.meta.dirname}/../../artefacts` }),
+  fileText: createDefaultFileTextPort({}),
+  scratch,
+});
 
 afterAll(() => {
   repositories.removeAll();
@@ -333,23 +416,27 @@ const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
         LEGACY_FILE,
       ],
     }),
-    changedSince: vi.fn<GitPort["changedSince"]>().mockReturnValue({ outcome: "ok", value: request.changed }),
+    changedSince: vi
+      .fn<GitPort["changedSince"]>()
+      .mockReturnValue({ outcome: "ok", value: request.changed }),
     contentInBase: vi.fn<GitPort["contentInBase"]>(),
     textInBase: vi.fn<GitPort["textInBase"]>(),
     renamedSince: vi.fn<GitPort["renamedSince"]>(),
   };
-  return runCheck(withSingleFileRecords({
-    repoRoot: CASCADE_REPO,
-    installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
-    moduleExtension: ".ts",
-    baseRevision: "origin/main",
-    assessment: DEFAULT_ASSESSMENT,
-    fileText: createDefaultFileTextPort({}),
-    engine: createDefaultEnginePort({}),
-    modules: createDefaultModuleLoaderPort({}),
-    path,
-    git: cascadeGit,
-  }));
+  return runCheck(
+    withSingleFileRecords({
+      repoRoot: CASCADE_REPO,
+      installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
+      moduleExtension: ".ts",
+      baseRevision: "origin/main",
+      assessment: DEFAULT_ASSESSMENT,
+      fileText: createDefaultFileTextPort({}),
+      engine: createDefaultEnginePort({}),
+      modules: createDefaultModuleLoaderPort({}),
+      path,
+      git: cascadeGit,
+    }),
+  );
 };
 
 describe("adopting a repository whose legacy file holds CD-1 debt beside another discipline's debt (CD-47: the shipped rules and the fixture's own files are the assertion's subject; nothing is spawned or written)", () => {
@@ -362,9 +449,21 @@ describe("adopting a repository whose legacy file holds CD-1 debt beside another
         invalidRecords: [],
         forfeited: [],
         exempted: expect.arrayContaining([
-          expect.objectContaining({ finding: expect.objectContaining({ clause: { ruleSet: "hone", discipline: "CD-1", clause: "any-cast" } }) }),
-          expect.objectContaining({ finding: expect.objectContaining({ clause: { ruleSet: "hone", discipline: "CD-1", clause: "explicit-any" } }) }),
-          expect.objectContaining({ finding: expect.objectContaining({ clause: { ruleSet: "hone", discipline: "CD-15", clause: "loops" } }) }),
+          expect.objectContaining({
+            finding: expect.objectContaining({
+              clause: { ruleSet: "hone", discipline: "CD-1", clause: "any-cast" },
+            }),
+          }),
+          expect.objectContaining({
+            finding: expect.objectContaining({
+              clause: { ruleSet: "hone", discipline: "CD-1", clause: "explicit-any" },
+            }),
+          }),
+          expect.objectContaining({
+            finding: expect.objectContaining({
+              clause: { ruleSet: "hone", discipline: "CD-15", clause: "loops" },
+            }),
+          }),
         ]),
       },
     });

@@ -1,11 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../../src/application/ports/host/process-port.ts";
+
 import type { FileTextPort } from "../../../src/application/ports/file-system/file-text-port.ts";
-import type { Bundle, BundledOutput, BundlerPort } from "../building/esbuild-bundler-port.ts";
+import type { ProcessPort } from "../../../src/application/ports/host/process-port.ts";
+import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import type { EntryDisposition, StepRun } from "../../install-proof/install-proof-plan.ts";
-import type { CommandRunPort, CopiedEntry, ListedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
-import type { DeclarationPort, EmittedDeclaration } from "../type-declarations/package-declarations.ts";
+import type {
+  CommandRunPort,
+  CopiedEntry,
+  ListedEntry,
+  ScratchFilesPort,
+} from "../../install-proof/install-proof-ports.ts";
+import type { Bundle, BundledOutput, BundlerPort } from "../building/esbuild-bundler-port.ts";
+import type {
+  DeclarationPort,
+  EmittedDeclaration,
+} from "../type-declarations/package-declarations.ts";
 import {
   createTarballPacker,
   type PackageCommandRequest,
@@ -17,15 +26,41 @@ import {
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/" });
 
 const ENTRY_DECLARATIONS: readonly EmittedDeclaration[] = [
-  { path: "src/audit.d.ts", text: 'export type { Result } from "./domain/result.js";\n', specifiers: ["./domain/result.js"], refusals: [] },
-  { path: "src/eslint-plugin.d.ts", text: "export type ChecksPlugin = 1;\n", specifiers: [], refusals: [] },
+  {
+    path: "src/audit.d.ts",
+    text: 'export type { Result } from "./domain/result.js";\n',
+    specifiers: ["./domain/result.js"],
+    refusals: [],
+  },
+  {
+    path: "src/eslint-plugin.d.ts",
+    text: "export type ChecksPlugin = 1;\n",
+    specifiers: [],
+    refusals: [],
+  },
   { path: "src/rule-set.d.ts", text: "export type RuleSet = 1;\n", specifiers: [], refusals: [] },
-  { path: "src/testing.d.ts", text: "export declare const repoPathOf: 1;\n", specifiers: [], refusals: [] },
-  { path: "src/domain/result.d.ts", text: "export type Result = 1;\n", specifiers: [], refusals: [] },
+  {
+    path: "src/testing.d.ts",
+    text: "export declare const repoPathOf: 1;\n",
+    specifiers: [],
+    refusals: [],
+  },
+  {
+    path: "src/domain/result.d.ts",
+    text: "export type Result = 1;\n",
+    specifiers: [],
+    refusals: [],
+  },
 ];
 
-const emittingDeclarations = (request: { readonly declarations: readonly EmittedDeclaration[] }): DeclarationPort => ({
-  emit: () => Promise.resolve({ outcome: "ok", value: { declarations: request.declarations, diagnostics: [] } }),
+const emittingDeclarations = (request: {
+  readonly declarations: readonly EmittedDeclaration[];
+}): DeclarationPort => ({
+  emit: () =>
+    Promise.resolve({
+      outcome: "ok",
+      value: { declarations: request.declarations, diagnostics: [] },
+    }),
 });
 
 type InMemoryFiles = {
@@ -38,7 +73,9 @@ type InMemoryFiles = {
 type Placement = "inside" | "outside";
 
 const placementOf = (request: { readonly path: string; readonly folder: string }): Placement =>
-  request.path === request.folder || request.path.startsWith(`${request.folder}/`) ? "inside" : "outside";
+  request.path === request.folder || request.path.startsWith(`${request.folder}/`)
+    ? "inside"
+    : "outside";
 
 const copyDispositionOf = (request: {
   readonly relative: string;
@@ -46,7 +83,11 @@ const copyDispositionOf = (request: {
 }): EntryDisposition => {
   const segments = request.relative.split("/");
   return segments.every(
-    (name, index) => request.disposition({ name, entryKind: index === segments.length - 1 ? "file" : "folder" }) === "kept",
+    (name, index) =>
+      request.disposition({
+        name,
+        entryKind: index === segments.length - 1 ? "file" : "folder",
+      }) === "kept",
   )
     ? "kept"
     : "left-out";
@@ -62,11 +103,20 @@ const copiedInto = (request: {
     .filter(
       ([candidate]) =>
         placementOf({ path: candidate, folder: request.from }) === "inside" &&
-        copyDispositionOf({ relative: candidate.slice(request.from.length + 1), disposition: request.disposition }) === "kept",
+        copyDispositionOf({
+          relative: candidate.slice(request.from.length + 1),
+          disposition: request.disposition,
+        }) === "kept",
     )
-    .map(([path, text]): readonly [string, string] => [`${request.to}${path.slice(request.from.length)}`, text]);
+    .map(([path, text]): readonly [string, string] => [
+      `${request.to}${path.slice(request.from.length)}`,
+      text,
+    ]);
 
-const listedUnder = (request: { readonly files: ReadonlyMap<string, string>; readonly folder: string }): readonly ListedEntry[] =>
+const listedUnder = (request: {
+  readonly files: ReadonlyMap<string, string>;
+  readonly folder: string;
+}): readonly ListedEntry[] =>
   [...request.files.keys()]
     .filter((path) => path.startsWith(`${request.folder}/`))
     .sort()
@@ -76,7 +126,9 @@ const listedUnder = (request: { readonly files: ReadonlyMap<string, string>; rea
       entryKind: "file",
     }));
 
-const inMemoryFiles = (request: { readonly initial: Readonly<Record<string, string>> }): InMemoryFiles => {
+const inMemoryFiles = (request: {
+  readonly initial: Readonly<Record<string, string>>;
+}): InMemoryFiles => {
   const files = new Map(Object.entries(request.initial));
   const temporaryRoots = { created: 0 };
   return {
@@ -123,7 +175,9 @@ const inMemoryFiles = (request: { readonly initial: Readonly<Record<string, stri
           : { outcome: "ok", value: `digest of ${text}` };
       },
       realPathOf: ({ path }) =>
-        [...files.keys()].some((candidate) => placementOf({ path: candidate, folder: path }) === "inside")
+        [...files.keys()].some(
+          (candidate) => placementOf({ path: candidate, folder: path }) === "inside",
+        )
           ? { outcome: "ok", value: path }
           : { outcome: "failed", error: { kind: "effect-failed", detail: `ENOENT ${path}` } },
     },
@@ -142,7 +196,9 @@ const PACK_DESTINATION_FLAG = "--pack-destination";
 const EXITED: StepRun = { outcome: "exited", exitCode: 0, output: "" };
 
 const packDestinationOf = (request: { readonly run: CommandRun }): string | undefined =>
-  request.run.arguments[0] === "pack" ? request.run.arguments[request.run.arguments.indexOf(PACK_DESTINATION_FLAG) + 1] : undefined;
+  request.run.arguments[0] === "pack"
+    ? request.run.arguments[request.run.arguments.indexOf(PACK_DESTINATION_FLAG) + 1]
+    : undefined;
 
 const npmPacking = (request: {
   readonly files: InMemoryFiles;
@@ -181,7 +237,8 @@ const SOURCE_WITHOUT_LOCK: Readonly<Record<string, string>> = {
   "/package/src/testing.ts": "export {};\n",
   "/package/src/hone.ts": "await run();\n",
   "/package/src/infrastructure/engines/typescript-compiler/runner/runner.ts": "await project();\n",
-  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [], "recordKinds": {} }',
+  "/package/src/infrastructure/disciplines-file/version-one-names.json":
+    '{ "version": 1, "clauses": [], "recordKinds": {} }',
 };
 
 const EMPTY_LOCK = `lockfileVersion: '9.0'
@@ -190,9 +247,16 @@ importers:
 snapshots: {}
 `;
 
-const SOURCE: Readonly<Record<string, string>> = { ...SOURCE_WITHOUT_LOCK, "/package/pnpm-lock.yaml": EMPTY_LOCK };
+const SOURCE: Readonly<Record<string, string>> = {
+  ...SOURCE_WITHOUT_LOCK,
+  "/package/pnpm-lock.yaml": EMPTY_LOCK,
+};
 
-const entryOutput = (request: { readonly source: string; readonly path: string; readonly text: string }): BundledOutput => ({
+const entryOutput = (request: {
+  readonly source: string;
+  readonly path: string;
+  readonly text: string;
+}): BundledOutput => ({
   path: request.path,
   text: request.text,
   entryPoint: request.source,
@@ -200,26 +264,44 @@ const entryOutput = (request: { readonly source: string; readonly path: string; 
   externalImports: [],
 });
 
-const RUNNER_OUTPUT = entryOutput({ source: "src/infrastructure/engines/typescript-compiler/runner/runner.ts", path: "src/infrastructure/engines/typescript-compiler/runner/runner.js", text: "await project();\n" });
+const RUNNER_OUTPUT = entryOutput({
+  source: "src/infrastructure/engines/typescript-compiler/runner/runner.ts",
+  path: "src/infrastructure/engines/typescript-compiler/runner/runner.js",
+  text: "await project();\n",
+});
 
 const API_OUTPUTS = [
   entryOutput({ source: "src/audit.ts", path: "src/audit.js", text: "export {};\n" }),
-  entryOutput({ source: "src/eslint-plugin.ts", path: "src/eslint-plugin.js", text: "export {};\n" }),
+  entryOutput({
+    source: "src/eslint-plugin.ts",
+    path: "src/eslint-plugin.js",
+    text: "export {};\n",
+  }),
   entryOutput({ source: "src/rule-set.ts", path: "src/rule-set.js", text: "export {};\n" }),
   entryOutput({ source: "src/testing.ts", path: "src/testing.js", text: "export {};\n" }),
 ];
 
 const BUNDLE: Bundle = {
-  outputs: [entryOutput({ source: "src/hone.ts", path: "src/hone.js", text: "await run();\n" }), ...API_OUTPUTS, RUNNER_OUTPUT],
+  outputs: [
+    entryOutput({ source: "src/hone.ts", path: "src/hone.js", text: "await run();\n" }),
+    ...API_OUTPUTS,
+    RUNNER_OUTPUT,
+  ],
   packageRoots: [],
 };
 
 const DRIFTED: Bundle = {
   ...BUNDLE,
-  outputs: [entryOutput({ source: "src/hone.ts", path: "src/hone.js", text: "drifted\n" }), ...API_OUTPUTS, RUNNER_OUTPUT],
+  outputs: [
+    entryOutput({ source: "src/hone.ts", path: "src/hone.js", text: "drifted\n" }),
+    ...API_OUTPUTS,
+    RUNNER_OUTPUT,
+  ],
 };
 
-const steadyBundler = (): BundlerPort => ({ bundle: vi.fn<BundlerPort["bundle"]>().mockResolvedValue({ outcome: "ok", value: BUNDLE }) });
+const steadyBundler = (): BundlerPort => ({
+  bundle: vi.fn<BundlerPort["bundle"]>().mockResolvedValue({ outcome: "ok", value: BUNDLE }),
+});
 
 const driftingBundler = (): BundlerPort => ({
   bundle: vi
@@ -230,12 +312,18 @@ const driftingBundler = (): BundlerPort => ({
 
 const SAME_TARBALL = (): string => "tarball";
 
-const NUMBERED_TARBALL = (request: { readonly packCount: number }): string => `tarball ${request.packCount}`;
+const NUMBERED_TARBALL = (request: { readonly packCount: number }): string =>
+  `tarball ${request.packCount}`;
 
 const npmFaking = (request: {
   readonly files: InMemoryFiles;
   readonly tarballText: (request: { readonly packCount: number }) => string;
-}): NpmPacking => npmPacking({ files: request.files, tarballName: "hailstails-hone-0.0.0.tgz", tarballText: request.tarballText });
+}): NpmPacking =>
+  npmPacking({
+    files: request.files,
+    tarballName: "hailstails-hone-0.0.0.tgz",
+    tarballText: request.tarballText,
+  });
 
 const processPort = (): ProcessPort => ({
   arguments: [],
@@ -281,12 +369,22 @@ describe("createTarballPacker", () => {
 
     const tarball = await packer.pack({ packageRoot: "/package", workRoot: "/work" });
 
-    expect({ tarball, runs: npm.runs(), built: files.texts()["/work/package-build/package.json"] }).toEqual({
+    expect({
+      tarball,
+      runs: npm.runs(),
+      built: files.texts()["/work/package-build/package.json"],
+    }).toEqual({
       tarball: { outcome: "ok", value: "/work/package-tarball/hailstails-hone-0.0.0.tgz" },
       runs: [
         {
           command: "npm",
-          arguments: ["pack", "--ignore-scripts", "--pack-destination", "/work/package-tarball", "/work/package-build"],
+          arguments: [
+            "pack",
+            "--ignore-scripts",
+            "--pack-destination",
+            "/work/package-tarball",
+            "/work/package-build",
+          ],
           directory: "/package",
         },
       ],
@@ -304,12 +402,17 @@ describe("createTarballPacker", () => {
         bundler: steadyBundler(),
         declarations: emittingDeclarations({ declarations: ENTRY_DECLARATIONS }),
       },
-      commands: { run: vi.fn<CommandRunPort["run"]>().mockReturnValue({ outcome: "exited", exitCode: 1, output: "npm ERR! pack" }) },
+      commands: {
+        run: vi
+          .fn<CommandRunPort["run"]>()
+          .mockReturnValue({ outcome: "exited", exitCode: 1, output: "npm ERR! pack" }),
+      },
     });
 
     expect(await packer.pack({ packageRoot: "/package", workRoot: "/work" })).toEqual({
       outcome: "failed",
-      error: 'FAIL: npm pack /work/package-build: {"outcome":"exited","exitCode":1,"output":"npm ERR! pack"}',
+      error:
+        'FAIL: npm pack /work/package-build: {"outcome":"exited","exitCode":1,"output":"npm ERR! pack"}',
     });
   });
 });
@@ -322,8 +425,15 @@ describe("runBuildPackage", () => {
 
     await runBuildPackage(request);
 
-    expect({ report: reportOf(request), runs: npm.runs(), left: files.pathsUnder({ folder: "/tmp" }) }).toEqual({
-      report: { writes: [[{ text: "build package: wrote 20 files to /package/dist\n" }]], exits: [[{ code: 0 }]] },
+    expect({
+      report: reportOf(request),
+      runs: npm.runs(),
+      left: files.pathsUnder({ folder: "/tmp" }),
+    }).toEqual({
+      report: {
+        writes: [[{ text: "build package: wrote 20 files to /package/dist\n" }]],
+        exits: [[{ code: 0 }]],
+      },
       runs: [],
       left: [],
     });
@@ -331,19 +441,31 @@ describe("runBuildPackage", () => {
 
   it("fails naming core's lock when it cannot be read, writing nothing to dist", async () => {
     const files = inMemoryFiles({ initial: { ...SOURCE_WITHOUT_LOCK } });
-    const request = commandRequest({ files, bundler: steadyBundler(), commands: npmFaking({ files, tarballText: SAME_TARBALL }).commands });
+    const request = commandRequest({
+      files,
+      bundler: steadyBundler(),
+      commands: npmFaking({ files, tarballText: SAME_TARBALL }).commands,
+    });
 
     await runBuildPackage(request);
 
-    expect({ report: reportOf(request), built: files.pathsUnder({ folder: "/package/dist" }) }).toEqual({
-      report: { writes: [[{ text: expect.stringContaining("/package/pnpm-lock.yaml") }]], exits: [[{ code: 1 }]] },
+    expect({
+      report: reportOf(request),
+      built: files.pathsUnder({ folder: "/package/dist" }),
+    }).toEqual({
+      report: {
+        writes: [[{ text: expect.stringContaining("/package/pnpm-lock.yaml") }]],
+        exits: [[{ code: 1 }]],
+      },
       built: [],
     });
   });
 });
 describe("runPackPackage", () => {
   it("clears the artefacts folder, packs the dist build into it and prints the tarball", async () => {
-    const files = inMemoryFiles({ initial: { ...SOURCE, "/package/artefacts/old-0.0.0.tgz": "old" } });
+    const files = inMemoryFiles({
+      initial: { ...SOURCE, "/package/artefacts/old-0.0.0.tgz": "old" },
+    });
     const request = commandRequest({
       files,
       bundler: steadyBundler(),
@@ -352,8 +474,14 @@ describe("runPackPackage", () => {
 
     await runPackPackage(request);
 
-    expect({ report: reportOf(request), old: files.texts()["/package/artefacts/old-0.0.0.tgz"] }).toEqual({
-      report: { writes: [[{ text: "pack package: wrote /package/artefacts/hailstails-hone-0.0.0.tgz\n" }]], exits: [[{ code: 0 }]] },
+    expect({
+      report: reportOf(request),
+      old: files.texts()["/package/artefacts/old-0.0.0.tgz"],
+    }).toEqual({
+      report: {
+        writes: [[{ text: "pack package: wrote /package/artefacts/hailstails-hone-0.0.0.tgz\n" }]],
+        exits: [[{ code: 0 }]],
+      },
       old: undefined,
     });
   });
@@ -372,7 +500,13 @@ describe("runPackageDeterminism", () => {
 
     expect({ report: reportOf(request), left: files.pathsUnder({ folder: "/tmp" }) }).toEqual({
       report: {
-        writes: [[{ text: "package determinism: pass, 20 files and the packed tarball byte-identical across two builds\n" }]],
+        writes: [
+          [
+            {
+              text: "package determinism: pass, 20 files and the packed tarball byte-identical across two builds\n",
+            },
+          ],
+        ],
         exits: [[{ code: 0 }]],
       },
       left: [],

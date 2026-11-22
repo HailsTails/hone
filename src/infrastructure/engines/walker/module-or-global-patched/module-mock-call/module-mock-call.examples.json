@@ -4,17 +4,13 @@
       "name": "vi.mock of a module",
       "fileName": "store.test.ts",
       "source": "vi.mock(\"./store.ts\");\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "vi.mock in a tsx test",
       "fileName": "view.test.tsx",
       "source": "import { vi } from \"vitest\";\nvi.mock(\"module\");\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

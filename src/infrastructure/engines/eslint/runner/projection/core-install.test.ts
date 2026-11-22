@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { coreInstallOf } from "./core-install.ts";
-import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 
@@ -17,7 +18,10 @@ const fileTextHolding = (request: { readonly text: string }): FileTextPort => ({
 });
 
 const fileTextFailingToRead: FileTextPort = {
-  read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }),
+  read: ({ path }) => ({
+    outcome: "failed",
+    error: { kind: "unreadable", path, detail: "ENOENT" },
+  }),
   exists: vi.fn<FileTextPort["exists"]>(),
   write: vi.fn<FileTextPort["write"]>(),
 };
@@ -26,10 +30,18 @@ describe("coreInstallOf", () => {
   it("is the package its package.json names when built core runs, reading only that manifest", () => {
     const fileText = fileTextHolding({ text: '{ "name": "@hailstails/hone", "type": "module" }' });
 
-    const install = coreInstallOf({ fileText, path: posixPath, installRoot: INSTALL_ROOT, moduleExtension: ".js" });
+    const install = coreInstallOf({
+      fileText,
+      path: posixPath,
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".js",
+    });
 
     expect({ install, read: vi.mocked(fileText.read).mock.calls }).toEqual({
-      install: { outcome: "ok", value: { form: "package", root: INSTALL_ROOT, name: "@hailstails/hone" } },
+      install: {
+        outcome: "ok",
+        value: { form: "package", root: INSTALL_ROOT, name: "@hailstails/hone" },
+      },
       read: [[{ path: MANIFEST }]],
     });
   });
@@ -38,14 +50,24 @@ describe("coreInstallOf", () => {
     const fileText = fileTextHolding({ text: '{ "name": "@hailstails/hone", "type": "module" }' });
 
     expect({
-      install: coreInstallOf({ fileText, path: posixPath, installRoot: INSTALL_ROOT, moduleExtension: ".ts" }),
+      install: coreInstallOf({
+        fileText,
+        path: posixPath,
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".ts",
+      }),
       read: vi.mocked(fileText.read).mock.calls,
     }).toEqual({ install: { outcome: "ok", value: { form: "source" } }, read: [] });
   });
 
   it("fails as tool-failed when built core's package.json names no package", () => {
     expect(
-      coreInstallOf({ fileText: fileTextHolding({ text: '{ "private": true, "type": "module" }' }), path: posixPath, installRoot: INSTALL_ROOT, moduleExtension: ".js" }),
+      coreInstallOf({
+        fileText: fileTextHolding({ text: '{ "private": true, "type": "module" }' }),
+        path: posixPath,
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".js",
+      }),
     ).toEqual({
       outcome: "failed",
       error: { kind: "tool-failed", detail: `the core install's ${MANIFEST} names no package` },
@@ -53,16 +75,36 @@ describe("coreInstallOf", () => {
   });
 
   it("fails as tool-failed naming the manifest when built core's package.json cannot be read", () => {
-    expect(coreInstallOf({ fileText: fileTextFailingToRead, path: posixPath, installRoot: INSTALL_ROOT, moduleExtension: ".js" })).toEqual({
+    expect(
+      coreInstallOf({
+        fileText: fileTextFailingToRead,
+        path: posixPath,
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".js",
+      }),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "tool-failed", detail: `the core install's ${MANIFEST} cannot be read: ENOENT` },
+      error: {
+        kind: "tool-failed",
+        detail: `the core install's ${MANIFEST} cannot be read: ENOENT`,
+      },
     });
   });
 
   it("fails as tool-failed naming the manifest when it is not JSON", () => {
-    expect(coreInstallOf({ fileText: fileTextHolding({ text: "{ name" }), path: posixPath, installRoot: INSTALL_ROOT, moduleExtension: ".js" })).toMatchObject({
+    expect(
+      coreInstallOf({
+        fileText: fileTextHolding({ text: "{ name" }),
+        path: posixPath,
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".js",
+      }),
+    ).toMatchObject({
       outcome: "failed",
-      error: { kind: "tool-failed", detail: expect.stringContaining(`the core install's ${MANIFEST} is not JSON:`) },
+      error: {
+        kind: "tool-failed",
+        detail: expect.stringContaining(`the core install's ${MANIFEST} is not JSON:`),
+      },
     });
   });
 });

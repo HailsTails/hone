@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { createDefaultDirectoryPort, createDefaultEntryKindPort, createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
+
 import type { DirectoryTreePort } from "../../src/application/ports/file-system/directory-tree-port.ts";
+import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import {
+  createDefaultDirectoryPort,
+  createDefaultEntryKindPort,
+  createDefaultFileTextPort,
+} from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import type { EntryDisposition, StepRun } from "./install-proof-plan.ts";
 import {
   type CommandSpawn,
@@ -11,7 +17,6 @@ import {
   createScratchFilesPort,
   type ScratchFilesSurface,
 } from "./install-proof-ports.ts";
-import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 
 const PERMISSION_DENIED = new Error("EACCES: permission denied, rm '/scratch/proof'");
 
@@ -51,9 +56,14 @@ const commandsOver = (request: { readonly spawn: CommandSpawn; readonly platform
 
 describe("createScratchFilesPort createTemporaryDirectory", () => {
   it("returns the directory the surface made, for the requested prefix", () => {
-    const makeTemporaryDirectory = vi.fn<ScratchFilesSurface["makeTemporaryDirectory"]>().mockReturnValue("/scratch/proof-1");
+    const makeTemporaryDirectory = vi
+      .fn<ScratchFilesSurface["makeTemporaryDirectory"]>()
+      .mockReturnValue("/scratch/proof-1");
 
-    const created = createScratchFilesPort({ tree: treeOver({}), surface: surfaceOver({ makeTemporaryDirectory }) }).createTemporaryDirectory({
+    const created = createScratchFilesPort({
+      tree: treeOver({}),
+      surface: surfaceOver({ makeTemporaryDirectory }),
+    }).createTemporaryDirectory({
       prefix: "proof-",
     });
 
@@ -66,7 +76,11 @@ describe("createScratchFilesPort createTemporaryDirectory", () => {
   it("returns effect-failed with the thrown message when the surface throws", () => {
     const created = createScratchFilesPort({
       tree: treeOver({}),
-      surface: surfaceOver({ makeTemporaryDirectory: vi.fn<ScratchFilesSurface["makeTemporaryDirectory"]>().mockThrow(PERMISSION_DENIED) }),
+      surface: surfaceOver({
+        makeTemporaryDirectory: vi
+          .fn<ScratchFilesSurface["makeTemporaryDirectory"]>()
+          .mockThrow(PERMISSION_DENIED),
+      }),
     }).createTemporaryDirectory({ prefix: "proof-" });
 
     expect(created).toEqual({
@@ -80,7 +94,10 @@ describe("createScratchFilesPort makeDirectory", () => {
   it("makes the requested directory", () => {
     const makeDirectory = vi.fn<ScratchFilesSurface["makeDirectory"]>();
 
-    const made = createScratchFilesPort({ tree: treeOver({}), surface: surfaceOver({ makeDirectory }) }).makeDirectory({ path: "/scratch/toolchain" });
+    const made = createScratchFilesPort({
+      tree: treeOver({}),
+      surface: surfaceOver({ makeDirectory }),
+    }).makeDirectory({ path: "/scratch/toolchain" });
 
     expect({ made, calls: makeDirectory.mock.calls }).toEqual({
       made: { outcome: "ok", value: null },
@@ -91,7 +108,9 @@ describe("createScratchFilesPort makeDirectory", () => {
   it("returns effect-failed when making the directory throws", () => {
     const made = createScratchFilesPort({
       tree: treeOver({}),
-      surface: surfaceOver({ makeDirectory: vi.fn<ScratchFilesSurface["makeDirectory"]>().mockThrow(PERMISSION_DENIED) }),
+      surface: surfaceOver({
+        makeDirectory: vi.fn<ScratchFilesSurface["makeDirectory"]>().mockThrow(PERMISSION_DENIED),
+      }),
     }).makeDirectory({ path: "/scratch/toolchain" });
 
     expect(made).toEqual({
@@ -105,9 +124,14 @@ const SCRATCH_PROOF = absoluteRootOf("/scratch/proof");
 
 describe("createScratchFilesPort removeTree", () => {
   it("removes the requested tree through the directory tree port", () => {
-    const remove = vi.fn<DirectoryTreePort["remove"]>().mockReturnValue({ outcome: "ok", value: undefined });
+    const remove = vi
+      .fn<DirectoryTreePort["remove"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
 
-    const removed = createScratchFilesPort({ surface: surfaceOver({}), tree: treeOver({ remove }) }).removeTree({ path: "/scratch/proof" });
+    const removed = createScratchFilesPort({
+      surface: surfaceOver({}),
+      tree: treeOver({ remove }),
+    }).removeTree({ path: "/scratch/proof" });
 
     expect({ removed, calls: remove.mock.calls }).toEqual({
       removed: { outcome: "ok", value: null },
@@ -116,11 +140,20 @@ describe("createScratchFilesPort removeTree", () => {
   });
 
   it("returns effect-failed with the tree port's detail when removing fails", () => {
-    const remove = vi
-      .fn<DirectoryTreePort["remove"]>()
-      .mockReturnValue({ outcome: "failed", error: { kind: "directory-tree-unremovable", path: SCRATCH_PROOF, detail: "EACCES: permission denied" } });
+    const remove = vi.fn<DirectoryTreePort["remove"]>().mockReturnValue({
+      outcome: "failed",
+      error: {
+        kind: "directory-tree-unremovable",
+        path: SCRATCH_PROOF,
+        detail: "EACCES: permission denied",
+      },
+    });
 
-    expect(createScratchFilesPort({ surface: surfaceOver({}), tree: treeOver({ remove }) }).removeTree({ path: "/scratch/proof" })).toEqual({
+    expect(
+      createScratchFilesPort({ surface: surfaceOver({}), tree: treeOver({ remove }) }).removeTree({
+        path: "/scratch/proof",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "effect-failed", detail: "EACCES: permission denied" },
     });
@@ -131,7 +164,10 @@ describe("createScratchFilesPort copyTree", () => {
   it("copies from and to the requested paths with the given disposition", () => {
     const copyTree = vi.fn<ScratchFilesSurface["copyTree"]>();
 
-    const copied = createScratchFilesPort({ tree: treeOver({}), surface: surfaceOver({ copyTree }) }).copyTree({
+    const copied = createScratchFilesPort({
+      tree: treeOver({}),
+      surface: surfaceOver({ copyTree }),
+    }).copyTree({
       from: "/package/core",
       to: "/repo/tools/hone/core",
       disposition: keepEverything,
@@ -139,12 +175,19 @@ describe("createScratchFilesPort copyTree", () => {
 
     expect({ copied, calls: copyTree.mock.calls }).toEqual({
       copied: { outcome: "ok", value: null },
-      calls: [[{ from: "/package/core", to: "/repo/tools/hone/core", disposition: keepEverything }]],
+      calls: [
+        [{ from: "/package/core", to: "/repo/tools/hone/core", disposition: keepEverything }],
+      ],
     });
   });
 
   it("returns effect-failed when copying throws", () => {
-    const copied = createScratchFilesPort({ tree: treeOver({}), surface: surfaceOver({ copyTree: vi.fn<ScratchFilesSurface["copyTree"]>().mockThrow(PERMISSION_DENIED) }) }).copyTree({
+    const copied = createScratchFilesPort({
+      tree: treeOver({}),
+      surface: surfaceOver({
+        copyTree: vi.fn<ScratchFilesSurface["copyTree"]>().mockThrow(PERMISSION_DENIED),
+      }),
+    }).copyTree({
       from: "/package/core",
       to: "/repo/tools/hone/core",
       disposition: keepEverything,
@@ -167,7 +210,10 @@ describe("createScratchFilesPort listTree", () => {
       ],
     });
 
-    const listed = createScratchFilesPort({ surface: surfaceOver({}), tree: treeOver({ list }) }).listTree({ path: "/repo/tools/hone" });
+    const listed = createScratchFilesPort({
+      surface: surfaceOver({}),
+      tree: treeOver({ list }),
+    }).listTree({ path: "/repo/tools/hone" });
 
     expect({ listed, calls: list.mock.calls }).toEqual({
       listed: {
@@ -182,11 +228,16 @@ describe("createScratchFilesPort listTree", () => {
   });
 
   it("returns effect-failed with the tree port's detail when listing fails", () => {
-    const list = vi
-      .fn<DirectoryTreePort["list"]>()
-      .mockReturnValue({ outcome: "failed", error: { kind: "directory-tree-unreadable", path: SCRATCH_PROOF, detail: "ENOENT" } });
+    const list = vi.fn<DirectoryTreePort["list"]>().mockReturnValue({
+      outcome: "failed",
+      error: { kind: "directory-tree-unreadable", path: SCRATCH_PROOF, detail: "ENOENT" },
+    });
 
-    expect(createScratchFilesPort({ surface: surfaceOver({}), tree: treeOver({ list }) }).listTree({ path: "/repo/tools/hone" })).toEqual({
+    expect(
+      createScratchFilesPort({ surface: surfaceOver({}), tree: treeOver({ list }) }).listTree({
+        path: "/repo/tools/hone",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "effect-failed", detail: "ENOENT" },
     });
@@ -198,9 +249,18 @@ describe("createScratchFilesPort given a path that is not absolute", () => {
     const tree = treeOver({});
     const scratch = createScratchFilesPort({ surface: surfaceOver({}), tree });
 
-    expect({ removed: scratch.removeTree({ path: "relative/proof" }), listed: scratch.listTree({ path: "relative/proof" }) }).toEqual({
-      removed: { outcome: "failed", error: { kind: "effect-failed", detail: "relative/proof is not an absolute path" } },
-      listed: { outcome: "failed", error: { kind: "effect-failed", detail: "relative/proof is not an absolute path" } },
+    expect({
+      removed: scratch.removeTree({ path: "relative/proof" }),
+      listed: scratch.listTree({ path: "relative/proof" }),
+    }).toEqual({
+      removed: {
+        outcome: "failed",
+        error: { kind: "effect-failed", detail: "relative/proof is not an absolute path" },
+      },
+      listed: {
+        outcome: "failed",
+        error: { kind: "effect-failed", detail: "relative/proof is not an absolute path" },
+      },
     });
     expect(tree.remove).not.toHaveBeenCalled();
     expect(tree.list).not.toHaveBeenCalled();
@@ -211,7 +271,10 @@ describe("createScratchFilesPort realPathOf", () => {
   it("returns the real path the surface resolved for the requested path", () => {
     const realPathOf = vi.fn<ScratchFilesSurface["realPathOf"]>().mockReturnValue("/store/zod");
 
-    const resolved = createScratchFilesPort({ tree: treeOver({}), surface: surfaceOver({ realPathOf }) }).realPathOf({ path: "/repo/node_modules/zod" });
+    const resolved = createScratchFilesPort({
+      tree: treeOver({}),
+      surface: surfaceOver({ realPathOf }),
+    }).realPathOf({ path: "/repo/node_modules/zod" });
 
     expect({ resolved, calls: realPathOf.mock.calls }).toEqual({
       resolved: { outcome: "ok", value: "/store/zod" },
@@ -222,7 +285,9 @@ describe("createScratchFilesPort realPathOf", () => {
   it("returns effect-failed when the path cannot be resolved", () => {
     const resolved = createScratchFilesPort({
       tree: treeOver({}),
-      surface: surfaceOver({ realPathOf: vi.fn<ScratchFilesSurface["realPathOf"]>().mockThrow(PERMISSION_DENIED) }),
+      surface: surfaceOver({
+        realPathOf: vi.fn<ScratchFilesSurface["realPathOf"]>().mockThrow(PERMISSION_DENIED),
+      }),
     }).realPathOf({ path: "/repo/node_modules/zod" });
 
     expect(resolved).toEqual({
@@ -236,7 +301,11 @@ describe("createCommandRunPort run", () => {
   it("runs git by name, directly, in the requested directory, with the ambient environment less every GIT_ variable", () => {
     const spawn = vi.fn<CommandSpawn>().mockReturnValue(EXITED_CLEAN);
 
-    commandsOver({ spawn, platform: "linux" }).run({ command: "git", arguments: ["init", "-q"], directory: "/repo" });
+    commandsOver({ spawn, platform: "linux" }).run({
+      command: "git",
+      arguments: ["init", "-q"],
+      directory: "/repo",
+    });
 
     expect(spawn.mock.calls).toEqual([
       [
@@ -254,23 +323,39 @@ describe("createCommandRunPort run", () => {
   it("runs node as the injected executable path", () => {
     const spawn = vi.fn<CommandSpawn>().mockReturnValue(EXITED_CLEAN);
 
-    commandsOver({ spawn, platform: "linux" }).run({ command: "node", arguments: ["entry.ts"], directory: "/repo" });
+    commandsOver({ spawn, platform: "linux" }).run({
+      command: "node",
+      arguments: ["entry.ts"],
+      directory: "/repo",
+    });
 
-    expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ file: "/opt/node/bin/node", launch: "direct" }));
+    expect(spawn).toHaveBeenCalledWith(
+      expect.objectContaining({ file: "/opt/node/bin/node", launch: "direct" }),
+    );
   });
 
   it.each(["npm", "pnpm"] as const)("runs %s directly off Windows", (command) => {
     const spawn = vi.fn<CommandSpawn>().mockReturnValue(EXITED_CLEAN);
 
-    commandsOver({ spawn, platform: "linux" }).run({ command, arguments: ["install"], directory: "/root" });
+    commandsOver({ spawn, platform: "linux" }).run({
+      command,
+      arguments: ["install"],
+      directory: "/root",
+    });
 
-    expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ file: command, launch: "direct" }));
+    expect(spawn).toHaveBeenCalledWith(
+      expect.objectContaining({ file: command, launch: "direct" }),
+    );
   });
 
   it.each(["npm", "pnpm"] as const)("runs %s through a shell on Windows", (command) => {
     const spawn = vi.fn<CommandSpawn>().mockReturnValue(EXITED_CLEAN);
 
-    commandsOver({ spawn, platform: "win32" }).run({ command, arguments: ["install"], directory: "C:\\root" });
+    commandsOver({ spawn, platform: "win32" }).run({
+      command,
+      arguments: ["install"],
+      directory: "C:\\root",
+    });
 
     expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ file: command, launch: "shell" }));
   });
@@ -278,14 +363,20 @@ describe("createCommandRunPort run", () => {
   it("runs git directly on Windows", () => {
     const spawn = vi.fn<CommandSpawn>().mockReturnValue(EXITED_CLEAN);
 
-    commandsOver({ spawn, platform: "win32" }).run({ command: "git", arguments: ["init"], directory: "C:\\repo" });
+    commandsOver({ spawn, platform: "win32" }).run({
+      command: "git",
+      arguments: ["init"],
+      directory: "C:\\repo",
+    });
 
     expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ file: "git", launch: "direct" }));
   });
 
   it("returns the run the spawn reported", () => {
     const run = commandsOver({
-      spawn: vi.fn<CommandSpawn>().mockReturnValue({ outcome: "not-exited", detail: "spawnSync npm ENOENT" }),
+      spawn: vi
+        .fn<CommandSpawn>()
+        .mockReturnValue({ outcome: "not-exited", detail: "spawnSync npm ENOENT" }),
       platform: "linux",
     }).run({ command: "npm", arguments: ["install"], directory: "/root" });
 
@@ -294,7 +385,9 @@ describe("createCommandRunPort run", () => {
 });
 
 describe("createDefaultScratchFilesPort lists and removes a tree through the directory tree port", () => {
-  const SCRATCH = absolutePathSchema.parse(`${import.meta.dirname}/../../artefacts/install-proof-ports-${globalThis.crypto.randomUUID()}`);
+  const SCRATCH = absolutePathSchema.parse(
+    `${import.meta.dirname}/../../artefacts/install-proof-ports-${globalThis.crypto.randomUUID()}`,
+  );
 
   it("lists each entry of a tree by slash-separated path and kind, then removes the whole tree", () => {
     const scratch = createDefaultScratchFilesPort({});
@@ -313,6 +406,8 @@ describe("createDefaultScratchFilesPort lists and removes a tree through the dir
   });
 
   it("reports listing a tree that is not there as a failure", () => {
-    expect(createDefaultScratchFilesPort({}).listTree({ path: SCRATCH })).toMatchObject({ outcome: "failed" });
+    expect(createDefaultScratchFilesPort({}).listTree({ path: SCRATCH })).toMatchObject({
+      outcome: "failed",
+    });
   });
 });

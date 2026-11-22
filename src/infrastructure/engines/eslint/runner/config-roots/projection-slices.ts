@@ -1,11 +1,11 @@
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { UnprojectedFolderReport } from "../../../../../domain/runner/mechanism-run.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
+import { PROJECTION_PATH } from "../projection/projection-text.ts";
 import { configuredDirectoriesOf } from "./checks-config-roots.ts";
 import { directoryOf, fileNameOf } from "./checks-paths.ts";
-import { PROJECTION_PATH } from "../projection/projection-text.ts";
 
 export type ConfigRoot =
   | { readonly placement: "repository" }
@@ -15,10 +15,17 @@ const SELECTION_FILE_NAME = "disciplines.json";
 
 const REPOSITORY_ROOT: ConfigRoot = { placement: "repository" };
 
-const within = (request: { readonly path: string; readonly directory: string }): "within" | "outside" =>
-  request.path === request.directory || request.path.startsWith(`${request.directory}/`) ? "within" : "outside";
+const within = (request: {
+  readonly path: string;
+  readonly directory: string;
+}): "within" | "outside" =>
+  request.path === request.directory || request.path.startsWith(`${request.directory}/`)
+    ? "within"
+    : "outside";
 
-const nestedRepositories = (request: { readonly trackedPaths: readonly RepoPath[] }): readonly string[] =>
+const nestedRepositories = (request: {
+  readonly trackedPaths: readonly RepoPath[];
+}): readonly string[] =>
   request.trackedPaths
     .filter((path) => fileNameOf({ path }) === SELECTION_FILE_NAME)
     .map((path) => directoryOf({ path }))
@@ -28,7 +35,11 @@ const insideNestedRepository = (request: {
   readonly directory: string;
   readonly nested: readonly string[];
 }): "nested" | "own" =>
-  request.nested.some((nested) => within({ path: request.directory, directory: nested }) === "within") ? "nested" : "own";
+  request.nested.some(
+    (nested) => within({ path: request.directory, directory: nested }) === "within",
+  )
+    ? "nested"
+    : "own";
 
 const codeUnitOrder = (left: string, right: string): number => {
   if (left < right) {
@@ -55,7 +66,10 @@ const packageDirectories = (request: RootsRequest): readonly RepoPath[] => {
 
 export const configRootsOf = (request: RootsRequest): readonly ConfigRoot[] => [
   REPOSITORY_ROOT,
-  ...packageDirectories(request).map((directory): ConfigRoot => ({ placement: "package", directory })),
+  ...packageDirectories(request).map((directory): ConfigRoot => ({
+    placement: "package",
+    directory,
+  })),
 ];
 
 export const slicePathOf = (request: { readonly root: ConfigRoot }): RepoPath =>
@@ -86,7 +100,9 @@ export const sliceRecordsOf = (request: {
     : request.records.flatMap((record) => packageRecord({ record, directory: root.directory }));
 };
 
-export const packageFoldersOf = (request: { readonly roots: readonly ConfigRoot[] }): ReadonlySet<string> =>
+export const packageFoldersOf = (request: {
+  readonly roots: readonly ConfigRoot[];
+}): ReadonlySet<string> =>
   new Set(request.roots.flatMap((root) => (root.placement === "package" ? [root.directory] : [])));
 
 export const governingPackageOf = (request: {
@@ -102,11 +118,18 @@ export const governingPackageOf = (request: {
 const outermostOf = (request: { readonly nested: readonly string[] }): readonly string[] =>
   request.nested.filter(
     (folder) =>
-      !request.nested.some((other) => other !== folder && within({ path: folder, directory: other }) === "within"),
+      !request.nested.some(
+        (other) => other !== folder && within({ path: folder, directory: other }) === "within",
+      ),
   );
 
-const holdingOf = (request: { readonly paths: readonly string[]; readonly folder: string }): "holds" | "holds-none" =>
-  request.paths.some((path) => within({ path, directory: request.folder }) === "within") ? "holds" : "holds-none";
+const holdingOf = (request: {
+  readonly paths: readonly string[];
+  readonly folder: string;
+}): "holds" | "holds-none" =>
+  request.paths.some((path) => within({ path, directory: request.folder }) === "within")
+    ? "holds"
+    : "holds-none";
 
 export const nestedConfigurationFoldersOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
@@ -131,10 +154,17 @@ export const unprojectedFoldersOf = (request: {
     .filter((folder) => holdingOf({ paths: request.files, folder }) === "holds")
     .sort(codeUnitOrder)
     .flatMap((folder) => {
-      const selectionFolder = outermostNested.find((candidate) => within({ path: folder, directory: candidate }) === "within");
+      const selectionFolder = outermostNested.find(
+        (candidate) => within({ path: folder, directory: candidate }) === "within",
+      );
       return selectionFolder === undefined
         ? []
-        : [{ folder: repoPathSchema.parse(folder), selectionFolder: repoPathSchema.parse(selectionFolder) }];
+        : [
+            {
+              folder: repoPathSchema.parse(folder),
+              selectionFolder: repoPathSchema.parse(selectionFolder),
+            },
+          ];
     });
 };
 
@@ -143,7 +173,9 @@ export const orphanedSliceDirectoriesOf = (request: {
   readonly roots: readonly ConfigRoot[];
 }): readonly RepoPath[] => {
   const nested = nestedRepositories(request);
-  const rooted = new Set<string>(request.roots.flatMap((root) => (root.placement === "package" ? [root.directory] : [])));
+  const rooted = new Set<string>(
+    request.roots.flatMap((root) => (root.placement === "package" ? [root.directory] : [])),
+  );
   return request.trackedPaths
     .filter((path) => fileNameOf({ path }) === PROJECTION_PATH)
     .map((path) => directoryOf({ path }))

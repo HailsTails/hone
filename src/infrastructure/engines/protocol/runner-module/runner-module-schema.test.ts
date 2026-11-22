@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { runnerModuleSchema } from "./runner-module-schema.ts";
 import { embeddedRunnerModuleSchema } from "./runner-module-schema.ts";
 
@@ -102,7 +103,11 @@ describe("runnerModuleSchema with the embedded member", () => {
   it("accepts an embedded module through the runner module union", () => {
     expect(runnerModuleSchema.safeParse(EMBEDDED_MODULE)).toMatchObject({
       success: true,
-      data: { exceptionPath: "embedded", projectedKinds: ["config-override"], project: expect.any(Function) },
+      data: {
+        exceptionPath: "embedded",
+        projectedKinds: ["config-override"],
+        project: expect.any(Function),
+      },
     });
   });
 

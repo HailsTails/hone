@@ -1,25 +1,40 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepositoryOf } from "../../src/application/ports/records/exception-repository.ts";
-import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
-import type { Finding } from "../../src/domain/finding/governance.ts";
+
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../src/application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
-import type { CheckReport } from "../../src/domain/report/check-report.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
-import type { Case, Principle, RecordKind, Rule, Symptom } from "../../src/domain/language-layer/symptom-catalogue.ts";
-import type { RunReport } from "../../src/domain/report/run-report.ts";
-import { runSelfCheck, selfCheckOutcomeOf, VERSION_TWO_GATED_SECTIONS, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
-import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
-import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { ShownPathOfRepository } from "../../src/application/ports/installation/shown-path-of.ts";
+import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { ExceptionRepositoryOf } from "../../src/application/ports/records/exception-repository.ts";
+import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
+import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
+import type { Finding } from "../../src/domain/finding/governance.ts";
+import type {
+  Case,
+  Principle,
+  RecordKind,
+  Rule,
+  Symptom,
+} from "../../src/domain/language-layer/symptom-catalogue.ts";
+import type { CheckReport } from "../../src/domain/report/check-report.ts";
+import type { RunReport } from "../../src/domain/report/run-report.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import {
+  NO_SYMPTOM_GUIDE,
+  type SymptomGuide,
+} from "../../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
+import {
+  runSelfCheck,
+  selfCheckOutcomeOf,
+  VERSION_TWO_GATED_SECTIONS,
+  versionTwoSelfCheckOutcomeOf,
+} from "./self-check-gate.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -45,7 +60,11 @@ const EMPTY_REPORT: CheckReport = {
 };
 
 const CLASS_IN_A: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
   file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
@@ -54,7 +73,12 @@ const CLASS_IN_A: Finding = {
 
 const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
 
-const DOER_OR_ORCHESTRATOR: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+const DOER_OR_ORCHESTRATOR: Rule = {
+  name: "doer-or-orchestrator",
+  title: "Doer or orchestrator",
+  principle: ONE_PLACE_DECIDES,
+  standing: "accepted",
+};
 
 const KEEPS_STATE: Case = {
   name: "keeps-state-or-settings-across-calls",
@@ -63,7 +87,12 @@ const KEEPS_STATE: Case = {
   owes: [{ kind: "principle", principle: ONE_PLACE_DECIDES }],
 };
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -94,7 +123,16 @@ const CLASS_GUIDE: SymptomGuide = {
     alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
     engines: [],
     symptoms: [CLASS_DECLARED],
-    clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, sight: { kind: "one-symptom", symptom: CLASS_DECLARED } }],
+    clauses: [
+      {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-14"),
+          clause: clauseIdOf("class-syntax"),
+        },
+        sight: { kind: "one-symptom", symptom: CLASS_DECLARED },
+      },
+    ],
     checks: [],
     namedBans: [],
   },
@@ -123,17 +161,37 @@ const EMPTY_RUN_REPORT: RunReport = {
   symptoms: [],
 };
 
-const IGNORED_IN_A = { kind: "ignore", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, file: repoPathOf("src/a.ts"), mechanism: "eslint" } as const;
+const IGNORED_IN_A = {
+  kind: "ignore",
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
+  file: repoPathOf("src/a.ts"),
+  mechanism: "eslint",
+} as const;
 
 describe("VERSION_TWO_GATED_SECTIONS", () => {
   it("names every failing section of a version 2 run except the findings and the unrecorded native exceptions, which are reported and not gated", () => {
-    expect(VERSION_TWO_GATED_SECTIONS).toEqual(["stale", "forfeited", "misnamed", "refused", "unmeasured", "projection-problems"]);
+    expect(VERSION_TWO_GATED_SECTIONS).toEqual([
+      "stale",
+      "forfeited",
+      "misnamed",
+      "refused",
+      "unmeasured",
+      "projection-problems",
+    ]);
   });
 });
 
 describe("versionTwoSelfCheckOutcomeOf", () => {
   it("passes a clean run, printing the report and the gate line", () => {
-    expect(versionTwoSelfCheckOutcomeOf({ checked: { outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT } })).toEqual({
+    expect(
+      versionTwoSelfCheckOutcomeOf({
+        checked: { outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT },
+      }),
+    ).toEqual({
       code: 0,
       text: "verdict: pass\nself-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
@@ -142,7 +200,14 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
   it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: { outcome: { code: 1, text: "verdict: fail\n" }, report: { ...EMPTY_RUN_REPORT, findings: [CLASS_IN_A], unrecorded: [IGNORED_IN_A, IGNORED_IN_A] } },
+        checked: {
+          outcome: { code: 1, text: "verdict: fail\n" },
+          report: {
+            ...EMPTY_RUN_REPORT,
+            findings: [CLASS_IN_A],
+            unrecorded: [IGNORED_IN_A, IGNORED_IN_A],
+          },
+        },
       }),
     ).toEqual({
       code: 0,
@@ -158,8 +223,21 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
           report: {
             ...EMPTY_RUN_REPORT,
             findings: [CLASS_IN_A],
-            misnamed: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathOf("src/a.ts"), line: 3, text: "// eslint-disable-line hone/no-such-check" }],
-            refused: [{ place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 1 }, refusals: [{ kind: "carried-changed-since-base" }] }],
+            misnamed: [
+              {
+                kind: "names-no-check",
+                ruleId: "hone/no-such-check",
+                file: repoPathOf("src/a.ts"),
+                line: 3,
+                text: "// eslint-disable-line hone/no-such-check",
+              },
+            ],
+            refused: [
+              {
+                place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 1 },
+                refusals: [{ kind: "carried-changed-since-base" }],
+              },
+            ],
             unmeasured: [{ kind: "import-unmeasured", base: { state: "not-given" } }],
           },
         },
@@ -173,7 +251,20 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
 
 describe("selfCheckOutcomeOf", () => {
   it("passes a clean run, printing the report and the gate line", () => {
-    expect(selfCheckOutcomeOf({ result: { outcome: "ok", value: { report: EMPTY_REPORT, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: NO_SYMPTOM_GUIDE } } })).toEqual({
+    expect(
+      selfCheckOutcomeOf({
+        result: {
+          outcome: "ok",
+          value: {
+            report: EMPTY_REPORT,
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: NO_SYMPTOM_GUIDE,
+          },
+        },
+      }),
+    ).toEqual({
       code: 0,
       text: "verdict: pass\nself-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
@@ -181,7 +272,18 @@ describe("selfCheckOutcomeOf", () => {
 
   it("passes a run whose only failures are findings, printing them in full as not gated", () => {
     expect(
-      selfCheckOutcomeOf({ result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: NO_SYMPTOM_GUIDE } } }),
+      selfCheckOutcomeOf({
+        result: {
+          outcome: "ok",
+          value: {
+            report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: NO_SYMPTOM_GUIDE,
+          },
+        },
+      }),
     ).toEqual({
       code: 0,
       text: "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nverdict: fail\nself-check: pass, the selection, records and projection are sound; findings (1) and unrecorded (0) are reported above and not gated\n",
@@ -197,10 +299,19 @@ describe("selfCheckOutcomeOf", () => {
             report: {
               ...EMPTY_REPORT,
               findings: [CLASS_IN_A],
-              uncovered: [{ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }],
+              uncovered: [
+                {
+                  ruleSet: TOOL_RULE_SET,
+                  discipline: disciplineIdOf("CD-15"),
+                  clause: clauseIdOf("loops"),
+                },
+              ],
               unmeasured: [{ kind: "import-unmeasured", base: { state: "not-given" } }],
             },
-            output: "counts", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: NO_SYMPTOM_GUIDE,
+            output: "counts",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: NO_SYMPTOM_GUIDE,
           },
         },
       }),
@@ -215,7 +326,13 @@ describe("selfCheckOutcomeOf", () => {
       selfCheckOutcomeOf({
         result: {
           outcome: "ok",
-          value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: CLASS_GUIDE },
+          value: {
+            report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: CLASS_GUIDE,
+          },
         },
       }),
     ).toEqual({
@@ -225,7 +342,14 @@ describe("selfCheckOutcomeOf", () => {
   });
 
   it("exits 2 with the load failure when the check cannot load", () => {
-    expect(selfCheckOutcomeOf({ result: { outcome: "failed", error: { kind: "arguments-invalid", detail: "--repo is required" } } })).toEqual({
+    expect(
+      selfCheckOutcomeOf({
+        result: {
+          outcome: "failed",
+          error: { kind: "arguments-invalid", detail: "--repo is required" },
+        },
+      }),
+    ).toEqual({
       code: 2,
       text: "load failure: arguments-invalid --repo is required\n",
     });
@@ -250,7 +374,11 @@ const requestOver = (request: { readonly process: ProcessPort }): VersionOneComm
     resolve: vi.fn<PathPort["resolve"]>(),
     fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
   },
-  fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() },
+  fileText: {
+    read: vi.fn<FileTextPort["read"]>(),
+    exists: vi.fn<FileTextPort["exists"]>(),
+    write: vi.fn<FileTextPort["write"]>(),
+  },
   engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
@@ -283,7 +411,15 @@ describe("runSelfCheck", () => {
       exits: vi.mocked(processPort.exitWith).mock.calls,
       reads: vi.mocked(request.fileText.read).mock.calls,
     }).toEqual({
-      writes: [[{ text: expect.stringMatching(/^load failure: arguments-invalid hone has no command "--repo"; /) }]],
+      writes: [
+        [
+          {
+            text: expect.stringMatching(
+              /^load failure: arguments-invalid hone has no command "--repo"; /,
+            ),
+          },
+        ],
+      ],
       exits: [[{ code: 2 }]],
       reads: [],
     });

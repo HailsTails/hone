@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+
 import { assessmentSchema, DEFAULT_ASSESSMENT, forfeitureAssessmentSchema } from "./assessment.ts";
 
 describe("forfeitureAssessmentSchema", () => {
   it.each(["this-run", "elsewhere"])("accepts %s", (forfeiture) => {
-    expect(forfeitureAssessmentSchema.safeParse(forfeiture)).toEqual({ success: true, data: forfeiture });
+    expect(forfeitureAssessmentSchema.safeParse(forfeiture)).toEqual({
+      success: true,
+      data: forfeiture,
+    });
   });
 
   it.each(["reported", "", "Elsewhere", "skip", true])("refuses %j", (forfeiture) => {
@@ -21,7 +25,9 @@ describe("assessmentSchema", () => {
   });
 
   it("reads forfeiture elsewhere", () => {
-    expect(assessmentSchema.parse({ forfeiture: "elsewhere" })).toEqual({ forfeiture: "elsewhere" });
+    expect(assessmentSchema.parse({ forfeiture: "elsewhere" })).toEqual({
+      forfeiture: "elsewhere",
+    });
   });
 
   it.each([
@@ -41,22 +47,27 @@ describe("assessmentSchema", () => {
 });
 
 describe("assessmentSchema removed waived clauses", () => {
-  it.each(["run", "not-run"])("refuses waivedClauses %s and says how clauses now state it", (waivedClauses) => {
-    expect(assessmentSchema.safeParse({ waivedClauses })).toMatchObject({
-      success: false,
-      error: {
-        issues: [
-          {
-            message:
-              'removed: "waivedClauses"; in clauses, mark a clause "not-run" when its mechanism does not run, or "not-adopted" when its rule does not apply; see MIGRATING.md section 12',
-          },
-        ],
-      },
-    });
-  });
+  it.each(["run", "not-run"])(
+    "refuses waivedClauses %s and says how clauses now state it",
+    (waivedClauses) => {
+      expect(assessmentSchema.safeParse({ waivedClauses })).toMatchObject({
+        success: false,
+        error: {
+          issues: [
+            {
+              message:
+                'removed: "waivedClauses"; in clauses, mark a clause "not-run" when its mechanism does not run, or "not-adopted" when its rule does not apply; see MIGRATING.md section 12',
+            },
+          ],
+        },
+      });
+    },
+  );
 
   it("names the removed key apart from a key this version does not assess", () => {
-    expect(assessmentSchema.safeParse({ waivedClauses: "not-run", eslint: { evidence: "hone" } })).toMatchObject({
+    expect(
+      assessmentSchema.safeParse({ waivedClauses: "not-run", eslint: { evidence: "hone" } }),
+    ).toMatchObject({
       success: false,
       error: {
         issues: [

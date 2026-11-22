@@ -1,16 +1,18 @@
-import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
-import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
-import type { PathPort } from "../ports/host/path-port.ts";
-import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
-import type { BoundCatalogueOf } from "../ports/symptom-catalogue-repository.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../domain/language-layer/symptom-catalogue-location.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
+import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
+import type { BoundCatalogueOf } from "../ports/symptom-catalogue-repository.ts";
 
 const unreadDetailOf = (request: { readonly error: VersionTwoLoadFailure }): string => {
   const { error } = request;
-  return error.kind === "file-unreadable" || error.kind === "file-malformed" ? error.detail : error.kind;
+  return error.kind === "file-unreadable" || error.kind === "file-malformed"
+    ? error.detail
+    : error.kind;
 };
 
 export const toolCatalogueOf = (request: {
@@ -19,12 +21,29 @@ export const toolCatalogueOf = (request: {
   readonly installRoot: AbsolutePath;
   readonly boundCatalogueOf: BoundCatalogueOf;
 }): Result<SymptomCatalogue, RunLoadFailure> => {
-  const path = request.path.join({ segments: [request.installRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] });
-  const held = request.boundCatalogueOf({ fileText: request.fileText, path: request.path, ruleSetRoot: request.installRoot, installRoot: request.installRoot });
+  const path = request.path.join({
+    segments: [request.installRoot, ...SYMPTOM_CATALOGUE_SEGMENTS],
+  });
+  const held = request.boundCatalogueOf({
+    fileText: request.fileText,
+    path: request.path,
+    ruleSetRoot: request.installRoot,
+    installRoot: request.installRoot,
+  });
   if (held.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "catalogue-not-read", path, reason: { reason: "unreadable", detail: unreadDetailOf({ error: held.error }) } } };
+    return {
+      outcome: "failed",
+      error: {
+        kind: "catalogue-not-read",
+        path,
+        reason: { reason: "unreadable", detail: unreadDetailOf({ error: held.error }) },
+      },
+    };
   }
   return held.value.held === "catalogue"
     ? { outcome: "ok", value: held.value.catalogue }
-    : { outcome: "failed", error: { kind: "catalogue-not-read", path, reason: { reason: "absent" } } };
+    : {
+        outcome: "failed",
+        error: { kind: "catalogue-not-read", path, reason: { reason: "absent" } },
+      };
 };

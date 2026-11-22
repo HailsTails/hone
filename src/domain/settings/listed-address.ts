@@ -1,12 +1,14 @@
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
-import { isRuleSetName } from "../rule-set/identifiers.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { isRuleSetName } from "../rule-set/identifiers.ts";
 
 export type ListedAddress = { readonly ruleSet: ClauseAddress["ruleSet"]; readonly check: string };
 
 const LISTED_ADDRESS_TEXT = /^(?:(?<ruleSet>[^/#]+)\/)?(?<check>[^/#]+#[^/#]+)$/;
 
-const ruleSetOf = (request: { readonly name: string | undefined }): ClauseAddress["ruleSet"] | undefined => {
+const ruleSetOf = (request: {
+  readonly name: string | undefined;
+}): ClauseAddress["ruleSet"] | undefined => {
   if (request.name === undefined || request.name === TOOL_RULE_SET) {
     return TOOL_RULE_SET;
   }
@@ -21,7 +23,14 @@ export const listedAddressOf = (request: { readonly text: string }): ListedAddre
 };
 
 export const listedAddressText = (request: { readonly address: ListedAddress }): string =>
-  request.address.ruleSet === TOOL_RULE_SET ? request.address.check : `${request.address.ruleSet.name}/${request.address.check}`;
+  request.address.ruleSet === TOOL_RULE_SET
+    ? request.address.check
+    : `${request.address.ruleSet.name}/${request.address.check}`;
 
-export const sameListedAddress = (request: { readonly left: ListedAddress; readonly right: ListedAddress }): "same" | "different" =>
-  listedAddressText({ address: request.left }) === listedAddressText({ address: request.right }) ? "same" : "different";
+export const sameListedAddress = (request: {
+  readonly left: ListedAddress;
+  readonly right: ListedAddress;
+}): "same" | "different" =>
+  listedAddressText({ address: request.left }) === listedAddressText({ address: request.right })
+    ? "same"
+    : "different";

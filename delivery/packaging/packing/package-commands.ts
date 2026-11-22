@@ -2,7 +2,11 @@ import type { ProcessPort } from "../../../src/application/ports/host/process-po
 import type { Result } from "../../../src/domain/result.ts";
 import { packageFileStemOf, TOOL_IDENTITY } from "../../../src/domain/rule-set/tool-identity.ts";
 import type { CommandRunPort } from "../../install-proof/install-proof-ports.ts";
-import { type BuiltPackage, buildPackage, type PackageBuildPorts } from "../building/package-build.ts";
+import {
+  type BuiltPackage,
+  buildPackage,
+  type PackageBuildPorts,
+} from "../building/package-build.ts";
 
 export type PackageCommandRequest = PackageBuildPorts & {
   readonly process: ProcessPort;
@@ -47,24 +51,37 @@ const packageRootOf = (request: PackageCommandRequest): Done<string> => {
       };
 };
 
-const finished = (request: { readonly process: ProcessPort; readonly outcome: Done<string> }): void => {
-  request.process.writeOut({ text: `${request.outcome.outcome === "failed" ? request.outcome.error : request.outcome.value}\n` });
+const finished = (request: {
+  readonly process: ProcessPort;
+  readonly outcome: Done<string>;
+}): void => {
+  request.process.writeOut({
+    text: `${request.outcome.outcome === "failed" ? request.outcome.error : request.outcome.value}\n`,
+  });
   request.process.exitWith({ code: request.outcome.outcome === "failed" ? 1 : 0 });
 };
 
-const succeeded = (request: { readonly label: string; readonly run: ReturnType<CommandRunPort["run"]> }): Done<null> =>
+const succeeded = (request: {
+  readonly label: string;
+  readonly run: ReturnType<CommandRunPort["run"]>;
+}): Done<null> =>
   request.run.outcome === "not-exited" || request.run.exitCode !== 0
     ? { outcome: "failed", error: `FAIL: ${request.label}: ${JSON.stringify(request.run)}` }
     : { outcome: "ok", value: null };
 
-const packedBuild = (request: CommandPorts & {
-  readonly packageRoot: string;
-  readonly outputRoot: string;
-  readonly packDestination: string;
-}): Done<string> => {
+const packedBuild = (
+  request: CommandPorts & {
+    readonly packageRoot: string;
+    readonly outputRoot: string;
+    readonly packDestination: string;
+  },
+): Done<string> => {
   const destination = request.ports.scratch.makeDirectory({ path: request.packDestination });
   if (destination.outcome === "failed") {
-    return { outcome: "failed", error: `FAIL: create ${request.packDestination}: ${destination.error.detail}` };
+    return {
+      outcome: "failed",
+      error: `FAIL: create ${request.packDestination}: ${destination.error.detail}`,
+    };
   }
   const packed = succeeded({
     label: `npm pack ${request.outputRoot}`,
@@ -78,18 +95,29 @@ const packedBuild = (request: CommandPorts & {
     return packed;
   }
   const listed = request.ports.scratch.listTree({ path: request.packDestination });
-  const tarballs = listed.outcome === "failed" ? [] : listed.value.filter((entry) => entry.name.endsWith(TARBALL_SUFFIX));
+  const tarballs =
+    listed.outcome === "failed"
+      ? []
+      : listed.value.filter((entry) => entry.name.endsWith(TARBALL_SUFFIX));
   const [tarball] = tarballs;
   return tarballs.length === 1 && tarball !== undefined
-    ? { outcome: "ok", value: request.ports.path.join({ segments: [request.packDestination, tarball.path] }) }
-    : { outcome: "failed", error: `FAIL: npm pack left ${tarballs.length} tarballs in ${request.packDestination}, not one` };
+    ? {
+        outcome: "ok",
+        value: request.ports.path.join({ segments: [request.packDestination, tarball.path] }),
+      }
+    : {
+        outcome: "failed",
+        error: `FAIL: npm pack left ${tarballs.length} tarballs in ${request.packDestination}, not one`,
+      };
 };
 
-export const packedTarball = async (request: CommandPorts & {
-  readonly packageRoot: string;
-  readonly outputRoot: string;
-  readonly packDestination: string;
-}): Promise<Done<string>> => {
+export const packedTarball = async (
+  request: CommandPorts & {
+    readonly packageRoot: string;
+    readonly outputRoot: string;
+    readonly packDestination: string;
+  },
+): Promise<Done<string>> => {
   const built = await buildPackage(request);
   return built.outcome === "failed" ? built : packedBuild(request);
 };
@@ -107,7 +135,10 @@ const buildOutcome = async (request: PackageCommandRequest): Promise<Done<string
   });
   return built.outcome === "failed"
     ? built
-    : { outcome: "ok", value: `build package: wrote ${built.value.files.length} files to ${built.value.outputRoot}` };
+    : {
+        outcome: "ok",
+        value: `build package: wrote ${built.value.files.length} files to ${built.value.outputRoot}`,
+      };
 };
 
 const packOutcome = async (request: PackageCommandRequest): Promise<Done<string>> => {
@@ -127,27 +158,43 @@ const packOutcome = async (request: PackageCommandRequest): Promise<Done<string>
     outputRoot: request.path.join({ segments: [packageRoot.value, BUILD_FOLDER] }),
     packDestination,
   });
-  return tarball.outcome === "failed" ? tarball : { outcome: "ok", value: `pack package: wrote ${tarball.value}` };
+  return tarball.outcome === "failed"
+    ? tarball
+    : { outcome: "ok", value: `pack package: wrote ${tarball.value}` };
 };
 
 type PackedBuild = { readonly built: BuiltPackage; readonly tarball: string };
 
-const packedBuildIn = async (request: CommandPorts & {
-  readonly packageRoot: string;
-  readonly root: string;
-}): Promise<Done<PackedBuild>> => {
+const packedBuildIn = async (
+  request: CommandPorts & {
+    readonly packageRoot: string;
+    readonly root: string;
+  },
+): Promise<Done<PackedBuild>> => {
   const outputRoot = request.ports.path.join({ segments: [request.root, "package"] });
   const built = await buildPackage({ ...request, outputRoot });
   if (built.outcome === "failed") {
     return built;
   }
-  const tarball = packedBuild({ ...request, outputRoot, packDestination: request.ports.path.join({ segments: [request.root, "tarball"] }) });
-  return tarball.outcome === "failed" ? tarball : { outcome: "ok", value: { built: built.value, tarball: tarball.value } };
+  const tarball = packedBuild({
+    ...request,
+    outputRoot,
+    packDestination: request.ports.path.join({ segments: [request.root, "tarball"] }),
+  });
+  return tarball.outcome === "failed"
+    ? tarball
+    : { outcome: "ok", value: { built: built.value, tarball: tarball.value } };
 };
 
-const builtText = (request: { readonly ports: PackageBuildPorts; readonly built: BuiltPackage; readonly file: string }): string | undefined => {
+const builtText = (request: {
+  readonly ports: PackageBuildPorts;
+  readonly built: BuiltPackage;
+  readonly file: string;
+}): string | undefined => {
   const read = request.ports.fileText.read({
-    path: request.ports.path.join({ segments: [request.built.outputRoot, ...request.file.split("/")] }),
+    path: request.ports.path.join({
+      segments: [request.built.outputRoot, ...request.file.split("/")],
+    }),
   });
   return read.outcome === "ok" ? read.value : undefined;
 };
@@ -159,7 +206,8 @@ const sameInBoth = (request: {
   readonly file: string;
 }): "same" | "different" => {
   const first = builtText({ ports: request.ports, built: request.first, file: request.file });
-  return first !== undefined && first === builtText({ ports: request.ports, built: request.second, file: request.file })
+  return first !== undefined &&
+    first === builtText({ ports: request.ports, built: request.second, file: request.file })
     ? "same"
     : "different";
 };
@@ -173,7 +221,10 @@ const differingFiles = (request: {
     .sort()
     .filter((file) => sameInBoth({ ...request, file }) === "different");
 
-const digestOf = (request: { readonly ports: PackageBuildPorts; readonly tarball: string }): string | undefined => {
+const digestOf = (request: {
+  readonly ports: PackageBuildPorts;
+  readonly tarball: string;
+}): string | undefined => {
   const digest = request.ports.scratch.digestOf({ path: request.tarball });
   return digest.outcome === "ok" ? digest.value : undefined;
 };
@@ -183,29 +234,50 @@ const comparedBuilds = (request: {
   readonly first: PackedBuild;
   readonly second: PackedBuild;
 }): Done<string> => {
-  const differing = differingFiles({ ports: request.ports, first: request.first.built, second: request.second.built });
+  const differing = differingFiles({
+    ports: request.ports,
+    first: request.first.built,
+    second: request.second.built,
+  });
   if (differing.length > 0) {
-    return { outcome: "failed", error: `FAIL: package determinism: two builds differ in ${differing.join(", ")}` };
+    return {
+      outcome: "failed",
+      error: `FAIL: package determinism: two builds differ in ${differing.join(", ")}`,
+    };
   }
   const firstDigest = digestOf({ ports: request.ports, tarball: request.first.tarball });
-  return firstDigest !== undefined && firstDigest === digestOf({ ports: request.ports, tarball: request.second.tarball })
+  return firstDigest !== undefined &&
+    firstDigest === digestOf({ ports: request.ports, tarball: request.second.tarball })
     ? {
         outcome: "ok",
         value: `package determinism: pass, ${request.first.built.files.length} files and the packed tarball byte-identical across two builds`,
       }
-    : { outcome: "failed", error: "FAIL: package determinism: the two builds' packed tarballs differ" };
+    : {
+        outcome: "failed",
+        error: "FAIL: package determinism: the two builds' packed tarballs differ",
+      };
 };
 
-const determinismIn = async (request: CommandPorts & {
-  readonly packageRoot: string;
-  readonly temporaryRoot: string;
-}): Promise<Done<string>> => {
-  const first = await packedBuildIn({ ...request, root: request.ports.path.join({ segments: [request.temporaryRoot, FIRST_BUILD] }) });
+const determinismIn = async (
+  request: CommandPorts & {
+    readonly packageRoot: string;
+    readonly temporaryRoot: string;
+  },
+): Promise<Done<string>> => {
+  const first = await packedBuildIn({
+    ...request,
+    root: request.ports.path.join({ segments: [request.temporaryRoot, FIRST_BUILD] }),
+  });
   if (first.outcome === "failed") {
     return first;
   }
-  const second = await packedBuildIn({ ...request, root: request.ports.path.join({ segments: [request.temporaryRoot, SECOND_BUILD] }) });
-  return second.outcome === "failed" ? second : comparedBuilds({ ports: request.ports, first: first.value, second: second.value });
+  const second = await packedBuildIn({
+    ...request,
+    root: request.ports.path.join({ segments: [request.temporaryRoot, SECOND_BUILD] }),
+  });
+  return second.outcome === "failed"
+    ? second
+    : comparedBuilds({ ports: request.ports, first: first.value, second: second.value });
 };
 
 const determinismOutcome = async (request: PackageCommandRequest): Promise<Done<string>> => {
@@ -215,7 +287,10 @@ const determinismOutcome = async (request: PackageCommandRequest): Promise<Done<
   }
   const temporaryRoot = request.scratch.createTemporaryDirectory({ prefix: DETERMINISM_PREFIX });
   if (temporaryRoot.outcome === "failed") {
-    return { outcome: "failed", error: `FAIL: create a temporary root: ${temporaryRoot.error.detail}` };
+    return {
+      outcome: "failed",
+      error: `FAIL: create a temporary root: ${temporaryRoot.error.detail}`,
+    };
   }
   const compared = await determinismIn({
     ports: request,
@@ -252,6 +327,8 @@ export const createTarballPacker = (options: CommandPorts): TarballPackerPort =>
       commands: options.commands,
       packageRoot: request.packageRoot,
       outputRoot: options.ports.path.join({ segments: [request.workRoot, PACKED_BUILD_FOLDER] }),
-      packDestination: options.ports.path.join({ segments: [request.workRoot, PACKED_TARBALL_FOLDER] }),
+      packDestination: options.ports.path.join({
+        segments: [request.workRoot, PACKED_TARBALL_FOLDER],
+      }),
     }),
 });

@@ -1,6 +1,6 @@
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { RecordedWhyChain } from "./version-one-why-chain.ts";
 
 export type ExistingAuthorisationProvenance = {

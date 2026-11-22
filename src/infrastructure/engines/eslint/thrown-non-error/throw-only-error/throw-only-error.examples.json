@@ -4,41 +4,31 @@
       "name": "string literal",
       "fileName": "src/fail.ts",
       "source": "export const fail = (): never => {\n  throw \"failed\";\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "object literal",
       "fileName": "src/fail.ts",
       "source": "export const fail = (): never => {\n  throw { code: 1 };\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "template literal",
       "fileName": "src/fail.ts",
       "source": "export const fail = (code: number): never => {\n  throw `failed ${code}`;\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "undefined",
       "fileName": "src/fail.ts",
       "source": "export const fail = (): never => {\n  throw undefined;\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "conditional with a literal branch",
       "fileName": "src/fail.ts",
       "source": "export const fail = (ready: string): never => {\n  throw ready === \"yes\" ? new Error(\"x\") : \"x\";\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

@@ -1,31 +1,50 @@
-import type { LoadFailure } from "../../domain/report/load-failure.ts";
-import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
-import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../node/path-port.ts";
-import type { PathPort } from "../../application/ports/host/path-port.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations, DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
-import { settledClauseEdition } from "../../domain/settings/clause-settings/clause-edition.ts";
-import { settledClauseSettings } from "./clause-settings.ts";
-import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
-import { editionPinOf } from "../../domain/settings/clause-settings/edition-pin.ts";
-import type { RunSettings } from "../../domain/settings/run-settings.ts";
-import type { ReportOutput } from "../../domain/settings/report-output.ts";
-import type { ClauseBinding, ClauseEditionReading, SelectionReading } from "../../domain/settings/selection/selection.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
-import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
-import type { Result } from "../../domain/result.ts";
-import type { AddressedCheck } from "../../domain/language-layer/check-address-text.ts";
-import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
-import { runSettingsOf } from "./selection-file.ts";
-import type { ConsumerSelectionFile, RuleSetLocation, UnrunState } from "../../domain/settings/selection/selection-file.ts";
-import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { LocatedPieceFile } from "../../application/ports/rule-set/rule-set-files.ts";
 import type { SelectionRepository } from "../../application/ports/selection/selection-repository.ts";
+import type { AddressedCheck } from "../../domain/language-layer/check-address-text.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../domain/result.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import {
+  clauseAddressText,
+  sameClauseAddress,
+  TOOL_RULE_SET,
+} from "../../domain/rule-set/clause-address.ts";
+import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
+import type {
+  ClauseExceptions,
+  ClauseSettingDeclarations,
+  DisciplineFile,
+} from "../../domain/rule-set/rule-set-types.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
+import { settledClauseEdition } from "../../domain/settings/clause-settings/clause-edition.ts";
+import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
+import { editionPinOf } from "../../domain/settings/clause-settings/edition-pin.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
+import type { RunSettings } from "../../domain/settings/run-settings.ts";
+import type {
+  ConsumerSelectionFile,
+  RuleSetLocation,
+  UnrunState,
+} from "../../domain/settings/selection/selection-file.ts";
+import type {
+  ClauseBinding,
+  ClauseEditionReading,
+  SelectionReading,
+} from "../../domain/settings/selection/selection.ts";
+import {
+  createRuleSetFiles,
+  type RuleSetFiles,
+} from "../content-files/rule-sets/rule-set-files.ts";
+import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../node/path-port.ts";
+import { settledClauseSettings } from "./clause-settings.ts";
+import { runSettingsOf } from "./selection-file.ts";
+import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
 
 export const createSelectionRepository = (options: {
   readonly repoRoot: AbsolutePath;
@@ -41,11 +60,12 @@ export const createDefaultSelectionRepository = (options: {
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
-}): SelectionRepository => createSelectionRepository({
-  ...options,
-  fileText: createDefaultFileTextPort({}),
-  path: createDefaultPathPort({}),
-});
+}): SelectionRepository =>
+  createSelectionRepository({
+    ...options,
+    fileText: createDefaultFileTextPort({}),
+    path: createDefaultPathPort({}),
+  });
 
 type ResolvedClause = {
   readonly ruleSetRoot: AbsolutePath;
@@ -58,7 +78,9 @@ type ResolvedClause = {
   readonly checks: readonly AddressedCheck[];
 };
 
-const failed = (error: LoadFailure): { readonly outcome: "failed"; readonly error: LoadFailure } => ({
+const failed = (
+  error: LoadFailure,
+): { readonly outcome: "failed"; readonly error: LoadFailure } => ({
   outcome: "failed",
   error,
 });
@@ -105,27 +127,40 @@ type ClauseRequest = {
   readonly earlier: readonly ResolvedClause[];
 };
 
-type MechanicalDefinition = Extract<DisciplineFile["clauses"][number], { readonly kind: "mechanical" }>;
+type MechanicalDefinition = Extract<
+  DisciplineFile["clauses"][number],
+  { readonly kind: "mechanical" }
+>;
 
 type DefinedClause = {
   readonly discipline: DisciplineFile;
   readonly definition: MechanicalDefinition;
 };
 
-const disciplineOf = (request: Omit<ClauseRequest, "mechanism">): Result<DisciplineFile, LoadFailure> => {
+const disciplineOf = (
+  request: Omit<ClauseRequest, "mechanism">,
+): Result<DisciplineFile, LoadFailure> => {
   const loaded = request.earlier.find(
     (earlier) =>
-      earlier.ruleSetRoot === request.ruleSetRoot && earlier.discipline.id === request.address.discipline,
+      earlier.ruleSetRoot === request.ruleSetRoot &&
+      earlier.discipline.id === request.address.discipline,
   );
   if (loaded !== undefined) {
     return { outcome: "ok", value: loaded.discipline };
   }
-  const held = request.ruleSetFiles.discipline({ ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.address.discipline });
+  const held = request.ruleSetFiles.discipline({
+    ruleSetRoot: request.ruleSetRoot,
+    installRoot: request.installRoot,
+    discipline: request.address.discipline,
+  });
   if (held.outcome === "failed") {
     return held;
   }
   return held.value.held === "absent"
-    ? failed({ kind: "unknown-discipline", address: clauseAddressText({ address: request.address }) })
+    ? failed({
+        kind: "unknown-discipline",
+        address: clauseAddressText({ address: request.address }),
+      })
     : { outcome: "ok", value: held.value.file };
 };
 
@@ -139,7 +174,9 @@ const mechanicalClause = (
   if (discipline.outcome === "failed") {
     return discipline;
   }
-  const definition = discipline.value.clauses.find((clause) => clause.id === request.address.clause);
+  const definition = discipline.value.clauses.find(
+    (clause) => clause.id === request.address.clause,
+  );
   if (definition === undefined) {
     return failed({ kind: "unknown-clause", address });
   }
@@ -155,7 +192,11 @@ const definedClause = (request: ClauseRequest): Result<DefinedClause, LoadFailur
     return defined;
   }
   if (!defined.value.definition.mechanisms.includes(request.mechanism)) {
-    return failed({ kind: "mechanism-not-allowed", address: clauseAddressText({ address: request.address }), mechanism: request.mechanism });
+    return failed({
+      kind: "mechanism-not-allowed",
+      address: clauseAddressText({ address: request.address }),
+      mechanism: request.mechanism,
+    });
   }
   return defined;
 };
@@ -178,11 +219,18 @@ const pieceOf = (request: PieceRequest): Result<LocatedPieceFile, LoadFailure> =
   if (loaded !== undefined) {
     return { outcome: "ok", value: loaded.piece };
   }
-  const held = request.ruleSetFiles.piece({ ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.discipline, mechanism: request.mechanism });
+  const held = request.ruleSetFiles.piece({
+    ruleSetRoot: request.ruleSetRoot,
+    installRoot: request.installRoot,
+    discipline: request.discipline,
+    mechanism: request.mechanism,
+  });
   if (held.outcome === "failed") {
     return held;
   }
-  return held.value.held === "absent" ? failed(pieceMissing(request)) : { outcome: "ok", value: held.value.file };
+  return held.value.held === "absent"
+    ? failed(pieceMissing(request))
+    : { outcome: "ok", value: held.value.file };
 };
 
 type PieceEntry = {
@@ -206,11 +254,22 @@ const pieceEntry = (request: PieceRequest): Result<PieceEntry, LoadFailure> => {
   if (piece.outcome === "failed") {
     return piece;
   }
-  const entry = piece.value.clauses.find((candidate) => candidate.clause === request.address.clause);
+  const entry = piece.value.clauses.find(
+    (candidate) => candidate.clause === request.address.clause,
+  );
   if (entry === undefined) {
     return failed(pieceMissing(request));
   }
-  return { outcome: "ok", value: { piece: piece.value, pieceRoot: entry.pieceRoot, settings: entry.settings, declarations: entry.clauseSettings, editions: entry.editions } };
+  return {
+    outcome: "ok",
+    value: {
+      piece: piece.value,
+      pieceRoot: entry.pieceRoot,
+      settings: entry.settings,
+      declarations: entry.clauseSettings,
+      editions: entry.editions,
+    },
+  };
 };
 
 const resolvedClauseOf = (request: {
@@ -253,7 +312,11 @@ const resolveClause = (request: {
   readonly mechanism: EngineId;
   readonly earlier: readonly ResolvedClause[];
 }): Result<ResolvedClause, LoadFailure> => {
-  const root = ruleSetRootOf({ ...request, ruleSet: request.address.ruleSet, ruleSets: Object.fromEntries(request.ruleSets) });
+  const root = ruleSetRootOf({
+    ...request,
+    ruleSet: request.address.ruleSet,
+    ruleSets: Object.fromEntries(request.ruleSets),
+  });
   if (root.outcome === "failed") {
     return root;
   }
@@ -266,11 +329,22 @@ const resolveClause = (request: {
   if (entry.outcome === "failed") {
     return entry;
   }
-  const checks = request.ruleSetFiles.checks({ installRoot: request.installRoot, clause: request.address });
+  const checks = request.ruleSetFiles.checks({
+    installRoot: request.installRoot,
+    clause: request.address,
+  });
   if (checks.outcome === "failed") {
     return checks;
   }
-  return { outcome: "ok", value: resolvedClauseOf({ clauseRequest, defined: defined.value, entry: entry.value, checks: checks.value }) };
+  return {
+    outcome: "ok",
+    value: resolvedClauseOf({
+      clauseRequest,
+      defined: defined.value,
+      entry: entry.value,
+      checks: checks.value,
+    }),
+  };
 };
 
 const addressOf = (request: { readonly resolved: ResolvedClause }): ClauseAddress =>
@@ -288,7 +362,11 @@ const occurrenceInDiscipline = (request: {
 }): "first" | "repeat" => {
   const address = request.clause.address;
   const firstIndex = request.listed.findIndex(
-    (earlier) => sameClauseAddress({ left: { ...earlier.address, clause: address.clause }, right: address }) === "same",
+    (earlier) =>
+      sameClauseAddress({
+        left: { ...earlier.address, clause: address.clause },
+        right: address,
+      }) === "same",
   );
   return firstIndex === request.index ? "first" : "repeat";
 };
@@ -297,7 +375,9 @@ const listingOf = (request: {
   readonly listed: readonly ListedClause[];
   readonly address: ClauseAddress;
 }): "listed" | "unlisted" =>
-  request.listed.some((listed) => sameClauseAddress({ left: listed.address, right: request.address }) === "same")
+  request.listed.some(
+    (listed) => sameClauseAddress({ left: listed.address, right: request.address }) === "same",
+  )
     ? "listed"
     : "unlisted";
 
@@ -307,12 +387,20 @@ const unlistedClausesOf = (request: {
 }): readonly ClauseAddress[] =>
   request.representative.discipline.clauses
     .filter((definition) => definition.kind === "mechanical")
-    .map((definition): ClauseAddress => ({ ...request.representative.address, clause: definition.id }))
+    .map((definition): ClauseAddress => ({
+      ...request.representative.address,
+      clause: definition.id,
+    }))
     .filter((address) => listingOf({ listed: request.listed, address }) === "unlisted");
 
-const uncoveredClauses = (request: { readonly listed: readonly ListedClause[] }): readonly ClauseAddress[] =>
+const uncoveredClauses = (request: {
+  readonly listed: readonly ListedClause[];
+}): readonly ClauseAddress[] =>
   request.listed
-    .filter((clause, index) => occurrenceInDiscipline({ listed: request.listed, clause, index }) === "first")
+    .filter(
+      (clause, index) =>
+        occurrenceInDiscipline({ listed: request.listed, clause, index }) === "first",
+    )
     .flatMap((representative) => unlistedClausesOf({ listed: request.listed, representative }));
 
 type SelectionRequest = {
@@ -325,23 +413,37 @@ type SelectionRequest = {
   readonly filePath: string;
 };
 
-const adoptedEntries = (request: { readonly file: ConsumerSelectionFile }): readonly (readonly [ClauseAddress, EngineId])[] =>
-  request.file.clauses.flatMap(([address, choice]): readonly (readonly [ClauseAddress, EngineId])[] =>
-    choice.state === "run" ? [[address, choice.mechanism]] : [],
+const adoptedEntries = (request: {
+  readonly file: ConsumerSelectionFile;
+}): readonly (readonly [ClauseAddress, EngineId])[] =>
+  request.file.clauses.flatMap(
+    ([address, choice]): readonly (readonly [ClauseAddress, EngineId])[] =>
+      choice.state === "run" ? [[address, choice.mechanism]] : [],
   );
 
-const unrunEntries = (request: { readonly file: ConsumerSelectionFile }): readonly (readonly [ClauseAddress, UnrunState])[] =>
-  request.file.clauses.flatMap(([address, choice]): readonly (readonly [ClauseAddress, UnrunState])[] =>
-    choice.state === "run" ? [] : [[address, choice.state]],
+const unrunEntries = (request: {
+  readonly file: ConsumerSelectionFile;
+}): readonly (readonly [ClauseAddress, UnrunState])[] =>
+  request.file.clauses.flatMap(
+    ([address, choice]): readonly (readonly [ClauseAddress, UnrunState])[] =>
+      choice.state === "run" ? [] : [[address, choice.state]],
   );
 
-const resolvedClauses = (request: SelectionRequest): Result<readonly ResolvedClause[], LoadFailure> =>
+const resolvedClauses = (
+  request: SelectionRequest,
+): Result<readonly ResolvedClause[], LoadFailure> =>
   adoptedEntries(request).reduce<Result<readonly ResolvedClause[], LoadFailure>>(
     (sofar, [address, mechanism]) =>
       appendedClause({
         sofar,
         resolve: ({ earlier }) =>
-          resolveClause({ ...request, ruleSets: request.file.ruleSets, address, mechanism, earlier }),
+          resolveClause({
+            ...request,
+            ruleSets: request.file.ruleSets,
+            address,
+            mechanism,
+            earlier,
+          }),
       }),
     { outcome: "ok", value: [] },
   );
@@ -369,21 +471,34 @@ const unrunClause = (
   });
   return defined.outcome === "failed"
     ? defined
-    : { outcome: "ok", value: { discipline: defined.value.discipline, address: request.address, state: request.state } };
+    : {
+        outcome: "ok",
+        value: {
+          discipline: defined.value.discipline,
+          address: request.address,
+          state: request.state,
+        },
+      };
 };
 
 const unrunClauses = (request: UnrunRequest): Result<readonly UnrunClause[], LoadFailure> =>
   unrunEntries(request).reduce<Result<readonly UnrunClause[], LoadFailure>>(
-    (sofar, [address, state]) => appendedClause({ sofar, resolve: () => unrunClause({ ...request, address, state }) }),
+    (sofar, [address, state]) =>
+      appendedClause({ sofar, resolve: () => unrunClause({ ...request, address, state }) }),
     { outcome: "ok", value: [] },
   );
 
-const addressesIn = (request: { readonly unrun: readonly UnrunClause[]; readonly state: UnrunState }): readonly ClauseAddress[] =>
+const addressesIn = (request: {
+  readonly unrun: readonly UnrunClause[];
+  readonly state: UnrunState;
+}): readonly ClauseAddress[] =>
   request.unrun.filter((clause) => clause.state === request.state).map((clause) => clause.address);
 
 const appendedClause = <Clause>(request: {
   readonly sofar: Result<readonly Clause[], LoadFailure>;
-  readonly resolve: (resolution: { readonly earlier: readonly Clause[] }) => Result<Clause, LoadFailure>;
+  readonly resolve: (resolution: {
+    readonly earlier: readonly Clause[];
+  }) => Result<Clause, LoadFailure>;
 }): Result<readonly Clause[], LoadFailure> => {
   if (request.sofar.outcome === "failed") {
     return request.sofar;
@@ -395,7 +510,9 @@ const appendedClause = <Clause>(request: {
   return { outcome: "ok", value: [...request.sofar.value, clause.value] };
 };
 
-const editionReadingsOf = (request: { readonly resolved: readonly ResolvedClause[] }): readonly ClauseEditionReading[] =>
+const editionReadingsOf = (request: {
+  readonly resolved: readonly ResolvedClause[];
+}): readonly ClauseEditionReading[] =>
   request.resolved
     .filter(({ editions }) => editions.declared.length > 1)
     .map(({ binding, editions }) => ({
@@ -418,7 +535,10 @@ const selectionReadingOf = (request: {
     })),
     uncovered: uncoveredClauses({
       listed: [
-        ...request.resolved.map((resolved) => ({ discipline: resolved.discipline, address: addressOf({ resolved }) })),
+        ...request.resolved.map((resolved) => ({
+          discipline: resolved.discipline,
+          address: addressOf({ resolved }),
+        })),
         ...request.unrun,
       ],
     }),
@@ -427,7 +547,11 @@ const selectionReadingOf = (request: {
     editions: editionReadingsOf({ resolved: request.resolved }),
   },
   bindings: request.resolved.map(({ binding }) => binding),
-  clauseRoots: request.resolved.map((resolved) => ({ clause: addressOf({ resolved }), ruleSetRoot: resolved.ruleSetRoot, checks: resolved.checks })),
+  clauseRoots: request.resolved.map((resolved) => ({
+    clause: addressOf({ resolved }),
+    ruleSetRoot: resolved.ruleSetRoot,
+    checks: resolved.checks,
+  })),
   excluded: request.file.exclude,
   eslintConfigRoots: request.file.eslintConfigRoots,
   fileExceptionWhyChains: request.file.fileExceptionWhyChains,
@@ -437,7 +561,9 @@ const givenClauseSettings = (request: {
   readonly file: ConsumerSelectionFile;
   readonly address: ClauseAddress;
 }): ClauseSettingValues | undefined =>
-  request.file.clauseSettings.find(([address]) => sameClauseAddress({ left: address, right: request.address }) === "same")?.[1];
+  request.file.clauseSettings.find(
+    ([address]) => sameClauseAddress({ left: address, right: request.address }) === "same",
+  )?.[1];
 
 const settledClause = (request: {
   readonly clause: ResolvedClause;
@@ -445,12 +571,23 @@ const settledClause = (request: {
   readonly path: string;
 }): Result<ResolvedClause, LoadFailure> => {
   const address = addressOf({ resolved: request.clause });
-  const { pin, rest } = editionPinOf({ given: givenClauseSettings({ file: request.file, address }) });
-  const edition = settledClauseEdition({ address, editions: request.clause.editions, pin, checkEditions: request.file.checkEditions });
+  const { pin, rest } = editionPinOf({
+    given: givenClauseSettings({ file: request.file, address }),
+  });
+  const edition = settledClauseEdition({
+    address,
+    editions: request.clause.editions,
+    pin,
+    checkEditions: request.file.checkEditions,
+  });
   if (edition.outcome === "failed") {
     return failed({ kind: "file-malformed", path: request.path, detail: edition.error });
   }
-  const clauseSettings = settledClauseSettings({ address, declarations: request.clause.declarations, given: rest });
+  const clauseSettings = settledClauseSettings({
+    address,
+    declarations: request.clause.declarations,
+    given: rest,
+  });
   if (clauseSettings.outcome === "failed") {
     return failed({ kind: "file-malformed", path: request.path, detail: clauseSettings.error });
   }
@@ -459,7 +596,10 @@ const settledClause = (request: {
     outcome: "ok",
     value: {
       ...request.clause,
-      binding: { ...binding, clause: { ...binding.clause, clauseSettings: clauseSettings.value, edition: edition.value } },
+      binding: {
+        ...binding,
+        clause: { ...binding.clause, clauseSettings: clauseSettings.value, edition: edition.value },
+      },
     },
   };
 };
@@ -471,7 +611,10 @@ const withClauseSettings = (request: {
 }): Result<readonly ResolvedClause[], LoadFailure> =>
   request.resolved.reduce<Result<readonly ResolvedClause[], LoadFailure>>(
     (sofar, clause) =>
-      appendedClause({ sofar, resolve: () => settledClause({ clause, file: request.file, path: request.path }) }),
+      appendedClause({
+        sofar,
+        resolve: () => settledClause({ clause, file: request.file, path: request.path }),
+      }),
     { outcome: "ok", value: [] },
   );
 
@@ -480,8 +623,13 @@ export const readRunSettings = (request: {
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
 }): Result<RunSettings<ReportOutput>, LoadFailure> => {
-  const file = readSelectionFile({ fileText: request.fileText, path: selectionFilePathOf(request) });
-  return file.outcome === "failed" ? file : { outcome: "ok", value: runSettingsOf({ file: file.value }) };
+  const file = readSelectionFile({
+    fileText: request.fileText,
+    path: selectionFilePathOf(request),
+  });
+  return file.outcome === "failed"
+    ? file
+    : { outcome: "ok", value: runSettingsOf({ file: file.value }) };
 };
 
 export const selectionFrom = (request: SelectionRequest): Result<SelectionReading, LoadFailure> => {
@@ -489,7 +637,11 @@ export const selectionFrom = (request: SelectionRequest): Result<SelectionReadin
   if (resolved.outcome === "failed") {
     return resolved;
   }
-  const settled = withClauseSettings({ resolved: resolved.value, file: request.file, path: request.filePath });
+  const settled = withClauseSettings({
+    resolved: resolved.value,
+    file: request.file,
+    path: request.filePath,
+  });
   if (settled.outcome === "failed") {
     return settled;
   }
@@ -497,7 +649,10 @@ export const selectionFrom = (request: SelectionRequest): Result<SelectionReadin
   if (unrun.outcome === "failed") {
     return unrun;
   }
-  return { outcome: "ok", value: selectionReadingOf({ resolved: settled.value, unrun: unrun.value, file: request.file }) };
+  return {
+    outcome: "ok",
+    value: selectionReadingOf({ resolved: settled.value, unrun: unrun.value, file: request.file }),
+  };
 };
 
 export const readSelection = (request: {
@@ -512,5 +667,10 @@ export const readSelection = (request: {
   if (file.outcome === "failed") {
     return file;
   }
-  return selectionFrom({ ...request, ruleSetFiles: createRuleSetFiles(request), file: file.value, filePath });
+  return selectionFrom({
+    ...request,
+    ruleSetFiles: createRuleSetFiles(request),
+    file: file.value,
+    filePath,
+  });
 };

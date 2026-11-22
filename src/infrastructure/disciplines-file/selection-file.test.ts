@@ -1,4 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
+
 import { runSettingsOf, selectionFileOf } from "./selection-file.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
@@ -35,17 +36,32 @@ describe("selectionFileOf reading the selection", () => {
       value: {
         ruleSets: [["team", { location: "folder", path: "team-rules" }]],
         clauses: [
-          [{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { state: "run", mechanism: "walker" }],
-          [{ ruleSet: { name: "team" }, discipline: "TM-1", clause: "no-tmp-files" }, { state: "run", mechanism: "walker" }],
+          [
+            { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" },
+            { state: "run", mechanism: "walker" },
+          ],
+          [
+            { ruleSet: { name: "team" }, discipline: "TM-1", clause: "no-tmp-files" },
+            { state: "run", mechanism: "walker" },
+          ],
         ],
       },
     });
   });
 
   it("reads a hone-prefixed clause as the same bare-addressed hone clause", () => {
-    expect(parsed(documentWith({ clauses: { "hone/CD-14#class-syntax": "walker" } }))).toMatchObject({
+    expect(
+      parsed(documentWith({ clauses: { "hone/CD-14#class-syntax": "walker" } })),
+    ).toMatchObject({
       outcome: "ok",
-      value: { clauses: [[{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { state: "run", mechanism: "walker" }]] },
+      value: {
+        clauses: [
+          [
+            { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" },
+            { state: "run", mechanism: "walker" },
+          ],
+        ],
+      },
     });
   });
 
@@ -57,9 +73,20 @@ describe("selectionFileOf reading the selection", () => {
   });
 
   it("reads the not-run and not-adopted clause states", () => {
-    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "not-run", "CD-14#abstract-syntax": "not-adopted" } }))).toMatchObject({
+    expect(
+      parsed(
+        documentWith({
+          clauses: { "CD-14#class-syntax": "not-run", "CD-14#abstract-syntax": "not-adopted" },
+        }),
+      ),
+    ).toMatchObject({
       outcome: "ok",
-      value: { clauses: [[expect.anything(), { state: "not-run" }], [expect.anything(), { state: "not-adopted" }]] },
+      value: {
+        clauses: [
+          [expect.anything(), { state: "not-run" }],
+          [expect.anything(), { state: "not-adopted" }],
+        ],
+      },
     });
   });
 
@@ -85,15 +112,21 @@ describe("selectionFileOf reading the selection", () => {
   });
 
   it("accepts a team rule-set name that only starts with the letters hone", () => {
-    expect(parsed(documentWith({ ruleSets: { honeycomb: "team-rules" }, clauses: {} }))).toMatchObject({ outcome: "ok" });
+    expect(
+      parsed(documentWith({ ruleSets: { honeycomb: "team-rules" }, clauses: {} })),
+    ).toMatchObject({ outcome: "ok" });
   });
 
   it("accepts declared rule-set names that merely share leading letters", () => {
-    expect(parsed(documentWith({ ruleSets: { acme: "acme-rules", acmeco: "co-rules" }, clauses: {} }))).toMatchObject({ outcome: "ok" });
+    expect(
+      parsed(documentWith({ ruleSets: { acme: "acme-rules", acmeco: "co-rules" }, clauses: {} })),
+    ).toMatchObject({ outcome: "ok" });
   });
 
   it("accepts the rule-set name shared as a team's own", () => {
-    expect(parsed(documentWith({ ruleSets: { shared: "team-rules" }, clauses: {} }))).toMatchObject({ outcome: "ok" });
+    expect(parsed(documentWith({ ruleSets: { shared: "team-rules" }, clauses: {} }))).toMatchObject(
+      { outcome: "ok" },
+    );
   });
 });
 
@@ -101,12 +134,21 @@ describe("selectionFileOf refusing a malformed selection", () => {
   it.each([
     ["an extra top-level key", { mechanisms: {} }],
     ["a clauses key that is not a clause address", { clauses: { "CD-14 class-syntax": "walker" } }],
-    ["a ruleSets key the rule-set name schema refuses", { ruleSets: { "team rules": "team-rules" }, clauses: {} }],
+    [
+      "a ruleSets key the rule-set name schema refuses",
+      { ruleSets: { "team rules": "team-rules" }, clauses: {} },
+    ],
     ["a ruleSets value that is not a string", { ruleSets: { team: 7 }, clauses: {} }],
-    ["a ruleSets value written with a backslash", { ruleSets: { team: "tools\\disciplines" }, clauses: {} }],
+    [
+      "a ruleSets value written with a backslash",
+      { ruleSets: { team: "tools\\disciplines" }, clauses: {} },
+    ],
     ["an absolute ruleSets value", { ruleSets: { team: "/abs" }, clauses: {} }],
     ["a clauses value that is not a mechanism id", { clauses: { "CD-14#class-syntax": "Walker" } }],
-    ["file exception why-chains other than required or optional", { fileExceptionWhyChains: "off" }],
+    [
+      "file exception why-chains other than required or optional",
+      { fileExceptionWhyChains: "off" },
+    ],
     ["an ESLint config root that is not a repository path", { eslintConfigRoots: ["../outside"] }],
     ["an excluded path that is not a repository path", { exclude: ["../outside"] }],
     ["an excluded glob", { exclude: ["src/**/generated"] }],
@@ -121,7 +163,9 @@ describe("selectionFileOf refusing a malformed selection", () => {
       error: {
         kind: "file-malformed",
         path: SELECTION_PATH,
-        detail: expect.stringContaining("an eslintConfigRoots entry is a repository folder, not a glob"),
+        detail: expect.stringContaining(
+          "an eslintConfigRoots entry is a repository folder, not a glob",
+        ),
       },
     });
   });
@@ -131,7 +175,9 @@ describe("selectionFileOf refusing a malformed selection", () => {
       outcome: "failed",
       error: {
         kind: "file-malformed",
-        detail: expect.stringMatching(/not a repo-relative path[\s\S]*an exclude entry is a repository path, not a glob/),
+        detail: expect.stringMatching(
+          /not a repo-relative path[\s\S]*an exclude entry is a repository path, not a glob/,
+        ),
       },
     });
   });
@@ -142,7 +188,9 @@ describe("selectionFileOf refusing a malformed selection", () => {
       error: {
         kind: "file-malformed",
         path: SELECTION_PATH,
-        detail: expect.stringContaining('a clause takes a mechanism id, "not-run" or "not-adopted"'),
+        detail: expect.stringContaining(
+          'a clause takes a mechanism id, "not-run" or "not-adopted"',
+        ),
       },
     });
   });
@@ -156,45 +204,78 @@ describe("selectionFileOf refusing a rule-set name or clause", () => {
     });
   });
 
-  it.each(["hone-extras", "hone-"])("refuses the rule-set name %s as reserved-rule-set-name", (name) => {
-    expect(parsed(documentWith({ ruleSets: { [name]: "team-rules" }, clauses: {} }))).toEqual({
-      outcome: "failed",
-      error: { kind: "reserved-rule-set-name", name },
-    });
-  });
+  it.each(["hone-extras", "hone-"])(
+    "refuses the rule-set name %s as reserved-rule-set-name",
+    (name) => {
+      expect(parsed(documentWith({ ruleSets: { [name]: "team-rules" }, clauses: {} }))).toEqual({
+        outcome: "failed",
+        error: { kind: "reserved-rule-set-name", name },
+      });
+    },
+  );
 
   it("refuses one declared rule-set name that is another plus a suffix, naming both", () => {
-    expect(parsed(documentWith({ ruleSets: { "acme-x": "x-rules", acme: "acme-rules" }, clauses: {} }))).toEqual({
+    expect(
+      parsed(documentWith({ ruleSets: { "acme-x": "x-rules", acme: "acme-rules" }, clauses: {} })),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "rule-set-name-collision", name: "acme", other: "acme-x" },
     });
   });
 
   it("refuses a clause selected twice, once bare and once with the hone prefix", () => {
-    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "walker", "hone/CD-14#class-syntax": "eslint" } }))).toEqual({
+    expect(
+      parsed(
+        documentWith({
+          clauses: { "CD-14#class-syntax": "walker", "hone/CD-14#class-syntax": "eslint" },
+        }),
+      ),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "duplicate-clause", address: "CD-14#class-syntax", prefixedAddress: "hone/CD-14#class-syntax" },
+      error: {
+        kind: "duplicate-clause",
+        address: "CD-14#class-syntax",
+        prefixedAddress: "hone/CD-14#class-syntax",
+      },
     });
   });
 
   it("refuses a clause both adopted and not adopted, bare and hone-prefixed, as duplicate-clause", () => {
-    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "walker", "hone/CD-14#class-syntax": "not-adopted" } }))).toEqual({
+    expect(
+      parsed(
+        documentWith({
+          clauses: { "CD-14#class-syntax": "walker", "hone/CD-14#class-syntax": "not-adopted" },
+        }),
+      ),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "duplicate-clause", address: "CD-14#class-syntax", prefixedAddress: "hone/CD-14#class-syntax" },
+      error: {
+        kind: "duplicate-clause",
+        address: "CD-14#class-syntax",
+        prefixedAddress: "hone/CD-14#class-syntax",
+      },
     });
   });
 });
 
 describe("selectionFileOf with clauseSettings", () => {
   it("reads the settings given to a selected clause", () => {
-    expect(parsed(documentWith({ clauseSettings: { "CD-14#class-syntax": { style: "strict" } } }))).toMatchObject({
+    expect(
+      parsed(documentWith({ clauseSettings: { "CD-14#class-syntax": { style: "strict" } } })),
+    ).toMatchObject({
       outcome: "ok",
-      value: { clauseSettings: [[{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { style: "strict" }]] },
+      value: {
+        clauseSettings: [
+          [{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { style: "strict" }],
+        ],
+      },
     });
   });
 
   it("matches a hone-prefixed clauseSettings key to the bare selected clause", () => {
-    expect(parsed(documentWith({ clauseSettings: { "hone/CD-14#class-syntax": { style: "strict" } } }))).toMatchObject({
+    expect(
+      parsed(documentWith({ clauseSettings: { "hone/CD-14#class-syntax": { style: "strict" } } })),
+    ).toMatchObject({
       outcome: "ok",
     });
   });
@@ -203,7 +284,10 @@ describe("selectionFileOf with clauseSettings", () => {
     expect(
       parsed(
         documentWith({
-          clauseSettings: { "CD-14#class-syntax": { style: "plain" }, "hone/CD-14#class-syntax": { style: "strict" } },
+          clauseSettings: {
+            "CD-14#class-syntax": { style: "plain" },
+            "hone/CD-14#class-syntax": { style: "strict" },
+          },
         }),
       ),
     ).toEqual({
@@ -211,7 +295,9 @@ describe("selectionFileOf with clauseSettings", () => {
       error: {
         kind: "file-malformed",
         path: SELECTION_PATH,
-        detail: expect.stringContaining("clauseSettings for CD-14#class-syntax: given twice, also as hone/CD-14#class-syntax"),
+        detail: expect.stringContaining(
+          "clauseSettings for CD-14#class-syntax: given twice, also as hone/CD-14#class-syntax",
+        ),
       },
     });
   });
@@ -230,12 +316,18 @@ describe("selectionFileOf with clauseSettings", () => {
   ])("names the key text when clauseSettings holds $name", ({ clauseSettings, message }) => {
     expect(parsed(documentWith({ clauseSettings }))).toEqual({
       outcome: "failed",
-      error: { kind: "file-malformed", path: SELECTION_PATH, detail: expect.stringContaining(message) },
+      error: {
+        kind: "file-malformed",
+        path: SELECTION_PATH,
+        detail: expect.stringContaining(message),
+      },
     });
   });
 
   it("is file-malformed for settings that are not an object", () => {
-    expect(parsed(documentWith({ clauseSettings: { "CD-14#class-syntax": ["Widget"] } }))).toMatchObject(MALFORMED);
+    expect(
+      parsed(documentWith({ clauseSettings: { "CD-14#class-syntax": ["Widget"] } })),
+    ).toMatchObject(MALFORMED);
   });
 
   it("refuses clauseSettings for a not-adopted clause as file-malformed, naming it not adopted", () => {
@@ -251,7 +343,9 @@ describe("selectionFileOf with clauseSettings", () => {
       error: {
         kind: "file-malformed",
         path: SELECTION_PATH,
-        detail: expect.stringContaining("clauseSettings for CD-14#class-syntax: clauses does not adopt it, so remove its settings"),
+        detail: expect.stringContaining(
+          "clauseSettings for CD-14#class-syntax: clauses does not adopt it, so remove its settings",
+        ),
       },
     });
   });
@@ -269,7 +363,9 @@ describe("selectionFileOf with clauseSettings", () => {
       error: {
         kind: "file-malformed",
         path: SELECTION_PATH,
-        detail: expect.stringContaining("clauseSettings for CD-14#class-syntax: clauses runs no mechanism for it, so remove its settings"),
+        detail: expect.stringContaining(
+          "clauseSettings for CD-14#class-syntax: clauses runs no mechanism for it, so remove its settings",
+        ),
       },
     });
   });
@@ -283,29 +379,45 @@ describe("runSettingsOf", () => {
     });
   });
 
-  it.each(["full", "failures-only", "counts", "verdict-only"])("reads the report output %s from disciplines.json", (reportOutput) => {
-    expect(settingsOf(documentWith({ reportOutput })).reportOutput).toBe(reportOutput);
-  });
+  it.each(["full", "failures-only", "counts", "verdict-only"])(
+    "reads the report output %s from disciplines.json",
+    (reportOutput) => {
+      expect(settingsOf(documentWith({ reportOutput })).reportOutput).toBe(reportOutput);
+    },
+  );
 
   it.each([
     ["a name that is not one of the four", "summary"],
     ["null", null],
     ["a number", 3],
     ["a list", ["full"]],
-  ])("is file-malformed when disciplines.json gives the report output as %s", (_shape, reportOutput) => {
-    expect(parsed(documentWith({ reportOutput }))).toMatchObject(MALFORMED);
-  });
+  ])(
+    "is file-malformed when disciplines.json gives the report output as %s",
+    (_shape, reportOutput) => {
+      expect(parsed(documentWith({ reportOutput }))).toMatchObject(MALFORMED);
+    },
+  );
 
-  it.each(["this-run", "elsewhere"])("reads the forfeiture assessment %s from disciplines.json", (forfeiture) => {
-    expect(settingsOf(documentWith({ assessment: { forfeiture } })).assessment).toEqual({ forfeiture });
-  });
+  it.each(["this-run", "elsewhere"])(
+    "reads the forfeiture assessment %s from disciplines.json",
+    (forfeiture) => {
+      expect(settingsOf(documentWith({ assessment: { forfeiture } })).assessment).toEqual({
+        forfeiture,
+      });
+    },
+  );
 
   it("is the default assessment for an empty assessment object", () => {
-    expect(settingsOf(documentWith({ assessment: {} })).assessment).toEqual({ forfeiture: "this-run" });
+    expect(settingsOf(documentWith({ assessment: {} })).assessment).toEqual({
+      forfeiture: "this-run",
+    });
   });
 
   it.each([
-    ["an eslint key, which is not built", { eslint: { evidence: "results-file", paths: ["reports/eslint.json"] } }],
+    [
+      "an eslint key, which is not built",
+      { eslint: { evidence: "results-file", paths: ["reports/eslint.json"] } },
+    ],
     ["the removed waivedClauses key", { waivedClauses: "not-run" }],
     ["a forfeiture that is not one of the two", { forfeiture: "reported" }],
     ["a list", ["elsewhere"]],
@@ -314,7 +426,11 @@ describe("runSettingsOf", () => {
   });
 
   it("names the removed waivedClauses with the clause states that replace it, then each unbuilt key", () => {
-    expect(parsed(documentWith({ assessment: { eslint: { evidence: "hone" }, waivedClauses: "not-run" } }))).toEqual({
+    expect(
+      parsed(
+        documentWith({ assessment: { eslint: { evidence: "hone" }, waivedClauses: "not-run" } }),
+      ),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "file-malformed",

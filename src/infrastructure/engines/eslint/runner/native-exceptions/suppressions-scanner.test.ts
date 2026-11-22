@@ -1,19 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import {
-  createPathPort,
-} from "../../../../node/path-port.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
+import { createPathPort } from "../../../../node/path-port.ts";
 import type { SelectedRule } from "./package-script-scanner.ts";
 import { scriptSuppressionEntries, suppressionEntriesOf } from "./suppressions-scanner.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 
-const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
-const noTmpFiles = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const classSyntax = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
+const noTmpFiles = {
+  ruleSet: { name: ruleSetNameOf("probe") },
+  discipline: disciplineIdOf("PD-1"),
+  clause: clauseIdOf("no-tmp-files"),
+};
 const defaultLocation = repoPathOf("eslint-suppressions.json");
 const scriptLocation = repoPathOf("ci/lint-suppressions.json");
 const repoRoot = absoluteRootOf("/repo");
@@ -50,9 +57,24 @@ describe("suppressionEntriesOf", () => {
     ).toEqual({
       outcome: "ok",
       value: [
-        { kind: "suppression-entry", clause: classSyntax, file: "src/a.ts", location: "eslint-suppressions.json" },
-        { kind: "suppression-entry", clause: noTmpFiles, file: "src/b.ts", location: "eslint-suppressions.json" },
-        { kind: "suppression-entry", clause: classSyntax, file: "src/b.ts", location: "eslint-suppressions.json" },
+        {
+          kind: "suppression-entry",
+          clause: classSyntax,
+          file: "src/a.ts",
+          location: "eslint-suppressions.json",
+        },
+        {
+          kind: "suppression-entry",
+          clause: noTmpFiles,
+          file: "src/b.ts",
+          location: "eslint-suppressions.json",
+        },
+        {
+          kind: "suppression-entry",
+          clause: classSyntax,
+          file: "src/b.ts",
+          location: "eslint-suppressions.json",
+        },
       ],
     });
   });
@@ -79,7 +101,12 @@ describe("suppressionEntriesOf", () => {
     ).toEqual({
       outcome: "ok",
       value: [
-        { kind: "suppression-entry", clause: classSyntax, file: "src/clean.ts", location: "ci/lint-suppressions.json" },
+        {
+          kind: "suppression-entry",
+          clause: classSyntax,
+          file: "src/clean.ts",
+          location: "ci/lint-suppressions.json",
+        },
       ],
     });
   });
@@ -97,8 +124,12 @@ describe("suppressionEntriesOf", () => {
 
   it("reports malformed JSON as tool-failed", () => {
     expect(
-      suppressionEntriesOf({ location: defaultLocation,
-        keysRelativeTo: "repo-root", text: `{ "src/a.ts": `, selectedRules: [classRule] }),
+      suppressionEntriesOf({
+        location: defaultLocation,
+        keysRelativeTo: "repo-root",
+        text: `{ "src/a.ts": `,
+        selectedRules: [classRule],
+      }),
     ).toMatchObject({ outcome: "failed", error: { kind: "tool-failed" } });
   });
 });
@@ -170,7 +201,12 @@ describe("scriptSuppressionEntries", () => {
     ).toEqual({
       outcome: "ok",
       value: [
-        { kind: "suppression-entry", clause: classSyntax, file: "packages/a/src/x.ts", location: "ci/lint-suppressions.json" },
+        {
+          kind: "suppression-entry",
+          clause: classSyntax,
+          file: "packages/a/src/x.ts",
+          location: "ci/lint-suppressions.json",
+        },
       ],
     });
   });
@@ -180,14 +216,30 @@ describe("scriptSuppressionEntries", () => {
       outcome: "ok",
       value: JSON.stringify({ "src/a.ts": { "hone/no-class-authoring": { count: 1 } } }),
     });
-    const fileText: FileTextPort = { read, exists: vi.fn().mockReturnValue("present"), write: vi.fn() };
+    const fileText: FileTextPort = {
+      read,
+      exists: vi.fn().mockReturnValue("present"),
+      write: vi.fn(),
+    };
 
     expect(
-      scriptSuppressionEntries({ fileText, path: posixPath, repoRoot, location: scriptLocation, keysRelativeTo: "repo-root", selectedRules: [classRule] }),
+      scriptSuppressionEntries({
+        fileText,
+        path: posixPath,
+        repoRoot,
+        location: scriptLocation,
+        keysRelativeTo: "repo-root",
+        selectedRules: [classRule],
+      }),
     ).toEqual({
       outcome: "ok",
       value: [
-        { kind: "suppression-entry", clause: classSyntax, file: "src/a.ts", location: "ci/lint-suppressions.json" },
+        {
+          kind: "suppression-entry",
+          clause: classSyntax,
+          file: "src/a.ts",
+          location: "ci/lint-suppressions.json",
+        },
       ],
     });
     expect(read).toHaveBeenCalledWith({ path: "/repo/ci/lint-suppressions.json" });
@@ -204,7 +256,14 @@ describe("scriptSuppressionEntries", () => {
     };
 
     expect(
-      scriptSuppressionEntries({ fileText, path: posixPath, repoRoot, location: scriptLocation, keysRelativeTo: "repo-root", selectedRules: [classRule] }),
+      scriptSuppressionEntries({
+        fileText,
+        path: posixPath,
+        repoRoot,
+        location: scriptLocation,
+        keysRelativeTo: "repo-root",
+        selectedRules: [classRule],
+      }),
     ).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", file: "ci/lint-suppressions.json", detail: "ENOENT" },
@@ -215,7 +274,11 @@ describe("scriptSuppressionEntries", () => {
 describe("scriptSuppressionEntries on Windows", () => {
   it("reads the script-named suppressions file at its Windows form under the repo root", () => {
     const read = vi.fn().mockReturnValue({ outcome: "ok", value: "{}" });
-    const fileText: FileTextPort = { read, exists: vi.fn().mockReturnValue("present"), write: vi.fn() };
+    const fileText: FileTextPort = {
+      read,
+      exists: vi.fn().mockReturnValue("present"),
+      write: vi.fn(),
+    };
 
     scriptSuppressionEntries({
       fileText,

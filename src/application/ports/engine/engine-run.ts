@@ -1,7 +1,10 @@
-import type { ChecksSliceProblem, MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
+import type {
+  ChecksSliceProblem,
+  MisnamedRuleId,
+} from "../../../domain/runner/checks-run-report.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import type { NativeException } from "../../../domain/runner/runner-result-types.ts";
-import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
 import type { ChecksRunRequest, LoadedRunner, RunnerCall } from "./runner-module.ts";
 
@@ -23,4 +26,6 @@ export type EngineRun = Omit<MechanismRun, "slices"> & {
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
 };
 
-export type EngineRunRequest = Omit<ChecksRunRequest, "bindings"> & { readonly bindings: readonly ClauseBinding[] };
+export type EngineRunRequest = Omit<ChecksRunRequest, "bindings"> & {
+  readonly bindings: readonly ClauseBinding[];
+};

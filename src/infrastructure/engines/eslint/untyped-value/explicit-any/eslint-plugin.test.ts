@@ -1,21 +1,34 @@
 import { assert, describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../runner/toolchain/eslint-toolchain.ts";
 import cd1Plugin from "./eslint-plugin.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: cd1Plugin }).default;
 
 const loadedToolchain = await loadEslintToolchain({
-  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultEslintToolchainPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
-assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
-assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+assert(
+  loadedToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
+assert(
+  /^10\./.test(loadedToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
+);
 
 const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
@@ -23,7 +36,8 @@ const anyFlagCases: readonly SourceCase[] = [
   {
     name: "any as an array element type",
     fileName: repoPathOf("any-array.ts"),
-    source: "const total = 1;\nexport const count = (input: any[]): number => input.length + total;\n",
+    source:
+      "const total = 1;\nexport const count = (input: any[]): number => input.length + total;\n",
     expectedLines: [2],
   },
   {
@@ -50,7 +64,7 @@ const anyAllowCases: readonly SourceCase[] = [
   {
     name: "an identifier that merely contains any",
     fileName: repoPathOf("any-identifier.ts"),
-    source: "export const anything = 1;\nexport const companyName = \"any\";\n",
+    source: 'export const anything = 1;\nexport const companyName = "any";\n',
     expectedLines: [],
   },
 ];
@@ -71,7 +85,8 @@ const implicitFlagCases: readonly SourceCase[] = [
   {
     name: "the first untyped declarator among several",
     fileName: repoPathOf("mixed-declarators.ts"),
-    source: "const ready = 1;\nlet counted: number = 1, loose;\nloose = ready;\nexport { counted, loose };\n",
+    source:
+      "const ready = 1;\nlet counted: number = 1, loose;\nloose = ready;\nexport { counted, loose };\n",
     expectedLines: [2],
   },
   {
@@ -98,13 +113,15 @@ const implicitAllowCases: readonly SourceCase[] = [
   {
     name: "a let in a for-in loop head",
     fileName: repoPathOf("for-in-head.ts"),
-    source: "export function keys(record: Record<string, number>): number {\n  let total = 0;\n  for (let key in record) {\n    total += record[key] ?? 0;\n  }\n  return total;\n}\n",
+    source:
+      "export function keys(record: Record<string, number>): number {\n  let total = 0;\n  for (let key in record) {\n    total += record[key] ?? 0;\n  }\n  return total;\n}\n",
     expectedLines: [],
   },
   {
     name: "a var in a second for-in loop head",
     fileName: repoPathOf("for-of-head.ts"),
-    source: "export function sum(numbers: number[]): number {\n  let total = 0;\n  for (var next in numbers) {\n    total += next;\n  }\n  return total;\n}\n",
+    source:
+      "export function sum(numbers: number[]): number {\n  let total = 0;\n  for (var next in numbers) {\n    total += next;\n  }\n  return total;\n}\n",
     expectedLines: [],
   },
   {
@@ -116,37 +133,43 @@ const implicitAllowCases: readonly SourceCase[] = [
 ];
 
 describe("CD-1 no-explicit-any rule through the ESLint runner's lintSourceCases", () => {
-  it.each([...anyFlagCases, ...anyAllowCases])("flags exactly the expected lines of the case $name", async (sourceCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone-cd1",
-        rule: "no-explicit-any",
-        options: [],
-        cases: [sourceCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
-    });
-  });
+  it.each([...anyFlagCases, ...anyAllowCases])(
+    "flags exactly the expected lines of the case $name",
+    async (sourceCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone-cd1",
+          rule: "no-explicit-any",
+          options: [],
+          cases: [sourceCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
+      });
+    },
+  );
 });
 
 describe("CD-1 implicit-any-let rule through the ESLint runner's lintSourceCases", () => {
-  it.each([...implicitFlagCases, ...implicitAllowCases])("flags exactly the expected lines of the case $name", async (sourceCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone-cd1",
-        rule: "implicit-any-let",
-        options: [],
-        cases: [sourceCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
-    });
-  });
+  it.each([...implicitFlagCases, ...implicitAllowCases])(
+    "flags exactly the expected lines of the case $name",
+    async (sourceCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone-cd1",
+          rule: "implicit-any-let",
+          options: [],
+          cases: [sourceCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
+      });
+    },
+  );
 });

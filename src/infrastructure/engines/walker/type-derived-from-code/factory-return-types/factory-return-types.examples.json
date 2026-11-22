@@ -4,17 +4,13 @@
       "name": "ReturnType of a factory",
       "fileName": "client.ts",
       "source": "declare const createClient: () => unknown;\nexport type Client = ReturnType<typeof createClient>;\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "awaited ReturnType of a factory",
       "fileName": "awaited.ts",
       "source": "declare const createClient: () => Promise<unknown>;\nexport type Client = Awaited<ReturnType<typeof createClient>>;\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

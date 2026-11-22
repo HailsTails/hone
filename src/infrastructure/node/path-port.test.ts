@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createDefaultPathPort,
-  createPathPort,
-} from "./path-port.ts";
+
+import { createDefaultPathPort, createPathPort } from "./path-port.ts";
 
 const workingDirectoryAt = (request: { readonly directory: string }) =>
   vi.fn<(request: Record<string, never>) => string>().mockReturnValue(request.directory);
@@ -108,31 +106,48 @@ describe("createPathPort resolve", () => {
   });
 
   it("resolves a relative path against the injected working directory", () => {
-    expect(pathPortIn({ directory: "/work" }).resolve({ path: "a/b.ts" })).toEqual({ outcome: "ok", value: "/work/a/b.ts" });
+    expect(pathPortIn({ directory: "/work" }).resolve({ path: "a/b.ts" })).toEqual({
+      outcome: "ok",
+      value: "/work/a/b.ts",
+    });
   });
 
   it("resolves an absolute path to itself", () => {
-    expect(pathPortIn({ directory: "/work" }).resolve({ path: "/abs/x.ts" })).toEqual({ outcome: "ok", value: "/abs/x.ts" });
+    expect(pathPortIn({ directory: "/work" }).resolve({ path: "/abs/x.ts" })).toEqual({
+      outcome: "ok",
+      value: "/abs/x.ts",
+    });
   });
 
   it("normalises a .. segment that climbs out of the working directory", () => {
-    expect(pathPortIn({ directory: "/work/sub" }).resolve({ path: "../a.ts" })).toEqual({ outcome: "ok", value: "/work/a.ts" });
+    expect(pathPortIn({ directory: "/work/sub" }).resolve({ path: "../a.ts" })).toEqual({
+      outcome: "ok",
+      value: "/work/a.ts",
+    });
   });
 });
 
 describe("createPathPort relative", () => {
   it("absolutises relative arguments against the injected working directory", () => {
-    expect(pathPortIn({ directory: "/work/sub" }).relative({ from: "..", to: "x" })).toEqual({ relation: "within-root", path: "sub/x" });
+    expect(pathPortIn({ directory: "/work/sub" }).relative({ from: "..", to: "x" })).toEqual({
+      relation: "within-root",
+      path: "sub/x",
+    });
   });
 
   it("gives the relative path between two absolute arguments", () => {
-    expect(pathPortIn({ directory: "/work/sub" }).relative({ from: "/a", to: "/a/b" })).toEqual({ relation: "within-root", path: "b" });
+    expect(pathPortIn({ directory: "/work/sub" }).relative({ from: "/a", to: "/a/b" })).toEqual({
+      relation: "within-root",
+      path: "b",
+    });
   });
 });
 
 describe("createPathPort with the win32 flavour", () => {
   it("converts a drive-rooted file URL to its backslashed drive path", () => {
-    expect(windowsPathPortIn({ directory: "C:\\work" }).fromFileUrl({ url: WINDOWS_ENTRY_URL })).toEqual({
+    expect(
+      windowsPathPortIn({ directory: "C:\\work" }).fromFileUrl({ url: WINDOWS_ENTRY_URL }),
+    ).toEqual({
       outcome: "ok",
       value: "C:\\repo\\packages\\hone\\src\\hone.ts",
     });
@@ -153,15 +168,23 @@ describe("createPathPort with the win32 flavour", () => {
   });
 
   it("resolves a relative path against a drive-rooted working directory", () => {
-    expect(windowsPathPortIn({ directory: "C:\\work" }).resolve({ path: "x" })).toEqual({ outcome: "ok", value: "C:\\work\\x" });
+    expect(windowsPathPortIn({ directory: "C:\\work" }).resolve({ path: "x" })).toEqual({
+      outcome: "ok",
+      value: "C:\\work\\x",
+    });
   });
 
   it("resolves a path on another drive to itself", () => {
-    expect(windowsPathPortIn({ directory: "C:\\work" }).resolve({ path: "D:\\other" })).toEqual({ outcome: "ok", value: "D:\\other" });
+    expect(windowsPathPortIn({ directory: "C:\\work" }).resolve({ path: "D:\\other" })).toEqual({
+      outcome: "ok",
+      value: "D:\\other",
+    });
   });
 
   it("normalises . and .. segments of a drive-rooted path", () => {
-    expect(windowsPathPortIn({ directory: "C:\\work" }).resolve({ path: "D:\\other\\.\\a\\..\\b" })).toEqual({ outcome: "ok", value: "D:\\other\\b" });
+    expect(
+      windowsPathPortIn({ directory: "C:\\work" }).resolve({ path: "D:\\other\\.\\a\\..\\b" }),
+    ).toEqual({ outcome: "ok", value: "D:\\other\\b" });
   });
 
   it("joins a drive-rooted path and a repository path into the backslashed OS form", () => {
@@ -172,20 +195,28 @@ describe("createPathPort with the win32 flavour", () => {
 
   it("gives the relative path between two drive-rooted paths in the forward-slashed repository form", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).relative({ from: "C:\\repo", to: "C:\\repo\\src\\a.ts" }),
+      windowsPathPortIn({ directory: "C:\\work" }).relative({
+        from: "C:\\repo",
+        to: "C:\\repo\\src\\a.ts",
+      }),
     ).toEqual({ relation: "within-root", path: "src/a.ts" });
   });
 
   it("gives the relative path to a sibling of a drive-rooted path in the forward-slashed form", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).relative({ from: "C:\\repo\\a", to: "C:\\repo\\b\\c.ts" }),
+      windowsPathPortIn({ directory: "C:\\work" }).relative({
+        from: "C:\\repo\\a",
+        to: "C:\\repo\\b\\c.ts",
+      }),
     ).toEqual({ relation: "within-root", path: "../b/c.ts" });
   });
 });
 
 describe("createPathPort with the win32 flavour, paths on different roots", () => {
   it("gives different-root for the relative path between two drives", () => {
-    expect(windowsPathPortIn({ directory: "C:\\work" }).relative({ from: "C:\\repo", to: "D:\\x" })).toEqual({
+    expect(
+      windowsPathPortIn({ directory: "C:\\work" }).relative({ from: "C:\\repo", to: "D:\\x" }),
+    ).toEqual({
       relation: "different-root",
     });
   });
@@ -193,34 +224,44 @@ describe("createPathPort with the win32 flavour, paths on different roots", () =
 
 describe("createPathPort joinRepository", () => {
   it("joins repository segments with forward slashes under the POSIX flavour", () => {
-    expect(pathPortIn({ directory: "/work" }).joinRepository({ segments: ["mechanisms", "audit", "runner"] })).toBe(
-      "mechanisms/audit/runner",
-    );
+    expect(
+      pathPortIn({ directory: "/work" }).joinRepository({
+        segments: ["mechanisms", "audit", "runner"],
+      }),
+    ).toBe("mechanisms/audit/runner");
   });
 
   it("joins repository segments with forward slashes under the win32 flavour", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: ["mechanisms", "audit", "runner"] }),
+      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({
+        segments: ["mechanisms", "audit", "runner"],
+      }),
     ).toBe("mechanisms/audit/runner");
   });
 
   it("normalises . and .. segments of a repository join under the win32 flavour", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: ["mechanisms/audit/CD-14", "../runner/x.ts"] }),
+      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({
+        segments: ["mechanisms/audit/CD-14", "../runner/x.ts"],
+      }),
     ).toBe("mechanisms/audit/runner/x.ts");
   });
 
   it("drops a leading . root of a repository join under the win32 flavour", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: [".", "mechanisms", "audit"] }),
+      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({
+        segments: [".", "mechanisms", "audit"],
+      }),
     ).toBe("mechanisms/audit");
   });
 });
 
 describe("createPathPort repositoryDirectoryOf", () => {
   it("gives the forward-slashed directory of a repository path under the POSIX flavour", () => {
-    expect(pathPortIn({ directory: "/work" }).repositoryDirectoryOf({ path: "mechanisms/audit/CD-14/a.ts" })).toBe(
-      "mechanisms/audit/CD-14",
-    );
+    expect(
+      pathPortIn({ directory: "/work" }).repositoryDirectoryOf({
+        path: "mechanisms/audit/CD-14/a.ts",
+      }),
+    ).toBe("mechanisms/audit/CD-14");
   });
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { checkLocationsFor } from "./check-locations.ts";
@@ -19,7 +20,12 @@ describe("checkLocationsFor", () => {
     ).toEqual({
       outcome: "ok",
       value: {
-        arguments: { repo: "/repo", baseRevision: "origin/main", reportOutput: undefined, forfeiture: undefined },
+        arguments: {
+          repo: "/repo",
+          baseRevision: "origin/main",
+          reportOutput: undefined,
+          forfeiture: undefined,
+        },
         repoRoot: "/repo",
         installRoot: "/repo/node_modules/@hailstails/hone",
       },
@@ -29,7 +35,12 @@ describe("checkLocationsFor", () => {
   it("looks for disciplines.json in the repository root", () => {
     const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("present");
 
-    checkLocationsFor({ arguments: ["--repo", "/repo"], path: POSIX, fileText: { exists }, moduleUrl: ENTRY_URL });
+    checkLocationsFor({
+      arguments: ["--repo", "/repo"],
+      path: POSIX,
+      fileText: { exists },
+      moduleUrl: ENTRY_URL,
+    });
 
     expect(exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/disciplines.json" });
   });
@@ -42,7 +53,13 @@ describe("checkLocationsFor", () => {
         fileText: { exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present") },
         moduleUrl: ENTRY_URL,
       }),
-    ).toEqual({ outcome: "failed", error: { kind: "arguments-invalid", detail: 'hone check has no option "--fix"; run hone check --help for its options' } });
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "arguments-invalid",
+        detail: 'hone check has no option "--fix"; run hone check --help for its options',
+      },
+    });
   });
 
   it("fails as selection-absent when the repository holds no disciplines.json", () => {
@@ -66,7 +83,11 @@ describe("checkLocationsFor", () => {
       }),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "install-root-unresolvable", url: "https://example.invalid/src/hone.ts", detail: "the text is not a file: URL" },
+      error: {
+        kind: "install-root-unresolvable",
+        url: "https://example.invalid/src/hone.ts",
+        detail: "the text is not a file: URL",
+      },
     });
   });
 });

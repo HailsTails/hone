@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { type ListedAddress, listedAddressOf } from "../../domain/settings/listed-address.ts";
 
 const NOT_A_LISTED_ADDRESS = "is not a check address of the form [<ruleSet>/]<symptom>#<check>";

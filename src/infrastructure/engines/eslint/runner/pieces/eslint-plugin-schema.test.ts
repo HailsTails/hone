@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { eslintPluginModuleSchema, inlineConfigNodesSchema } from "./eslint-plugin-schema.ts";
 
 const createsNoVisitor = () => ({});
@@ -25,7 +26,9 @@ describe("eslintPluginModuleSchema", () => {
   it("accepts a rule whose meta has no messages", () => {
     expect(
       eslintPluginModuleSchema.safeParse({
-        default: { rules: { "no-class": { meta: { type: "suggestion" }, create: createsNoVisitor } } },
+        default: {
+          rules: { "no-class": { meta: { type: "suggestion" }, create: createsNoVisitor } },
+        },
       }).success,
     ).toBe(true);
   });

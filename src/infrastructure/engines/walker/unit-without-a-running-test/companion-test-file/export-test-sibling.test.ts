@@ -1,27 +1,41 @@
 import { assert, describe, expect, it, vi } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../runner/toolchain/typescript-toolchain.ts";
-import type { SourceObservers, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
-import { check } from "./export-test-sibling.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { SourceObservers, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../runner/toolchain/typescript-toolchain.ts";
+import { check } from "./export-test-sibling.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/view.tsx");
 const SIBLING = repoPathOf("src/view.test.tsx");
-const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-23"), clause: clauseIdOf("export-test-sibling") };
+const ADDRESS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-23"),
+  clause: clauseIdOf("export-test-sibling"),
+};
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
@@ -36,7 +50,11 @@ const sourceObservations = (request: {
   readonly source: string;
   readonly repository: WalkerRepository;
 }): SourceObservers => {
-  const prepared = check.prepare({ clauses: [CLAUSE], repository: request.repository, syntaxApi: SYNTAX_API });
+  const prepared = check.prepare({
+    clauses: [CLAUSE],
+    repository: request.repository,
+    syntaxApi: SYNTAX_API,
+  });
   assert(prepared.outcome === "ok");
   const selected = prepared.value.prepareFile({
     file: FILE,
@@ -45,7 +63,12 @@ const sourceObservations = (request: {
   assert(selected.outcome === "ok");
   assert(selected.value.kind === "syntax");
   return selected.value.begin({
-    sourceFile: SYNTAX_API.createSourceFile(FILE, request.source, SYNTAX_API.ScriptTarget.Latest, true),
+    sourceFile: SYNTAX_API.createSourceFile(
+      FILE,
+      request.source,
+      SYNTAX_API.ScriptTarget.Latest,
+      true,
+    ),
     anchorAt: vi.fn().mockReturnValue({ line: 1, column: 0 }),
   });
 };
@@ -58,14 +81,22 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     });
 
     expect(observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "missing co-located *.test.ts(x) sibling" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "missing co-located *.test.ts(x) sibling",
+      },
     ]);
   });
 
   it("accepts the existing TSX test sibling in the supplied repository population", () => {
     const observers = sourceObservations({
       source: "export const value = 1;\n",
-      repository: { files: [FILE, SIBLING], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE, SIBLING],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+      },
     });
 
     expect(observers.finish()).toEqual([]);
@@ -78,7 +109,11 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     });
 
     expect(observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "missing co-located *.test.ts(x) sibling" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "missing co-located *.test.ts(x) sibling",
+      },
     ]);
   });
 
@@ -89,13 +124,18 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     });
 
     expect(observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "missing co-located *.test.ts(x) sibling" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "missing co-located *.test.ts(x) sibling",
+      },
     ]);
   });
 
   it("excludes both forms of type-only named exports from sibling obligations", () => {
     const observers = sourceObservations({
-      source: "export type { First } from './first.ts';\nexport { type Second } from './second.ts';\n",
+      source:
+        "export type { First } from './first.ts';\nexport { type Second } from './second.ts';\n",
       repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
     });
 
@@ -108,7 +148,11 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     const source = "export const value = 1;\n";
     const prepared = check.prepare({
       clauses: [CLAUSE],
-      repository: { files: [file, sibling], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file, sibling],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");
@@ -128,7 +172,8 @@ describe("CD-23 existing exported-source sibling obligation", () => {
 
   it("retains type-only and declare-only export exclusions", () => {
     const observers = sourceObservations({
-      source: "export type Value = { readonly name: string };\nexport declare const value: Value;\n",
+      source:
+        "export type Value = { readonly name: string };\nexport declare const value: Value;\n",
       repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
     });
 
@@ -167,15 +212,28 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     expect(readText).not.toHaveBeenCalled();
   });
 
-  it.each(["src/vendor/view.ts", "src/scripts/task.ts", "scripts/task.ts", "ui/view.tsx"])("retains authored source for %s", (fileName) => {
-    const file = repoPathSchema.parse(fileName);
-    const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
-    assert(prepared.outcome === "ok");
-    const readText = vi.fn().mockReturnValue({ outcome: "failed", error: { kind: "file-unreadable", file, detail: "unexpected read" } });
+  it.each(["src/vendor/view.ts", "src/scripts/task.ts", "scripts/task.ts", "ui/view.tsx"])(
+    "retains authored source for %s",
+    (fileName) => {
+      const file = repoPathSchema.parse(fileName);
+      const prepared = check.prepare({
+        clauses: [CLAUSE],
+        repository: { files: [file], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+        syntaxApi: SYNTAX_API,
+      });
+      assert(prepared.outcome === "ok");
+      const readText = vi.fn().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "file-unreadable", file, detail: "unexpected read" },
+      });
 
-    const selected = prepared.value.prepareFile({ file, readText });
+      const selected = prepared.value.prepareFile({ file, readText });
 
-    expect(selected).toMatchObject({ outcome: "ok", value: { kind: "syntax", begin: expect.any(Function) } });
-    expect(readText).not.toHaveBeenCalled();
-  });
+      expect(selected).toMatchObject({
+        outcome: "ok",
+        value: { kind: "syntax", begin: expect.any(Function) },
+      });
+      expect(readText).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -52,7 +52,12 @@ export const RUN_SECTION_NAMES: readonly RunSectionName[] = [
   "symptoms",
 ];
 
-export const runSectionRoleOf = (request: { readonly section: RunSectionName }): RunSectionRole => RUN_SECTION_ROLES[request.section];
+export const runSectionRoleOf = (request: { readonly section: RunSectionName }): RunSectionRole =>
+  RUN_SECTION_ROLES[request.section];
 
 export const runVerdictOf = (request: { readonly report: RunReport }): RunVerdict =>
-  RUN_SECTION_NAMES.filter((section) => runSectionRoleOf({ section }) === "failing").every((section) => request.report[section].length === 0) ? "pass" : "fail";
+  RUN_SECTION_NAMES.filter((section) => runSectionRoleOf({ section }) === "failing").every(
+    (section) => request.report[section].length === 0,
+  )
+    ? "pass"
+    : "fail";

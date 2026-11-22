@@ -1,5 +1,5 @@
-import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -12,13 +12,19 @@ export const check: WalkerPiece = {
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
-        if (sourceEligibility({ file }) === "excluded") return { outcome: "ok", value: { kind: "skipped" } };
+        if (sourceEligibility({ file }) === "excluded")
+          return { outcome: "ok", value: { kind: "skipped" } };
         const text = readText();
         if (text.outcome === "failed") return text;
-        const hits = text.value.split("\n")
-          .flatMap((line, index) => /\bDate\.now\(\)/.test(line) || /\bnew\x20Date\b/.test(line)
-            ? clauses.map((clause) => ({ clause: clause.address, anchor: { line: index + 1, column: 0 }, snippet: line.trim() }))
-            : []);
+        const hits = text.value.split("\n").flatMap((line, index) =>
+          /\bDate\.now\(\)/.test(line) || /\bnew\x20Date\b/.test(line)
+            ? clauses.map((clause) => ({
+                clause: clause.address,
+                anchor: { line: index + 1, column: 0 },
+                snippet: line.trim(),
+              }))
+            : [],
+        );
         return { outcome: "ok", value: { kind: "complete", hits } };
       },
       finish: () => ({ outcome: "ok", value: [] }),

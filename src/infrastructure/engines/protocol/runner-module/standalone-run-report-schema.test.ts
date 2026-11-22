@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { standaloneRunReportSchema } from "./standalone-run-report-schema.ts";
 
 const CAST_EXPRESSIONS = { ruleSet: "hone", discipline: "CD-2", clause: "cast-expressions" };
@@ -23,7 +24,11 @@ const MEASURED_IN_A = { clause: CAST_EXPRESSIONS, file: "src/a.ts" };
 
 describe("standaloneRunReportSchema", () => {
   it("accepts a report holding a hit, an inline disable and the clause it measured on that file", () => {
-    const report = { hits: [HIT_IN_A], nativeExceptions: [EXPECTATION_IN_A], measured: [MEASURED_IN_A] };
+    const report = {
+      hits: [HIT_IN_A],
+      nativeExceptions: [EXPECTATION_IN_A],
+      measured: [MEASURED_IN_A],
+    };
     expect(standaloneRunReportSchema.safeParse(report)).toEqual({ success: true, data: report });
   });
 
@@ -39,7 +44,11 @@ describe("standaloneRunReportSchema", () => {
 
   it("refuses a measured file that is not a repo path, within that pair", () => {
     expect(
-      standaloneRunReportSchema.safeParse({ hits: [], nativeExceptions: [], measured: [{ clause: CAST_EXPRESSIONS, file: "/repo/src/a.ts" }] }),
+      standaloneRunReportSchema.safeParse({
+        hits: [],
+        nativeExceptions: [],
+        measured: [{ clause: CAST_EXPRESSIONS, file: "/repo/src/a.ts" }],
+      }),
     ).toMatchObject({ success: false, error: { issues: [{ path: ["measured", 0, "file"] }] } });
   });
 
@@ -51,7 +60,11 @@ describe("standaloneRunReportSchema", () => {
       }),
     ).toMatchObject({
       success: false,
-      error: { issues: expect.arrayContaining([expect.objectContaining({ path: ["nativeExceptions", 0, "kind"] })]) },
+      error: {
+        issues: expect.arrayContaining([
+          expect.objectContaining({ path: ["nativeExceptions", 0, "kind"] }),
+        ]),
+      },
     });
   });
 

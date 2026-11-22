@@ -23,15 +23,23 @@ type PieceRequest = {
 
 type LocatedPieceEntry = LocatedPieceFile["clauses"][number];
 
-const readInstalledPieceFile = (request: PieceRequest): Result<LocatedPieceFile, VersionTwoLoadFailure> => {
+const readInstalledPieceFile = (
+  request: PieceRequest,
+): Result<LocatedPieceFile, VersionTwoLoadFailure> => {
   const names = readInstalledNames(request);
   if (names.outcome === "failed") {
     return names;
   }
   const clauses = everyOk({
-    entries: request.discipline.clauses.filter((clause) => clause.kind === "mechanical" && clause.mechanisms.includes(request.mechanism)),
+    entries: request.discipline.clauses.filter(
+      (clause) => clause.kind === "mechanical" && clause.mechanisms.includes(request.mechanism),
+    ),
     resolve: ({ id }): Result<LocatedPieceEntry | undefined, VersionTwoLoadFailure> => {
-      const installed = firstInstalledPieceFor({ ...request, names: names.value, clause: { ruleSet: TOOL_RULE_SET, discipline: request.discipline.id, clause: id } });
+      const installed = firstInstalledPieceFor({
+        ...request,
+        names: names.value,
+        clause: { ruleSet: TOOL_RULE_SET, discipline: request.discipline.id, clause: id },
+      });
       if (installed.outcome === "failed") {
         return installed;
       }
@@ -39,15 +47,28 @@ const readInstalledPieceFile = (request: PieceRequest): Result<LocatedPieceFile,
         return { outcome: "ok", value: undefined };
       }
       const { pieceRoot, settings, declarations, editions } = installed.value.piece;
-      return { outcome: "ok", value: { clause: id, pieceRoot, settings, clauseSettings: declarations, editions } };
+      return {
+        outcome: "ok",
+        value: { clause: id, pieceRoot, settings, clauseSettings: declarations, editions },
+      };
     },
   });
-  return clauses.outcome === "failed" ? clauses : { outcome: "ok", value: {
-    version: 1, discipline: request.discipline.id, mechanism: request.mechanism, clauses: clauses.value.filter((entry) => entry !== undefined),
-  } };
+  return clauses.outcome === "failed"
+    ? clauses
+    : {
+        outcome: "ok",
+        value: {
+          version: 1,
+          discipline: request.discipline.id,
+          mechanism: request.mechanism,
+          clauses: clauses.value.filter((entry) => entry !== undefined),
+        },
+      };
 };
 
-export const readLocatedPieceFile = (request: PieceRequest): Result<LocatedPieceFile, VersionTwoLoadFailure> => {
+export const readLocatedPieceFile = (
+  request: PieceRequest,
+): Result<LocatedPieceFile, VersionTwoLoadFailure> => {
   if (request.ruleSetRoot === request.installRoot) {
     return readInstalledPieceFile(request);
   }
@@ -55,6 +76,11 @@ export const readLocatedPieceFile = (request: PieceRequest): Result<LocatedPiece
   if (read.outcome === "failed") {
     return read;
   }
-  const pieceRoot = request.path.join({ segments: pieceFolderSegmentsOf({ ...request, discipline: request.discipline.id }) });
-  return { outcome: "ok", value: { ...read.value, clauses: read.value.clauses.map((entry) => ({ ...entry, pieceRoot })) } };
+  const pieceRoot = request.path.join({
+    segments: pieceFolderSegmentsOf({ ...request, discipline: request.discipline.id }),
+  });
+  return {
+    outcome: "ok",
+    value: { ...read.value, clauses: read.value.clauses.map((entry) => ({ ...entry, pieceRoot })) },
+  };
 };

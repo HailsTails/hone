@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { parseInlineConfigComment } from "./inline-config-parser.ts";
 
 describe("parseInlineConfigComment", () => {
@@ -37,8 +38,8 @@ describe("parseInlineConfigComment", () => {
   });
 
   it("parses an eslint comment whose configuration does not parse as an unparseable rule config", () => {
-    expect(
-      parseInlineConfigComment({ text: " eslint hone/no-class-authoring: [ " }),
-    ).toEqual({ kind: "unparseable-rule-config" });
+    expect(parseInlineConfigComment({ text: " eslint hone/no-class-authoring: [ " })).toEqual({
+      kind: "unparseable-rule-config",
+    });
   });
 });

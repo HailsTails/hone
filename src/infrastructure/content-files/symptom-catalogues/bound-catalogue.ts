@@ -19,7 +19,9 @@ type BoundCatalogueSource = {
   readonly installRoot: AbsolutePath;
 };
 
-export const readBoundCatalogue = (source: BoundCatalogueSource): Result<CatalogueHolding, VersionTwoLoadFailure> => {
+export const readBoundCatalogue = (
+  source: BoundCatalogueSource,
+): Result<CatalogueHolding, VersionTwoLoadFailure> => {
   const holding = createSymptomCatalogueRepository(source).read({});
   if (holding.outcome === "failed") {
     return holding;
@@ -31,11 +33,21 @@ export const readBoundCatalogue = (source: BoundCatalogueSource): Result<Catalog
   }
   const bound = holdingBoundTo({ holding: holding.value, bindings: bindings.value });
   return bound.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "file-malformed", path: source.path.join({ segments: [source.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] }), detail: bound.error } }
+    ? {
+        outcome: "failed",
+        error: {
+          kind: "file-malformed",
+          path: source.path.join({ segments: [source.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] }),
+          detail: bound.error,
+        },
+      }
     : bound;
 };
 
-export const createBoundCatalogueOf = (options: { readonly directory: DirectoryPort }): BoundCatalogueOf => {
-  const boundCatalogueOf: BoundCatalogueOf = (request) => readBoundCatalogue({ ...request, directory: options.directory });
+export const createBoundCatalogueOf = (options: {
+  readonly directory: DirectoryPort;
+}): BoundCatalogueOf => {
+  const boundCatalogueOf: BoundCatalogueOf = (request) =>
+    readBoundCatalogue({ ...request, directory: options.directory });
   return boundCatalogueOf;
 };

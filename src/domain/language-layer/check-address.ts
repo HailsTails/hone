@@ -1,9 +1,11 @@
-import { checkAddressTextOf } from "./check-address-text.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
+import { checkAddressTextOf } from "./check-address-text.ts";
 import type { Check, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
 
-export type FoundCheck = { readonly found: "check"; readonly check: Check } | { readonly found: "none" };
+export type FoundCheck =
+  | { readonly found: "check"; readonly check: Check }
+  | { readonly found: "none" };
 
 const NO_CHECK: FoundCheck = { found: "none" };
 
@@ -12,13 +14,26 @@ const foundAmong = (request: { readonly checks: readonly Check[] }): FoundCheck 
   return check === undefined ? NO_CHECK : { found: "check", check };
 };
 
-export const checkAddressOf = (request: { readonly check: Check }): string => checkAddressTextOf(request);
+export const checkAddressOf = (request: { readonly check: Check }): string =>
+  checkAddressTextOf(request);
 
-export const checkAt = (request: { readonly catalogue: SymptomCatalogue; readonly address: string }): FoundCheck =>
-  foundAmong({ checks: request.catalogue.checks.filter((candidate) => checkAddressOf({ check: candidate }) === request.address) });
+export const checkAt = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly address: string;
+}): FoundCheck =>
+  foundAmong({
+    checks: request.catalogue.checks.filter(
+      (candidate) => checkAddressOf({ check: candidate }) === request.address,
+    ),
+  });
 
-export const checksOf = <Each extends CheckContent>(request: { readonly catalogue: { readonly checks: readonly Each[] }; readonly clause: ClauseAddress }): readonly Each[] =>
-  request.catalogue.checks.filter((check) => sameClauseAddress({ left: check.clause, right: request.clause }) === "same");
+export const checksOf = <Each extends CheckContent>(request: {
+  readonly catalogue: { readonly checks: readonly Each[] };
+  readonly clause: ClauseAddress;
+}): readonly Each[] =>
+  request.catalogue.checks.filter(
+    (check) => sameClauseAddress({ left: check.clause, right: request.clause }) === "same",
+  );
 
 export type NamedCheck =
   | { readonly named: "unnamed" }
@@ -34,6 +49,10 @@ export const checkNamedAt = (request: {
   if (address === undefined) {
     return { named: "unnamed" };
   }
-  const found = foundAmong({ checks: checksOf(request).filter((check) => checkAddressOf({ check }) === address) });
-  return found.found === "check" ? { named: "check", check: found.check } : { named: "not-of-the-clause", address };
+  const found = foundAmong({
+    checks: checksOf(request).filter((check) => checkAddressOf({ check }) === address),
+  });
+  return found.found === "check"
+    ? { named: "check", check: found.check }
+    : { named: "not-of-the-clause", address };
 };

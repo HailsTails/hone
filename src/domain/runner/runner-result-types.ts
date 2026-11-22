@@ -1,6 +1,6 @@
 import type { Anchor } from "../finding/anchor.ts";
-import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
+import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 
 export type Remedy = {
   readonly fix: string;
@@ -27,13 +27,27 @@ export type InlineReach = "one-clause" | "every-selected-clause";
 
 export type ScriptOptionCause =
   | { readonly kind: "weakens-run" }
-  | { readonly kind: "after-another-command"; readonly command: string; readonly invocation: string }
+  | {
+      readonly kind: "after-another-command";
+      readonly command: string;
+      readonly invocation: string;
+    }
   | { readonly kind: "wrapped"; readonly command: string; readonly wrapper: string }
   | { readonly kind: "unreadable"; readonly command: string };
 
 export type NativeException =
-  | { readonly kind: "ignore"; readonly check?: string; readonly clause: ClauseAddress; readonly file: RepoPath }
-  | { readonly kind: "config-override"; readonly check?: string; readonly clause: ClauseAddress; readonly file: RepoPath }
+  | {
+      readonly kind: "ignore";
+      readonly check?: string;
+      readonly clause: ClauseAddress;
+      readonly file: RepoPath;
+    }
+  | {
+      readonly kind: "config-override";
+      readonly check?: string;
+      readonly clause: ClauseAddress;
+      readonly file: RepoPath;
+    }
   | {
       readonly kind: "suppression-entry";
       readonly check?: string;

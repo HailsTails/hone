@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { sameJsonValue } from "./same-json-value.ts";
 
 const regexOption = /class/u;
@@ -11,7 +12,11 @@ describe("sameJsonValue", () => {
     { label: "equal numbers", left: 2, right: 2 },
     { label: "null and null", left: null, right: null },
     { label: "equal arrays", left: [1, "a", [true]], right: [1, "a", [true]] },
-    { label: "objects with keys in another order", left: { a: 1, b: { c: [2] } }, right: { b: { c: [2] }, a: 1 } },
+    {
+      label: "objects with keys in another order",
+      left: { a: 1, b: { c: [2] } },
+      right: { b: { c: [2] }, a: 1 },
+    },
     { label: "the same array", left: sharedArray, right: sharedArray },
     { label: "two not-a-numbers", left: Number.NaN, right: Number.NaN },
   ])("reads $label as the same", ({ left, right }) => {

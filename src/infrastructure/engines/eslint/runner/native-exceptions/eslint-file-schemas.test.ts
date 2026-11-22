@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { packageJsonSchema, suppressionsFileSchema } from "./eslint-file-schemas.ts";
 
 describe("packageJsonSchema", () => {
@@ -18,13 +19,12 @@ describe("packageJsonSchema", () => {
     });
   });
 
-  it.each([
-    { scripts: { lint: 3 } },
-    { scripts: ["eslint ."] },
-    { scripts: "eslint ." },
-  ])("refuses %j, whose scripts are not a map of strings", (packageJson) => {
-    expect(packageJsonSchema.safeParse(packageJson)).toMatchObject({ success: false });
-  });
+  it.each([{ scripts: { lint: 3 } }, { scripts: ["eslint ."] }, { scripts: "eslint ." }])(
+    "refuses %j, whose scripts are not a map of strings",
+    (packageJson) => {
+      expect(packageJsonSchema.safeParse(packageJson)).toMatchObject({ success: false });
+    },
+  );
 
   it.each([null, "package", ["eslint ."]])("refuses %j, which is not an object", (packageJson) => {
     expect(packageJsonSchema.safeParse(packageJson)).toMatchObject({ success: false });

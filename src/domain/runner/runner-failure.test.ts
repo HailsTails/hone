@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { rejectedCall, runnerInvalidOutput } from "./runner-failure.ts";
 
 describe("runnerInvalidOutput", () => {

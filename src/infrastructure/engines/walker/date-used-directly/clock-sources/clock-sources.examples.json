@@ -4,17 +4,13 @@
       "name": "Date.now call",
       "fileName": "started-at.ts",
       "source": "export const startedAt = Date.now();\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "new Date construction",
       "fileName": "wall-clock.ts",
       "source": "export const stampNow = (): number => new Date().getTime();\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

@@ -1,5 +1,5 @@
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -9,13 +9,51 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
 
 const SNIPPET_MAX_LENGTH = 80;
 const BANNED_SHORTHAND_NAMES: readonly string[] = [
-  "c", "op", "s", "cb", "fn", "tx", "e", "ev", "acc", "item", "k", "v",
-  "el", "arr", "i", "j", "n", "obj", "val", "res", "req", "tmp", "temp",
+  "c",
+  "op",
+  "s",
+  "cb",
+  "fn",
+  "tx",
+  "e",
+  "ev",
+  "acc",
+  "item",
+  "k",
+  "v",
+  "el",
+  "arr",
+  "i",
+  "j",
+  "n",
+  "obj",
+  "val",
+  "res",
+  "req",
+  "tmp",
+  "temp",
 ];
 const BANNED_FILLER_NAMES: readonly string[] = [
-  "object", "obj", "args", "arguments", "details", "extra", "extras", "data",
-  "info", "params", "parameters", "props", "payload", "body", "value", "result",
-  "stuff", "things", "misc", "metadata",
+  "object",
+  "obj",
+  "args",
+  "arguments",
+  "details",
+  "extra",
+  "extras",
+  "data",
+  "info",
+  "params",
+  "parameters",
+  "props",
+  "payload",
+  "body",
+  "value",
+  "result",
+  "stuff",
+  "things",
+  "misc",
+  "metadata",
 ];
 
 type DeclarationHit = {
@@ -56,14 +94,16 @@ export const check: WalkerPiece = {
                   .slice(request.position, request.position + SNIPPET_MAX_LENGTH)
                   .replace(/\n/g, " ");
                 const anchor = anchorAt({ position: request.position });
-                hits.push(...clauses.map((clause) => ({
-                  owner: request.owner,
-                  hit: {
-                    clause: clause.address,
-                    anchor,
-                    snippet: snippet.length === SNIPPET_MAX_LENGTH ? snippet + "…" : snippet,
-                  },
-                })));
+                hits.push(
+                  ...clauses.map((clause) => ({
+                    owner: request.owner,
+                    hit: {
+                      clause: clause.address,
+                      anchor,
+                      snippet: snippet.length === SNIPPET_MAX_LENGTH ? snippet + "…" : snippet,
+                    },
+                  })),
+                );
               };
               return {
                 enter: ({ node }) => {
@@ -72,27 +112,40 @@ export const check: WalkerPiece = {
                     nextOwner += 1;
                     owners.push(owner);
                     if (syntaxApi.isIdentifier(node.name)) {
-                      recordName({ name: node.name.text, position: node.name.getStart(sourceFile), owner });
+                      recordName({
+                        name: node.name.text,
+                        position: node.name.getStart(sourceFile),
+                        owner,
+                      });
                     }
                     return;
                   }
                   if (syntaxApi.isFunctionDeclaration(node) && node.name !== undefined) {
                     const owner = nextOwner;
                     nextOwner += 1;
-                    recordName({ name: node.name.text, position: node.name.getStart(sourceFile), owner });
+                    recordName({
+                      name: node.name.text,
+                      position: node.name.getStart(sourceFile),
+                      owner,
+                    });
                     return;
                   }
-                  if (!syntaxApi.isBindingElement(node) || !syntaxApi.isIdentifier(node.name)) return;
+                  if (!syntaxApi.isBindingElement(node) || !syntaxApi.isIdentifier(node.name))
+                    return;
                   const owner = owners.at(-1);
                   if (owner === undefined) return;
-                  recordName({ name: node.name.text, position: node.name.getStart(sourceFile), owner });
+                  recordName({
+                    name: node.name.text,
+                    position: node.name.getStart(sourceFile),
+                    owner,
+                  });
                 },
                 leave: ({ node }) => {
-                  if (syntaxApi.isVariableDeclaration(node) || syntaxApi.isParameter(node)) owners.pop();
+                  if (syntaxApi.isVariableDeclaration(node) || syntaxApi.isParameter(node))
+                    owners.pop();
                 },
-                finish: () => [...hits]
-                  .sort((left, right) => left.owner - right.owner)
-                  .map(({ hit }) => hit),
+                finish: () =>
+                  [...hits].sort((left, right) => left.owner - right.owner).map(({ hit }) => hit),
               };
             },
           },

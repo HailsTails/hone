@@ -4,25 +4,19 @@
       "name": "any return annotation",
       "fileName": "src/parse.ts",
       "source": "export const parse = (text: string): any => JSON.parse(text);\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "any type argument",
       "fileName": "src/table.ts",
       "source": "export const table = new Map<string, any>();\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "as any cast",
       "fileName": "src/value.ts",
       "source": "export const value = JSON.parse(\"1\") as any;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

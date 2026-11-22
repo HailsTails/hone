@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import config from "./vitest.config.ts";
 
 describe("@hailstails/hone Vitest configuration", () => {

@@ -3,20 +3,32 @@ import { createHash } from "node:crypto";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
+
 import type { DirectoryTreePort } from "../../src/application/ports/file-system/directory-tree-port.ts";
 import type { Result } from "../../src/domain/result.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
-import { type EntryDisposition, type EntryKind, environmentWithoutGit, type StepRun } from "./install-proof-plan.ts";
+import {
+  type EntryDisposition,
+  type EntryKind,
+  environmentWithoutGit,
+  type StepRun,
+} from "./install-proof-plan.ts";
 
 export type EffectFailure = { readonly kind: "effect-failed"; readonly detail: string };
 
 export type CopiedEntry = { readonly name: string; readonly entryKind: EntryKind };
 
-export type ListedEntry = { readonly path: string; readonly name: string; readonly entryKind: EntryKind };
+export type ListedEntry = {
+  readonly path: string;
+  readonly name: string;
+  readonly entryKind: EntryKind;
+};
 
 export type ScratchFilesPort = {
-  readonly createTemporaryDirectory: (request: { readonly prefix: string }) => Result<string, EffectFailure>;
+  readonly createTemporaryDirectory: (request: {
+    readonly prefix: string;
+  }) => Result<string, EffectFailure>;
   readonly removeTree: (request: { readonly path: string }) => Result<null, EffectFailure>;
   readonly makeDirectory: (request: { readonly path: string }) => Result<null, EffectFailure>;
   readonly copyTree: (request: {
@@ -24,7 +36,9 @@ export type ScratchFilesPort = {
     readonly to: string;
     readonly disposition: (entry: CopiedEntry) => EntryDisposition;
   }) => Result<null, EffectFailure>;
-  readonly listTree: (request: { readonly path: string }) => Result<readonly ListedEntry[], EffectFailure>;
+  readonly listTree: (request: {
+    readonly path: string;
+  }) => Result<readonly ListedEntry[], EffectFailure>;
   readonly digestOf: (request: { readonly path: string }) => Result<string, EffectFailure>;
   readonly realPathOf: (request: { readonly path: string }) => Result<string, EffectFailure>;
 };
@@ -74,7 +88,10 @@ const attempted = <T>(request: { readonly action: () => T }): Result<T, EffectFa
   try {
     return { outcome: "ok", value: request.action() };
   } catch (thrown) {
-    return { outcome: "failed", error: { kind: "effect-failed", detail: failureDetail({ thrown }) } };
+    return {
+      outcome: "failed",
+      error: { kind: "effect-failed", detail: failureDetail({ thrown }) },
+    };
   }
 };
 
@@ -86,12 +103,17 @@ const completed = (request: { readonly action: () => void }): Result<null, Effec
     },
   });
 
-const treeFailureOf = (request: { readonly detail: string }): { readonly outcome: "failed"; readonly error: EffectFailure } => ({
+const treeFailureOf = (request: {
+  readonly detail: string;
+}): { readonly outcome: "failed"; readonly error: EffectFailure } => ({
   outcome: "failed",
   error: { kind: "effect-failed", detail: request.detail },
 });
 
-export const createScratchFilesPort = (options: { readonly surface: ScratchFilesSurface; readonly tree: DirectoryTreePort }): ScratchFilesPort => ({
+export const createScratchFilesPort = (options: {
+  readonly surface: ScratchFilesSurface;
+  readonly tree: DirectoryTreePort;
+}): ScratchFilesPort => ({
   createTemporaryDirectory: (request) =>
     attempted({ action: () => options.surface.makeTemporaryDirectory({ prefix: request.prefix }) }),
   removeTree: (request) => {
@@ -100,13 +122,20 @@ export const createScratchFilesPort = (options: { readonly surface: ScratchFiles
       return treeFailureOf({ detail: `${request.path} is not an absolute path` });
     }
     const removed = options.tree.remove({ path: path.data });
-    return removed.outcome === "ok" ? { outcome: "ok", value: null } : treeFailureOf({ detail: removed.error.detail });
+    return removed.outcome === "ok"
+      ? { outcome: "ok", value: null }
+      : treeFailureOf({ detail: removed.error.detail });
   },
-  makeDirectory: (request) => completed({ action: () => options.surface.makeDirectory({ path: request.path }) }),
+  makeDirectory: (request) =>
+    completed({ action: () => options.surface.makeDirectory({ path: request.path }) }),
   copyTree: (request) =>
     completed({
       action: () =>
-        options.surface.copyTree({ from: request.from, to: request.to, disposition: request.disposition }),
+        options.surface.copyTree({
+          from: request.from,
+          to: request.to,
+          disposition: request.disposition,
+        }),
     }),
   listTree: (request) => {
     const path = absolutePathSchema.safeParse(request.path);
@@ -115,14 +144,26 @@ export const createScratchFilesPort = (options: { readonly surface: ScratchFiles
     }
     const listed = options.tree.list({ path: path.data });
     return listed.outcome === "ok"
-      ? { outcome: "ok", value: listed.value.map(({ path, name, kind }) => ({ path, name, entryKind: kind === "directory" ? "folder" : "file" })) }
+      ? {
+          outcome: "ok",
+          value: listed.value.map(({ path, name, kind }) => ({
+            path,
+            name,
+            entryKind: kind === "directory" ? "folder" : "file",
+          })),
+        }
       : treeFailureOf({ detail: listed.error.detail });
   },
-  digestOf: (request) => attempted({ action: () => options.surface.digestOf({ path: request.path }) }),
-  realPathOf: (request) => attempted({ action: () => options.surface.realPathOf({ path: request.path }) }),
+  digestOf: (request) =>
+    attempted({ action: () => options.surface.digestOf({ path: request.path }) }),
+  realPathOf: (request) =>
+    attempted({ action: () => options.surface.realPathOf({ path: request.path }) }),
 });
 
-const launchOf = (request: { readonly command: ProofCommand; readonly platform: string }): Launch => {
+const launchOf = (request: {
+  readonly command: ProofCommand;
+  readonly platform: string;
+}): Launch => {
   switch (request.command) {
     case "npm":
     case "pnpm":
@@ -133,7 +174,10 @@ const launchOf = (request: { readonly command: ProofCommand; readonly platform: 
   }
 };
 
-const fileOf = (request: { readonly command: ProofCommand; readonly executablePath: string }): string => {
+const fileOf = (request: {
+  readonly command: ProofCommand;
+  readonly executablePath: string;
+}): string => {
   switch (request.command) {
     case "node":
       return request.executablePath;
@@ -195,7 +239,11 @@ const spawnedRun = (request: CommandSpawnRequest): StepRun => {
     }
     return spawned.status === null
       ? { outcome: "not-exited", detail: `signal ${spawned.signal ?? "unknown"}` }
-      : { outcome: "exited", exitCode: spawned.status, output: `${spawned.stdout}${spawned.stderr}` };
+      : {
+          outcome: "exited",
+          exitCode: spawned.status,
+          output: `${spawned.stdout}${spawned.stderr}`,
+        };
   } catch (thrown) {
     return { outcome: "not-exited", detail: failureDetail({ thrown }) };
   }
@@ -204,7 +252,10 @@ const spawnedRun = (request: CommandSpawnRequest): StepRun => {
 export const defaultCommandSpawn: CommandSpawn = spawnedRun;
 
 export const createDefaultScratchFilesPort = (_options: Record<string, never>): ScratchFilesPort =>
-  createScratchFilesPort({ surface: defaultScratchFilesSurface, tree: createDefaultDirectoryTreePort({}) });
+  createScratchFilesPort({
+    surface: defaultScratchFilesSurface,
+    tree: createDefaultDirectoryTreePort({}),
+  });
 
 export const createDefaultCommandRunPort = (_options: Record<string, never>): CommandRunPort =>
   createCommandRunPort({

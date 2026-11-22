@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+
+import type { EnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
@@ -6,11 +8,10 @@ import type { FileCreationPort } from "../application/ports/file-system/file-cre
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
-import type { EnginePort } from "../application/ports/engine/engine-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
-import { installedPortsOver, type NodePorts } from "./installed-ports.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
+import { installedPortsOver, type NodePorts } from "./installed-ports.ts";
 
 const nodePorts = (): NodePorts => ({
   path: {
@@ -22,12 +23,22 @@ const nodePorts = (): NodePorts => ({
     resolve: vi.fn<PathPort["resolve"]>(),
     fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
   },
-  fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() },
+  fileText: {
+    read: vi.fn<FileTextPort["read"]>(),
+    exists: vi.fn<FileTextPort["exists"]>(),
+    write: vi.fn<FileTextPort["write"]>(),
+  },
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   engine: {
     load: vi.fn<EnginePort["load"]>(),
-    run: { checks: vi.fn<EnginePort["run"]["checks"]>(), withRecords: vi.fn<EnginePort["run"]["withRecords"]>() },
-    project: { checks: vi.fn<EnginePort["project"]["checks"]>(), withRecords: vi.fn<EnginePort["project"]["withRecords"]>() },
+    run: {
+      checks: vi.fn<EnginePort["run"]["checks"]>(),
+      withRecords: vi.fn<EnginePort["run"]["withRecords"]>(),
+    },
+    project: {
+      checks: vi.fn<EnginePort["project"]["checks"]>(),
+      withRecords: vi.fn<EnginePort["project"]["withRecords"]>(),
+    },
     conform: vi.fn<EnginePort["conform"]>(),
   },
   git: {
@@ -37,7 +48,9 @@ const nodePorts = (): NodePorts => ({
     textInBase: vi.fn<GitPort["textInBase"]>(),
     renamedSince: vi.fn<GitPort["renamedSince"]>(),
   },
-  gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }) },
+  gitTree: {
+    pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }),
+  },
   directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
   fileCreation: { createNew: vi.fn<FileCreationPort["createNew"]>() },
   fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
@@ -49,7 +62,15 @@ describe("installedPortsOver", () => {
   it("hands the node ports it is given on as the tool's own", () => {
     const node = nodePorts();
     const ports = installedPortsOver(node);
-    expect([ports.path, ports.fileText, ports.modules, ports.engine, ports.git, ports.gitTree, ports.directory]).toEqual([
+    expect([
+      ports.path,
+      ports.fileText,
+      ports.modules,
+      ports.engine,
+      ports.git,
+      ports.gitTree,
+      ports.directory,
+    ]).toEqual([
       node.path,
       node.fileText,
       node.modules,
@@ -58,18 +79,20 @@ describe("installedPortsOver", () => {
       node.gitTree,
       node.directory,
     ]);
-    expect([ports.fileCreation, ports.fileRemoval, ports.directoryRemoval, ports.entryKind]).toEqual([
-      node.fileCreation,
-      node.fileRemoval,
-      node.directoryRemoval,
-      node.entryKind,
-    ]);
+    expect([
+      ports.fileCreation,
+      ports.fileRemoval,
+      ports.directoryRemoval,
+      ports.entryKind,
+    ]).toEqual([node.fileCreation, node.fileRemoval, node.directoryRemoval, node.entryKind]);
   });
 
   it("reads a repository's exceptions at a base revision through the node git tree it was given", () => {
     const node = nodePorts();
     const repoRoot = absoluteRootOf("/repo");
-    const read = installedPortsOver(node).exceptionRepositoryOf({ repoRoot }).readAt({ revision: "origin/main" });
+    const read = installedPortsOver(node)
+      .exceptionRepositoryOf({ repoRoot })
+      .readAt({ revision: "origin/main" });
     expect({ read, asked: vi.mocked(node.gitTree.pathsAt).mock.calls }).toEqual({
       read: { outcome: "ok", value: [] },
       asked: [[{ repoRoot: "/repo", revision: "origin/main" }]],

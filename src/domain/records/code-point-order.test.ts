@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { codePointOrder } from "./code-point-order.ts";
 
 describe("the order of two texts by their code points", () => {

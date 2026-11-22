@@ -1,4 +1,7 @@
-import { BUILT_MODULE_EXTENSION, type ModuleExtension } from "../../../application/ports/host/module-extension.ts";
+import {
+  BUILT_MODULE_EXTENSION,
+  type ModuleExtension,
+} from "../../../application/ports/host/module-extension.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 
 export type InstallEntry = "api" | "command" | "runner";
@@ -21,11 +24,20 @@ export const installRootAboveEntry = (request: {
 
 export type InstallForm = "package" | "source";
 
-export const installFormOf = (request: { readonly moduleExtension: ModuleExtension }): InstallForm =>
-  request.moduleExtension === BUILT_MODULE_EXTENSION ? "package" : "source";
+export const installFormOf = (request: {
+  readonly moduleExtension: ModuleExtension;
+}): InstallForm => (request.moduleExtension === BUILT_MODULE_EXTENSION ? "package" : "source");
 
 export const runnerModuleSegmentsOf = (request: {
   readonly installRoot: string;
   readonly mechanism: EngineId;
   readonly moduleExtension: ModuleExtension;
-}): readonly string[] => [request.installRoot, "src", "infrastructure", "engines", request.mechanism, "runner", `runner${request.moduleExtension}`];
+}): readonly string[] => [
+  request.installRoot,
+  "src",
+  "infrastructure",
+  "engines",
+  request.mechanism,
+  "runner",
+  `runner${request.moduleExtension}`,
+];

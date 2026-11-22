@@ -50,11 +50,15 @@ const everyListener = (observers: SiteObservers): Rule.RuleListener => ({
 });
 
 const listenerOf = (observers: SiteObservers): Rule.RuleListener =>
-  Object.fromEntries(Object.entries(everyListener(observers)).filter(([, listen]) => listen !== undefined));
+  Object.fromEntries(
+    Object.entries(everyListener(observers)).filter(([, listen]) => listen !== undefined),
+  );
 
 export const functionSiteOf = (request: { readonly node: Rule.Node }): FunctionSite | undefined => {
   const node = request.node;
-  return node.type === "FunctionDeclaration" || node.type === "FunctionExpression" || node.type === "ArrowFunctionExpression"
+  return node.type === "FunctionDeclaration" ||
+    node.type === "FunctionExpression" ||
+    node.type === "ArrowFunctionExpression"
     ? node
     : undefined;
 };

@@ -1,25 +1,45 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { CheckRequest } from "../../run/check/run-check.ts";
+
+import type {
+  Check,
+  Engine,
+  Principle,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../../ports/git-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
-import type { FoundTreeRecordsSourceOf, RecordsSourceOf } from "../../ports/records/records-source-of.ts";
-import type { RecordsSource } from "../../ports/records/records-source.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
-import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type {
+  FoundTreeRecordsSourceOf,
+  RecordsSourceOf,
+} from "../../ports/records/records-source-of.ts";
+import type { RecordsSource } from "../../ports/records/records-source.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
-import { FOUND_TREE_REVISION, foundTreeCheckReachOf, foundTreeRunReachOf } from "./found-tree-reach.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import type { CheckRequest } from "../../run/check/run-check.ts";
+import {
+  FOUND_TREE_REVISION,
+  foundTreeCheckReachOf,
+  foundTreeRunReachOf,
+} from "./found-tree-reach.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION_KIND: RecordKind = {
   name: "authorised-location",
@@ -52,17 +72,47 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
-const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
+const LAYERING_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-13"),
+  clause: clauseIdOf("layering"),
+};
 
-const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: LOOPS_CLAUSE,
+  engines: [WALKER, ESLINT_ENGINE],
+  forms: [],
+};
 
-const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
 
-const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-let"],
+};
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS],
@@ -105,13 +155,24 @@ const PATH: PathPort = {
 
 const loadFailureDetail: LoadFailureDetail = () => "the failure in words";
 
-const ENTRY = { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "kept" } as const;
+const ENTRY = {
+  kind: "authorised-location",
+  clause: "CD-15#loops",
+  file: "src/a.ts",
+  reason: "kept",
+} as const;
 
-const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
+const PLACED: PlacedEntry = {
+  place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 },
+  entry: ENTRY,
+};
 
 const AUTHORISED_DOCUMENT: RecordsDocument = {
   file: repoPathOf("hone-records/authorised-locations/loop-keyword.json"),
-  document: { version: 2, records: [{ answers: "loop-keyword#loops", file: "src/a.ts", carried: ENTRY }] },
+  document: {
+    version: 2,
+    records: [{ answers: "loop-keyword#loops", file: "src/a.ts", carried: ENTRY }],
+  },
 };
 
 const git = (): GitPort => ({
@@ -139,12 +200,26 @@ describe("foundTreeCheckReachOf", () => {
   it("gives a version 1 check the tree the upgrade found as its base revision, git and entries at the base", () => {
     const underlyingGit = git();
     const underlyingExceptions = exceptions();
-    const reach = foundTreeCheckReachOf({ check: { git: underlyingGit, fileText: fileText(), path: PATH, exceptionRepository: underlyingExceptions }, loadFailureDetail });
+    const reach = foundTreeCheckReachOf({
+      check: {
+        git: underlyingGit,
+        fileText: fileText(),
+        path: PATH,
+        exceptionRepository: underlyingExceptions,
+      },
+      loadFailureDetail,
+    });
     expect({
       baseRevision: reach.baseRevision,
-      changedSince: reach.git.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
+      changedSince: reach.git.changedSince({
+        repoRoot: REPO_ROOT,
+        baseRevision: FOUND_TREE_REVISION,
+      }),
       entriesAtBase: reach.exceptionRepository.readAt({ revision: FOUND_TREE_REVISION }),
-      askedGit: [vi.mocked(underlyingGit.changedSince).mock.calls, vi.mocked(underlyingExceptions.readAt).mock.calls],
+      askedGit: [
+        vi.mocked(underlyingGit.changedSince).mock.calls,
+        vi.mocked(underlyingExceptions.readAt).mock.calls,
+      ],
     }).toEqual({
       baseRevision: FOUND_TREE_REVISION,
       changedSince: { outcome: "ok", value: [] },
@@ -156,32 +231,58 @@ describe("foundTreeCheckReachOf", () => {
 
 const FOUND_RECORDS_SOURCE: RecordsSource = {
   read: vi.fn<RecordsSource["read"]>(),
-  readAt: vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "ok", value: [AUTHORISED_DOCUMENT] }),
+  readAt: vi
+    .fn<RecordsSource["readAt"]>()
+    .mockReturnValue({ outcome: "ok", value: [AUTHORISED_DOCUMENT] }),
 };
 
 describe("foundTreeRunReachOf", () => {
   it("gives a version 2 run the tree the upgrade found as its base revision and git, and records at the base made from the working tree's entries", () => {
-    const underlyingSource: RecordsSource = { read: vi.fn<RecordsSource["read"]>(), readAt: vi.fn<RecordsSource["readAt"]>() };
+    const underlyingSource: RecordsSource = {
+      read: vi.fn<RecordsSource["read"]>(),
+      readAt: vi.fn<RecordsSource["readAt"]>(),
+    };
     const underlyingGit = git();
     const directory: Pick<DirectoryPort, "list"> = { list: vi.fn<DirectoryPort["list"]>() };
     const gitTree: GitTreePort = { pathsAt: vi.fn<GitTreePort["pathsAt"]>() };
     const underlyingExceptions = exceptions();
     const recordsSourceOf = vi.fn<RecordsSourceOf>().mockReturnValue(underlyingSource);
-    const foundTreeRecordsSourceOf = vi.fn<FoundTreeRecordsSourceOf>().mockReturnValue(() => FOUND_RECORDS_SOURCE);
+    const foundTreeRecordsSourceOf = vi
+      .fn<FoundTreeRecordsSourceOf>()
+      .mockReturnValue(() => FOUND_RECORDS_SOURCE);
     const reach = foundTreeRunReachOf({
       recordsSourceOf,
       foundTreeRecordsSourceOf,
       loadFailureDetail,
-      command: { git: underlyingGit, fileText: fileText(), path: PATH, exceptionRepositoryOf: () => underlyingExceptions },
+      command: {
+        git: underlyingGit,
+        fileText: fileText(),
+        path: PATH,
+        exceptionRepositoryOf: () => underlyingExceptions,
+      },
     });
-    const folder = { fileText: fileText(), path: PATH, directory, git: underlyingGit, gitTree, repoRoot: REPO_ROOT, catalogue: SETTINGS_CATALOGUE };
+    const folder = {
+      fileText: fileText(),
+      path: PATH,
+      directory,
+      git: underlyingGit,
+      gitTree,
+      repoRoot: REPO_ROOT,
+      catalogue: SETTINGS_CATALOGUE,
+    };
     const recordsAtBase = reach.recordsSourceOf(folder).readAt({ revision: FOUND_TREE_REVISION });
     const [[handed]] = foundTreeRecordsSourceOf.mock.calls;
     expect({
       baseRevision: reach.baseRevision,
-      changedSince: reach.git.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
+      changedSince: reach.git.changedSince({
+        repoRoot: REPO_ROOT,
+        baseRevision: FOUND_TREE_REVISION,
+      }),
       recordsAtBase,
-      handedOver: { recordsSourceOf: handed.recordsSourceOf, entriesAtBase: handed.exceptionsOf({ repoRoot: REPO_ROOT }).readAt() },
+      handedOver: {
+        recordsSourceOf: handed.recordsSourceOf,
+        entriesAtBase: handed.exceptionsOf({ repoRoot: REPO_ROOT }).readAt(),
+      },
       askedRecords: vi.mocked(underlyingSource.readAt).mock.calls,
       askedEntries: vi.mocked(underlyingExceptions.readAt).mock.calls,
     }).toEqual({

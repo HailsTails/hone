@@ -1,7 +1,20 @@
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import type {
+  AuthoriseArguments,
+  CheckArguments,
+  ProjectArguments,
+  PruneDebtArguments,
+  RecordDebtArguments,
+  SplitRecordsArguments,
+  UpgradeArguments,
+} from "../../../application/ports/command/command-arguments.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import { FORFEITURE_ASSESSMENTS, WAIVED_CLAUSES_REPLACEMENT } from "../../../domain/settings/assessment.ts";
 import type { Result } from "../../../domain/result.ts";
+import {
+  FORFEITURE_ASSESSMENTS,
+  WAIVED_CLAUSES_REPLACEMENT,
+} from "../../../domain/settings/assessment.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
   ADOPTION_BASE_REVISION_OPTION,
@@ -20,16 +33,6 @@ import {
   subcommandOf,
   VERSION_FLAG,
 } from "./command-line.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import type {
-  AuthoriseArguments,
-  CheckArguments,
-  ProjectArguments,
-  PruneDebtArguments,
-  RecordDebtArguments,
-  SplitRecordsArguments,
-  UpgradeArguments,
-} from "../../../application/ports/command/command-arguments.ts";
 
 export type Invocation =
   | { readonly kind: "run"; readonly subcommand: Subcommand; readonly arguments: readonly string[] }
@@ -44,26 +47,44 @@ const JOINED_VALUE_MARKER = "=";
 
 const END_OF_OPTIONS = "--";
 
-const REMOVED_OPTIONS: ReadonlyMap<string, string> = new Map([["--waived-clauses", WAIVED_CLAUSES_REPLACEMENT]]);
+const REMOVED_OPTIONS: ReadonlyMap<string, string> = new Map([
+  ["--waived-clauses", WAIVED_CLAUSES_REPLACEMENT],
+]);
 
-const failedWith = (request: { readonly problem: ArgumentProblem }): { readonly outcome: "failed"; readonly error: LoadFailure } =>
-  argumentsInvalid(request);
+const failedWith = (request: {
+  readonly problem: ArgumentProblem;
+}): { readonly outcome: "failed"; readonly error: LoadFailure } => argumentsInvalid(request);
 
-const optionNamed = (request: { readonly subcommand: Subcommand; readonly given: string }): CommandOption | undefined =>
+const optionNamed = (request: {
+  readonly subcommand: Subcommand;
+  readonly given: string;
+}): CommandOption | undefined =>
   COMMANDS[request.subcommand].options.find((option) => option.name === request.given);
 
-const unknownArgumentProblem = (request: { readonly subcommand: Subcommand; readonly given: string }): ArgumentProblem => {
+const unknownArgumentProblem = (request: {
+  readonly subcommand: Subcommand;
+  readonly given: string;
+}): ArgumentProblem => {
   if (!request.given.startsWith(FLAG_MARKER)) {
     return { kind: "argument-unexpected", ...request };
   }
-  const joined = optionNamed({ subcommand: request.subcommand, given: request.given.split(JOINED_VALUE_MARKER)[0] });
-  return joined === undefined ? { kind: "option-unknown", ...request } : { kind: "option-joined", option: joined, given: request.given };
+  const joined = optionNamed({
+    subcommand: request.subcommand,
+    given: request.given.split(JOINED_VALUE_MARKER)[0],
+  });
+  return joined === undefined
+    ? { kind: "option-unknown", ...request }
+    : { kind: "option-joined", option: joined, given: request.given };
 };
 
-const removedOptionProblem = (request: { readonly arguments: readonly string[] }): ArgumentProblem | undefined => {
+const removedOptionProblem = (request: {
+  readonly arguments: readonly string[];
+}): ArgumentProblem | undefined => {
   const removed = request.arguments.find((argument) => REMOVED_OPTIONS.has(argument));
   const instead = removed === undefined ? undefined : REMOVED_OPTIONS.get(removed);
-  return removed === undefined || instead === undefined ? undefined : { kind: "option-removed", given: removed, instead };
+  return removed === undefined || instead === undefined
+    ? undefined
+    : { kind: "option-removed", given: removed, instead };
 };
 
 const optionValuesFrom = (request: {
@@ -77,7 +98,9 @@ const optionValuesFrom = (request: {
   }
   const option = optionNamed({ subcommand: request.subcommand, given: name });
   if (option === undefined) {
-    return failedWith({ problem: unknownArgumentProblem({ subcommand: request.subcommand, given: name }) });
+    return failedWith({
+      problem: unknownArgumentProblem({ subcommand: request.subcommand, given: name }),
+    });
   }
   if (given === undefined || given.startsWith(FLAG_MARKER)) {
     return failedWith({ problem: { kind: "value-missing", option } });
@@ -86,10 +109,16 @@ const optionValuesFrom = (request: {
   if (earlier.length > 0 && option.occurrence === "once") {
     return failedWith({ problem: { kind: "option-repeated", option } });
   }
-  return optionValuesFrom({ ...request, remaining: rest, given: new Map([...request.given, [option.name, [...earlier, given]]]) });
+  return optionValuesFrom({
+    ...request,
+    remaining: rest,
+    given: new Map([...request.given, [option.name, [...earlier, given]]]),
+  });
 };
 
-const withoutEndOfOptions = (request: { readonly remaining: readonly string[] }): readonly string[] => {
+const withoutEndOfOptions = (request: {
+  readonly remaining: readonly string[];
+}): readonly string[] => {
   const [name, ...rest] = request.remaining;
   if (name === undefined) {
     return [];
@@ -98,7 +127,9 @@ const withoutEndOfOptions = (request: { readonly remaining: readonly string[] })
     return withoutEndOfOptions({ remaining: rest });
   }
   const [given, ...beyond] = rest;
-  return given === undefined ? [name] : [name, given, ...withoutEndOfOptions({ remaining: beyond })];
+  return given === undefined
+    ? [name]
+    : [name, given, ...withoutEndOfOptions({ remaining: beyond })];
 };
 
 const givenOptionValues = (request: {
@@ -116,8 +147,10 @@ const givenOptionValues = (request: {
   });
 };
 
-const singleValue = (request: { readonly option: CommandOption; readonly values: OptionValues }): string | undefined =>
-  request.values.get(request.option.name)?.[0];
+const singleValue = (request: {
+  readonly option: CommandOption;
+  readonly values: OptionValues;
+}): string | undefined => request.values.get(request.option.name)?.[0];
 
 const requiredValue = (request: {
   readonly subcommand: Subcommand;
@@ -126,12 +159,20 @@ const requiredValue = (request: {
 }): Result<string, LoadFailure> => {
   const given = singleValue(request);
   return given === undefined
-    ? failedWith({ problem: { kind: "option-required", subcommand: request.subcommand, option: request.option } })
+    ? failedWith({
+        problem: {
+          kind: "option-required",
+          subcommand: request.subcommand,
+          option: request.option,
+        },
+      })
     : { outcome: "ok", value: given };
 };
 
-const requiredRepo = (request: { readonly subcommand: Subcommand; readonly values: OptionValues }): Result<string, LoadFailure> =>
-  requiredValue({ ...request, option: REPO_OPTION });
+const requiredRepo = (request: {
+  readonly subcommand: Subcommand;
+  readonly values: OptionValues;
+}): Result<string, LoadFailure> => requiredValue({ ...request, option: REPO_OPTION });
 
 const chosenValue = <Choice extends string>(request: {
   readonly option: CommandOption;
@@ -141,7 +182,9 @@ const chosenValue = <Choice extends string>(request: {
   const given = singleValue(request);
   const chosen = request.choices.find((choice) => choice === given);
   if (given !== undefined && chosen === undefined) {
-    return failedWith({ problem: { kind: "choice-invalid", option: request.option, choices: request.choices, given } });
+    return failedWith({
+      problem: { kind: "choice-invalid", option: request.option, choices: request.choices, given },
+    });
   }
   return { outcome: "ok", value: chosen };
 };
@@ -154,11 +197,19 @@ const checkArgumentsOf = <Output extends string>(request: {
   if (repo.outcome === "failed") {
     return repo;
   }
-  const reportOutput = chosenValue({ option: REPORT_OUTPUT_OPTION, choices: request.reportOutputs, values: request.values });
+  const reportOutput = chosenValue({
+    option: REPORT_OUTPUT_OPTION,
+    choices: request.reportOutputs,
+    values: request.values,
+  });
   if (reportOutput.outcome === "failed") {
     return reportOutput;
   }
-  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: FORFEITURE_ASSESSMENTS, values: request.values });
+  const forfeiture = chosenValue({
+    option: FORFEITURE_OPTION,
+    choices: FORFEITURE_ASSESSMENTS,
+    values: request.values,
+  });
   if (forfeiture.outcome === "failed") {
     return forfeiture;
   }
@@ -178,15 +229,23 @@ export const parseCheckArguments = <Output extends string>(request: {
   readonly reportOutputs: readonly Output[];
 }): Result<CheckArguments<Output>, LoadFailure> => {
   const values = givenOptionValues({ subcommand: "check", arguments: request.arguments });
-  return values.outcome === "failed" ? values : checkArgumentsOf({ values: values.value, reportOutputs: request.reportOutputs });
+  return values.outcome === "failed"
+    ? values
+    : checkArgumentsOf({ values: values.value, reportOutputs: request.reportOutputs });
 };
 
-const pruneDebtArgumentsOf = (request: { readonly values: OptionValues }): Result<PruneDebtArguments, LoadFailure> => {
+const pruneDebtArgumentsOf = (request: {
+  readonly values: OptionValues;
+}): Result<PruneDebtArguments, LoadFailure> => {
   const repo = requiredRepo({ subcommand: "prune-debt", values: request.values });
   if (repo.outcome === "failed") {
     return repo;
   }
-  const forfeiture = chosenValue({ option: FORFEITURE_OPTION, choices: FORFEITURE_ASSESSMENTS, values: request.values });
+  const forfeiture = chosenValue({
+    option: FORFEITURE_OPTION,
+    choices: FORFEITURE_ASSESSMENTS,
+    values: request.values,
+  });
   return forfeiture.outcome === "failed"
     ? forfeiture
     : {
@@ -246,35 +305,57 @@ export const parseAuthoriseArguments = (request: {
   if (values.outcome === "failed") {
     return values;
   }
-  const repo = requiredValue({ subcommand: "authorise", values: values.value, option: AUTHORISE_REPO_OPTION });
-  return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value, values: values.value } };
+  const repo = requiredValue({
+    subcommand: "authorise",
+    values: values.value,
+    option: AUTHORISE_REPO_OPTION,
+  });
+  return repo.outcome === "failed"
+    ? repo
+    : { outcome: "ok", value: { repo: repo.value, values: values.value } };
 };
 
 const GLOB_MARKER = "*";
 
-const leavePaths = (request: { readonly values: OptionValues }): Result<readonly RepoPath[], LoadFailure> => {
+const leavePaths = (request: {
+  readonly values: OptionValues;
+}): Result<readonly RepoPath[], LoadFailure> => {
   const given = request.values.get(LEAVE_OPTION.name) ?? [];
   const parsed = given.map((path) => ({ path, parsed: repoPathSchema.safeParse(path) }));
   const refused = parsed.find((entry) => !entry.parsed.success || entry.path.includes(GLOB_MARKER));
   if (refused !== undefined) {
-    return failedWith({ problem: { kind: "path-invalid", option: LEAVE_OPTION, given: refused.path } });
+    return failedWith({
+      problem: { kind: "path-invalid", option: LEAVE_OPTION, given: refused.path },
+    });
   }
-  return { outcome: "ok", value: parsed.flatMap((entry) => (entry.parsed.success ? [entry.parsed.data] : [])) };
+  return {
+    outcome: "ok",
+    value: parsed.flatMap((entry) => (entry.parsed.success ? [entry.parsed.data] : [])),
+  };
 };
 
-const recordDebtArgumentsOf = (request: { readonly values: OptionValues }): Result<RecordDebtArguments, LoadFailure> => {
+const recordDebtArgumentsOf = (request: {
+  readonly values: OptionValues;
+}): Result<RecordDebtArguments, LoadFailure> => {
   const repo = requiredRepo({ subcommand: "record-debt", values: request.values });
   if (repo.outcome === "failed") {
     return repo;
   }
-  const baseRevision = requiredValue({ subcommand: "record-debt", option: ADOPTION_BASE_REVISION_OPTION, values: request.values });
+  const baseRevision = requiredValue({
+    subcommand: "record-debt",
+    option: ADOPTION_BASE_REVISION_OPTION,
+    values: request.values,
+  });
   if (baseRevision.outcome === "failed") {
     return baseRevision;
   }
   const leave = leavePaths(request);
   return leave.outcome === "failed"
     ? leave
-    : { outcome: "ok", value: { repo: repo.value, baseRevision: baseRevision.value, leave: leave.value } };
+    : {
+        outcome: "ok",
+        value: { repo: repo.value, baseRevision: baseRevision.value, leave: leave.value },
+      };
 };
 
 export const parseRecordDebtArguments = (request: {
@@ -284,13 +365,19 @@ export const parseRecordDebtArguments = (request: {
   return values.outcome === "failed" ? values : recordDebtArgumentsOf({ values: values.value });
 };
 
-const optionNamePositions = (request: { readonly arguments: readonly string[] }): readonly string[] =>
+const optionNamePositions = (request: {
+  readonly arguments: readonly string[];
+}): readonly string[] =>
   withoutEndOfOptions({ remaining: request.arguments }).filter((_, position) => position % 2 === 0);
 
 const asksForHelp = (request: { readonly arguments: readonly string[] }): "help" | "no-help" =>
-  optionNamePositions(request).some((argument) => HELP_FLAGS.includes(argument)) ? "help" : "no-help";
+  optionNamePositions(request).some((argument) => HELP_FLAGS.includes(argument))
+    ? "help"
+    : "no-help";
 
-const toolFlagOf = (request: { readonly given: string | undefined }): "help" | "version" | undefined => {
+const toolFlagOf = (request: {
+  readonly given: string | undefined;
+}): "help" | "version" | undefined => {
   if (request.given !== undefined && HELP_FLAGS.includes(request.given)) {
     return "help";
   }
@@ -304,15 +391,21 @@ const toolFlagInvocation = (request: {
 }): Result<Invocation, LoadFailure> => {
   const [after, ...beyond] = request.rest;
   if (after === undefined) {
-    return { outcome: "ok", value: request.flag === "help" ? { kind: "help", topic: "tool" } : { kind: "version" } };
+    return {
+      outcome: "ok",
+      value: request.flag === "help" ? { kind: "help", topic: "tool" } : { kind: "version" },
+    };
   }
-  const topic = request.flag === "help" && beyond.length === 0 ? subcommandOf({ given: after }) : undefined;
+  const topic =
+    request.flag === "help" && beyond.length === 0 ? subcommandOf({ given: after }) : undefined;
   return topic === undefined
     ? failedWith({ problem: { kind: "flag-extra", flag: request.given, given: after } })
     : { outcome: "ok", value: { kind: "help", topic } };
 };
 
-export const parseInvocation = (request: { readonly arguments: readonly string[] }): Result<Invocation, LoadFailure> => {
+export const parseInvocation = (request: {
+  readonly arguments: readonly string[];
+}): Result<Invocation, LoadFailure> => {
   const [given, ...rest] = request.arguments;
   const flag = toolFlagOf({ given });
   if (flag !== undefined && given !== undefined) {
@@ -320,7 +413,10 @@ export const parseInvocation = (request: { readonly arguments: readonly string[]
   }
   const subcommand = subcommandOf({ given });
   if (subcommand === undefined) {
-    return failedWith({ problem: given === undefined ? { kind: "command-missing" } : { kind: "command-unknown", given } });
+    return failedWith({
+      problem:
+        given === undefined ? { kind: "command-missing" } : { kind: "command-unknown", given },
+    });
   }
   return {
     outcome: "ok",

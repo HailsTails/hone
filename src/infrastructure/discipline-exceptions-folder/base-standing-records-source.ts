@@ -1,16 +1,21 @@
 import { z } from "zod";
-import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
+
+import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { RecordsSourceOf } from "../../application/ports/records/records-source-of.ts";
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
-import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
+import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import { type RecordInput, mappedRecords } from "../../domain/records/upgrade/records-mapping.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { carriedDebtDocumentsAtBaseOf } from "./carried-debt-at-base.ts";
-import { type VersionOneEntries, type VersionOneEntry, versionOneEntriesOf } from "./version-one-entries.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import {
+  type VersionOneEntries,
+  type VersionOneEntry,
+  versionOneEntriesOf,
+} from "./version-one-entries.ts";
 
 const authorisedLocationEntrySchema = z.object({
   kind: z.literal("authorised-location"),
@@ -21,7 +26,14 @@ const authorisedLocationEntrySchema = z.object({
 const inputsOf = (request: { readonly entry: VersionOneEntry }): readonly RecordInput[] => {
   const parsed = authorisedLocationEntrySchema.safeParse(request.entry);
   return parsed.success
-    ? [{ kind: "authorised-location", record: { clause: parsed.data.clause, file: parsed.data.file }, entry: request.entry, answer: { reach: "whole-clause" } }]
+    ? [
+        {
+          kind: "authorised-location",
+          record: { clause: parsed.data.clause, file: parsed.data.file },
+          entry: request.entry,
+          answer: { reach: "whole-clause" },
+        },
+      ]
     : [];
 };
 
@@ -31,9 +43,16 @@ const documentsMappedFrom = (request: {
 }): readonly RecordsDocument[] => {
   const { catalogues } = request;
   const inputs = request.entries.flatMap((entry) => inputsOf({ entry }));
-  const mappable = inputs.filter((input) => mappedRecords({ inputs: [input], catalogues }).outcome === "ok");
+  const mappable = inputs.filter(
+    (input) => mappedRecords({ inputs: [input], catalogues }).outcome === "ok",
+  );
   const mapped = mappedRecords({ inputs: mappable, catalogues });
-  return mapped.outcome === "ok" ? mapped.value.documents.map(({ file, version, records }) => ({ file, document: { version, records } })) : [];
+  return mapped.outcome === "ok"
+    ? mapped.value.documents.map(({ file, version, records }) => ({
+        file,
+        document: { version, records },
+      }))
+    : [];
 };
 
 export const baseStandingRecordsSource = (request: {
@@ -60,13 +79,18 @@ export const baseStandingRecordsSource = (request: {
   },
 });
 
-export const versionOneAwareRecordsSourceOf = (request: {
-  readonly recordsSourceOf: RecordsSourceOf;
-  readonly exceptionRepositoryOf: (request: { readonly repoRoot: AbsolutePath }) => Pick<ExceptionRepository, "readAt">;
-}): RecordsSourceOf =>
+export const versionOneAwareRecordsSourceOf =
+  (request: {
+    readonly recordsSourceOf: RecordsSourceOf;
+    readonly exceptionRepositoryOf: (request: {
+      readonly repoRoot: AbsolutePath;
+    }) => Pick<ExceptionRepository, "readAt">;
+  }): RecordsSourceOf =>
   (folder) =>
     baseStandingRecordsSource({
       source: request.recordsSourceOf(folder),
-      entries: versionOneEntriesOf({ repository: request.exceptionRepositoryOf({ repoRoot: folder.repoRoot }) }),
+      entries: versionOneEntriesOf({
+        repository: request.exceptionRepositoryOf({ repoRoot: folder.repoRoot }),
+      }),
       catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: folder.catalogue }],
     });

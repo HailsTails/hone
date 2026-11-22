@@ -4,43 +4,33 @@
       "name": "noImplicitOverride set to false",
       "fileName": "packages/a/tsconfig.json",
       "source": "{\n  \"compilerOptions\": {\n    \"noImplicitOverride\": false\n  }\n}\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "noImplicitOverride restated as true",
       "fileName": "tsconfig.json",
       "source": "{ \"compilerOptions\": { \"target\": \"ESNext\", \"noImplicitOverride\": true } }\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "noImplicitOverride set to false under the second edition",
       "fileName": "packages/a/tsconfig.json",
       "source": "{\n  \"compilerOptions\": {\n    \"noImplicitOverride\": false\n  }\n}\n",
-      "expectedLines": [
-        1
-      ],
+      "expectedLines": [1],
       "edition": "2"
     },
     {
       "name": "a base that cannot be read",
       "fileName": "packages/a/tsconfig.json",
       "source": "{ \"extends\": \"../../tsconfig.base.json\", \"compilerOptions\": { \"target\": \"ESNext\" } }\n",
-      "expectedLines": [
-        1
-      ],
+      "expectedLines": [1],
       "edition": "2"
     },
     {
       "name": "noImplicitOverride unset with no base",
       "fileName": "packages/b/tsconfig.json",
       "source": "{ \"compilerOptions\": { \"outDir\": \"dist\", \"target\": \"ESNext\" } }\n",
-      "expectedLines": [
-        1
-      ],
+      "expectedLines": [1],
       "edition": "2"
     }
   ],

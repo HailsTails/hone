@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { checkConformanceOf, checkUnderTestOf, type CheckRequest } from "./testing.ts";
 
 const requests: readonly CheckRequest[] = [
@@ -54,7 +55,10 @@ describe("installed named check examples", () => {
   it.each(requests)("$engine $check conforms to its named examples", async (request) => {
     expect(checkUnderTestOf(request)).toMatchObject({
       outcome: "ok",
-      value: { ...request, examples: expect.arrayContaining([expect.objectContaining({ source: expect.any(String) })]) },
+      value: {
+        ...request,
+        examples: expect.arrayContaining([expect.objectContaining({ source: expect.any(String) })]),
+      },
     });
     await expect(checkConformanceOf(request)).resolves.toEqual({ outcome: "ok", value: [] });
   });

@@ -1,39 +1,49 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import type { ExceptionRecord } from "../domain/records/discipline-exceptions/exception-record.ts";
-import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
-import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
-import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
-import { createEslintRunner } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
-import { createDefaultDirectoryTreePort } from "../infrastructure/node/file-system/directory-tree-port.ts";
-import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import type { EslintClass } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
-import { versionTwoStagesOver } from "./version-two-stages.ts";
+import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import type { ExceptionRecord } from "../domain/records/discipline-exceptions/exception-record.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { createEslintRunner } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import {
+  type AnsweredFile,
+  checksProjectionText,
+} from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
+import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
+import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
+import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import type { EslintClass } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import { loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import {
+  defaultEslintToolchainPeers,
+  type EslintToolchainModules,
+} from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { createDefaultDirectoryTreePort } from "../infrastructure/node/file-system/directory-tree-port.ts";
+import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import { versionTwoStagesOver } from "./version-two-stages.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
 const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
 
-const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../..`, installForm: "source" });
+const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({
+  installRoot: `${import.meta.dirname}/../..`,
+  installForm: "source",
+});
 
 const ESLINT_MODULES: Readonly<Record<EslintLine, EslintToolchainModules>> = {
   "eslint-10": DEVELOPMENT_PEERS.modules,
@@ -53,9 +63,22 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", ".."] }) });
+const INSTALL_ROOT = resolvedPath({
+  path: path.join({ segments: [import.meta.dirname, "..", ".."] }),
+});
 
-const PAIR_ROOT = path.join({ segments: [import.meta.dirname, "..", "infrastructure", "engines", "eslint", "runner", "projection", "projection-pair"] });
+const PAIR_ROOT = path.join({
+  segments: [
+    import.meta.dirname,
+    "..",
+    "infrastructure",
+    "engines",
+    "eslint",
+    "runner",
+    "projection",
+    "projection-pair",
+  ],
+});
 
 const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "before"] }) });
 
@@ -70,16 +93,47 @@ const WIDE = repoPathOf("src/wide.ts");
 const SKIPPING = repoPathOf("src/skipping.test.ts");
 
 const VERSION_ONE_RECORDS: readonly ExceptionRecord[] = [
-  { kind: "file-carve-out", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") }, mechanism: ESLINT, file: LEGACY },
+  {
+    kind: "file-carve-out",
+    clause: {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-2"),
+      clause: clauseIdOf("non-null-assertions"),
+    },
+    mechanism: ESLINT,
+    file: LEGACY,
+  },
   {
     kind: "authorised-location",
-    clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") },
+    clause: {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-44"),
+      clause: clauseIdOf("parameter-reassignment"),
+    },
     mechanism: ESLINT,
     file: LEGACY,
     reason: "a reducer rebinds its accumulator",
   },
-  { kind: "file-carve-out", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-40"), clause: clauseIdOf("parameter-count") }, mechanism: ESLINT, file: WIDE },
-  { kind: "file-carve-out", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("skipped-tests") }, mechanism: ESLINT, file: SKIPPING },
+  {
+    kind: "file-carve-out",
+    clause: {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-40"),
+      clause: clauseIdOf("parameter-count"),
+    },
+    mechanism: ESLINT,
+    file: WIDE,
+  },
+  {
+    kind: "file-carve-out",
+    clause: {
+      ruleSet: TOOL_RULE_SET,
+      discipline: disciplineIdOf("CD-27"),
+      clause: clauseIdOf("skipped-tests"),
+    },
+    mechanism: ESLINT,
+    file: SKIPPING,
+  },
 ];
 
 const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [
@@ -125,13 +179,25 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 };
 
 const toolCatalogue = (): SymptomCatalogue => {
-  const reading = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT });
+  const reading = readBoundCatalogue({
+    directory: createDefaultDirectoryPort({}),
+    fileText,
+    path,
+    ruleSetRoot: INSTALL_ROOT,
+    installRoot: INSTALL_ROOT,
+  });
   assert(reading.outcome === "ok", "this repository's catalogue reads");
   assert(reading.value.held === "catalogue", "this repository holds a catalogue");
   return reading.value.catalogue;
 };
 
-const versionOneSelection = createSelectionRepository({ repoRoot: BEFORE_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
+const versionOneSelection = createSelectionRepository({
+  repoRoot: BEFORE_ROOT,
+  installRoot: INSTALL_ROOT,
+  moduleExtension: ".ts",
+  fileText,
+  path,
+}).read({});
 assert(versionOneSelection.outcome === "ok", "the pair's version 1 selection file loads");
 
 const [
@@ -157,7 +223,11 @@ const directory = createDefaultDirectoryPort({});
 
 const directoryTree = createDefaultDirectoryTreePort({});
 
-const SCRATCH = resolvedPath({ path: path.join({ segments: [INSTALL_ROOT, "artefacts", `projection-pair-${globalThis.crypto.randomUUID()}`] }) });
+const SCRATCH = resolvedPath({
+  path: path.join({
+    segments: [INSTALL_ROOT, "artefacts", `projection-pair-${globalThis.crypto.randomUUID()}`],
+  }),
+});
 
 const madeScratch = directory.create({ path: SCRATCH });
 
@@ -209,13 +279,21 @@ const versionTwoStages = versionTwoStagesOver({
     directory,
     recordsSourceOf: vi.fn<RecordsSourceOf>(),
   },
-  locations: { repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", baseRevision: undefined },
+  locations: {
+    repoRoot: AFTER_ROOT,
+    installRoot: INSTALL_ROOT,
+    moduleExtension: ".ts",
+    baseRevision: undefined,
+  },
 });
 
 const versionTwoSettings = versionTwoStages.settings({ catalogue: toolCatalogue() });
 assert(versionTwoSettings.outcome === "ok", "the pair's version 2 settings file loads");
 
-const versionTwoChecks = projectedChecksOf({ checks: toolCatalogue().checks, bindings: versionTwoSettings.value.selection.bindings });
+const versionTwoChecks = projectedChecksOf({
+  checks: toolCatalogue().checks,
+  bindings: versionTwoSettings.value.selection.bindings,
+});
 assert(versionTwoChecks.outcome === "ok", "the pair's version 2 checks project");
 
 const writtenConfig = (request: { readonly name: string; readonly text: string }): string => {
@@ -230,15 +308,24 @@ const VERSION_ONE_CONFIG = path.join({ segments: [SCRATCH, "disciplines.eslint.m
 const VERSION_TWO_CONFIG = writtenConfig({
   name: "version-two.eslint.mjs",
   text: checksProjectionText({
-    pluginImport: specifierOf({ modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }) }),
+    pluginImport: specifierOf({
+      modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }),
+    }),
     checks: versionTwoChecks.value,
     answered: VERSION_TWO_ANSWERED,
   }),
 });
 
-const resolvedRules = async (request: { readonly line: EslintLine; readonly config: string; readonly file: string }) => {
+const resolvedRules = async (request: {
+  readonly line: EslintLine;
+  readonly config: string;
+  readonly file: string;
+}) => {
   const Eslint = await eslintClassOn({ line: request.line });
-  const resolved = await new Eslint({ cwd: SCRATCH, overrideConfigFile: request.config }).calculateConfigForFile(path.join({ segments: [SCRATCH, request.file] }));
+  const resolved = await new Eslint({
+    cwd: SCRATCH,
+    overrideConfigFile: request.config,
+  }).calculateConfigForFile(path.join({ segments: [SCRATCH, request.file] }));
   const config = resolvedConfigSchema.parse(resolved);
   assert.isDefined(config);
   const { rules } = config;

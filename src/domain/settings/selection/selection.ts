@@ -1,12 +1,12 @@
+import type { AddressedCheck } from "../../language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../repository/absolute-path-types.ts";
-import type { RunnerClause } from "../../runner/runner-module-types.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import type { ClauseEditionReading } from "../../rule-set/edition-types.ts";
-import type { FileExceptionWhyChains } from "./file-exception-why-chains.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseExceptions } from "../../rule-set/rule-set-types.ts";
-import type { AddressedCheck } from "../../language-layer/check-address-text.ts";
+import type { RunnerClause } from "../../runner/runner-module-types.ts";
+import type { FileExceptionWhyChains } from "./file-exception-why-chains.ts";
 
 export type SelectedClause = {
   readonly address: ClauseAddress;
@@ -46,4 +46,6 @@ export type SelectionReading = {
   readonly fileExceptionWhyChains: FileExceptionWhyChains;
 };
 
-export type VersionTwoSelectionReading = Omit<SelectionReading, "selection"> & { readonly selection: VersionTwoSelection };
+export type VersionTwoSelectionReading = Omit<SelectionReading, "selection"> & {
+  readonly selection: VersionTwoSelection;
+};

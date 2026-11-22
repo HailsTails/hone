@@ -1,15 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createFileTextPort, type FileSystemSurface } from "./file-text-port.ts";
 
 const PATH = "/repo/a.ts";
 
-const NO_SUCH_FILE = Object.assign(new Error("ENOENT: no such file or directory, access '/repo/a.ts'"), {
-  code: "ENOENT",
-});
+const NO_SUCH_FILE = Object.assign(
+  new Error("ENOENT: no such file or directory, access '/repo/a.ts'"),
+  {
+    code: "ENOENT",
+  },
+);
 
-const PERMISSION_DENIED = Object.assign(new Error("EACCES: permission denied, access '/repo/a.ts'"), {
-  code: "EACCES",
-});
+const PERMISSION_DENIED = Object.assign(
+  new Error("EACCES: permission denied, access '/repo/a.ts'"),
+  {
+    code: "EACCES",
+  },
+);
 
 const fileSystemOver = (surface: Partial<FileSystemSurface>): FileSystemSurface => ({
   readText: vi.fn(),
@@ -48,16 +55,20 @@ describe("createFileTextPort read", () => {
 
     expect(readOutcome).toEqual({
       outcome: "failed",
-      error: { kind: "unreadable", path: "/repo/a.ts", detail: "ENOENT: no such file or directory" },
+      error: {
+        kind: "unreadable",
+        path: "/repo/a.ts",
+        detail: "ENOENT: no such file or directory",
+      },
     });
   });
 });
 
 describe("createFileTextPort exists", () => {
   it("reports a path the file system can access as present", () => {
-    expect(
-      createFileTextPort({ fileSystem: fileSystemOver({}) }).exists({ path: PATH }),
-    ).toBe("present");
+    expect(createFileTextPort({ fileSystem: fileSystemOver({}) }).exists({ path: PATH })).toBe(
+      "present",
+    );
   });
 
   it("checks access to the requested path", () => {
@@ -121,7 +132,11 @@ describe("createFileTextPort write", () => {
 
     expect(writeOutcome).toEqual({
       outcome: "failed",
-      error: { kind: "unwritable", path: "/repo/a.ts", detail: "ENOENT: no such file or directory" },
+      error: {
+        kind: "unwritable",
+        path: "/repo/a.ts",
+        detail: "ENOENT: no such file or directory",
+      },
     });
   });
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { isClauseId, isDisciplineId, isRuleSetName } from "./identifiers.ts";
 
 describe("isRuleSetName", () => {

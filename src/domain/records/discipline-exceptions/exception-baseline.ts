@@ -12,14 +12,21 @@ export type ExceptionBaseline =
       readonly basePathOfRenamed: ReadonlyMap<RepoPath, RepoPath>;
     };
 
-export const UNMEASURED_EXCEPTION_BASELINE: ExceptionBaseline = { measured: "no", base: { state: "not-given" } };
+export const UNMEASURED_EXCEPTION_BASELINE: ExceptionBaseline = {
+  measured: "no",
+  base: { state: "not-given" },
+};
 
 export type MeasuredBaseline = Extract<ExceptionBaseline, { readonly measured: "yes" }>;
 
 export type JudgedEvidence = { readonly whyChain?: unknown; readonly provenance?: unknown };
 
 const evidenceJudgedBy = (request: { readonly evidence: JudgedEvidence }): "itself" | "the-base" =>
-  (request.evidence.whyChain === undefined ? request.evidence.provenance === undefined : whyChainFormOf({ chain: request.evidence.whyChain }) === "causal")
+  (
+    request.evidence.whyChain === undefined
+      ? request.evidence.provenance === undefined
+      : whyChainFormOf({ chain: request.evidence.whyChain }) === "causal"
+  )
     ? "itself"
     : "the-base";
 
@@ -33,7 +40,9 @@ export const judgedAtBase = <Judged>(request: {
   if (evidenceJudgedBy(request) === "itself") {
     return request.inFull();
   }
-  return request.baseline.measured === "no" ? request.unjudged() : request.againstBase(request.baseline);
+  return request.baseline.measured === "no"
+    ? request.unjudged()
+    : request.againstBase(request.baseline);
 };
 
 export type AuthorisationStanding = "established" | "provisional";

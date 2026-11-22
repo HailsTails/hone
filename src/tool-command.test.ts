@@ -4,7 +4,12 @@ declare global {
   interface ImportMeta {
     readonly glob: (
       patterns: readonly string[],
-      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
+      options: {
+        readonly base: string;
+        readonly query: "?raw";
+        readonly import: "default";
+        readonly eager: true;
+      },
     ) => Readonly<Record<string, string>>;
   }
 }

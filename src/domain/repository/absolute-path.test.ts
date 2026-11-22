@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { isAbsolutePath } from "./absolute-path.ts";
 
 describe("isAbsolutePath", () => {

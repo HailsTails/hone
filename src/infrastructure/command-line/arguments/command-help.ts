@@ -1,5 +1,14 @@
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
-import { COMMANDS, type CommandOption, type CommandSpec, HELP_FLAGS, type HelpTopic, SUBCOMMANDS, type Subcommand, VERSION_FLAG } from "./command-line.ts";
+import {
+  COMMANDS,
+  type CommandOption,
+  type CommandSpec,
+  HELP_FLAGS,
+  type HelpTopic,
+  SUBCOMMANDS,
+  type Subcommand,
+  VERSION_FLAG,
+} from "./command-line.ts";
 
 type HelpEntry = {
   readonly term: string;
@@ -22,7 +31,10 @@ const alignedEntries = (request: { readonly entries: readonly HelpEntry[] }): re
 };
 
 const stackedEntries = (request: { readonly entries: readonly HelpEntry[] }): readonly string[] =>
-  request.entries.flatMap((entry) => [`${INDENT}${entry.term}`, `${DESCRIPTION_INDENT}${entry.text}`]);
+  request.entries.flatMap((entry) => [
+    `${INDENT}${entry.term}`,
+    `${DESCRIPTION_INDENT}${entry.text}`,
+  ]);
 
 const usageTerm = (request: { readonly option: CommandOption }): string => {
   const term = `${request.option.name} ${request.option.value}`;
@@ -30,7 +42,10 @@ const usageTerm = (request: { readonly option: CommandOption }): string => {
   return request.option.occurrence === "repeated" ? `${given}...` : given;
 };
 
-const commandUsage = (request: { readonly subcommand: Subcommand; readonly spec: CommandSpec }): string =>
+const commandUsage = (request: {
+  readonly subcommand: Subcommand;
+  readonly spec: CommandSpec;
+}): string =>
   `${COMMAND} ${request.subcommand} ${request.spec.options.map((option) => usageTerm({ option })).join(" ")}`;
 
 const helpLines = (request: { readonly blocks: readonly (readonly string[])[] }): string =>
@@ -41,13 +56,27 @@ const toolHelp = (): string =>
     blocks: [
       [`usage: ${COMMAND} <command> [options]`],
       [TOOL_IDENTITY.description],
-      ["commands:", ...alignedEntries({ entries: SUBCOMMANDS.map((subcommand) => ({ term: subcommand, text: COMMANDS[subcommand].summary })) })],
+      [
+        "commands:",
+        ...alignedEntries({
+          entries: SUBCOMMANDS.map((subcommand) => ({
+            term: subcommand,
+            text: COMMANDS[subcommand].summary,
+          })),
+        }),
+      ],
       [
         "options:",
         ...alignedEntries({
           entries: [
-            { term: HELP_TERM, text: "print this help; after a command, print that command's help" },
-            { term: VERSION_FLAG, text: `print the installed version of ${TOOL_IDENTITY.packageName}` },
+            {
+              term: HELP_TERM,
+              text: "print this help; after a command, print that command's help",
+            },
+            {
+              term: VERSION_FLAG,
+              text: `print the installed version of ${TOOL_IDENTITY.packageName}`,
+            },
           ],
         }),
       ],
@@ -55,7 +84,10 @@ const toolHelp = (): string =>
     ],
   });
 
-const subcommandHelp = (request: { readonly subcommand: Subcommand; readonly spec: CommandSpec }): string =>
+const subcommandHelp = (request: {
+  readonly subcommand: Subcommand;
+  readonly spec: CommandSpec;
+}): string =>
   helpLines({
     blocks: [
       [`usage: ${commandUsage(request)}`],
@@ -64,17 +96,30 @@ const subcommandHelp = (request: { readonly subcommand: Subcommand; readonly spe
         "options:",
         ...stackedEntries({
           entries: [
-            ...request.spec.options.map((option) => ({ term: `${option.name} ${option.value}`, text: option.summary })),
+            ...request.spec.options.map((option) => ({
+              term: `${option.name} ${option.value}`,
+              text: option.summary,
+            })),
             { term: HELP_TERM, text: "print this help" },
           ],
         }),
       ],
-      ["exit codes:", ...alignedEntries({ entries: request.spec.exits.map((exit) => ({ term: String(exit.code), text: exit.meaning })) })],
+      [
+        "exit codes:",
+        ...alignedEntries({
+          entries: request.spec.exits.map((exit) => ({
+            term: String(exit.code),
+            text: exit.meaning,
+          })),
+        }),
+      ],
     ],
   });
 
 export const helpText = (request: { readonly topic: HelpTopic }): string =>
-  request.topic === "tool" ? toolHelp() : subcommandHelp({ subcommand: request.topic, spec: COMMANDS[request.topic] });
+  request.topic === "tool"
+    ? toolHelp()
+    : subcommandHelp({ subcommand: request.topic, spec: COMMANDS[request.topic] });
 
 const SYNOPSIS_LINES: readonly string[] = [
   ...SUBCOMMANDS.map((subcommand) => commandUsage({ subcommand, spec: COMMANDS[subcommand] })),

@@ -1,4 +1,5 @@
 import { build, type Metafile, type OutputFile } from "esbuild";
+
 import type { PathPort } from "../../../src/application/ports/host/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
 
@@ -17,22 +18,36 @@ export type BundledOutput = {
   readonly externalImports: readonly string[];
 };
 
-export type Bundle = { readonly outputs: readonly BundledOutput[]; readonly packageRoots: readonly string[] };
+export type Bundle = {
+  readonly outputs: readonly BundledOutput[];
+  readonly packageRoots: readonly string[];
+};
 
 export type BundleFailure = { readonly kind: "bundle-failed"; readonly detail: string };
 
-export type BundlerPort = { readonly bundle: (request: BundleRequest) => Promise<Result<Bundle, BundleFailure>> };
+export type BundlerPort = {
+  readonly bundle: (request: BundleRequest) => Promise<Result<Bundle, BundleFailure>>;
+};
 
 const LAYOUT_OUTPUT_FOLDER = "dist";
 
 const BUNDLED_PACKAGE_ROOT = /^(.*node_modules\/(?:@[^/]+\/)?[^/]+)\//;
 
-const repositoryPathBetween = (request: { readonly path: PathPort; readonly from: string; readonly to: string }): string => {
+const repositoryPathBetween = (request: {
+  readonly path: PathPort;
+  readonly from: string;
+  readonly to: string;
+}): string => {
   const location = request.path.relative({ from: request.from, to: request.to });
   return location.relation === "within-root" ? location.path : request.to;
 };
 
-const NO_OUTPUT_META: Metafile["outputs"][string] = { bytes: 0, inputs: {}, imports: [], exports: [] };
+const NO_OUTPUT_META: Metafile["outputs"][string] = {
+  bytes: 0,
+  inputs: {},
+  imports: [],
+  exports: [],
+};
 
 const bundledOutputOf = (request: {
   readonly path: PathPort;
@@ -42,14 +57,25 @@ const bundledOutputOf = (request: {
   readonly metafile: Metafile;
 }): BundledOutput => {
   const meta =
-    request.metafile.outputs[repositoryPathBetween({ path: request.path, from: request.sourceRoot, to: request.outputFile.path })] ??
-    NO_OUTPUT_META;
+    request.metafile.outputs[
+      repositoryPathBetween({
+        path: request.path,
+        from: request.sourceRoot,
+        to: request.outputFile.path,
+      })
+    ] ?? NO_OUTPUT_META;
   return {
-    path: repositoryPathBetween({ path: request.path, from: request.outdir, to: request.outputFile.path }),
+    path: repositoryPathBetween({
+      path: request.path,
+      from: request.outdir,
+      to: request.outputFile.path,
+    }),
     text: request.outputFile.text,
     entryPoint: meta.entryPoint,
     inputs: Object.keys(meta.inputs),
-    externalImports: meta.imports.filter((imported) => imported.external === true).map((imported) => imported.path),
+    externalImports: meta.imports
+      .filter((imported) => imported.external === true)
+      .map((imported) => imported.path),
   };
 };
 
@@ -86,7 +112,13 @@ const bundled = async (request: BundleRequest & { readonly path: PathPort }): Pr
   });
   return {
     outputs: built.outputFiles.map((outputFile) =>
-      bundledOutputOf({ path: request.path, outputFile, outdir, sourceRoot: request.sourceRoot, metafile: built.metafile }),
+      bundledOutputOf({
+        path: request.path,
+        outputFile,
+        outdir,
+        sourceRoot: request.sourceRoot,
+        metafile: built.metafile,
+      }),
     ),
     packageRoots: packageRootsOf({ metafile: built.metafile }),
   };
@@ -98,7 +130,10 @@ export const createEsbuildBundlerPort = (options: { readonly path: PathPort }): 
       (bundle): Result<Bundle, BundleFailure> => ({ outcome: "ok", value: bundle }),
       (thrown: unknown): Result<Bundle, BundleFailure> => ({
         outcome: "failed",
-        error: { kind: "bundle-failed", detail: thrown instanceof Error ? thrown.message : String(thrown) },
+        error: {
+          kind: "bundle-failed",
+          detail: thrown instanceof Error ? thrown.message : String(thrown),
+        },
       }),
     ),
 });

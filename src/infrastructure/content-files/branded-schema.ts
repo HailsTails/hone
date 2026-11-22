@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import type { Branded } from "../../domain/repository/branded.ts";
 
 export const brandedTextSchema = <Brand extends Branded<string, string>>(request: {

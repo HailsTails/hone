@@ -8,7 +8,10 @@ type LockLine = { readonly indent: number; readonly key: string; readonly value:
 
 type LockNode = { readonly value: string; readonly children: ReadonlyMap<string, LockNode> };
 
-type Siblings = { readonly entries: readonly (readonly [string, LockNode])[]; readonly next: number };
+type Siblings = {
+  readonly entries: readonly (readonly [string, LockNode])[];
+  readonly next: number;
+};
 
 const SUPPORTED_LOCKFILE_VERSION = "9.0";
 
@@ -36,7 +39,10 @@ const FLOW_STARTS: readonly string[] = ["{", "["];
 
 const ROOT_IMPORTER = ".";
 
-const failedReading = (request: { readonly error: string }): Reading<never> => ({ outcome: "failed", error: request.error });
+const failedReading = (request: { readonly error: string }): Reading<never> => ({
+  outcome: "failed",
+  error: request.error,
+});
 
 const unquoted = (request: { readonly text: string }): string =>
   request.text.length > 1 && request.text.startsWith(QUOTE) && request.text.endsWith(QUOTE)
@@ -48,10 +54,16 @@ const lockLineOf = (request: { readonly raw: string }): LockLine => {
   const indent = request.raw.length - content.length;
   const quoted = QUOTED_LINE.exec(content);
   if (quoted !== null) {
-    return { indent, key: quoted[1].replaceAll(ESCAPED_QUOTE, QUOTE), value: unquoted({ text: quoted[2] ?? "" }) };
+    return {
+      indent,
+      key: quoted[1].replaceAll(ESCAPED_QUOTE, QUOTE),
+      value: unquoted({ text: quoted[2] ?? "" }),
+    };
   }
   const plain = PLAIN_LINE.exec(content);
-  return plain === null ? { indent, key: content, value: "" } : { indent, key: plain[1], value: unquoted({ text: plain[2] ?? "" }) };
+  return plain === null
+    ? { indent, key: content, value: "" }
+    : { indent, key: plain[1], value: unquoted({ text: plain[2] ?? "" }) };
 };
 
 const siblingsFrom = (request: {
@@ -67,7 +79,12 @@ const siblingsFrom = (request: {
   const following = request.lines[request.index + 1];
   const nested =
     following !== undefined && following.indent > line.indent
-      ? siblingsFrom({ lines: request.lines, index: request.index + 1, indent: following.indent, found: [] })
+      ? siblingsFrom({
+          lines: request.lines,
+          index: request.index + 1,
+          indent: following.indent,
+          found: [],
+        })
       : { entries: [], next: request.index + 1 };
   return siblingsFrom({
     ...request,
@@ -76,20 +93,30 @@ const siblingsFrom = (request: {
   });
 };
 
-const lockTreeOf = (request: { readonly lockText: string }): Reading<ReadonlyMap<string, LockNode>> => {
+const lockTreeOf = (request: {
+  readonly lockText: string;
+}): Reading<ReadonlyMap<string, LockNode>> => {
   const raws = request.lockText.split(LINE_BREAK).filter((raw) => raw.trim() !== "");
   const doubleQuoted = raws.find((raw) => raw.trimStart().startsWith(DOUBLE_QUOTE));
   if (doubleQuoted !== undefined) {
-    return failedReading({ error: `the lock holds a double-quoted key, which this reader does not read: ${doubleQuoted.trim()}` });
+    return failedReading({
+      error: `the lock holds a double-quoted key, which this reader does not read: ${doubleQuoted.trim()}`,
+    });
   }
   const lines = raws.map((raw) => lockLineOf({ raw }));
-  return { outcome: "ok", value: new Map(siblingsFrom({ lines, index: 0, indent: 0, found: [] }).entries) };
+  return {
+    outcome: "ok",
+    value: new Map(siblingsFrom({ lines, index: 0, indent: 0, found: [] }).entries),
+  };
 };
 
-const childOf = (request: { readonly node: LockNode | undefined; readonly key: string }): LockNode | undefined =>
-  request.node?.children.get(request.key);
+const childOf = (request: {
+  readonly node: LockNode | undefined;
+  readonly key: string;
+}): LockNode | undefined => request.node?.children.get(request.key);
 
-const withoutPeerSuffix = (request: { readonly version: string }): string => request.version.split(PEER_SUFFIX_START)[0];
+const withoutPeerSuffix = (request: { readonly version: string }): string =>
+  request.version.split(PEER_SUFFIX_START)[0];
 
 const problemOfVersion = (request: { readonly value: string }): string | undefined => {
   const bare = withoutPeerSuffix({ version: request.value });
@@ -109,7 +136,11 @@ const problemOfVersion = (request: { readonly value: string }): string | undefin
   return SEMVER.test(bare) ? undefined : "a version that is not semver";
 };
 
-const versionOf = (request: { readonly owner: string; readonly name: string; readonly value: string }): Reading<string> => {
+const versionOf = (request: {
+  readonly owner: string;
+  readonly name: string;
+  readonly value: string;
+}): Reading<string> => {
   const problem = problemOfVersion({ value: request.value });
   if (problem === undefined) {
     return { outcome: "ok", value: request.value };
@@ -118,13 +149,17 @@ const versionOf = (request: { readonly owner: string; readonly name: string; rea
   return failedReading({ error: `${request.owner} holds ${problem} for ${request.name}${shown}` });
 };
 
-const allRead = <Value>(request: { readonly results: readonly Reading<Value>[] }): Reading<readonly Value[]> =>
+const allRead = <Value>(request: {
+  readonly results: readonly Reading<Value>[];
+}): Reading<readonly Value[]> =>
   request.results.reduce<Reading<readonly Value[]>>(
     (sofar, next) => {
       if (sofar.outcome === "failed") {
         return sofar;
       }
-      return next.outcome === "failed" ? next : { outcome: "ok", value: [...sofar.value, next.value] };
+      return next.outcome === "failed"
+        ? next
+        : { outcome: "ok", value: [...sofar.value, next.value] };
     },
     { outcome: "ok", value: [] },
   );
@@ -134,7 +169,9 @@ const sectionOf = (request: {
   readonly key: string;
 }): Reading<LockNode> => {
   const section = request.tree.get(request.key);
-  return section === undefined ? failedReading({ error: `the lock holds no ${request.key} section` }) : { outcome: "ok", value: section };
+  return section === undefined
+    ? failedReading({ error: `the lock holds no ${request.key} section` })
+    : { outcome: "ok", value: section };
 };
 
 const rootDependenciesOf = (request: {
@@ -157,7 +194,12 @@ const rootDependenciesOf = (request: {
         name,
         value: childOf({ node: direct?.children.get(name), key: "version" })?.value ?? "",
       });
-      return version.outcome === "failed" ? version : { outcome: "ok", value: { name, version: withoutPeerSuffix({ version: version.value }) } };
+      return version.outcome === "failed"
+        ? version
+        : {
+            outcome: "ok",
+            value: { name, version: withoutPeerSuffix({ version: version.value }) },
+          };
     }),
   });
 };
@@ -177,5 +219,7 @@ export const lockedDependenciesOf = (request: {
     });
   }
   const importers = sectionOf({ tree: tree.value, key: "importers" });
-  return importers.outcome === "failed" ? importers : rootDependenciesOf({ importers: importers.value, dependencies: request.dependencies });
+  return importers.outcome === "failed"
+    ? importers
+    : rootDependenciesOf({ importers: importers.value, dependencies: request.dependencies });
 };

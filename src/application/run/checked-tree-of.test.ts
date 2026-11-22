@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../ports/git-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { checkedTreeOf, typescriptFilesOf } from "./checked-tree-of.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -19,15 +20,27 @@ const WEB_X = repoPathOf("packages/web/x.ts");
 
 const DIST = repoPathOf("dist");
 
-const POSIX: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts") };
+const POSIX: Pick<PathPort, "join"> = {
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),
+};
 
-const trackedByGit = (request: { readonly tracked: readonly RepoPath[] }): Pick<GitPort, "trackedPaths"> => ({
-  trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: request.tracked }),
+const trackedByGit = (request: {
+  readonly tracked: readonly RepoPath[];
+}): Pick<GitPort, "trackedPaths"> => ({
+  trackedPaths: vi
+    .fn<GitPort["trackedPaths"]>()
+    .mockReturnValue({ outcome: "ok", value: request.tracked }),
 });
 
-const ALL_PRESENT: Pick<FileTextPort, "exists"> = { exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present") };
+const ALL_PRESENT: Pick<FileTextPort, "exists"> = {
+  exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+};
 
-const treeOver = (request: { readonly tracked: readonly RepoPath[]; readonly excluded: readonly RepoPath[]; readonly roots: readonly RepoPath[] }) =>
+const treeOver = (request: {
+  readonly tracked: readonly RepoPath[];
+  readonly excluded: readonly RepoPath[];
+  readonly roots: readonly RepoPath[];
+}) =>
   checkedTreeOf({
     git: trackedByGit(request),
     fileText: ALL_PRESENT,
@@ -39,24 +52,47 @@ const treeOver = (request: { readonly tracked: readonly RepoPath[]; readonly exc
 
 describe("checkedTreeOf", () => {
   it("gives the tracked files that are present and not excluded, and the declared config roots", () => {
-    expect(treeOver({ tracked: [A, DIST_B, WEB_X], excluded: [DIST], roots: [PACKAGES_WEB] })).toEqual({
+    expect(
+      treeOver({ tracked: [A, DIST_B, WEB_X], excluded: [DIST], roots: [PACKAGES_WEB] }),
+    ).toEqual({
       outcome: "ok",
       value: { tracked: [A, WEB_X], declaredConfigRoots: [PACKAGES_WEB] },
     });
   });
 
   it("leaves out a tracked file that is not on disk", () => {
-    const absent: Pick<FileTextPort, "exists"> = { exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent") };
+    const absent: Pick<FileTextPort, "exists"> = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+    };
     expect(
-      checkedTreeOf({ git: trackedByGit({ tracked: [A] }), fileText: absent, path: POSIX, repoRoot: REPO, excluded: [], eslintConfigRoots: [] }),
+      checkedTreeOf({
+        git: trackedByGit({ tracked: [A] }),
+        fileText: absent,
+        path: POSIX,
+        repoRoot: REPO,
+        excluded: [],
+        eslintConfigRoots: [],
+      }),
     ).toEqual({ outcome: "ok", value: { tracked: [], declaredConfigRoots: [] } });
   });
 
   it("fails as a git failure when git cannot list the tracked files", () => {
     const failing: Pick<GitPort, "trackedPaths"> = {
-      trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "failed", error: { kind: "git-failed", command: "git ls-files", detail: "not a repository" } }),
+      trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "git-failed", command: "git ls-files", detail: "not a repository" },
+      }),
     };
-    expect(checkedTreeOf({ git: failing, fileText: ALL_PRESENT, path: POSIX, repoRoot: REPO, excluded: [], eslintConfigRoots: [] })).toEqual({
+    expect(
+      checkedTreeOf({
+        git: failing,
+        fileText: ALL_PRESENT,
+        path: POSIX,
+        repoRoot: REPO,
+        excluded: [],
+        eslintConfigRoots: [],
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "git-failed", detail: "git ls-files: not a repository" },
     });

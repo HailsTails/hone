@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { PROOF_SECTIONS } from "./proof-outcome.ts";
 
 describe("PROOF_SECTIONS", () => {

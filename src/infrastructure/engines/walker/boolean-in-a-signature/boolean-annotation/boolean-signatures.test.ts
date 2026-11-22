@@ -1,28 +1,47 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../runner/toolchain/typescript-toolchain.ts";
-import type { PreparedWalkerCheck, SourceObservers, WalkerFile, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
-import { check } from "./boolean-signatures.ts";
-import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { textsDisk } from "../../runner/pieces/walker-disk.ts";
+import type {
+  PreparedWalkerCheck,
+  SourceObservers,
+  WalkerFile,
+  WalkerRepository,
+} from "../../runner/pieces/walker-piece.ts";
+import type { SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../runner/toolchain/typescript-toolchain.ts";
+import { check } from "./boolean-signatures.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/signatures.ts");
-const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-43"), clause: clauseIdOf("boolean-signatures") };
+const ADDRESS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-43"),
+  clause: clauseIdOf("boolean-signatures"),
+};
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
@@ -41,17 +60,35 @@ type ObservationFixture = {
 };
 
 const sourceObservations = (request: { readonly source: string }): ObservationFixture => {
-  const repository: WalkerRepository = { files: [FILE], exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"), disk: EMPTY_DISK };
+  const repository: WalkerRepository = {
+    files: [FILE],
+    exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"),
+    disk: EMPTY_DISK,
+  };
   const prepared = check.prepare({ clauses: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
-  const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: request.source });
+  const readText = vi
+    .fn<WalkerFile["readText"]>()
+    .mockReturnValue({ outcome: "ok", value: request.source });
   const file = prepared.value.prepareFile({ file: FILE, readText });
   expect(file).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
   assert(file.outcome === "ok" && file.value.kind === "syntax");
   expect(readText).not.toHaveBeenCalled();
-  const tree = SYNTAX_API.createSourceFile(FILE, request.source, SYNTAX_API.ScriptTarget.Latest, true);
-  const anchorAt = vi.fn<(request: { readonly position: number }) => Anchor>().mockReturnValue({ line: 3, column: 2 });
-  return { tree, observers: file.value.begin({ sourceFile: tree, anchorAt }), anchorAt, finish: prepared.value.finish };
+  const tree = SYNTAX_API.createSourceFile(
+    FILE,
+    request.source,
+    SYNTAX_API.ScriptTarget.Latest,
+    true,
+  );
+  const anchorAt = vi
+    .fn<(request: { readonly position: number }) => Anchor>()
+    .mockReturnValue({ line: 3, column: 2 });
+  return {
+    tree,
+    observers: file.value.begin({ sourceFile: tree, anchorAt }),
+    anchorAt,
+    finish: prepared.value.finish,
+  };
 };
 
 describe("CD43 existing authored boolean signatures", () => {
@@ -63,11 +100,18 @@ describe("CD43 existing authored boolean signatures", () => {
     { name: "nested root-only directory", fileName: "src/vendor/view.ts" },
   ])("admits $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
-    const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
+    const prepared = check.prepare({
+      clauses: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
     assert(prepared.outcome === "ok");
     const readText = vi.fn<WalkerFile["readText"]>();
 
-    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
+    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({
+      outcome: "ok",
+      value: { kind: "syntax" },
+    });
     expect(readText).not.toHaveBeenCalled();
   });
 
@@ -77,11 +121,18 @@ describe("CD43 existing authored boolean signatures", () => {
     { name: "root-only excluded directory", fileName: "vendor/view.ts" },
   ])("excludes $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
-    const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
+    const prepared = check.prepare({
+      clauses: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
     assert(prepared.outcome === "ok");
     const readText = vi.fn<WalkerFile["readText"]>();
 
-    expect(prepared.value.prepareFile({ file, readText })).toEqual({ outcome: "ok", value: { kind: "skipped" } });
+    expect(prepared.value.prepareFile({ file, readText })).toEqual({
+      outcome: "ok",
+      value: { kind: "skipped" },
+    });
     expect(readText).not.toHaveBeenCalled();
   });
 
@@ -91,13 +142,19 @@ describe("CD43 existing authored boolean signatures", () => {
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const parameter = declaration.parameters[0];
     assert(parameter !== undefined);
-    observed.anchorAt.mockReturnValueOnce({ line: 1, column: 0 }).mockReturnValueOnce({ line: 1, column: 11 });
+    observed.anchorAt
+      .mockReturnValueOnce({ line: 1, column: 0 })
+      .mockReturnValueOnce({ line: 1, column: 11 });
 
     observed.observers.enter?.({ node: declaration });
     observed.observers.enter?.({ node: parameter });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "function f(flag: boolean): boolean {} " },
+      {
+        clause: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "function f(flag: boolean): boolean {} ",
+      },
       { clause: ADDRESS, anchor: { line: 1, column: 11 }, snippet: "flag: boolean): boolean {} " },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 0 }], [{ position: 11 }]]);
@@ -105,7 +162,9 @@ describe("CD43 existing authored boolean signatures", () => {
   });
 
   it("retains a boolean with both nullish members on an authored property signature", () => {
-    const observed = sourceObservations({ source: "interface Input { enabled: boolean | null | undefined }" });
+    const observed = sourceObservations({
+      source: "interface Input { enabled: boolean | null | undefined }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isInterfaceDeclaration(declaration));
     const property = declaration.members[0];
@@ -114,13 +173,19 @@ describe("CD43 existing authored boolean signatures", () => {
     observed.observers.enter?.({ node: property });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "enabled: boolean | null | undefined }" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "enabled: boolean | null | undefined }",
+      },
     ]);
     expect(observed.anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 18 });
   });
 
   it("retains explicit method and call-signature returns with a nullish boolean member", () => {
-    const observed = sourceObservations({ source: "interface Factory { enabled(): boolean; (value): boolean | undefined; }" });
+    const observed = sourceObservations({
+      source: "interface Factory { enabled(): boolean; (value): boolean | undefined; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isInterfaceDeclaration(declaration));
     const method = declaration.members[0];
@@ -131,8 +196,16 @@ describe("CD43 existing authored boolean signatures", () => {
     observed.observers.enter?.({ node: callable });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "enabled(): boolean; (value): boolean | undefined; }" },
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "(value): boolean | undefined; }" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "enabled(): boolean; (value): boolean | undefined; }",
+      },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "(value): boolean | undefined; }",
+      },
     ]);
     expect(observed.anchorAt).toHaveBeenCalledTimes(2);
   });
@@ -157,7 +230,9 @@ describe("CD43 existing authored boolean signatures", () => {
   });
 
   it("does not infer returns from JSDoc or runtime values", () => {
-    const observed = sourceObservations({ source: "/** @returns {boolean} */\nfunction f(value) { return true; }" });
+    const observed = sourceObservations({
+      source: "/** @returns {boolean} */\nfunction f(value) { return true; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
 
@@ -168,7 +243,9 @@ describe("CD43 existing authored boolean signatures", () => {
   });
 
   it("retains the type-predicate return exception", () => {
-    const observed = sourceObservations({ source: "function isItem(value): value is Item { return true; }" });
+    const observed = sourceObservations({
+      source: "function isItem(value): value is Item { return true; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
 
@@ -179,14 +256,22 @@ describe("CD43 existing authored boolean signatures", () => {
   });
 
   it("preserves the exact eighty-character newline and ellipsis policy", () => {
-    const observed = sourceObservations({ source: "function f(): boolean {}\n0123456789012345678901234567890123456789012345678901234567890123456789" });
+    const observed = sourceObservations({
+      source:
+        "function f(): boolean {}\n0123456789012345678901234567890123456789012345678901234567890123456789",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
 
     observed.observers.enter?.({ node: declaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "function f(): boolean {} 0123456789012345678901234567890123456789012345678901234…" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet:
+          "function f(): boolean {} 0123456789012345678901234567890123456789012345678901234…",
+      },
     ]);
   });
 });

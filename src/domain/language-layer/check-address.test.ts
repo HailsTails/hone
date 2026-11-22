@@ -1,15 +1,29 @@
 import { describe, expect, it } from "vitest";
+
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
-import { checkAddressOf, checkAt, checkNamedAt, checksOf } from "./check-address.ts";
-import type { Check, Engine, Principle, Recipe, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";
-import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
+import { checkAddressOf, checkAt, checkNamedAt, checksOf } from "./check-address.ts";
+import type {
+  Check,
+  Engine,
+  Principle,
+  Recipe,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "./symptom-catalogue.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -26,7 +40,12 @@ const LOOP_KEYWORD: Symptom = {
   seen: "`for` or `while`.",
   mayIndicate: [
     {
-      case: { name: "makes-a-new-value-from-what-it-has", title: "Makes a new value from what it has", standing: "accepted", owes: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }] },
+      case: {
+        name: "makes-a-new-value-from-what-it-has",
+        title: "Makes a new value from what it has",
+        standing: "accepted",
+        owes: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
+      },
       points: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
     },
   ],
@@ -37,13 +56,29 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
-const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layer-boundaries") };
+const LAYERING_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-13"),
+  clause: clauseIdOf("layer-boundaries"),
+};
 
-const RESULT_FAILURES_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") };
+const RESULT_FAILURES_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-9"),
+  clause: clauseIdOf("result-failures"),
+};
 
 const FAILURES_AS_VALUES: Recipe = {
   name: "failures-as-values",
@@ -52,11 +87,29 @@ const FAILURES_AS_VALUES: Recipe = {
   reason: { text: "A caller handles each named failure.", standing: "accepted" },
 };
 
-const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER], forms: [] };
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: LOOPS_CLAUSE,
+  engines: [WALKER],
+  forms: [],
+};
 
-const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
 
-const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-let"],
+};
 
 const CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS],
@@ -80,8 +133,18 @@ const CATALOGUE: SymptomCatalogue = {
       },
     },
     { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
-    { clause: RESULT_FAILURES_CLAUSE, sight: { kind: "method", recipe: FAILURES_AS_VALUES, outcomeSeenBy: [REBINDING] } },
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, sight: { kind: "outside-the-cases" } },
+    {
+      clause: RESULT_FAILURES_CLAUSE,
+      sight: { kind: "method", recipe: FAILURES_AS_VALUES, outcomeSeenBy: [REBINDING] },
+    },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-32"),
+        clause: clauseIdOf("pii-redaction"),
+      },
+      sight: { kind: "outside-the-cases" },
+    },
   ],
   checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
   namedBans: [],
@@ -91,8 +154,16 @@ describe("checkAddressOf", () => {
   type AddressRow = { readonly name: string; readonly check: Check; readonly address: string };
 
   it.each<AddressRow>([
-    { name: "a check that is its clause's only check", check: LOOP_KEYWORD_LOOPS, address: "loop-keyword#loops" },
-    { name: "one symptom's check on a clause that sees several", check: REBINDING_TEST_BODY, address: "rebinding#test-body" },
+    {
+      name: "a check that is its clause's only check",
+      check: LOOP_KEYWORD_LOOPS,
+      address: "loop-keyword#loops",
+    },
+    {
+      name: "one symptom's check on a clause that sees several",
+      check: REBINDING_TEST_BODY,
+      address: "rebinding#test-body",
+    },
   ])("addresses $name by its symptom and its name", ({ check, address }) => {
     expect(checkAddressOf({ check })).toBe(address);
   });
@@ -120,17 +191,61 @@ describe("checkAt", () => {
 });
 
 describe("checksOf", () => {
-  type ClauseRow = { readonly name: string; readonly clause: ClauseAddress; readonly checks: readonly Check[] };
+  type ClauseRow = {
+    readonly name: string;
+    readonly clause: ClauseAddress;
+    readonly checks: readonly Check[];
+  };
 
   it.each<ClauseRow>([
     { name: "a clause that sees one symptom", clause: LOOPS_CLAUSE, checks: [LOOP_KEYWORD_LOOPS] },
-    { name: "a clause that sees a symptom by each form", clause: TEST_BODY_CLAUSE, checks: [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY] },
-    { name: "a clause named with its rule set", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, checks: [LOOP_KEYWORD_LOOPS] },
-    { name: "a judgement clause, which sees a symptom but has no check", clause: LAYERING_CLAUSE, checks: [] },
+    {
+      name: "a clause that sees a symptom by each form",
+      clause: TEST_BODY_CLAUSE,
+      checks: [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY],
+    },
+    {
+      name: "a clause named with its rule set",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-15"),
+        clause: clauseIdOf("loops"),
+      },
+      checks: [LOOP_KEYWORD_LOOPS],
+    },
+    {
+      name: "a judgement clause, which sees a symptom but has no check",
+      clause: LAYERING_CLAUSE,
+      checks: [],
+    },
     { name: "a clause that demands a method", clause: RESULT_FAILURES_CLAUSE, checks: [] },
-    { name: "a team rule set's clause of the same id as one of Hone's", clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, checks: [] },
-    { name: "a clause outside the cases", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, checks: [] },
-    { name: "a clause the catalogue does not hold", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-99"), clause: clauseIdOf("unheld") }, checks: [] },
+    {
+      name: "a team rule set's clause of the same id as one of Hone's",
+      clause: {
+        ruleSet: { name: ruleSetNameOf("team") },
+        discipline: disciplineIdOf("CD-15"),
+        clause: clauseIdOf("loops"),
+      },
+      checks: [],
+    },
+    {
+      name: "a clause outside the cases",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-32"),
+        clause: clauseIdOf("pii-redaction"),
+      },
+      checks: [],
+    },
+    {
+      name: "a clause the catalogue does not hold",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-99"),
+        clause: clauseIdOf("unheld"),
+      },
+      checks: [],
+    },
   ])("gives the checks of $name", ({ clause, checks }) => {
     expect(checksOf({ catalogue: CATALOGUE, clause })).toEqual(checks);
   });
@@ -138,22 +253,34 @@ describe("checksOf", () => {
 
 describe("checkNamedAt", () => {
   it("is unnamed when no check is named", () => {
-    expect(checkNamedAt({ catalogue: CATALOGUE, clause: TEST_BODY_CLAUSE, address: undefined })).toEqual({ named: "unnamed" });
+    expect(
+      checkNamedAt({ catalogue: CATALOGUE, clause: TEST_BODY_CLAUSE, address: undefined }),
+    ).toEqual({ named: "unnamed" });
   });
 
   it.each<{ readonly address: string; readonly check: Check }>([
     { address: "loop-keyword#test-body", check: LOOP_KEYWORD_TEST_BODY },
     { address: "rebinding#test-body", check: REBINDING_TEST_BODY },
   ])("is the check $address when the clause has it", ({ address, check }) => {
-    expect(checkNamedAt({ catalogue: CATALOGUE, clause: TEST_BODY_CLAUSE, address })).toEqual({ named: "check", check });
+    expect(checkNamedAt({ catalogue: CATALOGUE, clause: TEST_BODY_CLAUSE, address })).toEqual({
+      named: "check",
+      check,
+    });
   });
 
   it.each<{ readonly name: string; readonly clause: ClauseAddress; readonly address: string }>([
     { name: "a check of another clause", clause: LOOPS_CLAUSE, address: "rebinding#test-body" },
     { name: "a check no clause has", clause: TEST_BODY_CLAUSE, address: "rebinding#loops" },
-    { name: "a clause address in place of a check address", clause: TEST_BODY_CLAUSE, address: "CD-27#test-body-logic" },
+    {
+      name: "a clause address in place of a check address",
+      clause: TEST_BODY_CLAUSE,
+      address: "CD-27#test-body-logic",
+    },
     { name: "a name with no hash", clause: TEST_BODY_CLAUSE, address: "nohash" },
   ])("is not-of-the-clause for $name", ({ clause, address }) => {
-    expect(checkNamedAt({ catalogue: CATALOGUE, clause, address })).toEqual({ named: "not-of-the-clause", address });
+    expect(checkNamedAt({ catalogue: CATALOGUE, clause, address })).toEqual({
+      named: "not-of-the-clause",
+      address,
+    });
   });
 });

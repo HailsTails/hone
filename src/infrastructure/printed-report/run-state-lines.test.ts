@@ -1,18 +1,30 @@
 import { describe, expect, it } from "vitest";
-import type { ConventionKey } from "../../domain/settings/conventions.ts";
-import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
+
 import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
-import { assessmentLine, projectionProblemLine, settingsNoteLine, settingsNoteText, unmeasuredLine } from "./run-state-lines.ts";
+import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { ConventionKey } from "../../domain/settings/conventions.ts";
+import {
+  assessmentLine,
+  projectionProblemLine,
+  settingsNoteLine,
+  settingsNoteText,
+  unmeasuredLine,
+} from "./run-state-lines.ts";
 
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
-const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
+const PROJECT_COMMAND =
+  "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
-const GIT_FAILED: BaseRevisionAvailability = { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" };
+const GIT_FAILED: BaseRevisionAvailability = {
+  state: "git-failed",
+  revision: "origin/main",
+  gitMessage: "fatal: bad revision",
+};
 
 const SLICE = repoPathOf("packages/web/hone.eslint.mjs");
 
@@ -25,13 +37,33 @@ const SLICES_NOTE = "; the eslint lines under projection-problems name the packa
 
 const NESTED_NOTE = `; packages/legacy hold their own hone.config.json, and nested Hone configurations are not supported yet (https://github.com/HailsTails/hone/issues/72): to govern such a folder from this repository, remove its hone.config.json and keep its records here, then run ${PROJECT_COMMAND}, which writes its slice`;
 
-const NOT_INCLUDED: RunUnmeasured = { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "not-included", nestedConfigurations: [] };
+const NOT_INCLUDED: RunUnmeasured = {
+  kind: "engine-not-run",
+  engine: ESLINT_ENGINE,
+  projection: "not-included",
+  nestedConfigurations: [],
+};
 
-const NESTED_NOT_INCLUDED: RunUnmeasured = { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "not-included", nestedConfigurations: [LEGACY] };
+const NESTED_NOT_INCLUDED: RunUnmeasured = {
+  kind: "engine-not-run",
+  engine: ESLINT_ENGINE,
+  projection: "not-included",
+  nestedConfigurations: [LEGACY],
+};
 
-const ESLINT_SLICE_PROBLEM: RunProjectionProblem = { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: SLICE };
+const ESLINT_SLICE_PROBLEM: RunProjectionProblem = {
+  scope: "slice",
+  engine: ESLINT_ENGINE,
+  state: "missing",
+  slice: SLICE,
+};
 
-const WALKER_SLICE_PROBLEM: RunProjectionProblem = { scope: "slice", engine: WALKER, state: "missing", slice: SLICE };
+const WALKER_SLICE_PROBLEM: RunProjectionProblem = {
+  scope: "slice",
+  engine: WALKER,
+  state: "missing",
+  slice: SLICE,
+};
 
 describe("unmeasuredLine", () => {
   it.each<{ readonly name: string; readonly unmeasured: RunUnmeasured; readonly line: string }>([
@@ -60,66 +92,113 @@ describe("unmeasuredLine", () => {
       unmeasured: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
       line: `engine-not-run eslint missing: hone.eslint.mjs is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
     },
-    { name: "an engine whose projection is not in effect", unmeasured: NOT_INCLUDED, line: NOT_INCLUDED_TEXT },
-    { name: "an engine whose projection is not in effect under nested configurations", unmeasured: NESTED_NOT_INCLUDED, line: `${NOT_INCLUDED_TEXT}${NESTED_NOTE}` },
+    {
+      name: "an engine whose projection is not in effect",
+      unmeasured: NOT_INCLUDED,
+      line: NOT_INCLUDED_TEXT,
+    },
+    {
+      name: "an engine whose projection is not in effect under nested configurations",
+      unmeasured: NESTED_NOT_INCLUDED,
+      line: `${NOT_INCLUDED_TEXT}${NESTED_NOTE}`,
+    },
   ])("prints $name", ({ unmeasured, line }) => {
-    expect(unmeasuredLine({ projectCommand: PROJECT_COMMAND, unmeasured, problems: [] })).toBe(line);
+    expect(unmeasuredLine({ projectCommand: PROJECT_COMMAND, unmeasured, problems: [] })).toBe(
+      line,
+    );
   });
 
   it("points at the engine's slice problems when projection-problems names any", () => {
-    expect(unmeasuredLine({ projectCommand: PROJECT_COMMAND, unmeasured: NESTED_NOT_INCLUDED, problems: [ESLINT_SLICE_PROBLEM] })).toBe(`${NOT_INCLUDED_TEXT}${SLICES_NOTE}${NESTED_NOTE}`);
+    expect(
+      unmeasuredLine({
+        projectCommand: PROJECT_COMMAND,
+        unmeasured: NESTED_NOT_INCLUDED,
+        problems: [ESLINT_SLICE_PROBLEM],
+      }),
+    ).toBe(`${NOT_INCLUDED_TEXT}${SLICES_NOTE}${NESTED_NOTE}`);
   });
 
   it("does not point at another engine's slice problems", () => {
-    expect(unmeasuredLine({ projectCommand: PROJECT_COMMAND, unmeasured: NOT_INCLUDED, problems: [WALKER_SLICE_PROBLEM] })).toBe(NOT_INCLUDED_TEXT);
+    expect(
+      unmeasuredLine({
+        projectCommand: PROJECT_COMMAND,
+        unmeasured: NOT_INCLUDED,
+        problems: [WALKER_SLICE_PROBLEM],
+      }),
+    ).toBe(NOT_INCLUDED_TEXT);
   });
 });
 
 describe("projectionProblemLine", () => {
-  it.each<{ readonly name: string; readonly problem: RunProjectionProblem; readonly line: string }>([
-    {
-      name: "an out-of-date projection",
-      problem: { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
-      line: `eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
-    },
-    {
-      name: "an out-of-date slice",
-      problem: { scope: "slice", engine: ESLINT_ENGINE, state: "out-of-date", slice: SLICE },
-      line: `eslint out-of-date packages/web/hone.eslint.mjs: that slice differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
-    },
-    {
-      name: "a missing slice",
-      problem: ESLINT_SLICE_PROBLEM,
-      line: `eslint missing packages/web/hone.eslint.mjs: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
-    },
-    {
-      name: "a missing declaration of a slice's type",
-      problem: { scope: "slice", engine: ESLINT_ENGINE, state: "missing", slice: repoPathOf("packages/web/hone.eslint.d.mts") },
-      line: `eslint missing packages/web/hone.eslint.d.mts: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
-    },
-    {
-      name: "a slice with no configuration to load it",
-      problem: { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE },
-      line: "eslint unconfigured packages/web/hone.eslint.mjs: packages/web has no eslint configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check",
-    },
-  ])("prints $name", ({ problem, line }) => {
+  it.each<{ readonly name: string; readonly problem: RunProjectionProblem; readonly line: string }>(
+    [
+      {
+        name: "an out-of-date projection",
+        problem: { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+        line: `eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
+      },
+      {
+        name: "an out-of-date slice",
+        problem: { scope: "slice", engine: ESLINT_ENGINE, state: "out-of-date", slice: SLICE },
+        line: `eslint out-of-date packages/web/hone.eslint.mjs: that slice differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
+      },
+      {
+        name: "a missing slice",
+        problem: ESLINT_SLICE_PROBLEM,
+        line: `eslint missing packages/web/hone.eslint.mjs: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
+      },
+      {
+        name: "a missing declaration of a slice's type",
+        problem: {
+          scope: "slice",
+          engine: ESLINT_ENGINE,
+          state: "missing",
+          slice: repoPathOf("packages/web/hone.eslint.d.mts"),
+        },
+        line: `eslint missing packages/web/hone.eslint.d.mts: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
+      },
+      {
+        name: "a slice with no configuration to load it",
+        problem: { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE },
+        line: "eslint unconfigured packages/web/hone.eslint.mjs: packages/web has no eslint configuration file on disk, so nothing loads that slice; run the tool that generates it (for sku, sku configure) before the check",
+      },
+    ],
+  )("prints $name", ({ problem, line }) => {
     expect(projectionProblemLine({ projectCommand: PROJECT_COMMAND, problem })).toBe(line);
   });
 });
 
 describe("assessmentLine", () => {
   it.each([
-    { debts: 1, line: "forfeiture elsewhere: 1 debt record not checked for forfeiture in this run" },
-    { debts: 3, line: "forfeiture elsewhere: 3 debt records not checked for forfeiture in this run" },
+    {
+      debts: 1,
+      line: "forfeiture elsewhere: 1 debt record not checked for forfeiture in this run",
+    },
+    {
+      debts: 3,
+      line: "forfeiture elsewhere: 3 debt records not checked for forfeiture in this run",
+    },
   ])("counts $debts debt records left to another run", ({ debts, line }) => {
-    expect(assessmentLine({ partial: { concern: "forfeiture", assessedBy: "elsewhere", debts } })).toBe(line);
+    expect(
+      assessmentLine({ partial: { concern: "forfeiture", assessedBy: "elsewhere", debts } }),
+    ).toBe(line);
   });
 
   it.each([
-    { carried: 1, line: "carried standing elsewhere: 1 carried record not checked against the base in this run" },
-    { carried: 4, line: "carried standing elsewhere: 4 carried records not checked against the base in this run" },
+    {
+      carried: 1,
+      line: "carried standing elsewhere: 1 carried record not checked against the base in this run",
+    },
+    {
+      carried: 4,
+      line: "carried standing elsewhere: 4 carried records not checked against the base in this run",
+    },
   ])("counts $carried carried records left to a run that has a base", ({ carried, line }) => {
-    expect(assessmentLine({ partial: { concern: "carried-standing", assessedBy: "elsewhere", carried } })).toBe(line);
+    expect(
+      assessmentLine({
+        partial: { concern: "carried-standing", assessedBy: "elsewhere", carried },
+      }),
+    ).toBe(line);
   });
 });
 

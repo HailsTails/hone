@@ -1,5 +1,5 @@
-import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -23,12 +23,19 @@ export const check: WalkerPiece = {
         if (text.outcome === "failed") return text;
         const hits = text.value.split(/\r?\n/).flatMap((line, index) => {
           const trimmed = line.trim();
-          if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) return [];
+          if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*"))
+            return [];
           const collapsed = trimmed.replace(/\s+/g, " ");
           const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
-          return [FOR_OF, COUNTED_FOR, WHILE_LOOP].flatMap((pattern) => pattern.test(line)
-            ? clauses.map((clause) => ({ clause: clause.address, anchor: { line: index + 1, column: 0 }, snippet }))
-            : []);
+          return [FOR_OF, COUNTED_FOR, WHILE_LOOP].flatMap((pattern) =>
+            pattern.test(line)
+              ? clauses.map((clause) => ({
+                  clause: clause.address,
+                  anchor: { line: index + 1, column: 0 },
+                  snippet,
+                }))
+              : [],
+          );
         });
         return { outcome: "ok", value: { kind: "complete", hits } };
       },

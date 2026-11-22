@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { createDefaultPathPort } from "../../../src/infrastructure/node/path-port.ts";
 import { createEsbuildBundlerPort } from "./esbuild-bundler-port.ts";
 
@@ -65,6 +66,9 @@ describe("createEsbuildBundlerPort bundle", () => {
       target: "node22",
     });
 
-    expect(bundled).toEqual({ outcome: "failed", error: { kind: "bundle-failed", detail: expect.any(String) } });
+    expect(bundled).toEqual({
+      outcome: "failed",
+      error: { kind: "bundle-failed", detail: expect.any(String) },
+    });
   });
 });

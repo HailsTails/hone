@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { conventionsOf, conventionsWireOf } from "./conventions.ts";
-import { type ConventionsReading, DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
+
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { type ConventionsReading, DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
+import { conventionsOf, conventionsWireOf } from "./conventions.ts";
 
 describe("conventionsOf", () => {
   it("gives the defaults, and names no key as declared, when the file declares none", () => {
@@ -15,19 +16,36 @@ describe("conventionsOf", () => {
     expect(
       conventionsOf({
         document: {
-          generated: [{ files: ["src/graphql/generated/**", "src/api/*.gen.ts"], outsideParty: "@graphql-codegen/cli" }],
-          layers: { domain: ["src/domain"], application: ["src/application"], adapters: ["src/adapters", "web/adapters"] },
+          generated: [
+            {
+              files: ["src/graphql/generated/**", "src/api/*.gen.ts"],
+              outsideParty: "@graphql-codegen/cli",
+            },
+          ],
+          layers: {
+            domain: ["src/domain"],
+            application: ["src/application"],
+            adapters: ["src/adapters", "web/adapters"],
+          },
         },
       }),
     ).toEqual<{ readonly outcome: "ok"; readonly value: ConventionsReading }>({
       outcome: "ok",
       value: {
         conventions: {
-          generated: [{ files: ["src/graphql/generated/**", "src/api/*.gen.ts"], outsideParty: "@graphql-codegen/cli" }],
+          generated: [
+            {
+              files: ["src/graphql/generated/**", "src/api/*.gen.ts"],
+              outsideParty: "@graphql-codegen/cli",
+            },
+          ],
           layers: [
             { layer: "domain", folders: [repoPathOf("src/domain")] },
             { layer: "application", folders: [repoPathOf("src/application")] },
-            { layer: "adapters", folders: [repoPathOf("src/adapters"), repoPathOf("web/adapters")] },
+            {
+              layer: "adapters",
+              folders: [repoPathOf("src/adapters"), repoPathOf("web/adapters")],
+            },
           ],
         },
         declared: ["generated", "layers"],
@@ -36,7 +54,11 @@ describe("conventionsOf", () => {
   });
 
   it("keeps layers inner to outer and only those declared", () => {
-    expect(conventionsOf({ document: { layers: { adapters: ["src/adapters"], domain: ["src/domain"] } } })).toMatchObject({
+    expect(
+      conventionsOf({
+        document: { layers: { adapters: ["src/adapters"], domain: ["src/domain"] } },
+      }),
+    ).toMatchObject({
       outcome: "ok",
       value: {
         conventions: {
@@ -56,21 +78,31 @@ describe("conventionsOf", () => {
     {
       name: "a generated entry with no outside party",
       document: { generated: [{ files: ["src/generated/**"], outsideParty: "" }], layers: {} },
-      refusal: "✖ Too small: expected string to have >=1 characters\n  → at generated[0].outsideParty",
+      refusal:
+        "✖ Too small: expected string to have >=1 characters\n  → at generated[0].outsideParty",
     },
     {
       name: "a generated entry that names files anywhere",
-      document: { generated: [{ files: ["**/*.ts"], outsideParty: "@graphql-codegen/cli" }], layers: {} },
+      document: {
+        generated: [{ files: ["**/*.ts"], outsideParty: "@graphql-codegen/cli" }],
+        layers: {},
+      },
       refusal: "✖ a generated entry names files under a named folder\n  → at generated[0].files[0]",
     },
     {
       name: "a generated entry that names files under any folder",
-      document: { generated: [{ files: ["*/**"], outsideParty: "@graphql-codegen/cli" }], layers: {} },
+      document: {
+        generated: [{ files: ["*/**"], outsideParty: "@graphql-codegen/cli" }],
+        layers: {},
+      },
       refusal: "✖ a generated entry names files under a named folder\n  → at generated[0].files[0]",
     },
     {
       name: "a generated entry that names files at the repository root",
-      document: { generated: [{ files: ["*.ts"], outsideParty: "@graphql-codegen/cli" }], layers: {} },
+      document: {
+        generated: [{ files: ["*.ts"], outsideParty: "@graphql-codegen/cli" }],
+        layers: {},
+      },
       refusal: "✖ a generated entry names files under a named folder\n  → at generated[0].files[0]",
     },
     {
@@ -91,22 +123,24 @@ describe("conventionsOf", () => {
     {
       name: "one folder in two layers",
       document: { layers: { domain: ["src/core"], adapters: ["src/core"] } },
-      refusal: "✖ src/core is listed more than once; a folder belongs to one layer, once\n  → at layers",
+      refusal:
+        "✖ src/core is listed more than once; a folder belongs to one layer, once\n  → at layers",
     },
     {
       name: "one folder twice in one layer",
       document: { layers: { domain: ["src/domain", "src/domain"] } },
-      refusal: "✖ src/domain is listed more than once; a folder belongs to one layer, once\n  → at layers",
+      refusal:
+        "✖ src/domain is listed more than once; a folder belongs to one layer, once\n  → at layers",
     },
     {
       name: "a layer the model does not name",
       document: { layers: { infrastructure: ["src/infrastructure"] } },
-      refusal: "✖ Unrecognized key: \"infrastructure\"\n  → at layers",
+      refusal: '✖ Unrecognized key: "infrastructure"\n  → at layers',
     },
     {
       name: "a conventions key, which is not a category in version 2",
       document: { conventions: { generated: [] }, layers: {} },
-      refusal: "✖ Unrecognized key: \"conventions\"",
+      refusal: '✖ Unrecognized key: "conventions"',
     },
   ])("refuses $name", ({ document, refusal }) => {
     expect(conventionsOf({ document })).toEqual({ outcome: "failed", error: refusal });
@@ -115,7 +149,9 @@ describe("conventionsOf", () => {
 
 describe("conventionsWireOf", () => {
   it("writes nothing for conventions that were not declared", () => {
-    expect(conventionsWireOf({ reading: { conventions: DEFAULT_CONVENTIONS, declared: [] } })).toEqual({});
+    expect(
+      conventionsWireOf({ reading: { conventions: DEFAULT_CONVENTIONS, declared: [] } }),
+    ).toEqual({});
   });
 
   it("writes the generated files and the layers that were declared, each under its own key", () => {

@@ -29,7 +29,8 @@ const namedRules = (request: {
 export const eslintCoreRules = (request: {
   readonly names: readonly string[];
   readonly sources: NativeRuleSources;
-}): NativeRules => namedRules({ names: request.names, ruleNamed: (name) => request.sources.eslintCore.get(name) });
+}): NativeRules =>
+  namedRules({ names: request.names, ruleNamed: (name) => request.sources.eslintCore.get(name) });
 
 export const typescriptEslintRules = (request: {
   readonly names: readonly TypescriptEslintRuleName[];
@@ -37,5 +38,8 @@ export const typescriptEslintRules = (request: {
 }): NativeRules =>
   namedRules({
     names: request.names,
-    ruleNamed: (name) => (Object.hasOwn(request.sources.typescriptEslint, name) ? request.sources.typescriptEslint[name] : undefined),
+    ruleNamed: (name) =>
+      Object.hasOwn(request.sources.typescriptEslint, name)
+        ? request.sources.typescriptEslint[name]
+        : undefined,
   });

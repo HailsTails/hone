@@ -1,9 +1,9 @@
-import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../domain/result.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import type { Result } from "../../domain/result.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 
 export const ruleSetRootOf = (request: {
@@ -27,6 +27,13 @@ export const ruleSetRootOf = (request: {
   const directory = request.path.join({ segments: [request.repoRoot, declared.location.path] });
   const resolved = request.path.resolve({ path: directory });
   return resolved.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "rule-set-invalid", path: directory, detail: `the directory of rule set ${ruleSet.name} resolves to no absolute path` } }
+    ? {
+        outcome: "failed",
+        error: {
+          kind: "rule-set-invalid",
+          path: directory,
+          detail: `the directory of rule set ${ruleSet.name} resolves to no absolute path`,
+        },
+      }
     : { outcome: "ok", value: resolved.value };
 };

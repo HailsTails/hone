@@ -4,25 +4,19 @@
       "name": "camelCase file name",
       "fileName": "src/userProfile.ts",
       "source": "export const value = 1;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "snake_case file name",
       "fileName": "src/user_profile.ts",
       "source": "export const value = 1;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "all-capitals file name",
       "fileName": "src/README.ts",
       "source": "export const value = 1;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

@@ -1,31 +1,39 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { createExceptionRepository } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+
 import type { LoadedRunner } from "../application/ports/engine/runner-module.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
-import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { Result } from "../domain/result.ts";
-import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
-import { commandOf } from "./composed-command.ts";
-import { PROJECT } from "./commands.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { createExceptionRepository } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
-import { repoPathOf } from "../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import { PROJECT } from "./commands.ts";
+import { commandOf } from "./composed-command.ts";
 
-const runProjectCommand = (command: VersionOneCommandRequest) => commandOf({ tool: PROJECT, ports: command })(command);
+const runProjectCommand = (command: VersionOneCommandRequest) =>
+  commandOf({ tool: PROJECT, ports: command })(command);
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
-type JsonValue = string | number | boolean | null | readonly JsonValue[] | { readonly [key: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly JsonValue[]
+  | { readonly [key: string]: JsonValue };
 
 type FakeFile = {
   readonly read: ReturnType<FileTextPort["read"]>;
@@ -37,7 +45,8 @@ const presentFile = (request: { readonly text: string }): FakeFile => ({
   presence: "present",
 });
 
-const presentJsonFile = (request: { readonly document: JsonValue }): FakeFile => presentFile({ text: JSON.stringify(request.document) });
+const presentJsonFile = (request: { readonly document: JsonValue }): FakeFile =>
+  presentFile({ text: JSON.stringify(request.document) });
 
 const ABSENT_FILE: FakeFile = {
   read: { outcome: "failed", error: { kind: "unreadable", path: "", detail: "ENOENT" } },
@@ -53,31 +62,61 @@ const requiredEntry = <Entry>(request: {
   return entry;
 };
 
-const singleFileRepositoriesOver = (request: {
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-}): ExceptionRepositoryOf =>
+const singleFileRepositoriesOver =
+  (request: {
+    readonly fileText: FileTextPort;
+    readonly path: PathPort;
+    readonly git: GitPort;
+  }): ExceptionRepositoryOf =>
   ({ repoRoot }) =>
     createExceptionRepository({
       ...request,
       repoRoot,
       fileText: {
         ...request.fileText,
-        exists: (query) => (query.path.endsWith("discipline-exceptions") ? "absent" : request.fileText.exists(query)),
+        exists: (query) =>
+          query.path.endsWith("discipline-exceptions") ? "absent" : request.fileText.exists(query),
       },
       directory: {
-        list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
-        create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+        list: ({ path }) => ({
+          outcome: "failed",
+          error: {
+            kind: "directory-unreadable",
+            path,
+            detail: "the single-file fake holds no folders",
+          },
+        }),
+        create: ({ path }) => ({
+          outcome: "failed",
+          error: {
+            kind: "directory-uncreatable",
+            path,
+            detail: "the single-file fake holds no folders",
+          },
+        }),
       },
-      fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
-      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathOf("discipline-exceptions.json")] }) },
+      fileRemoval: {
+        remove: ({ path }) => ({
+          outcome: "failed",
+          error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" },
+        }),
+      },
+      gitTree: {
+        pathsAt: () => ({ outcome: "ok", value: [repoPathOf("discipline-exceptions.json")] }),
+      },
     });
 const NOT_A_FILE_URL = "https://example.invalid/src/hone.ts";
 
 const CLASS_SYNTAX_NAMES = {
   version: 1,
-  clauses: [{ clause: "CD-14#class-syntax", sight: { kind: "one-symptom", symptom: "authored-class-or-this" }, checks: ["authored-class-or-this#class-keyword"], anchor: { kind: "keyword", keyword: "class" } }],
+  clauses: [
+    {
+      clause: "CD-14#class-syntax",
+      sight: { kind: "one-symptom", symptom: "authored-class-or-this" },
+      checks: ["authored-class-or-this#class-keyword"],
+      anchor: { kind: "keyword", keyword: "class" },
+    },
+  ],
   recordKinds: {},
 };
 
@@ -87,21 +126,36 @@ const CLASS_SYNTAX_CASES = {
 };
 
 const NOTHING_SELECTED: Readonly<Record<string, FakeFile>> = {
-  "/repo/disciplines.json": presentJsonFile({ document: { version: 1, ruleSets: {}, clauses: {} } }),
+  "/repo/disciplines.json": presentJsonFile({
+    document: { version: 1, ruleSets: {}, clauses: {} },
+  }),
   "/repo/discipline-exceptions.json": ABSENT_FILE,
   "/install/package.json": ABSENT_FILE,
 };
 
 const CLASS_SYNTAX_SELECTED: Readonly<Record<string, FakeFile>> = {
-  "/repo/disciplines.json": presentJsonFile({ document: { version: 1, ruleSets: {}, clauses: { "CD-14#class-syntax": "walker" } } }),
-  "/repo/discipline-exceptions.json": ABSENT_FILE,
-  "/install/src/infrastructure/disciplines-file/version-one-names.json": presentJsonFile({ document: CLASS_SYNTAX_NAMES }),
-  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-keyword.examples.json": presentJsonFile({ document: CLASS_SYNTAX_CASES }),
-  "/install/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json": ABSENT_FILE,
-  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/piece.json": presentJsonFile({
-    document: { version: 2, anchor: { kind: "keyword", keyword: "class" }, settings: { module: "class-syntax.ts" } },
+  "/repo/disciplines.json": presentJsonFile({
+    document: { version: 1, ruleSets: {}, clauses: { "CD-14#class-syntax": "walker" } },
   }),
-  "/install/src/infrastructure/engines/walker/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
+  "/repo/discipline-exceptions.json": ABSENT_FILE,
+  "/install/src/infrastructure/disciplines-file/version-one-names.json": presentJsonFile({
+    document: CLASS_SYNTAX_NAMES,
+  }),
+  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-keyword.examples.json":
+    presentJsonFile({ document: CLASS_SYNTAX_CASES }),
+  "/install/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json":
+    ABSENT_FILE,
+  "/install/src/infrastructure/engines/walker/authored-class-or-this/class-keyword/piece.json":
+    presentJsonFile({
+      document: {
+        version: 2,
+        anchor: { kind: "keyword", keyword: "class" },
+        settings: { module: "class-syntax.ts" },
+      },
+    }),
+  "/install/src/infrastructure/engines/walker/runner/runner.ts": presentFile({
+    text: "export const runner = {};\n",
+  }),
   "/repo/src/a.ts": presentFile({ text: "class A {}\n" }),
 };
 
@@ -140,7 +194,10 @@ const TABLE_PATH: PathPort = {
 
 const REPO_RESOLVING_TO_NO_ABSOLUTE_PATH: PathPort = {
   ...TABLE_PATH,
-  resolve: ({ path }) => ({ outcome: "failed", error: { kind: "working-directory-unusable", path } }),
+  resolve: ({ path }) => ({
+    outcome: "failed",
+    error: { kind: "working-directory-unusable", path },
+  }),
 };
 
 const standaloneRunner = (request: { readonly runReturns: unknown }): LoadedRunner => ({
@@ -174,7 +231,9 @@ const commandRequest = (overrides: Partial<VersionOneCommandRequest>): VersionOn
     path: TABLE_PATH,
     fileText: fileTextOver(NOTHING_SELECTED),
     engine: createDefaultEnginePort({}),
-    modules: modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: [] } }) }),
+    modules: modulesLoading({
+      runner: standaloneRunner({ runReturns: { outcome: "ok", value: [] } }),
+    }),
     git: gitTracking([]),
     moduleUrl: ENTRY_URL,
     ...overrides,
@@ -212,7 +271,13 @@ describe("runProjectCommand", () => {
 
     expect(outputOf({ process: processPort })).toEqual({
       writes: [
-        [{ text: expect.stringMatching(/^load failure: install-root-unresolvable https:\/\/example\.invalid\//) }],
+        [
+          {
+            text: expect.stringMatching(
+              /^load failure: install-root-unresolvable https:\/\/example\.invalid\//,
+            ),
+          },
+        ],
       ],
       exits: [[{ code: 2 }]],
     });
@@ -221,7 +286,9 @@ describe("runProjectCommand", () => {
   it("exits 2 with the arguments-invalid line when --repo resolves to no absolute path", async () => {
     const processPort = processWith({ arguments: ["--repo", "relative-repo"] });
 
-    await runProjectCommand(commandRequest({ process: processPort, path: REPO_RESOLVING_TO_NO_ABSOLUTE_PATH }));
+    await runProjectCommand(
+      commandRequest({ process: processPort, path: REPO_RESOLVING_TO_NO_ABSOLUTE_PATH }),
+    );
 
     expect(outputOf({ process: processPort })).toEqual({
       writes: [[{ text: expect.stringMatching(/^load failure: arguments-invalid /) }]],
@@ -233,12 +300,19 @@ describe("runProjectCommand", () => {
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
     await runProjectCommand(
-      commandRequest({ process: processPort, fileText: fileTextOver({ ...NOTHING_SELECTED, "/repo/disciplines.json": ABSENT_FILE }) }),
+      commandRequest({
+        process: processPort,
+        fileText: fileTextOver({ ...NOTHING_SELECTED, "/repo/disciplines.json": ABSENT_FILE }),
+      }),
     );
 
     expect(outputOf({ process: processPort })).toEqual({
       writes: [
-        [{ text: "load failure: selection-absent /repo holds no disciplines.json; give the folder that holds it, usually the repository root\n" }],
+        [
+          {
+            text: "load failure: selection-absent /repo holds no disciplines.json; give the folder that holds it, usually the repository root\n",
+          },
+        ],
       ],
       exits: [[{ code: 2 }]],
     });
@@ -250,13 +324,21 @@ describe("runProjectCommand", () => {
     await runProjectCommand(
       commandRequest({
         process: processPort,
-        path: { ...TABLE_PATH, relative: () => ({ relation: "within-root", path: "disciplines.json" }) },
-        fileText: fileTextOver({ ...NOTHING_SELECTED, "/repo/disciplines.json": presentFile({ text: "{" }) }),
+        path: {
+          ...TABLE_PATH,
+          relative: () => ({ relation: "within-root", path: "disciplines.json" }),
+        },
+        fileText: fileTextOver({
+          ...NOTHING_SELECTED,
+          "/repo/disciplines.json": presentFile({ text: "{" }),
+        }),
       }),
     );
 
     expect(outputOf({ process: processPort })).toEqual({
-      writes: [[{ text: expect.stringMatching(/^load failure: file-malformed disciplines\.json /) }]],
+      writes: [
+        [{ text: expect.stringMatching(/^load failure: file-malformed disciplines\.json /) }],
+      ],
       exits: [[{ code: 2 }]],
     });
   });
@@ -267,12 +349,21 @@ describe("runProjectCommand", () => {
     await runProjectCommand(
       commandRequest({
         process: processPort,
-        fileText: fileTextOver({ ...NOTHING_SELECTED, "/repo/disciplines.json": presentFile({ text: "{" }) }),
+        fileText: fileTextOver({
+          ...NOTHING_SELECTED,
+          "/repo/disciplines.json": presentFile({ text: "{" }),
+        }),
       }),
     );
 
     expect(outputOf({ process: processPort })).toEqual({
-      writes: [[{ text: expect.stringMatching(/^load failure: file-malformed \/repo\/disciplines\.json /) }]],
+      writes: [
+        [
+          {
+            text: expect.stringMatching(/^load failure: file-malformed \/repo\/disciplines\.json /),
+          },
+        ],
+      ],
       exits: [[{ code: 2 }]],
     });
   });
@@ -281,7 +372,11 @@ describe("runProjectCommand", () => {
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
     await runProjectCommand(
-      commandRequest({ process: processPort, fileText: fileTextOver(CLASS_SYNTAX_SELECTED), git: gitTracking([repoPathOf("src/a.ts")]) }),
+      commandRequest({
+        process: processPort,
+        fileText: fileTextOver(CLASS_SYNTAX_SELECTED),
+        git: gitTracking([repoPathOf("src/a.ts")]),
+      }),
     );
 
     expect(outputOf({ process: processPort })).toEqual({
@@ -291,9 +386,13 @@ describe("runProjectCommand", () => {
   });
 
   it("loads the runner from the install two levels above the entry file", async () => {
-    const modules = modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: [] } }) });
+    const modules = modulesLoading({
+      runner: standaloneRunner({ runReturns: { outcome: "ok", value: [] } }),
+    });
 
-    await runProjectCommand(commandRequest({ fileText: fileTextOver(CLASS_SYNTAX_SELECTED), modules }));
+    await runProjectCommand(
+      commandRequest({ fileText: fileTextOver(CLASS_SYNTAX_SELECTED), modules }),
+    );
 
     expect(vi.mocked(modules.load).mock.calls).toEqual([
       [{ path: "/install/src/infrastructure/engines/walker/runner/runner.ts" }],
@@ -304,7 +403,11 @@ describe("runProjectCommand", () => {
     const processPort = processWith({ arguments: ["--repo", "relative-repo"] });
 
     await runProjectCommand(
-      commandRequest({ process: processPort, path: REPO_RESOLVING_TO_NO_ABSOLUTE_PATH, moduleUrl: NOT_A_FILE_URL }),
+      commandRequest({
+        process: processPort,
+        path: REPO_RESOLVING_TO_NO_ABSOLUTE_PATH,
+        moduleUrl: NOT_A_FILE_URL,
+      }),
     );
 
     expect(outputOf({ process: processPort })).toEqual({

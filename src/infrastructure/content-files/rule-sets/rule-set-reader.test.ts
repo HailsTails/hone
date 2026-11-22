@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { parsedJson, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
-import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import { parsedJson, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
 
 const ROOT = absoluteRootOf("/install");
 const INSTALL_ROOT = absoluteRootOf("/running-install");
@@ -23,9 +24,10 @@ const fileTextReading = (request: { readonly text: string }): FileTextPort => ({
 });
 
 const unreadableFileText = (): FileTextPort => ({
-  read: vi
-    .fn<FileTextPort["read"]>()
-    .mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "", detail: "ENOENT" } }),
+  read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+    outcome: "failed",
+    error: { kind: "unreadable", path: "", detail: "ENOENT" },
+  }),
   exists: vi.fn(),
   write: vi.fn(),
 });
@@ -86,9 +88,17 @@ const READ_CLASS_SYNTAX = {
   cases: { flag: [FLAG_CASE], allow: [ALLOW_CASE] },
 };
 
-const READ_LIBRARY_CONSTRUCTION = { kind: "judgement", id: "library-construction", enforcedBy: "review" };
+const READ_LIBRARY_CONSTRUCTION = {
+  kind: "judgement",
+  id: "library-construction",
+  enforcedBy: "review",
+};
 
-const READ_DISCIPLINE = { version: 1, id: "CD-14", clauses: [READ_CLASS_SYNTAX, READ_LIBRARY_CONSTRUCTION] };
+const READ_DISCIPLINE = {
+  version: 1,
+  id: "CD-14",
+  clauses: [READ_CLASS_SYNTAX, READ_LIBRARY_CONSTRUCTION],
+};
 
 const PIECE = {
   version: 1,
@@ -129,7 +139,15 @@ const SECOND_EDITION_DISCIPLINE: DisciplineFile = {
       anchor: { kind: "keyword", keyword: "class" },
       exceptions: "allowed",
       cases: {
-        flag: [{ name: FLAG_CASE.name, fileName: repoPathSchema.parse(FLAG_CASE.fileName), source: FLAG_CASE.source, expectedLines: [1], edition: editionOf("2") }],
+        flag: [
+          {
+            name: FLAG_CASE.name,
+            fileName: repoPathSchema.parse(FLAG_CASE.fileName),
+            source: FLAG_CASE.source,
+            expectedLines: [1],
+            edition: editionOf("2"),
+          },
+        ],
         allow: [],
       },
     },
@@ -163,11 +181,17 @@ describe("readDisciplineFile", () => {
   });
 
   it("reads a clause that refuses exceptions", () => {
-    const refusing = { ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, exceptions: "refused" }, LIBRARY_CONSTRUCTION] };
+    const refusing = {
+      ...DISCIPLINE,
+      clauses: [{ ...CLASS_SYNTAX, exceptions: "refused" }, LIBRARY_CONSTRUCTION],
+    };
 
     expect(readDiscipline(refusing)).toEqual({
       outcome: "ok",
-      value: { ...READ_DISCIPLINE, clauses: [{ ...READ_CLASS_SYNTAX, exceptions: "refused" }, READ_LIBRARY_CONSTRUCTION] },
+      value: {
+        ...READ_DISCIPLINE,
+        clauses: [{ ...READ_CLASS_SYNTAX, exceptions: "refused" }, READ_LIBRARY_CONSTRUCTION],
+      },
     });
   });
 
@@ -175,13 +199,27 @@ describe("readDisciplineFile", () => {
     const file = {
       ...DISCIPLINE,
       clauses: [
-        { ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, fileName: "types/ambient.d.ts" }], allow: [ALLOW_CASE] } },
+        {
+          ...CLASS_SYNTAX,
+          cases: { flag: [{ ...FLAG_CASE, fileName: "types/ambient.d.ts" }], allow: [ALLOW_CASE] },
+        },
       ],
     };
 
     expect(readDiscipline(file)).toEqual({
       outcome: "ok",
-      value: { ...READ_DISCIPLINE, clauses: [{ ...READ_CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, fileName: "types/ambient.d.ts" }], allow: [ALLOW_CASE] } }] },
+      value: {
+        ...READ_DISCIPLINE,
+        clauses: [
+          {
+            ...READ_CLASS_SYNTAX,
+            cases: {
+              flag: [{ ...FLAG_CASE, fileName: "types/ambient.d.ts" }],
+              allow: [ALLOW_CASE],
+            },
+          },
+        ],
+      },
     });
   });
 
@@ -245,9 +283,7 @@ describe("readDisciplineFile", () => {
   });
 
   it("refuses duplicate clause ids as rule-set-invalid", () => {
-    expect(
-      readDiscipline({ ...DISCIPLINE, clauses: [CLASS_SYNTAX, CLASS_SYNTAX] }),
-    ).toMatchObject({
+    expect(readDiscipline({ ...DISCIPLINE, clauses: [CLASS_SYNTAX, CLASS_SYNTAX] })).toMatchObject({
       outcome: "failed",
       error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH },
     });
@@ -255,10 +291,17 @@ describe("readDisciplineFile", () => {
 
   it("refuses a mechanical clause listing a mechanism other than audit or eslint", () => {
     expect(
-      readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, mechanisms: ["walker", "not-adopted"] }] }),
+      readDiscipline({
+        ...DISCIPLINE,
+        clauses: [{ ...CLASS_SYNTAX, mechanisms: ["walker", "not-adopted"] }],
+      }),
     ).toMatchObject({
       outcome: "failed",
-      error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH, detail: expect.stringContaining("expected one of") },
+      error: {
+        kind: "rule-set-invalid",
+        path: DISCIPLINE_PATH,
+        detail: expect.stringContaining("expected one of"),
+      },
     });
   });
 
@@ -300,7 +343,10 @@ describe("readDisciplineFile", () => {
       readDiscipline({
         ...DISCIPLINE,
         clauses: [
-          { ...CLASS_SYNTAX, cases: { flag: [FLAG_CASE], allow: [{ ...ALLOW_CASE, expectedLines: [1] }] } },
+          {
+            ...CLASS_SYNTAX,
+            cases: { flag: [FLAG_CASE], allow: [{ ...ALLOW_CASE, expectedLines: [1] }] },
+          },
         ],
       }),
     ).toMatchObject({
@@ -314,7 +360,10 @@ describe("readDisciplineFile", () => {
       readDiscipline({
         ...DISCIPLINE,
         clauses: [
-          { ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, expectedLines: [] }], allow: [ALLOW_CASE] } },
+          {
+            ...CLASS_SYNTAX,
+            cases: { flag: [{ ...FLAG_CASE, expectedLines: [] }], allow: [ALLOW_CASE] },
+          },
         ],
       }),
     ).toMatchObject({
@@ -324,18 +373,42 @@ describe("readDisciplineFile", () => {
   });
 
   it("reads a case that names the edition it runs under", () => {
-    const file = { ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "2" }], allow: [ALLOW_CASE] } }] };
+    const file = {
+      ...DISCIPLINE,
+      clauses: [
+        { ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "2" }], allow: [ALLOW_CASE] } },
+      ],
+    };
 
     expect(readDiscipline(file)).toEqual({
       outcome: "ok",
-      value: { ...READ_DISCIPLINE, clauses: [{ ...READ_CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "2" }], allow: [ALLOW_CASE] } }] },
+      value: {
+        ...READ_DISCIPLINE,
+        clauses: [
+          {
+            ...READ_CLASS_SYNTAX,
+            cases: { flag: [{ ...FLAG_CASE, edition: "2" }], allow: [ALLOW_CASE] },
+          },
+        ],
+      },
     });
   });
 
   it("refuses a case edition that is not a whole number as rule-set-invalid", () => {
     expect(
-      readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "latest" }], allow: [ALLOW_CASE] } }] }),
-    ).toMatchObject({ outcome: "failed", error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH } });
+      readDiscipline({
+        ...DISCIPLINE,
+        clauses: [
+          {
+            ...CLASS_SYNTAX,
+            cases: { flag: [{ ...FLAG_CASE, edition: "latest" }], allow: [ALLOW_CASE] },
+          },
+        ],
+      }),
+    ).toMatchObject({
+      outcome: "failed",
+      error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH },
+    });
   });
 
   it("refuses a case fileName that is not a RepoPath as rule-set-invalid", () => {
@@ -343,7 +416,10 @@ describe("readDisciplineFile", () => {
       readDiscipline({
         ...DISCIPLINE,
         clauses: [
-          { ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, fileName: "../a.ts" }], allow: [ALLOW_CASE] } },
+          {
+            ...CLASS_SYNTAX,
+            cases: { flag: [{ ...FLAG_CASE, fileName: "../a.ts" }], allow: [ALLOW_CASE] },
+          },
         ],
       }),
     ).toMatchObject({
@@ -359,27 +435,54 @@ describe("readPieceFile", () => {
       outcome: "ok",
       value: {
         ...PIECE,
-        clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" }, clauseSettings: {}, editions: FIRST_EDITION_ONLY }],
+        clauses: [
+          {
+            clause: "class-syntax",
+            settings: { module: "class-syntax.ts" },
+            clauseSettings: {},
+            editions: FIRST_EDITION_ONLY,
+          },
+        ],
       },
     });
   });
 
   it("reads declared editions with the first as the default and the last as the latest", () => {
-    const clause = { clause: "class-syntax", settings: { module: "class-syntax.ts" }, editions: ["1", "2"] };
+    const clause = {
+      clause: "class-syntax",
+      settings: { module: "class-syntax.ts" },
+      editions: ["1", "2"],
+    };
 
     expect(readPiece({ ...PIECE, clauses: [clause] })).toEqual({
       outcome: "ok",
-      value: { ...PIECE, clauses: [{ ...clause, clauseSettings: {}, editions: { declared: ["1", "2"], default: "1", latest: "2" } }] },
+      value: {
+        ...PIECE,
+        clauses: [
+          {
+            ...clause,
+            clauseSettings: {},
+            editions: { declared: ["1", "2"], default: "1", latest: "2" },
+          },
+        ],
+      },
     });
   });
 
   it.each([
     { name: "editions out of order", editions: ["2", "1"], kind: "rule-set-invalid" },
-    { name: "an edition that is not a whole number", editions: ["1", "two"], kind: "rule-set-invalid" },
+    {
+      name: "an edition that is not a whole number",
+      editions: ["1", "two"],
+      kind: "rule-set-invalid",
+    },
     { name: "no editions", editions: [], kind: "file-malformed" },
   ])("refuses $name as $kind", ({ editions, kind }) => {
     expect(
-      readPiece({ ...PIECE, clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" }, editions }] }),
+      readPiece({
+        ...PIECE,
+        clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" }, editions }],
+      }),
     ).toMatchObject({ outcome: "failed", error: { kind } });
   });
 
@@ -387,11 +490,20 @@ describe("readPieceFile", () => {
     expect(
       readPiece({
         ...PIECE,
-        clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" }, clauseSettings: { edition: { default: "1" } } }],
+        clauses: [
+          {
+            clause: "class-syntax",
+            settings: { module: "class-syntax.ts" },
+            clauseSettings: { edition: { default: "1" } },
+          },
+        ],
       }),
     ).toMatchObject({
       outcome: "failed",
-      error: { kind: "rule-set-invalid", detail: expect.stringContaining("edition is reserved for the clause's editions") },
+      error: {
+        kind: "rule-set-invalid",
+        detail: expect.stringContaining("edition is reserved for the clause's editions"),
+      },
     });
   });
 
@@ -410,7 +522,8 @@ describe("readPieceFile", () => {
       error: {
         kind: "rule-set-invalid",
         path: PIECE_PATH,
-        detail: "case class declaration of clause class-syntax runs under edition 2, which this piece does not declare; it declares 1",
+        detail:
+          "case class declaration of clause class-syntax runs under edition 2, which this piece does not declare; it declares 1",
       },
     });
   });
@@ -427,7 +540,10 @@ describe("readPieceFile", () => {
 
     expect(readPiece({ ...PIECE, clauses: [clause] })).toEqual({
       outcome: "ok",
-      value: { ...PIECE, clauses: [{ ...clause, clauseSettings: {}, editions: FIRST_EDITION_ONLY }] },
+      value: {
+        ...PIECE,
+        clauses: [{ ...clause, clauseSettings: {}, editions: FIRST_EDITION_ONLY }],
+      },
     });
   });
 
@@ -436,7 +552,11 @@ describe("readPieceFile", () => {
       convention: { default: "camelCase", choices: ["camelCase", "snake_case"] },
       confinedPackages: { default: [] },
     };
-    const clause = { clause: "class-syntax", settings: { module: "class-syntax.ts" }, clauseSettings };
+    const clause = {
+      clause: "class-syntax",
+      settings: { module: "class-syntax.ts" },
+      clauseSettings,
+    };
 
     expect(readPiece({ ...PIECE, clauses: [clause] })).toEqual({
       outcome: "ok",
@@ -445,15 +565,40 @@ describe("readPieceFile", () => {
   });
 
   it.each([
-    { name: "a declaration with no default", clauseSettings: { convention: { choices: ["camelCase"] } }, kind: "file-malformed" },
-    { name: "a declaration with an unknown field", clauseSettings: { convention: { default: "camelCase", values: [] } }, kind: "file-malformed" },
-    { name: "empty choices", clauseSettings: { convention: { default: "camelCase", choices: [] } }, kind: "file-malformed" },
+    {
+      name: "a declaration with no default",
+      clauseSettings: { convention: { choices: ["camelCase"] } },
+      kind: "file-malformed",
+    },
+    {
+      name: "a declaration with an unknown field",
+      clauseSettings: { convention: { default: "camelCase", values: [] } },
+      kind: "file-malformed",
+    },
+    {
+      name: "empty choices",
+      clauseSettings: { convention: { default: "camelCase", choices: [] } },
+      kind: "file-malformed",
+    },
     { name: "an empty key", clauseSettings: { "": { default: [] } }, kind: "file-malformed" },
-    { name: "a choice of another JSON kind", clauseSettings: { convention: { default: "camelCase", choices: ["camelCase", 1] } }, kind: "rule-set-invalid" },
-    { name: "a default outside its choices", clauseSettings: { convention: { default: "camelCase", choices: ["snake_case"] } }, kind: "rule-set-invalid" },
+    {
+      name: "a choice of another JSON kind",
+      clauseSettings: { convention: { default: "camelCase", choices: ["camelCase", 1] } },
+      kind: "rule-set-invalid",
+    },
+    {
+      name: "a default outside its choices",
+      clauseSettings: { convention: { default: "camelCase", choices: ["snake_case"] } },
+      kind: "rule-set-invalid",
+    },
   ])("refuses $name as $kind", ({ clauseSettings, kind }) => {
     expect(
-      readPiece({ ...PIECE, clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" }, clauseSettings }] }),
+      readPiece({
+        ...PIECE,
+        clauses: [
+          { clause: "class-syntax", settings: { module: "class-syntax.ts" }, clauseSettings },
+        ],
+      }),
     ).toMatchObject({ outcome: "failed", error: { kind } });
   });
 
@@ -469,7 +614,12 @@ describe("readPieceFile", () => {
           },
         ],
       }),
-    ).toMatchObject({ outcome: "failed", error: { detail: expect.stringContaining("every choice must be an array, as the default is") } });
+    ).toMatchObject({
+      outcome: "failed",
+      error: {
+        detail: expect.stringContaining("every choice must be an array, as the default is"),
+      },
+    });
   });
 
   it("reads the joined piece path", () => {
@@ -543,9 +693,7 @@ describe("readPieceFile", () => {
   });
 
   it("refuses duplicate clause entries as rule-set-invalid", () => {
-    expect(
-      readPiece({ ...PIECE, clauses: [PIECE.clauses[0], PIECE.clauses[0]] }),
-    ).toMatchObject({
+    expect(readPiece({ ...PIECE, clauses: [PIECE.clauses[0], PIECE.clauses[0]] })).toMatchObject({
       outcome: "failed",
       error: { kind: "rule-set-invalid", path: PIECE_PATH },
     });

@@ -1,18 +1,29 @@
 import { z } from "zod";
+
+import type {
+  LoadedStandaloneRunner,
+  RunRequest,
+} from "../../../../application/ports/engine/runner-module.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
+import type { Result } from "../../../../domain/result.ts";
+import {
+  clauseAddressText,
+  sameClauseAddress,
+} from "../../../../domain/rule-set/clause-address.ts";
+import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
+import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import {
   type RunnerFailure,
   rejectedCall,
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
-import type { LoadedStandaloneRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
+import type {
+  Hit,
+  MeasuredPair,
+  NativeException,
+} from "../../../../domain/runner/runner-result-types.ts";
 import { runnerResultSchema } from "../runner-module/runner-result-schema.ts";
-import type { Hit, MeasuredPair, NativeException } from "../../../../domain/runner/runner-result-types.ts";
-import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { standaloneRunReportSchema } from "../runner-module/standalone-run-report-schema.ts";
-import { clauseAddressText, sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
-import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
-import type { Result } from "../../../../domain/result.ts";
 
 const STANDALONE_COVERABLE_KINDS: readonly NativeException["kind"][] = ["inline-disable"];
 
@@ -46,17 +57,26 @@ export const firstUnrequestedDetail = (request: {
   readonly checkedFiles: readonly RepoPath[];
 }): string | undefined =>
   request.groups.flatMap((group) => {
-    const unrequested = unrequestedEntry({ entries: group.entries, run: request.run, checkedFiles: request.checkedFiles });
+    const unrequested = unrequestedEntry({
+      entries: group.entries,
+      run: request.run,
+      checkedFiles: request.checkedFiles,
+    });
     return unrequested === undefined
       ? []
-      : [`${group.noun} names ${clauseAddressText({ address: unrequested.clause })} in ${unrequested.file}, which the request did not hold`];
+      : [
+          `${group.noun} names ${clauseAddressText({ address: unrequested.clause })} in ${unrequested.file}, which the request did not hold`,
+        ];
   })[0];
 
 const okOutcomeSchema = z.object({ outcome: z.literal("ok") });
 
 const okStandaloneSchema = z.object({ outcome: z.literal("ok"), value: standaloneRunReportSchema });
 
-const invalidStandaloneDetail = (request: { readonly returned: unknown; readonly error: z.ZodError }): string => {
+const invalidStandaloneDetail = (request: {
+  readonly returned: unknown;
+  readonly error: z.ZodError;
+}): string => {
   if (!okOutcomeSchema.safeParse(request.returned).success) {
     return z.prettifyError(request.error);
   }
@@ -71,7 +91,9 @@ const standaloneRun = (request: {
 }): Result<MechanismRun, RunnerFailure> => {
   const parsed = standaloneResultSchema.safeParse(request.returned);
   if (!parsed.success) {
-    return runnerInvalidOutput({ detail: invalidStandaloneDetail({ returned: request.returned, error: parsed.error }) });
+    return runnerInvalidOutput({
+      detail: invalidStandaloneDetail({ returned: request.returned, error: parsed.error }),
+    });
   }
   if (parsed.data.outcome === "failed") {
     return parsed.data;

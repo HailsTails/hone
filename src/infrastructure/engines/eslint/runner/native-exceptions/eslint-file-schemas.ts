@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { eslintConfigLookupSchema } from "../../eslint-config-lookup.ts";
 
 export const packageJsonSchema = z.looseObject({
@@ -16,4 +17,6 @@ export type SuppressionsFile = z.infer<typeof suppressionsFileSchema>;
 
 export const eslintVersionFileSchema = z.looseObject({ version: z.string() });
 
-export const selectionLookupSchema = z.looseObject({ eslintConfigLookup: eslintConfigLookupSchema.optional() });
+export const selectionLookupSchema = z.looseObject({
+  eslintConfigLookup: eslintConfigLookupSchema.optional(),
+});

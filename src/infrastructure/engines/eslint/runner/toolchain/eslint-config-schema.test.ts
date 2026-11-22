@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { resolvedConfigSchema, ruleStateOf } from "./eslint-config-schema.ts";
 
 const enabledFile = { rules: { "p/r": [2], "no-console": [1, {}] } };
@@ -59,7 +60,10 @@ describe("resolvedConfigSchema", () => {
   });
 
   it("accepts the parser, language, processor and plugins ESLint resolved for a file", () => {
-    expect(resolvedConfigSchema.safeParse(RESOLVED_WITH_OBJECTS)).toEqual({ success: true, data: RESOLVED_WITH_OBJECTS });
+    expect(resolvedConfigSchema.safeParse(RESOLVED_WITH_OBJECTS)).toEqual({
+      success: true,
+      data: RESOLVED_WITH_OBJECTS,
+    });
   });
 
   it("keeps the very parser object ESLint resolved", () => {
@@ -85,7 +89,9 @@ describe("resolvedConfigSchema", () => {
 
 describe("ruleStateOf", () => {
   it("reads a rule configured at error as configured at severity 2 with no options", () => {
-    expect(ruleStateOf({ resolved: { rules: { "p/r": [2], "no-console": [1, {}] } }, ruleId: "p/r" })).toEqual({
+    expect(
+      ruleStateOf({ resolved: { rules: { "p/r": [2], "no-console": [1, {}] } }, ruleId: "p/r" }),
+    ).toEqual({
       state: "configured",
       severity: 2,
       options: [],
@@ -94,7 +100,10 @@ describe("ruleStateOf", () => {
 
   it("reads a rule configured at warn with options as configured at severity 1, keeping its options", () => {
     expect(
-      ruleStateOf({ resolved: { rules: { "p/r": [2], "no-console": [1, {}] } }, ruleId: "no-console" }),
+      ruleStateOf({
+        resolved: { rules: { "p/r": [2], "no-console": [1, {}] } },
+        ruleId: "no-console",
+      }),
     ).toEqual({ state: "configured", severity: 1, options: [{}] });
   });
 
@@ -105,7 +114,9 @@ describe("ruleStateOf", () => {
   });
 
   it("reads a rule turned off for the file as configured at severity 0", () => {
-    expect(ruleStateOf({ resolved: { rules: { "p/r": [0], "no-console": [1, {}] } }, ruleId: "p/r" })).toEqual({
+    expect(
+      ruleStateOf({ resolved: { rules: { "p/r": [0], "no-console": [1, {}] } }, ruleId: "p/r" }),
+    ).toEqual({
       state: "configured",
       severity: 0,
       options: [],

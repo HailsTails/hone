@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { moduleFileForm } from "../../../../../application/ports/host/module-extension.ts";
 import { isRepoPathText } from "../../../../../domain/repository/repo-path.ts";
 import type { Equal } from "../../../protocol/runner-module/type-equality.ts";
@@ -7,7 +8,10 @@ import type { EslintPieceSettings, RuleOptions } from "./eslint-piece-settings-t
 export type { EslintPieceSettings, RuleOptions } from "./eslint-piece-settings-types.ts";
 
 const pieceModulePathSchema = z.string().superRefine((text, context) => {
-  if (isRepoPathText({ text }) === "not-repo-path" || moduleFileForm({ text }) === "not-module-file") {
+  if (
+    isRepoPathText({ text }) === "not-repo-path" ||
+    moduleFileForm({ text }) === "not-module-file"
+  ) {
     context.addIssue({
       code: "custom",
       message: "not a path inside the piece folder ending in .ts, or .js in a built install",
@@ -26,7 +30,10 @@ export const eslintPieceSettingsSchema = z
   })
   .readonly();
 
-export const isEslintPieceSettingsSchemaEqual: Equal<z.output<typeof eslintPieceSettingsSchema>, EslintPieceSettings> = true;
+export const isEslintPieceSettingsSchemaEqual: Equal<
+  z.output<typeof eslintPieceSettingsSchema>,
+  EslintPieceSettings
+> = true;
 
 export const ruleOptionsOf = (request: { readonly settings: EslintPieceSettings }): RuleOptions =>
   request.settings.options ?? [];

@@ -1,5 +1,5 @@
-import type { ReportOutput } from "../../domain/settings/report-output.ts";
 import { type SectionName, sectionRoleOf } from "../../domain/report/section-roles.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
 
 export type ReportSection = {
   readonly name: SectionName;
@@ -15,7 +15,9 @@ const headedEntries = (request: { readonly section: ReportSection }): readonly s
 ];
 
 const failingEntries = (request: { readonly section: ReportSection }): readonly string[] =>
-  sectionRoleOf({ section: request.section.name }) === "informational" ? [] : headedEntries(request);
+  sectionRoleOf({ section: request.section.name }) === "informational"
+    ? []
+    : headedEntries(request);
 
 const countLine = (request: { readonly section: ReportSection }): string => {
   const role = sectionRoleOf({ section: request.section.name });
