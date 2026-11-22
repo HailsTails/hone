@@ -15,6 +15,7 @@ const SOURCE_FOLDER = repoPathSchema.parse("src");
 const BASKET = repoPathSchema.parse("src/basket.ts");
 const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
 const FRESH = repoPathSchema.parse("src/fresh.ts");
+const MOVED_BASKET = repoPathSchema.parse("src/checkout/basket.ts");
 const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
 const LOCATIONS_FILE = repoPathSchema.parse("discipline-exceptions/authorised-locations/cd-15.json");
 const CARVE_OUTS_FILE = repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-15.json");
@@ -43,6 +44,7 @@ const NOTHING: InheritedDebtRequest = {
   existing: [],
   leave: [],
   inBase: new Set([BASKET, LEGACY]),
+  basePathOfRenamed: new Map(),
   refusing: [],
 };
 
@@ -191,6 +193,42 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
     expect(
       inheritedDebtOf({ ...NOTHING, findings: [findingAt({ clause: LOOPS, file: FRESH, line: 1 })] }),
     ).toEqual([{ clause: LOOPS, file: FRESH, effect: "new-file" }]);
+  });
+
+  it("records a file git saw renamed from a path the base revision holds, at its new path, since its debt was inherited", () => {
+    expect(
+      inheritedDebtOf({
+        ...NOTHING,
+        inBase: new Set([BASKET]),
+        basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
+        findings: [findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 })],
+      }),
+    ).toEqual([{ clause: LOOPS, file: MOVED_BASKET, effect: "recorded" }]);
+  });
+
+  it("does not record a new file beside a renamed one, since git saw no rename of it", () => {
+    expect(
+      inheritedDebtOf({
+        ...NOTHING,
+        inBase: new Set([BASKET]),
+        basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
+        findings: [findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 }), findingAt({ clause: LOOPS, file: FRESH, line: 1 })],
+      }),
+    ).toEqual([
+      { clause: LOOPS, file: MOVED_BASKET, effect: "recorded" },
+      { clause: LOOPS, file: FRESH, effect: "new-file" },
+    ]);
+  });
+
+  it("does not record a renamed file whose old path the base revision does not hold", () => {
+    expect(
+      inheritedDebtOf({
+        ...NOTHING,
+        inBase: new Set([LEGACY]),
+        basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
+        findings: [findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 })],
+      }),
+    ).toEqual([{ clause: LOOPS, file: MOVED_BASKET, effect: "new-file" }]);
   });
 
   it("does not record a clause whose discipline refuses exceptions", () => {

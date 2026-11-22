@@ -3,6 +3,7 @@ import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import type { MechanismId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import { basePathOf } from "../../repository/renamed-path.ts";
 import type { UnprojectedFolder } from "../../runner/unprojected-folder.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs, entryPairKey } from "./debt-pair.ts";
 import type { FileCarveOutEntry } from "./exception-record.ts";
@@ -25,6 +26,7 @@ export type InheritedDebtRequest = {
   readonly existing: readonly PlacedEntry[];
   readonly leave: readonly RepoPath[];
   readonly inBase: ReadonlySet<RepoPath>;
+  readonly basePathOfRenamed: ReadonlyMap<RepoPath, RepoPath>;
   readonly refusing: readonly ClauseAddress[];
 };
 
@@ -64,7 +66,7 @@ const outcomeOf = (request: {
   if (under !== undefined) {
     return { ...pair, effect: "left", under };
   }
-  return { ...pair, effect: debt.inBase.has(pair.file) ? "recorded" : "new-file" };
+  return { ...pair, effect: debt.inBase.has(basePathOf({ file: pair.file, basePathOfRenamed: debt.basePathOfRenamed })) ? "recorded" : "new-file" };
 };
 
 export const inheritedDebtOf = (request: InheritedDebtRequest): readonly InheritedDebtOutcome[] => {
