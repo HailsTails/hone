@@ -103,43 +103,20 @@ describe("createDirectoryTreePort", () => {
   });
 });
 
-describe("createDirectoryTreePort removing something that is not a folder", () => {
-  it("removes a file at the path through the file removal port", () => {
-    const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue(OK_REMOVAL);
-    const tree = createDirectoryTreePort({
-      directory: directoryOver(vi.fn<DirectoryPort["list"]>()),
-      fileRemoval: { remove },
-      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
-      entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("file") },
-    });
-
-    expect(tree.remove({ path: FOLDER })).toEqual(OK_REMOVAL);
-    expect(remove).toHaveBeenCalledExactlyOnceWith({ path: FOLDER });
-  });
-
-  it("reports a file it cannot remove as unremovable with its detail", () => {
-    const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue({ outcome: "failed", error: { kind: "unremovable", path: FOLDER, detail: "EPERM" } });
-    const tree = createDirectoryTreePort({
-      directory: directoryOver(vi.fn<DirectoryPort["list"]>()),
-      fileRemoval: { remove },
-      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
-      entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("file") },
-    });
-
-    expect(tree.remove({ path: FOLDER })).toEqual({ outcome: "failed", error: { kind: "directory-tree-unremovable", path: FOLDER, detail: "EPERM" } });
-  });
-
-  it("removes nothing, and succeeds, where nothing is at the path", () => {
+describe("createDirectoryTreePort removing where nothing is at the path", () => {
+  it("removes nothing, and succeeds", () => {
     const remove = vi.fn<FileRemovalPort["remove"]>();
+    const removeEmpty = vi.fn<DirectoryRemovalPort["removeEmpty"]>();
     const tree = createDirectoryTreePort({
       directory: directoryOver(vi.fn<DirectoryPort["list"]>()),
       fileRemoval: { remove },
-      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      directoryRemoval: { removeEmpty },
       entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("absent") },
     });
 
     expect(tree.remove({ path: FOLDER })).toEqual(OK_REMOVAL);
     expect(remove).not.toHaveBeenCalled();
+    expect(removeEmpty).not.toHaveBeenCalled();
   });
 });
 

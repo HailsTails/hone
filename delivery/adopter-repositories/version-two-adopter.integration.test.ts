@@ -1,5 +1,6 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 import { projectCommandOf, pruneCommandOf } from "../../src/infrastructure/command-line/arguments/tool-invocations.ts";
+import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
@@ -467,7 +468,7 @@ describe("the settings a version 2 adopter edits, run as the real tool command",
       runCommandIn({ repo, subcommand: "project", options: [] });
       writeIn({ repo, file: "hone.eslint.mjs", text: PROJECTION_WITH_AN_EXTRA_LINE });
       const outOfDate = runCommandIn({ repo, subcommand: "check", options: [] });
-      const removed = scratch.removeTree({ path: `${repo}/hone.eslint.mjs` });
+      const removed = createDefaultFileRemovalPort({}).remove({ path: `${repo}/hone.eslint.mjs` });
       assert(removed.outcome === "ok", "the projection is removed");
       const missing = runCommandIn({ repo, subcommand: "check", options: [] });
       expect({ outOfDate, missing }).toEqual({

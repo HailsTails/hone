@@ -84,20 +84,8 @@ export const createDirectoryTreePort = (options: TreePorts): DirectoryTreePort =
       ? { outcome: "ok", value: listed.value.toSorted((left, right) => textOrder({ left: left.path, right: right.path })) }
       : listed;
   },
-  remove: (request) => {
-    switch (options.entryKind.kindOf({ path: request.path })) {
-      case "absent":
-        return { outcome: "ok", value: undefined };
-      case "file": {
-        const removed = options.fileRemoval.remove({ path: request.path });
-        return removed.outcome === "ok"
-          ? removed
-          : { outcome: "failed", error: { kind: "directory-tree-unremovable", path: request.path, detail: removed.error.detail } };
-      }
-      case "directory":
-        return removedWithin({ ...options, folder: request.path });
-    }
-  },
+  remove: (request) =>
+    options.entryKind.kindOf({ path: request.path }) === "absent" ? { outcome: "ok", value: undefined } : removedWithin({ ...options, folder: request.path }),
 });
 
 export const createDefaultDirectoryTreePort = (_options: Record<string, never>): DirectoryTreePort =>
