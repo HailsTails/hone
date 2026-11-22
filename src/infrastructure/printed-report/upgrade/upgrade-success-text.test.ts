@@ -30,7 +30,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
     correctUses: [],
   },
   clause: LOOPS_CLAUSE,
-  engines: [{ name: "walker", mechanism: "audit" }],
+  engines: [{ name: "walker" }],
   forms: [],
 };
 
