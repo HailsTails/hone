@@ -1,7 +1,11 @@
 # No leak across a boundary
 
 ```json
-{}
+{
+  "lenses": [
+    "zod-boundary"
+  ]
+}
 ```
 
 - **Must hold:** Data and failures cross a boundary only through an adapter that maps between their outside form and a type of our own.

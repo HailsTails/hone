@@ -3,7 +3,10 @@
 ```json
 {
   "principle": "tests-are-ours",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "test-discipline"
+  ]
 }
 ```
 

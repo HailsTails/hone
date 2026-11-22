@@ -5,9 +5,25 @@ import type { ItemKind } from "./item-identity.ts";
 
 const OMITTED_NAME_AND_TITLE = { name: true, title: true } as const;
 
-const principleFactsSchema = catalogueFileSchema.shape.principles.element.omit(OMITTED_NAME_AND_TITLE);
+const reviewLensSchema = z.enum([
+  "clean-architecture",
+  "decomposition",
+  "di-discipline",
+  "errors-as-data",
+  "function-first",
+  "naming",
+  "test-discipline",
+  "type-soundness",
+  "zod-boundary",
+]);
 
-const ruleFactsSchema = catalogueFileSchema.shape.rules.element.omit(OMITTED_NAME_AND_TITLE).extend({ namedBans: z.array(z.string().min(1)).min(1).optional() });
+const reviewLensesSchema = z.array(reviewLensSchema).min(1).optional();
+
+const principleFactsSchema = catalogueFileSchema.shape.principles.element.omit(OMITTED_NAME_AND_TITLE).extend({ lenses: reviewLensesSchema });
+
+const ruleFactsSchema = catalogueFileSchema.shape.rules.element
+  .omit(OMITTED_NAME_AND_TITLE)
+  .extend({ namedBans: z.array(z.string().min(1)).min(1).optional(), lenses: reviewLensesSchema });
 
 const caseFactsSchema = caseWireSchema.omit(OMITTED_NAME_AND_TITLE);
 

@@ -3,7 +3,10 @@
 ```json
 {
   "principle": "one-place-decides",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "decomposition"
+  ]
 }
 ```
 

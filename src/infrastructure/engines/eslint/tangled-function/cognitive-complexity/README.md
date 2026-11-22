@@ -3,7 +3,7 @@
 This piece enforces CD-41's `cognitive-complexity` and `function-length` clauses through ESLint, in the plugin `cd41/cd41.eslint-plugin.ts` under the namespace `hone-cd41`.
 
 - `cognitive-complexity` reports a function whose cognitive complexity is above 15, at the function's name.
-- `function-length` reports a function whose body spans more than 50 lines, at the function. A test suite's body, the function a `describe` or `suite` call runs, is not measured; the functions inside it are. [CHECKS.md](../../../../../rules/CD-41/CHECKS.md) lists the suite forms.
+- `function-length` reports a function whose body spans more than 50 lines, at the function. A test suite's body, the function a `describe` or `suite` call runs, is not measured; the functions inside it are. [Its check page](../../../../../../rules/typescript/symptoms/long-function/function-length.md) lists the suite forms.
 
 `piece.json` names each clause, the namespace, the plugin module and the rule. It is the only file core reads to find the rules.
 

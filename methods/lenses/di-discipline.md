@@ -1,7 +1,7 @@
 # DI-discipline lens
 
 A reusable audit method, not a ruleset. The rules it enforces are **data**: load
-every rule page whose `Review lens` line names `di-discipline`
+every rule whose `lenses` fact or `Review lens` line names `di-discipline`
 from the codebase under review and treat their text as authoritative. This file
 describes only *how* the lens reads code — the concept, the inspection
 procedure, and the output shape. It names no specific rule numbers, file paths,
@@ -44,10 +44,10 @@ intuition.
 
 ## Loading the ruleset
 
-1. Resolve the rule pages: `rules/*/README.md` in the Hone install (the folder holding `core/` and `rules/`), and in each rule set the repository's `disciplines.json` names under `ruleSets`.
-2. Keep the pages whose `Review lens` line names `di-discipline`. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
-3. Read each kept page in full together with its sibling `CHECKS.md`, including the `## Exceptions` section in `CHECKS.md` and any examples, and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names the single permitted site for an ambient binding (a factory file, a port-module directory), that is the *only* permitted site; everywhere else the same call is a violation.
-4. If zero rule pages name this lens in their `Review lens` line, report that the codebase declares no DI discipline and produce an empty finding set — do not invent rules.
+1. Resolve the rules: the rule and principle items, `rules/rules/*.md` and `rules/principles/*.md`, in the Hone install (the folder holding `core/` and `rules/`), and the rule pages, `rules/*/README.md`, in each rule set the repository's `disciplines.json` names under `ruleSets`.
+2. Keep the items whose `lenses` fact names `di-discipline`, and the rule-set pages whose `Review lens` line names it. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
+3. Read each kept page in full together with its check pages (for a Hone item, `rules/typescript/symptoms/<symptom>/<check>.md` of each symptom that may indicate it; for a rule set's page, its sibling `CHECKS.md` with its `## Exceptions` section) and any examples, and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names the single permitted site for an ambient binding (a factory file, a port-module directory), that is the *only* permitted site; everywhere else the same call is a violation.
+4. If no item or rule page names this lens, report that the codebase declares no DI discipline and produce an empty finding set — do not invent rules.
 
 ## Inspection procedure
 
@@ -159,6 +159,6 @@ threading gaps, unbound context generics) and a test-side block
 (module-interception violations by mechanism, spy classifications, structural
 boundary gaps). Every finding is
 `file:line | quoted code | <rule-id> | defect-named`, citing the loaded rule by
-the discipline id and clause address in its CHECKS.md Clauses table (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules.md#failures-are-values)), and — for a test-side mock — naming the port
+its name and the clause address [Every numbered discipline](../../rules/numbers.md#every-numbered-discipline) gives it (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules/failures-are-values.md)), and — for a test-side mock — naming the port
 shape the remediating refactor would lift into the unit's signature. State the
 rule-page paths you resolved and which rule ids you loaded under this lens.

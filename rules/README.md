@@ -36,9 +36,9 @@ Two tests for a rule:
 
 ## Names, not numbers
 
-Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Selections, records and findings still use the numbered clause addresses, and each numbered folder still holds its discipline's `CHECKS.md`.
+Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Selections, records and findings still use the numbered clause addresses; each check's mechanics are on its own page under its symptom.
 
-The numbered `README.md` pages are the earlier form of these rules. Where they differ, the pages here govern. Findings still link to the numbered pages until they are replaced; [Every CD](numbers.md#every-numbered-discipline) lists each one with its title, clauses, files checked and review lens.
+[Every CD](numbers.md#every-numbered-discipline) lists each numbered discipline with its title, clauses, files checked and review lens.
 
 ## Words used the same way everywhere
 
@@ -66,7 +66,7 @@ The numbered `README.md` pages are the earlier form of these rules. Where they d
 
 ## Selecting checks
 
-Adopters select clauses in `disciplines.json`. Selecting one clause adopts its discipline, so every mechanical clause of an adopted discipline must be selected, each through a mechanism its `CHECKS.md` lists, or listed as `"not-run"` or `"not-adopted"`; the check reports the rest as uncovered. Review clauses are judgement clauses: they cannot be selected and are applied in review with the discipline's review lens, as [ADOPTING.md](../ADOPTING.md#9-apply-the-judgement-rules) describes.
+Adopters select clauses in `disciplines.json`. Selecting one clause adopts its discipline, so every mechanical clause of an adopted discipline must be selected, each through one of its checks, or listed as `"not-run"` or `"not-adopted"`; the check reports the rest as uncovered. Review clauses are judgement clauses: they cannot be selected and are applied in review with the discipline's review lens, as [ADOPTING.md](../ADOPTING.md#9-apply-the-judgement-rules) describes.
 
 Exceptions are recorded in `discipline-exceptions.json`; see [the package README](../README.md#hone-records). [The spirit of the rules](SPIRIT.md) explains what the friction is for.
 

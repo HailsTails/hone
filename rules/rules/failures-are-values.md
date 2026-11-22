@@ -3,7 +3,10 @@
 ```json
 {
   "principle": "the-type-checker-proves-it",
-  "standing": "accepted"
+  "standing": "accepted",
+  "lenses": [
+    "errors-as-data"
+  ]
 }
 ```
 
