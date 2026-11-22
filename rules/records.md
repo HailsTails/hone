@@ -10,7 +10,7 @@ Five kinds cover everything. They are the model Hone's records take on with 2.0,
 
 ### Authorised location
 
-- **Answers:** A symptom whose correct use a case makes right at one place: Claimed type forced by an outside contract, Throw between our units at an adapter whose caller expects a throw, Loop keyword draining a stream, Shorthand name or Name off its casing fixed by an outside contract, Text past its reader at one test site, Edit inside vendored code.
+- **Answers:** A symptom whose correct use a case makes right at one place. Each symptom's correct uses are on [the symptoms page](typescript/symptoms.md).
 - **States:** The symptom; the site; the case that makes it correct here and the rule or principle that case owes; a why-chain whose root, if it changed, would remove the need; an owner. In the model it is never refused for what it claims: what it lacks is [noted](#what-is-noted-never-refused), and a note changes no verdict. A why that only restates the symptom is [refused](#what-is-refused).
 - **Scope:** One symptom at one site: a file, or a span within it.
 - **Stale or paid when:** Stale when the symptom is no longer at the site. A vendored edit is also re-tested when the vendored version moves. A person removes it.
@@ -109,26 +109,9 @@ An authorised location answers a check that is wrong at that place, so the form 
 
 **What an agent gets when it cannot fix:** two honest exits, debt (visible, and it forfeits) or a thought-through record (it costs the reasoning). Neither is "give up and ask": "telling agents to give up and ask me has in experience made them just never even try and increased my workload".
 
-## Which kind answers which symptom
+## Which kind answers which method
 
-| Symptom | Kind |
-|---|---|
-| Date used directly (clock adapter) | Boundary record |
-| Ambient randomness | Boundary record |
-| Process global used in place | Boundary record |
-| Outside import past a boundary | Boundary record |
-| Library class built in place | Boundary record |
-| Text past its reader, in the producer's adapter | Boundary record |
-| Text past its reader, at one test site | Authorised location |
-| Schema past its adapter (outside model adopted as ours) | Boundary record, with a Conformist statement |
-| Claimed type forced by an outside contract | Authorised location |
-| Untyped value | Debt |
-| Throw between our units | Authorised location ("Throwing in specific places allowed is just authorised locations as prose.") |
-| Loop keyword, draining a stream | Authorised location |
-| Double with a body (a fake) | Deviation from Stub with vi.fn |
-| Unit without a running test | Debt |
-| Shorthand name, Name off its casing (outside contract) | Authorised location |
-| Edit inside vendored code | Authorised location (drift) |
+Which kind answers each symptom is on [the symptoms page](typescript/symptoms.md), as that symptom's correct uses.
 
 | Method | Kind |
 |---|---|
