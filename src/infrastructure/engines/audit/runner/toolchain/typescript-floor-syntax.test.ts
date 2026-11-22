@@ -36,8 +36,6 @@ const shippedSources = import.meta.glob(
     "!./src/eslint-plugin.ts",
     "!./src/rule-set.ts",
     "!./src/testing.ts",
-    "!./delivery/adopter-repositories/cd1-cascade/**",
-    "!./delivery/adopter-repositories/cd1-exempted/**",
     "!./src/infrastructure/command-line/documentation/walkthrough/**",
     "!./src/infrastructure/content-files/rule-sets/probe-rule-set/**",
     "!./src/infrastructure/engines/eslint/runner/native-exceptions/*/**",

@@ -350,8 +350,6 @@ const coreSources = import.meta.glob(
     "!./src/testing.ts",
     "!./src/infrastructure/engines/audit/**",
     "!./src/infrastructure/engines/eslint/*/**",
-    "!./delivery/adopter-repositories/cd1-cascade/**",
-    "!./delivery/adopter-repositories/cd1-exempted/**",
     "!./src/infrastructure/command-line/documentation/walkthrough/**",
     "!./src/infrastructure/content-files/rule-sets/probe-rule-set/**",
     "!./src/infrastructure/content-files/rule-sets/team-rule-set/**",
