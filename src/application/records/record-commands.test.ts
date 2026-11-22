@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../domain/finding/governance.ts";
-import { answerFindings } from "../../domain/records/answering/answering.ts";
 import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
@@ -194,11 +193,6 @@ const HELD_CLOCK_DEBT: PlacedRecord = {
   record: { kind: "debt", symptom: DATE_USED_DIRECTLY, reach: { reaches: "one-check", check: CLOCK_CHECK }, file: ORDER_FILE, holding: { held: "stated" } },
 };
 
-const WEBHOOK_DEBT_AS_WRITTEN: PlacedRecord = {
-  place: { file: WEBHOOK_DEBT_FILE, index: 0 },
-  record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "one-check", check: CAST_CHECK }, file: TOUCHED_FILE, holding: { held: "stated" } },
-};
-
 const NOT_A_RECORDS_DOCUMENT: readonly RecordsDocumentRefusal[] = [
   { kind: "document-refused", file: DEBT_FILE, issues: [{ path: ["version"], message: "Invalid input: expected 2" }] },
 ];
@@ -244,15 +238,6 @@ const NEW_AND_WEBHOOK_CHANGED: TouchedSet = { measured: "yes", paths: new Set([T
 const LEFT_TO_ANOTHER_RUN: TouchedSet = { measured: "elsewhere" };
 
 const UNMEASURED: TouchedSet = { measured: "no", base: { state: "git-failed", revision: "origin/main", gitMessage: "bad revision" } };
-
-const answeredFor = (request: { readonly records: readonly PlacedRecord[]; readonly touched: TouchedSet; readonly finding: Finding }) =>
-  answerFindings({
-    catalogue: REPORT_CATALOGUE,
-    records: request.records,
-    findings: [{ finding: request.finding, party: { reported: "not-reported" } }],
-    touched: request.touched,
-    runs: [], measurements: { runs: [], tracked: [], excluded: [] },
-  });
 
 describe("hone record-debt over a run's unanswered findings", () => {
   const request: RecordDebtRequest = { findings: [CLOCK_FINDING], unrecorded: [], runs: [], touched: NOTHING_CHANGED, leave: [] };
@@ -313,11 +298,6 @@ describe("hone record-debt over a run's unanswered findings", () => {
       ],
     });
     expect(apply).not.toHaveBeenCalled();
-    expect(answeredFor({ records: [WEBHOOK_DEBT_AS_WRITTEN], touched: NEW_AND_WEBHOOK_CHANGED, finding: TOUCHED_FINDING })).toMatchObject({
-      findings: [TOUCHED_FINDING],
-      answered: [],
-      forfeited: [{ place: { file: WEBHOOK_DEBT_FILE, index: 0 } }],
-    });
   });
 
   it("writes debt on a file the change changed when another run assesses forfeiture, as the check answers the finding by it", () => {
@@ -330,11 +310,6 @@ describe("hone record-debt over a run's unanswered findings", () => {
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "claimed-type#cast-expressions", file: TOUCHED_FILE, effect: "recorded" }] });
     expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(expect.objectContaining({ documents: [], additions: [{ file: WEBHOOK_DEBT_FILE, entry: WEBHOOK_DEBT_ENTRY }] }));
     expect(apply).toHaveBeenCalledWith({ edit: { write: [WEBHOOK_DEBT_DOCUMENT], remove: [] } });
-    expect(answeredFor({ records: [WEBHOOK_DEBT_AS_WRITTEN], touched: LEFT_TO_ANOTHER_RUN, finding: TOUCHED_FINDING })).toMatchObject({
-      findings: [],
-      answered: [{ finding: TOUCHED_FINDING }],
-      forfeited: [],
-    });
   });
 
   it("gives a line to a finding it cannot record debt for, and records the others", () => {

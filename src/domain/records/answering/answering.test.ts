@@ -417,6 +417,13 @@ describe("answerFindings, forfeit", () => {
     });
   });
 
+  it("answers by debt whose file was touched when another run assesses forfeiture", () => {
+    expect(answerFindings({ catalogue: CATALOGUE, records: [DEBT_ON_CLASS_IN_A], findings: [unreported(NO_CLASS_IN_A)], touched: ELSEWHERE, runs: [], measurements: { runs: [], tracked: [], excluded: [] } })).toEqual({
+      ...NOTHING_ANSWERED,
+      answered: [{ finding: NO_CLASS_IN_A, by: [DEBT_ON_CLASS_IN_A] }],
+    });
+  });
+
   it("does not forfeit an authorised location whose file was touched", () => {
     expect(answerFindings({ catalogue: CATALOGUE, records: [LOCATED_CLASS_IN_A], findings: [unreported(NO_CLASS_IN_A)], touched: FILE_A_TOUCHED, runs: [], measurements: { runs: [], tracked: [], excluded: [] } })).toEqual({
       ...NOTHING_ANSWERED,
