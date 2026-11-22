@@ -384,11 +384,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conformance.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projected-off-switch.integration.test.ts"
     },
     {
@@ -439,37 +434,12 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "delivery/shipped-content/projection-type.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/composition/native-exceptions.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/composition/output-contract.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/composition/probe-check.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/composition/projection-pair.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/composition/toolchain-unavailable.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
