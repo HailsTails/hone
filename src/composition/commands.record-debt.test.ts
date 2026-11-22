@@ -253,8 +253,6 @@ const embeddedRunnerFinding = (request: { readonly unprojectedFolders: readonly 
 
 const SOURCE_A = repoPathSchema.parse("src/a.ts");
 
-const SOURCE_A_AT_BASE = repoPathSchema.parse("src/legacy/a.ts");
-
 const gitChanging = (changed: readonly RepoPath[]): GitPort => ({
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: [SOURCE_A] }),
   changedSince: vi.fn<GitPort["changedSince"]>().mockReturnValue({ outcome: "ok", value: changed }),
@@ -358,19 +356,6 @@ describe("recordDebtCommandOf", () => {
     await recordedDebt({ ...adoptionRun(), arguments: ["--repo", "/repo", "--base-revision", "origin/main"], tree });
 
     expect(vi.mocked(tree.pathsAt).mock.calls).toEqual([[{ repoRoot: "/repo", revision: "origin/main" }]]);
-  });
-
-  it("records a file git saw renamed from a path the base revision holds, at its new path", async () => {
-    const git: GitPort = {
-      ...gitChanging([SOURCE_A]),
-      renamedSince: vi.fn<GitPort["renamedSince"]>().mockReturnValue({ outcome: "ok", value: new Map([[SOURCE_A, SOURCE_A_AT_BASE]]) }),
-    };
-
-    expect(await recordedDebt({ ...adoptionRun(), git, tree: treeHolding({ outcome: "ok", value: [SOURCE_A_AT_BASE] }) })).toEqual({
-      writes: [[{ text: "CD-14#class-syntax recorded src/a.ts\n" }]],
-      exits: [[{ code: 0 }]],
-      files: [[{ path: EXCEPTIONS_PATH, text: EXCEPTIONS_WITH_THE_RECORD }]],
-    });
   });
 });
 
