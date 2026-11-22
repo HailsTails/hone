@@ -55,7 +55,6 @@ const shippedSources = import.meta.glob(
     "!./src/eslint-plugin.ts",
     "!./src/rule-set.ts",
     "!./src/testing.ts",
-    "!./src/infrastructure/command-line/documentation/walkthrough/**",
     "!./src/infrastructure/content-files/rule-sets/probe-rule-set/**",
     "!./src/infrastructure/engines/eslint/runner/native-exceptions/*/**",
     "!./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts",
