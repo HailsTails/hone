@@ -132,7 +132,7 @@ describe("VERSION_TWO_GATED_SECTIONS", () => {
 
 describe("versionTwoSelfCheckOutcomeOf", () => {
   it("passes a clean run, printing the report and the gate line", () => {
-    expect(versionTwoSelfCheckOutcomeOf({ checked: { kind: "ran", outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT } })).toEqual({
+    expect(versionTwoSelfCheckOutcomeOf({ checked: { outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT } })).toEqual({
       code: 0,
       text: "verdict: pass\nself-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
@@ -141,7 +141,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
   it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: { kind: "ran", outcome: { code: 1, text: "verdict: fail\n" }, report: { ...EMPTY_RUN_REPORT, findings: [CLASS_IN_A], unrecorded: [IGNORED_IN_A, IGNORED_IN_A] } },
+        checked: { outcome: { code: 1, text: "verdict: fail\n" }, report: { ...EMPTY_RUN_REPORT, findings: [CLASS_IN_A], unrecorded: [IGNORED_IN_A, IGNORED_IN_A] } },
       }),
     ).toEqual({
       code: 0,
@@ -153,7 +153,6 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
         checked: {
-          kind: "ran",
           outcome: { code: 1, text: "verdict: fail\n" },
           report: {
             ...EMPTY_RUN_REPORT,
@@ -167,13 +166,6 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     ).toEqual({
       code: 1,
       text: "verdict: fail\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
-    });
-  });
-
-  it("hands on a version 2 check that could not run as it is, with its own exit code", () => {
-    expect(versionTwoSelfCheckOutcomeOf({ checked: { kind: "not-run", outcome: { code: 2, text: "load failure: arguments-invalid --repo is required\n" } } })).toEqual({
-      code: 2,
-      text: "load failure: arguments-invalid --repo is required\n",
     });
   });
 });

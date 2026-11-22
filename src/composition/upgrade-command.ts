@@ -10,13 +10,13 @@ import { shippedCataloguesOf } from "../infrastructure/content-files/symptom-cat
 import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/version-one-records-on-disk.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
 import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
-import { type UpgradeInput, upgradeOf } from "../operations/upgrade/run-upgrade-command.ts";
+import { type UpgradeInput, type UpgradePorts, upgradeOf } from "../operations/upgrade/run-upgrade-command.ts";
 import { type CommandHandler, loadFailed, type ToolCommand } from "./composed-command.ts";
-import type { ToolInvocation, ToolPorts } from "./tool-ports.ts";
+import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
 import { runSettingsOver } from "./version-one-runs.ts";
-import { repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";
+import { repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 
-export type UpgradeCommandPorts = ToolPorts;
+export type UpgradeCommandPorts = VersionOneToolPorts & VersionTwoRepositoryPorts & Pick<ToolPorts, keyof UpgradePorts | "foundTreeRecordsSourceOf">;
 
 type Placed = { readonly ports: UpgradeCommandPorts; readonly command: ToolInvocation; readonly located: RepositoryLocated };
 

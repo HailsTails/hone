@@ -87,7 +87,7 @@ declare global {
 }
 
 const sourceFiles = import.meta.glob(["./src/**/*.ts", "!./src/**/*.test.ts"], {
-  base: "../../../../../",
+  base: "../../",
   query: "?raw",
   import: "default",
   eager: true,

@@ -21,4 +21,8 @@ export type ExceptionRepository = {
   readonly moveToSplitLayout: () => Result<RecordsSplit, LoadFailure>;
 };
 
+export type FoundTreeExceptions = {
+  readonly readAt: () => Result<readonly StructuralExceptionEntry[], GitFailure>;
+};
+
 export type ExceptionRepositoryOf = (request: { readonly repoRoot: AbsolutePath }) => ExceptionRepository;

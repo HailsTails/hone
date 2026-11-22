@@ -44,7 +44,7 @@ const SEPARATOR = "/";
 type MemoryRepository = {
   readonly fileText: FileTextPort;
   readonly directory: DirectoryPort;
-  readonly removal: FileRemovalPort;
+  readonly fileRemoval: FileRemovalPort;
   readonly textOf: (request: { readonly file: string }) => string | undefined;
   readonly filesHeld: () => readonly string[];
 };
@@ -77,7 +77,7 @@ const memoryRepositoryOf = (request: { readonly files: Readonly<Record<string, s
       list: ({ path }) => ({ outcome: "ok", value: entriesIn(path) }),
       create: () => ({ outcome: "ok", value: undefined }),
     },
-    removal: {
+    fileRemoval: {
       remove: ({ path }) => {
         held.delete(path);
         return { outcome: "ok", value: undefined };
@@ -435,7 +435,7 @@ const ranWith = async (request: {
   await request.handler({
     gitTree: gitTreeStub(),
     directory: repository.directory,
-    removal: repository.removal,
+    fileRemoval: repository.fileRemoval,
     recordsSourceOf: createRecordsFolder,
     stagesOver,
     recordsReader,

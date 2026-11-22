@@ -40,9 +40,7 @@ export type GuidedCheckRequest = {
   readonly symptomGuideIn: SymptomGuideIn;
 };
 
-export type VersionTwoChecked =
-  | { readonly kind: "ran"; readonly outcome: CommandOutcome; readonly report: RunReport }
-  | { readonly kind: "not-run"; readonly outcome: CommandOutcome };
+export type VersionTwoChecked = { readonly outcome: CommandOutcome; readonly report: RunReport };
 
 const checkCommandsOf = (request: {
   readonly path: PathPort;

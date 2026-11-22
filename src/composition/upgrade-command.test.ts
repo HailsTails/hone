@@ -5,11 +5,11 @@ import type { FileTextPort } from "../application/ports/file-system/file-text-po
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import { commandOf } from "./composed-command.ts";
-import type { ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
-import { alreadyUpgradedCommand, UPGRADE } from "./upgrade-command.ts";
+import type { VersionOneToolPorts } from "./tool-ports.ts";
+import { alreadyUpgradedCommand, UPGRADE, type UpgradeCommandPorts } from "./upgrade-command.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 
-type UpgradeOnlyPorts = Omit<ToolPorts, keyof VersionOneToolPorts>;
+type UpgradeOnlyPorts = Omit<UpgradeCommandPorts, keyof VersionOneToolPorts>;
 
 const upgradeCommandOf = (ports: UpgradeOnlyPorts) => (command: VersionOneCommandRequest) => commandOf({ tool: UPGRADE, ports: { ...command, ...ports } })(command);
 
@@ -75,8 +75,6 @@ const PORTS: UpgradeOnlyPorts = {
   foundTreeRecordsSourceOf: vi.fn(),
   loadFailureDetail: vi.fn(),
   recordsReader: { recordsReadingOf: vi.fn() },
-  recordsEditor: { documentsWithAdded: vi.fn(), placeOfAddition: vi.fn(), documentsWithRemoved: vi.fn() },
-  removal: { remove: vi.fn() },
   symptomCatalogueOf: vi.fn(),
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),

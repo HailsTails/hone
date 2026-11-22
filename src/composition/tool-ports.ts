@@ -28,7 +28,6 @@ export type ToolPorts = VersionOneToolPorts & {
   readonly stagesOver: StagesOver;
   readonly recordsSourceOf: RecordsSourceOf;
   readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
-  readonly removal: FileRemovalPort;
   readonly recordsReader: RecordsReader;
   readonly recordsEditor: RecordsEditor;
   readonly fileCreation: FileCreationPort;

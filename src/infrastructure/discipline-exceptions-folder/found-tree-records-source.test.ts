@@ -5,7 +5,7 @@ import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
+import type { FoundTreeExceptions } from "../../application/ports/records/exception-repository.ts";
 import { foundTreeRecordsSourceOver } from "./found-tree-records-source.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
@@ -97,8 +97,8 @@ const AUTHORISED_DOCUMENT: RecordsDocument = {
 
 const WRITTEN_DOCUMENT: RecordsDocument = { file: repoPathSchema.parse("hone-records/debt/loop-keyword.json"), document: { version: 2, records: [] } };
 
-const entriesAtFoundTree = (): Pick<ExceptionRepository, "readAt"> => ({
-  readAt: vi.fn<ExceptionRepository["readAt"]>().mockReturnValue({ outcome: "ok", value: [ENTRY] }),
+const entriesAtFoundTree = (): FoundTreeExceptions => ({
+  readAt: vi.fn<FoundTreeExceptions["readAt"]>().mockReturnValue({ outcome: "ok", value: [ENTRY] }),
 });
 
 const sourceReading = (): RecordsSource => ({

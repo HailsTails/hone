@@ -52,15 +52,11 @@ export const selfCheckOutcomeOf = (request: { readonly result: Result<GuidedChec
 };
 
 export const versionTwoSelfCheckOutcomeOf = (request: { readonly checked: VersionTwoChecked }): CommandOutcome => {
-  const { checked } = request;
-  if (checked.kind === "not-run") {
-    return checked.outcome;
-  }
-  const { report } = checked;
+  const { report, outcome } = request.checked;
   const failing = VERSION_TWO_GATED_SECTIONS.filter((section) => report[section].length > 0).map((section) => `${section} (${report[section].length})`);
   return {
     code: failing.length > 0 ? 1 : 0,
-    text: `${checked.outcome.text}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, failing })}`,
+    text: `${outcome.text}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, failing })}`,
   };
 };
 
@@ -72,7 +68,7 @@ const selfCheckSubcommandsOf = (ports: ToolPorts): Subcommands => ({
     versionTwo: commandOf({
       tool: {
         ...VERSION_TWO_CHECK,
-        print: (request) => versionTwoSelfCheckOutcomeOf({ checked: { kind: "ran", outcome: VERSION_TWO_CHECK.print(request), report: request.produced.run.report } }),
+        print: (request) => versionTwoSelfCheckOutcomeOf({ checked: { outcome: VERSION_TWO_CHECK.print(request), report: request.produced.run.report } }),
       },
       ports,
     }),

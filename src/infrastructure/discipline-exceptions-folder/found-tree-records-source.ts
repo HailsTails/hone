@@ -1,6 +1,6 @@
 import type { FoundTreeRecordsSourceOf } from "../../application/ports/records/records-source-of.ts";
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
-import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
+import type { FoundTreeExceptions } from "../../application/ports/records/exception-repository.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { baseStandingRecordsSource } from "./base-standing-records-source.ts";
@@ -8,7 +8,7 @@ import { versionOneEntriesOf } from "./version-one-entries.ts";
 
 export const foundTreeRecordsSourceOver = (request: {
   readonly source: RecordsSource;
-  readonly exceptions: Pick<ExceptionRepository, "readAt">;
+  readonly exceptions: FoundTreeExceptions;
   readonly catalogue: SymptomCatalogue;
 }): RecordsSource =>
   baseStandingRecordsSource({

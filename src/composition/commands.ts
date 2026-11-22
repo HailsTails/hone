@@ -41,7 +41,7 @@ import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-port
 import { runSettingsOver, versionOneRunAt, withShownPaths } from "./version-one-runs.ts";
 import { repoRootOf as resolvedRepoRootOf, repositoryLocatedOf, stagesOverRepository, type VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 
-export type VersionTwoRecordPorts = VersionTwoRepositoryPorts & Pick<ToolPorts, "removal" | "recordsReader" | "recordsEditor">;
+export type VersionTwoRecordPorts = VersionTwoRepositoryPorts & Pick<ToolPorts, "fileRemoval" | "recordsReader" | "recordsEditor">;
 
 type AuthoriseParsed = { readonly repo: string; readonly authorising: AuthoriseRequest };
 
@@ -65,7 +65,7 @@ const recordInputOf = (request: {
     repoRoot: located.repoRoot,
     recordsSourceFor: ({ catalogue }) =>
       ports.recordsSourceOf({ fileText, path, git, gitTree: ports.gitTree, directory: ports.directory, repoRoot: located.repoRoot, catalogue }),
-    recordsStoreOf: ({ repoRoot }) => createRecordsStore({ fileText, path, removal: ports.removal, directory: ports.directory, repoRoot }),
+    recordsStoreOf: ({ repoRoot }) => createRecordsStore({ fileText, path, removal: ports.fileRemoval, directory: ports.directory, repoRoot }),
     recordsReader: ports.recordsReader,
     recordsEditor: ports.recordsEditor,
   };

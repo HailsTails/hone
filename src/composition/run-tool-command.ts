@@ -45,7 +45,6 @@ export const INSTALLED_PORTS: ToolPorts = {
     recordsSourceOf: createRecordsFolder,
     exceptionRepositoryOf: createDefaultExceptionRepositoryOf({}),
   }),
-  removal: createDefaultFileRemovalPort({}),
   recordsReader,
   recordsEditor,
   fileCreation: createDefaultFileCreationPort({}),

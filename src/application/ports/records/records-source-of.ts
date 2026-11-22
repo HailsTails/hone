@@ -4,7 +4,7 @@ import type { DirectoryPort } from "../file-system/directory-port.ts";
 import type { FileTextPort } from "../file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../git-port.ts";
 import type { PathPort } from "../host/path-port.ts";
-import type { ExceptionRepository } from "./exception-repository.ts";
+import type { FoundTreeExceptions } from "./exception-repository.ts";
 import type { RecordsSource } from "./records-source.ts";
 
 export type RecordsFolderPorts = {
@@ -19,5 +19,5 @@ export type RecordsSourceOf = (request: RecordsFolderPorts & { readonly repoRoot
 
 export type FoundTreeRecordsSourceOf = (request: {
   readonly recordsSourceOf: RecordsSourceOf;
-  readonly exceptionsOf: (request: { readonly repoRoot: AbsolutePath }) => Pick<ExceptionRepository, "readAt">;
+  readonly exceptionsOf: (request: { readonly repoRoot: AbsolutePath }) => FoundTreeExceptions;
 }) => RecordsSourceOf;

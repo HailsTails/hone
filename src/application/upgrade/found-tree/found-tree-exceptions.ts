@@ -1,9 +1,9 @@
-import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { ExceptionRepository, FoundTreeExceptions } from "../../ports/records/exception-repository.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 
 type EntriesReach = Pick<ExceptionRepository, "read" | "readAt">;
 
-export const foundTreeExceptionsOf = (request: { readonly repository: EntriesReach; readonly loadFailureDetail: LoadFailureDetail }): EntriesReach => ({
+export const foundTreeExceptionsOf = (request: { readonly repository: EntriesReach; readonly loadFailureDetail: LoadFailureDetail }): Pick<ExceptionRepository, "read"> & FoundTreeExceptions => ({
   read: request.repository.read,
   readAt: () => {
     const read = request.repository.read();
