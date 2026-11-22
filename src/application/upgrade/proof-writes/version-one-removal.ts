@@ -7,7 +7,6 @@ import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { OutsideRoot, RemovalFailure, Removed } from "../../ports/upgrade/proof-outcome.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 export type VersionOneRemovalPorts = {
   readonly fileRemoval: FileRemovalPort;
@@ -44,7 +43,7 @@ export const recordsOutsideRoot = (request: { readonly ports: VersionOneRemovalP
 };
 
 const absolutePathsOf = (request: { readonly texts: readonly string[] }): readonly AbsolutePath[] =>
-  request.texts.filter(isAbsolutePath).map((text) => absoluteRootOf(text));
+  request.texts.filter(isAbsolutePath);
 
 const foldersOfFile = (request: { readonly ports: VersionOneRemovalPorts; readonly root: RecordsRoot; readonly file: AbsolutePath }): readonly AbsolutePath[] => {
   const segments = segmentsBelowRoot({ ports: request.ports, root: request.root.path, file: request.file }) ?? [];

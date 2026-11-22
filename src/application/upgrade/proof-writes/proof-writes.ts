@@ -9,7 +9,6 @@ import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { ProofWrite, ProofWriteFailure, ProofWriteRefusal, Unrestored } from "../../ports/upgrade/proof-outcome.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 export type PlannedFile = { readonly path: AbsolutePath; readonly text: string };
 
@@ -40,7 +39,7 @@ type Step =
 
 const parentOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): AbsolutePath => {
   const parent = request.ports.path.directoryOf({ path: request.path });
-  return isAbsolutePath(parent) ? absoluteRootOf(parent) : request.path;
+  return isAbsolutePath(parent) ? parent : request.path;
 };
 
 const missingDirectoriesOf = (request: { readonly ports: ProofWritePorts; readonly path: AbsolutePath }): readonly AbsolutePath[] => {

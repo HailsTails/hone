@@ -8,9 +8,43 @@ type DriveLetter =
 
 type Backslash = "\\";
 
-export type AbsoluteRootText = `/${string}` | `${DriveLetter}:${Backslash}${string}` | `${DriveLetter}:/${string}` | `${Backslash}${Backslash}${string}`;
+type BeforeSeparator<Text extends string> = Text extends `${infer Head}${Backslash}${infer Rest}`
+  ? Head extends `${string}/${string}`
+    ? BeforeSlash<Text>
+    : [Head, Rest]
+  : BeforeSlash<Text>;
 
-export type StaticAbsoluteRoot<Text extends string> = string extends Text ? never : Text extends AbsoluteRootText ? Text : never;
+type BeforeSlash<Text extends string> = Text extends `${infer Head}/${infer Rest}` ? [Head, Rest] : never;
+
+type Named<Part extends string> = Part extends "" ? never : Part;
+
+type ShareRoot<Rest extends string> = [BeforeSeparator<Rest>] extends [never]
+  ? never
+  : BeforeSeparator<Rest> extends [infer Host extends string, infer Tail extends string]
+    ? [Named<Host>] extends [never]
+      ? never
+      : [BeforeSeparator<Tail>] extends [never]
+        ? never
+        : BeforeSeparator<Tail> extends [infer Share extends string, string]
+          ? [Named<Share>] extends [never]
+            ? never
+            : true
+          : never
+    : never;
+
+type StaticShareRoot<Text extends string> = Text extends `${Backslash}${Backslash}${infer Rest}`
+  ? [ShareRoot<Rest>] extends [never]
+    ? never
+    : Text
+  : never;
+
+type Written<Text extends string> = Text extends "" ? true : Text extends `${infer Character}${infer Rest}` ? (string extends Character ? false : Written<Rest>) : false;
+
+export type StaticAbsoluteRoot<Text extends string> = Written<Text> extends true
+  ? Text extends `/${string}` | `${DriveLetter}:${Backslash}${string}` | `${DriveLetter}:/${string}`
+    ? Text
+    : StaticShareRoot<Text>
+  : never;
 
 export const absoluteRootOf = <Text extends string>(text: StaticAbsoluteRoot<Text>): AbsolutePath => {
   const plain: string = text;

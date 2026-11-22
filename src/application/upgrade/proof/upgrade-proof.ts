@@ -18,7 +18,6 @@ import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import { type ProjectionFilesOf, type UpgradePlan, upgradePlanOf } from "./upgrade-plan.ts";
 import type { ProjectionsRefusal, VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 export type UpgradeProofRequest = {
   readonly ports: ProofWritePorts;
@@ -44,7 +43,7 @@ const unplaceable = (request: { readonly file: RepoPath }): ProofRefusal => ({ k
 
 const absoluteOf = (request: { readonly ports: ProofWritePorts; readonly repoRoot: AbsolutePath; readonly file: RepoPath }): Result<AbsolutePath, ProofRefusal> => {
   const joined = request.ports.path.join({ segments: [request.repoRoot, request.file] });
-  return isAbsolutePath(joined) ? { outcome: "ok", value: absoluteRootOf(joined) } : { outcome: "failed", error: unplaceable({ file: request.file }) };
+  return isAbsolutePath(joined) ? { outcome: "ok", value: joined } : { outcome: "failed", error: unplaceable({ file: request.file }) };
 };
 
 const plannedFileOf = (request: { readonly ports: ProofWritePorts; readonly repoRoot: AbsolutePath; readonly planned: PlannedRepoFile }): Result<PlannedFile, ProofRefusal> => {
