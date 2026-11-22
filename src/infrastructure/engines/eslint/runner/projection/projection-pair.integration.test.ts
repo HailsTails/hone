@@ -52,17 +52,6 @@ const WIDE = repoPathSchema.parse("src/wide.ts");
 
 const SKIPPING = repoPathSchema.parse("src/skipping.test.ts");
 
-const VERSION_TWO_CLAUSES = [
-  clauseAddressSchema.parse("CD-2#non-null-assertions"),
-  clauseAddressSchema.parse("CD-6#naming-convention"),
-  clauseAddressSchema.parse("CD-14#class-syntax"),
-  clauseAddressSchema.parse("CD-14#static-only-class"),
-  clauseAddressSchema.parse("CD-27#focused-tests"),
-  clauseAddressSchema.parse("CD-27#skipped-tests"),
-  clauseAddressSchema.parse("CD-40#parameter-count"),
-  clauseAddressSchema.parse("CD-44#parameter-reassignment"),
-];
-
 const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [
   { symptom: "claimed-type", file: LEGACY },
   { symptom: "rebinding", file: LEGACY },
@@ -83,15 +72,28 @@ const catalogue = () => {
   return reading.value.catalogue;
 };
 
-const bindingOf = (request: { readonly clause: (typeof VERSION_TWO_CLAUSES)[number] }): ProjectedBinding => {
+const bindingOf = (request: { readonly clause: string }): ProjectedBinding => {
+  const address = clauseAddressSchema.parse(request.clause);
   const sources = createSettingsSources({ repoRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
-  const piece = sources.pieceClause({ ruleSetRoot: INSTALL_ROOT, clause: request.clause, mechanism: ESLINT });
-  assert(piece.outcome === "ok", `${request.clause.clause} resolves its eslint piece`);
-  return { mechanism: ESLINT, clause: { address: request.clause, pieceRoot: piece.value.pieceRoot, settings: piece.value.settings } };
+  const piece = sources.pieceClause({ ruleSetRoot: INSTALL_ROOT, clause: address, mechanism: ESLINT });
+  assert(piece.outcome === "ok", `${request.clause} resolves its eslint piece`);
+  return { mechanism: ESLINT, clause: { address, pieceRoot: piece.value.pieceRoot, settings: piece.value.settings } };
 };
 
 const versionTwoText = (): string => {
-  const checks = projectedChecksOf({ checks: catalogue().checks, bindings: VERSION_TWO_CLAUSES.map((clause) => bindingOf({ clause })) });
+  const checks = projectedChecksOf({
+    checks: catalogue().checks,
+    bindings: [
+        bindingOf({ clause: "CD-2#non-null-assertions" }),
+        bindingOf({ clause: "CD-6#naming-convention" }),
+        bindingOf({ clause: "CD-14#class-syntax" }),
+        bindingOf({ clause: "CD-14#static-only-class" }),
+        bindingOf({ clause: "CD-27#focused-tests" }),
+        bindingOf({ clause: "CD-27#skipped-tests" }),
+        bindingOf({ clause: "CD-40#parameter-count" }),
+        bindingOf({ clause: "CD-44#parameter-reassignment" }),
+    ],
+  });
   assert(checks.outcome === "ok", "the version 2 checks project");
   return checksProjectionText({
     pluginImport: specifierOf({ modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }) }),
