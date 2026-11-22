@@ -12,8 +12,9 @@ import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts"
 import { projectedChecksOf } from "./projected-checks.ts";
 import { resolvedConfigSchema } from "../toolchain/eslint-config-schema.ts";
 import { type ProjectedPiece, projectionText } from "./projection-text.ts";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { createDefaultDirectoryRemovalPort } from "../../../../node/file-system/directory-removal-port.ts";
+import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { checksOf } from "../../../../../domain/language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
@@ -178,12 +179,25 @@ const versionTwoText = (): string => {
   });
 };
 
-const SCRATCH = resolvedPath({ path: mkdtempSync(path.join({ segments: [tmpdir(), "hone-projection-pair-"] })) });
+const directory = createDefaultDirectoryPort({});
+
+const fileRemoval = createDefaultFileRemovalPort({});
+
+const directoryRemoval = createDefaultDirectoryRemovalPort({});
+
+const SCRATCH = resolvedPath({ path: path.join({ segments: [INSTALL_ROOT, "artefacts", `projection-pair-${globalThis.crypto.randomUUID()}`] }) });
+
+const madeScratch = directory.create({ path: SCRATCH });
+
+assert(madeScratch.outcome === "ok", "a scratch folder is made for the two projections");
+
+const WRITTEN_CONFIGS: string[] = [];
 
 const writtenConfig = (request: { readonly name: string; readonly text: string }): string => {
   const configPath = path.join({ segments: [SCRATCH, request.name] });
   const written = fileText.write({ path: configPath, text: request.text });
   assert(written.outcome === "ok", `${request.name} is written`);
+  WRITTEN_CONFIGS.push(configPath);
   return configPath;
 };
 
@@ -218,7 +232,10 @@ const lintedMessages = async (request: { readonly line: EslintLine }) => {
 };
 
 afterAll(() => {
-  rmSync(SCRATCH, { recursive: true, force: true });
+  WRITTEN_CONFIGS.forEach((configPath) => {
+    fileRemoval.remove({ path: configPath });
+  });
+  directoryRemoval.removeEmpty({ path: SCRATCH });
 });
 
 describe.each(ESLINT_LINES)("on %s, the version 1 projection and its version 2 form", (line) => {

@@ -1,6 +1,4 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { mkdirSync, readdirSync, rmSync } from "node:fs";
-import { join, relative } from "node:path";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
@@ -11,7 +9,9 @@ import { checkConformance } from "../../../protocol/conformance.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { LoadedRunner } from "../../../../../application/ports/engine/runner-module.ts";
+import { createDefaultDirectoryRemovalPort } from "../../../../node/file-system/directory-removal-port.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
@@ -146,6 +146,33 @@ const overlaidFileText = (request: {
   };
 };
 
+const directory = createDefaultDirectoryPort({});
+
+const directoryRemoval = createDefaultDirectoryRemovalPort({});
+
+const fileRemoval = createDefaultFileRemovalPort({});
+
+const madeDirectory = (request: { readonly path: string }): void => {
+  const made = directory.create({ path: absolutePathSchema.parse(request.path) });
+  assert(made.outcome === "ok", `${request.path} is made`);
+};
+
+const removedTree = (request: { readonly path: AbsolutePath }): void => {
+  const listed = directory.list({ path: request.path });
+  assert(listed.outcome === "ok", `${request.path} lists for removal`);
+  listed.value
+    .filter(({ kind }) => kind === "directory")
+    .forEach(({ name }) => {
+      removedTree({ path: absolutePathSchema.parse(`${request.path}/${name}`) });
+    });
+  listed.value
+    .filter(({ kind }) => kind === "file")
+    .forEach(({ name }) => {
+      fileRemoval.remove({ path: `${request.path}/${name}` });
+    });
+  directoryRemoval.removeEmpty({ path: request.path });
+};
+
 type ScratchRepositories = {
   readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
   readonly removeAll: () => void;
@@ -156,7 +183,7 @@ const scratchRepositoriesUnder = (request: { readonly parent: string; readonly f
   return {
     repositoryWith: (repository) => {
       const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
-      mkdirSync(folder, { recursive: true });
+      madeDirectory({ path: folder });
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
         request.fileText.write({ path: `${folder}/${name}`, text });
@@ -165,7 +192,7 @@ const scratchRepositoriesUnder = (request: { readonly parent: string; readonly f
     },
     removeAll: () => {
       made.forEach((folder) => {
-        rmSync(folder, { recursive: true, force: true });
+        removedTree({ path: folder });
       });
     },
   };
@@ -222,7 +249,7 @@ type Dependencies = {
   readonly path: PathPort;
 };
 
-type ListedEntry = { readonly path: string; readonly name: string; readonly entryKind: "file" | "folder" };
+type ListedEntry = { readonly path: string; readonly name: string; readonly entryKind: "file" | "directory" };
 
 type EntryRequest = Dependencies & {
   readonly fixtureRoot: AbsolutePath;
@@ -246,7 +273,7 @@ const failed = (request: { readonly what: string; readonly detail: string }): ne
 };
 
 const copiedFolder = (request: EntryRequest): void => {
-  mkdirSync(`${request.repo}/${slashed({ path: request.entry.path })}`, { recursive: true });
+  madeDirectory({ path: `${request.repo}/${slashed({ path: request.entry.path })}` });
 };
 
 const textOf = (request: EntryRequest): string => {
@@ -278,7 +305,7 @@ const copiedFile = (request: EntryRequest): void => {
 };
 
 const copiedEntry = (request: EntryRequest): void => {
-  if (request.entry.entryKind === "folder") {
+  if (request.entry.entryKind === "directory") {
     copiedFolder(request);
     return;
   }
@@ -297,24 +324,27 @@ type RestoredFixtureRepositories = {
 
 const writtenText = (request: Dependencies & { readonly repo: AbsolutePath; readonly file: string; readonly text: string }): void => {
   const target = `${request.repo}/${request.file}`;
-  mkdirSync(request.path.directoryOf({ path: target }), { recursive: true });
+  madeDirectory({ path: request.path.directoryOf({ path: target }) });
   const written = request.fileText.write({ path: target, text: request.text });
   if (written.outcome !== "ok") {
     failed({ what: `a fixture text could not be written at ${target}`, detail: written.error.detail });
   }
 };
 
-const listedTree = (request: { readonly path: string }): readonly ListedEntry[] =>
-  readdirSync(request.path, { recursive: true, withFileTypes: true }).map((entry) => ({
-    path: relative(request.path, join(entry.parentPath, entry.name)),
-    name: entry.name,
-    entryKind: entry.isDirectory() ? "folder" : "file",
-  }));
+const listedTree = (request: { readonly root: AbsolutePath; readonly within: readonly string[] }): readonly ListedEntry[] => {
+  const listed = directory.list({ path: absolutePathSchema.parse([request.root, ...request.within].join("/")) });
+  assert(listed.outcome === "ok", `${request.root} lists for restoring`);
+  const entries = listed.value.map(({ name, kind }): ListedEntry => ({ path: [...request.within, name].join("/"), name, entryKind: kind }));
+  const nested = entries
+    .filter(({ entryKind }) => entryKind === "directory")
+    .flatMap(({ name }) => listedTree({ root: request.root, within: [...request.within, name] }));
+  return [...entries, ...nested];
+};
 
 const restoredOnce = (request: Dependencies & RestoredFixture): AbsolutePath => {
-  const listed = listedTree({ path: request.fixtureRoot });
+  const listed = listedTree({ root: request.fixtureRoot, within: [] });
   const repo = request.repositories.repositoryWith({ files: {} });
-  const folders = listed.filter(({ entryKind }) => entryKind === "folder");
+  const folders = listed.filter(({ entryKind }) => entryKind === "directory");
   const files = listed.filter(({ entryKind }) => entryKind === "file");
   [...folders, ...files].forEach((entry) => {
     copiedEntry({ ...request, repo, entry });
