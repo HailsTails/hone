@@ -1,0 +1,24 @@
+{
+  "flag": [
+    {
+      "name": "stub answer in a hook",
+      "fileName": "src/order.test.ts",
+      "source": "beforeEach(() => stub.mockReturnValue('order'));",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "plain reset and test-specific answer",
+      "fileName": "src/order.test.ts",
+      "source": "afterEach(() => stub.mockReset());\nit('loads', () => { stub.mockReturnValue('order'); });",
+      "expectedLines": []
+    },
+    {
+      "name": "named callback is outside the syntax check",
+      "fileName": "src/order.test.ts",
+      "source": "const setup = () => stub.mockReturnValue('order');\nbeforeEach(setup);",
+      "expectedLines": []
+    }
+  ]
+}
