@@ -1,6 +1,6 @@
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 
-type PluginSpecifier = { readonly versionOne: string; readonly versionTwo: string };
+export type PluginSpecifier = { readonly versionOne: string; readonly versionTwo: string };
 
 const ESLINT_ENGINE_FOLDER = "src/infrastructure/engines/eslint";
 

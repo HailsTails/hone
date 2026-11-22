@@ -1,13 +1,14 @@
-import { existsSync, readFileSync } from "node:fs";
-
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 
 import { PLUGIN_SPECIFIERS } from "../../src/application/upgrade/patching/version-one-plugin-specifiers.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 
 const PACKAGE_PREFIX = "@hailstails/hone/";
 
-const repositoryFile = (relativePath: string): URL =>
-  new URL(`../../${relativePath}`, import.meta.url);
+const fileText = createDefaultFileTextPort({});
+
+const repositoryFile = (relativePath: string): string =>
+  new URL(`../../${relativePath}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
 const versionTwoModules = PLUGIN_SPECIFIERS.map(({ versionTwo }) =>
   versionTwo.slice(PACKAGE_PREFIX.length),
@@ -17,11 +18,16 @@ describe("the version 2 plugin modules a version 1 projection is rewritten to", 
   it.each(versionTwoModules)(
     "%s exists in the repository and its piece names it as the plugin module",
     (module) => {
-      expect(existsSync(repositoryFile(module.replace(/\.js$/, ".ts")))).toBe(true);
-      const piece: unknown = JSON.parse(
-        readFileSync(repositoryFile(module.replace(/eslint-plugin\.js$/, "piece.json")), "utf8"),
+      expect(fileText.exists({ path: repositoryFile(module.replace(/\.js$/, ".ts")) })).toBe(
+        "present",
       );
-      expect(piece).toMatchObject({ settings: { pluginModule: "eslint-plugin.ts" } });
+      const pieceText = fileText.read({
+        path: repositoryFile(module.replace(/eslint-plugin\.js$/, "piece.json")),
+      });
+      assert(pieceText.outcome === "ok", "the piece file is readable");
+      expect(JSON.parse(pieceText.value)).toMatchObject({
+        settings: { pluginModule: "eslint-plugin.ts" },
+      });
     },
   );
 });
