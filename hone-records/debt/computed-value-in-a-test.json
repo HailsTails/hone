@@ -1,0 +1,209 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-requirement.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/node/process/execution-port.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/node/file-system/file-text-port.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/release/release-pull-request.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/architecture/layer-directions.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/packaging/building/package-build.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/packaging/packing/package-commands.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/packaging/type-declarations/public-type-declarations.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/self-check/self-check.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/commands.record-debt.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/commands.split-records.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/commands.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/commands.version-two-needed.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/run-tool-command.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/upgrade-command.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/command-line/documentation/adopting-guide-checks.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/content-files/symptom-catalogues/record-reach-catalogue.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/runner/config-roots/config-lookup.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/hone-config-file/settings-sources.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/node/file-system/file-creation-port.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/output-contract.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/prune-debt-answered.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/walkthrough.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/shipped-content/eslint-conformance.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/single-mechanism.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/walker/runner/toolchain/typescript-floor-syntax.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "double-with-a-body#stub-implementation",
+      "file": "src/operations/record-debt/run-record-debt-command.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/command-line/installation/installed-version.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/content-files/import-boundaries/piece-import-rules.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/release/release-pull-request.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/content-files/rule-sets/probe-rule-set/probe-piece-imports.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/packaging/building/package-build.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/packaging/packing/package-commands.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/self-check/self-check.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/check-command.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/commands.project.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/commands.record-debt.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/commands.split-records.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/commands.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/commands.version-two-needed.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/composed-command.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/run-tool-command.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/upgrade-command.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/eslint/runner/config-roots/config-lookup.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/hone-config-file/settings-sources.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/output-contract.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/prune-debt-answered.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/walkthrough.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/single-mechanism.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
+    }
+  ]
+}

@@ -1,3 +1,3 @@
-import projection from "./disciplines.eslint.mjs";
+import projection from "./hone.eslint.mjs";
 
 export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];

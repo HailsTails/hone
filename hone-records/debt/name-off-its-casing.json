@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/infrastructure/node/process/execution-port.test.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/infrastructure/git/git-port.test.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.test.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "delivery/install-proof/install-proof-ports.test.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "delivery/install-proof/install-proof-plan.test.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
+    },
+    {
+      "answers": "name-off-its-casing#naming-convention",
+      "file": "src/composition/output-contract.integration.test.ts"
+    }
+  ]
+}

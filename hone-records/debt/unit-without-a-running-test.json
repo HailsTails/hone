@@ -1,84 +1,68 @@
 {
-  "version": 1,
-  "exceptions": [
+  "version": 2,
+  "records": [
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/application/run/settings/selection-holding.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/discipline-exceptions/exception-baseline.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/discipline-exceptions/exception-entry.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/discipline-exceptions/version-one-why-chain.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/hone-records/record-identity.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/hone-records/record-listings.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/hone-records/recorded-reach.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/why-chain.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/rule-set/clause-address.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/settings/clause-settings/check-editions.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/settings/clause-settings/reserved-edition-setting.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/settings/selection/file-exception-why-chains.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/settings/settings-file.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
+      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/infrastructure/engines/protocol/engine-port.ts"
     }
   ]
