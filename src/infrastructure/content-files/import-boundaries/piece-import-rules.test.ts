@@ -43,7 +43,7 @@ const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
     "packages/hone/src/infrastructure/engines/eslint/runner/eslint-instance.ts",
   '["../..","src","infrastructure","engines","walker","runner","piece-type-packages.json"]': TYPE_PACKAGES_KEY,
   [`["${TYPE_PACKAGES_KEY}"]`]: TYPE_PACKAGES_KEY,
-  '["../../tests/probe-rule-set","mechanisms","walker","PD-1"]': PROBE_FOLDER,
+  '["../../tests/probe-rule-set","mechanisms","audit","PD-1"]': PROBE_FOLDER,
   '["../../tests/probe-rule-set","rules","PD-1"]': "../../tests/probe-rule-set/rules/PD-1",
   '["../..","src","infrastructure","engines","walker","runner"]': "../../src/infrastructure/engines/walker/runner",
   '["../..","src","domain"]': "../../src/domain",

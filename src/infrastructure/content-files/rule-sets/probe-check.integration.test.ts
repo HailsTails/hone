@@ -89,7 +89,7 @@ assert.isDefined(EXPORT_TEST_SIBLING_BINDING, "the selection binds the CD-23 cla
 
 const PIECE_MODULES: Readonly<Record<string, unknown>> = {
   [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "walker", "CD-23", "export-test-sibling.ts"] })]: exportTestSibling,
-  [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "walker", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
+  [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "audit", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
 };
 
 const pieceModules: ModuleLoaderPort = {

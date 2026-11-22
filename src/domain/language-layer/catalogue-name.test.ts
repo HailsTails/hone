@@ -2,13 +2,11 @@ import { describe, expect, it } from "vitest";
 import { catalogueNameOf, isCatalogueName } from "./catalogue-name.ts";
 
 describe("catalogue names", () => {
-  it("builds the declared name without changing its text", () => {
-    expect(catalogueNameOf("ambient-randomness")).toBe("ambient-randomness");
+  it("builds a catalogue name from a lowercase dash-separated literal", () => {
+    expect(catalogueNameOf("class-keyword")).toBe("class-keyword");
   });
 
-  it("accepts a named path segment and refuses a path or a numbered discipline", () => {
-    expect(isCatalogueName("direct-call")).toBe(true);
-    expect(isCatalogueName("../direct-call")).toBe(false);
-    expect(isCatalogueName("CD-17")).toBe(false);
+  it.each(["../class-keyword", "ClassKeyword", "class--keyword", "class-keyword/"])("refuses %s as a folder segment", (name) => {
+    expect(isCatalogueName(name)).toBe(false);
   });
 });

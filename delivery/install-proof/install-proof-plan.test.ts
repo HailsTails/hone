@@ -248,7 +248,7 @@ const WORKSPACE_ACTIONS: readonly ProofAction[] = [
 describe("the proof cases", () => {
   it("install the packed package into an audit-only consumer, an ESLint consumer on each supported major, one missing eslint, a team consumer type-checking the public entries on the TypeScript floor and running its own rule set and its own piece proof on the current version, and a pnpm workspace whose package lints through its own wrapper with its slice, projecting with the package's own import", () => {
     expect(PROOF_CASES).toEqual([
-      { consumer: "walker", fixture: "walker", toolchain: "typescript-floor", typeStripping: "disabled", actions: AUDIT_ACTIONS },
+      { consumer: "audit", fixture: "audit", toolchain: "typescript-floor", typeStripping: "disabled", actions: AUDIT_ACTIONS },
       { consumer: "eslint-10", fixture: "eslint", toolchain: "current", typeStripping: "disabled", actions: ESLINT_ACTIONS },
       { consumer: "eslint-9", fixture: "eslint", toolchain: "eslint-9", typeStripping: "disabled", actions: ESLINT_ACTIONS },
       { consumer: "eslint-missing", fixture: "eslint", toolchain: "typescript-floor", typeStripping: "disabled", actions: ESLINT_MISSING_ACTIONS },

@@ -246,7 +246,7 @@ describe("proofDifferencesOf", () => {
 
   it("names a native exception only one side reports as unrecorded", () => {
     expect(differencesBetween({ before: { unrecorded: [INLINE_DISABLE] } })).toEqual([
-      { section: "unrecorded", onlyBefore: ["audit inline-disable CD-15#loops src/a.ts:3"], onlyAfter: [] },
+      { section: "unrecorded", onlyBefore: ["walker inline-disable CD-15#loops src/a.ts:3"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);
   });
@@ -291,7 +291,7 @@ describe("proofDifferencesOf", () => {
 
   it("names a pair version 1 holds doubly, which version 2 has no section for", () => {
     expect(differencesBetween({ before: { doublyHeld: [{ clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT }] } })).toEqual([
-      { section: "doubly-held", onlyBefore: ["CD-15#loops src/a.ts audit"], onlyAfter: [] },
+      { section: "doubly-held", onlyBefore: ["CD-15#loops src/a.ts walker"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);
   });
@@ -316,7 +316,7 @@ describe("proofDifferencesOf", () => {
 
   it("names an engine not run on one side", () => {
     expect(differencesBetween({ before: { unmeasured: [{ kind: "mechanism-not-run", mechanism: AUDIT, projection: "missing" }] } })).toEqual([
-      { section: "unmeasured", onlyBefore: ["audit not-run missing"], onlyAfter: [] },
+      { section: "unmeasured", onlyBefore: ["walker not-run missing"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);
   });

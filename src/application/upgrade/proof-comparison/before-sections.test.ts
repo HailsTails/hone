@@ -99,11 +99,11 @@ describe("answeredKeyOf", () => {
 
 describe("nativeKeyOf", () => {
   it("places a command-line option at its script and option", () => {
-    expect(nativeKeyOf({ exception: COMMAND_LINE_OPTION })).toBe("audit command-line-option CD-15#loops package.json lint --ignore-pattern");
+    expect(nativeKeyOf({ exception: COMMAND_LINE_OPTION })).toBe("walker command-line-option CD-15#loops package.json lint --ignore-pattern");
   });
 
   it("places an ignore at its file", () => {
-    expect(nativeKeyOf({ exception: { kind: "ignore", clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT } })).toBe("audit ignore CD-15#loops src/a.ts");
+    expect(nativeKeyOf({ exception: { kind: "ignore", clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT } })).toBe("walker ignore CD-15#loops src/a.ts");
   });
 });
 
@@ -152,18 +152,18 @@ describe("beforeSectionsOf", () => {
       excluded: ["generated"],
       findings: ["CD-15#loops src/a.ts 3:1"],
       answered: ["CD-15#loops src/a.ts 3:1 answered by debt"],
-      unrecorded: ["audit command-line-option CD-15#loops package.json lint --ignore-pattern"],
+      unrecorded: ["walker command-line-option CD-15#loops package.json lint --ignore-pattern"],
       misnamed: [],
       paid: [],
       stale: ["CD-15#loops"],
       forfeited: ["src/a.ts"],
-      "doubly-held": ["CD-15#loops src/a.ts audit"],
+      "doubly-held": ["CD-15#loops src/a.ts walker"],
       "invalid-records": [],
       "not-adopted": [],
       "not-run": ["CD-15#loops"],
       editions: [],
       unmeasured: [],
-      "projection-problems": ["slice audit missing packages/web"],
+      "projection-problems": ["slice walker missing packages/web"],
       assessment: ["forfeiture elsewhere"],
       verdict: ["fail"],
     });

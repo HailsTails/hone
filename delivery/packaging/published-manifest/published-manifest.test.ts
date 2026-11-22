@@ -34,7 +34,7 @@ const published = (developmentManifest: string) =>
     files: ["LICENSE", "chunks", "core", "mechanisms"],
     exported: ["mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.js"],
     typed: [
-      { subpath: "walker", declaration: "api/audit.d.ts", module: "api/audit.mjs" },
+      { subpath: "audit", declaration: "api/audit.d.ts", module: "api/audit.mjs" },
       { subpath: "rule-set", declaration: "api/rule-set.d.ts", module: "api/rule-set.mjs" },
     ],
     nodeRange: "^22.18.0 || >=24",

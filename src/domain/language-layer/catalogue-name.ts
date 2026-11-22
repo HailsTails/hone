@@ -11,9 +11,9 @@ type StaticCatalogueName<Text extends string> = Text extends `${string}--${strin
   ? never
   : StaticRuleSetName<Text>;
 
-export const catalogueNameOf = <Text extends string>(text: StaticCatalogueName<Text>): CatalogueName => {
-  const plain: string = text;
-  return plain as CatalogueName;
-};
+export function catalogueNameOf<Text extends string>(text: StaticCatalogueName<Text>): CatalogueName;
+export function catalogueNameOf(text: string): string {
+  return text;
+}
 
 export const isCatalogueName = (text: string): text is CatalogueName => WHOLE_CATALOGUE_NAME.test(text);

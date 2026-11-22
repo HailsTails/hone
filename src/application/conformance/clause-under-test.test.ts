@@ -182,7 +182,7 @@ describe("boundClauseOf", () => {
       mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
       clause: "acme/ACME-2#scratch-files",
     });
-    expect(path.join).toHaveBeenCalledWith({ segments: ["/repo/tools/disciplines/acme", "mechanisms", "walker", "ACME-2"] });
+    expect(path.join).toHaveBeenCalledWith({ segments: ["/repo/tools/disciplines/acme", "mechanisms", "audit", "ACME-2"] });
   });
 
   it("refuses text that is not a clause address", () => {

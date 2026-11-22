@@ -443,7 +443,7 @@ const vitestImport = packageImport({ packageName: "vitest" });
 const relativeImportUnderCoreFrom = ({ importingFolder }: { readonly importingFolder: string }) => [
   relativeImportReaching({
     importingFolder,
-    reach: /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:audit|eslint\/[^/]+)\/)/,
+    reach: /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:walker|eslint\/[^/]+)\/)/,
   }),
   packageOrComputedImport,
 ];

@@ -187,8 +187,8 @@ describe("afterSectionsOf", () => {
       "not-adopted": [],
       "not-run": ["CD-15#loops"],
       editions: [],
-      unmeasured: ["audit not-run missing"],
-      "projection-problems": ["slice audit missing packages/web"],
+      unmeasured: ["walker not-run missing"],
+      "projection-problems": ["slice walker missing packages/web"],
       assessment: ["forfeiture elsewhere"],
       verdict: ["fail"],
     });

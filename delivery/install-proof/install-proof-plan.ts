@@ -13,7 +13,7 @@ export type StepRun =
   | { readonly outcome: "exited"; readonly exitCode: number; readonly output: string }
   | { readonly outcome: "not-exited"; readonly detail: string };
 
-export type ConsumerFixture = "walker" | "eslint" | "team" | "workspace";
+export type ConsumerFixture = "audit" | "eslint" | "team" | "workspace";
 
 export type ProofAction =
   | { readonly kind: "check"; readonly expectation: StepExpectation }
@@ -171,7 +171,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
 ];
 
 export const PROOF_CASES: readonly ProofCase[] = [
-  { consumer: "walker", fixture: "walker", toolchain: "typescript-floor", typeStripping: "disabled", actions: AUDIT_CONSUMER_ACTIONS },
+  { consumer: "audit", fixture: "audit", toolchain: "typescript-floor", typeStripping: "disabled", actions: AUDIT_CONSUMER_ACTIONS },
   { consumer: "eslint-10", fixture: "eslint", toolchain: "current", typeStripping: "disabled", actions: ESLINT_CONSUMER_ACTIONS },
   { consumer: "eslint-9", fixture: "eslint", toolchain: "eslint-9", typeStripping: "disabled", actions: ESLINT_CONSUMER_ACTIONS },
   { consumer: "eslint-missing", fixture: "eslint", toolchain: "typescript-floor", typeStripping: "disabled", actions: ESLINT_MISSING_ACTIONS },

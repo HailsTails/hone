@@ -36,7 +36,7 @@ const typePackageTexts = import.meta.glob(["./src/infrastructure/engines/*/runne
 });
 
 const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
-  '["./src/infrastructure/content-files/rule-sets/probe-rule-set","mechanisms","walker","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
+  '["./src/infrastructure/content-files/rule-sets/probe-rule-set","mechanisms","audit","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1",
   '["./src/infrastructure/content-files/rule-sets/probe-rule-set","rules","PD-1"]': "src/infrastructure/content-files/rule-sets/probe-rule-set/rules/PD-1",
   '[".","src","infrastructure","engines","walker","runner"]': "src/infrastructure/engines/walker/runner",
   '[".","src","domain"]': "src/domain",

@@ -65,8 +65,8 @@ const PACKAGE_FILES: Readonly<Record<string, string>> = {
 };
 
 const EXPECTING_PASS: ProofCase = {
-  consumer: "walker",
-  fixture: "walker",
+  consumer: "audit",
+  fixture: "audit",
   toolchain: "typescript-floor",
   typeStripping: "disabled",
   actions: [

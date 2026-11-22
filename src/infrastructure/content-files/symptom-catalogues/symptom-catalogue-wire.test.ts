@@ -317,7 +317,7 @@ describe("catalogueContentOf", () => {
         ...SYMPTOM_HOLDING_DOCUMENT,
         engines: [
           { name: "eslint" },
-          { name: "eslint", mechanism: "walker" },
+          { name: "eslint" },
         ],
       },
       refusal: "✖ engines holds eslint more than once",
@@ -363,17 +363,6 @@ describe("catalogueContentOf", () => {
       },
       refusal:
         "✖ checks holds work-inside-a-condition#useless-else more than once\n✖ the checks of work-inside-a-condition holds CD-42#useless-else more than once",
-    },
-    {
-      name: "an engine listed twice under one mechanism",
-      document: {
-        ...SYMPTOM_HOLDING_DOCUMENT,
-        engines: [
-          { name: "eslint" },
-          { name: "linter", mechanism: "eslint" },
-        ],
-      },
-      refusal: "✖ the mechanisms of engines holds eslint more than once",
     },
     {
       name: "two checks of one symptom on one clause",
