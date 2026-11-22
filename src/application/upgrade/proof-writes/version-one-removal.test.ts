@@ -200,6 +200,25 @@ describe("removedVersionOneFiles", () => {
     expect(sequenceOf({ ports })).toEqual([...REMOVING_RECORDS, ...REMOVING_AUTHORISED_FOLDER, ...REMOVING_CARVE_OUT_FOLDER, ...REMOVING_ROOT, REMOVING_SETTINGS]);
   });
 
+  it("removes a records file given with backslashes under a Windows records folder, and its emptied folder", () => {
+    const ports = { ...portsOver(), path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }) };
+    const windowsRoot = absolutePathSchema.parse("C:\\repo\\discipline-exceptions");
+    const windowsFolder = absolutePathSchema.parse("C:\\repo\\discipline-exceptions\\file-carve-outs");
+    const windowsFile = absolutePathSchema.parse("C:\\repo\\discipline-exceptions\\file-carve-outs\\cd-15.json");
+    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [windowsFile], recordsRoot: { kind: "folder", path: windowsRoot }, projections: [] } })).toEqual({
+      outcome: "ok",
+      value: { files: [windowsFile, SETTINGS], folders: [windowsFolder, windowsRoot] },
+    });
+    expect(sequenceOf({ ports })).toEqual([
+      { port: "remove", arguments: [{ path: windowsFile }] },
+      { port: "list", arguments: [{ path: windowsFolder }] },
+      { port: "removeEmpty", arguments: [{ path: windowsFolder }] },
+      { port: "list", arguments: [{ path: windowsRoot }] },
+      { port: "removeEmpty", arguments: [{ path: windowsRoot }] },
+      REMOVING_SETTINGS,
+    ]);
+  });
+
   it("refuses, before removing anything, a records file that is not under the records folder", () => {
     const ports = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValueOnce(IN_CARVE_OUT_FOLDER).mockReturnValueOnce({ relation: "within-root", path: "../tools/x.json" }) });
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [CARVE_OUT_FILE, OUTSIDE] } })).toEqual({
