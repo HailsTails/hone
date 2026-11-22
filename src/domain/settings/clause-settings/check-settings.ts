@@ -41,7 +41,7 @@ const UNPINNED_EDITIONS: Readonly<Record<CheckEditions, (editions: ClauseEdition
 const unpinnedEditionOf = (request: { readonly editions: ClauseEditions; readonly checkEditions: CheckEditions }): Edition =>
   UNPINNED_EDITIONS[request.checkEditions](request.editions);
 
-const editionOf = (
+const settledEditionOf = (
   request: SettingsRequest & { readonly given: GivenCheckSettings; readonly pin: ReadonlyJsonValue | undefined },
 ): Result<Edition, string> => {
   if (request.pin === undefined) {
@@ -105,7 +105,7 @@ export const settledCheckSettings = (request: SettingsRequest): Result<SettledCh
     return { outcome: "ok", value: { clauseSettings: defaultClauseSettings({ declarations: request.declarations }), edition: unpinnedEditionOf(request) } };
   }
   const { pin, rest } = editionPinOf({ given: given.values });
-  const edition = editionOf({ ...request, given, pin });
+  const edition = settledEditionOf({ ...request, given, pin });
   if (edition.outcome === "failed") {
     return edition;
   }
