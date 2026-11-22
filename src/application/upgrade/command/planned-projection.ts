@@ -32,7 +32,7 @@ export type PlannedProjectionPorts = {
 };
 
 type Context = PlannedProjectionPorts & {
-  readonly command: CommandRequest;
+  readonly command: Omit<CommandRequest, "process">;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
 };

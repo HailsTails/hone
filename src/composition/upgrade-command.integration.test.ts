@@ -1,40 +1,44 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { TOOL_SUBCOMMANDS } from "../../run-tool-command.ts";
-import { createDefaultExceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { Subcommand } from "../../infrastructure/command-line/arguments/command-line.ts";
-import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort } from "../../infrastructure/node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { createDefaultFileRemovalPort } from "../../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultGitPort } from "../../infrastructure/git/git-port.ts";
-import { createDefaultModuleLoaderPort } from "../../infrastructure/node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../application/ports/host/process-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { RunnerFailure } from "../../domain/runner/runner-failure.ts";
-import type { Result } from "../../domain/result.ts";
-import type { ExceptionsFile } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import type { EmbeddedRunner } from "../../infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
-import type { LoadedChecksRunner } from "../../infrastructure/engines/protocol/checks/checks-runner-types.ts";
-import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner } from "../../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
-import { createChecksRunner } from "../../infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
-import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createEslintPort, type EslintToolchain } from "../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import { INSTALLED_PORTS, toolSubcommandsOf } from "./run-tool-command.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { createDefaultExceptionRepositoryOf } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultGitPort } from "../infrastructure/git/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { RunnerFailure } from "../domain/runner/runner-failure.ts";
+import type { Result } from "../domain/result.ts";
+import type { ExceptionsFile } from "../domain/records/discipline-exceptions/exception-record.ts";
+import type { EmbeddedRunner } from "../infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
+import type { LoadedChecksRunner } from "../infrastructure/engines/protocol/checks/checks-runner-types.ts";
+import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner } from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { createChecksRunner } from "../infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createEslintPort, type EslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
   type EslintToolchainPeers,
   loadEslintToolchain,
-} from "../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { eslint9PieceModules, eslint9ToolchainModules } from "../../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../delivery/install-proof/install-proof-ports.ts";
-import type { AuthorisedLocationEntry } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
-import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
-import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
+} from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../delivery/install-proof/install-proof-ports.ts";
+import type { AuthorisedLocationEntry } from "../domain/records/discipline-exceptions/exception-record.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+
+const subcommandRan = (request: { readonly subcommand: Subcommand; readonly command: VersionOneCommandRequest }): Promise<void> =>
+  toolSubcommandsOf({ ...INSTALLED_PORTS, ...request.command })[request.subcommand](request.command);
 
 const VERSION_ONE = 1;
 
@@ -78,9 +82,9 @@ const scratchRepositoriesUnder = (request: {
   };
 };
 
-const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../..`);
+const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
-const ENTRY_URL = new URL("../../hone.ts", import.meta.url).href;
+const ENTRY_URL = new URL("../hone.ts", import.meta.url).href;
 
 const fileText = createDefaultFileTextPort({});
 
@@ -241,7 +245,7 @@ const runCommandIn = async (request: {
     writeError: vi.fn<ProcessPort["writeError"]>(),
     exitWith: vi.fn<ProcessPort["exitWith"]>(),
   };
-  await TOOL_SUBCOMMANDS[request.subcommand]({
+  await subcommandRan({ subcommand: request.subcommand, command: {
     process: processPort,
     path: createDefaultPathPort({}),
     fileText,
@@ -253,7 +257,7 @@ const runCommandIn = async (request: {
     selectionRepositoryOf: createSelectionRepository,
     shownPathOfRepository,
     moduleUrl: ENTRY_URL,
-  });
+  } });
   return { writes: vi.mocked(processPort.writeOut).mock.calls, exits: vi.mocked(processPort.exitWith).mock.calls };
 };
 

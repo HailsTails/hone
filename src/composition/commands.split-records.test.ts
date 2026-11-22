@@ -1,16 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import { type ExceptionLayoutPorts, exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import type { DirectoryEntry } from "../../application/ports/file-system/directory-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../application/ports/host/process-port.ts";
-import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import { runSplitRecordsCommand } from "./run-split-records-command.ts";
-import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
-import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
-import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
+import { type ExceptionLayoutPorts, exceptionRepositoryOf } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { DirectoryEntry } from "../application/ports/file-system/directory-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { commandOf } from "./composed-command.ts";
+import { SPLIT_RECORDS } from "./commands.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+
+const runSplitRecordsCommand = (command: VersionOneCommandRequest) => commandOf({ tool: SPLIT_RECORDS, ports: command })(command);
 
 type RecordsDisk = {
   readonly repoRoot: AbsolutePath;

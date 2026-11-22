@@ -1,9 +1,9 @@
-import { AUTHORISE_COMMAND_OPTIONS, COMMANDS, type CommandOption, type CommandSpec, HELP_FLAGS, UPGRADE_SUBCOMMAND, VERSION_FLAG } from "../../infrastructure/command-line/arguments/command-line.ts";
-import { RECORDS_FOLDER } from "../../domain/records/hone-records/records-layout.ts";
-import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
-import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
-import { FORFEITURE_ASSESSMENTS } from "../../domain/settings/assessment.ts";
-import { VERSION_TWO_REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
+import { AUTHORISE_COMMAND_OPTIONS, COMMANDS, type CommandOption, type CommandSpec, HELP_FLAGS, UPGRADE_SUBCOMMAND, VERSION_FLAG } from "./command-line.ts";
+import { RECORDS_FOLDER } from "../../../domain/records/hone-records/records-layout.ts";
+import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
+import { FORFEITURE_ASSESSMENTS } from "../../../domain/settings/assessment.ts";
+import { VERSION_TWO_REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
 
 export type RunSubcommand = "check" | "project" | "record-debt" | "prune-debt" | "authorise" | "upgrade";
 

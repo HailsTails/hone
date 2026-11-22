@@ -1,7 +1,8 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
 import { projectCommandOf } from "../arguments/tool-invocations.ts";
 import type { Subcommand } from "../arguments/command-line.ts";
-import { TOOL_SUBCOMMANDS } from "../../../run-tool-command.ts";
+import { INSTALLED_PORTS, toolSubcommandsOf } from "../../../composition/run-tool-command.ts";
+import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import type { ExceptionRepositoryOf } from "../../../application/ports/records/exception-repository.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultGitPort } from "../../git/git-port.ts";
@@ -18,6 +19,9 @@ import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 import type { ExceptionEntryParser } from "../../../application/ports/records/exception-entries.ts";
 import type { SelectionRepositoryOf } from "../../../application/ports/selection/selection-repository.ts";
 import type { ShownPathOfRepository } from "../../../application/ports/installation/shown-path-of.ts";
+
+const subcommandRan = (request: { readonly subcommand: Subcommand; readonly command: VersionOneCommandRequest }): Promise<void> =>
+  toolSubcommandsOf({ ...INSTALLED_PORTS, ...request.command })[request.subcommand](request.command);
 
 const installedBoundary = await installedEslintBoundary();
 
@@ -124,7 +128,7 @@ const runCommandIn = async (request: { readonly repo: string; readonly subcomman
     writeError: vi.fn<ProcessPort["writeError"]>(),
     exitWith: vi.fn<ProcessPort["exitWith"]>(),
   };
-  await TOOL_SUBCOMMANDS[request.subcommand]({
+  await subcommandRan({ subcommand: request.subcommand, command: {
     process: processPort,
     path: createDefaultPathPort({}),
     fileText,
@@ -140,7 +144,7 @@ const runCommandIn = async (request: { readonly repo: string; readonly subcomman
     selectionRepositoryOf: vi.fn<SelectionRepositoryOf>(),
     shownPathOfRepository: vi.fn<ShownPathOfRepository>(),
     moduleUrl: ENTRY_URL,
-  });
+  } });
   return { writes: vi.mocked(processPort.writeOut).mock.calls, exits: vi.mocked(processPort.exitWith).mock.calls };
 };
 

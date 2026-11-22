@@ -1,21 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepositoryOf } from "../../application/ports/records/exception-repository.ts";
-import type { ExceptionEntryParser } from "../../application/ports/records/exception-entries.ts";
-import type { SelectionRepositoryOf } from "../../application/ports/selection/selection-repository.ts";
-import type { ShownPathOfRepository } from "../../application/ports/installation/shown-path-of.ts";
-import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../application/ports/git-port.ts";
-import type { ModuleLoaderPort } from "../../application/ports/host/module-loader-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../application/ports/host/process-port.ts";
-import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { CheckReport } from "../../domain/report/check-report.ts";
-import type { SymptomGuide } from "../../infrastructure/printed-report/symptoms/symptom-notes.ts";
-import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import type { CheckRunAt } from "./run-check-command.ts";
-import { guidedCheckRunFor } from "./run-guided-check-command.ts";
-import type { SymptomGuideIn } from "../../infrastructure/printed-report/symptoms/symptom-guide.ts";
-import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+import type { ExceptionEntryParser } from "../application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "../application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "../application/ports/installation/shown-path-of.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { RecordKind } from "../domain/language-layer/symptom-catalogue.ts";
+import type { CheckReport } from "../domain/report/check-report.ts";
+import type { SymptomGuide } from "../infrastructure/printed-report/symptoms/symptom-notes.ts";
+import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
+import type { CheckArguments } from "../application/ports/command/command-arguments.ts";
+import type { ReportOutput } from "../domain/settings/report-output.ts";
+import { type CheckRunAt, guidedCheckRunFor } from "./check-command.ts";
+import type { SymptomGuideIn } from "../infrastructure/printed-report/symptoms/symptom-guide.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 
 const EMPTY_REPORT: CheckReport = {
   excluded: [],
@@ -97,13 +97,9 @@ const SHOWN_PATH_OF_REPOSITORY = vi.fn<ShownPathOfRepository>();
 
 const MODULE_URL = "file:///repo/node_modules/@hailstails/hone/src/hone.ts";
 
-const COMMAND: VersionOneCommandRequest = {
-  process: {
-    arguments: ["--repo", "/repo"],
-    writeOut: vi.fn<ProcessPort["writeOut"]>(),
-    writeError: vi.fn<ProcessPort["writeError"]>(),
-    exitWith: vi.fn<ProcessPort["exitWith"]>(),
-  },
+const ARGUMENTS: CheckArguments<ReportOutput> = { repo: "/repo", baseRevision: undefined, reportOutput: undefined, forfeiture: undefined };
+
+const COMMAND: VersionOneCommandPorts = {
   path: PATH,
   fileText: FILE_TEXT,
   engine: ENGINE,
@@ -116,8 +112,7 @@ const COMMAND: VersionOneCommandRequest = {
   moduleUrl: MODULE_URL,
 };
 
-const ABSENT_SELECTION_COMMAND: VersionOneCommandRequest = {
-  process: COMMAND.process,
+const ABSENT_SELECTION_COMMAND: VersionOneCommandPorts = {
   path: PATH,
   fileText: {
     read: vi.fn<FileTextPort["read"]>(),
@@ -138,7 +133,8 @@ describe("guidedCheckRunFor", () => {
   it("gives the check run with the symptom guide beside it", async () => {
     expect(
       await guidedCheckRunFor({
-        command: COMMAND,
+        ports: COMMAND,
+        arguments: ARGUMENTS,
         checkRunAt: vi.fn<CheckRunAt>().mockResolvedValue({
           outcome: "ok",
           value: { report: EMPTY_REPORT, output: "full", projectCommand: "hone project --repo .", pruneCommand: "hone prune-debt --repo ." },
@@ -158,7 +154,7 @@ describe("guidedCheckRunFor", () => {
     });
     const symptomGuideIn = vi.fn<SymptomGuideIn>().mockReturnValue(GUIDE);
 
-    await guidedCheckRunFor({ command: COMMAND, checkRunAt, symptomGuideIn });
+    await guidedCheckRunFor({ ports: COMMAND, arguments: ARGUMENTS, checkRunAt, symptomGuideIn });
 
     expect(checkRunAt).toHaveBeenCalledExactlyOnceWith({
       path: PATH,
@@ -188,7 +184,8 @@ describe("guidedCheckRunFor", () => {
   it("gives the check's load failure", async () => {
     expect(
       await guidedCheckRunFor({
-        command: COMMAND,
+        ports: COMMAND,
+        arguments: ARGUMENTS,
         checkRunAt: vi.fn<CheckRunAt>().mockResolvedValue({ outcome: "failed", error: { kind: "git-failed", detail: "not a git repository" } }),
         symptomGuideIn: vi.fn<SymptomGuideIn>().mockReturnValue(GUIDE),
       }),
@@ -199,7 +196,8 @@ describe("guidedCheckRunFor", () => {
     const symptomGuideIn = vi.fn<SymptomGuideIn>().mockReturnValue(GUIDE);
 
     await guidedCheckRunFor({
-      command: COMMAND,
+      ports: COMMAND,
+      arguments: ARGUMENTS,
       checkRunAt: vi.fn<CheckRunAt>().mockResolvedValue({ outcome: "failed", error: { kind: "git-failed", detail: "not a git repository" } }),
       symptomGuideIn,
     });
@@ -214,7 +212,7 @@ describe("guidedCheckRunFor", () => {
     });
     const symptomGuideIn = vi.fn<SymptomGuideIn>().mockReturnValue(GUIDE);
 
-    expect(await guidedCheckRunFor({ command: ABSENT_SELECTION_COMMAND, checkRunAt, symptomGuideIn })).toEqual({
+    expect(await guidedCheckRunFor({ ports: ABSENT_SELECTION_COMMAND, arguments: ARGUMENTS, checkRunAt, symptomGuideIn })).toEqual({
       outcome: "failed",
       error: { kind: "selection-absent", repo: "/repo" },
     });

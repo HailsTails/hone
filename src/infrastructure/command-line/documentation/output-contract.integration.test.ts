@@ -53,7 +53,8 @@ import { renderRunReportText } from "../../printed-report/run-report-text.ts";
 import { recordReferenceText, recordSubjectText } from "../../printed-report/records/record-lines.ts";
 import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "../../printed-report/records/record-command-lines.ts";
 import { ALREADY_ON_VERSION_TWO, upgradeSuccessOutcomeOf } from "../../printed-report/upgrade/upgrade-success-text.ts";
-import { type UpgradeFailure, UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../../printed-report/upgrade/upgrade-refusal-text.ts";
+import { UPGRADE_ISSUES_URL, upgradeFailureOutcomeOf } from "../../printed-report/upgrade/upgrade-refusal-text.ts";
+import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
 import type { PlanRefusal } from "../../../application/ports/upgrade/plan-refusal.ts";
 import { authorisingOf } from "../../../application/records/authorising.ts";
 import type { AuthoriseRequest, Authorising } from "../../../application/ports/authorising.ts";
@@ -79,11 +80,14 @@ import type {
   SymptomReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../../../operations/help/run-help.ts";
-import { runToolCommand } from "../../../run-tool-command.ts";
+import { RUN_SUBCOMMANDS, RUN_SYNOPSIS, type RunHelpTopic, runHelpText } from "../arguments/run-help.ts";
+import { INSTALLED_PORTS, toolCommandOver } from "../../../composition/run-tool-command.ts";
+import type { VersionOneCommandRequest as ToolCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 import { recordsReader } from "../../hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../../hone-records-folder/writing/records-edit.ts";
+
+const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
 type Fills = Readonly<Record<string, string>>;
 
@@ -2445,7 +2449,7 @@ const printedHelpBlockOf = async (request: {
   readonly files: Readonly<Record<string, string>>;
 }): Promise<string> => {
   const recorded = recordedProcessWith({ arguments: request.given });
-  await runToolCommand(commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) }));
+  await commandRan(commandOver({ process: recorded.port, fileText: memoryFileTextOf({ files: request.files }) }));
   return `${FENCE}text\n${recorded.writes.map(([written]) => written.text).join("")}${FENCE}`;
 };
 

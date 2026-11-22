@@ -6,7 +6,9 @@ import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../../infrastructure/git/git-port.ts";
 import { createDefaultPathPort } from "../../infrastructure/node/path-port.ts";
 import { answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
-import { authoriseOf, pruneDebtOf, recordDebtOf } from "./record-commands.ts";
+import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "./record-commands.ts";
+import type { RunReport } from "../../domain/report/run-report.ts";
+import type { AuthoriseRequest } from "../ports/authorising.ts";
 import { readHoneRecords } from "./read-hone-records.ts";
 import { createRecordsFolder } from "../../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createRecordsStore } from "../../infrastructure/hone-records-folder/writing/records-store.ts";
@@ -196,11 +198,11 @@ const RAISED: readonly RaisedFinding[] = [{ finding: CAST_IN_ORDERS, party: { re
 
 const NOTHING_CHANGED: TouchedSet = { measured: "yes", paths: new Set() };
 
-const recordDebt = recordDebtOf({ catalogue, source, store, recordsReader, recordsEditor });
+const recordDebt = (run: RecordDebtRequest) => recordDebtOf({ ports: { catalogue, source, store, recordsReader, recordsEditor }, run });
 
-const pruneDebt = pruneDebtOf({ source, store, recordsEditor });
+const pruneDebt = (request: { readonly report: Pick<RunReport, "paid" | "stale" | "forfeited"> }) => pruneDebtOf({ ports: { source, store, recordsEditor }, report: request.report });
 
-const authorise = authoriseOf({ catalogue, source, store, recordsReader, recordsEditor });
+const authorise = (request: AuthoriseRequest) => authoriseOf({ ports: { catalogue, source, store, recordsReader, recordsEditor }, request });
 
 const DEBT_TEXT = '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "claimed-type",\n      "file": "src/orders/charge-order.ts"\n    }\n  ]\n}\n';
 

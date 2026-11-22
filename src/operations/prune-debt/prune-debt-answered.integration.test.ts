@@ -1,5 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { runPruneDebtCommand } from "./run-prune-debt-command.ts";
+import { commandOf } from "../../composition/composed-command.ts";
+import type { VersionOneCommandRequest as PruneCommand } from "../../application/ports/version-one-command-request.ts";
+import { PRUNE_DEBT } from "../../composition/commands.ts";
 import { exceptionRepositoryOf } from "../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import type { FileRemovalPort } from "../../application/ports/file-system/file-removal-port.ts";
 import { createDefaultDirectoryPort } from "../../infrastructure/node/file-system/file-system-port.ts";
@@ -20,6 +22,8 @@ import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/e
 import { exceptionEntryParser } from "../../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../../infrastructure/command-line/installation/shown-path.ts";
+
+const runPruneDebtCommand = (command: PruneCommand) => commandOf({ tool: PRUNE_DEBT, ports: command })(command);
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 

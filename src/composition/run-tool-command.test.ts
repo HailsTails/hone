@@ -1,19 +1,27 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { ExceptionRepositoryOf } from "./application/ports/records/exception-repository.ts";
-import type { FileTextPort } from "./application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "./application/ports/git-port.ts";
-import type { ModuleLoaderPort } from "./application/ports/host/module-loader-port.ts";
-import { createPathPort } from "./infrastructure/node/path-port.ts";
-import type { PathPort } from "./application/ports/host/path-port.ts";
-import type { ProcessPort } from "./application/ports/host/process-port.ts";
-import { runHelpText } from "./operations/help/run-help.ts";
-import { helpText } from "./infrastructure/command-line/arguments/command-help.ts";
-import type { VersionOneCommandRequest } from "./application/ports/version-one-command-request.ts";
-import { type CommandHandler, type Subcommands, TOOL_SUBCOMMANDS, toolCommandOf } from "./run-tool-command.ts";
-import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
-import type { ExceptionEntryParser } from "./application/ports/records/exception-entries.ts";
-import type { SelectionRepositoryOf } from "./application/ports/selection/selection-repository.ts";
-import type { ShownPathOfRepository } from "./application/ports/installation/shown-path-of.ts";
+import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../application/ports/git-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { PathPort } from "../application/ports/host/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import { runHelpText } from "../infrastructure/command-line/arguments/run-help.ts";
+import { helpText } from "../infrastructure/command-line/arguments/command-help.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { type CommandHandler, type Subcommands, toolCommandOf } from "./composed-command.ts";
+import { INSTALLED_PORTS, toolSubcommandsOf } from "./run-tool-command.ts";
+import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import type { ExceptionEntryParser } from "../application/ports/records/exception-entries.ts";
+import type { SelectionRepositoryOf } from "../application/ports/selection/selection-repository.ts";
+import type { ShownPathOfRepository } from "../application/ports/installation/shown-path-of.ts";
+
+const dispatchedOver = (request: { readonly subcommands: Subcommands; readonly command: VersionOneCommandRequest }): Promise<void> =>
+  toolCommandOf({ subcommands: request.subcommands, ports: request.command })(request.command);
+
+const subcommandRan = (request: { readonly subcommand: Subcommand; readonly command: VersionOneCommandRequest }): Promise<void> =>
+  toolSubcommandsOf({ ...INSTALLED_PORTS, ...request.command })[request.subcommand](request.command);
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -199,7 +207,7 @@ describe("toolCommandOf", () => {
     const subcommands = subcommandsSpied();
     const request = commandRequest({ process: processWith({ arguments: ["check", "--repo", "/repo"] }) });
 
-    await toolCommandOf({ subcommands })(request);
+    await dispatchedOver({ subcommands, command: request });
 
     expect(callsOf({ subcommands })).toEqual({
       check: [[{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }]],
@@ -213,7 +221,7 @@ describe("toolCommandOf", () => {
     const subcommands = subcommandsSpied();
     const request = commandRequest({ process: processWith({ arguments: ["project", "--repo", "/repo"] }) });
 
-    await toolCommandOf({ subcommands })(request);
+    await dispatchedOver({ subcommands, command: request });
 
     expect(callsOf({ subcommands })).toEqual({
       check: [],
@@ -227,7 +235,7 @@ describe("toolCommandOf", () => {
     const subcommands = subcommandsSpied();
     const request = commandRequest({ process: processWith({ arguments: ["record-debt", "--repo", "/repo", "--base-revision", "HEAD"] }) });
 
-    await toolCommandOf({ subcommands })(request);
+    await dispatchedOver({ subcommands, command: request });
 
     expect(callsOf({ subcommands })).toEqual({
       check: [],
@@ -241,7 +249,7 @@ describe("toolCommandOf", () => {
     const subcommands = subcommandsSpied();
     const request = commandRequest({ process: processWith({ arguments: ["prune-debt", "--repo", "/repo", "--base-revision", "origin/main"] }) });
 
-    await toolCommandOf({ subcommands })(request);
+    await dispatchedOver({ subcommands, command: request });
 
     expect(callsOf({ subcommands })).toEqual({
       check: [],
@@ -265,7 +273,7 @@ describe("toolCommandOf refusing an invocation it cannot read", () => {
     const subcommands = subcommandsSpied();
     const processPort = processWith({ arguments: given });
 
-    await toolCommandOf({ subcommands })(commandRequest({ process: processPort }));
+    await dispatchedOver({ subcommands, command: commandRequest({ process: processPort }) });
 
     expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual({
       output: { writes: [[{ text: line }]], exits: [[{ code: 2 }]] },
@@ -294,7 +302,7 @@ describe("toolCommandOf printing help", () => {
     const subcommands = subcommandsSpied();
     const processPort = processWith({ arguments: given });
 
-    await toolCommandOf({ subcommands })(helpRequest({ process: processPort, files: VERSION_TWO_FILES }));
+    await dispatchedOver({ subcommands, command: helpRequest({ process: processPort, files: VERSION_TWO_FILES }) });
 
     expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual({
       output: { writes: [[{ text: runHelpText({ topic }) }]], exits: [[{ code: 0 }]] },
@@ -308,7 +316,7 @@ describe("toolCommandOf printing help", () => {
   ] as const)("prints version 1's $topic help for a repository holding disciplines.json, given $given", async ({ given, topic }) => {
     const processPort = processWith({ arguments: given });
 
-    await toolCommandOf({ subcommands: subcommandsSpied() })(helpRequest({ process: processPort, files: VERSION_ONE_FILES }));
+    await dispatchedOver({ subcommands: subcommandsSpied(), command: helpRequest({ process: processPort, files: VERSION_ONE_FILES }) });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: helpText({ topic }) }]], exits: [[{ code: 0 }]] });
   });
@@ -316,7 +324,7 @@ describe("toolCommandOf printing help", () => {
   it("prints version 2's help for a repository holding neither settings file", async () => {
     const processPort = processWith({ arguments: ["check", "--repo", "/repo", "--help"] });
 
-    await toolCommandOf({ subcommands: subcommandsSpied() })(helpRequest({ process: processPort, files: {} }));
+    await dispatchedOver({ subcommands: subcommandsSpied(), command: helpRequest({ process: processPort, files: {} }) });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: runHelpText({ topic: "check" }) }]], exits: [[{ code: 0 }]] });
   });
@@ -324,7 +332,7 @@ describe("toolCommandOf printing help", () => {
   it("prints version 1's split-records help, the only help split-records has, for a version 2 repository", async () => {
     const processPort = processWith({ arguments: ["split-records", "--repo", "/repo", "--help"] });
 
-    await toolCommandOf({ subcommands: subcommandsSpied() })(helpRequest({ process: processPort, files: VERSION_TWO_FILES }));
+    await dispatchedOver({ subcommands: subcommandsSpied(), command: helpRequest({ process: processPort, files: VERSION_TWO_FILES }) });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: helpText({ topic: "split-records" }) }]], exits: [[{ code: 0 }]] });
   });
@@ -343,9 +351,9 @@ describe("toolCommandOf printing the version", () => {
     const subcommands = subcommandsSpied();
     const processPort = processWith({ arguments: ["--version"] });
 
-    await toolCommandOf({ subcommands })(
+    await dispatchedOver({ subcommands, command: 
       versionRequest({ process: processPort, read: { outcome: "ok", value: '{ "version": "1.2.3" }' } }),
-    );
+     });
 
     expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual({
       output: { writes: [[{ text: "1.2.3\n" }]], exits: [[{ code: 0 }]] },
@@ -356,9 +364,9 @@ describe("toolCommandOf printing the version", () => {
   it("exits 2 with the load failure line when the install's package.json cannot be read", async () => {
     const processPort = processWith({ arguments: ["--version"] });
 
-    await toolCommandOf({ subcommands: subcommandsSpied() })(
+    await dispatchedOver({ subcommands: subcommandsSpied(), command: 
       versionRequest({ process: processPort, read: { outcome: "failed", error: { kind: "unreadable", path: PACKAGE_PATH, detail: "EACCES" } } }),
-    );
+     });
 
     expect(outputOf({ process: processPort })).toEqual({
       writes: [[{ text: "load failure: file-unreadable /install/package.json EACCES\n" }]],
@@ -378,7 +386,7 @@ describe("toolCommandOf when a command fails unexpectedly", () => {
   ])("exits 2 with an unexpected-error load failure line, so exit 1 always means a failing verdict: $line", async ({ handler, line }) => {
     const processPort = processWith({ arguments: ["check", "--repo", "/repo"] });
 
-    await toolCommandOf({ subcommands: { check: handler, project: handler, "record-debt": handler, "prune-debt": handler, authorise: handler, "split-records": handler, upgrade: handler } })(commandRequest({ process: processPort }));
+    await dispatchedOver({ subcommands: { check: handler, project: handler, "record-debt": handler, "prune-debt": handler, authorise: handler, "split-records": handler, upgrade: handler }, command: commandRequest({ process: processPort }) });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: line }]], exits: [[{ code: 2 }]] });
   });
@@ -431,7 +439,7 @@ describe("TOOL_SUBCOMMANDS authorise, which has no version 1 form", () => {
   it.each(AUTHORISE_CASES)("prints one load failure line naming what is wrong, and exits 2, given $case", async ({ files, path, arguments: given, line }) => {
     const processPort = processWith({ arguments: given });
 
-    await TOOL_SUBCOMMANDS.authorise({ ...commandOver({ process: processPort, fileText: memoryFileTextOf({ files }) }), path });
+    await subcommandRan({ subcommand: "authorise", command: { ...commandOver({ process: processPort, fileText: memoryFileTextOf({ files }) }), path } });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: line }]], exits: [[{ code: 2 }]] });
   });
@@ -451,7 +459,7 @@ declare global {
 }
 
 const SHIPPED_CATALOGUE = requiredEntry({
-  table: import.meta.glob(["./rules/typescript/symptoms.json"], { base: "../", query: "?raw", import: "default", eager: true }),
+  table: import.meta.glob(["./rules/typescript/symptoms.json"], { base: "../../", query: "?raw", import: "default", eager: true }),
   key: "./rules/typescript/symptoms.json",
 });
 
@@ -468,7 +476,7 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
     const processPort = processWith({ arguments: given });
     const command = commandOver({ process: processPort, fileText: memoryFileTextOf({ files: {}, outsideFiles: { [CATALOGUE_PATH]: SHIPPED_CATALOGUE } }) });
 
-    await TOOL_SUBCOMMANDS[subcommand](command);
+    await subcommandRan({ subcommand, command: command });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: CONFIG_ABSENT_LINE }]], exits: [[{ code: 2 }]] });
   });
@@ -485,7 +493,7 @@ describe("TOOL_SUBCOMMANDS on a repository holding hone.config.json", () => {
         fileText: { ...UNUSED_FILE_TEXT, exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present") },
       };
 
-      await TOOL_SUBCOMMANDS[subcommand](request);
+      await subcommandRan({ subcommand, command: request });
 
       expect(outputOf({ process: processPort })).toEqual({
         writes: [[{ text: `load failure: not-ready-yet ${subcommand}: this release runs ${subcommand} on version 1 files only, and this repository holds hone.config.json

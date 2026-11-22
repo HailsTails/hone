@@ -10,3 +10,5 @@ export type VersionOneCommandRequest = CommandRequest & {
   readonly selectionRepositoryOf: SelectionRepositoryOf;
   readonly shownPathOfRepository: ShownPathOfRepository;
 };
+
+export type VersionOneCommandPorts = Omit<VersionOneCommandRequest, "process">;

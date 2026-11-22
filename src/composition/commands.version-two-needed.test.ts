@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { VersionOneCommandRequest } from "../../application/ports/version-one-command-request.ts";
-import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
-import type { ProcessPort } from "../../application/ports/host/process-port.ts";
-import { versionTwoNeededCommandOf } from "./version-two-needed-command.ts";
-import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import { commandOf } from "./composed-command.ts";
+import { VERSION_TWO_NEEDED } from "./commands.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+
+const versionTwoNeededCommandOf = (command: VersionOneCommandRequest) => commandOf({ tool: VERSION_TWO_NEEDED, ports: command })(command);
 
 const notUsed = (): never => {
   throw new Error("this port is not used by the command under test");

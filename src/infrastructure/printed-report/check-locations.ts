@@ -4,8 +4,8 @@ import type { AbsolutePath } from "../../domain/repository/absolute-path-types.t
 import type { Result } from "../../domain/result.ts";
 import { argumentsInvalid } from "../command-line/arguments/argument-problem.ts";
 import { parseCheckArguments } from "../command-line/arguments/command-arguments.ts";
-import type { CheckLocations } from "../../application/ports/command/command-arguments.ts";
-import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
+import type { CheckArguments, CheckLocations } from "../../application/ports/command/command-arguments.ts";
+import { REPORT_OUTPUTS, type ReportOutput } from "../../domain/settings/report-output.ts";
 import { installRootOf } from "../command-line/installation/install-root.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 
@@ -26,6 +26,22 @@ export const repoRootOf = (request: {
     : resolved;
 };
 
+export const checkLocationsOf = (request: {
+  readonly arguments: CheckArguments<ReportOutput>;
+  readonly path: PathPort;
+  readonly fileText: Pick<FileTextPort, "exists">;
+  readonly moduleUrl: string;
+}): Result<CheckLocations, LoadFailure> => {
+  const repoRoot = repoRootOf({ path: request.path, fileText: request.fileText, repo: request.arguments.repo });
+  if (repoRoot.outcome === "failed") {
+    return repoRoot;
+  }
+  const installRoot = installRootOf({ path: request.path, moduleUrl: request.moduleUrl });
+  return installRoot.outcome === "failed"
+    ? installRoot
+    : { outcome: "ok", value: { arguments: request.arguments, repoRoot: repoRoot.value, installRoot: installRoot.value } };
+};
+
 export const checkLocationsFor = (request: {
   readonly arguments: readonly string[];
   readonly path: PathPort;
@@ -33,15 +49,5 @@ export const checkLocationsFor = (request: {
   readonly moduleUrl: string;
 }): Result<CheckLocations, LoadFailure> => {
   const parsed = parseCheckArguments({ arguments: request.arguments, reportOutputs: REPORT_OUTPUTS });
-  if (parsed.outcome === "failed") {
-    return parsed;
-  }
-  const repoRoot = repoRootOf({ path: request.path, fileText: request.fileText, repo: parsed.value.repo });
-  if (repoRoot.outcome === "failed") {
-    return repoRoot;
-  }
-  const installRoot = installRootOf({ path: request.path, moduleUrl: request.moduleUrl });
-  return installRoot.outcome === "failed"
-    ? installRoot
-    : { outcome: "ok", value: { arguments: parsed.value, repoRoot: repoRoot.value, installRoot: installRoot.value } };
+  return parsed.outcome === "failed" ? parsed : checkLocationsOf({ ...request, arguments: parsed.value });
 };

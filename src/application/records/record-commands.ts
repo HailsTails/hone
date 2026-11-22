@@ -126,9 +126,8 @@ const outcomesOf = (request: { readonly ports: RecordDebtPorts; readonly run: Re
   };
 };
 
-export const recordDebtOf =
-  (ports: RecordDebtPorts) =>
-  (run: RecordDebtRequest): Commanded<readonly DebtOutcome[]> => {
+export const recordDebtOf = (request: { readonly ports: RecordDebtPorts; readonly run: RecordDebtRequest }): Commanded<readonly DebtOutcome[]> => {
+    const { ports, run } = request;
     if (run.findings.length === 0 && run.unrecorded.length === 0) {
       return { outcome: "ok", value: [] };
     }
@@ -148,9 +147,8 @@ export const recordDebtOf =
     return stored.outcome === "failed" ? stored : outcomes;
   };
 
-export const pruneDebtOf =
-  (ports: PruneDebtPorts) =>
-  (request: { readonly report: Pick<RunReport, "paid" | "stale" | "forfeited"> }): Commanded<readonly PrunableDebt[]> => {
+export const pruneDebtOf = (request: { readonly ports: PruneDebtPorts; readonly report: Pick<RunReport, "paid" | "stale" | "forfeited"> }): Commanded<readonly PrunableDebt[]> => {
+    const { ports } = request;
     const prunable = prunableDebtOf(request);
     if (prunable.length === 0) {
       return { outcome: "ok", value: [] };
@@ -167,9 +165,8 @@ export const pruneDebtOf =
     return stored.outcome === "failed" ? stored : { outcome: "ok", value: prunable };
   };
 
-export const authoriseOf =
-  (ports: AuthorisePorts) =>
-  (request: AuthoriseRequest): Commanded<Authorising> => {
+export const authoriseOf = (command: { readonly ports: AuthorisePorts; readonly request: AuthoriseRequest }): Commanded<Authorising> => {
+    const { ports, request } = command;
     const documents = documentsOf(ports);
     if (documents.outcome === "failed") {
       return documents;

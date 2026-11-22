@@ -220,7 +220,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("writes one debt record under hone-records/debt for the symptom and check, in the format the records reader reads", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })(request);
+    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: request });
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" }] });
     expect(apply).toHaveBeenCalledWith({
       edit: { write: [{ file: DEBT_FILE, document: { version: 2, records: [{ answers: "date-used-directly#clock-sources", file: ORDER_FILE }] } }], remove: [] },
@@ -229,18 +229,18 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("writes nothing the second time, when the first run's records are held", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })(request);
+    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store }, run: request });
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "already-recorded", heldIn: DEBT_FILE }] });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("declines debt on a file the change created or changed when this run assesses forfeiture, as the check forfeits the same debt", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({
+    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: {
       ...request,
       findings: [NEW_FILE_FINDING, TOUCHED_FINDING],
       touched: NEW_AND_WEBHOOK_CHANGED,
-    });
+    } });
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
@@ -255,11 +255,11 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("writes debt on a file the change changed when another run assesses forfeiture, as the check answers the finding by it", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({
+    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: {
       ...request,
       findings: [TOUCHED_FINDING],
       touched: LEFT_TO_ANOTHER_RUN,
-    });
+    } });
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "claimed-type#cast-expressions", file: TOUCHED_FILE, effect: "recorded" }] });
     const [written] = apply.mock.calls;
     assert(written !== undefined, "the debt was written");
@@ -269,7 +269,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("gives a line to a finding it cannot record debt for, and records the others", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({ ...request, findings: [UNCATALOGUED_FINDING, CLOCK_FINDING] });
+    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, findings: [UNCATALOGUED_FINDING, CLOCK_FINDING] } });
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
@@ -282,7 +282,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("writes nothing when every finding is one it cannot record debt for", () => {
     const { apply, store } = storeOf();
-    expect(recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({ ...request, findings: [UNCATALOGUED_FINDING] })).toEqual({
+    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, findings: [UNCATALOGUED_FINDING] } })).toEqual({
       outcome: "ok",
       value: [{ address: "CD-99#nowhere", file: ORDER_FILE, effect: "unrecordable", because: { kind: "no-check" } }],
     });
@@ -291,13 +291,13 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("writes nothing and prints nothing when the run left nothing unanswered", () => {
     const { apply, store } = storeOf();
-    expect(recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({ ...request, findings: [] })).toEqual({ outcome: "ok", value: [] });
+    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, findings: [] } })).toEqual({ outcome: "ok", value: [] });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("fails with git's own words when the run could not measure the change", () => {
     const { apply, store } = storeOf();
-    expect(recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({ ...request, touched: UNMEASURED })).toEqual({
+    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, touched: UNMEASURED } })).toEqual({
       outcome: "failed",
       error: { kind: "git-failed", detail: "bad revision" },
     });
@@ -306,11 +306,11 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("fails, without writing, when hone-records holds a file it cannot read as records", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({
+    const recorded = recordDebtOf({ ports: {
       ...COMMAND,
       source: sourceOf({ documents: [{ file: DEBT_FILE, document: { records: [] } }] }),
       store,
-    })(request);
+    }, run: request });
     expect(recorded).toMatchObject({ outcome: "failed", error: { kind: "records-documents" } });
     expect(apply).not.toHaveBeenCalled();
   });
@@ -318,7 +318,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
   it("passes on the failure of the store that could not write", () => {
     const { apply, store } = storeOf();
     apply.mockReturnValue({ outcome: "failed", error: { kind: "file-unwritable", path: "/work/shop/hone-records/debt/date-used-directly.json", detail: "EACCES" } });
-    expect(recordDebtOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })(request)).toEqual({
+    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: request })).toEqual({
       outcome: "failed",
       error: { kind: "file-unwritable", path: "/work/shop/hone-records/debt/date-used-directly.json", detail: "EACCES" },
     });
@@ -333,14 +333,14 @@ const PAID_DEBT: PlacedRecord = {
 describe("hone prune-debt over a run's paid, stale and forfeited debt", () => {
   it("removes exactly the debt the report listed, from the document that holds it", () => {
     const { apply, store } = storeOf();
-    const pruned = pruneDebtOf({ recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })({ report: { paid: [{ debt: PAID_DEBT, answeredBy: [] }], stale: [], forfeited: [] } });
+    const pruned = pruneDebtOf({ ports: { recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store }, report: { paid: [{ debt: PAID_DEBT, answeredBy: [] }], stale: [], forfeited: [] } });
     expect(pruned).toMatchObject({ outcome: "ok", value: [{ place: { file: DEBT_FILE, index: 0 }, reason: "paid" }] });
     expect(apply).toHaveBeenCalledWith({ edit: { write: [], remove: [DEBT_FILE] } });
   });
 
   it("writes nothing when the report lists nothing to remove", () => {
     const { apply, store } = storeOf();
-    expect(pruneDebtOf({ recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store })({ report: { paid: [], stale: [], forfeited: [] } })).toEqual({ outcome: "ok", value: [] });
+    expect(pruneDebtOf({ ports: { recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store }, report: { paid: [], stale: [], forfeited: [] } })).toEqual({ outcome: "ok", value: [] });
     expect(apply).not.toHaveBeenCalled();
   });
 });
@@ -360,23 +360,23 @@ const AUTHORISE = {
 describe("hone authorise over the person's arguments", () => {
   it("writes the one record when the form accepts it", () => {
     const { apply, store } = storeOf();
-    expect(authoriseOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })(AUTHORISE)).toMatchObject({ outcome: "ok", value: { judged: "accepted" } });
+    expect(authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, request: AUTHORISE })).toMatchObject({ outcome: "ok", value: { judged: "accepted" } });
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
   it("writes nothing when the form refuses the chain", () => {
     const { apply, store } = storeOf();
-    expect(authoriseOf({ ...COMMAND, source: sourceOf({ documents: [] }), store })({ ...AUTHORISE, rootCause: "no" })).toMatchObject({ outcome: "ok", value: { judged: "refused" } });
+    expect(authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, request: { ...AUTHORISE, rootCause: "no" } })).toMatchObject({ outcome: "ok", value: { judged: "refused" } });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("writes nothing for a record already held", () => {
     const first = storeOf();
-    authoriseOf({ ...COMMAND, source: sourceOf({ documents: [] }), store: first.store })(AUTHORISE);
+    authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store: first.store }, request: AUTHORISE });
     const { apply, store } = storeOf();
     const [firstCall] = first.apply.mock.calls;
     assert(firstCall !== undefined, "the first authorise wrote its record");
-    expect(authoriseOf({ ...COMMAND, source: sourceOf({ documents: firstCall[0].edit.write }), store })(AUTHORISE)).toMatchObject({ outcome: "ok", value: { judged: "already-held" } });
+    expect(authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: firstCall[0].edit.write }), store }, request: AUTHORISE })).toMatchObject({ outcome: "ok", value: { judged: "already-held" } });
     expect(apply).not.toHaveBeenCalled();
   });
 });

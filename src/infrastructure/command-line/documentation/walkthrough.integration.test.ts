@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
-import { runToolCommand } from "../../../run-tool-command.ts";
+import { INSTALLED_PORTS, toolCommandOver } from "../../../composition/run-tool-command.ts";
+import type { VersionOneCommandRequest as ToolCommandRequest } from "../../../application/ports/version-one-command-request.ts";
 import { createDefaultExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-layout.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
@@ -15,6 +16,8 @@ import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
 import { exceptionEntryParser } from "../../discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../installation/shown-path.ts";
+
+const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
 type FencedBlock = { readonly language: string; readonly body: string };
 
@@ -139,7 +142,7 @@ const commandOver = (request: { readonly tracked: readonly RepoPath[]; readonly 
 
 const checkedOutput = async (request: { readonly repo: string; readonly tracked: readonly RepoPath[] }) => {
   const recorded = recordedProcessWith({ arguments: ["check", "--repo", request.repo] });
-  await runToolCommand(commandOver({ tracked: request.tracked, process: recorded.port }));
+  await commandRan(commandOver({ tracked: request.tracked, process: recorded.port }));
   return { writes: recorded.writes, exits: recorded.exits };
 };
 

@@ -1,13 +1,12 @@
 import { type GuidedCheckRun, guidedCheckCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
 import type { CommandOutcome } from "../../src/infrastructure/command-line/outcomes/command-outcome.ts";
 import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
-import { installedVersionTwoCheckedOf, TOOL_SUBCOMMANDS, toolCommandOf } from "../../src/run-tool-command.ts";
-import type { CommandHandler } from "../../src/run-tool-command.ts";
-import { printOutcome } from "../../src/infrastructure/command-line/outcomes/print-outcome.ts";
-import { installedGuidedCheckRunFor } from "../../src/operations/check/run-guided-check-command.ts";
+import { INSTALLED_PORTS, toolSubcommandsOf } from "../../src/composition/run-tool-command.ts";
+import { type CommandHandler, commandOf, type Subcommands, toolCommandOf } from "../../src/composition/composed-command.ts";
+import { GUIDED_CHECK, VERSION_TWO_CHECK, type VersionTwoChecked } from "../../src/composition/check-command.ts";
+import type { ToolPorts } from "../../src/composition/tool-ports.ts";
+import { versionChosenCommandOf } from "../../src/composition/version-chosen-command.ts";
 import { RUN_SECTION_NAMES, type RunSectionName, runSectionRoleOf } from "../../src/domain/report/report-sections.ts";
-import { type VersionedHandler, versionChosenCommandOf } from "../../src/infrastructure/command-line/run-path/version-chosen-command.ts";
-import type { VersionTwoChecked } from "../../src/operations/check/version-two-check-command.ts";
 import type { Result } from "../../src/domain/result.ts";
 import type { CheckReport } from "../../src/domain/report/check-report.ts";
 
@@ -65,19 +64,19 @@ export const versionTwoSelfCheckOutcomeOf = (request: { readonly checked: Versio
   };
 };
 
-const runGatedCheckCommand: CommandHandler = (command) =>
-  installedGuidedCheckRunFor({ command }).then((ranCheck) =>
-    printOutcome({ process: command.process, outcome: selfCheckOutcomeOf({ result: ranCheck }) }),
-  );
-
-const runGatedVersionTwoCheckCommand: VersionedHandler = (command) =>
-  installedVersionTwoCheckedOf(command).then((checked) =>
-    printOutcome({ process: command.process, outcome: versionTwoSelfCheckOutcomeOf({ checked }) }),
-  );
-
-export const runSelfCheck: CommandHandler = toolCommandOf({
-  subcommands: {
-    ...TOOL_SUBCOMMANDS,
-    check: versionChosenCommandOf({ versionOne: runGatedCheckCommand, versionTwo: runGatedVersionTwoCheckCommand }),
-  },
+const selfCheckSubcommandsOf = (ports: ToolPorts): Subcommands => ({
+  ...toolSubcommandsOf(ports),
+  check: versionChosenCommandOf({
+    ports,
+    versionOne: commandOf({ tool: { ...GUIDED_CHECK, print: ({ produced }) => selfCheckOutcomeOf({ result: { outcome: "ok", value: produced } }) }, ports }),
+    versionTwo: commandOf({
+      tool: {
+        ...VERSION_TWO_CHECK,
+        print: (request) => versionTwoSelfCheckOutcomeOf({ checked: { kind: "ran", outcome: VERSION_TWO_CHECK.print(request), report: request.produced.run.report } }),
+      },
+      ports,
+    }),
+  }),
 });
+
+export const runSelfCheck: CommandHandler = toolCommandOf({ subcommands: selfCheckSubcommandsOf(INSTALLED_PORTS), ports: INSTALLED_PORTS });
