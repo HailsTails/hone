@@ -9,17 +9,7 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
-      "file": "src/application/run/check/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
       "file": "src/application/upgrade/command/planned-projection.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/application/upgrade/record-answers/version-one-engine-pass.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -45,16 +35,6 @@
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
       "file": "src/composition/version-two-repository.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projected-off-switch.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -105,6 +85,36 @@
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/application/projection/run-project.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/application/upgrade/record-answers/version-one-engine-pass.test.ts"
     }
   ]
 }

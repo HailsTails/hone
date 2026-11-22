@@ -24,21 +24,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/application/conformance/clause-conformance.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/application/conformance/clause-under-test.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/application/conformance/conformance-testing.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/protocol/toolchain/toolchain-requirement.test.ts"
     },
     {
@@ -194,11 +179,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/application/run/check/single-mechanism.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "vitest.config.test.ts"
     },
     {
@@ -229,26 +209,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/application/records/hone-records-reader.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/application/records/record-commands.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/application/run/check/cd1-exemptible.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/application/run/check/consumer-proof.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/application/run/check/run-check.test.ts"
     },
     {
@@ -265,11 +225,6 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/application/upgrade/record-answers/version-one-engine-pass.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -364,11 +319,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.test.ts"
     },
     {
@@ -380,11 +330,6 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projected-off-switch.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -460,6 +405,91 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/projection/projected-files-written.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/run/check/shown-remedies.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/run/checked-tree-of.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/run/engines/engines-run.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/run/tool-catalogue.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/upgrade/command/version-one-projections.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/upgrade/found-tree/found-tree-git.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/upgrade/found-tree/found-tree-reach.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/application/upgrade/proof/team-config-finder.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/single-mechanism.integration.test.ts"
     }
   ]
 }
