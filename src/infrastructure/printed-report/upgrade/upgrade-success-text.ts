@@ -1,5 +1,6 @@
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { ProofCarriedOver } from "../../../application/ports/upgrade/proof-outcome.ts";
+import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
 
@@ -17,6 +18,16 @@ const shownOf = (request: {
   return location.relation === "within-root" ? location.path : request.target;
 };
 
+const recordLineOf = (request: { readonly record: RecordLine }): string => {
+  const { oldKind, oldAddress, file, newKind, symptom } = request.record;
+  return `${oldKind} ${oldAddress} ${file} -> ${newKind} ${symptom}`;
+};
+
+const carriedLinesOf = (request: { readonly records: readonly RecordLine[] }): readonly string[] =>
+  request.records
+    .filter(({ holding }) => holding === "carried")
+    .map(({ symptom, file }) => `carried ${symptom} ${file}`);
+
 export const upgradeSuccessOutcomeOf = (request: {
   readonly carried: ProofCarriedOver;
   readonly repoRoot: AbsolutePath;
@@ -31,6 +42,9 @@ export const upgradeSuccessOutcomeOf = (request: {
       ...carried.written.map((file) => `wrote ${file}`),
       ...carried.replaced.map((file) => `rewrote ${file}`),
       ...removed.map((target) => `removed ${shownOf({ path, repoRoot, target })}`),
+      ...carried.records.map((record) => recordLineOf({ record })),
+      ...carriedLinesOf({ records: carried.records }),
+      `upgrade: same findings (${carried.findings}), same verdict`,
     ]
       .map((line) => `${line}\n`)
       .join(""),

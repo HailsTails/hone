@@ -1,6 +1,8 @@
 import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
 import {
   mappedRecords,
+  type RecordLine,
+  recordLinesOf,
   type MappedRecordsDocument,
   type RecordInput,
 } from "../../../domain/records/upgrade/records-mapping.ts";
@@ -32,6 +34,7 @@ export type ProjectionFilesOf = (request: {
 
 export type UpgradePlan = {
   readonly inputs: readonly RecordInput[];
+  readonly lines: readonly RecordLine[];
   readonly files: readonly PlannedRepoFile[];
   readonly projected: readonly PlannedRepoFile[];
 };
@@ -96,6 +99,7 @@ export const upgradePlanOf = async (
     outcome: "ok",
     value: {
       inputs: inputs.value,
+      lines: recordLinesOf({ inputs: inputs.value, catalogues: request.catalogues }),
       files: [
         {
           file: SETTINGS_FILE,

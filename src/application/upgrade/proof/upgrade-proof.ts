@@ -306,6 +306,8 @@ const removedAfterComparing = (
         value: {
           ...carried,
           removed: { ...removed.value, files: [...request.removed, ...removed.value.files] },
+          records: request.plan.lines,
+          findings: request.before.findings.length,
         },
       };
 };

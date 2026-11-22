@@ -3,6 +3,7 @@ import { checksOfClause } from "../../language-layer/clause-checks.ts";
 import type { Check } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { Result } from "../../result.ts";
+import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
@@ -67,7 +68,29 @@ export type MappedRecordsDocument = {
 
 export type MappedRecords = { readonly documents: readonly MappedRecordsDocument[] };
 
-type PlacedRecord = { readonly file: RepoPath; readonly record: WrittenRecord };
+export type RecordLine = {
+  readonly oldKind: ExceptionRecord["kind"];
+  readonly oldAddress: string;
+  readonly file: string;
+  readonly newKind: "debt" | "authorised-location";
+  readonly symptom: string;
+  readonly holding: "carried" | "stated";
+};
+
+type RecordOrigin = Pick<RecordLine, "oldKind" | "oldAddress" | "file">;
+
+type MappedFolderKind = Extract<NamedFolderKind, "debt" | "authorised-locations">;
+
+const NEW_KIND_OF_FOLDER: Readonly<Record<MappedFolderKind, RecordLine["newKind"]>> = {
+  debt: "debt",
+  "authorised-locations": "authorised-location",
+};
+
+type PlacedRecord = {
+  readonly file: RepoPath;
+  readonly record: WrittenRecord;
+  readonly line: RecordLine;
+};
 
 type InputOutcome = {
   readonly placed: readonly PlacedRecord[];
@@ -87,14 +110,29 @@ const withoutRepeats = (request: { readonly checks: readonly Check[] }): readonl
       ) === index,
   );
 
+const lineOf = (request: {
+  readonly origin: RecordOrigin;
+  readonly kind: MappedFolderKind;
+  readonly record: WrittenRecord;
+}): RecordLine => ({
+  ...request.origin,
+  newKind: NEW_KIND_OF_FOLDER[request.kind],
+  symptom: request.record.answers,
+  holding: request.record.carried === undefined ? "stated" : "carried",
+});
+
 const placedAt = (request: {
-  readonly kind: NamedFolderKind;
+  readonly origin: RecordOrigin;
+  readonly kind: MappedFolderKind;
   readonly check: Check;
   readonly record: WrittenRecord;
 }): Result<PlacedRecord, UpgradeRefusal> => {
   const file = namedRecordsFileOf({ kind: request.kind, name: request.check.symptom.name });
   return file.outcome === "ok"
-    ? { outcome: "ok", value: { file: file.value, record: request.record } }
+    ? {
+        outcome: "ok",
+        value: { file: file.value, record: request.record, line: lineOf(request) },
+      }
     : {
         outcome: "failed",
         error: { kind: "records-name-refused", name: request.check.symptom.name },
@@ -114,6 +152,15 @@ const outcomeOfPlacements = (request: {
 
 const noteOf = (request: { readonly reason: string | undefined }): { readonly note?: string } =>
   request.reason === undefined ? {} : { note: request.reason };
+
+const originOf = (request: {
+  readonly oldKind: RecordOrigin["oldKind"];
+  readonly record: { readonly clause: ClauseAddress; readonly file: string };
+}): RecordOrigin => ({
+  oldKind: request.oldKind,
+  oldAddress: clauseAddressText({ address: request.record.clause }),
+  file: request.record.file,
+});
 
 const holdingOf = (request: {
   readonly record: RecordOf<"file-carve-out">;
@@ -149,7 +196,12 @@ const carveOutOutcome = (request: {
   }
   return outcomeOfPlacements({
     placements: withoutRepeats({ checks: answer.checks }).map((check) =>
-      placedAt({ kind: "debt", check, record: debtRecordOf({ record, check, entry }) }),
+      placedAt({
+        origin: originOf({ oldKind: "file-carve-out", record }),
+        kind: "debt",
+        check,
+        record: debtRecordOf({ record, check, entry }),
+      }),
     ),
   });
 };
@@ -179,6 +231,7 @@ const authorisedLocationOutcome = (request: {
   return outcomeOfPlacements({
     placements: checksAnsweredBy({ answer, clauseChecks }).map((check) =>
       placedAt({
+        origin: originOf({ oldKind: "authorised-location", record }),
         kind: "authorised-locations",
         check,
         record: { answers: checkAddressOf({ check }), file: record.file, carried: entry },
@@ -234,3 +287,8 @@ export const mappedRecords = (
         },
       };
 };
+
+export const recordLinesOf = (request: RecordsMappingRequest): readonly RecordLine[] =>
+  request.inputs.flatMap((input) =>
+    outcomeOf({ input, catalogues: request.catalogues }).placed.map(({ line }) => line),
+  );

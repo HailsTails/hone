@@ -284,6 +284,15 @@ const LOOP_FINDING: Finding = {
   check: "loop-keyword#loops",
 };
 
+const DEBT_LINE = {
+  oldKind: "file-carve-out",
+  oldAddress: "CD-15#loops",
+  file: "src/a.ts",
+  newKind: "debt",
+  symptom: "loop-keyword#loops",
+  holding: "stated",
+} as const;
+
 const ok = { outcome: "ok", value: undefined } as const;
 
 const IN_RECORDS_FOLDER: RelativeLocation = { relation: "within-root", path: "cd-15.json" };
@@ -619,6 +628,8 @@ describe("upgradeProof", () => {
           ],
           folders: ["/repo/discipline-exceptions"],
         },
+        records: [DEBT_LINE],
+        findings: 0,
       },
     });
     expect(sequenceOf({ doubles })).toEqual([
@@ -759,6 +770,26 @@ describe("upgradeProof", () => {
       ...RUNNING_VERSION_TWO,
       ...ROLLING_BACK,
     ]);
+  });
+
+  it("reports the count of findings both runs agree on, and the records it mapped, when it succeeds", async () => {
+    const doubles = doublesOver({
+      kindOf: kindsOfEveryPlannedFileNew(),
+      path: recordsFolderPath(),
+    });
+    doubles.runs.versionOne.mockResolvedValue({
+      outcome: "ok",
+      value: { ...EMPTY_BEFORE, findings: [LOOP_FINDING] },
+    });
+    doubles.runs.versionTwo.mockResolvedValue({
+      outcome: "ok",
+      value: { ...EMPTY_AFTER, findings: [LOOP_FINDING] },
+    });
+    const carried = await upgradeProof(requestOver({ doubles }));
+    expect(carried).toMatchObject({
+      outcome: "ok",
+      value: { findings: 1, records: [DEBT_LINE] },
+    });
   });
 
   it("restores what it wrote and names the difference when the two runs do not agree, removing nothing", async () => {
@@ -902,6 +933,8 @@ describe("upgradeProof", () => {
           ],
           folders: [],
         },
+        records: [DEBT_LINE],
+        findings: 0,
       },
     });
     expect(sequenceOf({ doubles })).toEqual([
@@ -1210,6 +1243,8 @@ describe("upgradeProof", () => {
           ],
           folders: ["/repo/discipline-exceptions"],
         },
+        records: [DEBT_LINE],
+        findings: 0,
       },
     });
   });

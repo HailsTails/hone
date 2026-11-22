@@ -1228,8 +1228,48 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
         files: [absoluteRootOf("/repo/disciplines.json")],
         folders: [absoluteRootOf("/repo/discipline-exceptions")],
       },
+      records: [
+        {
+          oldKind: "file-carve-out",
+          oldAddress: "CD-15#loops",
+          file: "src/a.ts",
+          newKind: "debt",
+          symptom: "loop-keyword#loops",
+          holding: "stated",
+        },
+        {
+          oldKind: "authorised-location",
+          oldAddress: "CD-15#loops",
+          file: "src/b.ts",
+          newKind: "authorised-location",
+          symptom: "loop-keyword#loops",
+          holding: "carried",
+        },
+      ],
+      findings: 3,
     },
   }).text;
+
+  const successFillsOf = (request: { readonly text: string }): Fills => {
+    const { text } = request;
+    const words = text.split(" ");
+    if (text.startsWith("upgrade: same findings")) {
+      return { count: "3" };
+    }
+    if (text.startsWith("carried ")) {
+      return { symptom: words[1] ?? "", file: words[2] ?? "" };
+    }
+    if (text.includes(" -> ")) {
+      return {
+        "old kind": words[0] ?? "",
+        "old address": words[1] ?? "",
+        file: words[2] ?? "",
+        "new kind": words[4] ?? "",
+        symptom: words[5] ?? "",
+      };
+    }
+    return { path: text.slice(text.indexOf(" ") + 1) };
+  };
 
   return [
     ...SAMPLES.flatMap(({ failure, fills }) =>
@@ -1243,7 +1283,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
       .map((text): PrintedLine => ({
         label: "upgrade",
         text,
-        fills: { path: text.slice(text.indexOf(" ") + 1) },
+        fills: successFillsOf({ text }),
       })),
     ...linesOf({ text: ALREADY_ON_VERSION_TWO.text, fills: {} }),
   ];

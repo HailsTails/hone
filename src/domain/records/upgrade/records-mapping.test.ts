@@ -15,7 +15,7 @@ import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
-import { mappedRecords } from "./records-mapping.ts";
+import { mappedRecords, recordLinesOf } from "./records-mapping.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -792,5 +792,82 @@ describe("mappedRecords ordering", () => {
         ],
       },
     });
+  });
+});
+
+describe("recordLinesOf", () => {
+  it("names a stated debt by the kind and clause it came from, the file it covers and the symptom it now answers", () => {
+    expect(
+      recordLinesOf({
+        catalogues: CATALOGUES,
+        inputs: [
+          {
+            kind: "file-carve-out",
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+            },
+            answer: FINDINGS_ON_LOOPS,
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        oldKind: "file-carve-out",
+        oldAddress: "CD-15#loops",
+        file: "src/a.ts",
+        newKind: "debt",
+        symptom: "loop-keyword#loops",
+        holding: "stated",
+      },
+    ]);
+  });
+
+  it("gives an authorised location one carried line at each check of its clause", () => {
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-27#test-body-logic",
+      file: "src/a.ts",
+      reason: "the tests need it",
+    } as const;
+    expect(
+      recordLinesOf({
+        catalogues: CATALOGUES,
+        inputs: [
+          {
+            kind: "authorised-location",
+            record: { clause: TEST_BODY_CLAUSE, file: SRC_A },
+            entry,
+            answer: WHOLE_CLAUSE,
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        oldKind: "authorised-location",
+        oldAddress: "CD-27#test-body-logic",
+        file: "src/a.ts",
+        newKind: "authorised-location",
+        symptom: "loop-keyword#test-body",
+        holding: "carried",
+      },
+      {
+        oldKind: "authorised-location",
+        oldAddress: "CD-27#test-body-logic",
+        file: "src/a.ts",
+        newKind: "authorised-location",
+        symptom: "rebinding#test-body",
+        holding: "carried",
+      },
+    ]);
   });
 });
