@@ -3,13 +3,15 @@ import type { RunRequest } from "../../../application/ports/engine/runner-module
 import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
-import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
-import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../node/path-port.ts";
+import { selectionFrom } from "../../disciplines-file/consumer-selection.ts";
+import { selectionFileOf } from "../../disciplines-file/selection-file.ts";
+import { createRuleSetFiles } from "./rule-set-files.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { FIRST_EDITION } from "../edition.ts";
 import * as exportTestSibling from "../../engines/audit/CD-23/export-test-sibling.ts";
 import { createWalkerRunner } from "../../engines/audit/runner/create-walker-runner.ts";
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
@@ -26,24 +28,65 @@ const UNSIBLINGED_SOURCE = "export const kept = 1;\n";
 const PLAIN_SOURCE = "export const plain = 3;\n";
 const PLAIN_TEST_SOURCE = 'import { plain } from "./plain.ts";\n';
 
+const path = createDefaultPathPort({});
+
+const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
+  const resolved = path.resolve(request);
+  assert(resolved.outcome === "ok", `${request.path} resolves to an absolute path`);
+  return resolved.value;
+};
+
+const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "..", "..", ".."] }) });
+
+const RULE_SETS_ROOT = resolvedPath({ path: import.meta.dirname });
+
+const REPO_ROOT = resolvedPath({ path: "/repo" });
+
+const sourceAt = (request: { readonly file: string }): string => path.join({ segments: [REPO_ROOT, request.file] });
+
 const SOURCES: Readonly<Record<string, string>> = {
-  "/repo/src/scratch.tmp.ts": TEMPORARY_SOURCE,
-  "/repo/src/kept.ts": UNSIBLINGED_SOURCE,
-  "/repo/src/plain.ts": PLAIN_SOURCE,
-  "/repo/src/plain.test.ts": PLAIN_TEST_SOURCE,
+  [sourceAt({ file: "src/scratch.tmp.ts" })]: TEMPORARY_SOURCE,
+  [sourceAt({ file: "src/kept.ts" })]: UNSIBLINGED_SOURCE,
+  [sourceAt({ file: "src/plain.ts" })]: PLAIN_SOURCE,
+  [sourceAt({ file: "src/plain.test.ts" })]: PLAIN_TEST_SOURCE,
 };
 
 const fileText: FileTextPort = {
-  read: ({ path }) => ({ outcome: "ok", value: SOURCES[path] }),
+  read: ({ path: file }) => ({ outcome: "ok", value: SOURCES[file] }),
   exists: () => "present",
   write: vi.fn<FileTextPort["write"]>(),
 };
 
-const path = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
+const SELECTION_FILE_PATH = path.join({ segments: [RULE_SETS_ROOT, "disciplines.json"] });
+
+const SELECTION_FILE = selectionFileOf({
+  path: SELECTION_FILE_PATH,
+  document: {
+    version: 1,
+    ruleSets: { probe: "probe-rule-set" },
+    clauses: { "probe/PD-1#no-tmp-files": "audit", "CD-23#export-test-sibling": "audit" },
+  },
+});
+assert(SELECTION_FILE.outcome === "ok", "the selection names the probe rule set's PD-1 beside CD-23");
+
+const selection = selectionFrom({
+  ruleSetFiles: createRuleSetFiles({ fileText: createDefaultFileTextPort({}), path }),
+  path,
+  repoRoot: RULE_SETS_ROOT,
+  installRoot: INSTALL_ROOT,
+  moduleExtension: ".ts",
+  file: SELECTION_FILE.value,
+  filePath: SELECTION_FILE_PATH,
+});
+assert(selection.outcome === "ok", "the probe rule set and CD-23 resolve from the team's rule set files and the install");
+
+const [PROBE_BINDING, EXPORT_TEST_SIBLING_BINDING] = selection.value.bindings;
+assert.isDefined(PROBE_BINDING, "the selection binds the probe clause");
+assert.isDefined(EXPORT_TEST_SIBLING_BINDING, "the selection binds the CD-23 clause");
 
 const PIECE_MODULES: Readonly<Record<string, unknown>> = {
-  "/install/src/infrastructure/engines/audit/CD-23/export-test-sibling.ts": exportTestSibling,
-  "/repo/probe/mechanisms/audit/PD-1/no-tmp-files.ts": noTmpFiles,
+  [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "audit", "CD-23", "export-test-sibling.ts"] })]: exportTestSibling,
+  [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "audit", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
 };
 
 const pieceModules: ModuleLoaderPort = {
@@ -54,24 +97,6 @@ const pieceModules: ModuleLoaderPort = {
 const PROBE_ADDRESS = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
 const EXPORT_TEST_SIBLING_ADDRESS = clauseAddressSchema.parse("CD-23#export-test-sibling");
 
-const PROBE_CLAUSE: RunnerClause = {
-  address: PROBE_ADDRESS,
-  anchor: { kind: "file" },
-  pieceRoot: "/repo/probe/mechanisms/audit/PD-1",
-  clauseSettings: {},
-  edition: FIRST_EDITION,
-  settings: { module: "no-tmp-files.ts" },
-};
-
-const EXPORT_TEST_SIBLING_CLAUSE: RunnerClause = {
-  address: EXPORT_TEST_SIBLING_ADDRESS,
-  anchor: { kind: "file" },
-  pieceRoot: "/install/src/infrastructure/engines/audit/CD-23",
-  clauseSettings: {},
-  edition: FIRST_EDITION,
-  settings: { module: "export-test-sibling.ts" },
-};
-
 const TRACKED = [
   repoPathSchema.parse("src/scratch.tmp.ts"),
   repoPathSchema.parse("src/kept.ts"),
@@ -81,11 +106,11 @@ const TRACKED = [
 ];
 
 const RUN: RunRequest = {
-  repoRoot: absolutePathSchema.parse("/repo"),
-  installRoot: absolutePathSchema.parse("/install"),
+  repoRoot: REPO_ROOT,
+  installRoot: INSTALL_ROOT,
   files: TRACKED,
   trackedPaths: TRACKED,
-  clauses: [PROBE_CLAUSE, EXPORT_TEST_SIBLING_CLAUSE],
+  clauses: [PROBE_BINDING.clause, EXPORT_TEST_SIBLING_BINDING.clause],
 };
 
 const probeRun = () => {
