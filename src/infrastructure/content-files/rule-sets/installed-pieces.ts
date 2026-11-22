@@ -41,17 +41,21 @@ const installedPieceOf = (request: InstallFiles & CheckNames & { readonly mechan
   } };
 };
 
+const firstPieceFrom = (request: InstallFiles & {
+  readonly checks: readonly CheckNames[];
+  readonly mechanism: EngineId;
+}): InstallPieceRead => {
+  const [check, ...remaining] = request.checks;
+  if (check === undefined) {
+    return { outcome: "ok", value: undefined };
+  }
+  const held = installedPieceOf({ ...request, ...check });
+  return held.outcome === "failed" || held.value !== undefined ? held : firstPieceFrom({ ...request, checks: remaining });
+};
+
 export const firstInstalledPieceFor = (
   request: InstallFiles & { readonly names: VersionOneNames; readonly clause: ClauseAddress; readonly mechanism: EngineId },
-): InstallPieceRead => {
-  for (const check of checksNamedFor(request)) {
-    const held = installedPieceOf({ ...request, ...check });
-    if (held.outcome === "failed" || held.value !== undefined) {
-      return held;
-    }
-  }
-  return { outcome: "ok", value: undefined };
-};
+): InstallPieceRead => firstPieceFrom({ ...request, checks: checksNamedFor(request) });
 
 export const installedPiecesFor = (
   request: InstallFiles & { readonly names: VersionOneNames; readonly clause: ClauseAddress; readonly mechanisms: readonly EngineId[] },

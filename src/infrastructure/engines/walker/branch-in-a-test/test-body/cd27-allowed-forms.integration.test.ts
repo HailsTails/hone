@@ -358,7 +358,7 @@ const checkItems = CHECK_ITEM_PAGES.map(({ page, sections }) => ({
   actual: allowedFormSectionsOf({ page: checkItemTextOf({ page }) }),
 }));
 
-const SECTIONS = checkItems.flatMap((item) => item.actual);
+const SECTIONS = checkItems.flatMap((checkItem) => checkItem.actual);
 
 const orderedSections = checkItems.map(({ page, expected, actual }) => ({ page, expected, actual: actual.map(({ section }) => section) }));
 

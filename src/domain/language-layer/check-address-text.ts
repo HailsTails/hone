@@ -5,8 +5,8 @@ export const CHECK_ADDRESS_SEPARATOR = "#";
 export type CheckNames = { readonly symptom: CatalogueName; readonly check: CatalogueName };
 
 export const checkNamesOf = (request: { readonly text: string }): CheckNames | undefined => {
-  const [symptom, check, extra] = request.text.split(CHECK_ADDRESS_SEPARATOR);
-  return extra === undefined && symptom !== undefined && check !== undefined && isCatalogueName(symptom) && isCatalogueName(check)
+  const [symptom, check, trailingSegment] = request.text.split(CHECK_ADDRESS_SEPARATOR);
+  return trailingSegment === undefined && symptom !== undefined && check !== undefined && isCatalogueName(symptom) && isCatalogueName(check)
     ? { symptom, check }
     : undefined;
 };

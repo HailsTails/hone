@@ -14,11 +14,12 @@ const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), cl
 describe("catalogueClausesOf", () => {
   it("reads the legacy clause's form names from the named walker piece", () => {
     const path = { join: vi.fn<PathPort["join"]>()
+      .mockReturnValueOnce("/install/src/infrastructure/engines/walker/rebinding/test-body/piece.json")
       .mockReturnValueOnce("/install/src/infrastructure/engines/walker/branch-in-a-test/test-body/piece.json")
       .mockReturnValueOnce("/install/src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body.examples.json")
       .mockReturnValueOnce("/install/src/infrastructure/engines/walker/branch-in-a-test/test-body") };
     const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present"),
       read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
         outcome: "ok",
         value: '{"version":2,"anchor":{"kind":"file"},"settings":{},"forms":{"a-let":{"symptom":"rebinding","check":"test-body"},"branching-with-if":{"symptom":"branch-in-a-test","check":"test-body"}}}',
@@ -30,7 +31,7 @@ describe("catalogueClausesOf", () => {
       installRoot: INSTALL_ROOT, path, fileText,
       names: {
         clauses: [], claimsPieceForms: [CLAUSE], formatsOfToday: {}, clauseOfCheck: new Map(),
-        namedClauses: [{ clause: CLAUSE, kind: "mechanical", anchor: { kind: "file" }, checks: [{ name: "test-body", symptom: { name: "branch-in-a-test" } }] }],
+        namedClauses: [{ clause: CLAUSE, kind: "mechanical", anchor: { kind: "file" }, checks: [{ name: "test-body", symptom: { name: "rebinding" } }, { name: "test-body", symptom: { name: "branch-in-a-test" } }] }],
       },
     })).toEqual({
       outcome: "ok",

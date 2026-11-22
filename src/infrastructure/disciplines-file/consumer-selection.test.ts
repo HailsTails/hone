@@ -67,30 +67,32 @@ const disciplineFile = (request: { readonly id: string; readonly clauses: readon
 const pieceFile = (request: {
   readonly discipline: string;
   readonly mechanism: EngineId;
-  readonly clauses: readonly Omit<LocatedPieceFile["clauses"][number], "pieceRoot">[];
-  readonly pieceRoot?: string;
+  readonly clauses: readonly LocatedPieceFile["clauses"][number][];
 }): LocatedPieceFile => ({
   version: 1,
   discipline: disciplineIdSchema.parse(request.discipline),
   mechanism: request.mechanism,
-  clauses: request.clauses.map((clause) => ({ ...clause, pieceRoot: request.pieceRoot ?? `/install/src/infrastructure/engines/${request.mechanism}/${request.discipline}` })),
+  clauses: request.clauses,
 });
 
 const pieceClause = (request: {
   readonly clause: string;
+  readonly pieceRoot: string;
   readonly settings: unknown;
   readonly clauseSettings: ClauseSettingDeclarations;
   readonly editions: LocatedPieceFile["clauses"][number]["editions"];
-}): Omit<LocatedPieceFile["clauses"][number], "pieceRoot"> => ({
+}): LocatedPieceFile["clauses"][number] => ({
   clause: clauseIdSchema.parse(request.clause),
+  pieceRoot: request.pieceRoot,
   settings: request.settings,
   clauseSettings: request.clauseSettings,
   editions: request.editions,
 });
 
-const moduleClause = (request: { readonly clause: string; readonly module: string }) =>
+const moduleClause = (request: { readonly clause: string; readonly module: string; readonly pieceRoot: string }): LocatedPieceFile["clauses"][number] =>
   pieceClause({
     clause: request.clause,
+    pieceRoot: request.pieceRoot,
     settings: { module: request.module },
     clauseSettings: NO_DECLARATIONS,
     editions: ONE_EDITION,
@@ -107,8 +109,8 @@ const CD_14_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: AUDIT,
   clauses: [
-    moduleClause({ clause: "class-syntax", module: "class-syntax.ts" }),
-    moduleClause({ clause: "abstract-syntax", module: "abstract-syntax.ts" }),
+    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "class-syntax", module: "class-syntax.ts" }),
+    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" }),
   ],
 });
 
@@ -123,13 +125,13 @@ const CD_14_ON_TWO_MECHANISMS = disciplineFile({
 const CD_14_ESLINT_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: ESLINT,
-  clauses: [pieceClause({ clause: "abstract-syntax", settings: { rule: "no-abstract" }, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
+  clauses: [pieceClause({ pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14", clause: "abstract-syntax", settings: { rule: "no-abstract" }, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
 });
 
 const CD_14_WITHOUT_CLASS_SYNTAX_PIECE = pieceFile({
   discipline: "CD-14",
   mechanism: AUDIT,
-  clauses: [moduleClause({ clause: "abstract-syntax", module: "abstract-syntax.ts" })],
+  clauses: [moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" })],
 });
 
 const TEAM_CD_14 = disciplineFile({
@@ -138,19 +140,17 @@ const TEAM_CD_14 = disciplineFile({
 });
 
 const TEAM_CD_14_PIECE = pieceFile({
-  pieceRoot: "/repo/team-rules/mechanisms/audit/CD-14",
   discipline: "CD-14",
   mechanism: AUDIT,
-  clauses: [moduleClause({ clause: "class-syntax", module: "team-class-syntax.ts" })],
+  clauses: [moduleClause({ pieceRoot: "/repo/team-rules/mechanisms/audit/CD-14", clause: "class-syntax", module: "team-class-syntax.ts" })],
 });
 
 const TM_1 = disciplineFile({ id: "TM-1", clauses: [auditClause("no-tmp-files")] });
 
 const TM_1_PIECE = pieceFile({
-  pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1",
   discipline: "TM-1",
   mechanism: AUDIT,
-  clauses: [moduleClause({ clause: "no-tmp-files", module: "no-tmp-files.ts" })],
+  clauses: [moduleClause({ pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1", clause: "no-tmp-files", module: "no-tmp-files.ts" })],
 });
 
 const CD_14_SETTABLE_PIECE = pieceFile({
@@ -158,12 +158,13 @@ const CD_14_SETTABLE_PIECE = pieceFile({
   mechanism: AUDIT,
   clauses: [
     pieceClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
       clause: "class-syntax",
       settings: { module: "class-syntax.ts" },
       clauseSettings: { allowedNames: { default: [] }, style: { default: "plain", choices: ["plain", "strict"] } },
       editions: ONE_EDITION,
     }),
-    moduleClause({ clause: "abstract-syntax", module: "abstract-syntax.ts" }),
+    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" }),
   ],
 });
 
@@ -172,12 +173,13 @@ const CD_14_EDITIONED_PIECE = pieceFile({
   mechanism: AUDIT,
   clauses: [
     pieceClause({
+      pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
       clause: "class-syntax",
       settings: { module: "class-syntax.ts" },
       clauseSettings: { style: { default: "plain", choices: ["plain", "strict"] } },
       editions: EDITIONS_ONE_AND_TWO,
     }),
-    moduleClause({ clause: "abstract-syntax", module: "abstract-syntax.ts" }),
+    moduleClause({ pieceRoot: "/install/src/infrastructure/engines/walker/CD-14", clause: "abstract-syntax", module: "abstract-syntax.ts" }),
   ],
 });
 
@@ -186,7 +188,7 @@ const CD_6 = disciplineFile({ id: "CD-6", clauses: [mechanical({ id: "naming-con
 const CD_6_PIECE = pieceFile({
   discipline: "CD-6",
   mechanism: ESLINT,
-  clauses: [pieceClause({ clause: "naming-convention", settings: {}, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
+  clauses: [pieceClause({ pieceRoot: "/install/src/infrastructure/engines/eslint/CD-6", clause: "naming-convention", settings: {}, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
 });
 
 const TD_1 = disciplineFile({ id: "TD-1", clauses: [auditClause("x")] });
@@ -195,7 +197,7 @@ const TD_1_PIECE = pieceFile({
   discipline: "TD-1",
   mechanism: AUDIT,
   clauses: [
-    pieceClause({ clause: "x", settings: { module: "x.ts" }, clauseSettings: { limit: { default: 3 } }, editions: ONE_EDITION }),
+    pieceClause({ pieceRoot: "/install/src/infrastructure/engines/walker/TD-1", clause: "x", settings: { module: "x.ts" }, clauseSettings: { limit: { default: 3 } }, editions: ONE_EDITION }),
   ],
 });
 
@@ -409,7 +411,7 @@ describe("selectionFrom selecting clauses", () => {
   });
 
   it("roots a named rule set declared as . at the repo root", () => {
-    const piece = pieceFile({ discipline: "TM-1", mechanism: "walker", pieceRoot: "/repo/mechanisms/audit/TM-1", clauses: [moduleClause({ clause: "no-tmp-files", module: "no-tmp-files.ts" })] });
+    const piece = pieceFile({ discipline: "TM-1", mechanism: "walker", clauses: [moduleClause({ pieceRoot: "/repo/mechanisms/audit/TM-1", clause: "no-tmp-files", module: "no-tmp-files.ts" })] });
     const rules = rulesReturning({ disciplines: [present(TM_1)], pieces: [present(piece)], runner: "present" });
     expect(
       selectionOver(rules, { version: 1, ruleSets: { team: "." }, clauses: { "team/TM-1#no-tmp-files": "walker" } }),

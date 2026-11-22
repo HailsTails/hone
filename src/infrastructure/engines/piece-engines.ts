@@ -73,12 +73,12 @@ const bindingsOfEngine = (request: { readonly source: PieceSource; readonly engi
 
 const bindingsByAddress = (bindings: readonly Binding[]): EngineBindings => {
   const byAddress = new Map<CheckAddressText, readonly Engine[]>();
-  for (const { address, engine } of bindings) {
+  bindings.forEach(({ address, engine }) => {
     const engines = byAddress.get(address) ?? [];
     if (!engines.some(({ name }) => name === engine.name)) {
       byAddress.set(address, [...engines, engine]);
     }
-  }
+  });
   return byAddress;
 };
 
