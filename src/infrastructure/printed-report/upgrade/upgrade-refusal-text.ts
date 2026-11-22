@@ -133,7 +133,7 @@ const mappingLineOf = (request: { readonly refusal: UpgradeRefusal }): string =>
     case "two-engines-on-mechanism":
       return `${refusal.check} could run on ${refusal.engines.join(" or ")} through the ${refusal.mechanism} mechanism; the upgrade cannot choose. ${FAULT_IN_HONE}`;
     case "record-answers-nothing":
-      return `the file carve-out for ${refusal.clause} in ${refusal.file} answers ${refusal.credited === "nothing" ? "no finding" : "only a suppression"}. Remove it, or fix the file it names, then run the upgrade again.`;
+      return `the file carve-out for ${refusal.clause} in ${refusal.file} answers ${refusal.credited === "nothing" ? "no finding" : "only a suppression no version 2 record can hold"}. Remove it, or fix the file it names, then run the upgrade again.`;
     case "records-name-refused":
       return `${refusal.name} is not a name version 2 can file records under. ${FAULT_IN_HONE}`;
   }

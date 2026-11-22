@@ -1,5 +1,6 @@
-import type { Finding } from "../../../domain/finding/governance.ts";
+import type { Finding, GovernedRun } from "../../../domain/finding/governance.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { nativeSitesOf } from "../../../domain/records/answering/answering.ts";
 import { sitesOfFinding } from "../../../domain/records/debt/debt-sites.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
@@ -18,6 +19,7 @@ import type {
 export type RecordAnswersRequest = {
   readonly records: readonly ExceptionRecord[];
   readonly governed: GovernanceResult;
+  readonly runs: readonly GovernedRun[];
   readonly catalogues: readonly RuleSetCatalogue[];
 };
 
@@ -79,12 +81,38 @@ const findingsExemptedBy = (request: {
     .filter((exempted) => exempted.by.includes(request.record))
     .map((exempted) => exempted.finding);
 
+const checksOfHeldSuppressions = (request: {
+  readonly record: FileCarveOutRecord;
+  readonly runs: readonly GovernedRun[];
+  readonly catalogues: readonly RuleSetCatalogue[];
+}): readonly Check[] => {
+  const { record, runs, catalogues } = request;
+  const catalogue = catalogueOf({ catalogues, ruleSet: record.clause.ruleSet });
+  return catalogue === undefined
+    ? []
+    : runs
+        .filter((run) => run.mechanism === record.mechanism)
+        .flatMap((run) =>
+          run.nativeExceptions
+            .filter(
+              (exception) =>
+                exception.kind !== "config-override" &&
+                exception.kind !== "command-line-option" &&
+                exception.file === record.file &&
+                sameClauseAddress({ left: exception.clause, right: record.clause }) === "same",
+            )
+            .flatMap((exception) => nativeSitesOf({ exception, run, catalogue }))
+            .flatMap((site) => (site.check.found === "check" ? [site.check.check] : [])),
+        );
+};
+
 const carveOutAnsweredOf = (request: {
   readonly record: FileCarveOutRecord;
   readonly governed: GovernanceResult;
+  readonly runs: readonly GovernedRun[];
   readonly catalogues: readonly RuleSetCatalogue[];
 }): Result<CarveOutAnswered, OracleFailure> => {
-  const { record, governed, catalogues } = request;
+  const { record, governed, runs, catalogues } = request;
   const doublyHeld = doublyHeldFailureOf({ record, governed });
   if (doublyHeld !== undefined) {
     return { outcome: "failed", error: doublyHeld };
@@ -108,7 +136,12 @@ const carveOutAnsweredOf = (request: {
     value: {
       kind: "file-carve-out",
       record,
-      answer: { credit: governed.stale.includes(record) ? "nothing" : "suppression-only" },
+      answer: governed.stale.includes(record)
+        ? { credit: "nothing" }
+        : {
+            credit: "suppression-only",
+            checks: checksOfHeldSuppressions({ record, runs, catalogues }),
+          },
     },
   };
 };
@@ -142,12 +175,13 @@ const locationAnsweredOf = (request: {
 const answeredOf = (request: {
   readonly record: ExceptionRecord;
   readonly governed: GovernanceResult;
+  readonly runs: readonly GovernedRun[];
   readonly catalogues: readonly RuleSetCatalogue[];
 }): readonly Result<RecordAnswered, OracleFailure>[] => {
-  const { record, governed, catalogues } = request;
+  const { record, governed, runs, catalogues } = request;
   switch (record.kind) {
     case "file-carve-out":
-      return [carveOutAnsweredOf({ record, governed, catalogues })];
+      return [carveOutAnsweredOf({ record, governed, runs, catalogues })];
     case "authorised-location":
       return [locationAnsweredOf({ record, governed, catalogues })];
     case "clause-wide-carve-out":
@@ -159,7 +193,12 @@ export const recordAnswersOf = (
   request: RecordAnswersRequest,
 ): Result<readonly RecordAnswered[], OracleFailure> => {
   const answered = request.records.flatMap((record) =>
-    answeredOf({ record, governed: request.governed, catalogues: request.catalogues }),
+    answeredOf({
+      record,
+      governed: request.governed,
+      runs: request.runs,
+      catalogues: request.catalogues,
+    }),
   );
   const failed = answered.find((each) => each.outcome === "failed");
   return (
