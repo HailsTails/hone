@@ -19,10 +19,7 @@ import type { RuleSetCatalogue } from "../../src/domain/settings/check-choices.t
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
-import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { runProject } from "../../src/application/projection/run-project.ts";
 import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
@@ -39,6 +36,9 @@ import type { ShownPathOf } from "../../src/application/ports/installation/shown
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
 import { loadFailureDetail } from "../../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
 
 const path = createDefaultPathPort({});
 
@@ -121,7 +121,7 @@ const shippedCheckOf = (request: { readonly catalogues: readonly RuleSetCatalogu
   return only;
 };
 
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE = repoPathOf("discipline-exceptions.json");
 
 const SPLIT_FOLDER_NAME = "discipline-exceptions";
 
@@ -231,22 +231,22 @@ const carvedRepository = async (): Promise<AbsolutePath> => {
 const unprojectedRepository = (): AbsolutePath =>
   repositoryOf({ files: { "disciplines.json": SELECTION, "discipline-exceptions.json": EXCEPTIONS, "eslint.config.mjs": UNPROJECTING_CONFIG } });
 
-const KEPT = repoPathSchema.parse("src/kept.ts");
+const KEPT = repoPathOf("src/kept.ts");
 
 const CARVE_OUT: FileCarveOutRecord = {
   kind: "file-carve-out",
-  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
-  mechanism: mechanismIdSchema.parse("eslint"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  mechanism: "eslint",
   file: KEPT,
   reason: "legacy class",
 };
 
 const CLASS_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
   file: KEPT,
   anchor: { line: 1, column: 7 },
   snippet: "export class Kept {}",
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
 };
 
 const catalogues = () => {
@@ -275,18 +275,18 @@ const enginePassOver = (request: { readonly repoRoot: AbsolutePath; readonly tra
 };
 
 const CARVED_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("disciplines.eslint.mjs"),
-  repoPathSchema.parse("eslint.config.mjs"),
-  repoPathSchema.parse("discipline-exceptions.json"),
-  repoPathSchema.parse("src/kept.ts"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("disciplines.eslint.mjs"),
+  repoPathOf("eslint.config.mjs"),
+  repoPathOf("discipline-exceptions.json"),
+  repoPathOf("src/kept.ts"),
 ];
 
 const UNPROJECTED_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("eslint.config.mjs"),
-  repoPathSchema.parse("discipline-exceptions.json"),
-  repoPathSchema.parse("src/kept.ts"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("eslint.config.mjs"),
+  repoPathOf("discipline-exceptions.json"),
+  repoPathOf("src/kept.ts"),
 ];
 
 describe("the version 1 engine pass over a real ESLint run of a repository that carves out src/kept.ts", () => {

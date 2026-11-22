@@ -1,24 +1,24 @@
 import { assert, describe, expect, it, test } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import classAuthoringPlugin, { classDisposition, containerMode } from "./cd14.eslint-plugin.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const keywordAfterNodeStartCases: readonly SourceCase[] = [
   {
     name: "decorator on the line before the class keyword",
-    fileName: repoPathSchema.parse("decorated.ts"),
+    fileName: repoPathOf("decorated.ts"),
     source: "@sealed\nclass Alpha {}\n",
     expectedLines: [2],
   },
   {
     name: "decorated class expression",
-    fileName: repoPathSchema.parse("decorated-expression.ts"),
+    fileName: repoPathOf("decorated-expression.ts"),
     source: "export const Gamma = @sealed\nclass {};\n",
     expectedLines: [2],
   },

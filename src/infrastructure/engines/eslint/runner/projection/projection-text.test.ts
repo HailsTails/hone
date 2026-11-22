@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { type ProjectedPiece, projectionText } from "./projection-text.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -41,10 +43,10 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const noTmpFiles = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
-const eslint = mechanismIdSchema.parse("eslint");
-const eslint10 = mechanismIdSchema.parse("eslint-10");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const noTmpFiles = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const eslint = "eslint" as const;
+const audit = "audit" as const;
 
 const cd14Piece: ProjectedPiece = {
   pluginNamespace: "hone",
@@ -63,7 +65,7 @@ const authorisedInB: ExceptionRecord = {
   provenance: { kind: "existing-authorisation", source: "fictional unit fixture mechanisms/eslint/runner/projection.test.ts#authorisedInB; not historical authorisation" },
   clause: classSyntax,
   mechanism: eslint,
-  file: repoPathSchema.parse("src/b.ts"),
+  file: repoPathOf("src/b.ts"),
   reason: "Structural location for the vendor adapter",
 };
 
@@ -71,7 +73,7 @@ const carveOutInA: ExceptionRecord = {
   kind: "file-carve-out",
   clause: classSyntax,
   mechanism: eslint,
-  file: repoPathSchema.parse("src/a.ts"),
+  file: repoPathOf("src/a.ts"),
   reason: "Inherited class awaiting paydown",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
@@ -81,7 +83,7 @@ const authorisedRoute: ExceptionRecord = {
   provenance: { kind: "existing-authorisation", source: "fictional unit fixture mechanisms/eslint/runner/projection.test.ts#authorisedRoute; not historical authorisation" },
   clause: noTmpFiles,
   mechanism: eslint,
-  file: repoPathSchema.parse("route/[id].ts"),
+  file: repoPathOf("route/[id].ts"),
   reason: "Route file named by the framework",
 };
 
@@ -101,7 +103,7 @@ const clauseWideClassSyntax: ExceptionRecord = {
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const authorisedInBUnderEslint10: ExceptionRecord = { ...authorisedInB, mechanism: eslint10 };
+const authorisedInBUnderAudit: ExceptionRecord = { ...authorisedInB, mechanism: audit };
 
 const fullProjection = `import piece0 from "../team-rules/mechanisms/eslint/PD-1/plugin.ts";
 import piece1 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
@@ -240,9 +242,9 @@ export default [
 ];
 `;
 
-const tmpFilesInA: ExceptionRecord = { ...authorisedRoute, file: repoPathSchema.parse("src/a.ts") };
+const tmpFilesInA: ExceptionRecord = { ...authorisedRoute, file: repoPathOf("src/a.ts") };
 
-const carveOutInB: ExceptionRecord = { ...carveOutInA, file: repoPathSchema.parse("src/b.ts") };
+const carveOutInB: ExceptionRecord = { ...carveOutInA, file: repoPathOf("src/b.ts") };
 
 describe("projectionText", () => {
   it("generates the whole projection: piece blocks, then one block per set of clauses its files are excepted from, by that set's text, then clause-wide blocks by clause text", () => {
@@ -298,8 +300,8 @@ describe("projectionText", () => {
     );
   });
 
-  it("emits the off block of a record carrying whatever mechanism id the runner is registered under", () => {
-    expect(projectionText({ selectedPieces: [cd14Piece], records: [authorisedInBUnderEslint10] })).toBe(
+  it("emits the off block of a record whichever mechanism it carries", () => {
+    expect(projectionText({ selectedPieces: [cd14Piece], records: [authorisedInBUnderAudit] })).toBe(
       authorisedInBOnlyProjection,
     );
   });
@@ -308,7 +310,7 @@ describe("projectionText", () => {
     expect(
       projectionText({
         selectedPieces: [cd14Piece],
-        records: [carveOutInA, { ...authorisedInB, file: repoPathSchema.parse("src/B.ts") }],
+        records: [carveOutInA, { ...authorisedInB, file: repoPathOf("src/B.ts") }],
       }),
     ).toBe(`import piece0 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
 

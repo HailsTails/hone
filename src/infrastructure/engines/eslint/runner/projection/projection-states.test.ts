@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { projectionStateAt } from "./projection-states.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
-const SLICE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
+const SLICE = repoPathOf("packages/a/disciplines.eslint.mjs");
 
 describe("projectionStateAt", () => {
   it("gives the state read for the file", () => {

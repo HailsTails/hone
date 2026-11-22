@@ -10,12 +10,12 @@ import type { GitPort } from "../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 
 const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
@@ -95,23 +95,23 @@ const AFTER = `${WALKTHROUGH}/after`;
 const ENTRY_URL = new URL("../hone.ts", import.meta.url).href;
 
 const BEFORE_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("generated/schema.ts"),
-  repoPathSchema.parse("hone.config.json"),
-  repoPathSchema.parse("src/basket.test.ts"),
-  repoPathSchema.parse("src/basket.ts"),
-  repoPathSchema.parse("src/utils/format.ts"),
+  repoPathOf("generated/schema.ts"),
+  repoPathOf("hone.config.json"),
+  repoPathOf("src/basket.test.ts"),
+  repoPathOf("src/basket.ts"),
+  repoPathOf("src/utils/format.ts"),
 ];
 
 const AFTER_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("generated/schema.ts"),
-  repoPathSchema.parse("hone-records/boundary-records.json"),
-  repoPathSchema.parse("hone.config.json"),
-  repoPathSchema.parse("src/basket.test.ts"),
-  repoPathSchema.parse("src/basket.ts"),
-  repoPathSchema.parse("src/clock.test.ts"),
-  repoPathSchema.parse("src/clock.ts"),
-  repoPathSchema.parse("src/format.test.ts"),
-  repoPathSchema.parse("src/format.ts"),
+  repoPathOf("generated/schema.ts"),
+  repoPathOf("hone-records/boundary-records.json"),
+  repoPathOf("hone.config.json"),
+  repoPathOf("src/basket.test.ts"),
+  repoPathOf("src/basket.ts"),
+  repoPathOf("src/clock.test.ts"),
+  repoPathOf("src/clock.ts"),
+  repoPathOf("src/format.test.ts"),
+  repoPathOf("src/format.ts"),
 ];
 
 const notUsed = (): never => {

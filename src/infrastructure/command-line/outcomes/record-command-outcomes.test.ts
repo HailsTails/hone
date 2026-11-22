@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { inheritedDebtLine, pruneDebtCommandOutcome, splitRecordsCommandOutcome } from "./record-command-outcomes.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
 describe("splitRecordsCommandOutcome", () => {
   it("prints each file written, then the file removed, and exits 0", () => {
@@ -15,8 +16,8 @@ describe("splitRecordsCommandOutcome", () => {
           value: {
             effect: "split",
             writes: [
-              { path: repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-19.json"), effect: "written" },
-              { path: repoPathSchema.parse("discipline-exceptions.json"), effect: "removed" },
+              { path: repoPathOf("discipline-exceptions/file-carve-outs/cd-19.json"), effect: "written" },
+              { path: repoPathOf("discipline-exceptions.json"), effect: "removed" },
             ],
           },
         },
@@ -26,11 +27,11 @@ describe("splitRecordsCommandOutcome", () => {
 
   it.each([
     {
-      split: { effect: "already-split", path: repoPathSchema.parse("discipline-exceptions") },
+      split: { effect: "already-split", path: repoPathOf("discipline-exceptions") },
       text: "discipline-exceptions already holds the records split: nothing to split\n",
     },
     {
-      split: { effect: "no-records", path: repoPathSchema.parse("discipline-exceptions.json") },
+      split: { effect: "no-records", path: repoPathOf("discipline-exceptions.json") },
       text: "discipline-exceptions.json holds no records: nothing to split\n",
     },
   ] as const)("prints one line and exits 0 when there is nothing to split: $text", ({ split, text }) => {
@@ -49,10 +50,10 @@ describe("inheritedDebtLine", () => {
     expect(
       inheritedDebtLine({
         outcome: {
-          clause: clauseAddressSchema.parse("CD-15#loops"),
-          file: repoPathSchema.parse("src/basket.ts"),
+          clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+          file: repoPathOf("src/basket.ts"),
           effect: "already-recorded",
-          heldIn: repoPathSchema.parse("discipline-exceptions/authorised-locations/cd-15.json"),
+          heldIn: repoPathOf("discipline-exceptions/authorised-locations/cd-15.json"),
         },
       }),
     ).toBe(
@@ -64,12 +65,12 @@ describe("inheritedDebtLine", () => {
     expect(
       inheritedDebtLine({
         outcome: {
-          clause: clauseAddressSchema.parse("CD-15#loops"),
-          file: repoPathSchema.parse("nested/src/n.ts"),
+          clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+          file: repoPathOf("nested/src/n.ts"),
           effect: "nested-configuration",
-          under: repoPathSchema.parse("nested/src"),
-          selectionFolder: repoPathSchema.parse("nested"),
-          mechanism: mechanismIdSchema.parse("eslint"),
+          under: repoPathOf("nested/src"),
+          selectionFolder: repoPathOf("nested"),
+          mechanism: "eslint",
         },
       }),
     ).toBe(
@@ -89,8 +90,8 @@ describe("pruneDebtCommandOutcome", () => {
         result: {
           outcome: "ok",
           value: [
-            { clause: clauseAddressSchema.parse("CD-14#class-syntax"), file: repoPathSchema.parse("src/a.ts") },
-            { clause: clauseAddressSchema.parse("CD-15#loops"), file: repoPathSchema.parse("src/b.ts") },
+            { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, file: repoPathOf("src/a.ts") },
+            { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, file: repoPathOf("src/b.ts") },
           ],
         },
       }),

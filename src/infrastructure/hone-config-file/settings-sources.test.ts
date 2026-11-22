@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema, ruleSetNameSchema } from "./identifiers.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import { createSettingsSources } from "./settings-sources.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const SETTINGS_TEXT = `{ "version": 2, "ruleSets": {}, "checks": {} }`;
 
@@ -88,11 +89,11 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   });
 
-const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly clause: string; readonly mechanism: string }) =>
+const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly clause: string; readonly mechanism: MechanismId }) =>
   sourcesOver({ files: request.files }).pieceClause({
     ruleSetRoot: INSTALL_ROOT,
     clause: clauseAddressSchema.parse(request.clause),
-    mechanism: mechanismIdSchema.parse(request.mechanism),
+    mechanism: request.mechanism,
   });
 
 describe("createSettingsSources", () => {
@@ -116,10 +117,10 @@ describe("createSettingsSources", () => {
 
   it("finds Hone's own rule set at the install root and a declared one under the repository", () => {
     const sources = sourcesOver({ files: INSTALL_FILES });
-    const ruleSets: readonly DeclaredRuleSet[] = [{ name: ruleSetNameSchema.parse("team"), location: { location: "folder", path: repoPathSchema.parse("tools/hone-rules") } }];
+    const ruleSets: readonly DeclaredRuleSet[] = [{ name: ruleSetNameOf("team"), location: { location: "folder", path: repoPathOf("tools/hone-rules") } }];
     expect({
       hone: sources.ruleSetRoot({ ruleSet: "hone", ruleSets }),
-      team: sources.ruleSetRoot({ ruleSet: { name: ruleSetNameSchema.parse("team") }, ruleSets }),
+      team: sources.ruleSetRoot({ ruleSet: { name: ruleSetNameOf("team") }, ruleSets }),
     }).toEqual({
       hone: { outcome: "ok", value: "/install" },
       team: { outcome: "ok", value: "/repo/tools/hone-rules" },

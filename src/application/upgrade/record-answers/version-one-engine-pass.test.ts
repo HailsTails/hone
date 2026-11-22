@@ -10,27 +10,28 @@ import type { ExceptionEntryParser } from "../../ports/records/exception-entries
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createVersionOneEnginePass } from "./version-one-engine-pass.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
-const SLICE = repoPathSchema.parse("packages/a/disciplines.audit.mjs");
+const SLICE = repoPathOf("packages/a/disciplines.audit.mjs");
 
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 
@@ -46,7 +47,7 @@ const CLASS_SYNTAX_CLAUSE = {
   pieceRoot: "/install/mechanisms/audit/CD-14",
   settings: { module: "class-syntax.ts" },
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
 } as const;
 
 const SELECTION_READING: SelectionReading = {

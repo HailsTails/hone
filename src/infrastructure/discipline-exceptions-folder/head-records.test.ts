@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { Result } from "../../domain/result.ts";
 import { headRecordsOf } from "./head-records.ts";
 import type { HeadRecord, HeadRecordsRefusal } from "../../domain/records/upgrade/head-records.ts";
 import type { VersionOneWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -45,11 +46,11 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const SELECTION: Selection = {
   selected: [{ address: LOOPS, mechanism: AUDIT, exceptions: "allowed" }],
@@ -166,7 +167,7 @@ describe("headRecordsOf", () => {
         kind: "invalid-records",
         invalid: [
           { place: AT_1, problem: { kind: "duplicate", of: AT_0 } },
-          { place: AT_2, problem: { kind: "clause-not-selected", clause: clauseAddressSchema.parse("CD-16#unselected") } },
+          { place: AT_2, problem: { kind: "clause-not-selected", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-16"), clause: clauseIdOf("unselected") } } },
         ],
       },
     });
@@ -177,7 +178,7 @@ describe("headRecordsOf", () => {
       outcome: "failed",
       error: {
         kind: "invalid-records",
-        invalid: [{ place: AT_0, problem: { kind: "clause-not-selected", clause: clauseAddressSchema.parse("CD-16#unselected") } }],
+        invalid: [{ place: AT_0, problem: { kind: "clause-not-selected", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-16"), clause: clauseIdOf("unselected") } } }],
       },
     });
   });

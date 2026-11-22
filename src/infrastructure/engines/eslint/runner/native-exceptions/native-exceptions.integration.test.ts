@@ -25,16 +25,17 @@ import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { runner as walkerRunner } from "../../../audit/runner/runner.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort, type EslintClass, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules, type EslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
-import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -360,7 +361,7 @@ const restoredFixtureRepositoriesOver = (dependencies: Dependencies): RestoredFi
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
 
-const CLAUSE = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
 const CLASS_SYNTAX = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 
@@ -369,7 +370,7 @@ const ESLINT_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/CD-14`,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { pluginNamespace: "hone", pluginModule: "cd14/cd14.eslint-plugin.ts", rule: "no-class-authoring" },
 };
 
@@ -378,7 +379,7 @@ const WALKER_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/audit/CD-14`,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
 
@@ -445,7 +446,7 @@ const classHit = (request: { readonly file: string; readonly line: number }) => 
 
 describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner's query instance, over a consumer repository", (line) => {
   it("reports an unrecorded override block placed after the projection as a config-override", async () => {
-    await expect(runOf({ name: "override-after", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "override-after", tracked: [repoPathOf("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
         hits: [classHit({ file: "x.ts", line: 1 })],
@@ -456,7 +457,7 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
   });
 
   it("reports an unrecorded global ignore over a file holding a class, and core still finds the class", async () => {
-    await expect(runOf({ name: "global-ignore", tracked: [repoPathSchema.parse("gen/g.ts"), repoPathSchema.parse("src/clean.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "global-ignore", tracked: [repoPathOf("gen/g.ts"), repoPathOf("src/clean.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
         hits: [classHit({ file: "gen/g.ts", line: 1 })],
@@ -467,7 +468,7 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
   });
 
   it("reports a rule the team sets to severity 0 everywhere with no records as config-overrides, the projection still in effect", async () => {
-    await expect(runOf({ name: "severity-zero", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "severity-zero", tracked: [repoPathOf("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
         hits: [classHit({ file: "x.ts", line: 1 })],
@@ -479,7 +480,7 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
 
   it("finds no projection in effect when a later team block sets a recorded file back to error", async () => {
     await expect(
-      runOf({ name: "re-enabled-record", tracked: [repoPathSchema.parse("src/owned.ts")], line, records: fixtureRecords({ name: "re-enabled-record" }) }),
+      runOf({ name: "re-enabled-record", tracked: [repoPathOf("src/owned.ts")], line, records: fixtureRecords({ name: "re-enabled-record" }) }),
     ).resolves.toMatchObject({ outcome: "ok", value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] } });
   });
 });
@@ -487,7 +488,7 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
 describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lint scripts read by the ESLint runner on %s, over a consumer repository", (line) => {
   it("reports an entry in the default eslint-suppressions.json as a suppression-entry", async () => {
     await expect(
-      runOf({ name: "suppression-default", tracked: [repoPathSchema.parse("supp/a.ts"), repoPathSchema.parse("eslint-suppressions.json")], line }),
+      runOf({ name: "suppression-default", tracked: [repoPathOf("supp/a.ts"), repoPathOf("eslint-suppressions.json")], line }),
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
@@ -510,11 +511,11 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
         line,
         name: "suppression-scripted",
         tracked: [
-          repoPathSchema.parse("supp/b.ts"),
-          repoPathSchema.parse("supp/clean.ts"),
-          repoPathSchema.parse("package.json"),
-          repoPathSchema.parse("custom/supp.json"),
-          repoPathSchema.parse("custom/supp2.json"),
+          repoPathOf("supp/b.ts"),
+          repoPathOf("supp/clean.ts"),
+          repoPathOf("package.json"),
+          repoPathOf("custom/supp.json"),
+          repoPathOf("custom/supp2.json"),
         ],
       }),
     ).resolves.toMatchObject({
@@ -544,7 +545,7 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
       runOf({
         line,
         name: "suppression-nested",
-        tracked: [repoPathSchema.parse("packages/a/src/n.ts"), repoPathSchema.parse("packages/a/eslint-suppressions.json")],
+        tracked: [repoPathOf("packages/a/src/n.ts"), repoPathOf("packages/a/eslint-suppressions.json")],
       }),
     ).resolves.toMatchObject({
       outcome: "ok",
@@ -566,7 +567,7 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
       runOf({
         line,
         name: "command-line-options",
-        tracked: [repoPathSchema.parse("src/plain.ts"), repoPathSchema.parse("package.json")],
+        tracked: [repoPathOf("src/plain.ts"), repoPathOf("package.json")],
       }),
     ).resolves.toMatchObject({
       outcome: "ok",
@@ -615,14 +616,14 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
 });
 
 const INLINE_FORM_FILES: readonly RepoPath[] = [
-  repoPathSchema.parse("i/disable-file.ts"),
-  repoPathSchema.parse("i/disable-file-named.ts"),
-  repoPathSchema.parse("i/disable-line.ts"),
-  repoPathSchema.parse("i/disable-next-line.ts"),
-  repoPathSchema.parse("i/rule-config.ts"),
-  repoPathSchema.parse("i/other-rule.ts"),
-  repoPathSchema.parse("i/enable.ts"),
-  repoPathSchema.parse("i/global.ts"),
+  repoPathOf("i/disable-file.ts"),
+  repoPathOf("i/disable-file-named.ts"),
+  repoPathOf("i/disable-line.ts"),
+  repoPathOf("i/disable-next-line.ts"),
+  repoPathOf("i/rule-config.ts"),
+  repoPathOf("i/other-rule.ts"),
+  repoPathOf("i/enable.ts"),
+  repoPathOf("i/global.ts"),
 ];
 
 const INLINE_FORM_TEXTS: TextFiles = {
@@ -710,7 +711,7 @@ describe.each(ESLINT_LINES)("real %s glob matching of the generated projection's
     await expect(
       runOf({
         name: "route-brackets",
-        tracked: [repoPathSchema.parse("route/[id].ts"), repoPathSchema.parse("route/i.ts")],
+        tracked: [repoPathOf("route/[id].ts"), repoPathOf("route/i.ts")],
         line,
         records: fixtureRecords({ name: "route-brackets" }),
       }),
@@ -727,21 +728,21 @@ describe.each(ESLINT_LINES)("real %s glob matching of the generated projection's
 
 describe.each(ESLINT_LINES)("the ESLint runner's projection states under real %s, over a consumer repository", (line) => {
   it("reports the projection missing when it was never generated", async () => {
-    await expect(runOf({ name: "projection-missing", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "projection-missing", tracked: [repoPathOf("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: { hits: [], projection: "missing" },
     });
   });
 
   it("reports the projection out-of-date when it was hand-edited", async () => {
-    await expect(runOf({ name: "projection-hand-edited", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "projection-hand-edited", tracked: [repoPathOf("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: { hits: [classHit({ file: "x.ts", line: 1 })], projection: "out-of-date" },
     });
   });
 
   it("reports no projection in effect when the team config does not import the projection", async () => {
-    await expect(runOf({ name: "projection-not-imported", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "projection-not-imported", tracked: [repoPathOf("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] },
     });
@@ -752,7 +753,7 @@ describe.each(ESLINT_LINES)("the ESLint runner's projection states under real %s
       runOf({
         line,
         name: "fragment-not-projection",
-        tracked: [repoPathSchema.parse("src/owned.ts"), repoPathSchema.parse("src/clean.ts")],
+        tracked: [repoPathOf("src/owned.ts"), repoPathOf("src/clean.ts")],
         records: fixtureRecords({ name: "fragment-not-projection" }),
       }),
     ).resolves.toMatchObject({
@@ -763,13 +764,13 @@ describe.each(ESLINT_LINES)("the ESLint runner's projection states under real %s
 });
 
 const SHARED_CASE_FILES: readonly RepoPath[] = [
-  repoPathSchema.parse("src/decl.ts"),
-  repoPathSchema.parse("src/expr.ts"),
-  repoPathSchema.parse("src/default.ts"),
-  repoPathSchema.parse("src/abstract.ts"),
-  repoPathSchema.parse("src/nested.ts"),
-  repoPathSchema.parse("src/space.ts"),
-  repoPathSchema.parse("src/anon.ts"),
+  repoPathOf("src/decl.ts"),
+  repoPathOf("src/expr.ts"),
+  repoPathOf("src/default.ts"),
+  repoPathOf("src/abstract.ts"),
+  repoPathOf("src/nested.ts"),
+  repoPathOf("src/space.ts"),
+  repoPathOf("src/anon.ts"),
 ];
 
 const SHARED_CASES_RUN = {
@@ -827,7 +828,7 @@ describe.each(ESLINT_LINES)("FR-3 over real files: the ESLint runner on real %s 
 type MechanicalCases = Extract<ClauseDefinition, { readonly kind: "mechanical" }>["cases"];
 
 const classSyntaxCases = (): MechanicalCases => {
-  const loaded = readDisciplineFile({ fileText, path, ruleSetRoot: INSTALL_ROOT, discipline: disciplineIdSchema.parse("CD-14") });
+  const loaded = readDisciplineFile({ fileText, path, ruleSetRoot: INSTALL_ROOT, discipline: disciplineIdOf("CD-14") });
   assert(loaded.outcome === "ok", "CD-14 discipline.json reads through the rule-set reader");
   const [classSyntax, libraryConstruction, staticOnlyClass, ...surplus] = loaded.value.clauses;
   assert.isDefined(classSyntax, "CD-14 declares a first clause");
@@ -849,7 +850,7 @@ const coreLoadedEslintRunner = async (request: { readonly line: EslintLine }): P
     moduleExtension: ".ts",
     modules: runnerModulesOn({ line: request.line, base: modules }),
     path,
-    mechanism: mechanismIdSchema.parse("eslint"),
+    mechanism: "eslint",
   });
   assert(loaded.outcome === "ok", "core loads the ESLint runner module");
   return loaded.value.runner;
@@ -899,11 +900,11 @@ const monorepoRun = async (request: {
     repoRoot: consumerRepo({ name: request.name }),
     installRoot: INSTALL_ROOT,
     declaredConfigRoots: [],
-    files: [repoPathSchema.parse("packages/a/x.ts")],
+    files: [repoPathOf("packages/a/x.ts")],
     trackedPaths: [
-      repoPathSchema.parse("packages/a/x.ts"),
-      repoPathSchema.parse("package.json"),
-      repoPathSchema.parse("packages/a/eslint.config.mjs"),
+      repoPathOf("packages/a/x.ts"),
+      repoPathOf("package.json"),
+      repoPathOf("packages/a/eslint.config.mjs"),
     ],
     clauses: [ESLINT_CLAUSE],
     records: request.records,
@@ -914,8 +915,8 @@ const PACKAGE_HIT = { file: "packages/a/x.ts" };
 const PACKAGE_LEGACY_CARVE_OUT: ExceptionRecord = {
   kind: "file-carve-out",
   clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("eslint"),
-  file: repoPathSchema.parse("packages/a/legacy.ts"),
+  mechanism: "eslint",
+  file: repoPathOf("packages/a/legacy.ts"),
   reason: "Inherited class awaiting paydown",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };

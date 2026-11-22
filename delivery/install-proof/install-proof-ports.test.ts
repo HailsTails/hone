@@ -11,6 +11,7 @@ import {
   createScratchFilesPort,
   type ScratchFilesSurface,
 } from "./install-proof-ports.ts";
+import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 
 const PERMISSION_DENIED = new Error("EACCES: permission denied, rm '/scratch/proof'");
 
@@ -100,7 +101,7 @@ describe("createScratchFilesPort makeDirectory", () => {
   });
 });
 
-const SCRATCH_PROOF = absolutePathSchema.parse("/scratch/proof");
+const SCRATCH_PROOF = absoluteRootOf("/scratch/proof");
 
 describe("createScratchFilesPort removeTree", () => {
   it("removes the requested tree through the directory tree port", () => {

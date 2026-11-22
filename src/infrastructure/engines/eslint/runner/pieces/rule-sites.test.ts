@@ -1,11 +1,11 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort, type EslintPort, type Rule } from "../toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "./eslint-plugin-schema.ts";
 import { type FunctionSite, functionSiteOf, type RuleMeta, type SiteObservers, siteRule } from "./rule-sites.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const loadedToolchain = await loadEslintToolchain({
   peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
@@ -57,7 +57,7 @@ const SITE_CASES: readonly { readonly rule: string; readonly expectedLines: read
 
 const mixedCase = (request: { readonly expectedLines: readonly number[] }): SourceCase => ({
   name: "one of each site",
-  fileName: repoPathSchema.parse("sites.ts"),
+  fileName: repoPathOf("sites.ts"),
   source: MIXED_SOURCE,
   expectedLines: [...request.expectedLines],
 });
@@ -89,7 +89,7 @@ const lintObserved = (request: { readonly observers: SiteObservers; readonly sou
     pluginNamespace: "sites",
     rule: "observed",
     options: [],
-    cases: [{ name: "observed", fileName: repoPathSchema.parse("observed.ts"), source: request.source, expectedLines: [] }],
+    cases: [{ name: "observed", fileName: repoPathOf("observed.ts"), source: request.source, expectedLines: [] }],
   });
 
 describe("functionSiteOf", () => {

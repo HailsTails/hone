@@ -6,25 +6,26 @@ import type { ClauseBinding } from "../../../../domain/settings/selection/select
 import type { ModuleLoad, ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import type { Check } from "../../../../domain/language-layer/symptom-catalogue.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { EngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import { engineProjectionOf, engineRunOf, loadedEngineOf } from "./engine-run.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const INSTALL = absolutePathSchema.parse("/install");
+const INSTALL = absoluteRootOf("/install");
 
-const CLASS_CLAUSE = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLASS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const A = repoPathSchema.parse("src/a.ts");
+const A = repoPathOf("src/a.ts");
 
 const CLASS_KEYWORD: Check = {
   name: "class-keyword",
@@ -44,7 +45,7 @@ const CLASS_KEYWORD: Check = {
 
 const BINDING: ClauseBinding = {
   mechanism: ESLINT,
-  clause: { address: CLASS_CLAUSE, anchor: { kind: "keyword", keyword: "class" }, pieceRoot: "/install/mechanisms/eslint/CD-14", clauseSettings: {}, edition: FIRST_EDITION, settings: {} },
+  clause: { address: CLASS_CLAUSE, anchor: { kind: "keyword", keyword: "class" }, pieceRoot: "/install/mechanisms/eslint/CD-14", clauseSettings: {}, edition: editionOf("1"), settings: {} },
 };
 
 const REQUEST: EngineRunRequest = {
@@ -61,7 +62,7 @@ const REQUEST: EngineRunRequest = {
 
 const HIT = { clause: CLASS_CLAUSE, file: A, anchor: { line: 1, column: 7 }, snippet: "export class A {}", check: "authored-class-or-this#class-keyword" };
 
-const MISSING_SLICE = { slice: repoPathSchema.parse("packages/web/hone.eslint.mjs"), state: "missing" } as const;
+const MISSING_SLICE = { slice: repoPathOf("packages/web/hone.eslint.mjs"), state: "missing" } as const;
 
 const REPORT: ChecksRunReport = {
   hits: [HIT],
@@ -127,7 +128,7 @@ describe("engineRunOf, a checks runner", () => {
   });
 
   it("fails as an invalid output when a hit is in a file the request did not hold", async () => {
-    const other = repoPathSchema.parse("src/other.ts");
+    const other = repoPathOf("src/other.ts");
     expect(await engineRunOf(embeddedWith({ returned: { outcome: "ok", value: { ...REPORT, hits: [{ ...HIT, file: other }] } } }))).toEqual({
       outcome: "failed",
       error: {
@@ -207,7 +208,7 @@ describe("engineRunOf, a standalone runner", () => {
   });
 });
 
-const WRITTEN = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
+const WRITTEN = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 const projectingWith = (request: { readonly returned: unknown }) => ({
   engine: { mechanism: ESLINT, runner: EMBEDDED, checksRunner: { ...checksRunnerReturning({ returned: { outcome: "ok", value: REPORT } }), project: vi.fn<(request: unknown) => Promise<unknown>>().mockResolvedValue(request.returned) } },

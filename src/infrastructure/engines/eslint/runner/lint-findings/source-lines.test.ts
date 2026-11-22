@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { type LinesReader, linesReaderOf, sourceLinesFor } from "./source-lines.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
-const FILE = repoPathSchema.parse("src/a.ts");
+const FILE = repoPathOf("src/a.ts");
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
 const path = createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" });
 
@@ -55,7 +57,7 @@ describe("linesReaderOf", () => {
       value: "first;\r\nsecond;\nthird;\rfourth;\u2028fifth;\u2029sixth;",
     });
     const fileText: FileTextPort = { read, exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() };
-    const readLines = linesReaderOf({ fileText, path, repoRoot: absolutePathSchema.parse("/repo") });
+    const readLines = linesReaderOf({ fileText, path, repoRoot: absoluteRootOf("/repo") });
     expect(readLines({ file: FILE })).toEqual({
       outcome: "ok",
       value: ["first;", "second;", "third;", "fourth;", "fifth;", "sixth;"],
@@ -72,7 +74,7 @@ describe("linesReaderOf", () => {
       exists: vi.fn<FileTextPort["exists"]>(),
       write: vi.fn<FileTextPort["write"]>(),
     };
-    expect(linesReaderOf({ fileText, path, repoRoot: absolutePathSchema.parse("/repo") })({ file: FILE })).toEqual({
+    expect(linesReaderOf({ fileText, path, repoRoot: absoluteRootOf("/repo") })({ file: FILE })).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
     });

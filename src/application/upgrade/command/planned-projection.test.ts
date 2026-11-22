@@ -3,8 +3,8 @@ import type { VersionOneCommandRequest } from "../../ports/version-one-command-r
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const SETTINGS: SettingsFile = {
   exclude: [],
@@ -63,8 +63,8 @@ describe("plannedProjectionOf", () => {
     const command = EMPTY_REPOSITORY_COMMAND;
     const projected = await plannedProjectionOf({
       command,
-      repoRoot: absolutePathSchema.parse("/repo"),
-      installRoot: absolutePathSchema.parse("/install"),
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: absoluteRootOf("/install"),
       recordsReader: { recordsReadingOf: notUsed },
       symptomCatalogueOf: NO_CATALOGUE,
       settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },

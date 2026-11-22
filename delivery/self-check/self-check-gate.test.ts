@@ -7,9 +7,6 @@ import type { GitPort } from "../../src/application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
-import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../src/domain/report/check-report.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
 import type { Case, Principle, RecordKind, Rule, Symptom } from "../../src/domain/language-layer/symptom-catalogue.ts";
@@ -19,6 +16,10 @@ import { createDefaultEnginePort } from "../../src/infrastructure/engines/protoc
 import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { ShownPathOfRepository } from "../../src/application/ports/installation/shown-path-of.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -44,11 +45,11 @@ const EMPTY_REPORT: CheckReport = {
 };
 
 const CLASS_IN_A: Finding = {
-  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
-  file: repoPathSchema.parse("src/a.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
 };
 
 const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
@@ -93,7 +94,7 @@ const CLASS_GUIDE: SymptomGuide = {
     alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
     engines: [],
     symptoms: [CLASS_DECLARED],
-    clauses: [{ clause: clauseAddressSchema.parse("CD-14#class-syntax"), sight: { kind: "one-symptom", symptom: CLASS_DECLARED } }],
+    clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, sight: { kind: "one-symptom", symptom: CLASS_DECLARED } }],
     checks: [],
     namedBans: [],
   },
@@ -122,7 +123,7 @@ const EMPTY_RUN_REPORT: RunReport = {
   symptoms: [],
 };
 
-const IGNORED_IN_A = { kind: "ignore", clause: clauseAddressSchema.parse("CD-14#class-syntax"), file: repoPathSchema.parse("src/a.ts"), mechanism: mechanismIdSchema.parse("eslint") } as const;
+const IGNORED_IN_A = { kind: "ignore", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, file: repoPathOf("src/a.ts"), mechanism: "eslint" } as const;
 
 describe("VERSION_TWO_GATED_SECTIONS", () => {
   it("names every failing section of a version 2 run except the findings and the unrecorded native exceptions, which are reported and not gated", () => {
@@ -157,8 +158,8 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
           report: {
             ...EMPTY_RUN_REPORT,
             findings: [CLASS_IN_A],
-            misnamed: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathSchema.parse("src/a.ts"), line: 3, text: "// eslint-disable-line hone/no-such-check" }],
-            refused: [{ place: { file: repoPathSchema.parse("hone-records/debt/loop-keyword.json"), index: 1 }, refusals: [{ kind: "carried-changed-since-base" }] }],
+            misnamed: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathOf("src/a.ts"), line: 3, text: "// eslint-disable-line hone/no-such-check" }],
+            refused: [{ place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 1 }, refusals: [{ kind: "carried-changed-since-base" }] }],
             unmeasured: [{ kind: "import-unmeasured", base: { state: "not-given" } }],
           },
         },
@@ -196,7 +197,7 @@ describe("selfCheckOutcomeOf", () => {
             report: {
               ...EMPTY_REPORT,
               findings: [CLASS_IN_A],
-              uncovered: [clauseAddressSchema.parse("CD-15#loops")],
+              uncovered: [{ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }],
               unmeasured: [{ kind: "import-unmeasured", base: { state: "not-given" } }],
             },
             output: "counts", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: NO_SYMPTOM_GUIDE,

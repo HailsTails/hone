@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { runPathOf } from "./run-path.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 

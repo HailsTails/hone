@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const ENTRY: PlacedEntry["entry"] = { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" };
 
-const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
+const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
 
 const loadFailureDetail: LoadFailureDetail = () => "file-unreadable discipline-exceptions.json EACCES";
 

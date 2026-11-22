@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { loadFailureOutcome, projectCommandOutcome, versionCommandOutcome } from "./command-outcome.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
 describe("loadFailureOutcome", () => {
   it("exits 2 and prints the load failure line when an input could not be loaded", () => {
@@ -39,8 +38,8 @@ describe("projectCommandOutcome", () => {
         result: {
           outcome: "ok",
           value: [
-            { path: repoPathSchema.parse("eslint.discipline.config.mjs"), effect: "written" },
-            { path: repoPathSchema.parse("config/eslint.discipline.mjs"), effect: "unchanged" },
+            { path: repoPathOf("eslint.discipline.config.mjs"), effect: "written" },
+            { path: repoPathOf("config/eslint.discipline.mjs"), effect: "unchanged" },
           ],
         },
       }),

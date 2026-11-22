@@ -6,12 +6,12 @@ import type { FileTextPort } from "../application/ports/file-system/file-text-po
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { repoRootOf, repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 
 const notUsed = (): never => {
   throw new Error("this port is not used by the command under test");
@@ -98,7 +98,7 @@ describe("stagesOverRepository", () => {
     const built = stagesOverRepository({
       ports: { ...command, gitTree, directory: memory.directory, recordsSourceOf, stagesOver },
       moduleUrl: command.moduleUrl,
-      located: { repoRoot: absolutePathSchema.parse("/repo"), installRoot: absolutePathSchema.parse("/install") },
+      located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
       baseRevision: "origin/main",
     });
     expect(built).toBe(stages);

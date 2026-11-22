@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { LegacyWhyChain, VersionOneWhyChain } from "./version-one-why-chain.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "./exception-baseline.ts";
 import { paidDebtOf, type PaidDebtRequest } from "./paid-debt.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -55,12 +56,12 @@ const LEGACY_WHY_CHAIN: LegacyWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
-const CASTS = clauseAddressSchema.parse("CD-2#cast-expressions");
-const AUDIT = mechanismIdSchema.parse("audit");
-const ESLINT = mechanismIdSchema.parse("eslint");
-const BASKET = repoPathSchema.parse("src/basket.ts");
-const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const CASTS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
+const BASKET = repoPathOf("src/basket.ts");
+const LEGACY = repoPathOf("src/legacy/report.ts");
 
 const carveOut = (request: { readonly clause: Finding["clause"]; readonly file: Finding["file"] }): ExceptionRecord => ({
   kind: "file-carve-out",
@@ -99,10 +100,10 @@ const NOTHING: PaidDebtRequest = {
   baseline: UNMEASURED_EXCEPTION_BASELINE,
 };
 
-const CHECKOUT = repoPathSchema.parse("src/checkout.ts");
-const PRICES = repoPathSchema.parse("src/prices.ts");
-const TOTALS = repoPathSchema.parse("src/totals.ts");
-const PACKAGE_JSON = repoPathSchema.parse("package.json");
+const CHECKOUT = repoPathOf("src/checkout.ts");
+const PRICES = repoPathOf("src/prices.ts");
+const TOTALS = repoPathOf("src/totals.ts");
+const PACKAGE_JSON = repoPathOf("package.json");
 
 const GONE: PaidDebtRequest = { ...NOTHING, absent: [BASKET, LEGACY, CHECKOUT, PRICES, TOTALS] };
 
@@ -415,7 +416,7 @@ describe("paidDebtOf keeping a forfeited record each native exception on its fil
         nativeExceptions: [
           { kind: "ignore", clause: LOOPS, mechanism: ESLINT, file: BASKET },
           { kind: "config-override", clause: LOOPS, mechanism: ESLINT, file: CHECKOUT },
-          { kind: "suppression-entry", clause: LOOPS, mechanism: ESLINT, file: PRICES, location: repoPathSchema.parse("eslint-suppressions.json") },
+          { kind: "suppression-entry", clause: LOOPS, mechanism: ESLINT, file: PRICES, location: repoPathOf("eslint-suppressions.json") },
           { kind: "inline-rule-config", clause: LOOPS, mechanism: ESLINT, file: TOTALS, line: 1, text: "/* eslint hone/no-for-of: off */" },
         ],
       }),
@@ -423,9 +424,9 @@ describe("paidDebtOf keeping a forfeited record each native exception on its fil
   });
 });
 
-const VENDORED = repoPathSchema.parse("src/vendored");
-const VENDORED_BASKET = repoPathSchema.parse("src/vendored/basket.ts");
-const VENDORED_PRICES = repoPathSchema.parse("src/vendored/prices.ts");
+const VENDORED = repoPathOf("src/vendored");
+const VENDORED_BASKET = repoPathOf("src/vendored/basket.ts");
+const VENDORED_PRICES = repoPathOf("src/vendored/prices.ts");
 const EXCLUDING_VENDORED: PaidDebtRequest = { ...NOTHING, excluded: [VENDORED] };
 
 describe("paidDebtOf naming debt on a file the selection excludes", () => {

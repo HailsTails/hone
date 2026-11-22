@@ -5,9 +5,6 @@ import type { CaseVerdict } from "../../../../../domain/runner/runner-result-typ
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import {
   type ConfiguredClause,
@@ -20,21 +17,27 @@ import {
   pluginOf,
 } from "./eslint-conform.ts";
 import type { EslintPort } from "../toolchain/eslint-instance.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 
 const PIECE_ROOT = "/install/mechanisms/eslint/CD-14";
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
 const CLASS_CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("CD-14#class-syntax"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { pluginNamespace: "hone", pluginModule: "cd14/cd14.eslint-plugin.ts", rule: "no-class-authoring" },
 };
 
-const ACME_CLAUSE: RunnerClause = { ...CLASS_CLAUSE, address: clauseAddressSchema.parse("acme/ACME-2#scratch-files") };
+const ACME_CLAUSE: RunnerClause = { ...CLASS_CLAUSE, address: { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("ACME-2"), clause: clauseIdOf("scratch-files") } };
 
 const PLUGIN = { rules: { "no-class-authoring": { meta: { type: "problem" as const }, create: () => ({}) } } };
 
@@ -47,7 +50,7 @@ const CONFIGURED: ConfiguredClause = {
 
 const CLASS_CASE: SourceCase = {
   name: "class",
-  fileName: repoPathSchema.parse("cases/class.ts"),
+  fileName: repoPathOf("cases/class.ts"),
   source: "class A {}\n",
   expectedLines: [1],
 };

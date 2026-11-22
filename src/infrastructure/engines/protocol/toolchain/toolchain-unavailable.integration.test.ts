@@ -10,21 +10,21 @@ import { createDefaultFileTextPort } from "../../../node/file-system/file-text-p
 import type { PackageLocationPort } from "../../../node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptModules } from "../../audit/runner/toolchain/typescript-parse.ts";
 import { loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const REPO = absolutePathSchema.parse("/repository");
+const REPO = absoluteRootOf("/repository");
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 

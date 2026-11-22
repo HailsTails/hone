@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { checksOfClauses, editionsOf } from "./selection-checks.ts";
+import { editionOf } from "../../rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -118,11 +119,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -163,7 +164,7 @@ describe("editionsOf", () => {
     expect(
       editionsOf({
         catalogue: REPORT_CATALOGUE,
-        readings: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, edition: editionSchema.parse("1"), latest: editionSchema.parse("2") }],
+        readings: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, edition: editionOf("1"), latest: editionOf("2") }],
       }),
     ).toEqual([{ check: CAST_CHECK, engine: ESLINT_ENGINE, edition: "1", latest: "2" }]);
   });
@@ -172,7 +173,7 @@ describe("editionsOf", () => {
     expect(
       editionsOf({
         catalogue: REPORT_CATALOGUE,
-        readings: [{ address: CLOCK_SOURCES, mechanism: ESLINT, edition: editionSchema.parse("1"), latest: editionSchema.parse("2") }],
+        readings: [{ address: CLOCK_SOURCES, mechanism: ESLINT, edition: editionOf("1"), latest: editionOf("2") }],
       }),
     ).toEqual([]);
   });
@@ -181,7 +182,7 @@ describe("editionsOf", () => {
     expect(
       editionsOf({
         catalogue: REPORT_CATALOGUE,
-        readings: [{ address: CLOCK_SOURCES, mechanism: WALKER.mechanism, edition: editionSchema.parse("2"), latest: editionSchema.parse("3") }],
+        readings: [{ address: CLOCK_SOURCES, mechanism: WALKER.mechanism, edition: editionOf("2"), latest: editionOf("3") }],
       }),
     ).toEqual([{ check: CLOCK_CHECK, engine: WALKER, edition: "2", latest: "3" }]);
   });

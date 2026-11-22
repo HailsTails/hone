@@ -15,7 +15,6 @@ import type { PathPort, RelativeLocation } from "../application/ports/host/path-
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import { commandOf } from "./composed-command.ts";
 import { RECORD_DEBT } from "./commands.ts";
@@ -24,6 +23,8 @@ import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engi
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 
 const recordDebtCommandOf = (ports: { readonly gitTree: GitTreePort }) => (command: VersionOneCommandRequest) =>
   commandOf({ tool: RECORD_DEBT, ports: { ...command, ...ports } })(command);
@@ -76,7 +77,7 @@ const singleFileRepositoriesOver = (request: {
         create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
       },
       fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
-      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathOf("discipline-exceptions.json")] }) },
     });
 
 type RecordsDisk = {
@@ -212,7 +213,7 @@ const TABLE_PATH: PathPort = {
   ...POSIX_PATH,
   relative: ({ to }) => requiredEntry({ table: RELATIVE_TO_REPO, key: to }),
   directoryOf: ({ path }) => requiredEntry({ table: DIRECTORIES, key: path }),
-  fromFileUrl: () => ({ outcome: "ok", value: absolutePathSchema.parse("/install/src/hone.ts") }),
+  fromFileUrl: () => ({ outcome: "ok", value: absoluteRootOf("/install/src/hone.ts") }),
 };
 
 const HIT_IN_A = {
@@ -231,7 +232,7 @@ const runnerFinding = (request: { readonly hits: readonly unknown[] }): ModuleLo
   return { load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: { runner } }) };
 };
 
-const OWN_CONFIGURATION: UnprojectedFolderReport = { folder: repoPathSchema.parse("src"), selectionFolder: repoPathSchema.parse("src") };
+const OWN_CONFIGURATION: UnprojectedFolderReport = { folder: repoPathOf("src"), selectionFolder: repoPathOf("src") };
 
 const embeddedRunnerFinding = (request: { readonly unprojectedFolders: readonly UnprojectedFolderReport[] }): ModuleLoaderPort => {
   const report: EmbeddedRunReport = {
@@ -251,7 +252,7 @@ const embeddedRunnerFinding = (request: { readonly unprojectedFolders: readonly 
   return { load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: { runner } }) };
 };
 
-const SOURCE_A = repoPathSchema.parse("src/a.ts");
+const SOURCE_A = repoPathOf("src/a.ts");
 
 const gitChanging = (changed: readonly RepoPath[]): GitPort => ({
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: [SOURCE_A] }),

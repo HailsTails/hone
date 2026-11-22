@@ -14,11 +14,10 @@ import type { FileTextPort } from "../../src/application/ports/file-system/file-
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../src/infrastructure/node/path-port.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile, SourceCase } from "../../src/domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../src/domain/rule-set/identifier-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
@@ -30,6 +29,7 @@ import {
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import * as eslintRunnerModule from "../../src/infrastructure/engines/eslint/runner/runner.ts";
+import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -84,7 +84,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+const RULE_SET_ROOT = absoluteRootOf("/install");
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -192,7 +192,7 @@ const eslintDisciplines = foldersUnder({ table: ruleSetTexts, prefix: "./src/inf
 const CONFORMANCE_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: eslintDisciplines,
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   mechanismRoot: `${import.meta.dirname}/../../src/infrastructure/engines/eslint`,
 });
 

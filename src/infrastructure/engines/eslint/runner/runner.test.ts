@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { checksRunnerModuleSchema } from "../../protocol/checks/checks-runner-module-schema.ts";
 import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { checksRunner, runner } from "./runner.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 describe("runner", () => {
   it("is an embedded runner module core accepts, projecting config overrides and inline disables", () => {
@@ -25,17 +27,17 @@ describe("runner", () => {
     expect(
       await runner.conform({
         clause: {
-          address: clauseAddressSchema.parse("XX-1#first-check"),
+          address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("first-check") },
           anchor: { kind: "file" },
           pieceRoot: "/install/mechanisms/eslint/XX-1",
           clauseSettings: {},
-          edition: FIRST_EDITION,
+          edition: editionOf("1"),
           settings: { pluginNamespace: "xx", pluginModule: "../x.ts", rule: "first-check" },
         },
         cases: [
           {
             name: "one line",
-            fileName: repoPathSchema.parse("src/a.ts"),
+            fileName: repoPathOf("src/a.ts"),
             source: "const a = 1;\n",
             expectedLines: [],
           },

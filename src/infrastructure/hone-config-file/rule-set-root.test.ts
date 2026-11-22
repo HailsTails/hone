@@ -2,20 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import { ruleSetNameSchema } from "./identifiers.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { ruleSetRootOf } from "./rule-set-root.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const TEAM = ruleSetNameSchema.parse("team");
+const TEAM = ruleSetNameOf("team");
 
-const GHOST = ruleSetNameSchema.parse("ghost");
+const GHOST = ruleSetNameOf("ghost");
 
-const IN_FOLDER: readonly DeclaredRuleSet[] = [{ name: TEAM, location: { location: "folder", path: repoPathSchema.parse("rules/team") } }];
+const IN_FOLDER: readonly DeclaredRuleSet[] = [{ name: TEAM, location: { location: "folder", path: repoPathOf("rules/team") } }];
 
 const AT_ROOT: readonly DeclaredRuleSet[] = [{ name: TEAM, location: { location: "repo-root" } }];
 

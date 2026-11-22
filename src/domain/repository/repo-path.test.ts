@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixedRepoPath, isRepoPathText } from "./repo-path.ts";
+import { isRepoPath, isRepoPathText } from "./repo-path.ts";
 
 const ACCEPTED = [
   "a.ts",
@@ -46,12 +46,12 @@ describe("isRepoPathText", () => {
   });
 });
 
-describe("fixedRepoPath", () => {
-  it("returns a repo-relative path as given", () => {
-    expect(fixedRepoPath("hone-records/debt")).toBe("hone-records/debt");
+describe("isRepoPath", () => {
+  it.each(ACCEPTED)("accepts %j", (text) => {
+    expect(isRepoPath(text)).toBe(true);
   });
 
-  it("throws for a path that is not repo-relative", () => {
-    expect(() => fixedRepoPath("../outside")).toThrow("../outside: not a repo-relative path");
+  it.each(REFUSED)("refuses %j", (text) => {
+    expect(isRepoPath(text)).toBe(false);
   });
 });

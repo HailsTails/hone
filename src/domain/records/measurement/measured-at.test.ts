@@ -1,30 +1,31 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { measurementOf, type RunMeasurement, type RunMeasurements } from "./measured-at.ts";
 import type { ReachedPlace } from "../answering/record-reach.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const SYMPTOM: Symptom = { name: "claimed-type", title: "Claimed type", seen: "Seen.", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 
-const CLAUSE = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
-const OTHER_CLAUSE = clauseAddressSchema.parse("CD-2#non-null-assertions");
+const OTHER_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
-const FILE_B = repoPathSchema.parse("src/b.ts");
+const FILE_B = repoPathOf("src/b.ts");
 
 const CHECK: Check = { name: "cast-expressions", symptom: SYMPTOM, clause: CLAUSE, engines: [{ name: "eslint", mechanism: ESLINT }], forms: [] };
 
 const AT_FILE_A: ReachedPlace = { check: CHECK, place: { at: "file", file: FILE_A } };
 
-const AT_SRC: ReachedPlace = { check: CHECK, place: { at: "module", module: repoPathSchema.parse("src") } };
+const AT_SRC: ReachedPlace = { check: CHECK, place: { at: "module", module: repoPathOf("src") } };
 
 const TRACKED = [FILE_A, FILE_B];
 
@@ -64,8 +65,8 @@ describe("measurementOf", () => {
   });
 
   it("says excluded for a module place inside an excluded folder", () => {
-    const measurements: RunMeasurements = { runs: [eslintRun({ selected: [CLAUSE], measured: [] })], tracked: [], excluded: [repoPathSchema.parse("src")] };
-    expect(measurementOf({ measurements, reached: { check: CHECK, place: { at: "module", module: repoPathSchema.parse("src/adapters") } } })).toBe("excluded");
+    const measurements: RunMeasurements = { runs: [eslintRun({ selected: [CLAUSE], measured: [] })], tracked: [], excluded: [repoPathOf("src")] };
+    expect(measurementOf({ measurements, reached: { check: CHECK, place: { at: "module", module: repoPathOf("src/adapters") } } })).toBe("excluded");
   });
 
   it("says not-run when there are no runs", () => {

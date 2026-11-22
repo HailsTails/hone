@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Recipe, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { WhyChain } from "../../../domain/records/why-chain.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { forfeitedLine, paidLine, staleLine } from "./debt-lines.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -97,20 +97,20 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
 
 const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop";
 
-const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
 const DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: WEBHOOK_FILE, holding: { held: "stated" } },
 };
 
 const CARRIED_DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 1 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 1 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: WEBHOOK_FILE, holding: { held: "carried", entry: {}, lacks: [], standing: "established" } },
 };
 
 const LOCATION: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/authorised-locations/claimed-type.json"), index: 0 },
   record: {
     kind: "authorised-location",
     symptom: CLAIMED_TYPE,
@@ -121,7 +121,7 @@ const LOCATION: PlacedRecord = {
 };
 
 const DEVIATION: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/deviations/world-values-through-a-port.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/deviations/world-values-through-a-port.json"), index: 0 },
   record: { kind: "deviation", recipe: WORLD_VALUES_THROUGH_A_PORT, file: WEBHOOK_FILE, reasonFails: "Fails.", evidence: "Evidence.", ruleHolds: "Holds." },
 };
 

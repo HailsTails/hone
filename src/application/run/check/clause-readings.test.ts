@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import { clauseReadingsOf } from "./clause-readings.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 type ReadableFiles = Pick<FileTextPort, "read" | "exists">;
 
@@ -38,15 +41,15 @@ const assessmentUnreadable = (): ReadableFiles => ({
   read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/disciplines.assessment.md", detail: "EACCES" } }),
 });
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
+const REPO_ROOT = absoluteRootOf("/repo");
 
 const ASSESSMENT_PATH = "/repo/disciplines.assessment.md";
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const TEAM_CLAUSE = clauseAddressSchema.parse("team/TM-1#no-tmp-files");
+const TEAM_CLAUSE = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("no-tmp-files") };
 
 const LOOPS_PAGE = "/repo/node_modules/@hailstails/hone/rules/CD-15/README.md";
 
@@ -56,23 +59,23 @@ const TEAM_PAGE = "/repo/team-rules/rules/TM-1/README.md";
 
 const GUIDE_PAGE = "/repo/node_modules/@hailstails/hone/ADOPTING.md";
 
-const SHIPPED_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
+const SHIPPED_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 
 const CLAUSE_ROOTS = [
   { clause: LOOPS, ruleSetRoot: SHIPPED_ROOT },
   { clause: CLASS_SYNTAX, ruleSetRoot: SHIPPED_ROOT },
-  { clause: TEAM_CLAUSE, ruleSetRoot: absolutePathSchema.parse("/repo/team-rules") },
+  { clause: TEAM_CLAUSE, ruleSetRoot: absoluteRootOf("/repo/team-rules") },
 ];
 
-const findingOn = (request: { readonly clause: Finding["clause"]; readonly file: string }): Finding => ({
+const findingOn = (request: { readonly clause: Finding["clause"]; readonly file: RepoPath }): Finding => ({
   clause: request.clause,
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse(request.file),
+  mechanism: "audit",
+  file: request.file,
   anchor: { line: 1, column: 0 },
   snippet: "const total = 0;",
 });
 
-const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
+const INSTALL_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 
 const LOOPS_PAGE_TEXT = "node_modules/@hailstails/hone/rules/CD-15/README.md";
 
@@ -105,7 +108,7 @@ const loopsReading = (request: { readonly assessmentSection: "present" | "not-as
   rulePage: { path: LOOPS_PAGE_TEXT, presence: "present" },
 });
 
-const ONE_LOOPS_FINDING = [findingOn({ clause: LOOPS, file: "src/a.ts" })];
+const ONE_LOOPS_FINDING = [findingOn({ clause: LOOPS, file: repoPathOf("src/a.ts") })];
 
 const CLASS_SYNTAX_READING = {
   kind: "clause",
@@ -131,9 +134,9 @@ describe("clauseReadingsOf", () => {
       readingsOver({
         fileText,
         findings: [
-          findingOn({ clause: LOOPS, file: "src/a.ts" }),
-          findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" }),
-          findingOn({ clause: LOOPS, file: "src/b.ts" }),
+          findingOn({ clause: LOOPS, file: repoPathOf("src/a.ts") }),
+          findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }),
+          findingOn({ clause: LOOPS, file: repoPathOf("src/b.ts") }),
         ],
         join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(LOOPS_PAGE).mockReturnValueOnce(CLASS_SYNTAX_PAGE),
         shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(LOOPS_PAGE_TEXT).mockReturnValueOnce(CLASS_SYNTAX_PAGE_TEXT),
@@ -145,7 +148,7 @@ describe("clauseReadingsOf", () => {
     const fileText = assessmentHolding({ text: "## CD-15#loops\n" });
     readingsOver({
       fileText,
-      findings: [findingOn({ clause: LOOPS, file: "src/a.ts" }), findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" })],
+      findings: [findingOn({ clause: LOOPS, file: repoPathOf("src/a.ts") }), findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") })],
       join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(LOOPS_PAGE).mockReturnValueOnce(CLASS_SYNTAX_PAGE),
       shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(LOOPS_PAGE_TEXT).mockReturnValueOnce(CLASS_SYNTAX_PAGE_TEXT),
     });
@@ -187,7 +190,7 @@ describe("clauseReadingsOf without a readable assessment file", () => {
     expect(
       readingsOver({
         fileText,
-        findings: [findingOn({ clause: LOOPS, file: "src/a.ts" }), findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" })],
+        findings: [findingOn({ clause: LOOPS, file: repoPathOf("src/a.ts") }), findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") })],
         join: vi
           .fn<PathPort["join"]>()
           .mockReturnValueOnce(ASSESSMENT_PATH)
@@ -209,7 +212,7 @@ describe("clauseReadingsOf pointing at the rule page", () => {
     expect(
       readingsOver({
         fileText,
-        findings: [findingOn({ clause: TEAM_CLAUSE, file: "src/a.ts" })],
+        findings: [findingOn({ clause: TEAM_CLAUSE, file: repoPathOf("src/a.ts") })],
         join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(TEAM_PAGE),
         shownPathOf: shownAs(TEAM_PAGE_TEXT),
       }),
@@ -220,9 +223,9 @@ describe("clauseReadingsOf pointing at the rule page", () => {
     expect(
       clauseReadingsOf({
         findings: ONE_LOOPS_FINDING,
-        clauseRoots: [{ clause: LOOPS, ruleSetRoot: absolutePathSchema.parse("D:\\hone") }],
-        repoRoot: absolutePathSchema.parse("C:\\repo"),
-        installRoot: absolutePathSchema.parse("D:\\hone"),
+        clauseRoots: [{ clause: LOOPS, ruleSetRoot: absoluteRootOf("D:\\hone") }],
+        repoRoot: absoluteRootOf("C:\\repo"),
+        installRoot: absoluteRootOf("D:\\hone"),
         fileText: assessmentNotWritten(),
         path: pathJoining(
           vi
@@ -241,7 +244,7 @@ describe("clauseReadingsOf pointing at the rule page", () => {
 });
 
 describe("clauseReadingsOf when pnpm runs the package from its store", () => {
-  const storeRoot = absolutePathSchema.parse("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone");
+  const storeRoot = absoluteRootOf("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone");
   const storedReadings = (request: { readonly shownPathOf: ShownPathOf }) =>
     clauseReadingsOf({
       findings: ONE_LOOPS_FINDING,

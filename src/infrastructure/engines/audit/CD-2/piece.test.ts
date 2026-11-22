@@ -3,15 +3,17 @@ import type { RunnerClause } from "../../../../domain/runner/runner-module-types
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import { walkerPieceSettingsSchema } from "../runner/pieces/walker-check-schema.ts";
 import { check } from "./cast-expressions.ts";
 import piece from "./piece.json" with { type: "json" };
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const loadedParsePort = await loadParsePort({
   peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
@@ -23,9 +25,9 @@ const defaultParsePort = loadedParsePort.value;
 const EXPECTATION = "@ts-expect-" + "error";
 const IGNORE = "@ts-" + "ignore";
 const NOCHECK = "@ts-" + "nocheck";
-const ADDRESS = clauseAddressSchema.parse("CD-2#cast-expressions");
-const TEST_FILE = repoPathSchema.parse("src/basket.test.ts");
-const GENERATED_FILE = repoPathSchema.parse("dist/basket.ts");
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
+const TEST_FILE = repoPathOf("src/basket.test.ts");
+const GENERATED_FILE = repoPathOf("dist/basket.ts");
 const SETTINGS = walkerPieceSettingsSchema.parse(piece.clauses[0].settings);
 
 const CLAUSE: RunnerClause = {
@@ -33,7 +35,7 @@ const CLAUSE: RunnerClause = {
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-2",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: SETTINGS,
 };
 
@@ -57,8 +59,8 @@ const castFreeRun = () =>
     parse: defaultParsePort,
     entryKind: { kindOf: () => "absent" },
   }).run({
-    repoRoot: absolutePathSchema.parse("/repo"),
-    installRoot: absolutePathSchema.parse("/install"),
+    repoRoot: absoluteRootOf("/repo"),
+    installRoot: absoluteRootOf("/install"),
     files: [TEST_FILE, GENERATED_FILE],
     trackedPaths: [TEST_FILE, GENERATED_FILE],
     clauses: [CLAUSE],

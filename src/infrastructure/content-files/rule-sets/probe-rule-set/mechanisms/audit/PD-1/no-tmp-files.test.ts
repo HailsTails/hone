@@ -1,11 +1,13 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressSchema } from "../../../../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../../../../../engines/audit/runner/pieces/walker-disk.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../../../../../engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { check } from "./no-tmp-files.ts";
-import { FIRST_EDITION } from "../../../../../edition.ts";
+import { disciplineIdOf } from "../../../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../../../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../../../../../../../domain/rule-set/rule-set-name-of.ts";
+import { editionOf } from "../../../../../../../domain/rule-set/edition-of.ts";
 
 const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../../../..`, installForm: "source" }) });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
@@ -14,13 +16,13 @@ const SYNTAX_API = loadedParsePort.value.syntaxApi;
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 
-const ADDRESS = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
+const ADDRESS = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
   anchor: { kind: "file" },
   pieceRoot: "/probe/mechanisms/audit/PD-1",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "no-tmp-files.ts" },
 };
 

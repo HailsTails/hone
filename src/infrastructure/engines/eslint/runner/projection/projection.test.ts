@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { CoreInstall } from "./core-install.ts";
 import {
   escapedGlobPath,
@@ -12,11 +10,13 @@ import {
   projectionState,
   writeProjection,
 } from "./projection.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
-const PROJECTION_PATH = repoPathSchema.parse("disciplines.eslint.mjs");
+const PROJECTION_PATH = repoPathOf("disciplines.eslint.mjs");
 
-const repoRoot = absolutePathSchema.parse("/repo");
-const windowsRepoRoot = absolutePathSchema.parse("C:\\repo");
+const repoRoot = absoluteRootOf("/repo");
+const windowsRepoRoot = absoluteRootOf("C:\\repo");
 const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 const windowsPath = createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" });
 

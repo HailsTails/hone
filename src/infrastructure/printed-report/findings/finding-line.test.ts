@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { Case, Principle, Recipe, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { escapedLineBreaks, locatedFindingLine, symptomFindingLine } from "./finding-line.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/a.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  mechanism: "audit",
+  file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 5 },
   snippet: "class A {}",
 };
@@ -134,17 +135,17 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const CLOCK_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-17#clock-sources"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/charge-order.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/charge-order.ts"),
   anchor: { line: 14, column: 0 },
   snippet: "const chargedAt = clock.now();",
 };
 
 const TEST_LOGIC_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/charge-order.test.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 22, column: 2 },
   snippet: "if (result.ok) {",
   remedy: {

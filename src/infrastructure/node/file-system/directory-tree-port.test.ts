@@ -6,10 +6,11 @@ import type { FileRemovalPort } from "../../../application/ports/file-system/fil
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDefaultDirectoryTreePort, createDirectoryTreePort } from "./directory-tree-port.ts";
 import { createDefaultDirectoryPort, createDefaultEntryKindPort, createDefaultFileTextPort } from "./file-system-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const FOLDER = absolutePathSchema.parse("/repo/scratch");
+const FOLDER = absoluteRootOf("/repo/scratch");
 
-const NESTED = absolutePathSchema.parse("/repo/scratch/nested");
+const NESTED = absoluteRootOf("/repo/scratch/nested");
 
 const IS_DIRECTORY = { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory") };
 

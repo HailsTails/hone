@@ -23,9 +23,6 @@ import {
   installedEslintBoundary,
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../src/infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import SYMPTOMS from "../../rules/typescript/symptoms.json" with { type: "json" };
 import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
@@ -33,6 +30,11 @@ import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/CD-14/pi
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import type { ChecksRunRequest } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-run-types.ts";
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
+import { editionOf } from "../../src/domain/rule-set/edition-of.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
@@ -153,13 +155,13 @@ const CATALOGUE = symptomCatalogueOf({ document: SYMPTOMS });
 
 assert(CATALOGUE.outcome === "ok");
 
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
 const CLASS_CHECK = "authored-class-or-this#class-keyword";
 
 const CLASS_RULE = "hone/authored-class-or-this#class-keyword";
 
-const SOURCE_FILE = repoPathSchema.parse("kept.ts");
+const SOURCE_FILE = repoPathOf("kept.ts");
 
 const BINDING_SETTINGS = ESLINT_CD_14_PIECE.clauses[0].settings;
 
@@ -259,7 +261,7 @@ const V1_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: BINDING_SETTINGS,
 };
 
@@ -267,7 +269,7 @@ const V1_CONFIG = `import projection from "./disciplines.eslint.mjs";\nexport de
 
 const REPOSITORY_ROOT_LOOKUP: ChecksRunRequest["declaredConfigLookup"] = "repository-root";
 
-const SUB_FILE = repoPathSchema.parse("sub/kept.ts");
+const SUB_FILE = repoPathOf("sub/kept.ts");
 
 const SUB_CONFIG_WITHOUT_THE_CHECKS = `export default [{ files: ["**/*.ts"], rules: {} }];
 `;
@@ -286,9 +288,9 @@ export default [...projection, { ignores: ["sub/**"] }];
 
 const BROKEN_SUB_FILES = { "eslint.config.mjs": "export default [;\n", "kept.ts": ONE_CLASS };
 
-const SUPPRESSIONS_PATH = repoPathSchema.parse("eslint-suppressions.json");
+const SUPPRESSIONS_PATH = repoPathOf("eslint-suppressions.json");
 
-const PACKAGE_PATH = repoPathSchema.parse("package.json");
+const PACKAGE_PATH = repoPathOf("package.json");
 
 const SUPPRESSIONS = `{ "kept.ts": { "hone/authored-class-or-this#class-keyword": { "count": 1 } } }\n`;
 
@@ -488,9 +490,9 @@ describe.each(ESLINT_LINES)("the version 2 ESLint runner on %s, over a repositor
   });
 });
 
-const SUB_SLICE = repoPathSchema.parse("sub/hone.eslint.mjs");
+const SUB_SLICE = repoPathOf("sub/hone.eslint.mjs");
 
-const SUB_DECLARATION_PATH = repoPathSchema.parse(`sub/${CHECKS_DECLARATION_PATH}`);
+const SUB_DECLARATION_PATH = repoPathOf(`sub/${CHECKS_DECLARATION_PATH}`);
 
 const ROOT_DECLARATION = { file: CHECKS_DECLARATION_PATH, text: DECLARATION_TEXT };
 
@@ -504,7 +506,7 @@ const PACKAGE_RUN = {
   ...ROOT_FILE_RUN,
   declaredConfigLookup: "nearest-to-file" as const,
   queried: [SUB_FILE],
-  tracked: [repoPathSchema.parse("eslint.config.mjs"), repoPathSchema.parse("sub/eslint.config.mjs"), SUB_FILE],
+  tracked: [repoPathOf("eslint.config.mjs"), repoPathOf("sub/eslint.config.mjs"), SUB_FILE],
   files: { "eslint.config.mjs": SUB_CONFIG_WITHOUT_THE_CHECKS, [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT },
   sub: { "eslint.config.mjs": PACKAGE_CONFIG, "kept.ts": ONE_CLASS, [CHECKS_PROJECTION_PATH]: SUB_PROJECTION_TEXT },
 };
@@ -565,7 +567,7 @@ describe.each(ESLINT_LINES)("the version 2 ESLint runner on %s, over a repositor
   });
 });
 
-const SUB_DIRECTORY = repoPathSchema.parse("sub");
+const SUB_DIRECTORY = repoPathOf("sub");
 
 const ROOT_CONFIG_IMPORTING_THE_SUB_SLICE = `import hone from "./${CHECKS_PROJECTION_PATH}";
 import sub from "./${SUB_SLICE}";
@@ -650,7 +652,7 @@ const UNCONFIGURED_RUN = {
   ...ROOT_FILE_RUN,
   declaredConfigRoots: [SUB_DIRECTORY],
   queried: [SUB_FILE],
-  tracked: [repoPathSchema.parse("eslint.config.mjs"), SUB_FILE],
+  tracked: [repoPathOf("eslint.config.mjs"), SUB_FILE],
   sub: { "kept.ts": ONE_CLASS, [CHECKS_PROJECTION_PATH]: SUB_PROJECTION_TEXT },
 };
 

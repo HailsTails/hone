@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { FoundCheck } from "../../language-layer/check-address.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { Case, Check, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { AuthorisedLocation, BoundaryRecord, Debt, HoneRecord, RuntimeFacility, SymptomReach } from "../hone-records/hone-record.ts";
 import type { WhyChain } from "../why-chain.ts";
 import { holdsAt, type PartyReport, placeCovers, placesReachedBy } from "./record-reach.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -99,9 +102,9 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const ADAPTER = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const ADAPTER = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const OTHER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const OTHER_FILE = repoPathOf("src/orders/charge-order.ts");
 
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
 
@@ -116,9 +119,9 @@ const RUNTIME_REACH: readonly { readonly facility: RuntimeFacility; readonly sym
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#cast-expressions"), engines: [], forms: [] };
+const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, engines: [], forms: [] };
 
-const NON_NULL_CHECK: Check = { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: clauseAddressSchema.parse("CD-2#non-null-assertions"), engines: [], forms: [] };
+const NON_NULL_CHECK: Check = { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") }, engines: [], forms: [] };
 
 const AT_CAST: FoundCheck = { found: "check", check: CAST_CHECK };
 
@@ -171,20 +174,20 @@ const DEVIATION: HoneRecord = {
 
 const ADAPTER_DEVIATION: HoneRecord = { ...DEVIATION, recipe: ADAPTER_PER_OUTSIDE_PARTY };
 
-const boundaryOn = (request: { readonly module: string; readonly outsideParty: BoundaryRecord["outsideParty"] }): HoneRecord => ({
+const boundaryOn = (request: { readonly module: RepoPath; readonly outsideParty: BoundaryRecord["outsideParty"] }): HoneRecord => ({
   kind: "boundary-record",
-  module: repoPathSchema.parse(request.module),
+  module: request.module,
   outsideParty: request.outsideParty,
   holding: { held: "stated", ports: ["Port"] },
 });
 
-const UUID_BOUNDARY = boundaryOn({ module: "src/adapters/ids.ts", outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" } });
+const UUID_BOUNDARY = boundaryOn({ module: repoPathOf("src/adapters/ids.ts"), outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" } });
 
-const FILES_BOUNDARY = boundaryOn({ module: "src/adapters/files", outsideParty: { kind: "scheme-module", specifier: "node:fs" } });
+const FILES_BOUNDARY = boundaryOn({ module: repoPathOf("src/adapters/files"), outsideParty: { kind: "scheme-module", specifier: "node:fs" } });
 
-const IDS_FILE = repoPathSchema.parse("src/adapters/ids.ts");
+const IDS_FILE = repoPathOf("src/adapters/ids.ts");
 
-const READ_TEXT_FILE = repoPathSchema.parse("src/adapters/files/read-text.ts");
+const READ_TEXT_FILE = repoPathOf("src/adapters/files/read-text.ts");
 
 describe("holdsAt, debt and authorised locations", () => {
   it.each([{ record: DEBT }, { record: AUTHORISED_LOCATION }, { record: AUTHORISED_LOCATION_OFF_THE_CATALOGUE }])(
@@ -208,8 +211,8 @@ describe("holdsAt, debt and authorised locations", () => {
   it.each([
     { record: DEBT, file: OTHER_FILE },
     { record: AUTHORISED_LOCATION, file: OTHER_FILE },
-    { record: DEBT, file: repoPathSchema.parse("src/adapters/stripe-webhook.ts.bak") },
-    { record: AUTHORISED_LOCATION, file: repoPathSchema.parse("src/adapters/stripe-webhook.ts/inner.ts") },
+    { record: DEBT, file: repoPathOf("src/adapters/stripe-webhook.ts.bak") },
+    { record: AUTHORISED_LOCATION, file: repoPathOf("src/adapters/stripe-webhook.ts/inner.ts") },
   ])("does not hold a $record.kind at $file, since its file never widens to a folder or a prefix", ({ record, file }) => {
     expect(holdsAt({ record, site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file, party: NOT_REPORTED }, catalogue: CATALOGUE })).toBe("does-not-hold");
   });
@@ -279,15 +282,15 @@ describe("holdsAt, boundary records", () => {
 
   it("does not hold a boundary record in a file that only shares its module's name as a prefix", () => {
     expect(
-      holdsAt({ record: FILES_BOUNDARY, site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file: repoPathSchema.parse("src/adapters/files-old.ts"), party: reportedAs("node:fs") }, catalogue: CATALOGUE }),
+      holdsAt({ record: FILES_BOUNDARY, site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file: repoPathOf("src/adapters/files-old.ts"), party: reportedAs("node:fs") }, catalogue: CATALOGUE }),
     ).toBe("does-not-hold");
   });
 
   it.each(RUNTIME_REACH)("holds a boundary record on runtime:$facility over $symptom.name in its module", ({ facility, symptom }) => {
     expect(
       holdsAt({
-        record: boundaryOn({ module: "src/adapters/world.ts", outsideParty: { kind: "runtime", facility } }),
-        site: { check: UNCHECKED, symptom, file: repoPathSchema.parse("src/adapters/world.ts"), party: NOT_REPORTED },
+        record: boundaryOn({ module: repoPathOf("src/adapters/world.ts"), outsideParty: { kind: "runtime", facility } }),
+        site: { check: UNCHECKED, symptom, file: repoPathOf("src/adapters/world.ts"), party: NOT_REPORTED },
         catalogue: CATALOGUE,
       }),
     ).toBe("holds");
@@ -296,8 +299,8 @@ describe("holdsAt, boundary records", () => {
   it.each(RUNTIME_REACH)("does not hold a boundary record on runtime:$facility over an outside import", ({ facility }) => {
     expect(
       holdsAt({
-        record: boundaryOn({ module: "src/adapters/world.ts", outsideParty: { kind: "runtime", facility } }),
-        site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file: repoPathSchema.parse("src/adapters/world.ts"), party: reportedAs("uuid") },
+        record: boundaryOn({ module: repoPathOf("src/adapters/world.ts"), outsideParty: { kind: "runtime", facility } }),
+        site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file: repoPathOf("src/adapters/world.ts"), party: reportedAs("uuid") },
         catalogue: CATALOGUE,
       }),
     ).toBe("does-not-hold");
@@ -306,8 +309,8 @@ describe("holdsAt, boundary records", () => {
   it("does not hold a boundary record on runtime:json over a symptom another facility reaches", () => {
     expect(
       holdsAt({
-        record: boundaryOn({ module: "src/adapters/json.ts", outsideParty: { kind: "runtime", facility: "json" } }),
-        site: { check: UNCHECKED, symptom: DATE_USED_DIRECTLY, file: repoPathSchema.parse("src/adapters/json.ts"), party: NOT_REPORTED },
+        record: boundaryOn({ module: repoPathOf("src/adapters/json.ts"), outsideParty: { kind: "runtime", facility: "json" } }),
+        site: { check: UNCHECKED, symptom: DATE_USED_DIRECTLY, file: repoPathOf("src/adapters/json.ts"), party: NOT_REPORTED },
         catalogue: CATALOGUE,
       }),
     ).toBe("does-not-hold");
@@ -316,7 +319,7 @@ describe("holdsAt, boundary records", () => {
   it("does not hold a boundary record on a package over a symptom outside an outside party's reach", () => {
     expect(
       holdsAt({
-        record: boundaryOn({ module: "src/adapters/stripe-webhook.ts", outsideParty: { kind: "package", specifier: "stripe", dependency: "stripe" } }),
+        record: boundaryOn({ module: repoPathOf("src/adapters/stripe-webhook.ts"), outsideParty: { kind: "package", specifier: "stripe", dependency: "stripe" } }),
         site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file: ADAPTER, party: reportedAs("stripe") },
         catalogue: CATALOGUE,
       }),
@@ -326,8 +329,8 @@ describe("holdsAt, boundary records", () => {
   it("holds a boundary record on a named ban, since a ban refuses only a dependency record or a deviation", () => {
     expect(
       holdsAt({
-        record: boundaryOn({ module: "src/adapters/collections.ts", outsideParty: { kind: "package", specifier: "lodash", dependency: "lodash" } }),
-        site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file: repoPathSchema.parse("src/adapters/collections.ts"), party: reportedAs("lodash/fp") },
+        record: boundaryOn({ module: repoPathOf("src/adapters/collections.ts"), outsideParty: { kind: "package", specifier: "lodash", dependency: "lodash" } }),
+        site: { check: UNCHECKED, symptom: OUTSIDE_IMPORT, file: repoPathOf("src/adapters/collections.ts"), party: reportedAs("lodash/fp") },
         catalogue: CATALOGUE,
       }),
     ).toBe("holds");
@@ -378,7 +381,7 @@ describe("holdsAt, an authorised location naming a check its symptom does not ha
   });
 });
 
-const IMPORT_CHECK: Check = { name: "import-or-require", symptom: OUTSIDE_IMPORT, clause: clauseAddressSchema.parse("CD-19#import-boundaries"), engines: [], forms: [] };
+const IMPORT_CHECK: Check = { name: "import-or-require", symptom: OUTSIDE_IMPORT, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-19"), clause: clauseIdOf("import-boundaries") }, engines: [], forms: [] };
 
 const CATALOGUE_WITH_CHECKS: SymptomCatalogue = { ...CATALOGUE, checks: [CAST_CHECK, NON_NULL_CHECK, IMPORT_CHECK] };
 
@@ -413,8 +416,8 @@ describe("placeCovers", () => {
     expect([
       placeCovers({ place: { at: "file", file: ADAPTER }, file: ADAPTER }),
       placeCovers({ place: { at: "file", file: ADAPTER }, file: OTHER_FILE }),
-      placeCovers({ place: { at: "module", module: repoPathSchema.parse("src/adapters/files") }, file: READ_TEXT_FILE }),
-      placeCovers({ place: { at: "module", module: repoPathSchema.parse("src/adapters/files") }, file: OTHER_FILE }),
+      placeCovers({ place: { at: "module", module: repoPathOf("src/adapters/files") }, file: READ_TEXT_FILE }),
+      placeCovers({ place: { at: "module", module: repoPathOf("src/adapters/files") }, file: OTHER_FILE }),
     ]).toEqual(["holds", "does-not-hold", "holds", "does-not-hold"]);
   });
 });

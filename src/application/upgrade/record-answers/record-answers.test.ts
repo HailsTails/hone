@@ -3,19 +3,19 @@ import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } 
 import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { recordAnswersOf } from "./record-answers.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -52,11 +52,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -320,7 +320,7 @@ describe("recordAnswersOf crediting an authorised location with the findings it 
 
 describe("recordAnswersOf over every record of the file", () => {
   it("answers each file carve-out and authorised location, in the order the records were given, and leaves a clause-wide carve-out out", () => {
-    const second: ExceptionRecord = { ...CARVE_OUT, file: repoPathSchema.parse("src/b.ts") };
+    const second: ExceptionRecord = { ...CARVE_OUT, file: repoPathOf("src/b.ts") };
     const clauseWide: ExceptionRecord = { kind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, reason: "generated", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN };
     expect(
       recordAnswersOf({

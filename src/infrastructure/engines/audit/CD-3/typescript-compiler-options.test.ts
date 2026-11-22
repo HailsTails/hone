@@ -1,10 +1,10 @@
 import { assert, describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
 import type { SyntaxApi } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers, typeScriptPeersNamed } from "../runner/toolchain/typescript-toolchain.ts";
 import type { OptionSettings, ResolvedConfig } from "./compiler-options-resolution.ts";
 import { typeScriptCompilerOptionsOf } from "./typescript-compiler-options.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 
 const DEVELOPMENT_ROOT = `${import.meta.dirname}/../../../../..`;
 
@@ -29,7 +29,7 @@ const syntaxApiOn = async (request: {
 const CURRENT = await syntaxApiOn({ peers: CURRENT_PEERS, line: "typescript", version: /^6\./ });
 const FLOOR = await syntaxApiOn({ peers: FLOOR_PEERS, line: "typescript-floor", version: /^4\.8\.4$/ });
 
-const LEAF = repoPathSchema.parse("packages/a/tsconfig.json");
+const LEAF = repoPathOf("packages/a/tsconfig.json");
 
 const UNSET: OptionSettings = {
   strict: "unset",

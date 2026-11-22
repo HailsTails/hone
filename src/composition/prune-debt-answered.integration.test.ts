@@ -14,7 +14,6 @@ import type { ModuleLoaderPort } from "../application/ports/host/module-loader-p
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
@@ -22,6 +21,7 @@ import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engi
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 
 const runPruneDebtCommand = (command: PruneCommand) => commandOf({ tool: PRUNE_DEBT, ports: command })(command);
 
@@ -87,13 +87,13 @@ assert(recordsOnDisk.outcome === "ok", "the fixture's records read from disk");
 
 const TOOL_COMMAND_URL = new URL("../hone.ts", import.meta.url).href;
 
-const ANSWERED = repoPathSchema.parse("src/answered.ts");
-const DOUBLY = repoPathSchema.parse("src/doubly.ts");
-const REFUSED = repoPathSchema.parse("src/refused.ts");
+const ANSWERED = repoPathOf("src/answered.ts");
+const DOUBLY = repoPathOf("src/doubly.ts");
+const REFUSED = repoPathOf("src/refused.ts");
 
 const CLASS_SOURCE = "export class Basket {}\n";
 
-const TRACKED = [repoPathSchema.parse("discipline-exceptions.json"), repoPathSchema.parse("disciplines.json"), ANSWERED, DOUBLY, REFUSED];
+const TRACKED = [repoPathOf("discipline-exceptions.json"), repoPathOf("disciplines.json"), ANSWERED, DOUBLY, REFUSED];
 
 const fixtureRepository = (): FileTextPort =>
   inMemoryOverlay({

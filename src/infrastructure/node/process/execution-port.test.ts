@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import {
   createExecutionPort,
   createExecutionSpawn,
@@ -7,8 +6,9 @@ import {
   type ExecutionSpawn,
   type ExecutionSpawnProvider,
 } from "./execution-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const WORKING_DIRECTORY = absolutePathSchema.parse("D:\\work\\project files");
+const WORKING_DIRECTORY = absoluteRootOf("D:\\work\\project files");
 
 describe("createExecutionPort", () => {
   it("binds policy and environment once and snapshots inputs across direct argv runs", () => {

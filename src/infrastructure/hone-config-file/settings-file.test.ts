@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ruleSetNameSchema } from "./identifiers.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import { settingsFileOf, settingsTextOf, settingsWireOf } from "./settings-file.ts";
 import type { SettingsFile, SettingsFileFault } from "../../domain/settings/settings-file.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const SMALLEST_DOCUMENT = { version: 2, ruleSets: {}, checks: {} };
 
@@ -54,15 +54,15 @@ describe("settingsFileOf", () => {
     ).toEqual<{ readonly outcome: "ok"; readonly value: SettingsFile }>({
       outcome: "ok",
       value: {
-        exclude: [repoPathSchema.parse("vendor")],
+        exclude: [repoPathOf("vendor")],
         ruleSets: [
-          { name: ruleSetNameSchema.parse("team"), location: { location: "folder", path: repoPathSchema.parse("tools/hone-rules") } },
-          { name: ruleSetNameSchema.parse("local"), location: { location: "repo-root" } },
+          { name: ruleSetNameOf("team"), location: { location: "folder", path: repoPathOf("tools/hone-rules") } },
+          { name: ruleSetNameOf("local"), location: { location: "repo-root" } },
         ],
         checks: [
           { address: { ruleSet: "hone", check: "date-used-directly#clock-sources" }, state: { state: "run", engine: "walker" } },
           { address: { ruleSet: "hone", check: "claimed-type#non-null-assertions" }, state: { state: "run", engine: "eslint" } },
-          { address: { ruleSet: { name: ruleSetNameSchema.parse("team") }, check: "no-tmp-file#tmp-paths" }, state: { state: "not-run" } },
+          { address: { ruleSet: { name: ruleSetNameOf("team") }, check: "no-tmp-file#tmp-paths" }, state: { state: "not-run" } },
           { address: { ruleSet: "hone", check: "loop-keyword#loop-statement" }, state: { state: "not-adopted" } },
         ],
         checkSettings: [
@@ -73,7 +73,7 @@ describe("settingsFileOf", () => {
         reportOutput: "counts",
         checkEditions: "latest",
         eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
-        eslintConfigRoots: [repoPathSchema.parse("web")],
+        eslintConfigRoots: [repoPathOf("web")],
         conventions: { conventions: DEFAULT_CONVENTIONS, declared: ["generated"] },
       },
     });
@@ -197,16 +197,16 @@ describe("settingsFileOf", () => {
 });
 
 const FULL_FILE: SettingsFile = {
-  exclude: [repoPathSchema.parse("vendor")],
+  exclude: [repoPathOf("vendor")],
   ruleSets: [
-    { name: ruleSetNameSchema.parse("local"), location: { location: "repo-root" } },
-    { name: ruleSetNameSchema.parse("team"), location: { location: "folder", path: repoPathSchema.parse("tools/hone-rules") } },
+    { name: ruleSetNameOf("local"), location: { location: "repo-root" } },
+    { name: ruleSetNameOf("team"), location: { location: "folder", path: repoPathOf("tools/hone-rules") } },
   ],
   checks: [
     { address: { ruleSet: "hone", check: "claimed-type#non-null-assertions" }, state: { state: "run", engine: "eslint" } },
     { address: { ruleSet: "hone", check: "date-used-directly#clock-sources" }, state: { state: "run", engine: "walker" } },
     { address: { ruleSet: "hone", check: "loop-keyword#loop-statement" }, state: { state: "not-adopted" } },
-    { address: { ruleSet: { name: ruleSetNameSchema.parse("team") }, check: "no-tmp-file#tmp-paths" }, state: { state: "not-run" } },
+    { address: { ruleSet: { name: ruleSetNameOf("team") }, check: "no-tmp-file#tmp-paths" }, state: { state: "not-run" } },
   ],
   checkSettings: [
     { address: { ruleSet: "hone", check: "branch-in-a-test#test-body" }, values: { edition: "2" } },
@@ -216,9 +216,9 @@ const FULL_FILE: SettingsFile = {
   reportOutput: "counts",
   checkEditions: "latest",
   eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
-  eslintConfigRoots: [repoPathSchema.parse("web")],
+  eslintConfigRoots: [repoPathOf("web")],
   conventions: {
-    conventions: { generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }], layers: [{ layer: "domain", folders: [repoPathSchema.parse("src/domain")] }] },
+    conventions: { generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }], layers: [{ layer: "domain", folders: [repoPathOf("src/domain")] }] },
     declared: ["generated", "layers"],
   },
 };
@@ -226,8 +226,8 @@ const FULL_FILE: SettingsFile = {
 const UNSORTED_FILE: SettingsFile = {
   ...SMALLEST_FILE,
   ruleSets: [
-    { name: ruleSetNameSchema.parse("team"), location: { location: "folder", path: repoPathSchema.parse("tools/hone-rules") } },
-    { name: ruleSetNameSchema.parse("local"), location: { location: "repo-root" } },
+    { name: ruleSetNameOf("team"), location: { location: "folder", path: repoPathOf("tools/hone-rules") } },
+    { name: ruleSetNameOf("local"), location: { location: "repo-root" } },
   ],
   checks: [
     { address: { ruleSet: "hone", check: "loop-keyword#loop-statement" }, state: { state: "not-adopted" } },

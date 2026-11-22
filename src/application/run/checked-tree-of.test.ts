@@ -2,22 +2,22 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../ports/git-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { checkedTreeOf, typescriptFilesOf } from "./checked-tree-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const A = repoPathSchema.parse("src/a.ts");
+const A = repoPathOf("src/a.ts");
 
-const PACKAGES_WEB = repoPathSchema.parse("packages/web");
+const PACKAGES_WEB = repoPathOf("packages/web");
 
-const DIST_B = repoPathSchema.parse("dist/b.ts");
+const DIST_B = repoPathOf("dist/b.ts");
 
-const WEB_X = repoPathSchema.parse("packages/web/x.ts");
+const WEB_X = repoPathOf("packages/web/x.ts");
 
-const DIST = repoPathSchema.parse("dist");
+const DIST = repoPathOf("dist");
 
 const POSIX: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts") };
 
@@ -75,12 +75,12 @@ describe("typescriptFilesOf", () => {
     expect(
       typescriptFilesOf({
         tracked: [
-          repoPathSchema.parse("src/a.ts"),
-          repoPathSchema.parse("src/b.tsx"),
-          repoPathSchema.parse("src/c.mts"),
-          repoPathSchema.parse("src/d.cts"),
-          repoPathSchema.parse("src/e.js"),
-          repoPathSchema.parse("README.md"),
+          repoPathOf("src/a.ts"),
+          repoPathOf("src/b.tsx"),
+          repoPathOf("src/c.mts"),
+          repoPathOf("src/d.cts"),
+          repoPathOf("src/e.js"),
+          repoPathOf("README.md"),
         ],
       }),
     ).toEqual(["src/a.ts", "src/b.tsx", "src/c.mts", "src/d.cts"]);

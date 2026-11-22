@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { Case, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { type CatalogueGuide, NO_SYMPTOM_GUIDE, type SymptomGuide, symptomNoteLinesOf, symptomReadingIn } from "./symptom-notes.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -142,9 +143,9 @@ const CATALOGUE: SymptomCatalogue = {
   engines: [],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, DOUBLE_WITH_A_BODY],
   clauses: [
-    { clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
     {
-      clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
+      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
       sight: {
         kind: "symptom-by-form",
         forms: [
@@ -153,7 +154,7 @@ const CATALOGUE: SymptomCatalogue = {
         ],
       },
     },
-    { clause: clauseAddressSchema.parse("CD-9#result-failures"), sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [DATE_USED_DIRECTLY] } },
+    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") }, sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [DATE_USED_DIRECTLY] } },
   ],
   checks: [],
   namedBans: [],
@@ -167,51 +168,51 @@ const UNREADABLE_GUIDE: SymptomGuide = {
 };
 
 const CLOCK_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-17#clock-sources"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/charge-order.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/charge-order.ts"),
   anchor: { line: 14, column: 0 },
   snippet: "const chargedAt = clock.now();",
 };
 
 const SECOND_CLOCK_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-17#clock-sources"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/refund-order.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/refund-order.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "const refundedAt = clock.now();",
 };
 
 const BRANCH_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/charge-order.test.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 22, column: 2 },
   snippet: "if (result.ok) {",
   remedy: { fix: "write one test per case", page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md", section: "branching-with-if" },
 };
 
 const DOUBLE_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-27#test-body-logic"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/charge-order.test.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 30, column: 4 },
   snippet: "kindOf: (path) => (installed.includes(path) ? \"file\" : \"missing\")",
   remedy: { fix: "make it a vi.fn spy", page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md", section: "logic-inside-a-function-the-test-passes-on" },
 };
 
 const UNCATALOGUED_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-15#loops"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/totals.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/totals.ts"),
   anchor: { line: 5, column: 2 },
   snippet: "const total = sumOf(lines);",
 };
 
 const METHOD_FINDING: Finding = {
-  clause: clauseAddressSchema.parse("CD-9#result-failures"),
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/orders/totals.ts"),
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") },
+  mechanism: "audit",
+  file: repoPathOf("src/orders/totals.ts"),
   anchor: { line: 9, column: 2 },
   snippet: "throw new Error(\"no total\");",
 };

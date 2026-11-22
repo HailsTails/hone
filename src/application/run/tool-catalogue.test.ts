@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { SymptomCatalogueOf, SymptomCatalogueRepository } from "../ports/symptom-catalogue-repository.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { toolCatalogueOf } from "./tool-catalogue.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
-const INSTALL = absolutePathSchema.parse("/install");
+const INSTALL = absoluteRootOf("/install");
 
 const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
 

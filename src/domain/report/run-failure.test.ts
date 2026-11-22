@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { runFailureOf } from "./run-failure.ts";
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const ESLINT_ENGINE = { name: "eslint", mechanism: ESLINT };
 

@@ -1,21 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { Hit } from "../../domain/runner/runner-result-types.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "./settings/read-settings.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../ports/engine/engine-run.ts";
 import { type VersionTwoRequest, type VersionTwoStages, versionTwoRunOver } from "./version-two-run.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -126,11 +127,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -161,7 +162,7 @@ const SETTINGS: SettingsReading = {
     selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],
     clauseRoots: [],
-    excluded: [repoPathSchema.parse("dist")],
+    excluded: [repoPathOf("dist")],
     eslintConfigRoots: [],
     fileExceptionWhyChains: "required",
   },
@@ -255,13 +256,13 @@ describe("versionTwoRunOver", () => {
   });
 
   it("fails with the records' failure when the records cannot be read", async () => {
-    const refused: RunLoadFailure = { kind: "records-refused", refusals: [{ kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.txt") }] };
+    const refused: RunLoadFailure = { kind: "records-refused", refusals: [{ kind: "not-a-records-file", file: repoPathOf("hone-records/notes.txt") }] };
     const stages = stagesGiving({ records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({ outcome: "failed", error: refused }) });
     expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({ outcome: "failed", error: refused });
   });
 
   it("fails with the tree's failure and runs no engine when a declared config root holds no tracked file", async () => {
-    const untracked: RunLoadFailure = { kind: "config-root-untracked", root: repoPathSchema.parse("packages/web") };
+    const untracked: RunLoadFailure = { kind: "config-root-untracked", root: repoPathOf("packages/web") };
     const stages = stagesGiving({ tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({ outcome: "failed", error: untracked }) });
     expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({ outcome: "failed", error: untracked });
     expect(vi.mocked(stages.engines).mock.calls).toEqual([]);

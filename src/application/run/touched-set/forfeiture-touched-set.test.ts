@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GitPort } from "../../ports/git-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { touchedSetUnder } from "./forfeiture-touched-set.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/work/shop");
+const REPO_ROOT = absoluteRootOf("/work/shop");
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
 describe("the change a run measures to assess forfeiture, by the forfeiture setting", () => {
   it("measures the files changed since the base when the run assesses forfeiture", () => {

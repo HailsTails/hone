@@ -1,24 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { type SettingsReading, readSettings } from "./read-settings.ts";
 import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
 const SETTINGS_PATH = "/repo/hone.config.json";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -33,7 +33,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -47,11 +47,11 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -86,9 +86,9 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const FIRST = editionSchema.parse("1");
+const FIRST = editionOf("1");
 
-const SECOND = editionSchema.parse("2");
+const SECOND = editionOf("2");
 
 const LOOPS_PIECE: PieceClause = {
   exceptions: "allowed",
@@ -197,7 +197,7 @@ describe("readSettings", () => {
             conventions: {
               conventions: {
                 generated: [{ files: ["src/generated/**"], outsideParty: "@graphql-codegen/cli" }],
-                layers: [{ layer: "domain", folders: [repoPathSchema.parse("src/domain")] }],
+                layers: [{ layer: "domain", folders: [repoPathOf("src/domain")] }],
               },
               declared: ["generated", "layers"],
             },

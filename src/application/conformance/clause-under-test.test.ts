@@ -3,28 +3,29 @@ import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { editionSchema, FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { boundClauseOf, clauseUnderTestOf, repoPathOf } from "./clause-under-test.ts";
+import { repoPathOf as staticRepoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
-const ESLINT = mechanismIdSchema.parse("eslint");
-const ACME_2 = disciplineIdSchema.parse("ACME-2");
-const SCRATCH_FILES_ID = clauseIdSchema.parse("scratch-files");
-const SECOND_EDITION = editionSchema.parse("2");
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
+const ACME_2 = disciplineIdOf("ACME-2");
+const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
+const SECOND_EDITION = editionOf("2");
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/repo/tools/disciplines/acme");
-const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/hone");
+const RULE_SET_ROOT = absoluteRootOf("/repo/tools/disciplines/acme");
+const INSTALL_ROOT = absoluteRootOf("/repo/node_modules/hone");
 const DISCIPLINE_PATH = "/repo/tools/disciplines/acme/rules/ACME-2/discipline.json";
 const PIECE_ROOT = "/repo/tools/disciplines/acme/mechanisms/audit/ACME-2";
 
-const FLAG_CASE = { name: "scratch file", fileName: repoPathSchema.parse("src/draft.scratch.ts"), source: "export const draft = 1;\n", expectedLines: [1] };
-const ALLOW_CASE = { name: "ordinary file", fileName: repoPathSchema.parse("src/kept.ts"), source: "export const kept = 1;\n", expectedLines: [] };
+const FLAG_CASE = { name: "scratch file", fileName: staticRepoPathOf("src/draft.scratch.ts"), source: "export const draft = 1;\n", expectedLines: [1] };
+const ALLOW_CASE = { name: "ordinary file", fileName: staticRepoPathOf("src/kept.ts"), source: "export const kept = 1;\n", expectedLines: [] };
 
-const NAMED_INTENT = { kind: "judgement", id: clauseIdSchema.parse("named-intent"), summary: "Names say what they hold.", enforcedBy: "review" } as const;
+const NAMED_INTENT = { kind: "judgement", id: clauseIdOf("named-intent"), summary: "Names say what they hold.", enforcedBy: "review" } as const;
 
 const DISCIPLINE: DisciplineFile = {
   version: 1,
@@ -84,7 +85,7 @@ const PIECE: PieceFile = {
       clause: SCRATCH_FILES_ID,
       settings: { module: "scratch-files.ts" },
       clauseSettings: { marker: { default: ".scratch." } },
-      editions: { declared: [FIRST_EDITION], default: FIRST_EDITION, latest: FIRST_EDITION },
+      editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
     },
   ],
 };
@@ -98,7 +99,7 @@ const EDITIONED_PIECE: PieceFile = {
       clause: SCRATCH_FILES_ID,
       settings: { module: "scratch-files.ts" },
       clauseSettings: { marker: { default: ".scratch." } },
-      editions: { declared: [FIRST_EDITION, SECOND_EDITION], default: FIRST_EDITION, latest: SECOND_EDITION },
+      editions: { declared: [editionOf("1"), SECOND_EDITION], default: editionOf("1"), latest: SECOND_EDITION },
     },
   ],
 };
@@ -133,7 +134,7 @@ const pathResolving = (resolved: ReturnType<PathPort["resolve"]>): PathPort => (
 
 const ACME_PATH = pathResolving({ outcome: "ok", value: RULE_SET_ROOT });
 
-const SCRATCH_FILES = clauseAddressSchema.parse("acme/ACME-2#scratch-files");
+const SCRATCH_FILES = { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("ACME-2"), clause: clauseIdOf("scratch-files") };
 
 const BOUND_CLAUSE = {
   address: SCRATCH_FILES,
@@ -260,8 +261,8 @@ describe("clauseUnderTestOf", () => {
       value: {
         clause: BOUND_CLAUSE,
         cases: [
-          { name: "scratch file", file: repoPathSchema.parse("src/draft.scratch.ts"), source: FLAG_CASE.source, edition: "1" },
-          { name: "ordinary file", file: repoPathSchema.parse("src/kept.ts"), source: ALLOW_CASE.source, edition: "1" },
+          { name: "scratch file", file: staticRepoPathOf("src/draft.scratch.ts"), source: FLAG_CASE.source, edition: "1" },
+          { name: "ordinary file", file: staticRepoPathOf("src/kept.ts"), source: ALLOW_CASE.source, edition: "1" },
         ],
       },
     });
@@ -292,7 +293,7 @@ describe("repoPathOf", () => {
   it("gives a repository path for a relative path inside the repository", () => {
     expect(repoPathOf({ file: "apps/storefront/package.json" })).toEqual({
       outcome: "ok",
-      value: repoPathSchema.parse("apps/storefront/package.json"),
+      value: staticRepoPathOf("apps/storefront/package.json"),
     });
   });
 

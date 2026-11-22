@@ -1,16 +1,20 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { JsoncParsePort } from "../runner/pieces/jsonc-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, WalkerFile, WalkerRepository } from "../runner/pieces/walker-piece.ts";
 import type { CompilerOptionsResolution, CompilerOptionsResolutionOf, OptionSettings, ResolvedConfig } from "./compiler-options-resolution.ts";
 import { createCompilerOverridesCheck } from "./compiler-overrides.ts";
-import { editionSchema, FIRST_EDITION } from "../../../content-files/edition.ts";
 import type { Edition } from "../../../../domain/rule-set/edition-types.ts";
 import { createDefaultJsoncParsePort } from "../runner/pieces/jsonc-parse.ts";
 import { textsDisk } from "../runner/pieces/walker-disk.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../../domain/rule-set/rule-set-name-of.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
@@ -20,23 +24,23 @@ assert(loadedParsePort.outcome === "ok", "the typescript line loads from the dev
 assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
 const defaultParsePort = loadedParsePort.value;
 
-const FILE = repoPathSchema.parse("tsconfig.json");
+const FILE = repoPathOf("tsconfig.json");
 const SOURCE = '{"compilerOptions":{"strict":true}}';
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const STRICT = clauseAddressSchema.parse("CD-3#strict");
-const UNCHECKED = clauseAddressSchema.parse("CD-3#no-unchecked-indexed-access");
-const EXACT = clauseAddressSchema.parse("CD-3#exact-optional-property-types");
-const OVERRIDE = clauseAddressSchema.parse("CD-3#no-implicit-override");
-const FALLTHROUGH = clauseAddressSchema.parse("CD-3#no-fallthrough-cases-in-switch");
-const PROPERTY = clauseAddressSchema.parse("CD-3#no-property-access-from-index-signature");
-const CATCH = clauseAddressSchema.parse("consumer/CD-3#use-unknown-in-catch-variables");
-const STRICT_CLAUSE: RunnerClause = { address: STRICT, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
-const UNCHECKED_CLAUSE: RunnerClause = { address: UNCHECKED, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
-const EXACT_CLAUSE: RunnerClause = { address: EXACT, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
-const OVERRIDE_CLAUSE: RunnerClause = { address: OVERRIDE, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
-const FALLTHROUGH_CLAUSE: RunnerClause = { address: FALLTHROUGH, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
-const PROPERTY_CLAUSE: RunnerClause = { address: PROPERTY, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
-const CATCH_CLAUSE: RunnerClause = { address: CATCH, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: FIRST_EDITION, settings: { module: "compiler-overrides.ts" } };
+const STRICT = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("strict") };
+const UNCHECKED = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-unchecked-indexed-access") };
+const EXACT = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("exact-optional-property-types") };
+const OVERRIDE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-implicit-override") };
+const FALLTHROUGH = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-fallthrough-cases-in-switch") };
+const PROPERTY = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-property-access-from-index-signature") };
+const CATCH = { ruleSet: { name: ruleSetNameOf("consumer") }, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("use-unknown-in-catch-variables") };
+const STRICT_CLAUSE: RunnerClause = { address: STRICT, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
+const UNCHECKED_CLAUSE: RunnerClause = { address: UNCHECKED, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
+const EXACT_CLAUSE: RunnerClause = { address: EXACT, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
+const OVERRIDE_CLAUSE: RunnerClause = { address: OVERRIDE, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
+const FALLTHROUGH_CLAUSE: RunnerClause = { address: FALLTHROUGH, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
+const PROPERTY_CLAUSE: RunnerClause = { address: PROPERTY, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
+const CATCH_CLAUSE: RunnerClause = { address: CATCH, anchor: { kind: "file" }, pieceRoot: "/install/mechanisms/audit/CD-3", clauseSettings: {}, edition: editionOf("1"), settings: { module: "compiler-overrides.ts" } };
 const CLAUSES: readonly RunnerClause[] = [STRICT_CLAUSE, UNCHECKED_CLAUSE, EXACT_CLAUSE, OVERRIDE_CLAUSE, FALLTHROUGH_CLAUSE, PROPERTY_CLAUSE, CATCH_CLAUSE];
 
 const UNRESOLVING: CompilerOptionsResolutionOf = () => ({ resolve: vi.fn<CompilerOptionsResolution["resolve"]>() });
@@ -205,7 +209,7 @@ describe("CD3 existing explicit compiler overrides", () => {
   });
 });
 
-const SECOND_EDITION: Edition = editionSchema.parse("2");
+const SECOND_EDITION: Edition = editionOf("2");
 
 const JSONC = createDefaultJsoncParsePort({ trailingCommas: "refused" });
 
@@ -220,7 +224,7 @@ const SECOND_EDITION_CLAUSES: readonly RunnerClause[] = [
 ];
 
 const EITHER_EDITION = [
-  { edition: FIRST_EDITION, clauses: CLAUSES },
+  { edition: editionOf("1"), clauses: CLAUSES },
   { edition: SECOND_EDITION, clauses: SECOND_EDITION_CLAUSES },
 ];
 
@@ -286,7 +290,7 @@ describe("CD3 in either edition", () => {
 
   it.each(EITHER_EDITION)("skips a config not named tsconfig.json without resolving it under edition $edition", ({ clauses }) => {
     const { resolutionOf, resolve } = resolvingTo({ resolved: { kind: "resolved", effective: ALL_OFF, bases: [] } });
-    const file = repoPathSchema.parse("tsconfig.base.json");
+    const file = repoPathOf("tsconfig.base.json");
     const prepared = prepareCheck({ jsonc: JSONC, clauses, file, resolutionOf });
 
     expect(prepared.prepareFile({ file, readText: () => ({ outcome: "ok", value: "{}" }) })).toEqual({ outcome: "ok", value: { kind: "skipped" } });

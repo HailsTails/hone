@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
 import { projectionText } from "../projection/projection-text.ts";
@@ -17,6 +13,11 @@ import {
   slicedProjectionWrites,
   sliceTextOf,
 } from "./sliced-projection.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -53,8 +54,8 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const eslint = mechanismIdSchema.parse("eslint");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const eslint = "eslint" as const;
 
 const CLASS_CLAUSE: ProjectionClause = {
   address: classSyntax,
@@ -67,24 +68,24 @@ const CLASS_CLAUSE: ProjectionClause = {
 
 const ORIGIN: SliceOrigin = {
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
-  repoRoot: absolutePathSchema.parse("/repo"),
+  repoRoot: absoluteRootOf("/repo"),
   install: { form: "source" },
 };
 
 const WINDOWS_ORIGIN: SliceOrigin = {
   path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }),
-  repoRoot: absolutePathSchema.parse("C:\\repo"),
+  repoRoot: absoluteRootOf("C:\\repo"),
   install: { form: "source" },
 };
 
 const REPOSITORY: ConfigRoot = { placement: "repository" };
-const PACKAGE_A: ConfigRoot = { placement: "package", directory: repoPathSchema.parse("packages/a") };
+const PACKAGE_A: ConfigRoot = { placement: "package", directory: repoPathOf("packages/a") };
 
 const carveOutInLegacy: ExceptionRecord = {
   kind: "file-carve-out",
   clause: classSyntax,
   mechanism: eslint,
-  file: repoPathSchema.parse("packages/a/src/legacy.ts"),
+  file: repoPathOf("packages/a/src/legacy.ts"),
   reason: "Inherited class awaiting paydown",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
@@ -97,7 +98,7 @@ const authorisedInRootSource: ExceptionRecord = {
   },
   clause: classSyntax,
   mechanism: eslint,
-  file: repoPathSchema.parse("src/adapter.ts"),
+  file: repoPathOf("src/adapter.ts"),
   reason: "Structural location for the vendor adapter",
 };
 
@@ -109,7 +110,7 @@ const PACKAGE_PIECE = {
 
 const PACKAGE_A_SLICE = projectionText({
   selectedPieces: [PACKAGE_PIECE],
-  records: [{ ...carveOutInLegacy, file: repoPathSchema.parse("src/legacy.ts") }],
+  records: [{ ...carveOutInLegacy, file: repoPathOf("src/legacy.ts") }],
 });
 
 const EMPTY_PACKAGE_SLICE = projectionText({ selectedPieces: [PACKAGE_PIECE], records: [] });
@@ -118,11 +119,11 @@ const ABSENT: CurrentProjection = { presence: "absent" };
 
 const present = (text: string): CurrentProjection => ({ presence: "present", text });
 
-const REPOSITORY_PROJECTION = repoPathSchema.parse("disciplines.eslint.mjs");
+const REPOSITORY_PROJECTION = repoPathOf("disciplines.eslint.mjs");
 
-const PACKAGE_A_SLICE_FILE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
+const PACKAGE_A_SLICE_FILE = repoPathOf("packages/a/disciplines.eslint.mjs");
 
-const OLD_SLICE_FILE = repoPathSchema.parse("packages/old/disciplines.eslint.mjs");
+const OLD_SLICE_FILE = repoPathOf("packages/old/disciplines.eslint.mjs");
 
 const projectionFilesHolding = (states: ProjectionStates) => ({
   currentOf: vi.fn<ProjectionFiles["currentOf"]>().mockReturnValue({ outcome: "ok", value: states }),
@@ -256,7 +257,7 @@ describe("slicedProjectionWrites over the config roots", () => {
       writeAt: vi
         .fn<ProjectionFiles["writeAt"]>()
         .mockReturnValueOnce({ outcome: "ok", value: { path: REPOSITORY_PROJECTION, effect: "written" } })
-        .mockReturnValueOnce({ outcome: "ok", value: { path: repoPathSchema.parse("packages/a/disciplines.eslint.mjs"), effect: "written" } }),
+        .mockReturnValueOnce({ outcome: "ok", value: { path: repoPathOf("packages/a/disciplines.eslint.mjs"), effect: "written" } }),
     };
 
     expect({

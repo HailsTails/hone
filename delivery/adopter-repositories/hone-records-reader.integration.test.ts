@@ -13,7 +13,6 @@ import { createSymptomCatalogueRepository } from "../../src/infrastructure/conte
 import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { Recipe } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../src/domain/result.ts";
@@ -26,6 +25,7 @@ import {
   type ScratchFilesPort,
 } from "../install-proof/install-proof-ports.ts";
 import { recordsReader } from "../../src/infrastructure/hone-records-folder/reading/records-reading.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 
 type ScratchRecordsFile = { readonly folder: string; readonly name: string; readonly records: readonly ReadonlyJsonValue[] };
 
@@ -233,14 +233,13 @@ afterAll(() => {
 
 const source = createRecordsFolder({
   fileText,
-  path,
   directory: createDefaultDirectoryPort({}),
   git: createDefaultGitPort({}),
   gitTree: createDefaultGitTreePort({}),
   repoRoot: absolutePathSchema.parse(made.value),
 });
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const findingAt = (request: { readonly clause: string; readonly file: string }): Finding => ({
   clause: clauseAddressSchema.parse(request.clause),
@@ -282,19 +281,19 @@ const FINDINGS: readonly RaisedFinding[] = [
   { finding: FAKE_IN_REPLAY, party: { reported: "not-reported" } },
 ];
 
-const AUTHORISED_CLAIMED = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_CLAIMED = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const AUTHORISED_IMPORTS = repoPathSchema.parse("hone-records/authorised-locations/outside-import-past-a-boundary.json");
+const AUTHORISED_IMPORTS = repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json");
 
-const BOUNDARIES = repoPathSchema.parse("hone-records/boundary-records.json");
+const BOUNDARIES = repoPathOf("hone-records/boundary-records.json");
 
-const DEBT = repoPathSchema.parse("hone-records/debt/text-past-its-reader.json");
+const DEBT = repoPathOf("hone-records/debt/text-past-its-reader.json");
 
-const DEBT_CLAIMED = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_CLAIMED = repoPathOf("hone-records/debt/claimed-type.json");
 
-const DEPENDENCIES = repoPathSchema.parse("hone-records/dependency-records.json");
+const DEPENDENCIES = repoPathOf("hone-records/dependency-records.json");
 
-const DEVIATIONS = repoPathSchema.parse("hone-records/deviations/stub-with-vifn.json");
+const DEVIATIONS = repoPathOf("hone-records/deviations/stub-with-vifn.json");
 
 const NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 

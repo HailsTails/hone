@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoad, ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import cd27Plugin from "../../CD-27/cd27/cd27.eslint-plugin.ts";
 import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./hone-plugin.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
@@ -27,8 +28,8 @@ const SKIPPED_TESTS_CHECK: Check = {
     recipes: [],
     correctUses: [],
   },
-  clause: clauseAddressSchema.parse("CD-27#skipped-tests"),
-  engines: [{ name: "eslint", mechanism: mechanismIdSchema.parse("eslint") }],
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("skipped-tests") },
+  engines: [{ name: "eslint", mechanism: "eslint" }],
   forms: [],
 };
 
@@ -48,7 +49,7 @@ const pluginBuiltFrom = (request: { readonly read: ReturnType<FileTextPort["read
   const load = vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue(request.load);
   const built = honePluginAt({
     checks: [SKIPPED_TESTS_CHECK],
-    installRoot: absolutePathSchema.parse("/install"),
+    installRoot: absoluteRootOf("/install"),
     fileText: { read, exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() },
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
     modules: { load },

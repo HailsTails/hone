@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import { recordInputsOf } from "./record-inputs.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
@@ -27,7 +28,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [
     { name: "walker", mechanism: AUDIT },
-    { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") },
+    { name: "eslint", mechanism: "eslint" },
   ],
   forms: [],
 };
@@ -67,13 +68,13 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const CARVE_OUT: FileCarveOutRecord = { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: repoPathSchema.parse("src/a.ts"), reason: "legacy loop" };
+const CARVE_OUT: FileCarveOutRecord = { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: repoPathOf("src/a.ts"), reason: "legacy loop" };
 
 const AUTHORISED: Extract<ExceptionRecord, { readonly kind: "authorised-location" }> = {
   kind: "authorised-location",
   clause: LOOPS_CLAUSE,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/b.ts"),
+  file: repoPathOf("src/b.ts"),
   reason: "kept",
 };
 

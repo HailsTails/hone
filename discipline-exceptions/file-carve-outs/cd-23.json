@@ -69,22 +69,7 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-23#export-test-sibling",
-      "file": "src/domain/repository/absolute-path.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
       "file": "src/domain/rule-set/clause-address.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
-      "file": "src/domain/rule-set/identifiers.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-23#export-test-sibling",
-      "file": "src/domain/rule-set/piece-folder.ts"
     },
     {
       "kind": "file-carve-out",

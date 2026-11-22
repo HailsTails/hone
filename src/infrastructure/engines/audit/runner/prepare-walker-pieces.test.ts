@@ -2,20 +2,22 @@ import { assert, describe, expect, it, vi } from "vitest";
 import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { prepareWalkerPieces } from "./prepare-walker-pieces.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 import type { PreparedWalkerCheck, WalkerPiece, WalkerRepository } from "./pieces/walker-piece.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
 import { textsDisk } from "./pieces/walker-disk.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
 const FIRST_MODULE = "/install/mechanisms/audit/XX-1/first.ts";
 const SECOND_MODULE = "/install/mechanisms/audit/XX-1/second.ts";
-const ALPHA = repoPathSchema.parse("src/alpha.ts");
-const BETA = repoPathSchema.parse("src/beta.ts");
+const ALPHA = repoPathOf("src/alpha.ts");
+const BETA = repoPathOf("src/beta.ts");
 const loadedParsePort = await loadParsePort({
   peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
 });
@@ -29,29 +31,29 @@ const REPOSITORY: WalkerRepository = {
 };
 
 const FIRST_CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("XX-1#first-check"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("first-check") },
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "first.ts" },
 };
 
 const SECOND_CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("XX-1#second-check"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("second-check") },
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "second.ts" },
 };
 
 const THIRD_CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("XX-1#third-check"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("third-check") },
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "first.ts" },
 };
 

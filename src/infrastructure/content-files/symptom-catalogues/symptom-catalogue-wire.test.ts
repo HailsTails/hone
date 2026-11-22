@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Case, Engine, Principle, Recipe, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const RECORD_KINDS_DOCUMENT = [
   { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
@@ -95,9 +96,9 @@ const AUTHORISED_LOCATION: RecordKind = {
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -174,14 +175,14 @@ describe("symptomCatalogueOf", () => {
         engines: [WALKER, ESLINT],
         symptoms: [LOOP_KEYWORD],
         clauses: [
-          { clause: clauseAddressSchema.parse("CD-15#loops"), sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
-          { clause: clauseAddressSchema.parse("CD-27#test-body-logic"), sight: { kind: "symptom-by-form", forms: [{ section: "a-let", symptom: LOOP_KEYWORD }] } },
-          { clause: clauseAddressSchema.parse("CD-9#result-failures"), sight: { kind: "method", recipe: FUNCTIONAL_ITERATION, outcomeSeenBy: [LOOP_KEYWORD] } },
-          { clause: clauseAddressSchema.parse("CD-32#pii-redaction"), sight: { kind: "outside-the-cases" } },
+          { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
+          { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, sight: { kind: "symptom-by-form", forms: [{ section: "a-let", symptom: LOOP_KEYWORD }] } },
+          { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") }, sight: { kind: "method", recipe: FUNCTIONAL_ITERATION, outcomeSeenBy: [LOOP_KEYWORD] } },
+          { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, sight: { kind: "outside-the-cases" } },
         ],
         checks: [
-          { name: "loops", symptom: LOOP_KEYWORD, clause: clauseAddressSchema.parse("CD-15#loops"), engines: [WALKER, ESLINT], forms: [] },
-          { name: "test-body", symptom: LOOP_KEYWORD, clause: clauseAddressSchema.parse("CD-27#test-body-logic"), engines: [WALKER], forms: ["a-let"] },
+          { name: "loops", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, engines: [WALKER, ESLINT], forms: [] },
+          { name: "test-body", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, engines: [WALKER], forms: ["a-let"] },
         ],
         namedBans: [{ outsideDependency: "lodash" }],
       },

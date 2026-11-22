@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { ClauseSettingValues, RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { stringListClauseSettings } from "./piece-clause-settings.ts";
-import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 
 const CLAUSE_WITH_NO_SETTINGS: RunnerClause = {
-  address: clauseAddressSchema.parse("CD-19#import-boundaries"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-19"), clause: clauseIdOf("import-boundaries") },
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-19",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "a.ts" },
 };
 

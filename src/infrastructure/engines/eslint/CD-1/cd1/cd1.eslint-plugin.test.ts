@@ -1,11 +1,11 @@
 import { assert, describe, expect, it } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import cd1Plugin from "./cd1.eslint-plugin.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -22,19 +22,19 @@ const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 const anyFlagCases: readonly SourceCase[] = [
   {
     name: "any as an array element type",
-    fileName: repoPathSchema.parse("any-array.ts"),
+    fileName: repoPathOf("any-array.ts"),
     source: "const total = 1;\nexport const count = (input: any[]): number => input.length + total;\n",
     expectedLines: [2],
   },
   {
     name: "any as a generic default",
-    fileName: repoPathSchema.parse("any-default.ts"),
+    fileName: repoPathOf("any-default.ts"),
     source: "export const identity = <Subject = any>(subject: Subject): Subject => subject;\n",
     expectedLines: [1],
   },
   {
     name: "any inside a type literal member",
-    fileName: repoPathSchema.parse("any-member.ts"),
+    fileName: repoPathOf("any-member.ts"),
     source: "export type Box = {\n  readonly label: string;\n  readonly content: any;\n};\n",
     expectedLines: [3],
   },
@@ -43,13 +43,13 @@ const anyFlagCases: readonly SourceCase[] = [
 const anyAllowCases: readonly SourceCase[] = [
   {
     name: "unknown is the sanctioned open type",
-    fileName: repoPathSchema.parse("unknown-type.ts"),
+    fileName: repoPathOf("unknown-type.ts"),
     source: "export const accept = (input: unknown): boolean => input !== null;\n",
     expectedLines: [],
   },
   {
     name: "an identifier that merely contains any",
-    fileName: repoPathSchema.parse("any-identifier.ts"),
+    fileName: repoPathOf("any-identifier.ts"),
     source: "export const anything = 1;\nexport const companyName = \"any\";\n",
     expectedLines: [],
   },
@@ -58,25 +58,25 @@ const anyAllowCases: readonly SourceCase[] = [
 const implicitFlagCases: readonly SourceCase[] = [
   {
     name: "a bare let declaration",
-    fileName: repoPathSchema.parse("bare-let.ts"),
+    fileName: repoPathOf("bare-let.ts"),
     source: "let pending;\npending = 1;\nexport { pending };\n",
     expectedLines: [1],
   },
   {
     name: "a bare var declaration inside a function",
-    fileName: repoPathSchema.parse("bare-var.ts"),
+    fileName: repoPathOf("bare-var.ts"),
     source: "export function run(): void {\n  var legacy;\n  legacy = 1;\n}\n",
     expectedLines: [2],
   },
   {
     name: "the first untyped declarator among several",
-    fileName: repoPathSchema.parse("mixed-declarators.ts"),
+    fileName: repoPathOf("mixed-declarators.ts"),
     source: "const ready = 1;\nlet counted: number = 1, loose;\nloose = ready;\nexport { counted, loose };\n",
     expectedLines: [2],
   },
   {
     name: "a tsx file is governed",
-    fileName: repoPathSchema.parse("bare-let.tsx"),
+    fileName: repoPathOf("bare-let.tsx"),
     source: "let element;\nelement = 1;\nexport { element };\n",
     expectedLines: [1],
   },
@@ -85,31 +85,31 @@ const implicitFlagCases: readonly SourceCase[] = [
 const implicitAllowCases: readonly SourceCase[] = [
   {
     name: "a let with a type annotation",
-    fileName: repoPathSchema.parse("typed-let.ts"),
+    fileName: repoPathOf("typed-let.ts"),
     source: "let counted: number;\ncounted = 1;\nexport { counted };\n",
     expectedLines: [],
   },
   {
     name: "a let with an initialiser",
-    fileName: repoPathSchema.parse("initialised-let.ts"),
+    fileName: repoPathOf("initialised-let.ts"),
     source: "let counted = 0;\ncounted += 1;\nexport { counted };\n",
     expectedLines: [],
   },
   {
     name: "a let in a for-in loop head",
-    fileName: repoPathSchema.parse("for-in-head.ts"),
+    fileName: repoPathOf("for-in-head.ts"),
     source: "export function keys(record: Record<string, number>): number {\n  let total = 0;\n  for (let key in record) {\n    total += record[key] ?? 0;\n  }\n  return total;\n}\n",
     expectedLines: [],
   },
   {
     name: "a var in a second for-in loop head",
-    fileName: repoPathSchema.parse("for-of-head.ts"),
+    fileName: repoPathOf("for-of-head.ts"),
     source: "export function sum(numbers: number[]): number {\n  let total = 0;\n  for (var next in numbers) {\n    total += next;\n  }\n  return total;\n}\n",
     expectedLines: [],
   },
   {
     name: "a javascript file is not governed",
-    fileName: repoPathSchema.parse("bare-let.js"),
+    fileName: repoPathOf("bare-let.js"),
     source: "let pending;\npending = 1;\nexport { pending };\n",
     expectedLines: [],
   },

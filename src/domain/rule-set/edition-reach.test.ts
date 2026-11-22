@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { editionSchema } from "../../infrastructure/content-files/edition.ts";
 import { editionOrder, editionReaches, isEdition } from "./edition-reach.ts";
 import type { Edition, EditionReach } from "./edition-types.ts";
+import { editionOf } from "./edition-of.ts";
 
-const ONE = editionSchema.parse("1");
-const TWO = editionSchema.parse("2");
-const TEN = editionSchema.parse("10");
+const ONE = editionOf("1");
+const TWO = editionOf("2");
+const TEN = editionOf("10");
 
 describe("editionReaches", () => {
   it.each<{ readonly ran: Edition; readonly introducedIn: Edition; readonly reach: EditionReach }>([

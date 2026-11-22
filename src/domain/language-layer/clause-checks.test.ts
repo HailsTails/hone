@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";
 import type { RuleSetCatalogue } from "../settings/check-choices.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { checksOfClause } from "./clause-checks.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -44,11 +46,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -95,10 +97,10 @@ describe("checksOfClause", () => {
   });
 
   it("finds nothing for a clause that has no check", () => {
-    expect(checksOfClause({ catalogues: CATALOGUES, clause: clauseAddressSchema.parse("CD-13#layering") })).toEqual([]);
+    expect(checksOfClause({ catalogues: CATALOGUES, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") } })).toEqual([]);
   });
 
   it("finds nothing for a clause of a rule set that has no catalogue", () => {
-    expect(checksOfClause({ catalogues: CATALOGUES, clause: clauseAddressSchema.parse("team/CD-15#loops") })).toEqual([]);
+    expect(checksOfClause({ catalogues: CATALOGUES, clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") } })).toEqual([]);
   });
 });

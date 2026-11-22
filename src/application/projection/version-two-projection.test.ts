@@ -5,12 +5,12 @@ import type { RecordsReading } from "../../domain/records/hone-records/hone-reco
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { SettingsReading } from "../run/settings/read-settings.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckedTree } from "../run/checked-tree-of.ts";
 import { versionTwoProjectionOver } from "./version-two-projection.ts";
 import type { VersionTwoStages } from "../run/version-two-run.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
@@ -54,7 +54,7 @@ const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { m
 
 const TREE: CheckedTree = { tracked: [FILE_A], declaredConfigRoots: [] };
 
-const WRITTEN: ProjectedFile = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
+const WRITTEN: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 const CATALOGUE_UNREAD: RunLoadFailure = { kind: "catalogue-not-read", path: "/install/rules/typescript/symptoms.json", reason: { reason: "absent" } };
 
@@ -97,14 +97,14 @@ describe("versionTwoProjectionOver", () => {
   });
 
   it("fails with the records' failure and projects nothing when the records cannot be read", async () => {
-    const refused: RunLoadFailure = { kind: "records-refused", refusals: [{ kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.txt") }] };
+    const refused: RunLoadFailure = { kind: "records-refused", refusals: [{ kind: "not-a-records-file", file: repoPathOf("hone-records/notes.txt") }] };
     const stages = stagesGiving({ records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({ outcome: "failed", error: refused }) });
     expect(await versionTwoProjectionOver({ stages })).toEqual({ outcome: "failed", error: refused });
     expect(vi.mocked(stages.projections).mock.calls).toEqual([]);
   });
 
   it("fails with the tree's failure and projects nothing when a declared config root holds no tracked file", async () => {
-    const untracked: RunLoadFailure = { kind: "config-root-untracked", root: repoPathSchema.parse("packages/web") };
+    const untracked: RunLoadFailure = { kind: "config-root-untracked", root: repoPathOf("packages/web") };
     const stages = stagesGiving({ tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({ outcome: "failed", error: untracked }) });
     expect(await versionTwoProjectionOver({ stages })).toEqual({ outcome: "failed", error: untracked });
     expect(vi.mocked(stages.projections).mock.calls).toEqual([]);

@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { nestedVersionTwoRepositoriesOf } from "./checks-nested-repositories.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
-const ROOT_SETTINGS = repoPathSchema.parse("hone.config.json");
+const ROOT_SETTINGS = repoPathOf("hone.config.json");
 
-const NESTED_SETTINGS = repoPathSchema.parse("vendor/lib/hone.config.json");
+const NESTED_SETTINGS = repoPathOf("vendor/lib/hone.config.json");
 
-const NESTED_SOURCE = repoPathSchema.parse("vendor/lib/src/a.ts");
+const NESTED_SOURCE = repoPathOf("vendor/lib/src/a.ts");
 
-const OWN_SOURCE = repoPathSchema.parse("src/a.ts");
+const OWN_SOURCE = repoPathOf("src/a.ts");
 
-const NESTED_VERSION_ONE_SETTINGS = repoPathSchema.parse("vendor/lib/disciplines.json");
+const NESTED_VERSION_ONE_SETTINGS = repoPathOf("vendor/lib/disciplines.json");
 
 describe("nestedVersionTwoRepositoriesOf", () => {
   it("names a folder with its own hone.config.json that holds a file to check", () => {

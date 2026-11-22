@@ -3,14 +3,11 @@ import type { FileTextPort } from "../../../../application/ports/file-system/fil
 import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile } from "../../../../domain/rule-set/rule-set-types.ts";
-import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import {
-  clauseIdSchema,
-  disciplineIdSchema,
-  mechanismIdSchema,
-} from "../../../hone-config-file/identifiers.ts";
 import { walkerPieceSettingsSchema } from "../runner/pieces/walker-check-schema.ts";
 import piece from "./piece.json" with { type: "json" };
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 
 const fileText: FileTextPort = {
   read: () => ({ outcome: "ok", value: JSON.stringify(piece) }),
@@ -39,11 +36,11 @@ const TABLE_PATH: PathPort = {
 
 const CD14: DisciplineFile = {
   version: 1,
-  id: disciplineIdSchema.parse("CD-14"),
+  id: disciplineIdOf("CD-14"),
   clauses: [
     {
       kind: "judgement",
-      id: clauseIdSchema.parse("class-syntax"),
+      id: clauseIdOf("class-syntax"),
       summary: "no authored class syntax",
       enforcedBy: "review",
     },
@@ -56,9 +53,9 @@ describe("CD-14 audit piece.json", () => {
       readPieceFile({
         fileText,
         path: TABLE_PATH,
-        ruleSetRoot: absolutePathSchema.parse("/install"),
-        installRoot: absolutePathSchema.parse("/install"),
-        mechanism: mechanismIdSchema.parse("audit"),
+        ruleSetRoot: absoluteRootOf("/install"),
+        installRoot: absoluteRootOf("/install"),
+        mechanism: "audit",
         discipline: CD14,
       }),
     ).toEqual({

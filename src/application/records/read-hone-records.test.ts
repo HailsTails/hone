@@ -1,10 +1,10 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RecordsDocument, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { readHoneRecords } from "./read-hone-records.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 
@@ -26,7 +26,7 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const CARRIED = { answers: "claimed-type", file: "src/a.ts", carried: { kind: "authorised-location", clause: "CD-2#cast-expressions", file: "src/a.ts", reason: "Kept." } };
 
@@ -95,7 +95,7 @@ describe("readHoneRecords", () => {
       readHoneRecords({
         recordsReader: readerGiving({ outcome: "ok", value: READING }),
         source: sourceOf({
-          read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.md") } }),
+          read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "not-a-records-file", file: repoPathOf("hone-records/notes.md") } }),
           readAt: vi.fn<RecordsSource["readAt"]>(),
         }),
         catalogue: CATALOGUE,

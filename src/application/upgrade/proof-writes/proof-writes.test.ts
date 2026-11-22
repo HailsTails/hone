@@ -6,8 +6,8 @@ import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { type PlannedFile, type ProofWritePorts, type ProofWrites, rolledBackProofWrites, writeProofFiles } from "./proof-writes.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -26,23 +26,23 @@ const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, Recor
     .toSorted((left, right) => left.order - right.order)
     .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const RECORDS_FOLDER = absolutePathSchema.parse("/repo/hone-records");
+const RECORDS_FOLDER = absoluteRootOf("/repo/hone-records");
 
-const DEBT_FOLDER = absolutePathSchema.parse("/repo/hone-records/debt");
+const DEBT_FOLDER = absoluteRootOf("/repo/hone-records/debt");
 
-const DEBT_FILE: PlannedFile = { path: absolutePathSchema.parse("/repo/hone-records/debt/loop-keyword.json"), text: "debt text" };
+const DEBT_FILE: PlannedFile = { path: absoluteRootOf("/repo/hone-records/debt/loop-keyword.json"), text: "debt text" };
 
-const CONFIG = absolutePathSchema.parse("/repo/eslint.config.mjs");
+const CONFIG = absoluteRootOf("/repo/eslint.config.mjs");
 
 const REWRITTEN_CONFIG: PlannedFile = { path: CONFIG, text: "rewritten config" };
 
-const PACKAGE_CONFIG = absolutePathSchema.parse("/repo/packages/a/eslint.config.mjs");
+const PACKAGE_CONFIG = absoluteRootOf("/repo/packages/a/eslint.config.mjs");
 
 const REWRITTEN_PACKAGE_CONFIG: PlannedFile = { path: PACKAGE_CONFIG, text: "rewritten package config" };
 
-const PROJECTION_FILE = absolutePathSchema.parse("/repo/hone.eslint.mjs");
+const PROJECTION_FILE = absoluteRootOf("/repo/hone.eslint.mjs");
 
 const ORIGINAL_CONFIG = "original config";
 

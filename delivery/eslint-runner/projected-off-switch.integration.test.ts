@@ -15,10 +15,6 @@ import type { RunnerClause } from "../../src/domain/runner/runner-module-types.t
 import { toolchainBoundEmbeddedRunner } from "../../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../src/infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort, type EslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
@@ -28,6 +24,11 @@ import {
   type EslintToolchainPeers,
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
+import { editionOf } from "../../src/domain/rule-set/edition-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -280,7 +281,7 @@ const restoredFixtureRepositoriesOver = (dependencies: Dependencies): RestoredFi
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
-const CLAUSE = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
 const CLASS_SYNTAX = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 
@@ -289,7 +290,7 @@ const ESLINT_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/CD-14`,
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { pluginNamespace: "hone", pluginModule: "cd14/cd14.eslint-plugin.ts", rule: "no-class-authoring" },
 };
 
@@ -305,7 +306,7 @@ afterAll(() => {
   repositories.removeAll();
 });
 
-const ROUTE_FILES = [repoPathSchema.parse("route/[id].ts"), repoPathSchema.parse("route/i.ts")];
+const ROUTE_FILES = [repoPathOf("route/[id].ts"), repoPathOf("route/i.ts")];
 
 const ROUTE_RUN = {
   repoRoot: restoredFixtures.restoredFrom({ fixtureRoot: absolutePathSchema.parse(`${import.meta.dirname}/../../src/infrastructure/engines/eslint/runner/native-exceptions/route-brackets`), textFiles: NO_TEXT_FILES }),
@@ -319,8 +320,8 @@ const ROUTE_RUN = {
 const ROUTE_LOCATION: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("eslint"),
-  file: repoPathSchema.parse("route/[id].ts"),
+  mechanism: "eslint",
+  file: repoPathOf("route/[id].ts"),
   reason: "wrapping factory for a library construction",
 };
 

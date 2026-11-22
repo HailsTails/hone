@@ -1,14 +1,16 @@
 import { assert, describe, expect, it } from "vitest";
 import type { LegacyWhyChain, VersionOneWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile } from "./exception-records.ts";
 import { authorisationStandingOf, type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { type ImportEvidence, legacyChainsIn, type PlacedEntry, recordImportOf, type StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -57,12 +59,12 @@ const LEGACY_WHY_CHAIN: LegacyWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
 const SELECTION: Selection = {
   selected: [
-    { address: clauseAddressSchema.parse("CD-14#class-syntax"), mechanism: mechanismIdSchema.parse("audit"), exceptions: "allowed" },
-    { address: clauseAddressSchema.parse("team/TM-1#no-tmp-files"), mechanism: mechanismIdSchema.parse("eslint"), exceptions: "allowed" },
+    { address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, mechanism: "audit", exceptions: "allowed" },
+    { address: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("no-tmp-files") }, mechanism: "eslint", exceptions: "allowed" },
   ],
   uncovered: [],
   notAdopted: [],
@@ -245,7 +247,7 @@ describe("parseExceptionEntries invalid records", () => {
     expect(
       parseExceptionEntries({
         entries: [{ place: AT_0, entry: { ...LOCATION, clause: "CD-14#abstract-syntax" } }],
-        selection: { ...SELECTION, notRun: [clauseAddressSchema.parse("CD-14#abstract-syntax")] },
+        selection: { ...SELECTION, notRun: [{ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") }] },
         fileExceptionWhyChains: "required",
         baseline: UNMEASURED_EXCEPTION_BASELINE,
       }),
@@ -264,7 +266,7 @@ describe("parseExceptionEntries invalid records", () => {
     expect(
       parseExceptionEntries({
         entries: [{ place: AT_0, entry: { ...LOCATION, clause: "CD-14#abstract-syntax" } }],
-        selection: { ...SELECTION, notAdopted: [clauseAddressSchema.parse("CD-14#abstract-syntax")] },
+        selection: { ...SELECTION, notAdopted: [{ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") }] },
         fileExceptionWhyChains: "required",
         baseline: UNMEASURED_EXCEPTION_BASELINE,
       }),
@@ -418,13 +420,13 @@ describe("non-exemptibility at the canonical boundary, for a clause whose discip
     { kind: "file-carve-out", clause: "CD-1#any-cast", file: "src/unsafe.ts", reason: "fictional non-exemptibility input", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
     { kind: "clause-wide-carve-out", clause: "CD-1#any-cast", reason: "fictional non-exemptibility input", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
   ] as const)("refuses an adopted any clause for $kind", (entry) => {
-    expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: entry }], selection: { selected: [{ address: clauseAddressSchema.parse("CD-1#any-cast"), mechanism: mechanismIdSchema.parse("audit"), exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] }, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({ records: [], invalid: [
+    expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: entry }], selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "audit", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] }, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({ records: [], invalid: [
       { place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "non-exemptible-clause", clause: { ruleSet: "hone", discipline: "CD-1", clause: "any-cast" } } },
     ] });
   });
 });
 
-const IMPORT_SOURCE = repoPathSchema.parse(".constitution-carve-outs/cd-14.json");
+const IMPORT_SOURCE = repoPathOf(".constitution-carve-outs/cd-14.json");
 
 const IMPORTED_CARVE_OUT = {
   kind: "file-carve-out",
@@ -544,7 +546,7 @@ describe("parseExceptionEntries imported records against the base revision", () 
   });
 
   it("refuses a new record whose provenance source belongs to a different discipline", () => {
-    const otherDisciplineSource = repoPathSchema.parse(".constitution-carve-outs/cd-15.json");
+    const otherDisciplineSource = repoPathOf(".constitution-carve-outs/cd-15.json");
 
     expect(
       parseExceptionEntries({
@@ -560,7 +562,7 @@ describe("parseExceptionEntries imported records against the base revision", () 
   });
 
   it("refuses a carve-out imported from an authorised-locations source", () => {
-    const authorisationSource = repoPathSchema.parse(".constitution-authorised-locations/cd-14.json");
+    const authorisationSource = repoPathOf(".constitution-authorised-locations/cd-14.json");
 
     expect(
       parseExceptionEntries({
@@ -593,7 +595,7 @@ describe("parseExceptionEntries imported records against the base revision", () 
     expect(
       parseExceptionEntries({
         entries: [{ place: AT_0, entry: { ...IMPORTED_CARVE_OUT, clause: "CD-1#any-cast" } }],
-        selection: { selected: [{ address: clauseAddressSchema.parse("CD-1#any-cast"), mechanism: mechanismIdSchema.parse("audit"), exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+        selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "audit", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
         fileExceptionWhyChains: "required",
         baseline: baselineHolding({ entriesAtBase: [IMPORTED_CARVE_OUT], sourceTextsAtBase: new Map() }),
       }),
@@ -610,9 +612,9 @@ describe("parseExceptionEntries imported records against the base revision", () 
   });
 });
 
-const MOVED_LEGACY_FILE = repoPathSchema.parse("src/moved/legacy.ts");
+const MOVED_LEGACY_FILE = repoPathOf("src/moved/legacy.ts");
 
-const LEGACY_FILE_AT_BASE = repoPathSchema.parse("src/legacy.ts");
+const LEGACY_FILE_AT_BASE = repoPathOf("src/legacy.ts");
 
 const MOVED_IMPORTED_CARVE_OUT = {
   kind: "file-carve-out",
@@ -678,7 +680,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         baseline: {
           measured: "yes",
           entriesAtBase: [],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
           basePathOfRenamed: LEGACY_FILE_MOVED,
         },
       }),
@@ -694,7 +696,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         baseline: {
           measured: "yes",
           entriesAtBase: [],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-authorised-locations/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-authorised-locations/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
           basePathOfRenamed: LEGACY_FILE_MOVED,
         },
       }),
@@ -745,7 +747,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         baseline: {
           measured: "yes",
           entriesAtBase: [IMPORTED_CARVE_OUT],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
           basePathOfRenamed: LEGACY_FILE_MOVED,
         },
       }),
@@ -786,7 +788,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         baseline: {
           measured: "yes",
           entriesAtBase: [],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-carve-outs/cd-14.json"), listing]]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-carve-outs/cd-14.json"), listing]]),
           basePathOfRenamed: LEGACY_FILE_MOVED,
         },
       }),
@@ -835,8 +837,8 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
           ],
           sourceTextsAtBase: new Map(),
           basePathOfRenamed: new Map([
-            [repoPathSchema.parse("src/moved/legacy.ts"), repoPathSchema.parse("src/legacy.ts")],
-            [repoPathSchema.parse("tools/install-proof.ts"), repoPathSchema.parse("scripts/install-proof.ts")],
+            [repoPathOf("src/moved/legacy.ts"), repoPathOf("src/legacy.ts")],
+            [repoPathOf("tools/install-proof.ts"), repoPathOf("scripts/install-proof.ts")],
           ]),
         },
       }),
@@ -896,8 +898,8 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
           ],
           sourceTextsAtBase: new Map(),
           basePathOfRenamed: new Map([
-            [repoPathSchema.parse("src/moved/legacy.ts"), repoPathSchema.parse("src/legacy.ts")],
-            [repoPathSchema.parse("tools/install-proof.ts"), repoPathSchema.parse("scripts/install-proof.ts")],
+            [repoPathOf("src/moved/legacy.ts"), repoPathOf("src/legacy.ts")],
+            [repoPathOf("tools/install-proof.ts"), repoPathOf("scripts/install-proof.ts")],
           ]),
         },
       }),
@@ -944,7 +946,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
             },
           ],
           sourceTextsAtBase: new Map(),
-          basePathOfRenamed: new Map([[repoPathSchema.parse("src/moved/legacy.ts"), repoPathSchema.parse("src/legacy.ts")]]),
+          basePathOfRenamed: new Map([[repoPathOf("src/moved/legacy.ts"), repoPathOf("src/legacy.ts")]]),
         },
       }),
     ).toEqual({
@@ -991,7 +993,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
             },
           ],
           sourceTextsAtBase: new Map(),
-          basePathOfRenamed: new Map([[repoPathSchema.parse("src/moved/legacy.ts"), repoPathSchema.parse("src/legacy.ts")]]),
+          basePathOfRenamed: new Map([[repoPathOf("src/moved/legacy.ts"), repoPathOf("src/legacy.ts")]]),
         },
       }),
     ).toEqual({
@@ -1037,8 +1039,8 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
               provenance: { kind: "inherited-debt", source: ".constitution-carve-outs/cd-14.json#0", decision: "fictional migration fixture; not a live debt decision" },
             },
           ],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
-          basePathOfRenamed: new Map([[repoPathSchema.parse("src/moved/legacy.ts"), repoPathSchema.parse("src/legacy.ts")]]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
+          basePathOfRenamed: new Map([[repoPathOf("src/moved/legacy.ts"), repoPathOf("src/legacy.ts")]]),
         },
       }),
     ).toEqual({
@@ -1088,7 +1090,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
             },
           ],
           sourceTextsAtBase: new Map(),
-          basePathOfRenamed: new Map([[repoPathSchema.parse("y/a.ts"), repoPathSchema.parse("x/a.ts")]]),
+          basePathOfRenamed: new Map([[repoPathOf("y/a.ts"), repoPathOf("x/a.ts")]]),
         },
       }),
     ).toEqual({
@@ -1134,7 +1136,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
             },
           ],
           sourceTextsAtBase: new Map(),
-          basePathOfRenamed: new Map([[repoPathSchema.parse("y/a.ts"), repoPathSchema.parse("x/a.ts")]]),
+          basePathOfRenamed: new Map([[repoPathOf("y/a.ts"), repoPathOf("x/a.ts")]]),
         },
       }),
     ).toEqual({
@@ -1161,8 +1163,8 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         baseline: {
           measured: "yes",
           entriesAtBase: [],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
-          basePathOfRenamed: new Map([[repoPathSchema.parse("src/moved/other.ts"), repoPathSchema.parse("src/other.ts")]]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
+          basePathOfRenamed: new Map([[repoPathOf("src/moved/other.ts"), repoPathOf("src/other.ts")]]),
         },
       }),
     ).toEqual({ records: [IMPORTED_RECORD], invalid: [] });
@@ -1177,7 +1179,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         baseline: {
           measured: "yes",
           entriesAtBase: [IMPORTED_CARVE_OUT],
-          sourceTextsAtBase: new Map([[repoPathSchema.parse(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
+          sourceTextsAtBase: new Map([[repoPathOf(".constitution-carve-outs/cd-14.json"), '[{ "files": ["src/legacy.ts"] }]']]),
           basePathOfRenamed: new Map(),
         },
       }),
@@ -1300,7 +1302,7 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
     expect(
       parseExceptionEntries({
         entries: [{ place: AT_0, entry: { ...REASONED_CARVE_OUT, clause: "CD-1#any-cast" } }],
-        selection: { selected: [{ address: clauseAddressSchema.parse("CD-1#any-cast"), mechanism: mechanismIdSchema.parse("audit"), exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+        selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "audit", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
         fileExceptionWhyChains: "optional",
         baseline: UNMEASURED_EXCEPTION_BASELINE,
       }).invalid,
@@ -1539,15 +1541,15 @@ describe("legacyChainsIn reports whether any entry holds a chain without rootChe
   });
 });
 
-const CLASS_SYNTAX_ADDRESS = clauseAddressSchema.parse("CD-14#class-syntax");
+const CLASS_SYNTAX_ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const IMPORTED_EXCEPTION_RECORD: ExceptionRecord = {
   kind: "file-carve-out",
   clause: CLASS_SYNTAX_ADDRESS,
   mechanism: AUDIT,
-  file: repoPathSchema.parse("src/legacy.ts"),
+  file: repoPathOf("src/legacy.ts"),
   reason: IMPORTED_CARVE_OUT.reason,
   provenance: IMPORTED_CARVE_OUT.provenance,
 };
@@ -1559,7 +1561,7 @@ const RECORD_IMPORT_CASES: readonly RecordImportCase[] = [
   { label: "a chained record that also gives provenance", record: { ...IMPORTED_EXCEPTION_RECORD, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN }, recordImport: { imported: "no" } },
   {
     label: "a reason-only record",
-    record: { kind: "authorised-location", clause: CLASS_SYNTAX_ADDRESS, mechanism: AUDIT, file: repoPathSchema.parse("src/factory.ts"), reason: REASONED_LOCATION.reason },
+    record: { kind: "authorised-location", clause: CLASS_SYNTAX_ADDRESS, mechanism: AUDIT, file: repoPathOf("src/factory.ts"), reason: REASONED_LOCATION.reason },
     recordImport: { imported: "no" },
   },
   {

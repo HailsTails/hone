@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
 import { shippedCataloguesOf } from "./shipped-catalogues.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 

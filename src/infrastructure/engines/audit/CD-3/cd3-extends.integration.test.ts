@@ -9,12 +9,14 @@ import { createDefaultFileTextPort } from "../../../node/file-system/file-text-p
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { editionSchema } from "../../../content-files/edition.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort, type TypeScriptPeers, typeScriptPeersNamed } from "../runner/toolchain/typescript-toolchain.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
 
 const path = createDefaultPathPort({});
 
@@ -62,27 +64,27 @@ const INSTALL_ROOT = resolvedPath({ path: `${import.meta.dirname}/../../../../..
 
 const REPO_ROOT = resolvedPath({ path: `${import.meta.dirname}/cd3-extends` });
 
-const INHERITS = repoPathSchema.parse("packages/inherits/tsconfig.json");
-const LOOSENED = repoPathSchema.parse("packages/loosened/tsconfig.json");
-const UNSET = repoPathSchema.parse("packages/unset/tsconfig.json");
-const BROKEN = repoPathSchema.parse("packages/broken/tsconfig.json");
-const LAYERED = repoPathSchema.parse("packages/layered/tsconfig.json");
-const SOLUTION = repoPathSchema.parse("tsconfig.json");
+const INHERITS = repoPathOf("packages/inherits/tsconfig.json");
+const LOOSENED = repoPathOf("packages/loosened/tsconfig.json");
+const UNSET = repoPathOf("packages/unset/tsconfig.json");
+const BROKEN = repoPathOf("packages/broken/tsconfig.json");
+const LAYERED = repoPathOf("packages/layered/tsconfig.json");
+const SOLUTION = repoPathOf("tsconfig.json");
 
-const STRICT = clauseAddressSchema.parse("CD-3#strict");
-const UNCHECKED = clauseAddressSchema.parse("CD-3#no-unchecked-indexed-access");
-const EXACT = clauseAddressSchema.parse("CD-3#exact-optional-property-types");
-const OVERRIDE = clauseAddressSchema.parse("CD-3#no-implicit-override");
-const FALLTHROUGH = clauseAddressSchema.parse("CD-3#no-fallthrough-cases-in-switch");
-const PROPERTY = clauseAddressSchema.parse("CD-3#no-property-access-from-index-signature");
-const CATCH = clauseAddressSchema.parse("CD-3#use-unknown-in-catch-variables");
+const STRICT = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("strict") };
+const UNCHECKED = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-unchecked-indexed-access") };
+const EXACT = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("exact-optional-property-types") };
+const OVERRIDE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-implicit-override") };
+const FALLTHROUGH = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-fallthrough-cases-in-switch") };
+const PROPERTY = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("no-property-access-from-index-signature") };
+const CATCH = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clause: clauseIdOf("use-unknown-in-catch-variables") };
 
 const secondEditionClause = (request: { readonly address: typeof STRICT }): RunnerClause => ({
   address: request.address,
   anchor: { kind: "file" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/audit/CD-3`,
   clauseSettings: {},
-  edition: editionSchema.parse("2"),
+  edition: editionOf("2"),
   settings: { module: "compiler-overrides.ts" },
 });
 

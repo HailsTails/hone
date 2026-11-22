@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { Finding } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 import type { VersionOneWhyChain } from "./version-one-why-chain.ts";
 import { applyGovernance, type GovernanceRequest } from "./governance.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -44,15 +46,15 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const noClass = clauseAddressSchema.parse("CD-14#no-class-syntax");
-const noForOf = clauseAddressSchema.parse("CD-15#no-for-of");
-const probeNoClass = clauseAddressSchema.parse("probe/CD-14#no-class-syntax");
-const fileA = repoPathSchema.parse("src/a.ts");
-const fileB = repoPathSchema.parse("src/b.ts");
-const packageJson = repoPathSchema.parse("package.json");
-const suppressions = repoPathSchema.parse("eslint-suppressions.json");
-const audit = mechanismIdSchema.parse("audit");
-const eslint = mechanismIdSchema.parse("eslint");
+const noClass = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
+const noForOf = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") };
+const probeNoClass = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
+const fileA = repoPathOf("src/a.ts");
+const fileB = repoPathOf("src/b.ts");
+const packageJson = repoPathOf("package.json");
+const suppressions = repoPathOf("eslint-suppressions.json");
+const audit = "audit" as const;
+const eslint = "eslint" as const;
 
 const noClassInA: Finding = {
   clause: noClass,

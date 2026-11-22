@@ -1,15 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { type PruneCheck, paidDebtRemoved, type RunSettingsReader } from "./run-prune-debt-command.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
-const ESLINT = mechanismIdSchema.parse("eslint");
-const LEGACY = repoPathSchema.parse("src/legacy.ts");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const ESLINT = "eslint" as const;
+const LEGACY = repoPathOf("src/legacy.ts");
 
 const PAID_PAIR = { clause: CLASS_SYNTAX, file: LEGACY };
 

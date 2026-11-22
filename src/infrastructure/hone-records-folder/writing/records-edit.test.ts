@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../repo-path.ts";
 import { documentsWithAdded, documentsWithRemoved, placeOfAddition } from "./records-edit.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const OTHER_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
+const OTHER_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
 const FIRST = { answers: "claimed-type", file: "src/a.ts" };
 

@@ -13,8 +13,7 @@ import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
@@ -22,6 +21,8 @@ import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/types
 import * as walkerRunnerModule from "../runner/runner.ts";
 import { TEST_BODY_SECTIONS } from "./test-body-logic.ts";
 import * as eslintRunnerModule from "../../eslint/runner/runner.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 declare global {
   interface ImportMeta {
@@ -76,7 +77,7 @@ const allowedFormSectionsOf = (request: { readonly page: string }): readonly All
     .slice(1)
     .flatMap((chunk) => sectionOf({ chunk }));
 
-const FORM_FILE = repoPathSchema.parse("allowed-form.test.ts");
+const FORM_FILE = repoPathOf("allowed-form.test.ts");
 
 const VITEST_PRELUDE = "import { assert, expect, it, vi } from \"vitest\";\n";
 
@@ -230,7 +231,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absolutePathSchema.parse("/install");
+const RULE_SET_ROOT = absoluteRootOf("/install");
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -329,14 +330,14 @@ const ruleSetTexts = import.meta.glob(
 const AUDIT_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" }),
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/audit`,
 });
 
 const ESLINT_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/eslint`,
 });
 

@@ -18,7 +18,6 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import { exceptionEntriesOfDocument, exceptionEntriesOfText, foreignKeysOfDocument, placedInSingleFile } from "./exception-records.ts";
@@ -26,6 +25,7 @@ import type { ExceptionRepository, ExceptionRepositoryOf, RecordsSplit } from ".
 import type { PlacedEntry, StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import { type DebtPair, debtPairKey, entryPairKey } from "../../domain/records/discipline-exceptions/debt-pair.ts";
 import { exceptionsTextWith, exceptionsTextWithout, type WritableEntry } from "./exceptions-text.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 export type ExceptionLayoutPorts = {
   readonly fileText: FileTextPort;
@@ -48,9 +48,9 @@ type RuleFileGroup = { readonly file: RepoPath; readonly entries: readonly Writa
 
 type RecordsDocument = { readonly entries: readonly StructuralExceptionEntry[]; readonly foreignKeys: readonly string[] };
 
-const SINGLE_FILE = fixedRepoPath("discipline-exceptions.json");
+const SINGLE_FILE = repoPathOf("discipline-exceptions.json");
 
-const SPLIT_FOLDER = fixedRepoPath("discipline-exceptions");
+const SPLIT_FOLDER = repoPathOf("discipline-exceptions");
 
 const RECORDS_FILE_EXTENSION = ".json";
 

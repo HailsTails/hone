@@ -3,15 +3,18 @@ import type { VersionOneWhyChain } from "../../domain/records/discipline-excepti
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { Finding } from "../../domain/finding/governance.ts";
 import type { ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { editionSchema } from "../content-files/edition.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { CheckReport, ClauseReading, PartialAssessment, ProjectionProblem, Unmeasured } from "../../domain/report/check-report.ts";
 import type { Case, Principle, Recipe, RecordKind, Rule, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
 import { renderGuidedReportText, renderReportText } from "./report-text.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "./symptoms/symptom-notes.ts";
 import { REPORT_OUTPUTS } from "../../domain/settings/report-output.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -48,18 +51,18 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
-const SPLIT_RECORDS_FILE = repoPathSchema.parse("discipline-exceptions/file-carve-outs/pd-1.json");
+const SPLIT_RECORDS_FILE = repoPathOf("discipline-exceptions/file-carve-outs/pd-1.json");
 
-const noClass = clauseAddressSchema.parse("CD-14#no-class-syntax");
-const probeNoTmp = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
-const fileA = repoPathSchema.parse("src/a.ts");
-const packageJson = repoPathSchema.parse("package.json");
-const suppressions = repoPathSchema.parse("eslint-suppressions.json");
-const audit = mechanismIdSchema.parse("audit");
-const eslint = mechanismIdSchema.parse("eslint");
-const SLICE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
+const noClass = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
+const probeNoTmp = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const fileA = repoPathOf("src/a.ts");
+const packageJson = repoPathOf("package.json");
+const suppressions = repoPathOf("eslint-suppressions.json");
+const audit = "audit" as const;
+const eslint = "eslint" as const;
+const SLICE = repoPathOf("packages/a/disciplines.eslint.mjs");
 const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
 const PRUNE_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop --base-revision origin/main";
@@ -129,7 +132,7 @@ describe("renderReportText entry lines", () => {
       renderReportText({
         projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND,
         output: "full",
-        report: { ...emptyReport, excluded: [repoPathSchema.parse("generated"), repoPathSchema.parse("src/legacy.ts")], findings: [finding] },
+        report: { ...emptyReport, excluded: [repoPathOf("generated"), repoPathOf("src/legacy.ts")], findings: [finding] },
       }),
     ).toBe(
       "excluded (2)\ngenerated\nsrc/legacy.ts\nfindings (1)\nCD-14#no-class-syntax audit src/a.ts:3:5 class A {}\nverdict: fail\n",
@@ -802,7 +805,7 @@ verdict: fail
 
 const mixedReport: CheckReport = {
   ...emptyReport,
-  excluded: [repoPathSchema.parse("generated")],
+  excluded: [repoPathOf("generated")],
   findings: [finding],
   exempted: [{ finding, by: [carved] }],
   stale: [located, carvedEverywhere],
@@ -836,7 +839,7 @@ describe("renderReportText outputs", () => {
       renderReportText({
         projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND,
         output: "failures-only",
-        report: { ...emptyReport, excluded: [repoPathSchema.parse("generated")], exempted: [{ finding, by: [carved] }] },
+        report: { ...emptyReport, excluded: [repoPathOf("generated")], exempted: [{ finding, by: [carved] }] },
       }),
     ).toBe("verdict: pass\n");
   });
@@ -933,7 +936,7 @@ describe("renderReportText assessment outputs", () => {
   });
 });
 
-const namingConvention = clauseAddressSchema.parse("CD-6#naming-convention");
+const namingConvention = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-6"), clause: clauseIdOf("naming-convention") };
 
 describe("renderReportText clauses not adopted", () => {
   it("lists the not-adopted clauses after the excluded paths and before the findings", () => {
@@ -941,7 +944,7 @@ describe("renderReportText clauses not adopted", () => {
       renderReportText({
         projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND,
         output: "full",
-        report: { ...emptyReport, excluded: [repoPathSchema.parse("generated")], notAdopted: [namingConvention], findings: [finding] },
+        report: { ...emptyReport, excluded: [repoPathOf("generated")], notAdopted: [namingConvention], findings: [finding] },
       }),
     ).toBe(
       "excluded (1)\ngenerated\nnotAdopted (1)\nCD-6#naming-convention\nfindings (1)\nCD-14#no-class-syntax audit src/a.ts:3:5 class A {}\nverdict: fail\n",
@@ -1001,7 +1004,7 @@ describe("renderReportText clauses adopted but not run", () => {
   });
 });
 
-const loops = clauseAddressSchema.parse("CD-15#loops");
+const loops = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const loopsFinding: Finding = { ...finding, clause: loops, snippet: "const total = 0;" };
 
@@ -1133,10 +1136,10 @@ describe("renderReportText readFirst by output", () => {
 
 describe("renderReportText clause editions", () => {
   const editionReading = {
-    address: clauseAddressSchema.parse("CD-27#test-body-logic"),
-    mechanism: mechanismIdSchema.parse("audit"),
-    edition: editionSchema.parse("1"),
-    latest: editionSchema.parse("2"),
+    address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+    mechanism: "audit" as const,
+    edition: editionOf("1"),
+    latest: editionOf("2"),
   };
 
   it("lists each clause's edition after the not-run clauses, with its mechanism and latest edition", () => {
@@ -1164,12 +1167,12 @@ describe("renderReportText clause editions", () => {
   });
 });
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
 const clockFinding: Finding = {
   clause: CLOCK_SOURCES,
   mechanism: audit,
-  file: repoPathSchema.parse("src/orders/charge-order.ts"),
+  file: repoPathOf("src/orders/charge-order.ts"),
   anchor: { line: 14, column: 0 },
   snippet: "const chargedAt = clock.now();",
 };

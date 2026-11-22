@@ -1,22 +1,23 @@
 import { describe, expect, it } from "vitest";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
 import type { Hit } from "../../domain/runner/runner-result-types.ts";
 import type { Debt, PlacedRecord, RecordsReading, RefusedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
-import { editionSchema } from "../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, runReportOf } from "./run-report-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -127,11 +128,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -157,11 +158,11 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
-const FILE_B = repoPathSchema.parse("src/b.ts");
+const FILE_B = repoPathOf("src/b.ts");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const CAST_HIT: Hit = { clause: CAST_EXPRESSIONS, file: FILE_A, anchor: { line: 4, column: 9 }, snippet: "body as Event", check: "claimed-type#cast-expressions" };
 
@@ -192,7 +193,7 @@ const SELECTS_CAST: RunReportRequest["selection"] = {
   editions: [],
 };
 
-const LOCATION_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const LOCATION_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const carriedLocationAt = (request: { readonly file: Debt["file"]; readonly index: number }): PlacedRecord => ({
   place: { file: LOCATION_FILE, index: request.index },
@@ -289,7 +290,7 @@ describe("runReportOf, findings and records", () => {
 
   it("does not call a record stale when a package slice is missing and the engine measured no file under a current root projection, and says the engine measured nothing", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
-    const missingSlice: ChecksSliceProblem = { slice: repoPathSchema.parse("packages/a/hone.eslint.mjs"), state: "missing" };
+    const missingSlice: ChecksSliceProblem = { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" };
     expect(
       runReportOf({ ...REQUEST, selection: SELECTS_CAST, records: { ...NO_RECORDS, records: [debt] }, runs: [{ ...eslintRunOf({ hits: [], projection: "current" }), slices: [missingSlice] }] }),
     ).toEqual({
@@ -470,9 +471,9 @@ describe("runReportOf, the selection and the settings", () => {
           uncovered: [CLOCK_SOURCES],
           notAdopted: [CAST_EXPRESSIONS],
           notRun: [TEST_BODY_LOGIC],
-          editions: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, edition: editionSchema.parse("1"), latest: editionSchema.parse("2") }],
+          editions: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, edition: editionOf("1"), latest: editionOf("2") }],
         },
-        excluded: [repoPathSchema.parse("dist")],
+        excluded: [repoPathOf("dist")],
         notes: [{ kind: "declared-not-read", key: "layers" }],
       }),
     ).toEqual({

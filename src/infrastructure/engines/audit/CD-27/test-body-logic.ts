@@ -1,9 +1,9 @@
 import type { PieceHit, WalkerPiece } from "../runner/pieces/walker-piece.ts";
 import { folderScope } from "../runner/pieces/source-scope.ts";
 import type { CallExpression, PropertyAccessExpression, SyntaxApi, SyntaxNode } from "../runner/toolchain/typescript-parse.ts";
-import { editionSchema, FIRST_EDITION } from "../../../content-files/edition.ts";
 import { editionReaches } from "../../../../domain/rule-set/edition-reach.ts";
 import type { Edition } from "../../../../domain/rule-set/edition-types.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
   if (folderScope({ file: request.file }) === "generated") return "skipped";
@@ -19,7 +19,7 @@ export type TestBodyForm = {
 
 type FormRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
-const SECOND_EDITION: Edition = editionSchema.parse("2");
+const SECOND_EDITION: Edition = editionOf("2");
 
 const ALLOWED_FORMS_PAGE = "CHECKS.md";
 
@@ -27,7 +27,7 @@ type PageSection = Omit<Remedy, "page">;
 
 const onAllowedFormsPage = (section: PageSection): Remedy => ({ fix: section.fix, page: ALLOWED_FORMS_PAGE, section: section.section });
 
-const firstEdition = (section: PageSection): TestBodyForm => ({ introducedIn: FIRST_EDITION, remedy: onAllowedFormsPage(section) });
+const firstEdition = (section: PageSection): TestBodyForm => ({ introducedIn: editionOf("1"), remedy: onAllowedFormsPage(section) });
 
 const secondEdition = (section: PageSection): TestBodyForm => ({ introducedIn: SECOND_EDITION, remedy: onAllowedFormsPage(section) });
 

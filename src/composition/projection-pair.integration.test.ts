@@ -5,9 +5,6 @@ import { createDefaultFileTextPort } from "../infrastructure/node/file-system/fi
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
 import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
@@ -28,6 +25,10 @@ import type { EslintClass } from "../infrastructure/engines/eslint/runner/toolch
 import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import { versionTwoStagesOver } from "./version-two-stages.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -61,25 +62,25 @@ const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "befo
 
 const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "after"] }) });
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const LEGACY = repoPathSchema.parse("src/legacy.ts");
+const LEGACY = repoPathOf("src/legacy.ts");
 
-const WIDE = repoPathSchema.parse("src/wide.ts");
+const WIDE = repoPathOf("src/wide.ts");
 
-const SKIPPING = repoPathSchema.parse("src/skipping.test.ts");
+const SKIPPING = repoPathOf("src/skipping.test.ts");
 
 const VERSION_ONE_RECORDS: readonly ExceptionRecord[] = [
-  { kind: "file-carve-out", clause: clauseAddressSchema.parse("CD-2#non-null-assertions"), mechanism: ESLINT, file: LEGACY },
+  { kind: "file-carve-out", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") }, mechanism: ESLINT, file: LEGACY },
   {
     kind: "authorised-location",
-    clause: clauseAddressSchema.parse("CD-44#parameter-reassignment"),
+    clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") },
     mechanism: ESLINT,
     file: LEGACY,
     reason: "a reducer rebinds its accumulator",
   },
-  { kind: "file-carve-out", clause: clauseAddressSchema.parse("CD-40#parameter-count"), mechanism: ESLINT, file: WIDE },
-  { kind: "file-carve-out", clause: clauseAddressSchema.parse("CD-27#skipped-tests"), mechanism: ESLINT, file: SKIPPING },
+  { kind: "file-carve-out", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-40"), clause: clauseIdOf("parameter-count") }, mechanism: ESLINT, file: WIDE },
+  { kind: "file-carve-out", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("skipped-tests") }, mechanism: ESLINT, file: SKIPPING },
 ];
 
 const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [

@@ -27,10 +27,12 @@ import type {
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { clauseAddressText, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
 type CatalogueCoverage = {
   readonly uncatalogued: readonly string[];
@@ -585,7 +587,7 @@ const PROSE_LINKS: readonly ProseLink[] = [
 ];
 
 describe("the catalogue guards over written-out pages and catalogues, so each can fail", () => {
-  const INSTALL_ROOT = absolutePathSchema.parse("/install");
+  const INSTALL_ROOT = absoluteRootOf("/install");
 
   const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
@@ -617,15 +619,15 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 
   const REBINDING: Symptom = { name: "rebinding", title: "rebinding", seen: "rebinding", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 
-  const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+  const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-  const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+  const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
-  const MUTATION_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-mutation");
+  const MUTATION_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-mutation") };
 
-  const REASSIGNMENT_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-reassignment");
+  const REASSIGNMENT_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") };
 
-  const INTENT_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-intent");
+  const INTENT_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-intent") };
 
   const PARAMETER_CLAUSES: SymptomCatalogue["clauses"] = [
     { clause: MUTATION_CLAUSE, sight: { kind: "one-symptom", symptom: WRITE_INTO_A_PARAMETER } },
@@ -689,7 +691,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
           ...NOTHING_CATALOGUED,
           clauses: [
             { clause: MUTATION_CLAUSE, sight: { kind: "one-symptom", symptom: WRITE_INTO_A_PARAMETER } },
-            { clause: clauseAddressSchema.parse("CD-27#test-body-logic"), sight: { kind: "one-symptom", symptom: REBINDING } },
+            { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, sight: { kind: "one-symptom", symptom: REBINDING } },
           ],
         },
         fileText: CD44_JUDGEMENT_FILE,

@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Engine, RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import type { EngineRun } from "../../ports/engine/engine-run.ts";
 import { engineMeasurementOf, engineProblemsOf, engineUnmeasuredOf } from "./engine-states.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -50,7 +51,7 @@ const runWith = (request: { readonly mechanism: EngineRun["mechanism"]; readonly
   misnamedRuleIds: [],
 });
 
-const TRACKED = [repoPathSchema.parse("src/a.ts")];
+const TRACKED = [repoPathOf("src/a.ts")];
 
 describe("engineUnmeasuredOf", () => {
   it("names the engine a run left out of effect because its projection is not written", () => {
@@ -66,9 +67,8 @@ describe("engineUnmeasuredOf", () => {
   });
 
   it("names the mechanism when the catalogue gives it no engine", () => {
-    const stranger = mechanismIdSchema.parse("stranger");
-    expect(engineUnmeasuredOf({ catalogue: REPORT_CATALOGUE, runs: [runWith({ mechanism: stranger, projection: "missing" })], tracked: TRACKED, selected: [] })).toEqual([
-      { kind: "engine-not-run", engine: { name: "stranger", mechanism: stranger }, projection: "missing" },
+    expect(engineUnmeasuredOf({ catalogue: { ...REPORT_CATALOGUE, engines: [WALKER] }, runs: [runWith({ mechanism: ESLINT, projection: "missing" })], tracked: TRACKED, selected: [] })).toEqual([
+      { kind: "engine-not-run", engine: { name: "eslint", mechanism: ESLINT }, projection: "missing" },
     ]);
   });
 
@@ -84,7 +84,7 @@ describe("engineUnmeasuredOf", () => {
 });
 
 describe("engineUnmeasuredOf, an engine that measured nothing", () => {
-  const CLAUSE = clauseAddressSchema.parse("CD-2#cast-expressions");
+  const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
   const SELECTED = [{ address: CLAUSE, mechanism: ESLINT, exceptions: "allowed" as const }];
 
@@ -98,7 +98,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
 
   it("names nothing for an engine with selected checks when the tree holds no TypeScript file to measure", () => {
     expect(
-      engineUnmeasuredOf({ catalogue: REPORT_CATALOGUE, runs: [runWith({ mechanism: ESLINT, projection: "current" })], tracked: [repoPathSchema.parse("README.md")], selected: SELECTED }),
+      engineUnmeasuredOf({ catalogue: REPORT_CATALOGUE, runs: [runWith({ mechanism: ESLINT, projection: "current" })], tracked: [repoPathOf("README.md")], selected: SELECTED }),
     ).toEqual([]);
   });
 
@@ -112,7 +112,7 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
     expect(
       engineUnmeasuredOf({
         catalogue: REPORT_CATALOGUE,
-        runs: [{ ...runWith({ mechanism: ESLINT, projection: "current" }), measured: [{ clause: CLAUSE, file: repoPathSchema.parse("src/a.ts") }] }, runWith({ mechanism: AUDIT, projection: "none" })],
+        runs: [{ ...runWith({ mechanism: ESLINT, projection: "current" }), measured: [{ clause: CLAUSE, file: repoPathOf("src/a.ts") }] }, runWith({ mechanism: AUDIT, projection: "none" })],
         tracked: TRACKED, selected: [...SELECTED, { address: CLAUSE, mechanism: AUDIT, exceptions: "allowed" as const }],
       }),
     ).toEqual([]);
@@ -120,13 +120,13 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
   });
 });
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
-const FILE_B = repoPathSchema.parse("src/b.ts");
+const FILE_B = repoPathOf("src/b.ts");
 
 const eslintRun = (request: Pick<RunMeasurement, "selected" | "measured">): RunMeasurement => ({ mechanism: ESLINT, ...request });
 
-const CLAUSE = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const IN_REACH = [FILE_A, FILE_B];
 
@@ -159,9 +159,9 @@ describe("engineProblemsOf", () => {
     const run: EngineRun = {
       ...runWith({ mechanism: ESLINT, projection: "current" }),
       slices: [
-        { slice: repoPathSchema.parse("packages/a/hone.eslint.mjs"), state: "missing" },
-        { slice: repoPathSchema.parse("packages/b/hone.eslint.mjs"), state: "out-of-date" },
-        { slice: repoPathSchema.parse("packages/c/hone.eslint.mjs"), state: "unconfigured" },
+        { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
+        { slice: repoPathOf("packages/b/hone.eslint.mjs"), state: "out-of-date" },
+        { slice: repoPathOf("packages/c/hone.eslint.mjs"), state: "unconfigured" },
       ],
     };
     expect(engineProblemsOf({ catalogue: REPORT_CATALOGUE, runs: [run] })).toEqual([
@@ -174,7 +174,7 @@ describe("engineProblemsOf", () => {
   it("names the root projection first, then the package files, when both differ", () => {
     const run: EngineRun = {
       ...runWith({ mechanism: ESLINT, projection: "out-of-date" }),
-      slices: [{ slice: repoPathSchema.parse("packages/a/hone.eslint.mjs"), state: "out-of-date" }],
+      slices: [{ slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "out-of-date" }],
     };
     expect(engineProblemsOf({ catalogue: REPORT_CATALOGUE, runs: [run] })).toEqual([
       { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },

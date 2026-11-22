@@ -1,11 +1,11 @@
 import { assert, describe, expect, it } from "vitest";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
 import cd6Plugin from "./cd6.eslint-plugin.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -22,43 +22,43 @@ const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 const flagCases: readonly SourceCase[] = [
   {
     name: "a const with an interior underscore",
-    fileName: repoPathSchema.parse("const-underscore.ts"),
+    fileName: repoPathOf("const-underscore.ts"),
     source: "export const Bad_Name = 1;\n",
     expectedLines: [1],
   },
   {
     name: "a function in snake case",
-    fileName: repoPathSchema.parse("function-snake.ts"),
+    fileName: repoPathOf("function-snake.ts"),
     source: "export function render_it(): void {}\n",
     expectedLines: [1],
   },
   {
     name: "a type alias in snake case",
-    fileName: repoPathSchema.parse("type-snake.ts"),
+    fileName: repoPathOf("type-snake.ts"),
     source: "export type snake_type = string;\n",
     expectedLines: [1],
   },
   {
     name: "an enum member in lower case",
-    fileName: repoPathSchema.parse("enum-lower.ts"),
+    fileName: repoPathOf("enum-lower.ts"),
     source: "export enum Colour {\n  RED = 1,\n  green = 2,\n}\n",
     expectedLines: [3],
   },
   {
     name: "an object literal property in snake case",
-    fileName: repoPathSchema.parse("property-snake.ts"),
+    fileName: repoPathOf("property-snake.ts"),
     source: "export const record = {\n  first_name: 1,\n};\n",
     expectedLines: [2],
   },
   {
     name: "a default import with an interior underscore",
-    fileName: repoPathSchema.parse("default-import.ts"),
+    fileName: repoPathOf("default-import.ts"),
     source: "import Foo_Bar from \"./foo-bar.ts\";\nexport { Foo_Bar };\n",
     expectedLines: [1],
   },
   {
     name: "a parameter in snake case",
-    fileName: repoPathSchema.parse("parameter-snake.ts"),
+    fileName: repoPathOf("parameter-snake.ts"),
     source: "export const double = (my_size: number): number => my_size * 2;\n",
     expectedLines: [1],
   },
@@ -67,31 +67,31 @@ const flagCases: readonly SourceCase[] = [
 const allowCases: readonly SourceCase[] = [
   {
     name: "an upper snake const",
-    fileName: repoPathSchema.parse("const-upper.ts"),
+    fileName: repoPathOf("const-upper.ts"),
     source: "export const MAX_RETRIES = 3;\n",
     expectedLines: [],
   },
   {
     name: "an unused variable with a leading underscore",
-    fileName: repoPathSchema.parse("unused-underscore.ts"),
+    fileName: repoPathOf("unused-underscore.ts"),
     source: "const _ignored = 1;\nexport {};\n",
     expectedLines: [],
   },
   {
     name: "a property that requires quotes",
-    fileName: repoPathSchema.parse("quoted-property.ts"),
+    fileName: repoPathOf("quoted-property.ts"),
     source: "export const headers = {\n  \"content-type\": \"text/plain\",\n};\n",
     expectedLines: [],
   },
   {
     name: "a pascal case class and interface",
-    fileName: repoPathSchema.parse("pascal-types.ts"),
+    fileName: repoPathOf("pascal-types.ts"),
     source: "export interface Reader {\n  readonly size: number;\n}\nexport class FileReader implements Reader {\n  readonly size = 1;\n}\n",
     expectedLines: [],
   },
   {
     name: "an upper snake enum member",
-    fileName: repoPathSchema.parse("enum-upper.ts"),
+    fileName: repoPathOf("enum-upper.ts"),
     source: "export enum Colour {\n  RED = 1,\n  DARK_GREEN = 2,\n}\n",
     expectedLines: [],
   },

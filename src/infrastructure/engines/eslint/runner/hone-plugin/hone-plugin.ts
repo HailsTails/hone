@@ -6,11 +6,10 @@ import { pieceFilePath } from "../../../../content-files/rule-sets/rule-set-read
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
 import type { DisciplineId } from "../../../../../domain/rule-set/identifier-types.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { parsedJson } from "../../../../content-files/parsed-json.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
-import { type RuledCheck, runsOnEslint } from "./check-rule-id.ts";
+import { ESLINT_MECHANISM, type RuledCheck, runsOnEslint } from "./check-rule-id.ts";
 import { type ChecksPlugin, type ChecksPluginFailure, checksPluginOf, type PieceSource } from "./checks-plugin.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 
@@ -29,8 +28,6 @@ export type HonePluginFailure =
   | { readonly kind: "plugin-unloadable"; readonly path: string; readonly detail: string };
 
 type Built<Value> = Result<Value, HonePluginFailure>;
-
-const ESLINT = mechanismIdSchema.parse("eslint");
 
 const pluginModulesSchema = z.looseObject({ clauses: z.array(z.looseObject({ settings: z.looseObject({ pluginModule: z.string() }) })) });
 
@@ -70,7 +67,7 @@ const pieceSourceOf = async (
 };
 
 const pieceSourcesOf = async (request: HonePluginSources & { readonly discipline: DisciplineId }): Promise<Built<readonly PieceSource[]>> => {
-  const pieceFile = pieceFilePath({ path: request.path, ruleSetRoot: request.installRoot, installRoot: request.installRoot, mechanism: ESLINT, discipline: request.discipline });
+  const pieceFile = pieceFilePath({ path: request.path, ruleSetRoot: request.installRoot, installRoot: request.installRoot, mechanism: ESLINT_MECHANISM, discipline: request.discipline });
   const piece = pieceDocumentAt({ ...request, pieceFile });
   if (piece.outcome === "failed") {
     return piece;
@@ -79,7 +76,7 @@ const pieceSourcesOf = async (request: HonePluginSources & { readonly discipline
   if (!pluginModules.success) {
     return { outcome: "failed", error: { kind: "piece-source-invalid", pieceFile, detail: z.prettifyError(pluginModules.error) } };
   }
-  const pieceRoot = request.path.join({ segments: [request.installRoot, "src", "infrastructure", "engines", ESLINT, request.discipline] });
+  const pieceRoot = request.path.join({ segments: [request.installRoot, "src", "infrastructure", "engines", ESLINT_MECHANISM, request.discipline] });
   const sources = await Promise.all(
     [...new Set(pluginModules.data.clauses.map((entry) => entry.settings.pluginModule))].map(async (pluginModule) =>
       listedOutcome({ outcome: await pieceSourceOf({ ...request, pieceFile, pieceRoot, piece: piece.value, pluginModule }) }),

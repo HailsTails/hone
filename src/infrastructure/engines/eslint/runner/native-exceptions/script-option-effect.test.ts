@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { ConfigFileSearch, EslintPort, QueryInstance } from "../toolchain/eslint-instance.ts";
 import type { NotPlainReason, OptionEffect, ScriptOption } from "./package-script-scanner.ts";
 import { scriptOptionJudge } from "./script-option-effect.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
-const REPO_ROOT = absolutePathSchema.parse("/repo");
-const ROOT_PACKAGE = repoPathSchema.parse("package.json");
-const NESTED_PACKAGE = repoPathSchema.parse("packages/a/package.json");
-const ROOT_FILE = repoPathSchema.parse("src/a.ts");
-const NESTED_FILE = repoPathSchema.parse("packages/a/src/b.ts");
+const REPO_ROOT = absoluteRootOf("/repo");
+const ROOT_PACKAGE = repoPathOf("package.json");
+const NESTED_PACKAGE = repoPathOf("packages/a/package.json");
+const ROOT_FILE = repoPathOf("src/a.ts");
+const NESTED_FILE = repoPathOf("packages/a/src/b.ts");
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/" });
 
 const optionAt = (request: { readonly location: typeof ROOT_PACKAGE; readonly effect: OptionEffect }): ScriptOption => ({
@@ -99,7 +99,7 @@ describe("scriptOptionJudge, what is not positively settled", () => {
   ])("weakens $kind when no checked file is under the script's folder", async (effect) => {
     await expect(
       judgeOver({ query: queryFinding(foundAt("/repo/tools/eslint.config.mjs")) })({
-        option: optionAt({ location: repoPathSchema.parse("tools/package.json"), effect }),
+        option: optionAt({ location: repoPathOf("tools/package.json"), effect }),
       }),
     ).resolves.toEqual({ outcome: "ok", value: { kind: "weakens" } });
   });

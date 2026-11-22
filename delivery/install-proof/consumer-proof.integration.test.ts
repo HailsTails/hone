@@ -25,7 +25,6 @@ import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.t
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createWalkerRunner } from "../../src/infrastructure/engines/audit/runner/create-walker-runner.ts";
@@ -35,8 +34,9 @@ import type { ExceptionEntryParser } from "../../src/application/ports/records/e
 import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 
-const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
 
 const SPLIT_FOLDER_NAME = "discipline-exceptions";
 
@@ -243,31 +243,31 @@ const projectOf = (request: { readonly repo: AbsolutePath; readonly ports: Obser
   }));
 
 const SIBLINGED_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("src/plain.ts"),
-  repoPathSchema.parse("src/plain.test.ts"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("src/plain.ts"),
+  repoPathOf("src/plain.test.ts"),
 ];
 
 const UNSIBLINGED_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("src/plain.ts"),
-  repoPathSchema.parse("src/plain.test.ts"),
-  repoPathSchema.parse("src/kept.ts"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("src/plain.ts"),
+  repoPathOf("src/plain.test.ts"),
+  repoPathOf("src/kept.ts"),
 ];
 
 const ESLINT_CLEAN_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("disciplines.eslint.mjs"),
-  repoPathSchema.parse("eslint.config.mjs"),
-  repoPathSchema.parse("src/plain.ts"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("disciplines.eslint.mjs"),
+  repoPathOf("eslint.config.mjs"),
+  repoPathOf("src/plain.ts"),
 ];
 
 const ESLINT_CLASS_TRACKED: readonly RepoPath[] = [
-  repoPathSchema.parse("disciplines.json"),
-  repoPathSchema.parse("disciplines.eslint.mjs"),
-  repoPathSchema.parse("eslint.config.mjs"),
-  repoPathSchema.parse("src/plain.ts"),
-  repoPathSchema.parse("src/kept.ts"),
+  repoPathOf("disciplines.json"),
+  repoPathOf("disciplines.eslint.mjs"),
+  repoPathOf("eslint.config.mjs"),
+  repoPathOf("src/plain.ts"),
+  repoPathOf("src/kept.ts"),
 ];
 
 const UNSIBLINGED_FINDING = {

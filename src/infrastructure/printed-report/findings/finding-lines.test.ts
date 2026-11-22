@@ -2,17 +2,19 @@ import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
 import type { PlacedRecord, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { editionSchema } from "../../content-files/edition.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { answeredLine, checkLine, editionLine, findingLine, notRunLine, unrecordedLines } from "./finding-lines.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -127,13 +129,13 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
-const TEAM_CLAUSE = clauseAddressSchema.parse("acme/AC-1#no-moment");
+const TEAM_CLAUSE = { ruleSet: { name: ruleSetNameOf("acme") }, discipline: disciplineIdOf("AC-1"), clause: clauseIdOf("no-moment") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -159,13 +161,13 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const ORDER_FILE = repoPathSchema.parse("src/orders/charge-order.ts");
+const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
-const TEST_FILE = repoPathSchema.parse("src/orders/charge-order.test.ts");
+const TEST_FILE = repoPathOf("src/orders/charge-order.test.ts");
 
-const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const PACKAGE_FILE = repoPathSchema.parse("package.json");
+const PACKAGE_FILE = repoPathOf("package.json");
 
 const CLOCK_FINDING: Finding = { clause: CLOCK_SOURCES, mechanism: AUDIT, file: ORDER_FILE, anchor: { line: 14, column: 0 }, snippet: "const chargedAt = clock.now();" };
 
@@ -183,12 +185,12 @@ const SECOND_CAST_CHECK: Check = { name: "cast-walker", symptom: CLAIMED_TYPE, c
 const TEAM_FINDING: Finding = { clause: TEAM_CLAUSE, mechanism: ESLINT, file: ORDER_FILE, anchor: { line: 1, column: 0 }, snippet: "moment()" };
 
 const DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: WEBHOOK_FILE, holding: { held: "stated" } },
 };
 
 const CLOCK_BOUNDARY: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/boundary-records.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 },
   record: { kind: "boundary-record", module: ORDER_FILE, outsideParty: { kind: "runtime", facility: "clock" }, holding: { held: "stated", ports: ["Clock"] } },
 };
 
@@ -226,7 +228,7 @@ describe("answeredLine", () => {
 
 describe("the lines that name a check", () => {
   it("prints an edition by its check, engine, the edition that ran and the latest", () => {
-    expect(editionLine({ reading: { check: CLOCK_CHECK, engine: { name: "walker", mechanism: AUDIT }, edition: editionSchema.parse("2"), latest: editionSchema.parse("3") } })).toBe(
+    expect(editionLine({ reading: { check: CLOCK_CHECK, engine: { name: "walker", mechanism: AUDIT }, edition: editionOf("2"), latest: editionOf("3") } })).toBe(
       "date-used-directly#clock-sources walker edition 2 of 3",
     );
   });
@@ -250,7 +252,7 @@ describe("unrecordedLines", () => {
     },
     {
       name: "a suppression entry",
-      exception: { kind: "suppression-entry", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, location: repoPathSchema.parse("eslint-suppressions.json"), mechanism: ESLINT },
+      exception: { kind: "suppression-entry", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, location: repoPathOf("eslint-suppressions.json"), mechanism: ESLINT },
       line: "claimed-type#cast-expressions eslint suppression-entry src/adapters/stripe-webhook.ts eslint-suppressions.json",
     },
     {

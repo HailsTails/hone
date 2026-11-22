@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
   type ConfigRoot,
@@ -15,6 +13,10 @@ import {
   slicePathOf,
   unprojectedFoldersOf,
 } from "./projection-slices.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -51,15 +53,15 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const eslint = mechanismIdSchema.parse("eslint");
+const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const eslint = "eslint" as const;
 
 const tracked = (paths: readonly string[]) => repoPathSchema.array().parse(paths);
 
 const REPOSITORY: ConfigRoot = { placement: "repository" };
-const PACKAGE_A: ConfigRoot = { placement: "package", directory: repoPathSchema.parse("packages/a") };
-const PACKAGE_B: ConfigRoot = { placement: "package", directory: repoPathSchema.parse("packages/b") };
-const NESTED_IN_A: ConfigRoot = { placement: "package", directory: repoPathSchema.parse("packages/a/tools") };
+const PACKAGE_A: ConfigRoot = { placement: "package", directory: repoPathOf("packages/a") };
+const PACKAGE_B: ConfigRoot = { placement: "package", directory: repoPathOf("packages/b") };
+const NESTED_IN_A: ConfigRoot = { placement: "package", directory: repoPathOf("packages/a/tools") };
 
 const carveOutIn = (file: string): ExceptionRecord => ({
   kind: "file-carve-out",
@@ -185,19 +187,19 @@ describe("governingPackageOf", () => {
   const packages = packageFoldersOf({ roots: [REPOSITORY, PACKAGE_A, NESTED_IN_A, PACKAGE_B] });
 
   it("is the deepest package folder holding the file", () => {
-    expect(governingPackageOf({ file: repoPathSchema.parse("packages/a/tools/run.ts"), packages })).toBe("packages/a/tools");
+    expect(governingPackageOf({ file: repoPathOf("packages/a/tools/run.ts"), packages })).toBe("packages/a/tools");
   });
 
   it("is the package folder for a file directly under it", () => {
-    expect(governingPackageOf({ file: repoPathSchema.parse("packages/a/x.ts"), packages })).toBe("packages/a");
+    expect(governingPackageOf({ file: repoPathOf("packages/a/x.ts"), packages })).toBe("packages/a");
   });
 
   it("is no package for a file outside every package, even one whose folder starts like a package", () => {
-    expect(governingPackageOf({ file: repoPathSchema.parse("packages/ab/x.ts"), packages })).toBeUndefined();
+    expect(governingPackageOf({ file: repoPathOf("packages/ab/x.ts"), packages })).toBeUndefined();
   });
 
   it("is no package for a file at the repository root", () => {
-    expect(governingPackageOf({ file: repoPathSchema.parse("x.ts"), packages })).toBeUndefined();
+    expect(governingPackageOf({ file: repoPathOf("x.ts"), packages })).toBeUndefined();
   });
 });
 

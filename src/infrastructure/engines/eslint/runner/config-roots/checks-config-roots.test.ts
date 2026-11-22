@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { configuredDirectoriesOf, outsideNestedRepositories, packageConfigFilesOf } from "./checks-config-roots.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const TRACKED = [
-  repoPathSchema.parse("eslint.config.mjs"),
-  repoPathSchema.parse("package.json"),
-  repoPathSchema.parse("packages/a/eslint.config.js"),
-  repoPathSchema.parse("packages/a/eslint.config.mjs"),
-  repoPathSchema.parse("packages/a/src/a.ts"),
-  repoPathSchema.parse("packages/b/tools/eslint.config.ts"),
+  repoPathOf("eslint.config.mjs"),
+  repoPathOf("package.json"),
+  repoPathOf("packages/a/eslint.config.js"),
+  repoPathOf("packages/a/eslint.config.mjs"),
+  repoPathOf("packages/a/src/a.ts"),
+  repoPathOf("packages/b/tools/eslint.config.ts"),
 ];
 
 describe("configuredDirectoriesOf", () => {

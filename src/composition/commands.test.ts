@@ -1,9 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { GitTreePort } from "../application/ports/git-port.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
 import type { DirectoryEntry, DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
@@ -18,7 +16,6 @@ import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import type { SettingsReading } from "../application/run/settings/read-settings.ts";
 import type { TouchedSet } from "../domain/repository/touched-set.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { EngineRun } from "../application/ports/engine/engine-run.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 import { commandOf } from "./composed-command.ts";
@@ -28,6 +25,10 @@ import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 
 type RecordPorts = Omit<VersionTwoRecordPorts, keyof CommandRequest>;
 
@@ -177,9 +178,9 @@ const authoriseArgumentsFor = (request: { readonly repo: string; readonly rootCa
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -292,11 +293,11 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
-const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
 
@@ -322,7 +323,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE_A = repoPathSchema.parse("src/a.ts");
+const FILE_A = repoPathOf("src/a.ts");
 
 const settingsWith = (request: { readonly forfeiture: ForfeitureAssessment }): SettingsReading => ({
   selection: {
@@ -342,7 +343,7 @@ const settingsWith = (request: { readonly forfeiture: ForfeitureAssessment }): S
 const NO_RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
 
 const HELD_DEBT: PlacedRecord = {
-  place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 },
+  place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
   record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: FILE_A, holding: { held: "stated" } },
 };
 
@@ -379,14 +380,14 @@ const INLINE_RULE_CONFIG: NativeException = {
   text: '/* eslint hone/claimed-type#cast-expressions: "off" */',
 };
 
-const SUPPRESSION_ENTRY: NativeException = { kind: "suppression-entry", clause: CAST_EXPRESSIONS, file: FILE_A, location: repoPathSchema.parse("eslint-suppressions.json") };
+const SUPPRESSION_ENTRY: NativeException = { kind: "suppression-entry", clause: CAST_EXPRESSIONS, file: FILE_A, location: repoPathOf("eslint-suppressions.json") };
 
 const CONFIG_OVERRIDE: NativeException = { kind: "config-override", clause: CAST_EXPRESSIONS, file: FILE_A };
 
 const COMMAND_LINE_OPTION: NativeException = {
   kind: "command-line-option",
   clause: CAST_EXPRESSIONS,
-  location: repoPathSchema.parse("package.json"),
+  location: repoPathOf("package.json"),
   script: "lint",
   option: "--no-inline-config",
   cause: { kind: "weakens-run" },
@@ -646,7 +647,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
   });
 
   it("keeps the debt when a package slice is missing, so the engine linted nothing under a current root projection", async () => {
-    const missingSlice: ChecksSliceProblem = { slice: repoPathSchema.parse("packages/a/hone.eslint.mjs"), state: "missing" };
+    const missingSlice: ChecksSliceProblem = { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" };
     expect(await prunedWhileEngineRan({ run: { ...runOf({ hits: [] }), slices: [missingSlice] } })).toEqual({
       writes: [[{ text: "" }]],
       exits: [[{ code: 0 }]],

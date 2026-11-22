@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import {
   type PieceLocation,
   pieceFilesOf,
@@ -72,7 +73,7 @@ const WALKER_PIECE: PieceLocation = {
   file: "packages/hone/src/infrastructure/engines/audit/CD-14/class-syntax.ts",
   ruleSetRoot: INSTALL_ROOT,
   mechanism: "audit",
-  discipline: "CD-14",
+  discipline: disciplineIdOf("CD-14"),
 };
 
 const refusalsOf = (request: {
@@ -99,7 +100,33 @@ describe("pieceFilesOf", () => {
         ruleSetRoots: [INSTALL_ROOT, PROBE_ROOT],
         installRoot: INSTALL_ROOT,
       }),
-    ).toEqual([WALKER_PIECE]);
+    ).toEqual({ outcome: "ok", value: [WALKER_PIECE] });
+  });
+
+  it.each([
+    "packages/hone/src/infrastructure/engines/protocol/checks/checks-runner.ts",
+    "packages/hone/src/infrastructure/engines/audit/runner/runner.ts",
+  ])("does not list %s, which is no piece's file", (file) => {
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: [] });
+  });
+
+  it.each([
+    { file: "packages/hone/src/infrastructure/engines/audit/not-a-discipline/class-syntax.ts", folder: "not-a-discipline" },
+    { file: "packages/hone/src/infrastructure/engines/audit/cd-14/class-syntax.ts", folder: "cd-14" },
+  ])("refuses the folder $folder under the audit mechanism, which is no discipline id", ({ file, folder }) => {
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({
+      outcome: "failed",
+      error: { kind: "not-a-discipline", file, folder },
+    });
+  });
+
+  it("refuses a piece folder under a mechanism other than audit or eslint", () => {
+    const file = "packages/hone/src/infrastructure/engines/oxlint/CD-14/class-syntax.ts";
+
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({
+      outcome: "failed",
+      error: { kind: "unknown-mechanism", file, mechanism: "oxlint" },
+    });
   });
 });
 

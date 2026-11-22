@@ -1,10 +1,10 @@
 import { assert, describe, expect, it } from "vitest";
 import { createDefaultTypeScriptDeclarationPort } from "./typescript-declaration-port.ts";
-import { repoPathSchema } from "../../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { CompilerOptions, Diagnostic } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { installedEslintBoundary } from "../../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { checksProjectionText } from "../../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
+import { repoPathOf } from "../../../src/domain/repository/repo-path-of.ts";
 
 const installedBoundary = await installedEslintBoundary();
 
@@ -171,7 +171,7 @@ const CHECKS = [
 const ROOT_PROJECTION = checksProjectionText({
   pluginImport: PLUGIN_SPECIFIER,
   checks: CHECKS,
-  answered: [{ symptom: "S-1", check: "C-1", file: repoPathSchema.parse("src/old.ts") }],
+  answered: [{ symptom: "S-1", check: "C-1", file: repoPathOf("src/old.ts") }],
 });
 
 const PACKAGE_PROJECTION = checksProjectionText({ pluginImport: PLUGIN_SPECIFIER, checks: CHECKS, answered: [] });

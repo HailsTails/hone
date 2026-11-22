@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { answeredKeyOf, beforeSectionsOf, findingKeyOf, nativeKeyOf } from "./before-sections.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -77,7 +78,7 @@ const CLAUSE_WIDE: ExceptionRecord = { kind: "clause-wide-carve-out", clause: LO
 const COMMAND_LINE_OPTION: AttributedNativeException = {
   kind: "command-line-option",
   clause: LOOPS_CLAUSE,
-  location: repoPathSchema.parse("package.json"),
+  location: repoPathOf("package.json"),
   script: "lint",
   option: "--ignore-pattern",
   cause: { kind: "weakens-run" },
@@ -135,7 +136,7 @@ describe("beforeSectionsOf", () => {
       beforeSectionsOf({
         report: {
           ...EMPTY_BEFORE,
-          excluded: [repoPathSchema.parse("generated")],
+          excluded: [repoPathOf("generated")],
           findings: [LOOP_FINDING],
           exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }],
           unrecorded: [COMMAND_LINE_OPTION],
@@ -144,7 +145,7 @@ describe("beforeSectionsOf", () => {
           doublyHeld: [{ clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT }],
           uncovered: [LOOPS_CLAUSE, LOOPS_CLAUSE],
           notRun: [LOOPS_CLAUSE],
-          projectionProblems: [{ scope: "slice", mechanism: AUDIT, state: "missing", slice: repoPathSchema.parse("packages/web") }],
+          projectionProblems: [{ scope: "slice", mechanism: AUDIT, state: "missing", slice: repoPathOf("packages/web") }],
           assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", fileCarveOuts: 1 }],
         },
       }),

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../repo-path.ts";
 import { carriedStandingOf } from "./carried-standing.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
 const ENTRY = { answers: "claimed-type", file: "src/a.ts", carried: { kind: "authorised-location", clause: "CD-2#cast-expressions", file: "src/a.ts", reason: "Kept." } };
 
@@ -24,7 +24,7 @@ describe("carriedStandingOf", () => {
   it("refuses a carried record that only another file at the base revision holds", () => {
     expect(
       carriedStandingOf({
-        base: { measured: "yes", documents: [{ file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), document: { version: 2, records: [ENTRY] } }] },
+        base: { measured: "yes", documents: [{ file: repoPathOf("hone-records/debt/claimed-type.json"), document: { version: 2, records: [ENTRY] } }] },
         file: FILE,
         entry: ENTRY,
       }),

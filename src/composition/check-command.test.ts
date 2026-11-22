@@ -9,7 +9,6 @@ import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
-import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../domain/repository/repo-path-types.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import { commandOf } from "./composed-command.ts";
@@ -19,6 +18,7 @@ import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engi
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 
 const runCheckCommand = (command: VersionOneCommandRequest) => commandOf({ tool: CHECK, ports: command })(command);
 
@@ -70,7 +70,7 @@ const singleFileRepositoriesOver = (request: {
         create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
       },
       fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
-      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
+      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathOf("discipline-exceptions.json")] }) },
     });
 
 const CLASS_SYNTAX_DEFINITION = {
@@ -251,7 +251,7 @@ describe("runCheckCommand", () => {
         process: processPort,
         fileText: fileTextOver(CLASS_SYNTAX_SELECTED),
         modules: modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: { hits: [HIT_IN_A], nativeExceptions: [] } } }) }),
-        git: gitTracking([repoPathSchema.parse("src/a.ts")]),
+        git: gitTracking([repoPathOf("src/a.ts")]),
       }),
     );
 
@@ -265,7 +265,7 @@ describe("runCheckCommand", () => {
     const modules = modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: { hits: [], nativeExceptions: [] } } }) });
 
     await runCheckCommand(
-      commandRequest({ fileText: fileTextOver(CLASS_SYNTAX_SELECTED), modules, git: gitTracking([repoPathSchema.parse("src/a.ts")]) }),
+      commandRequest({ fileText: fileTextOver(CLASS_SYNTAX_SELECTED), modules, git: gitTracking([repoPathOf("src/a.ts")]) }),
     );
 
     expect(vi.mocked(modules.load).mock.calls).toEqual([
@@ -274,7 +274,7 @@ describe("runCheckCommand", () => {
   });
 
   it("measures the change set against the --base-revision it is given when a file carve-out needs it", async () => {
-    const git = gitTracking([repoPathSchema.parse("src/a.ts")]);
+    const git = gitTracking([repoPathOf("src/a.ts")]);
 
     await runCheckCommand(
       commandRequest({
@@ -301,7 +301,7 @@ const checkedWith = async (request: {
       process: processPort,
       fileText: fileTextOver(classSyntaxSelectedWith({ settings: request.settings })),
       modules: modulesLoading({ runner: standaloneRunner({ runReturns: { outcome: "ok", value: { hits: [HIT_IN_A], nativeExceptions: [] } } }) }),
-      git: gitTracking([repoPathSchema.parse("src/a.ts")]),
+      git: gitTracking([repoPathOf("src/a.ts")]),
     }),
   );
   return outputOf({ process: processPort });
@@ -443,8 +443,8 @@ const carvedRunWith = async (request: {
   readonly settings: JsonValue;
 }) => {
   const processPort = processWith({ arguments: request.arguments });
-  const git = gitTracking([repoPathSchema.parse("src/a.ts")]);
-  vi.mocked(git.changedSince).mockReturnValue({ outcome: "ok", value: [repoPathSchema.parse("src/a.ts")] });
+  const git = gitTracking([repoPathOf("src/a.ts")]);
+  vi.mocked(git.changedSince).mockReturnValue({ outcome: "ok", value: [repoPathOf("src/a.ts")] });
   await runCheckCommand(
     commandRequest({
       process: processPort,

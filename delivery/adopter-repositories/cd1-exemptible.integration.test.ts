@@ -20,7 +20,6 @@ import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
-import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
@@ -28,8 +27,9 @@ import type { ExceptionEntryParser } from "../../src/application/ports/records/e
 import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
+import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 
-const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
 
 const SPLIT_FOLDER_NAME = "discipline-exceptions";
 
@@ -268,10 +268,10 @@ const git: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
     outcome: "ok",
     value: [
-      repoPathSchema.parse("discipline-exceptions.json"),
-      repoPathSchema.parse("disciplines.json"),
-      repoPathSchema.parse("src/fresh.ts"),
-      repoPathSchema.parse("src/parse.ts"),
+      repoPathOf("discipline-exceptions.json"),
+      repoPathOf("disciplines.json"),
+      repoPathOf("src/fresh.ts"),
+      repoPathOf("src/parse.ts"),
     ],
   }),
   changedSince: vi.fn<GitPort["changedSince"]>(),
@@ -321,15 +321,15 @@ const CASCADE_REPO = restoredFixture({
   fixtureRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-cascade` }),
 });
 
-const LEGACY_FILE = repoPathSchema.parse("src/legacy.ts");
+const LEGACY_FILE = repoPathOf("src/legacy.ts");
 
 const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
   const cascadeGit: GitPort = {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
       outcome: "ok",
       value: [
-        repoPathSchema.parse("discipline-exceptions.json"),
-        repoPathSchema.parse("disciplines.json"),
+        repoPathOf("discipline-exceptions.json"),
+        repoPathOf("disciplines.json"),
         LEGACY_FILE,
       ],
     }),

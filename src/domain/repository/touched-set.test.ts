@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { baseJudgementOf, type TouchedSet } from "./touched-set.ts";
+import { repoPathOf } from "./repo-path-of.ts";
 
-const A = repoPathSchema.parse("a.ts");
+const A = repoPathOf("a.ts");
 
 describe("baseJudgementOf", () => {
   it.each<{ readonly name: string; readonly touched: TouchedSet; readonly judgement: "in-this-run" | "left-to-another-run" }>([

@@ -3,7 +3,6 @@ import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
@@ -15,6 +14,7 @@ import { type ProjectionFiles, pluginImportOf, projectionState } from "../projec
 import { type ProjectedPiece, projectionText } from "../projection/projection-text.ts";
 import { type ProjectionStates, projectionStateAt } from "../projection/projection-states.ts";
 import { type ConfigRoot, orphanedSliceDirectoriesOf, sliceRecordsOf, slicePathOf } from "./projection-slices.ts";
+import { absoluteWithin } from "../../../../../domain/repository/absolute-within.ts";
 
 export type ProjectionClause = {
   readonly address: ClauseAddress;
@@ -42,7 +42,7 @@ type SliceSource = {
 const importingDirectoryOf = (request: { readonly origin: SliceOrigin; readonly root: ConfigRoot }): AbsolutePath =>
   request.root.placement === "repository"
     ? request.origin.repoRoot
-    : absolutePathSchema.parse(request.origin.path.join({ segments: [request.origin.repoRoot, request.root.directory] }));
+    : absoluteWithin({ root: request.origin.repoRoot, file: request.root.directory });
 
 const namespaceLeaders = (request: { readonly clauses: readonly ProjectionClause[] }): readonly ProjectionClause[] =>
   request.clauses.filter(

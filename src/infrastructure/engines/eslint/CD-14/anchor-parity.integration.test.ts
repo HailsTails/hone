@@ -5,8 +5,6 @@ import type { ModuleLoaderPort } from "../../../../application/ports/host/module
 import { createPathPort } from "../../../node/path-port.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { check } from "../../audit/CD-14/class-syntax.ts";
 import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
@@ -14,20 +12,24 @@ import { createEslintPort } from "../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../runner/pieces/eslint-plugin-schema.ts";
 import classAuthoringPlugin from "./cd14/cd14.eslint-plugin.ts";
-import { FIRST_EDITION } from "../../../content-files/edition.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(import.meta.dirname);
 
 const keywordAfterNodeStartCases: readonly SourceCase[] = [
   {
     name: "decorator on the line before the class keyword",
-    fileName: repoPathSchema.parse("decorated.ts"),
+    fileName: repoPathOf("decorated.ts"),
     source: "@sealed\nclass Alpha {}\n",
     expectedLines: [2],
   },
   {
     name: "decorated class expression",
-    fileName: repoPathSchema.parse("decorated-expression.ts"),
+    fileName: repoPathOf("decorated-expression.ts"),
     source: "export const Gamma = @sealed\nclass {};\n",
     expectedLines: [2],
   },
@@ -70,11 +72,11 @@ const walkerRunner = createWalkerRunner({
 });
 
 const WALKER_CLAUSE: RunnerClause = {
-  address: clauseAddressSchema.parse("CD-14#class-syntax"),
+  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",
   clauseSettings: {},
-  edition: FIRST_EDITION,
+  edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
 

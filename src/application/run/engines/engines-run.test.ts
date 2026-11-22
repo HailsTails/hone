@@ -1,7 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
 import type { RunnerCall } from "../../ports/engine/runner-module.ts";
 import type { EngineRun, EngineRunRequest, LoadedEngine } from "../../ports/engine/engine-run.ts";
@@ -13,25 +12,28 @@ import type { RunFailureSource } from "../../../domain/report/run-failure.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { RecordsReading, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { SettingsReading } from "../settings/read-settings.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type EnginesRunRequest, enginesProjectionOf, enginesRunOf } from "./engines-run.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
-const INSTALL = absolutePathSchema.parse("/install");
+const INSTALL = absoluteRootOf("/install");
 
-const A = repoPathSchema.parse("src/a.ts");
+const A = repoPathOf("src/a.ts");
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
+const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -88,11 +90,11 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const README = repoPathSchema.parse("README.md");
+const README = repoPathOf("README.md");
 
-const bindingOn = (request: { readonly mechanism: typeof ESLINT }): ClauseBinding => ({
+const bindingOn = (request: { readonly mechanism: MechanismId }): ClauseBinding => ({
   mechanism: request.mechanism,
-  clause: { address: CAST_EXPRESSIONS, anchor: { kind: "file" }, pieceRoot: "/install/pieces", clauseSettings: {}, edition: FIRST_EDITION, settings: {} },
+  clause: { address: CAST_EXPRESSIONS, anchor: { kind: "file" }, pieceRoot: "/install/pieces", clauseSettings: {}, edition: editionOf("1"), settings: {} },
 });
 
 const settingsBinding = (request: { readonly bindings: readonly ClauseBinding[]; readonly lookup: SettingsReading["eslintConfigLookup"] }): SettingsReading => ({
@@ -111,7 +113,7 @@ const settingsBinding = (request: { readonly bindings: readonly ClauseBinding[];
 });
 
 const DEBT_ON_A: RecordsReading = {
-  records: [{ place: { file: repoPathSchema.parse("hone-records/debt/claimed-type.json"), index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: A, holding: { held: "stated" } } }],
+  records: [{ place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: A, holding: { held: "stated" } } }],
   refused: [],
   notes: [],
   base: { measured: "yes" },
@@ -281,7 +283,7 @@ describe("enginesRunOf", () => {
   });
 });
 
-const WRITTEN_PROJECTION = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
+const WRITTEN_PROJECTION = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 describe("enginesProjectionOf", () => {
   it("gives the files the checks runner wrote", async () => {

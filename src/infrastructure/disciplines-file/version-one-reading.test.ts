@@ -3,18 +3,19 @@ import type { SelectionRepository } from "../../application/ports/selection/sele
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { RecordsOnDisk } from "../../application/ports/records/version-one-reading.ts";
 import { versionOneReadOf, type VersionOneReadRequest } from "./version-one-reading.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const SELECTION_TEXT = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "eslint" } }';
 
@@ -27,7 +28,7 @@ const READING: SelectionReading = {
   fileExceptionWhyChains: "optional",
 };
 
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE = repoPathOf("discipline-exceptions.json");
 
 const CARVE_OUT_ENTRY = { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" } as const;
 
@@ -37,7 +38,7 @@ const SINGLE_FILE_ENTRIES: readonly PlacedEntry[] = [
 ];
 
 const SPLIT_ENTRIES: readonly PlacedEntry[] = [
-  { place: { layout: "split", file: repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-15.json"), index: 0 }, entry: CARVE_OUT_ENTRY },
+  { place: { layout: "split", file: repoPathOf("discipline-exceptions/file-carve-outs/cd-15.json"), index: 0 }, entry: CARVE_OUT_ENTRY },
 ];
 
 type Held = {
@@ -47,14 +48,14 @@ type Held = {
   readonly recordsOnDisk: RecordsOnDisk;
 };
 
-const NO_RECORDS_ON_DISK: RecordsOnDisk = { files: [], folders: [], root: { kind: "folder", folder: repoPathSchema.parse("discipline-exceptions") } };
+const NO_RECORDS_ON_DISK: RecordsOnDisk = { files: [], folders: [], root: { kind: "folder", folder: repoPathOf("discipline-exceptions") } };
 
 const SINGLE_FILE_ON_DISK: RecordsOnDisk = { files: [SINGLE_FILE], folders: [], root: { kind: "repository" } };
 
 const SPLIT_ON_DISK: RecordsOnDisk = {
-  files: [repoPathSchema.parse("discipline-exceptions/file-carve-outs/cd-15.json")],
-  folders: [repoPathSchema.parse("discipline-exceptions"), repoPathSchema.parse("discipline-exceptions/file-carve-outs")],
-  root: { kind: "folder", folder: repoPathSchema.parse("discipline-exceptions") },
+  files: [repoPathOf("discipline-exceptions/file-carve-outs/cd-15.json")],
+  folders: [repoPathOf("discipline-exceptions"), repoPathOf("discipline-exceptions/file-carve-outs")],
+  root: { kind: "folder", folder: repoPathOf("discipline-exceptions") },
 };
 
 const NOTHING_HELD: Held = {
@@ -65,7 +66,7 @@ const NOTHING_HELD: Held = {
 };
 
 const requestOver = (held: Held): VersionOneReadRequest => ({
-  repoRoot: absolutePathSchema.parse("/repo"),
+  repoRoot: absoluteRootOf("/repo"),
   fileText: {
     read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: held.selectionText }),
     exists: vi.fn<FileTextPort["exists"]>(),

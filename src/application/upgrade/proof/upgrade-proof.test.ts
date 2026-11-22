@@ -11,11 +11,7 @@ import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { RecordAnswerOracle, FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
 import type { HeadRecord } from "../../../domain/records/upgrade/head-records.ts";
@@ -26,6 +22,10 @@ import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -44,9 +44,9 @@ const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, Recor
     .toSorted((left, right) => left.order - right.order)
     .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -83,11 +83,11 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
 
@@ -124,9 +124,9 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
 
 const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: TOOL_RULE_SET, catalogue: { ...SETTINGS_CATALOGUE, checks: [LOOP_KEYWORD_LOOPS] } }];
 
-const SRC_A = repoPathSchema.parse("src/a.ts");
+const SRC_A = repoPathOf("src/a.ts");
 
-const REPO = absolutePathSchema.parse("/repo");
+const REPO = absoluteRootOf("/repo");
 
 const SELECTION: ConsumerSelectionFile = {
   version: 1,
@@ -154,13 +154,13 @@ const ORIGINAL_CONFIG = 'import disciplines from "./disciplines.eslint.mjs";\nex
 const READING: VersionOneReading = { selection: SELECTION, heads: [CARVE_OUT_HEAD] };
 
 const ROOT_PROJECTION: VersionOneProjection = {
-  projection: repoPathSchema.parse("disciplines.eslint.mjs"),
-  teamConfigs: [{ file: repoPathSchema.parse("eslint.config.mjs"), text: ORIGINAL_CONFIG }],
+  projection: repoPathOf("disciplines.eslint.mjs"),
+  teamConfigs: [{ file: repoPathOf("eslint.config.mjs"), text: ORIGINAL_CONFIG }],
 };
 
 const FOUND_PROJECTIONS: VersionOneProjectionsReading = { removed: [], outcome: { outcome: "ok", value: [ROOT_PROJECTION] } };
 
-const ORPHAN = repoPathSchema.parse("old/disciplines.eslint.mjs");
+const ORPHAN = repoPathOf("old/disciplines.eslint.mjs");
 
 const EMPTY_BEFORE: CheckReport = {
   excluded: [],
@@ -353,9 +353,9 @@ const doublesOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]>; 
   },
 });
 
-const ROOT_PROJECTION_FILE = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "projection text" };
+const ROOT_PROJECTION_FILE = { file: repoPathOf("hone.eslint.mjs"), text: "projection text" };
 
-const SLICE_PROJECTION_FILE = { file: repoPathSchema.parse("packages/a/hone.eslint.mjs"), text: "slice text" };
+const SLICE_PROJECTION_FILE = { file: repoPathOf("packages/a/hone.eslint.mjs"), text: "slice text" };
 
 const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofRequest => ({
   ports: request.doubles.ports,
@@ -363,10 +363,10 @@ const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofReques
   runs: request.doubles.runs,
   reading: READING,
   versionOneFiles: {
-    recordsFiles: [repoPathSchema.parse("discipline-exceptions/cd-15.json")],
+    recordsFiles: [repoPathOf("discipline-exceptions/cd-15.json")],
     recordsFolders: [],
-    recordsRoot: { kind: "folder", folder: repoPathSchema.parse("discipline-exceptions") },
-    settings: repoPathSchema.parse("disciplines.json"),
+    recordsRoot: { kind: "folder", folder: repoPathOf("discipline-exceptions") },
+    settings: repoPathOf("disciplines.json"),
   },
   catalogues: CATALOGUES,
   repoRoot: REPO,
@@ -394,10 +394,10 @@ const sequenceOf = (request: { readonly doubles: Doubles }) =>
   });
 
 const SINGLE_FILE_LAYOUT: UpgradeProofRequest["versionOneFiles"] = {
-  recordsFiles: [repoPathSchema.parse("discipline-exceptions.json")],
+  recordsFiles: [repoPathOf("discipline-exceptions.json")],
   recordsFolders: [],
   recordsRoot: { kind: "repository" },
-  settings: repoPathSchema.parse("disciplines.json"),
+  settings: repoPathOf("disciplines.json"),
 };
 
 const SETTINGS_PATH = "/repo/hone.config.json";
@@ -412,7 +412,7 @@ const ASKING_THE_ORACLE = [{ port: "answer", arguments: [{ records: [CARVE_OUT] 
 
 const RUNNING_VERSION_ONE = [{ port: "versionOne", arguments: [] }];
 
-const NO_IMPORTER = { kind: "no-file-imports-projection", projection: repoPathSchema.parse("disciplines.eslint.mjs") } as const;
+const NO_IMPORTER = { kind: "no-file-imports-projection", projection: repoPathOf("disciplines.eslint.mjs") } as const;
 
 
 const READING_PROJECTIONS = [{ port: "projections", arguments: [] }];
@@ -569,7 +569,7 @@ describe("upgradeProof", () => {
     const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionTwo.mockResolvedValue({
       outcome: "ok",
-      value: { ...EMPTY_AFTER, findings: [LOOP_FINDING], misnamed: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathSchema.parse("src/a.ts"), line: 3, text: "the text" }] },
+      value: { ...EMPTY_AFTER, findings: [LOOP_FINDING], misnamed: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathOf("src/a.ts"), line: 3, text: "the text" }] },
     });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -632,7 +632,7 @@ describe("upgradeProof", () => {
   it("refuses, before writing anything, a version 1 records file outside its records folder", async () => {
     const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: outsideRecordsFolderPath() });
     const request = requestOver({ doubles });
-    await expect(upgradeProof({ ...request, versionOneFiles: { ...request.versionOneFiles, recordsFiles: [repoPathSchema.parse("tools/x.json")] } })).resolves.toEqual({
+    await expect(upgradeProof({ ...request, versionOneFiles: { ...request.versionOneFiles, recordsFiles: [repoPathOf("tools/x.json")] } })).resolves.toEqual({
       outcome: "failed",
       error: { kind: "removal-refused", failure: { kind: "records-file-outside-root", path: "/repo/tools/x.json", root: "/repo/discipline-exceptions" }, removedByVersionOne: [] },
     });
@@ -682,7 +682,7 @@ describe("upgradeProof", () => {
     const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({
       removed: [ORPHAN],
-      outcome: { outcome: "failed", error: { kind: "slice-left-in-place", files: [repoPathSchema.parse("stale/disciplines.eslint.mjs")] } },
+      outcome: { outcome: "failed", error: { kind: "slice-left-in-place", files: [repoPathOf("stale/disciplines.eslint.mjs")] } },
     });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -701,7 +701,7 @@ describe("upgradeProof", () => {
 
   it("refuses naming each file version 1's project rewrote, and the slice it removed, without writing anything", async () => {
     const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
-    doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "failed", error: { kind: "project-rewrote", files: [repoPathSchema.parse("disciplines.eslint.mjs")] } } });
+    doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "failed", error: { kind: "project-rewrote", files: [repoPathOf("disciplines.eslint.mjs")] } } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
       error: { kind: "version-one-project-rewrote", files: ["disciplines.eslint.mjs"], removedByVersionOne: ["old/disciplines.eslint.mjs"] },

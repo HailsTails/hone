@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { repoPathSchema } from "./repo-path.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 
 const ACCEPTED = [
   "a.ts",
@@ -46,6 +47,6 @@ describe("repoPathSchema", () => {
   });
 
   it("parses a path to the same text", () => {
-    expect(repoPathSchema.parse("src/é.ts")).toBe("src/é.ts");
+    expect(repoPathOf("src/é.ts")).toBe("src/é.ts");
   });
 });

@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { debtPairKey, distinctDebtPairs, entryPairKey } from "./debt-pair.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
-const CASTS = clauseAddressSchema.parse("CD-2#cast-expressions");
-const BASKET = repoPathSchema.parse("src/basket.ts");
-const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const CASTS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
+const BASKET = repoPathOf("src/basket.ts");
+const LEGACY = repoPathOf("src/legacy/report.ts");
 
 describe("debtPairKey", () => {
   it("joins the clause text and the file", () => {

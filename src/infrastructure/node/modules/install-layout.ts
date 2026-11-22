@@ -1,4 +1,5 @@
 import { BUILT_MODULE_EXTENSION, type ModuleExtension } from "../../../application/ports/host/module-extension.ts";
+import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 
 export type InstallEntry = "api" | "command" | "runner";
 
@@ -25,6 +26,6 @@ export const installFormOf = (request: { readonly moduleExtension: ModuleExtensi
 
 export const runnerModuleSegmentsOf = (request: {
   readonly installRoot: string;
-  readonly mechanism: string;
+  readonly mechanism: MechanismId;
   readonly moduleExtension: ModuleExtension;
 }): readonly string[] => [request.installRoot, "src", "infrastructure", "engines", request.mechanism, "runner", `runner${request.moduleExtension}`];

@@ -47,7 +47,7 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
     located,
     runSettingsOf: runSettingsOver(ports),
     catalogues: () => shippedCataloguesOf({ fileText, path, installRoot: located.installRoot }),
-    recordsOnDiskOf: ({ repoRoot }) => recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory, path }),
+    recordsOnDiskOf: ({ repoRoot }) => recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),
     proofRunsOf,
     foundTreeStages: () => foundTreeStagesOf(request),

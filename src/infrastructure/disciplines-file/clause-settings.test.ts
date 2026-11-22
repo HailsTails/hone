@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
 import type { ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { clauseSettingsSchema, settledClauseSettings } from "./clause-settings.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
-const ADDRESS = clauseAddressSchema.parse("CD-6#naming-convention");
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-6"), clause: clauseIdOf("naming-convention") };
 
 const DECLARATIONS: ClauseSettingDeclarations = {
   confinedPackages: { default: [] },

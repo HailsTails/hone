@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { clauseEditionsSchema } from "../../../infrastructure/content-files/edition.ts";
+import { editionOf } from "../../rule-set/edition-of.ts";
 import type { CheckEditions } from "./check-editions.ts";
 import { settledClauseEdition } from "./clause-edition.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const ADDRESS = clauseAddressSchema.parse("CD-27#test-body-logic");
-const TWO_EDITIONS = clauseEditionsSchema.parse(["1", "2"]);
-const ONE_EDITION = clauseEditionsSchema.parse(undefined);
+const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TWO_EDITIONS = { declared: [editionOf("1"), editionOf("2")], default: editionOf("1"), latest: editionOf("2") };
+const ONE_EDITION = { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") };
 
 describe("settledClauseEdition", () => {
   it("runs the default edition when pinned and not given one", () => {

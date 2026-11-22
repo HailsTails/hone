@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { shownRemediesOf } from "./shown-remedies.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const pathJoining = (join: PathPort["join"]): PathPort => ({
   join,
@@ -20,16 +21,16 @@ const pathJoining = (join: PathPort["join"]): PathPort => ({
 
 const shownAs = (shown: string): ShownPathOf => vi.fn<ShownPathOf>().mockReturnValue(shown);
 
-const STORE_ROOT = absolutePathSchema.parse("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone");
+const STORE_ROOT = absoluteRootOf("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone");
 
-const LOCAL_ROOT = absolutePathSchema.parse("C:\\work\\my repo\\team-rules");
+const LOCAL_ROOT = absoluteRootOf("C:\\work\\my repo\\team-rules");
 
-const CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
+const CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
 const LOCATED: Finding = {
   clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("audit"),
-  file: repoPathSchema.parse("src/a.test.ts"),
+  mechanism: "audit",
+  file: repoPathOf("src/a.test.ts"),
   anchor: { line: 3, column: 5 },
   snippet: "rows.map(idOf);",
 };

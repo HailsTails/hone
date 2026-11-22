@@ -1,19 +1,13 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { RunSettingsOf, SelectionRepositoryOf } from "../../application/ports/selection/selection-repository.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
-import { isAbsolutePath } from "../../domain/repository/absolute-path.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { checkOf } from "./run-check-command.ts";
 
-const absolute = (text: string): AbsolutePath => {
-  assert(isAbsolutePath(text), `${text} is absolute`);
-  return text;
-};
+const REPO_ROOT = absoluteRootOf("/repo");
 
-const REPO_ROOT = absolute("/repo");
-
-const INSTALL_ROOT = absolute("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
 const SELECTION_ABSENT: LoadFailure = { kind: "selection-absent", repo: "/repo" };
 

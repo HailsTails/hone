@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { projectionHolding } from "./projection-holding.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
@@ -41,11 +42,11 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: "capture 01a0b421",
 };
 
-const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
-const FOR_OF = clauseAddressSchema.parse("CD-15#no-for-of");
-const ESLINT = mechanismIdSchema.parse("eslint");
-const FACTORY = repoPathSchema.parse("src/factory.ts");
-const OTHER_FILE = repoPathSchema.parse("src/a.ts");
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const FOR_OF = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") };
+const ESLINT = "eslint" as const;
+const FACTORY = repoPathOf("src/factory.ts");
+const OTHER_FILE = repoPathOf("src/a.ts");
 
 const FACTORY_LOCATION: ExceptionRecord = {
   kind: "authorised-location",

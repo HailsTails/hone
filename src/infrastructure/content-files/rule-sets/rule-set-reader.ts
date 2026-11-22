@@ -83,13 +83,22 @@ const anchorKindSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("file") }),
 ]);
 
+const ruleSetMechanismSchema = z.string().transform((text, context): MechanismId => {
+  const parsed = mechanismIdSchema.safeParse(text);
+  if (parsed.success) {
+    return parsed.data;
+  }
+  context.addIssue({ code: "custom", message: `not a mechanism: expected one of ${mechanismIdSchema.options.join(", ")}` });
+  return z.NEVER;
+});
+
 const clauseDefinitionSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("mechanical"),
     id: clauseIdSchema,
     summary: z.string(),
     mechanisms: z
-      .array(mechanismIdSchema)
+      .array(ruleSetMechanismSchema)
       .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause names no mechanism" }),
     anchor: anchorKindSchema,
     exceptions: z.enum(["allowed", "refused"]).default("allowed"),
@@ -139,7 +148,7 @@ const clauseSettingDeclarationSchema = z
 const pieceFileSchema = z.object({
   version: z.literal(SUPPORTED_VERSION),
   discipline: disciplineIdSchema,
-  mechanism: mechanismIdSchema,
+  mechanism: ruleSetMechanismSchema,
   clauses: z
     .array(
       z.object({

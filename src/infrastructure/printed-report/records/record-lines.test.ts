@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Case, Check, Pointed, Recipe, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { CatalogueNote, HoneRecord, RecordRefusal, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import type { WhyChain } from "../../../domain/records/why-chain.ts";
 import { carriedLine, recordNoteLine, recordPlaceText, recordReferenceText, recordSubjectText, refusedLines } from "./record-lines.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -50,8 +51,8 @@ const CLAIMED_TYPE: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
-  clause: clauseAddressSchema.parse("CD-2#cast-expressions"),
-  engines: [{ name: "eslint", mechanism: mechanismIdSchema.parse("eslint") }],
+  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") },
+  engines: [{ name: "eslint", mechanism: "eslint" }],
   forms: [],
 };
 
@@ -90,15 +91,15 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
   owner: "capture 01a0b421",
 };
 
-const FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
+const FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const BOUNDARIES_FILE = repoPathSchema.parse("hone-records/boundary-records.json");
+const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
 
-const CLOCK_ADAPTER = repoPathSchema.parse("src/adapters/system-clock.ts");
+const CLOCK_ADAPTER = repoPathOf("src/adapters/system-clock.ts");
 
 const STATED_DEBT: HoneRecord = { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: FILE, holding: { held: "stated" } };
 
@@ -158,14 +159,14 @@ const CLOCK_BOUNDARY: HoneRecord = {
 
 const FS_BOUNDARY: HoneRecord = {
   kind: "boundary-record",
-  module: repoPathSchema.parse("src/adapters/files"),
+  module: repoPathOf("src/adapters/files"),
   outsideParty: { kind: "scheme-module", specifier: "node:fs" },
   holding: { held: "carried", entry: {}, lacks: ["ports"], standing: "established" },
 };
 
 const UUID_BOUNDARY: HoneRecord = {
   kind: "boundary-record",
-  module: repoPathSchema.parse("src/adapters/ids"),
+  module: repoPathOf("src/adapters/ids"),
   outsideParty: { kind: "package", specifier: "uuid/v4", dependency: "uuid" },
   holding: { held: "stated", ports: ["Ids"] },
 };
@@ -196,8 +197,8 @@ describe("recordPlaceText", () => {
   });
 
   it.each([
-    { name: "a space", file: repoPathSchema.parse("hone-records/debt/claimed type.json"), text: '"hone-records/debt/claimed type.json" records[3]' },
-    { name: "a double quote", file: repoPathSchema.parse('hone-records/debt/claimed"type.json'), text: '"hone-records/debt/claimed\\"type.json" records[3]' },
+    { name: "a space", file: repoPathOf("hone-records/debt/claimed type.json"), text: '"hone-records/debt/claimed type.json" records[3]' },
+    { name: "a double quote", file: repoPathOf('hone-records/debt/claimed"type.json'), text: '"hone-records/debt/claimed\\"type.json" records[3]' },
   ])("writes a records file whose name holds $name as a JSON string, so the file is always one field", ({ file, text }) => {
     expect(recordPlaceText({ place: { file, index: 3 } })).toBe(text);
   });
@@ -291,7 +292,7 @@ describe("refusedLines", () => {
     },
     {
       name: "a misplaced record, by the file it belongs in",
-      refusal: { kind: "misplaced", belongsIn: repoPathSchema.parse("hone-records/authorised-locations/date-used-directly.json") },
+      refusal: { kind: "misplaced", belongsIn: repoPathOf("hone-records/authorised-locations/date-used-directly.json") },
       line: "hone-records/authorised-locations/claimed-type.json records[2] misplaced hone-records/authorised-locations/date-used-directly.json",
     },
     { name: "a name that names no records file", refusal: { kind: "not-a-records-name", name: "../x" }, line: 'hone-records/authorised-locations/claimed-type.json records[2] not-a-records-name "../x"' },

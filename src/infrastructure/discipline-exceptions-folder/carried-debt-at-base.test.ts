@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { carriedDebtDocumentsAtBaseOf } from "./carried-debt-at-base.ts";
 import type { VersionOneEntry } from "./version-one-entries.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -20,9 +20,9 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -36,11 +36,11 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-15#loops");
+const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const TEST_BODY_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-27#test-body-logic");
+const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
-const LAYERING_CLAUSE: ClauseAddress = clauseAddressSchema.parse("CD-13#layering");
+const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
 const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT], forms: [] };
 
@@ -77,9 +77,9 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
 
 const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }];
 
-const LOOP_KEYWORD_DEBT = repoPathSchema.parse("hone-records/debt/loop-keyword.json");
+const LOOP_KEYWORD_DEBT = repoPathOf("hone-records/debt/loop-keyword.json");
 
-const REBINDING_DEBT = repoPathSchema.parse("hone-records/debt/rebinding.json");
+const REBINDING_DEBT = repoPathOf("hone-records/debt/rebinding.json");
 
 const CARVE_OUT: VersionOneEntry = {
   kind: "file-carve-out",

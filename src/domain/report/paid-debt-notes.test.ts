@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../records/discipline-exceptions/exception-record.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { paidDebtNotesOf } from "./paid-debt-notes.ts";
+import { repoPathOf } from "../repository/repo-path-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
-const LOOPS = clauseAddressSchema.parse("CD-15#loops");
-const AUDIT = mechanismIdSchema.parse("audit");
-const ESLINT = mechanismIdSchema.parse("eslint");
-const BASKET = repoPathSchema.parse("src/basket.ts");
-const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
+const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
+const BASKET = repoPathOf("src/basket.ts");
+const LEGACY = repoPathOf("src/legacy/report.ts");
 
 const ESLINT_CARVE_OUT_ON_BASKET: ExceptionRecord = { kind: "file-carve-out", clause: LOOPS, mechanism: ESLINT, file: BASKET };
 

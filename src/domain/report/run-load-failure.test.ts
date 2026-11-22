@@ -1,15 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { type RunLoadFailure, type RunLoadFailureSource, runLoadFailureOf } from "./run-load-failure.ts";
+import { repoPathOf } from "../repository/repo-path-of.ts";
 
 type MappedRow = { readonly name: string; readonly source: RunLoadFailureSource; readonly failure: RunLoadFailure };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -17,9 +16,7 @@ const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
 
 const ENGINES: readonly Engine[] = [WALKER, ESLINT_ENGINE];
 
-const UNCATALOGUED = mechanismIdSchema.parse("stylelint");
-
-const RECORDS_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+const RECORDS_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const DOCUMENT_REFUSED: RecordsDocumentRefusal = { kind: "document-refused", file: RECORDS_FILE, issues: [{ path: ["records"], message: "expected an array" }] };
 
@@ -42,11 +39,6 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
     },
     { name: "a missing runner", source: { kind: "runner-missing", mechanism: ESLINT }, failure: { kind: "engine-missing", engine: { named: "engine", engine: ESLINT_ENGINE } } },
     {
-      name: "a missing runner the catalogue names no engine for",
-      source: { kind: "runner-missing", mechanism: UNCATALOGUED },
-      failure: { kind: "engine-missing", engine: { named: "mechanism", mechanism: UNCATALOGUED } },
-    },
-    {
       name: "an invalid runner",
       source: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" },
       failure: { kind: "engine-invalid", engine: { named: "engine", engine: WALKER }, detail: "no runner export" },
@@ -63,6 +55,13 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
     },
   ])("names $name", ({ source, failure }) => {
     expect(runLoadFailureOf({ source, engines: ENGINES })).toEqual(failure);
+  });
+
+  it("names a missing runner the catalogue names no engine for", () => {
+    expect(runLoadFailureOf({ source: { kind: "runner-missing", mechanism: ESLINT }, engines: [WALKER] })).toEqual({
+      kind: "engine-missing",
+      engine: { named: "mechanism", mechanism: ESLINT },
+    });
   });
 
   it.each<MappedRow>([
@@ -83,8 +82,8 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
     { name: "git-failed", source: { kind: "git-failed", detail: "not a git repository" }, failure: { kind: "git-failed", detail: "not a git repository" } },
     {
       name: "config-root-untracked",
-      source: { kind: "config-root-untracked", root: repoPathSchema.parse("packages/gone") },
-      failure: { kind: "config-root-untracked", root: repoPathSchema.parse("packages/gone") },
+      source: { kind: "config-root-untracked", root: repoPathOf("packages/gone") },
+      failure: { kind: "config-root-untracked", root: repoPathOf("packages/gone") },
     },
     { name: "unexpected-error", source: { kind: "unexpected-error", detail: "boom" }, failure: { kind: "unexpected-error", detail: "boom" } },
   ])("keeps $name as it is", ({ source, failure }) => {
@@ -130,8 +129,8 @@ describe("runLoadFailureOf, records that could not be read", () => {
   it.each<MappedRow>([
     {
       name: "an unreadable records folder",
-      source: { kind: "records-folder", failure: { kind: "records-folder-unreadable", folder: repoPathSchema.parse("hone-records/debt"), detail: "EACCES" } },
-      failure: { kind: "records-folder-unreadable", folder: repoPathSchema.parse("hone-records/debt"), detail: "EACCES" },
+      source: { kind: "records-folder", failure: { kind: "records-folder-unreadable", folder: repoPathOf("hone-records/debt"), detail: "EACCES" } },
+      failure: { kind: "records-folder-unreadable", folder: repoPathOf("hone-records/debt"), detail: "EACCES" },
     },
     {
       name: "an unreadable records file",
@@ -145,13 +144,13 @@ describe("runLoadFailureOf, records that could not be read", () => {
     },
     {
       name: "a file where no records file can be",
-      source: { kind: "records-folder", failure: { kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.md") } },
-      failure: { kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.md") },
+      source: { kind: "records-folder", failure: { kind: "not-a-records-file", file: repoPathOf("hone-records/notes.md") } },
+      failure: { kind: "not-a-records-file", file: repoPathOf("hone-records/notes.md") },
     },
     {
       name: "a name no repository path can hold",
-      source: { kind: "records-folder", failure: { kind: "not-a-records-name", folder: repoPathSchema.parse("hone-records/debt"), name: "a\\b.json" } },
-      failure: { kind: "not-a-records-name", folder: repoPathSchema.parse("hone-records/debt"), name: "a\\b.json" },
+      source: { kind: "records-folder", failure: { kind: "not-a-records-name", folder: repoPathOf("hone-records/debt"), name: "a\\b.json" } },
+      failure: { kind: "not-a-records-name", folder: repoPathOf("hone-records/debt"), name: "a\\b.json" },
     },
     {
       name: "git failing to read the records at the base",

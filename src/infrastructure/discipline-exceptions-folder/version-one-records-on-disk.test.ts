@@ -1,9 +1,8 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { DirectoryEntry, DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../node/path-port.ts";
-import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { recordsOnDiskOf } from "./version-one-records-on-disk.ts";
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
 const listing = (entries: readonly DirectoryEntry[]): ReturnType<DirectoryPort["list"]> => ({ outcome: "ok", value: entries });
 
@@ -21,8 +20,7 @@ const RECORDS_FOLDER_PATH = { path: "/repo/discipline-exceptions" };
 
 const read = (request: { readonly exists: Mock<FileTextPort["exists"]>; readonly list: Mock<DirectoryPort["list"]> }) =>
   recordsOnDiskOf({
-    repoRoot: absolutePathSchema.parse("/repo"),
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    repoRoot: absoluteRootOf("/repo"),
     fileText: { exists: request.exists },
     directory: { list: request.list },
   });
@@ -95,7 +93,7 @@ describe("recordsOnDiskOf", () => {
     const exists = recordsFolderPresent();
     const list = vi
       .fn<DirectoryPort["list"]>()
-      .mockReturnValue({ outcome: "failed", error: { kind: "directory-unreadable", path: absolutePathSchema.parse("/repo/discipline-exceptions"), detail: "EACCES" } });
+      .mockReturnValue({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/discipline-exceptions"), detail: "EACCES" } });
     expect({ read: read({ exists, list }), listCalls: list.mock.calls }).toEqual({
       read: { outcome: "failed", error: { kind: "file-unreadable", path: "/repo/discipline-exceptions", detail: "EACCES" } },
       listCalls: [[RECORDS_FOLDER_PATH]],

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { AUTHORISE_OPTIONS, authoriseRequestOf } from "./authorise-options.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 const FULL_VALUES: readonly (readonly [string, readonly string[]])[] = [
   [AUTHORISE_OPTIONS.answers, ["claimed-type#cast-expressions"]],
@@ -22,7 +22,7 @@ describe("the arguments of hone authorise, read as the record they write", () =>
       outcome: "ok",
       value: {
         answers: "claimed-type#cast-expressions",
-        file: repoPathSchema.parse("src/adapters/stripe-webhook.ts"),
+        file: repoPathOf("src/adapters/stripe-webhook.ts"),
         case: "gives-a-value-its-type",
         owes: "declared-not-asserted",
         whys: [

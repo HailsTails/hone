@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDirectoryRemovalPort, type DirectoryRemovalSurface } from "./directory-removal-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const FOLDER = absolutePathSchema.parse("/repo/discipline-exceptions");
+const FOLDER = absoluteRootOf("/repo/discipline-exceptions");
 
 describe("createDirectoryRemovalPort", () => {
   it("removes the empty directory at the path through the surface", () => {

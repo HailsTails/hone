@@ -3,12 +3,13 @@ import { createDefaultFileTextPort } from "../../node/file-system/file-system-po
 import { createDefaultPathPort, createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { linkOver, manifestReaderOver, type ManifestAt, type PackageManifest } from "./package-link.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const MANIFEST: PackageManifest = { name: "@hailstails/hone", version: "1.0.0" };
 
 const OTHER_VERSION: PackageManifest = { name: "@hailstails/hone", version: "0.9.0" };
 
-const STORE_ROOT = absolutePathSchema.parse("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone");
+const STORE_ROOT = absoluteRootOf("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone");
 
 const LINK_ROOT = "/repo/node_modules/@hailstails/hone";
 
@@ -18,7 +19,7 @@ const linkFor = (request: { readonly manifestAt: ManifestAt; readonly installRoo
   linkOver({
     path: posix,
     manifestAt: request.manifestAt,
-    repoRoot: absolutePathSchema.parse("/repo"),
+    repoRoot: absoluteRootOf("/repo"),
     installRoot: absolutePathSchema.parse(request.installRoot),
   });
 

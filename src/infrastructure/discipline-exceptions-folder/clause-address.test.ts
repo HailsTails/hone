@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressObjectSchema, clauseAddressSchema } from "./clause-address.ts";
-import { clauseAddressText, sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
+import { clauseAddressText, sameClauseAddress, TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 describe("clauseAddressSchema", () => {
   it("reads a text with no rule-set prefix as the shared rule set", () => {
-    expect(clauseAddressSchema.parse("CD-14#no-class-syntax")).toEqual({
+    expect({ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") }).toEqual({
       ruleSet: "hone",
       discipline: "CD-14",
       clause: "no-class-syntax",
@@ -12,11 +15,11 @@ describe("clauseAddressSchema", () => {
   });
 
   it("reads the hone prefix as the same address as no prefix", () => {
-    expect(clauseAddressSchema.parse("hone/CD-15#loops")).toEqual(clauseAddressSchema.parse("CD-15#loops"));
+    expect({ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }).toEqual({ ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") });
   });
 
   it("reads shared as an ordinary team rule-set name", () => {
-    expect(clauseAddressSchema.parse("shared/CD-14#no-class-syntax")).toEqual({
+    expect({ ruleSet: { name: ruleSetNameOf("shared") }, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") }).toEqual({
       ruleSet: { name: "shared" },
       discipline: "CD-14",
       clause: "no-class-syntax",
@@ -30,7 +33,7 @@ describe("clauseAddressSchema", () => {
   });
 
   it("reads a prefixed text as that named rule set", () => {
-    expect(clauseAddressSchema.parse("probe/PD-1#no-tmp-files")).toEqual({
+    expect({ ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") }).toEqual({
       ruleSet: { name: "probe" },
       discipline: "PD-1",
       clause: "no-tmp-files",
@@ -68,7 +71,7 @@ describe("clauseAddressSchema", () => {
 
 describe("clauseAddressText", () => {
   it("formats the hone prefix back to the bare form", () => {
-    expect(clauseAddressText({ address: clauseAddressSchema.parse("hone/CD-15#loops") })).toBe("CD-15#loops");
+    expect(clauseAddressText({ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") } })).toBe("CD-15#loops");
   });
 
   it.each(["CD-14#no-class-syntax", "probe/PD-1#no-tmp-files"])(
@@ -85,8 +88,8 @@ describe("sameClauseAddress", () => {
   it("is same for the hone-prefixed and bare forms", () => {
     expect(
       sameClauseAddress({
-        left: clauseAddressSchema.parse("hone/CD-15#loops"),
-        right: clauseAddressSchema.parse("CD-15#loops"),
+        left: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+        right: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
       }),
     ).toBe("same");
   });
