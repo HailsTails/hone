@@ -19,7 +19,7 @@ const WEB_X = repoPathSchema.parse("packages/web/x.ts");
 
 const DIST = repoPathSchema.parse("dist");
 
-const POSIX: Pick<PathPort, "join"> = { join: ({ segments }) => segments.join("/") };
+const POSIX: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts") };
 
 const trackedByGit = (request: { readonly tracked: readonly RepoPath[] }): Pick<GitPort, "trackedPaths"> => ({
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: request.tracked }),

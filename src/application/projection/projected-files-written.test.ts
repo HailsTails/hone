@@ -10,7 +10,7 @@ const REPO = absolutePathSchema.parse("/repo");
 
 const FILE: ProjectedFile = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
 
-const POSIX_PATH: Pick<PathPort, "join"> = { join: ({ segments }) => segments.join("/") };
+const POSIX_PATH: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/hone.eslint.mjs") };
 
 const fileTextAbsent = (): FileTextPort => ({
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),

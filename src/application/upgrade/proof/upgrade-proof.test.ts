@@ -215,30 +215,86 @@ const LOOP_FINDING: Finding = {
 
 const ok = { outcome: "ok", value: undefined } as const;
 
-const PARENTS = new Map<string, string>([
-  ["/repo/hone-records", "/repo"],
-  ["/repo/hone-records/debt", "/repo/hone-records"],
-  ["/repo/hone-records/debt/loop-keyword.json", "/repo/hone-records/debt"],
-  ["/repo/hone.config.json", "/repo"],
-  ["/repo/hone.eslint.mjs", "/repo"],
-  ["/repo", "/"],
-]);
+const IN_RECORDS_FOLDER: RelativeLocation = { relation: "within-root", path: "cd-15.json" };
 
-const RELATIVE_LOCATIONS = new Map<string, RelativeLocation>([
-  ["/repo /repo/discipline-exceptions.json", { relation: "within-root", path: "discipline-exceptions.json" }],
-  ["/repo/discipline-exceptions /repo/discipline-exceptions/cd-15.json", { relation: "within-root", path: "cd-15.json" }],
-  ["/repo/discipline-exceptions /repo/tools/x.json", { relation: "within-root", path: "../tools/x.json" }],
-]);
+const IN_REPOSITORY_ROOT: RelativeLocation = { relation: "within-root", path: "discipline-exceptions.json" };
 
-const POSIX_PATH: PathPort = {
-  join: ({ segments }) => segments.join("/"),
+const OUTSIDE_RECORDS_FOLDER: RelativeLocation = { relation: "within-root", path: "../tools/x.json" };
+
+const pathOver = (request: { readonly join: PathPort["join"]; readonly relative: PathPort["relative"] }): PathPort => ({
+  join: request.join,
   joinRepository: vi.fn<PathPort["joinRepository"]>(),
-  relative: ({ from, to }) => RELATIVE_LOCATIONS.get(`${from} ${to}`) ?? { relation: "different-root" },
-  directoryOf: ({ path }) => PARENTS.get(path) ?? path,
+  relative: request.relative,
+  directoryOf: vi
+    .fn<PathPort["directoryOf"]>()
+    .mockReturnValueOnce("/repo")
+    .mockReturnValueOnce("/repo/hone-records/debt")
+    .mockReturnValueOnce("/repo/hone-records")
+    .mockReturnValueOnce("/repo")
+    .mockReturnValueOnce("/repo"),
   repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
   resolve: vi.fn<PathPort["resolve"]>(),
   fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
-};
+});
+
+const joiningRecordsFolderFiles = () =>
+  vi
+    .fn<PathPort["join"]>()
+    .mockReturnValueOnce("/repo/hone.config.json")
+    .mockReturnValueOnce("/repo/hone-records/debt/loop-keyword.json")
+    .mockReturnValueOnce("/repo/hone.eslint.mjs")
+    .mockReturnValueOnce("/repo/eslint.config.mjs")
+    .mockReturnValueOnce("/repo/discipline-exceptions/cd-15.json")
+    .mockReturnValueOnce("/repo/discipline-exceptions")
+    .mockReturnValueOnce("/repo/disciplines.eslint.mjs")
+    .mockReturnValueOnce("/repo/disciplines.json");
+
+const recordsFolderPath = () => pathOver({ join: joiningRecordsFolderFiles(), relative: vi.fn<PathPort["relative"]>().mockReturnValue(IN_RECORDS_FOLDER) });
+
+const sliceFirstPath = () =>
+  pathOver({
+    join: vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/repo/old/disciplines.eslint.mjs")
+      .mockReturnValueOnce("/repo/hone.config.json")
+      .mockReturnValueOnce("/repo/hone-records/debt/loop-keyword.json")
+      .mockReturnValueOnce("/repo/hone.eslint.mjs")
+      .mockReturnValueOnce("/repo/eslint.config.mjs")
+      .mockReturnValueOnce("/repo/discipline-exceptions/cd-15.json")
+      .mockReturnValueOnce("/repo/discipline-exceptions")
+      .mockReturnValueOnce("/repo/disciplines.eslint.mjs")
+      .mockReturnValueOnce("/repo/disciplines.json"),
+    relative: vi.fn<PathPort["relative"]>().mockReturnValue(IN_RECORDS_FOLDER),
+  });
+
+const repositoryRootPath = () =>
+  pathOver({
+    join: vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/repo/hone.config.json")
+      .mockReturnValueOnce("/repo/hone-records/debt/loop-keyword.json")
+      .mockReturnValueOnce("/repo/hone.eslint.mjs")
+      .mockReturnValueOnce("/repo/eslint.config.mjs")
+      .mockReturnValueOnce("/repo/discipline-exceptions.json")
+      .mockReturnValueOnce("/repo/disciplines.eslint.mjs")
+      .mockReturnValueOnce("/repo/disciplines.json"),
+    relative: vi.fn<PathPort["relative"]>().mockReturnValue(IN_REPOSITORY_ROOT),
+  });
+
+const outsideRecordsFolderPath = () =>
+  pathOver({
+    join: vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/repo/hone.config.json")
+      .mockReturnValueOnce("/repo/hone-records/debt/loop-keyword.json")
+      .mockReturnValueOnce("/repo/hone.eslint.mjs")
+      .mockReturnValueOnce("/repo/eslint.config.mjs")
+      .mockReturnValueOnce("/repo/tools/x.json")
+      .mockReturnValueOnce("/repo/discipline-exceptions")
+      .mockReturnValueOnce("/repo/disciplines.eslint.mjs")
+      .mockReturnValueOnce("/repo/disciplines.json"),
+    relative: vi.fn<PathPort["relative"]>().mockReturnValue(OUTSIDE_RECORDS_FOLDER),
+  });
 
 const SETTINGS_FORMAT: Pick<SettingsFileFormat, "textOf"> = { textOf: () => "the settings format's text" };
 
@@ -266,7 +322,7 @@ const kindsOfEveryPlannedFileNew = () =>
 
 const kindsOfExistingFirstFile = () => vi.fn<EntryKindPort["kindOf"]>().mockReturnValueOnce("file");
 
-const portsOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]> }): MockedPorts => ({
+const portsOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]>; readonly path: PathPort }): MockedPorts => ({
   fileText: {
     read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: ORIGINAL_CONFIG }),
     exists: vi.fn<FileTextPort["exists"]>(),
@@ -277,7 +333,7 @@ const portsOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]> }):
   directory: { list: vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>().mockReturnValue(ok) },
   directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(ok) },
   entryKind: { kindOf: request.kindOf },
-  path: POSIX_PATH,
+  path: request.path,
 });
 
 type Doubles = {
@@ -287,7 +343,7 @@ type Doubles = {
   readonly projections: Mock<VersionOneProjectionsOf>;
 };
 
-const doublesOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]> }): Doubles => ({
+const doublesOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]>; readonly path: PathPort }): Doubles => ({
   ports: portsOver(request),
   projections: vi.fn<VersionOneProjectionsOf>().mockResolvedValue(FOUND_PROJECTIONS),
   oracle: { answer: vi.fn<RecordAnswerOracle["answer"]>().mockResolvedValue({ outcome: "ok", value: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "findings", checks: [LOOP_KEYWORD_LOOPS] } }] }) },
@@ -405,7 +461,7 @@ const REMOVING_VERSION_ONE = [
 
 describe("upgradeProof", () => {
   it("writes the version 2 files, finds the two runs equal and removes the version 1 files, in that order", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "ok",
       value: {
@@ -429,7 +485,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses, before writing anything, a repository version 1 already reports uncovered", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionOne.mockResolvedValue({ outcome: "ok", value: { ...EMPTY_BEFORE, uncovered: [LOOPS_CLAUSE] } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -439,7 +495,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses, before running or writing anything, when the oracle cannot answer", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.oracle.answer.mockResolvedValue({ outcome: "failed", error: { kind: "version-one-run-failed", detail: "the eslint runner threw" } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -449,7 +505,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses, before running or writing anything, a carve-out that answered nothing", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.oracle.answer.mockResolvedValue({ outcome: "ok", value: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "nothing" } }] });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -463,7 +519,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses, before writing anything, when the version 1 run fails", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionOne.mockResolvedValue({ outcome: "failed", error: { kind: "run-failed", detail: "no selection" } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -473,7 +529,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses, before the second run, when a file it would write already exists", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfExistingFirstFile() });
+    const doubles = doublesOver({ kindOf: kindsOfExistingFirstFile(), path: recordsFolderPath() });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
       error: { kind: "write-refused", refusal: { failure: { kind: "path-already-exists", path: SETTINGS_PATH }, unrestored: [] }, removedByVersionOne: [] },
@@ -482,7 +538,7 @@ describe("upgradeProof", () => {
   });
 
   it("restores what it wrote when the version 2 run fails, and removes nothing", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionTwo.mockResolvedValue({ outcome: "failed", error: { kind: "run-failed", detail: "config unreadable" } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -492,7 +548,7 @@ describe("upgradeProof", () => {
   });
 
   it("restores what it wrote and names the difference when the two runs do not agree, removing nothing", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionTwo.mockResolvedValue({ outcome: "ok", value: { ...EMPTY_AFTER, findings: [LOOP_FINDING] } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -510,7 +566,7 @@ describe("upgradeProof", () => {
   });
 
   it("restores what it wrote and names each directive, before any difference, when version 2 reports a directive naming no check, removing nothing", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionTwo.mockResolvedValue({
       outcome: "ok",
       value: { ...EMPTY_AFTER, findings: [LOOP_FINDING], misnamed: [{ kind: "names-no-check", ruleId: "hone/no-such-check", file: repoPathSchema.parse("src/a.ts"), line: 3, text: "the text" }] },
@@ -528,7 +584,7 @@ describe("upgradeProof", () => {
   });
 
   it("leaves the version 2 files in place and reports what was removed when a version 1 file cannot be removed", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.ports.fileRemoval.remove.mockReturnValue({ outcome: "failed", error: { kind: "unremovable", path: "/repo/discipline-exceptions/cd-15.json", detail: "EBUSY" } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -551,7 +607,7 @@ describe("upgradeProof", () => {
   });
 
   it("upgrades a repository whose version 1 records sit in the single file at its root, removing no folder", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: repositoryRootPath() });
     await expect(upgradeProof({ ...requestOver({ doubles }), versionOneFiles: SINGLE_FILE_LAYOUT })).resolves.toEqual({
       outcome: "ok",
       value: {
@@ -574,7 +630,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses, before writing anything, a version 1 records file outside its records folder", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: outsideRecordsFolderPath() });
     const request = requestOver({ doubles });
     await expect(upgradeProof({ ...request, versionOneFiles: { ...request.versionOneFiles, recordsFiles: [repoPathSchema.parse("tools/x.json")] } })).resolves.toEqual({
       outcome: "failed",
@@ -584,7 +640,7 @@ describe("upgradeProof", () => {
   });
 
   it("restores what it wrote when the version 2 run rejects", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionTwo.mockRejectedValue(new Error("the runner threw"));
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -594,7 +650,7 @@ describe("upgradeProof", () => {
   });
 
   it("names what it could not restore when the version 2 run rejects and a file cannot be removed", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.runs.versionTwo.mockRejectedValue(new Error("the runner threw"));
     doubles.ports.fileRemoval.remove.mockReturnValueOnce(ok).mockReturnValueOnce({ outcome: "failed", error: { kind: "unremovable", path: DEBT_PATH, detail: "EBUSY" } }).mockReturnValue(ok);
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
@@ -604,7 +660,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses without listing anything to restore when the team config is refused and version 1 changed nothing", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.projections.mockResolvedValue({ removed: [], outcome: { outcome: "failed", error: { kind: "team-config-refused", refusal: NO_IMPORTER } } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -614,7 +670,7 @@ describe("upgradeProof", () => {
   });
 
   it("names the slice version 1 removed to restore when the team config is refused after it", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "failed", error: { kind: "team-config-refused", refusal: NO_IMPORTER } } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -623,7 +679,7 @@ describe("upgradeProof", () => {
   });
 
   it("names the slice version 1 left in place when it refuses, and the one it removed to restore", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({
       removed: [ORPHAN],
       outcome: { outcome: "failed", error: { kind: "slice-left-in-place", files: [repoPathSchema.parse("stale/disciplines.eslint.mjs")] } },
@@ -635,7 +691,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses naming what failed when version 1's project fails", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.projections.mockResolvedValue({ removed: [], outcome: { outcome: "failed", error: { kind: "project-failed", detail: "disk full" } } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -644,7 +700,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses naming each file version 1's project rewrote, and the slice it removed, without writing anything", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "failed", error: { kind: "project-rewrote", files: [repoPathSchema.parse("disciplines.eslint.mjs")] } } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -654,7 +710,7 @@ describe("upgradeProof", () => {
   });
 
   it("names the slice version 1 removed when that slice cannot be placed in the repository", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "ok", value: [ROOT_PROJECTION] } });
     const request = requestOver({ doubles });
     const unplaceable = { ...request, ports: { ...request.ports, path: { ...request.ports.path, join: vi.fn<PathPort["join"]>().mockReturnValue("not-absolute") } } };
@@ -665,7 +721,7 @@ describe("upgradeProof", () => {
   });
 
   it("refuses a version 2 projection no version 1 projection stands behind, naming the slice version 1 removed to restore", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "ok", value: [ROOT_PROJECTION] } });
     const request = {
       ...requestOver({ doubles }),
@@ -685,7 +741,7 @@ describe("upgradeProof", () => {
   });
 
   it("names the slice version 1 removed to restore when a file it would write already exists", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfExistingFirstFile() });
+    const doubles = doublesOver({ kindOf: kindsOfExistingFirstFile(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "ok", value: [ROOT_PROJECTION] } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -694,7 +750,7 @@ describe("upgradeProof", () => {
   });
 
   it("names the slice version 1 removed to restore, with what it rolled back, when the version 2 run fails", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "ok", value: [ROOT_PROJECTION] } });
     doubles.runs.versionTwo.mockResolvedValue({ outcome: "failed", error: { kind: "run-failed", detail: "config unreadable" } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
@@ -704,7 +760,7 @@ describe("upgradeProof", () => {
   });
 
   it("lists the slice version 1 removed among the version 1 files removed, first", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
     doubles.projections.mockResolvedValue({ removed: [ORPHAN], outcome: { outcome: "ok", value: [ROOT_PROJECTION] } });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "ok",
@@ -721,7 +777,7 @@ describe("upgradeProof", () => {
   });
 
   it("reports what it wrote and what it had removed, and leaves the version 2 files, when removing a version 1 file throws", async () => {
-    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew() });
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: recordsFolderPath() });
     doubles.ports.fileRemoval.remove.mockReturnValueOnce(ok).mockThrowOnce(new Error("the removal threw"));
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",

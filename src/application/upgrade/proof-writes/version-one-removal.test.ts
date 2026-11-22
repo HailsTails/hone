@@ -53,25 +53,27 @@ const OTHER_CASE = absolutePathSchema.parse("/repo/Discipline-Exceptions/file-ca
 
 const ok = { outcome: "ok", value: undefined } as const;
 
-const RELATIVE_LOCATIONS = new Map<string, RelativeLocation>([
-  [`${ROOT} ${CARVE_OUT_FILE}`, { relation: "within-root", path: "file-carve-outs/cd-15.json" }],
-  [`${ROOT} ${AUTHORISED_FILE}`, { relation: "within-root", path: "authorised-locations/cd-15.json" }],
-  [`${ROOT} ${DIRECT}`, { relation: "within-root", path: "records.json" }],
-  [`${REPOSITORY} ${SINGLE}`, { relation: "within-root", path: "discipline-exceptions.json" }],
-  [`${ROOT} ${OUTSIDE}`, { relation: "within-root", path: "../tools/x.json" }],
-  [`${ROOT} ${OTHER_CASE}`, { relation: "within-root", path: "../Discipline-Exceptions/file-carve-outs/cd-15.json" }],
-  [`${ROOT} ${ROOT}`, { relation: "within-root", path: "" }],
-]);
+const IN_CARVE_OUT_FOLDER: RelativeLocation = { relation: "within-root", path: "file-carve-outs/cd-15.json" };
 
-const PATH: PathPort = {
-  join: ({ segments }) => segments.join("/"),
+const IN_AUTHORISED_FOLDER: RelativeLocation = { relation: "within-root", path: "authorised-locations/cd-15.json" };
+
+const pathOver = (request: { readonly relative: PathPort["relative"] }): PathPort => ({
+  join: vi.fn<PathPort["join"]>().mockReturnValueOnce(CARVE_OUT_FOLDER).mockReturnValueOnce(AUTHORISED_FOLDER),
   joinRepository: vi.fn<PathPort["joinRepository"]>(),
-  relative: ({ from, to }) => RELATIVE_LOCATIONS.get(`${from} ${to}`) ?? { relation: "different-root" },
+  relative: request.relative,
   directoryOf: vi.fn<PathPort["directoryOf"]>(),
   repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
   resolve: vi.fn<PathPort["resolve"]>(),
   fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
-};
+});
+
+const relativeToRecordsFolderFiles = () =>
+  vi
+    .fn<PathPort["relative"]>()
+    .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
+    .mockReturnValueOnce(IN_AUTHORISED_FOLDER)
+    .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
+    .mockReturnValueOnce(IN_AUTHORISED_FOLDER);
 
 type MockedPorts = {
   readonly fileRemoval: { readonly remove: Mock<FileRemovalPort["remove"]> };
@@ -80,11 +82,11 @@ type MockedPorts = {
   readonly path: VersionOneRemovalPorts["path"];
 };
 
-const portsOver = (): MockedPorts => ({
+const portsOver = (request: { readonly relative: PathPort["relative"] } = { relative: relativeToRecordsFolderFiles() }): MockedPorts => ({
   fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>().mockReturnValue(ok) },
   directory: { list: vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>() },
   directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(ok) },
-  path: PATH,
+  path: pathOver(request),
 });
 
 const sequenceOf = (request: { readonly ports: MockedPorts }) =>
@@ -163,7 +165,7 @@ describe("removedVersionOneFiles", () => {
   });
 
   it("tries only the records folder for a records file directly under it", () => {
-    const ports = portsOver();
+    const ports = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValue({ relation: "within-root", path: "records.json" }) });
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [DIRECT], projections: [] } })).toEqual({
       outcome: "ok",
       value: { files: [DIRECT, SETTINGS], folders: [ROOT] },
@@ -172,7 +174,7 @@ describe("removedVersionOneFiles", () => {
   });
 
   it("removes a records file at the repository root and no folder, since the root is not a records folder", () => {
-    const ports = portsOver();
+    const ports = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValue({ relation: "within-root", path: "discipline-exceptions.json" }) });
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [SINGLE], recordsRoot: { kind: "repository", path: REPOSITORY } } })).toEqual({
       outcome: "ok",
       value: { files: [SINGLE, PROJECTION, SETTINGS], folders: [] },
@@ -199,7 +201,7 @@ describe("removedVersionOneFiles", () => {
   });
 
   it("refuses, before removing anything, a records file that is not under the records folder", () => {
-    const ports = portsOver();
+    const ports = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValueOnce(IN_CARVE_OUT_FOLDER).mockReturnValueOnce({ relation: "within-root", path: "../tools/x.json" }) });
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [CARVE_OUT_FILE, OUTSIDE] } })).toEqual({
       outcome: "failed",
       error: { kind: "records-file-outside-root", path: OUTSIDE, root: ROOT },
@@ -208,7 +210,7 @@ describe("removedVersionOneFiles", () => {
   });
 
   it("refuses a records file whose path differs from the records folder's only in case", () => {
-    const ports = portsOver();
+    const ports = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValue({ relation: "within-root", path: "../Discipline-Exceptions/file-carve-outs/cd-15.json" }) });
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [OTHER_CASE] } })).toEqual({
       outcome: "failed",
       error: { kind: "records-file-outside-root", path: OTHER_CASE, root: ROOT },
@@ -217,7 +219,7 @@ describe("removedVersionOneFiles", () => {
   });
 
   it("refuses the records folder itself listed as a records file", () => {
-    const ports = portsOver();
+    const ports = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValue({ relation: "within-root", path: "" }) });
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [ROOT] } })).toEqual({
       outcome: "failed",
       error: { kind: "records-file-outside-root", path: ROOT, root: ROOT },

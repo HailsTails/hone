@@ -9,7 +9,7 @@ const INSTALL = absolutePathSchema.parse("/install");
 
 const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
 
-const POSIX: Pick<PathPort, "join"> = { join: ({ segments }) => segments.join("/") };
+const POSIX: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue(CATALOGUE_PATH) };
 
 const FILE_TEXT: FileTextPort = {
   exists: vi.fn<FileTextPort["exists"]>(),

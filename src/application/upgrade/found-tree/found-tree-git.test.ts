@@ -12,7 +12,7 @@ const REPO_ROOT = absolutePathSchema.parse("/repo");
 const FILE = repoPathSchema.parse("src/a.ts");
 
 const PATH: PathPort = {
-  join: ({ segments }) => segments.join("/"),
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),
   joinRepository: vi.fn<PathPort["joinRepository"]>(),
   relative: vi.fn<PathPort["relative"]>(),
   directoryOf: vi.fn<PathPort["directoryOf"]>(),

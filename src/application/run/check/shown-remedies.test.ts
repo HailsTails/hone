@@ -8,26 +8,21 @@ import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { shownRemediesOf } from "./shown-remedies.ts";
 
-const WINDOWS: PathPort = {
-  join: ({ segments }) => segments.join("\\"),
+const pathJoining = (join: PathPort["join"]): PathPort => ({
+  join,
   joinRepository: vi.fn<PathPort["joinRepository"]>(),
   relative: vi.fn<PathPort["relative"]>(),
   directoryOf: vi.fn<PathPort["directoryOf"]>(),
   repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
   resolve: vi.fn<PathPort["resolve"]>(),
   fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
-};
+});
+
+const shownAs = (shown: string): ShownPathOf => vi.fn<ShownPathOf>().mockReturnValue(shown);
 
 const STORE_ROOT = absolutePathSchema.parse("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone");
 
 const LOCAL_ROOT = absolutePathSchema.parse("C:\\work\\my repo\\team-rules");
-
-const SHOWN_PATHS = new Map<string, string>([
-  [`${STORE_ROOT}\\rules\\CD-27\\CHECKS.md`, "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md"],
-  [`${LOCAL_ROOT}\\rules\\CD-27\\pages/forms.md`, "team-rules/rules/CD-27/pages/forms.md"],
-]);
-
-const SHOWN_PATH_OF: ShownPathOf = ({ target }) => SHOWN_PATHS.get(target) ?? target;
 
 const CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
 
@@ -46,7 +41,17 @@ const SHIPPED_ROOT = { clause: CLAUSE, ruleSetRoot: STORE_ROOT };
 describe("shownRemediesOf", () => {
   it("shows the page a finding's rule names as the path a reader opens, through the repository's link", () => {
     expect(
-      shownRemediesOf({ path: WINDOWS, shownPathOf: SHOWN_PATH_OF, clauseRoots: [SHIPPED_ROOT], findings: [REMEDIED] }),
+      shownRemediesOf({
+        path: pathJoining(
+          vi
+            .fn<PathPort["join"]>()
+            .mockReturnValueOnce("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone\\rules\\CD-27")
+            .mockReturnValueOnce("C:\\work\\my repo\\node_modules\\.pnpm\\@hailstails+hone@1.0.0\\node_modules\\@hailstails\\hone\\rules\\CD-27\\CHECKS.md"),
+        ),
+        shownPathOf: shownAs("node_modules/@hailstails/hone/rules/CD-27/CHECKS.md"),
+        clauseRoots: [SHIPPED_ROOT],
+        findings: [REMEDIED],
+      }),
     ).toEqual([
       {
         ...LOCATED,
@@ -64,18 +69,28 @@ describe("shownRemediesOf", () => {
     const paged: Finding = { ...LOCATED, remedy: { fix: "write the values out", page: "pages/forms.md", section: "a-form" } };
 
     expect(
-      shownRemediesOf({ path: WINDOWS, shownPathOf: SHOWN_PATH_OF, clauseRoots: [localRoot], findings: [paged] }),
+      shownRemediesOf({
+        path: pathJoining(
+          vi
+            .fn<PathPort["join"]>()
+            .mockReturnValueOnce("C:\\work\\my repo\\team-rules\\rules\\CD-27")
+            .mockReturnValueOnce("C:\\work\\my repo\\team-rules\\rules\\CD-27\\pages/forms.md"),
+        ),
+        shownPathOf: shownAs("team-rules/rules/CD-27/pages/forms.md"),
+        clauseRoots: [localRoot],
+        findings: [paged],
+      }),
     ).toEqual([{ ...LOCATED, remedy: { fix: "write the values out", page: "team-rules/rules/CD-27/pages/forms.md", section: "a-form" } }]);
   });
 
   it("keeps a finding with no fix as it is", () => {
     expect(
-      shownRemediesOf({ path: WINDOWS, shownPathOf: SHOWN_PATH_OF, clauseRoots: [SHIPPED_ROOT], findings: [LOCATED] }),
+      shownRemediesOf({ path: pathJoining(vi.fn<PathPort["join"]>()), shownPathOf: vi.fn<ShownPathOf>(), clauseRoots: [SHIPPED_ROOT], findings: [LOCATED] }),
     ).toEqual([LOCATED]);
   });
 
   it("drops the fix of a finding whose clause has no rule set to find its page in", () => {
-    expect(shownRemediesOf({ path: WINDOWS, shownPathOf: SHOWN_PATH_OF, clauseRoots: [], findings: [REMEDIED] })).toEqual([
+    expect(shownRemediesOf({ path: pathJoining(vi.fn<PathPort["join"]>()), shownPathOf: vi.fn<ShownPathOf>(), clauseRoots: [], findings: [REMEDIED] })).toEqual([
       LOCATED,
     ]);
   });

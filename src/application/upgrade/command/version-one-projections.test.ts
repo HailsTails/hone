@@ -20,7 +20,7 @@ import type { SelectionRepositoryOf } from "../../ports/selection/selection-repo
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
 const path: PathPort = {
-  join: ({ segments }) => segments.join("/"),
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/eslint.config.mjs"),
   joinRepository: vi.fn<PathPort["joinRepository"]>(),
   relative: vi.fn<PathPort["relative"]>(),
   directoryOf: vi.fn<PathPort["directoryOf"]>(),
