@@ -19,6 +19,11 @@ export const createAnsweringOracle = (request: {
       touched: { measured: "no", base: { state: "not-given" } },
       runs: pass.value.runs,
     });
-    return recordAnswersOf({ records, governed, catalogues: request.catalogues });
+    return recordAnswersOf({
+      records,
+      governed,
+      runs: pass.value.runs,
+      catalogues: request.catalogues,
+    });
   },
 });

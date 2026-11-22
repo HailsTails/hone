@@ -210,6 +210,15 @@ const NOTHING_GOVERNED: GovernanceResult = {
   unrecorded: [],
 };
 
+const SUPPRESSION_IN_A = {
+  kind: "inline-disable",
+  clause: LOOPS_CLAUSE,
+  file: SRC_A,
+  line: 3,
+  text: "// @ts-expect-error legacy interop",
+  reach: "one-clause",
+} as const;
+
 const catalogues: readonly RuleSetCatalogue[] = [
   { ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE },
 ];
@@ -220,6 +229,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
       recordAnswersOf({
         records: [CARVE_OUT],
         governed: { ...NOTHING_GOVERNED, exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -256,6 +266,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
             { finding: rebinding, by: [carveOut] },
           ],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -280,6 +291,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
             { finding: { ...LOOP_FINDING, mechanism: ESLINT, check: undefined }, by: [CARVE_OUT] },
           ],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -308,6 +320,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
             },
           ],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -333,6 +346,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
       recordAnswersOf({
         records: [carveOut],
         governed: { ...NOTHING_GOVERNED, exempted: [{ finding: letFinding, by: [carveOut] }] },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -359,6 +373,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
       recordAnswersOf({
         records: [carveOut],
         governed: { ...NOTHING_GOVERNED, exempted: [{ finding: eslintFinding, by: [carveOut] }] },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -377,6 +392,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
       recordAnswersOf({
         records: [CARVE_OUT],
         governed: { ...NOTHING_GOVERNED, exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] },
+        runs: [],
         catalogues: [],
       }),
     ).toEqual({
@@ -400,6 +416,7 @@ describe("recordAnswersOf crediting a file carve-out with the findings it exempt
             { finding: { ...LOOP_FINDING, check: "rebinding#test-body" }, by: [CARVE_OUT] },
           ],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -420,6 +437,7 @@ describe("recordAnswersOf answering a file carve-out that exempted no finding", 
       recordAnswersOf({
         records: [CARVE_OUT],
         governed: { ...NOTHING_GOVERNED, stale: [CARVE_OUT] },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -428,13 +446,66 @@ describe("recordAnswersOf answering a file carve-out that exempted no finding", 
     });
   });
 
-  it("answers suppression-only for a carve-out that is neither stale nor credited a finding, held up by a native suppression alone", () => {
+  it("answers suppression-only with the check of the native suppression a carve-out held up", () => {
     expect(
-      recordAnswersOf({ records: [CARVE_OUT], governed: NOTHING_GOVERNED, catalogues }),
+      recordAnswersOf({
+        records: [CARVE_OUT],
+        governed: NOTHING_GOVERNED,
+        runs: [
+          {
+            mechanism: AUDIT,
+            nativeExceptions: [SUPPRESSION_IN_A],
+            coverableKinds: ["inline-disable"],
+          },
+        ],
+        catalogues,
+      }),
     ).toEqual({
       outcome: "ok",
       value: [
-        { kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "suppression-only" } },
+        {
+          kind: "file-carve-out",
+          record: CARVE_OUT,
+          answer: { credit: "suppression-only", checks: [LOOP_KEYWORD_LOOPS] },
+        },
+      ],
+    });
+  });
+
+  it("answers suppression-only with no check when no recordable suppression sits at the carve-out's file", () => {
+    expect(
+      recordAnswersOf({ records: [CARVE_OUT], governed: NOTHING_GOVERNED, runs: [], catalogues }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          kind: "file-carve-out",
+          record: CARVE_OUT,
+          answer: { credit: "suppression-only", checks: [] },
+        },
+      ],
+    });
+  });
+
+  it("leaves a suppression in another file out of the checks a carve-out held up", () => {
+    const elsewhere = { ...SUPPRESSION_IN_A, file: repoPathOf("src/b.ts") };
+    expect(
+      recordAnswersOf({
+        records: [CARVE_OUT],
+        governed: NOTHING_GOVERNED,
+        runs: [
+          { mechanism: AUDIT, nativeExceptions: [elsewhere], coverableKinds: ["inline-disable"] },
+        ],
+        catalogues,
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          kind: "file-carve-out",
+          record: CARVE_OUT,
+          answer: { credit: "suppression-only", checks: [] },
+        },
       ],
     });
   });
@@ -447,6 +518,7 @@ describe("recordAnswersOf answering a file carve-out that exempted no finding", 
           ...NOTHING_GOVERNED,
           doublyHeld: [{ clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT }],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -467,6 +539,7 @@ describe("recordAnswersOf crediting an authorised location with the findings it 
           ...NOTHING_GOVERNED,
           exempted: [{ finding: LOOP_FINDING, by: [authorisedOnLoops] }],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -502,6 +575,7 @@ describe("recordAnswersOf crediting an authorised location with the findings it 
             { finding: rebinding, by: [AUTHORISED] },
           ],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -524,6 +598,7 @@ describe("recordAnswersOf crediting an authorised location with the findings it 
       recordAnswersOf({
         records: [AUTHORISED],
         governed: { ...NOTHING_GOVERNED, stale: [AUTHORISED] },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -533,7 +608,7 @@ describe("recordAnswersOf crediting an authorised location with the findings it 
       ],
     });
     expect(
-      recordAnswersOf({ records: [AUTHORISED], governed: NOTHING_GOVERNED, catalogues }),
+      recordAnswersOf({ records: [AUTHORISED], governed: NOTHING_GOVERNED, runs: [], catalogues }),
     ).toEqual({
       outcome: "ok",
       value: [
@@ -552,6 +627,7 @@ describe("recordAnswersOf crediting an authorised location with the findings it 
             { finding: { ...LOOP_FINDING, check: "rebinding#test-body" }, by: [authorisedOnLoops] },
           ],
         },
+        runs: [],
         catalogues,
       }),
     ).toEqual({
@@ -580,6 +656,7 @@ describe("recordAnswersOf over every record of the file", () => {
       recordAnswersOf({
         records: [AUTHORISED, CARVE_OUT, clauseWide, second],
         governed: { ...NOTHING_GOVERNED, stale: [CARVE_OUT, second] },
+        runs: [],
         catalogues,
       }),
     ).toEqual({

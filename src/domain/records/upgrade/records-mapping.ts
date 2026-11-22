@@ -19,8 +19,8 @@ import type { UnansweredCredit, UpgradeRefusal } from "./upgrade-refusal.ts";
 export type CarriedEntry = { readonly [key: string]: ReadonlyJsonValue };
 
 export type CarveOutAnswer =
-  | { readonly credit: "findings"; readonly checks: readonly Check[] }
-  | { readonly credit: UnansweredCredit };
+  | { readonly credit: "findings" | "suppression-only"; readonly checks: readonly Check[] }
+  | { readonly credit: "nothing" };
 
 export type LocationAnswer =
   | { readonly reach: "answered-checks"; readonly checks: readonly Check[] }
@@ -202,22 +202,35 @@ const debtRecordOf = (request: {
     : { answers, file: request.record.file, ...noteOf({ reason: request.record.reason }) };
 };
 
+const checksCarriedBy = (request: {
+  readonly answer: CarveOutAnswer;
+}): Result<readonly Check[], UnansweredCredit> => {
+  const { answer } = request;
+  if (answer.credit === "nothing") {
+    return { outcome: "failed", error: "nothing" };
+  }
+  return answer.credit === "suppression-only" && answer.checks.length === 0
+    ? { outcome: "failed", error: "suppression-only" }
+    : { outcome: "ok", value: answer.checks };
+};
+
 const carveOutOutcome = (request: {
   readonly input: Extract<RecordInput, { readonly kind: "file-carve-out" }>;
 }): InputOutcome => {
   const { record, answer, entry } = request.input;
-  if (answer.credit !== "findings") {
+  const carried = checksCarriedBy({ answer });
+  if (carried.outcome === "failed") {
     return refusedWith({
       refusal: {
         kind: "record-answers-nothing",
         clause: clauseAddressText({ address: record.clause }),
         file: record.file,
-        credited: answer.credit,
+        credited: carried.error,
       },
     });
   }
   return outcomeOfPlacements({
-    placements: withoutRepeats({ checks: answer.checks }).map((check) =>
+    placements: withoutRepeats({ checks: carried.value }).map((check) =>
       placedAt({
         origin: originOf({ recordKind: "file-carve-out", record }),
         kind: "debt",

@@ -231,6 +231,60 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
     });
   });
 
+  it("writes the debt record for the check of a suppression a file carve-out held up, and lists it as a debt", () => {
+    expect(
+      mappedRecords({
+        catalogues: CATALOGUES,
+        inputs: [
+          {
+            kind: "file-carve-out",
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "kept for the legacy interop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "kept for the legacy interop",
+            },
+            answer: { credit: "suppression-only", checks: [LOOP_KEYWORD_LOOPS] },
+          },
+        ],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        documents: [
+          {
+            file: "hone-records/debt/loop-keyword.json",
+            version: 2,
+            records: [
+              {
+                answers: "loop-keyword#loops",
+                file: "src/a.ts",
+                note: "kept for the legacy interop",
+              },
+            ],
+          },
+        ],
+        lines: [
+          {
+            recordKind: "file-carve-out",
+            clause: LOOPS_CLAUSE,
+            file: "src/a.ts",
+            newKind: "debt",
+            check: LOOP_KEYWORD_LOOPS,
+            holding: "stated",
+          },
+        ],
+      },
+    });
+  });
+
   it("writes one debt for a check that answered the carve-out twice", () => {
     expect(
       mappedRecords({
@@ -752,7 +806,7 @@ describe("mappedRecords refusing what carries over to nothing", () => {
     });
   });
 
-  it("refuses a file carve-out credited only by a suppression, apart from a stale one", () => {
+  it("refuses a file carve-out credited only by a suppression no record can hold", () => {
     expect(
       mappedRecords({
         catalogues: CATALOGUES,
@@ -772,7 +826,7 @@ describe("mappedRecords refusing what carries over to nothing", () => {
               file: "src/a.ts",
               reason: "legacy loop",
             },
-            answer: { credit: "suppression-only" },
+            answer: { credit: "suppression-only", checks: [] },
           },
         ],
       }),

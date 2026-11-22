@@ -592,7 +592,7 @@ When version 2 is in place but a version 1 file could not be removed, it prints 
 | `upgrade` | `<check> has no engine on the <mechanism> mechanism. This is a fault in hone, not in your repository. Report it at <issues page>, with this output.` |
 | `upgrade` | `<check> could run on <engines> through the <mechanism> mechanism; the upgrade cannot choose. This is a fault in hone, not in your repository. Report it at <issues page>, with this output.` |
 | `upgrade` | `the file carve-out for <clause> in <file> answers no finding. Remove it, or fix the file it names, then run the upgrade again.` |
-| `upgrade` | `the file carve-out for <clause> in <file> answers only a suppression. Remove it, or fix the file it names, then run the upgrade again.` |
+| `upgrade` | `the file carve-out for <clause> in <file> answers only a suppression no version 2 record can hold. Remove it, or fix the file it names, then run the upgrade again.` |
 | `upgrade` | `<name> is not a name version 2 can file records under. This is a fault in hone, not in your repository. Report it at <issues page>, with this output.` |
 | `upgrade` | `version 2's projection could not be made (<detail>). Fix what it names, then run the upgrade again.` |
 | `upgrade` | `version 2 cannot run this repository yet (<detail>). Do what it names, or stay on version 1 until version 2 runs it, then run the upgrade again.` |

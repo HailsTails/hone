@@ -167,7 +167,7 @@ const SUPPRESSING_RUN: GovernedRun = {
       clause: LOOPS_CLAUSE,
       file: SRC_A,
       line: 3,
-      text: "eslint-disable-next-line",
+      text: "// @ts-expect-error legacy interop",
       reach: "one-clause",
     },
   ],
@@ -215,7 +215,11 @@ describe("createAnsweringOracle", () => {
     expect(await oracle.answer({ records: [CARVE_OUT] })).toEqual({
       outcome: "ok",
       value: [
-        { kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "suppression-only" } },
+        {
+          kind: "file-carve-out",
+          record: CARVE_OUT,
+          answer: { credit: "suppression-only", checks: [LOOP_KEYWORD_LOOPS] },
+        },
       ],
     });
   });

@@ -80,6 +80,28 @@ const ROWS: readonly Row[] = [
     },
   },
   {
+    name: "a file carve-out that held up only a suppression no record can hold is refused",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "mapping-refused",
+        refusals: [
+          {
+            kind: "record-answers-nothing",
+            clause: "CD-15#loops",
+            file: repoPathOf("src/a.ts"),
+            credited: "suppression-only",
+          },
+        ],
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nthe file carve-out for CD-15#loops in src/a.ts answers only a suppression no version 2 record can hold. Remove it, or fix the file it names, then run the upgrade again.\nNothing was changed.\n",
+    },
+  },
+  {
     name: "version 2's projection cannot be made",
     failure: {
       kind: "plan-refused",
