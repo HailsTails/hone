@@ -3,17 +3,20 @@ import { createSelectionRepository } from "../../../../disciplines-file/consumer
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import { createSettingsSources } from "../../../../hone-config-file/settings-sources.ts";
+import { SETTINGS_FILE_FORMAT } from "../../../../hone-config-file/settings-file.ts";
+import { checkChoicesOf } from "../../../../../domain/settings/check-choices.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { createSymptomCatalogueRepository } from "../../../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts";
-import { projectedChecksOf } from "./projected-checks.ts";
+import { type ProjectedBinding, projectedChecksOf } from "./projected-checks.ts";
 import { resolvedConfigSchema } from "../toolchain/eslint-config-schema.ts";
 import { type ProjectedPiece, projectionText } from "./projection-text.ts";
-import { createDefaultDirectoryRemovalPort } from "../../../../node/file-system/directory-removal-port.ts";
-import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
 import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { checksOf } from "../../../../../domain/language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../../../../domain/language-layer/symptom-catalogue.ts";
@@ -108,6 +111,8 @@ const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dir
 
 const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "projection-pair", "before"] }) });
 
+const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "projection-pair", "after"] }) });
+
 const ESLINT = mechanismIdSchema.parse("eslint");
 
 const LEGACY = repoPathSchema.parse("src/legacy.ts");
@@ -166,11 +171,33 @@ const selectedBindings = () => {
   return reading.value.bindings;
 };
 
+const versionTwoBindings = (): readonly ProjectedBinding[] => {
+  const sources = createSettingsSources({ repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
+  const document = sources.settingsFile({});
+  assert(document.outcome === "ok", "the pair's version 2 settings file loads");
+  const settings = SETTINGS_FILE_FORMAT.fileOf({ document: document.value.document });
+  assert(settings.outcome === "ok", "the pair's version 2 settings file parses");
+  const choices = checkChoicesOf({
+    catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: catalogue() }],
+    checks: settings.value.checks,
+    checkSettings: settings.value.checkSettings,
+  });
+  assert(choices.outcome === "ok", "the pair's version 2 checks choose their clauses");
+  return choices.value.clauses.flatMap((chosen): readonly ProjectedBinding[] => {
+    if (chosen.choice.state !== "run") {
+      return [];
+    }
+    const piece = sources.pieceClause({ ruleSetRoot: INSTALL_ROOT, clause: chosen.clause, mechanism: chosen.choice.mechanism });
+    assert(piece.outcome === "ok", `${chosen.clause.clause} resolves its piece`);
+    return [{ mechanism: chosen.choice.mechanism, clause: { address: chosen.clause, pieceRoot: piece.value.pieceRoot, settings: piece.value.settings } }];
+  });
+};
+
 const versionOneText = (): string =>
   projectionText({ selectedPieces: versionOnePiecesOf({ bindings: selectedBindings(), path, specifierOf }), records: VERSION_ONE_RECORDS });
 
 const versionTwoText = (): string => {
-  const checks = projectedChecksOf({ checks: catalogue().checks, bindings: selectedBindings() });
+  const checks = projectedChecksOf({ checks: catalogue().checks, bindings: versionTwoBindings() });
   assert(checks.outcome === "ok", "the pair's version 2 checks project");
   return checksProjectionText({
     pluginImport: specifierOf({ modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }) }),
@@ -181,9 +208,7 @@ const versionTwoText = (): string => {
 
 const directory = createDefaultDirectoryPort({});
 
-const fileRemoval = createDefaultFileRemovalPort({});
-
-const directoryRemoval = createDefaultDirectoryRemovalPort({});
+const directoryTree = createDefaultDirectoryTreePort({});
 
 const SCRATCH = resolvedPath({ path: path.join({ segments: [INSTALL_ROOT, "artefacts", `projection-pair-${globalThis.crypto.randomUUID()}`] }) });
 
@@ -191,13 +216,10 @@ const madeScratch = directory.create({ path: SCRATCH });
 
 assert(madeScratch.outcome === "ok", "a scratch folder is made for the two projections");
 
-const WRITTEN_CONFIGS: string[] = [];
-
 const writtenConfig = (request: { readonly name: string; readonly text: string }): string => {
   const configPath = path.join({ segments: [SCRATCH, request.name] });
   const written = fileText.write({ path: configPath, text: request.text });
   assert(written.outcome === "ok", `${request.name} is written`);
-  WRITTEN_CONFIGS.push(configPath);
   return configPath;
 };
 
@@ -232,10 +254,8 @@ const lintedMessages = async (request: { readonly line: EslintLine }) => {
 };
 
 afterAll(() => {
-  WRITTEN_CONFIGS.forEach((configPath) => {
-    fileRemoval.remove({ path: configPath });
-  });
-  directoryRemoval.removeEmpty({ path: SCRATCH });
+  const removed = directoryTree.remove({ path: SCRATCH });
+  assert(removed.outcome === "ok", "the scratch folder is removed");
 });
 
 describe.each(ESLINT_LINES)("on %s, the version 1 projection and its version 2 form", (line) => {
