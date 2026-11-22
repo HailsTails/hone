@@ -9,7 +9,7 @@ import { checkConformance } from "../../../protocol/conformance.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { LoadedRunner } from "../../../../../application/ports/engine/runner-module.ts";
-import { createDefaultDirectoryRemovalPort } from "../../../../node/file-system/directory-removal-port.ts";
+import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
@@ -18,6 +18,9 @@ import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-l
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import { exceptionEntriesOfText, parseExceptionEntries } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
@@ -148,9 +151,7 @@ const overlaidFileText = (request: {
 
 const directory = createDefaultDirectoryPort({});
 
-const directoryRemoval = createDefaultDirectoryRemovalPort({});
-
-const fileRemoval = createDefaultFileRemovalPort({});
+const directoryTree = createDefaultDirectoryTreePort({});
 
 const madeDirectory = (request: { readonly path: string }): void => {
   const made = directory.create({ path: absolutePathSchema.parse(request.path) });
@@ -158,19 +159,8 @@ const madeDirectory = (request: { readonly path: string }): void => {
 };
 
 const removedTree = (request: { readonly path: AbsolutePath }): void => {
-  const listed = directory.list({ path: request.path });
-  assert(listed.outcome === "ok", `${request.path} lists for removal`);
-  listed.value
-    .filter(({ kind }) => kind === "directory")
-    .forEach(({ name }) => {
-      removedTree({ path: absolutePathSchema.parse(`${request.path}/${name}`) });
-    });
-  listed.value
-    .filter(({ kind }) => kind === "file")
-    .forEach(({ name }) => {
-      fileRemoval.remove({ path: `${request.path}/${name}` });
-    });
-  directoryRemoval.removeEmpty({ path: request.path });
+  const removed = directoryTree.remove({ path: request.path });
+  assert(removed.outcome === "ok", `${request.path} is removed`);
 };
 
 type ScratchRepositories = {
@@ -331,18 +321,14 @@ const writtenText = (request: Dependencies & { readonly repo: AbsolutePath; read
   }
 };
 
-const listedTree = (request: { readonly root: AbsolutePath; readonly within: readonly string[] }): readonly ListedEntry[] => {
-  const listed = directory.list({ path: absolutePathSchema.parse([request.root, ...request.within].join("/")) });
+const listedTree = (request: { readonly root: AbsolutePath }): readonly ListedEntry[] => {
+  const listed = directoryTree.list({ path: request.root });
   assert(listed.outcome === "ok", `${request.root} lists for restoring`);
-  const entries = listed.value.map(({ name, kind }): ListedEntry => ({ path: [...request.within, name].join("/"), name, entryKind: kind }));
-  const nested = entries
-    .filter(({ entryKind }) => entryKind === "directory")
-    .flatMap(({ name }) => listedTree({ root: request.root, within: [...request.within, name] }));
-  return [...entries, ...nested];
+  return listed.value.map(({ path: entryPath, name, kind }): ListedEntry => ({ path: entryPath, name, entryKind: kind }));
 };
 
 const restoredOnce = (request: Dependencies & RestoredFixture): AbsolutePath => {
-  const listed = listedTree({ root: request.fixtureRoot, within: [] });
+  const listed = listedTree({ root: request.fixtureRoot });
   const repo = request.repositories.repositoryWith({ files: {} });
   const folders = listed.filter(({ entryKind }) => entryKind === "directory");
   const files = listed.filter(({ entryKind }) => entryKind === "file");
@@ -417,14 +403,25 @@ const consumerRepo = (request: { readonly name: string }): AbsolutePath => consu
 
 const TYPESCRIPT_FILE = /\.ts$/;
 
-const OWNED_FACTORY = (request: { readonly file: string }): ExceptionRecord => ({
-  kind: "authorised-location",
-  clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("eslint"),
-  file: repoPathSchema.parse(request.file),
-  reason: "wrapping factory for a library construction",
-  whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
-});
+const EXCEPTIONS_FILE_NAME = "discipline-exceptions.json";
+
+const EXCEPTIONS_FILE = repoPathSchema.parse(EXCEPTIONS_FILE_NAME);
+
+const fixtureRecords = (request: { readonly name: string }): readonly ExceptionRecord[] => {
+  const repoRoot = absolutePathSchema.parse(`${import.meta.dirname}/${request.name}`);
+  const selection = createSelectionRepository({ repoRoot, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
+  assert(selection.outcome === "ok", `${request.name} selects its clauses`);
+  const text = fileText.read({ path: `${repoRoot}/${EXCEPTIONS_FILE_NAME}` });
+  assert(text.outcome === "ok", `${request.name} holds its records`);
+  const reading = parseExceptionEntries({
+    entries: exceptionEntriesOfText({ text: text.value }).map((entry, index) => ({ place: { layout: "single-file", file: EXCEPTIONS_FILE, index }, entry })),
+    selection: selection.value.selection,
+    baseline: UNMEASURED_EXCEPTION_BASELINE,
+    fileExceptionWhyChains: selection.value.fileExceptionWhyChains,
+  });
+  assert.isEmpty(reading.invalid, `${request.name}'s records are all valid`);
+  return reading.records;
+};
 
 const runOf = (request: {
   readonly name: string;
@@ -457,6 +454,7 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
       value: {
         hits: [classHit({ file: "x.ts", line: 1 })],
         nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts" }],
+        projection: "current",
       },
     });
   });
@@ -467,6 +465,7 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
       value: {
         hits: [classHit({ file: "gen/g.ts", line: 1 })],
         nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: "gen/g.ts" }],
+        projection: "current",
       },
     });
   });
@@ -477,14 +476,15 @@ describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner'
       value: {
         hits: [classHit({ file: "x.ts", line: 1 })],
         nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts" }],
+        projection: "current",
       },
     });
   });
 
   it("finds no projection in effect when a later team block sets a recorded file back to error", async () => {
     await expect(
-      runOf({ name: "re-enabled-record", tracked: [repoPathSchema.parse("src/owned.ts")], line, records: [OWNED_FACTORY({ file: "src/owned.ts" })] }),
-    ).resolves.toMatchObject({ outcome: "ok", value: { hits: [], nativeExceptions: [], projection: "not-included" } });
+      runOf({ name: "re-enabled-record", tracked: [repoPathSchema.parse("src/owned.ts")], line, records: fixtureRecords({ name: "re-enabled-record" }) }),
+    ).resolves.toMatchObject({ outcome: "ok", value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] } });
   });
 });
 
@@ -716,7 +716,7 @@ describe.each(ESLINT_LINES)("real %s glob matching of the generated projection's
         name: "route-brackets",
         tracked: [repoPathSchema.parse("route/[id].ts"), repoPathSchema.parse("route/i.ts")],
         line,
-        records: [OWNED_FACTORY({ file: "route/[id].ts" })],
+        records: fixtureRecords({ name: "route-brackets" }),
       }),
     ).resolves.toMatchObject({
       outcome: "ok",
@@ -747,7 +747,7 @@ describe.each(ESLINT_LINES)("the ESLint runner's projection states under real %s
   it("reports no projection in effect when the team config does not import the projection", async () => {
     await expect(runOf({ name: "projection-not-imported", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], projection: "not-included" },
+      value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] },
     });
   });
 
@@ -757,11 +757,11 @@ describe.each(ESLINT_LINES)("the ESLint runner's projection states under real %s
         line,
         name: "fragment-not-projection",
         tracked: [repoPathSchema.parse("src/owned.ts"), repoPathSchema.parse("src/clean.ts")],
-        records: [OWNED_FACTORY({ file: "src/owned.ts" })],
+        records: fixtureRecords({ name: "fragment-not-projection" }),
       }),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { hits: [], nativeExceptions: [], projection: "not-included" },
+      value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] },
     });
   });
 });
