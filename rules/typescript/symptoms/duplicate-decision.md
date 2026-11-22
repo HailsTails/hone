@@ -30,8 +30,7 @@
     "entity-module",
     "screaming-folders"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "clone tools surface candidates."
 }
 ```
-
-- **How it is seen:** clone tools surface candidates.

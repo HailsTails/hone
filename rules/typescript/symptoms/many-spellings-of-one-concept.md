@@ -23,8 +23,7 @@
   "recipes": [
     "domain-vocabulary-list"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "the vocabulary list makes it checkable."
 }
 ```
-
-- **How it is seen:** the vocabulary list makes it checkable.

@@ -38,10 +38,9 @@
       "kind": "authorised-location",
       "at": "at an adapter whose caller's contract is exceptions"
     }
-  ]
+  ],
+  "howItIsSeen": "graph for adapters."
 }
 ```
 
 "Throwing in specific places allowed is just authorised locations as prose."
-
-- **How it is seen:** graph for adapters.

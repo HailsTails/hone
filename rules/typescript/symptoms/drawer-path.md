@@ -22,6 +22,11 @@
   "recipes": [
     "screaming-folders"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a path name is fixed by a framework or external convention",
+      "kind": "authorised-location"
+    }
+  ]
 }
 ```

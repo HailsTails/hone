@@ -1,13 +1,13 @@
 # stub-implementation
 
 ```json
-{}
+{
+  "misses": "hand-written doubles.",
+  "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
+}
 ```
 
 `vi.fn(<implementation>)` and `.mockImplementation(...)`.
-
-- **Misses:** hand-written doubles.
-- **Settings traced to:** test file is `.test.ts(x)`: Companion test file recipe.
 
 ## Flags
 

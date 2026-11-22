@@ -61,12 +61,11 @@
       "kind": "authorised-location",
       "at": "for this symptom alone"
     }
-  ]
+  ],
+  "howItIsSeen": "types to trace the port.",
+  "breachACheckCouldName": "the port that carries text, by types.",
+  "toNameTheBreach": "types: the port method the text is fed to."
 }
 ```
 
 "a boundary on whoever made json"
-
-- **How it is seen:** types to trace the port.
-- **The breach a check could name:** the port that carries text, by types.
-- **To name the breach, a check needs:** types: the port method the text is fed to.

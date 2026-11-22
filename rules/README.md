@@ -245,7 +245,7 @@ Outside dependency: what was called a package. An internal package is our own co
 - **Needs:** syntax, types, graph (imports between files), app (the app's structure), files (config, names, build output), history, person.
 - **Today:**
   - *reuse:* a clause is enough for a first cut.
-  - *partial:* a clause sees part of the symptom.
+  - *partial:* every check of the symptom states what it misses.
   - *review:* only a review clause covers it today.
   - *new:* nothing covers it today.
 - **Margin:** what it flags that is not the symptom / what it misses. "Review owes" names what only a person sees.
@@ -258,6 +258,24 @@ Several symptoms are seen far from their breach. Each finding has two addresses:
 - the rule or rules the symptom indicates, with the place the breach usually sits.
 
 Until a check can name the breach, a finding names the rules the symptom points at and where the breach usually sits. It never says only "this line".
+
+## Checks: The test-body checks
+
+Six checks run together on `CD-27#test-body-logic`: [branch-in-a-test#test-body](typescript/symptoms/branch-in-a-test/test-body.md), [throw-or-catch-in-a-test#try-block](typescript/symptoms/throw-or-catch-in-a-test/try-block.md), [rebinding#test-body](typescript/symptoms/rebinding/test-body.md), [computed-value-in-a-test#test-body](typescript/symptoms/computed-value-in-a-test/test-body.md), [text-past-its-reader#test-body](typescript/symptoms/text-past-its-reader/test-body.md) and [double-with-a-body#logic-in-a-passed-function](typescript/symptoms/double-with-a-body/logic-in-a-passed-function.md). Each check's page lists what it flags.
+
+- They read test files only: `*.test.ts` and `*.test.tsx`. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped. Helper files that tests import are not checked.
+- None flags loops, which [loop-statement](typescript/symptoms/loop-keyword/loop-statement.md) covers, or `throw`, which [throw-statement](typescript/symptoms/throw-or-catch-in-a-test/throw-statement.md) covers.
+- None flags element access such as `calls[0]`, calls to free functions, a method called through a computed key, such as `rows["map"]`, or text built with a template literal.
+
+They have two editions. Edition 1 runs by default. Edition 2 adds what each check lists under edition 2, and becomes the default in the next major release. To run it now, set `edition`, `"1"` or `"2"`; without it the clause runs edition 1, or the latest edition when `checkEditions` in `disciplines.json` is `"latest"`:
+
+```jsonc
+"clauseSettings": {
+  "CD-27#test-body-logic": { "edition": "2" }
+}
+```
+
+Each check's "Allowed forms in a test" sections show a flagged form first, then the forms to write instead. Every form to write instead passes every audit and ESLint clause Hone ships, at each edition its check declares, and compiles under the compiler options [strictness-weakened](typescript/symptoms/strictness-weakened.md) requires. A test reads each check's page and holds every block on it to that. `assert`, `expect`, `it` and `vi` come from `vitest`, and a `declare const` line stands for the unit under test.
 
 ## Checks: Settings
 

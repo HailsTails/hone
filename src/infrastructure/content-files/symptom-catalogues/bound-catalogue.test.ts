@@ -30,12 +30,7 @@ const PARAMETER_REASSIGNMENT_TEXT = '# parameter-reassignment\n\n```json\n{}\n``
 describe("readBoundCatalogue", () => {
   it("fails as a malformed catalogue, naming its rules folder, when no piece runs the clause of a check", () => {
     const fileText: FileTextPort = {
-      exists: vi
-        .fn<FileTextPort["exists"]>()
-        .mockReturnValueOnce("present")
-        .mockReturnValueOnce("present")
-        .mockReturnValueOnce("absent")
-        .mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent").mockReturnValueOnce("absent"),
       read: vi
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
@@ -88,7 +83,7 @@ describe("readBoundCatalogue", () => {
   it("reads a team's content from its rules folder and its pieces from its mechanisms folder", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
@@ -102,12 +97,12 @@ describe("readBoundCatalogue", () => {
       outcome: "failed",
       error: { kind: "file-unreadable", path: "/repo/team-rules/mechanisms/audit", detail: "EACCES" },
     });
-    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/src/infrastructure/disciplines-file/version-one-names.json" });
-    expect(fileText.exists).toHaveBeenNthCalledWith(2, { path: "/repo/team-rules/rules" });
-    expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/repo/team-rules/mechanisms/audit" });
+    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/rules" });
+    expect(fileText.exists).toHaveBeenNthCalledWith(2, { path: "/repo/team-rules/mechanisms/audit" });
+    expect(fileText.read).not.toHaveBeenCalled();
   });
 
-  it("holds no catalogue when the rule set holds neither content nor pieces", () => {
+  it("holds no catalogue when a team's rule set holds neither content nor pieces", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
@@ -115,8 +110,8 @@ describe("readBoundCatalogue", () => {
     };
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
 
-    expect(readBoundCatalogue({ fileText, directory, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(directory.list).not.toHaveBeenCalled();
+    expect(readBoundCatalogue({ fileText, directory, path: PATH, ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
+    expect(fileText.exists).toHaveBeenNthCalledWith(2, { path: "/repo/team-rules/mechanisms/audit" });
   });
 });
 
@@ -124,12 +119,12 @@ describe("createBoundCatalogueOf", () => {
   it("reads through the directory it was built with", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>() };
 
-    expect(createBoundCatalogueOf({ directory })({ fileText, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(directory.list).toHaveBeenCalledExactlyOnceWith({ path: "/install/rules" });
+    expect(createBoundCatalogueOf({ directory })({ fileText, path: PATH, ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
+    expect(directory.list).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/mechanisms/audit" });
   });
 });

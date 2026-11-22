@@ -31,9 +31,8 @@
   "recipes": [
     "ports-in-the-argument"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "breachACheckCouldName": "the unit that imports the module, by graph.",
+  "toNameTheBreach": "graph: who imports the mocked module."
 }
 ```
-
-- **The breach a check could name:** the unit that imports the module, by graph.
-- **To name the breach, a check needs:** graph: who imports the mocked module.

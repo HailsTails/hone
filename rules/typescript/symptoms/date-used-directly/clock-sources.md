@@ -1,14 +1,14 @@
 # clock-sources
 
 ```json
-{}
+{
+  "flagsBeyondTheSymptom": "`Date.now` in comments and strings.",
+  "misses": "`performance.now()`.",
+  "settingsTracedTo": "none."
+}
 ```
 
 `Date.now()` and `new Date`.
-
-- **Flags beyond the symptom:** `Date.now` in comments and strings.
-- **Misses:** `performance.now()`.
-- **Settings traced to:** none.
 
 ## Flags
 

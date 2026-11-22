@@ -22,6 +22,11 @@
   "recipes": [
     "shared-strict-base-config"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a package must set the flag itself",
+      "kind": "authorised-location"
+    }
+  ]
 }
 ```

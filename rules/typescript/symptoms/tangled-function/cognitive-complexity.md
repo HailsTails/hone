@@ -1,12 +1,12 @@
 # cognitive-complexity
 
 ```json
-{}
+{
+  "settingsTracedTo": "complexity 15: where a broad symptom fires (as above)."
+}
 ```
 
 A function whose cognitive complexity is above 15.
-
-- **Settings traced to:** complexity 15: where a broad symptom fires (as above).
 
 ## Flags
 

@@ -1,12 +1,12 @@
 # parameter-mutation
 
 ```json
-{}
+{
+  "settingsTracedTo": "none."
+}
 ```
 
 Assignment to, deletion from or in-place methods on a parameter's fields.
-
-- **Settings traced to:** none.
 
 ## Flags
 

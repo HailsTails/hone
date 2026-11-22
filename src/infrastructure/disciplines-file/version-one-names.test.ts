@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { NO_VERSION_ONE_NAMES, readVersionOneNames, VERSION_ONE_NAMES_SEGMENTS, versionOneNamesOf } from "./version-one-names.ts";
+import { readVersionOneNames, VERSION_ONE_NAMES_SEGMENTS, versionOneNamesOf } from "./version-one-names.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
@@ -131,10 +131,13 @@ describe("readVersionOneNames", () => {
     });
   });
 
-  it("gives no names, reading nothing, when the map is absent", () => {
-    const fileText: FileTextPort = { ...fileTextHolding({ text: "{}" }), exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent") };
-    expect(readVersionOneNames({ fileText, path: PATH })).toEqual({ outcome: "ok", value: NO_VERSION_ONE_NAMES });
-    expect(fileText.read).not.toHaveBeenCalled();
+  it("fails file-unreadable when the map is missing, rather than giving no names", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "unreadable", path: PATH, detail: "ENOENT" } }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    expect(readVersionOneNames({ fileText, path: PATH })).toEqual({ outcome: "failed", error: { kind: "file-unreadable", path: PATH, detail: "ENOENT" } });
   });
 
   it("fails file-unreadable when the map cannot be read", () => {

@@ -1150,7 +1150,7 @@ describe("renderReportText readFirst at check items", () => {
         },
       }),
     ).toContain(
-      "\nreadFirst (2)\nStart from the Spirit of each rule its symptom may indicate. disciplines.assessment.md could not be read.\nCD-15#loops: read rules/typescript/symptoms/loop-keyword/loop-statement.md#fix and rules/typescript/symptoms/loop-keyword/for-each-call.md\nverdict: fail\n",
+      "\nreadFirst (2)\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md could not be read.\nCD-15#loops: read rules/typescript/symptoms/loop-keyword/loop-statement.md#fix and rules/typescript/symptoms/loop-keyword/for-each-call.md\nverdict: fail\n",
     );
   });
 

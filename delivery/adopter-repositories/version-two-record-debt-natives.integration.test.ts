@@ -189,7 +189,7 @@ const projectCommandIn = (request: { readonly repo: string }): string => {
 const NOT_ADOPTED = "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#cast-to-any\nclaimed-type#non-null-assertions\n";
 
 const CLASS_SYMPTOM =
-  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
+  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
 
 const INHERITED_TEXT = `${NOT_ADOPTED}findings (2)
 authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted

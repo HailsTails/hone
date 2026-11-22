@@ -52,6 +52,25 @@ describe("checkTodayOf", () => {
     expect(checkTodayOf({ file: FILE, symptom: CHECKED })).toBe("reuse");
   });
 
+  it("is partial when every check the symptom has states what it misses", () => {
+    const file: CatalogueFile = {
+      ...FILE,
+      checks: [{ symptom: "checked", name: "a-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") }, misses: "the `let` form." }],
+    };
+    expect(checkTodayOf({ file, symptom: CHECKED })).toBe("partial");
+  });
+
+  it("reuses the checks when one of them misses nothing, though another states a miss", () => {
+    const file: CatalogueFile = {
+      ...FILE,
+      checks: [
+        { symptom: "checked", name: "a-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") }, misses: "the `let` form." },
+        { symptom: "checked", name: "b-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") } },
+      ],
+    };
+    expect(checkTodayOf({ file, symptom: CHECKED })).toBe("reuse");
+  });
+
   it("leaves to review alone a symptom a person sees first, even when a clause sees it", () => {
     expect(checkTodayOf({ file: FILE, symptom: PERSON_FIRST })).toBe("only review");
   });

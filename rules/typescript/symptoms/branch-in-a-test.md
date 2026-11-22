@@ -41,9 +41,8 @@
     "assert-to-narrow",
     "iteach-over-typed-rows"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "breachACheckCouldName": "the type branched on, by types.",
+  "toNameTheBreach": "types: the declaring type of the member read."
 }
 ```
-
-- **The breach a check could name:** the type branched on, by types.
-- **To name the breach, a check needs:** types: the declaring type of the member read.

@@ -31,8 +31,7 @@
     "one-argument-object",
     "entity-module"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "breachACheckCouldName": "the input's declaration."
 }
 ```
-
-- **The breach a check could name:** the input's declaration.

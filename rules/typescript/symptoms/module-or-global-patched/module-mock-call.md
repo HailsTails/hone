@@ -1,13 +1,13 @@
 # module-mock-call
 
 ```json
-{}
+{
+  "misses": "`vi.stubGlobal`, `process.env` set in a test.",
+  "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
+}
 ```
 
 Calls to `vi.mock`.
-
-- **Misses:** `vi.stubGlobal`, `process.env` set in a test.
-- **Settings traced to:** test file is `.test.ts(x)`: Companion test file recipe.
 
 ## Flags
 

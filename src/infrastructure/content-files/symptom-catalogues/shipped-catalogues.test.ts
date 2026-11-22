@@ -14,7 +14,7 @@ const UNLISTED: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: 
 describe("shippedCataloguesOf", () => {
   it("fails naming the catalogue's path when the install holds none", () => {
     const fileText: FileTextPort = {
-      read: vi.fn<FileTextPort["read"]>(),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: '{ "version": 1, "clauses": [], "recordKinds": {} }' }),
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
       write: vi.fn<FileTextPort["write"]>(),
     };
@@ -26,8 +26,8 @@ describe("shippedCataloguesOf", () => {
 
   it("fails with the load failure when the install's rule items cannot be listed", () => {
     const fileText: FileTextPort = {
-      read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: '{ "version": 1, "clauses": [], "recordKinds": {} }' }),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {

@@ -1,13 +1,13 @@
 # parameter-reassignment
 
 ```json
-{}
+{
+  "misses": "a local `let` in production.",
+  "settingsTracedTo": "none."
+}
 ```
 
 Assigning to, incrementing or destructuring into a parameter itself.
-
-- **Misses:** a local `let` in production.
-- **Settings traced to:** none.
 
 ## Flags
 

@@ -1,13 +1,13 @@
 # default-arm
 
 ```json
-{}
+{
+  "flagsBeyondTheSymptom": "a `switch` over an open set.",
+  "settingsTracedTo": "none."
+}
 ```
 
 A `default:` arm inside a `switch`.
-
-- **Flags beyond the symptom:** a `switch` over an open set.
-- **Settings traced to:** none.
 
 ## Flags
 - `.ts` and `.tsx` files, including tests and declaration files; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

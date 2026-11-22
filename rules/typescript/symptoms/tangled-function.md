@@ -64,6 +64,12 @@
     "guard-clauses",
     "one-argument-object"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a function whose shape an outside contract fixes",
+      "kind": "authorised-location",
+      "at": "in the file that holds it"
+    }
+  ]
 }
 ```

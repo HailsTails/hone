@@ -23,8 +23,7 @@
     "integration-test-suffix",
     "companion-test-file"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "files (by the integration test suffix)."
 }
 ```
-
-- **How it is seen:** files (by the integration test suffix).

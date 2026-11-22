@@ -10,8 +10,8 @@ or library names; those live in the loaded rules and differ per codebase.
 ## Concept
 
 This lens defends **structural-semantic boundaries**: the directions data and
-dependencies are allowed to flow, and the classification of the data that crosses
-the outermost edge. It is one concept with four faces:
+dependencies are allowed to flow, and the size of the surface the system exposes.
+It is one concept with three faces:
 
 - **Dependency direction.** The import graph points inward. An inner layer
   (domain) depends on nothing; each outer layer may depend only on layers more
@@ -24,36 +24,29 @@ the outermost edge. It is one concept with four faces:
   to the port and never knows whether the backing is a database, a filesystem, an
   in-memory map, or a remote service. Inner code importing a storage driver
   directly is the violation.
-- **Data classification at the edge.** Data leaving the system into a log, a URL,
-  or the repository carries a classification. The default for free-form strings
-  is "sensitive/PII unless proven otherwise"; the opt-out to log-safe is explicit
-  and auditable; secrets are pinned to the type system so the redaction layer can
-  enforce them wherever they flow. An unannotated secret or PII string reaching an
-  edge is the violation.
 - **Minimal surface.** The system's externally-reachable surface — public network
   bindings, per-service resource budgets — has hard caps. Exceeding a cap is not a
   code smell to weigh; it is a violation that requires an explicit, tracked
   decision to override.
 
 Across codebases the concept recurs under different names (hexagonal / ports-and-
-adapters, onion layering, the dependency-inversion principle, data-classification
-or taint rules, attack-surface budgets). The loaded rules tell you this codebase's
-exact shape: the names of its rings, which driver primitives are forbidden inward,
-the brand/annotation idiom for classifying data, and the specific surface caps.
+adapters, onion layering, the dependency-inversion principle, attack-surface
+budgets). The loaded rules tell you this codebase's exact shape: the names of its
+rings, which driver primitives are forbidden inward, and the specific surface caps.
 Read them first; they override any default intuition.
 
 ## Loading the ruleset
 
 1. Resolve the rules: the rule and principle items, `rules/rules/*.md` and `rules/principles/*.md`, in the Hone install (the folder holding `core/` and `rules/`), and the rule pages, `rules/*/README.md`, in each rule set the repository's `disciplines.json` names under `ruleSets`.
 2. Keep the items whose `lenses` fact names `clean-architecture`, and the rule-set pages whose `Review lens` line names it. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
-3. Read each kept page in full together with its check pages (for a Hone item, `rules/typescript/symptoms/<symptom>/<check>.md` of each symptom that may indicate it; for a rule set's page, its sibling `CHECKS.md` with its `## Exceptions` section) and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names exact permitted sites (a single adapter file, a single redaction layer, a closed list of binding counts), those are the only permitted sites.
+3. Read each kept page in full together with its check pages (for a Hone item, `rules/typescript/symptoms/<symptom>/<check>.md` of each symptom that may indicate it; for a rule set's page, its sibling `CHECKS.md` with its `## Exceptions` section) and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names exact permitted sites (a single adapter file, a closed list of binding counts), those are the only permitted sites.
 4. If no item or rule page names this lens, report that the codebase declares no clean-architecture discipline and produce an empty finding set — do not invent rules.
 
 ## Inspection procedure
 
-This lens reads one direction and one classification per artefact. For each
-changed file, identify its layer (the rules name the rings and how a path or
-package maps to one), then walk its imports and its edge-crossing call sites.
+This lens reads one direction per artefact. For each changed file, identify its
+layer (the rules name the rings and how a path or package maps to one), then walk
+its imports and the surfaces it adds.
 
 ### The inward-arrow read (dependency direction + storage-behind-port)
 
@@ -85,32 +78,6 @@ outer layer?*
   shoulder the platform-specificity. The whole point of the abstraction layer is
   that *most* files should pass this test and only a small contained set fail it.
 
-### The classification read (PII / secrets / data at the edge)
-
-For every call site that emits data into a log, a URL, a response body, or the
-repository, ask what classification the emitted fields carry:
-
-- **Unannotated PII in a log.** A logged field whose value is a free-form string
-  sourced from user input, an external response, a parsed external message, or a
-  stored row, and which lacks the explicit log-safe annotation the rules define,
-  is a finding. The remediation is to confirm the field's classification and
-  either annotate it (if genuinely safe) or remove it from the payload (if not) —
-  never to rubber-stamp it safe to clear the check.
-- **Unbranded secret.** A schema or type whose identifier or shape reads as a
-  credential (token, secret, key, password, session key, bearer, authorization,
-  refresh/access token, OAuth material) but which is held as a plain string
-  without the sensitive brand the rules mandate is a finding: the value is
-  indistinguishable from a normal string and can slip past the redaction layer.
-  The remediation is to brand it at the declaration site and propagate the branded
-  type to every consumer.
-- **Secret at a forbidden surface.** A hard-coded credential literal in committed
-  source, a secret placed in a URL query parameter, or a sensitive-branded value
-  reaching a log without passing the redaction layer is a finding. (Operational
-  backstops — secret-manager wiring, env discipline, deploy-side rotation,
-  external scanners — are upstream of this lens; it flags only the source-level
-  artefact that would arm them, and clearly-fake test fixtures on an audited
-  allowlist are out of scope, deferring to test-discipline.)
-
 ### The minimal-surface read
 
 For every change that adds or widens an externally-reachable surface — a new
@@ -128,8 +95,7 @@ version of some other codebase's rule.
 
 The lens's catch-rate lives where each symbol is locally fine yet a boundary is
 defeated. An outward import compiles cleanly and every name it touches is valid —
-the defect is the *direction*, not any one symbol. A logged field is a legal
-string — the defect is its missing classification. A surface addition is valid
+the defect is the *direction*, not any one symbol. A surface addition is valid
 config — the defect is that it crosses a capped budget. A finding must explain
 *how the local code reads correct yet the boundary rule is defeated*, grounded in
 the specific loaded rule.
@@ -152,15 +118,14 @@ re-tagging the rule another lens owns):
   naming, generic binding) is the DI lens's lane. Note an adapter built anywhere
   else as a sibling observation, not as a clean-architecture finding of its own.
 
-Vague phrasings ("this coupling feels wrong", "might leak data") are the lens's own
+Vague phrasings ("this coupling feels wrong", "this might reach too far") are the lens's own
 failure mode — every finding names the specific boundary and the rule that draws it.
 
 ## Output shape
 
 Produce the counts the review asks for (e.g. imports inspected,
 outward-arrow / cross-layer violations, inner-code-importing-driver violations,
-ambient-global call sites, unannotated-PII log emissions, unbranded-secret
-declarations, secret-at-forbidden-surface hits, minimal-surface cap breaches).
+ambient-global call sites, minimal-surface cap breaches).
 Every finding is `file:line | quoted code | <rule-id> | defect-named`, citing the
 loaded rule by its name and the clause address [Every numbered discipline](../../rules/numbers.md#every-numbered-discipline) gives it (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules/failures-are-values.md)). State the code-discipline path you
 resolved and which rule ids you loaded under this lens.

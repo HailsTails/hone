@@ -23,6 +23,11 @@
   "recipes": [
     "integration-test-owns-its-scratch"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a test file legitimately builds its environment another way",
+      "kind": "authorised-location"
+    }
+  ]
 }
 ```

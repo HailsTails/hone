@@ -36,7 +36,7 @@ export const principlesPageOf = (request: PageSource): CataloguePage =>
         blocksOf({
           blocks: [
             `## ${principle.title}`,
-            proseAt({ prose: request.prose, path: itemPaths.principle(principle), pagePath: PAGE }),
+            proseAt({ path: request.path, prose: request.prose, itemPath: itemPaths.principle(principle), pagePath: PAGE }),
             rulesUnderOf({ file: request.file, principle: principle.name }),
           ],
         }),

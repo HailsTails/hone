@@ -1,13 +1,13 @@
 # boolean-annotation
 
 ```json
-{}
+{
+  "flagsBeyondTheSymptom": "a predicate's boolean return.",
+  "settingsTracedTo": "none."
+}
 ```
 
 A boolean type in a parameter, property signature or return.
-
-- **Flags beyond the symptom:** a predicate's boolean return.
-- **Settings traced to:** none.
 
 ## Flags
 

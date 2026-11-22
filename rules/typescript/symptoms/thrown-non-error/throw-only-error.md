@@ -1,12 +1,12 @@
 # throw-only-error
 
 ```json
-{}
+{
+  "settingsTracedTo": "none."
+}
 ```
 
 A `throw` of something that is not an error object.
-
-- **Settings traced to:** none.
 
 ## Flags
 Needs ESLint adopted through the projection.

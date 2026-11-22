@@ -1,13 +1,13 @@
 # class-keyword
 
 ```json
-{}
+{
+  "misses": "`this` outside a class.",
+  "settingsTracedTo": "none."
+}
 ```
 
 A class declaration or expression outside ambient code.
-
-- **Misses:** `this` outside a class.
-- **Settings traced to:** none.
 
 ## Flags
 - TypeScript source files; declaration files (`.d.ts`) are skipped. Generated folders (`node_modules`, `dist`, `build`, `coverage`, `.git`, root `vendor`) are skipped by the audit mechanism. The ESLint piece lints whatever files the team's ESLint run includes.

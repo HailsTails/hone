@@ -1,13 +1,13 @@
 # unlisted-cast-site
 
 ```json
-{}
+{
+  "misses": "`any` reached through an outside dependency's types.",
+  "settingsTracedTo": "`as const` allowed: Declared, not asserted."
+}
 ```
 
 A type assertion that is not on the permitted list.
-
-- **Misses:** `any` reached through an outside dependency's types.
-- **Settings traced to:** `as const` allowed: Declared, not asserted.
 
 ## Flags
 - `.ts` and `.tsx` files; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

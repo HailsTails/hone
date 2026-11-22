@@ -30,9 +30,8 @@
   "recipes": [
     "one-argument-object"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "syntax for the cast.",
+  "toNameTheBreach": "types: the parameter's declaration and the fields read."
 }
 ```
-
-- **How it is seen:** syntax for the cast.
-- **To name the breach, a check needs:** types: the parameter's declaration and the fields read.

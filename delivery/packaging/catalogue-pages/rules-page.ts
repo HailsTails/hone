@@ -27,7 +27,7 @@ const ruleBlockOf = (request: PageSource & { readonly rule: Rule }): string =>
     blocks: [
       `### ${request.rule.title}`,
       request.rule.standing === "proposed" ? "Proposed, not accepted." : "",
-      proseAt({ prose: request.prose, path: itemPaths.rule(request.rule), pagePath: PAGE }),
+      proseAt({ path: request.path, prose: request.prose, itemPath: itemPaths.rule(request.rule), pagePath: PAGE }),
       [casesServedOf(request), recipesOf(request)].filter((line) => line.length > 0).join("\n"),
     ],
   });

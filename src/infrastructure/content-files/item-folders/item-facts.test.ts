@@ -22,6 +22,8 @@ describe("itemFactsOf", () => {
     { kind: "record-kind", facts: { phrase: "debt" } },
     { kind: "symptom", facts: SYMPTOM_FACTS },
     { kind: "check", facts: {} },
+    { kind: "check", facts: { flagsBeyondTheSymptom: "`as const`.", misses: "casts in strings.", settingsTracedTo: "none." } },
+    { kind: "symptom", facts: { ...SYMPTOM_FACTS, howItIsSeen: "types.", breachACheckCouldName: "the field.", toNameTheBreach: "the declaring type." } },
     { kind: "rule", facts: { principle: "outside-risk-is-carried-on-purpose", standing: "accepted", namedBans: ["lodash"] } },
     { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted", lenses: ["di-discipline", "test-discipline"] } },
     { kind: "principle", facts: { lenses: ["zod-boundary"] } },

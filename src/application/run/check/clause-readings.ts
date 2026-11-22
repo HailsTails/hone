@@ -23,7 +23,7 @@ type ReadingRequest = {
 
 type HeadingScan = { readonly fence: string | undefined; readonly headings: readonly string[] };
 
-const BYTE_ORDER_MARK = /^﻿/u;
+const BYTE_ORDER_MARK = /^\uFEFF/u;
 
 const FENCE_OPENING = /^ {0,3}(`{3,}|~{3,})/;
 

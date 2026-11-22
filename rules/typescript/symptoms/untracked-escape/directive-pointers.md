@@ -1,12 +1,12 @@
 # directive-pointers
 
 ```json
-{}
+{
+  "settingsTracedTo": "reference form \"need a digit\": **nothing**."
+}
 ```
 
 TODOs, linter directives and `@ts-expect-error` without a tracker.
-
-- **Settings traced to:** reference form "need a digit": **nothing**.
 
 ## Flags
 - `.ts` and `.tsx` files, including tests and declaration files; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

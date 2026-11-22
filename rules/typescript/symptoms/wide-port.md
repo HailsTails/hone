@@ -26,8 +26,7 @@
   "recipes": [
     "narrow-ports"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "breachACheckCouldName": "the port."
 }
 ```
-
-- **The breach a check could name:** the port.

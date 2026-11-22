@@ -23,8 +23,12 @@
   "recipes": [
     "copy-never-write-in"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a file must fill an output object supplied by an external API",
+      "kind": "authorised-location"
+    }
+  ],
+  "howItIsSeen": "types for in-place methods."
 }
 ```
-
-- **How it is seen:** types for in-place methods.

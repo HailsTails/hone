@@ -7,7 +7,7 @@ import type { ContentHolding } from "../../../domain/language-layer/symptom-cata
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import { readVersionOneNames, VERSION_ONE_NAMES_SEGMENTS } from "../../disciplines-file/version-one-names.ts";
+import { NO_VERSION_ONE_NAMES, readVersionOneNames, type VersionOneNames, VERSION_ONE_NAMES_SEGMENTS } from "../../disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../engines/engine-registry.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { catalogueClausesOf } from "../rule-sets/installed-pieces.ts";
@@ -18,7 +18,13 @@ type CatalogueSource = {
   readonly directory: DirectoryPort;
   readonly path: Pick<PathPort, "join">;
   readonly ruleSetRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
 };
+
+const namesOfRuleSet = (request: CatalogueSource): Result<VersionOneNames, VersionTwoLoadFailure> =>
+  request.ruleSetRoot === request.installRoot
+    ? readVersionOneNames({ fileText: request.fileText, path: request.path.join({ segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS] }) })
+    : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
 
 const readSymptomCatalogue = (request: CatalogueSource): Result<ContentHolding, VersionTwoLoadFailure> => {
   const itemRoot = request.path.join({ segments: [request.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] });
@@ -26,7 +32,7 @@ const readSymptomCatalogue = (request: CatalogueSource): Result<ContentHolding, 
   if (!root.success) {
     return { outcome: "failed", error: { kind: "file-unreadable", path: itemRoot, detail: "is not an absolute path" } };
   }
-  const names = readVersionOneNames({ fileText: request.fileText, path: request.path.join({ segments: [request.ruleSetRoot, ...VERSION_ONE_NAMES_SEGMENTS] }) });
+  const names = namesOfRuleSet(request);
   if (names.outcome === "failed") {
     return names;
   }

@@ -1,12 +1,12 @@
 # explicit-any
 
 ```json
-{}
+{
+  "settingsTracedTo": "none."
+}
 ```
 
 An `any` type anywhere in a type position.
-
-- **Settings traced to:** none.
 
 ## Flags
 Needs ESLint adopted through the projection.

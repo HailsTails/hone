@@ -1,19 +1,16 @@
 # test-body
 
 ```json
-{}
+{
+  "flagsBeyondTheSymptom": "unit's own API (edition 1).",
+  "settingsTracedTo": "the edition: backwards compatibility for adopters since the npm release."
+}
 ```
 
-Branching, `let`, and computing methods in a test file; edition 2 adds short-circuits, optional chaining, `switch` and computing namespace calls.
-
-- **Flags beyond the symptom:** unit's own API (edition 1).
-- **Settings traced to:** the edition: backwards compatibility for adopters since the npm release.
+Computing and mutating string and array methods in a test file; edition 2 adds computing calls on `Object`, `Array` and `Math`. These run with the other [test-body checks](../../../README.md#checks-the-test-body-checks), which share their scope, editions and settings.
 
 ## Flags
-`CD-27#test-body-logic` has two editions. Edition 1 runs by default. Edition 2 adds the constructs below and becomes the default in the next major release; see [Settings](#settings) to run it now.
-
 Edition 1:
-- Test files only: `*.test.ts` and `*.test.tsx`. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
 - A method call with a computing or mutating name, wherever it could be the string or array method of that name: `map`, `filter`, `reduce`, `find`, `forEach`, `join`, `slice`, `split`, `replace`, `includes`, `sort`, `trim`, `keys`, `values`, `push`, `pop`, `splice`, `fill` and similar string and array methods.
 - Not flagged: a call with one of those names whose arguments no string or array method of that name accepts, which makes it the unit's own API. Either it passes an object literal where none of them takes an object, such as `paths.join({ segments: ["a", "b"] })`, or it passes more arguments than any of them takes, such as `screen.keys("x", true, true)`.
 - Still flagged, though they look like that:
@@ -25,37 +22,12 @@ Edition 1:
   - It misses a string or array method taken off its receiver before the call.
   - It does not trace a receiver that is a function parameter, an `it.each` row, a value from another module (even a relative module that re-exports a package), a name destructured from an object literal, or a property nested deeper in one, such as `deps.nested.path`; it reads these as the unit's own.
   - It releases a method of another built-in or library type that shares a name, such as a stream's `values` or `reduce`, when that call passes an object or more arguments than the string or array method takes.
-
   Only a check that reads types knows a receiver's identity, and Hone does not have one yet.
-- Loops are not flagged here; [loop-statement](../loop-keyword/loop-statement.md) covers them. `throw` is [throw-statement](../throw-or-catch-in-a-test/throw-statement.md).
 
 Edition 2 also flags:
-- Computing calls on a built-in namespace: `JSON.stringify`, `JSON.parse`, `Object.assign`, `Object.fromEntries`, `Array.from` and any `Math` method. A finding on `JSON.stringify` or `JSON.parse` names [Serialising or parsing JSON](../text-past-its-reader/test-body.md#serialising-or-parsing-json).
-
-Neither edition flags element access such as `calls[0]`, calls to free functions, a method called through a computed key, such as `rows["map"]`, or text built with a template literal. Helper files that tests import are not checked; only the test files themselves are.
-
-## Settings
-- `edition`: the edition this clause runs, `"1"` or `"2"`. Without it, the clause runs edition 1, or the latest edition when `checkEditions` in `disciplines.json` is `"latest"`.
-
-```jsonc
-"clauseSettings": {
-  "CD-27#test-body-logic": { "edition": "2" }
-}
-```
-
-## Example
-```ts
-const expected = rows.map((row) => row.id);
-```
-
-## Fix
-```ts
-expect(ids).toEqual(["a1", "b2"]);
-```
-Write the expected value out. A method call in the act step is flagged too, so move such logic into the unit under test.
+- Computing calls on a built-in namespace: `Object.assign`, `Object.fromEntries`, `Array.from` and any `Math` method. `JSON.stringify` and `JSON.parse` are [text-past-its-reader#test-body](../text-past-its-reader/test-body.md).
 
 ## Allowed forms in a test
-Each section shows a flagged form first, then the forms to write instead. Every form to write instead passes every audit and ESLint clause Hone ships, at each edition its check declares, and compiles under the compiler options [strictness-weakened](../strictness-weakened.md) requires. A test reads this page and holds every block on it to that. `assert`, `expect`, `it` and `vi` come from `vitest`, and a `declare const` line stands for the unit under test.
 
 ### A method that picks or tests an element
 ```ts

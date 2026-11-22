@@ -46,11 +46,10 @@
       "kind": "deviation",
       "at": "from Stub with vi.fn"
     }
-  ]
+  ],
+  "breachACheckCouldName": "the port it fills, by types.",
+  "toNameTheBreach": "types: the port the double fills, and its uncalled methods."
 }
 ```
 
 "Exact returns can use mockreturn or mockresolve".
-
-- **The breach a check could name:** the port it fills, by types.
-- **To name the breach, a check needs:** types: the port the double fills, and its uncalled methods.

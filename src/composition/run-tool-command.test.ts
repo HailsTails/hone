@@ -452,6 +452,7 @@ describe("TOOL_SUBCOMMANDS authorise, which has no version 1 form", () => {
 const CONFIG_ABSENT_LINE = "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n";
 
 const ALWAYS_RECORDABLE_KINDS: Readonly<Record<string, string>> = {
+  "/install/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [], "recordKinds": {} }',
   "/install/rules/record-kinds/authorised-location.md": '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n',
   "/install/rules/record-kinds/debt.md": '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n',
 };

@@ -1,13 +1,13 @@
 # companion-test-file
 
 ```json
-{}
+{
+  "misses": "an empty or non-running sibling.",
+  "settingsTracedTo": "`__tests__` skipped by default, on purpose (noise; the practice is not adopted). `exclude` is scope."
+}
 ```
 
 A production file with a runtime export and no `.test` sibling.
-
-- **Misses:** an empty or non-running sibling.
-- **Settings traced to:** `__tests__` skipped by default, on purpose (noise; the practice is not adopted). `exclude` is scope.
 
 ## Flags
 

@@ -32,8 +32,12 @@
   "recipes": [
     "tagged-union-and-exhaustive-switch"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a file must follow an external interface that uses a boolean",
+      "kind": "authorised-location"
+    }
+  ],
+  "howItIsSeen": "types to tell a predicate."
 }
 ```
-
-- **How it is seen:** types to tell a predicate.
