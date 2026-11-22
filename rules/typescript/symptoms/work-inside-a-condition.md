@@ -30,6 +30,12 @@
   "recipes": [
     "guard-clauses"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "an else kept for an outside reason",
+      "kind": "authorised-location",
+      "at": "in the file that keeps it"
+    }
+  ]
 }
 ```

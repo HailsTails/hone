@@ -30,7 +30,13 @@
   "recipes": [
     "one-argument-object"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a callback whose signature an outside library fixes",
+      "kind": "authorised-location",
+      "at": "in the file that implements it"
+    }
+  ]
 }
 ```
 

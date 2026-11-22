@@ -38,6 +38,12 @@
   "recipes": [
     "closure-factory"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a class an outside library requires, such as an adapter extending its base class",
+      "kind": "authorised-location",
+      "at": "in that adapter"
+    }
+  ]
 }
 ```
