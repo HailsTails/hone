@@ -12,7 +12,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 const ROOT = absoluteRootOf("/install");
 const INSTALL_ROOT = absoluteRootOf("/running-install");
 const CD_14 = disciplineIdOf("CD-14");
-const WALKER = "audit" as const;
+const WALKER = "audit";
 const DISCIPLINE_PATH = "/install/rules/CD-14/discipline.json";
 const PIECE_PATH = "/install/mechanisms/audit/CD-14/piece.json";
 
@@ -77,6 +77,19 @@ const DISCIPLINE = {
   clauses: [CLASS_SYNTAX, LIBRARY_CONSTRUCTION],
 };
 
+const READ_CLASS_SYNTAX = {
+  kind: "mechanical",
+  id: "class-syntax",
+  mechanisms: ["audit", "eslint"],
+  anchor: { kind: "keyword", keyword: "class" },
+  exceptions: "allowed",
+  cases: { flag: [FLAG_CASE], allow: [ALLOW_CASE] },
+};
+
+const READ_LIBRARY_CONSTRUCTION = { kind: "judgement", id: "library-construction", enforcedBy: "review" };
+
+const READ_DISCIPLINE = { version: 1, id: "CD-14", clauses: [READ_CLASS_SYNTAX, READ_LIBRARY_CONSTRUCTION] };
+
 const PIECE = {
   version: 1,
   discipline: "CD-14",
@@ -87,8 +100,7 @@ const PIECE = {
 const readDiscipline = (file: unknown) =>
   readDisciplineFile({
     fileText: fileTextReading({ text: JSON.stringify(file) }),
-    path: pathJoiningTo({ joined: DISCIPLINE_PATH }),
-    ruleSetRoot: ROOT,
+    path: DISCIPLINE_PATH,
     discipline: CD_14,
   });
 
@@ -99,7 +111,6 @@ const LOADED_DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: clauseIdOf("class-syntax"),
-      summary: CLASS_SYNTAX.summary,
       mechanisms: [WALKER, "eslint"],
       anchor: { kind: "keyword", keyword: "class" },
       exceptions: "allowed",
@@ -114,7 +125,6 @@ const SECOND_EDITION_DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: clauseIdOf("class-syntax"),
-      summary: CLASS_SYNTAX.summary,
       mechanisms: [WALKER],
       anchor: { kind: "keyword", keyword: "class" },
       exceptions: "allowed",
@@ -139,8 +149,8 @@ const readPiece = (file: unknown) =>
   });
 
 describe("readDisciplineFile", () => {
-  it("reads <ruleSetRoot>/rules/<discipline>/discipline.json into a discipline file", () => {
-    expect(readDiscipline(DISCIPLINE)).toEqual({ outcome: "ok", value: DISCIPLINE });
+  it("reads a discipline file, leaving out each clause's summary, which nothing reads", () => {
+    expect(readDiscipline(DISCIPLINE)).toEqual({ outcome: "ok", value: READ_DISCIPLINE });
   });
 
   it("reads a clause that names no exceptions policy as allowing exceptions", () => {
@@ -148,14 +158,17 @@ describe("readDisciplineFile", () => {
 
     expect(readDiscipline({ ...DISCIPLINE, clauses: [unstated, LIBRARY_CONSTRUCTION] })).toEqual({
       outcome: "ok",
-      value: DISCIPLINE,
+      value: READ_DISCIPLINE,
     });
   });
 
   it("reads a clause that refuses exceptions", () => {
     const refusing = { ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, exceptions: "refused" }, LIBRARY_CONSTRUCTION] };
 
-    expect(readDiscipline(refusing)).toEqual({ outcome: "ok", value: refusing });
+    expect(readDiscipline(refusing)).toEqual({
+      outcome: "ok",
+      value: { ...READ_DISCIPLINE, clauses: [{ ...READ_CLASS_SYNTAX, exceptions: "refused" }, READ_LIBRARY_CONSTRUCTION] },
+    });
   });
 
   it("allows a case fileName ending .d.ts", () => {
@@ -166,16 +179,18 @@ describe("readDisciplineFile", () => {
       ],
     };
 
-    expect(readDiscipline(file)).toEqual({ outcome: "ok", value: file });
+    expect(readDiscipline(file)).toEqual({
+      outcome: "ok",
+      value: { ...READ_DISCIPLINE, clauses: [{ ...READ_CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, fileName: "types/ambient.d.ts" }], allow: [ALLOW_CASE] } }] },
+    });
   });
 
-  it("reads the joined discipline path", () => {
+  it("reads the path it is given", () => {
     const fileText = fileTextReading({ text: JSON.stringify(DISCIPLINE) });
 
     readDisciplineFile({
       fileText,
-      path: pathJoiningTo({ joined: DISCIPLINE_PATH }),
-      ruleSetRoot: ROOT,
+      path: DISCIPLINE_PATH,
       discipline: CD_14,
     });
 
@@ -185,8 +200,7 @@ describe("readDisciplineFile", () => {
   it("is file-unreadable with the path when the file cannot be read", () => {
     const disciplineRead = readDisciplineFile({
       fileText: unreadableFileText(),
-      path: pathJoiningTo({ joined: DISCIPLINE_PATH }),
-      ruleSetRoot: ROOT,
+      path: DISCIPLINE_PATH,
       discipline: CD_14,
     });
 
@@ -199,8 +213,7 @@ describe("readDisciplineFile", () => {
   it("is file-malformed with the path when the text is not JSON", () => {
     const disciplineRead = readDisciplineFile({
       fileText: fileTextReading({ text: "{ not json" }),
-      path: pathJoiningTo({ joined: DISCIPLINE_PATH }),
-      ruleSetRoot: ROOT,
+      path: DISCIPLINE_PATH,
       discipline: CD_14,
     });
 
@@ -313,7 +326,10 @@ describe("readDisciplineFile", () => {
   it("reads a case that names the edition it runs under", () => {
     const file = { ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "2" }], allow: [ALLOW_CASE] } }] };
 
-    expect(readDiscipline(file)).toEqual({ outcome: "ok", value: file });
+    expect(readDiscipline(file)).toEqual({
+      outcome: "ok",
+      value: { ...READ_DISCIPLINE, clauses: [{ ...READ_CLASS_SYNTAX, cases: { flag: [{ ...FLAG_CASE, edition: "2" }], allow: [ALLOW_CASE] } }] },
+    });
   });
 
   it("refuses a case edition that is not a whole number as rule-set-invalid", () => {

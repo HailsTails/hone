@@ -11,7 +11,7 @@ const PATH = createDefaultPathPort({});
 
 const RULE_SET_FILES = createRuleSetFiles({ fileText: createDefaultFileTextPort({}), path: PATH });
 
-const AUDIT = "audit" as const;
+const AUDIT = "audit";
 
 const ESLINT = "eslint" as const;
 
@@ -32,7 +32,6 @@ const mechanicalDiscipline = (request: { readonly id: string; readonly clause: s
     {
       kind: "mechanical",
       id: clauseIdSchema.parse(request.clause),
-      summary: "a mechanical clause",
       mechanisms: [request.mechanism],
       anchor: { kind: "keyword", keyword: "class" },
       exceptions: "allowed",
@@ -45,14 +44,14 @@ const TM_1 = mechanicalDiscipline({ id: "TM-1", clause: "no-tmp-files", mechanis
 
 describe("createRuleSetFiles discipline", () => {
   it("reads a discipline file present on disk", () => {
-    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, discipline: disciplineIdOf("TM-1") })).toMatchObject({
+    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT, discipline: disciplineIdOf("TM-1") })).toMatchObject({
       outcome: "ok",
       value: { held: "present", file: { id: "TM-1", clauses: [{ id: "no-tmp-files", kind: "mechanical" }] } },
     });
   });
 
   it("holds nothing for a discipline file absent from disk", () => {
-    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, discipline: disciplineIdOf("CD-99") })).toEqual({
+    expect(RULE_SET_FILES.discipline({ ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT, discipline: disciplineIdOf("CD-99") })).toEqual({
       outcome: "ok",
       value: { held: "absent" },
     });

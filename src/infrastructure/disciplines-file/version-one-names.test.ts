@@ -29,7 +29,7 @@ describe("versionOneNamesOf", () => {
       versionOneNamesOf({
         document: {
           version: 1,
-          clauses: [{ clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: ["date-used-directly#clock-sources"] }],
+          clauses: [{ clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: ["date-used-directly#clock-sources"], anchor: { kind: "file" } }],
           recordKinds: { debt: "file-carve-out" },
         },
       }),
@@ -37,6 +37,7 @@ describe("versionOneNamesOf", () => {
       outcome: "ok",
       value: {
         clauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "outside-the-cases" } }],
+        namedClauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), kind: "mechanical", anchor: { kind: "file" } }],
         clauseOfCheck: new Map([["date-used-directly#clock-sources", clauseAddressSchema.parse("CD-17#clock-sources")]]),
         formatsOfToday: { debt: "file-carve-out" },
       },
@@ -56,13 +57,32 @@ describe("versionOneNamesOf", () => {
         document: {
           version: 1,
           clauses: [
-            { clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: ["a#b"] },
-            { clause: "CD-18#other", sight: { kind: "outside-the-cases" }, checks: ["a#b"] },
+            { clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: ["a#b"], anchor: { kind: "file" } },
+            { clause: "CD-18#other", sight: { kind: "outside-the-cases" }, checks: ["a#b"], anchor: { kind: "file" } },
           ],
           recordKinds: {},
         },
       }),
     ).toEqual({ outcome: "failed", error: "✖ a#b is named by more than one clause" });
+  });
+
+  it("names a clause with no checks and no anchor a judgement clause", () => {
+    expect(versionOneNamesOf({ document: { version: 1, clauses: [{ clause: "CD-32#outside", sight: { kind: "outside-the-cases" }, checks: [] }], recordKinds: {} } })).toMatchObject({
+      outcome: "ok",
+      value: { namedClauses: [{ clause: clauseAddressSchema.parse("CD-32#outside"), kind: "judgement" }] },
+    });
+  });
+
+  it("fails when a clause names a check without an anchor", () => {
+    expect(
+      versionOneNamesOf({ document: { version: 1, clauses: [{ clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: ["a#b"] }], recordKinds: {} } }),
+    ).toEqual({ outcome: "failed", error: "✖ CD-17#clock-sources needs an anchor exactly when it names a check" });
+  });
+
+  it("fails when a clause has an anchor but names no check", () => {
+    expect(
+      versionOneNamesOf({ document: { version: 1, clauses: [{ clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: [], anchor: { kind: "file" } }], recordKinds: {} } }),
+    ).toEqual({ outcome: "failed", error: "✖ CD-17#clock-sources needs an anchor exactly when it names a check" });
   });
 
   it("fails when a check is no check address", () => {
@@ -81,11 +101,12 @@ describe("versionOneNamesOf", () => {
 
 describe("readVersionOneNames", () => {
   it("gives the names the map's text holds", () => {
-    const text = '{ "version": 1, "clauses": [{ "clause": "CD-17#clock-sources", "sight": { "kind": "one-symptom", "symptom": "date-used-directly" }, "checks": ["date-used-directly#clock-sources"] }], "recordKinds": {} }';
+    const text = '{ "version": 1, "clauses": [{ "clause": "CD-17#clock-sources", "sight": { "kind": "one-symptom", "symptom": "date-used-directly" }, "checks": ["date-used-directly#clock-sources"], "anchor": { "kind": "file" } }], "recordKinds": {} }';
     expect(readVersionOneNames({ fileText: fileTextHolding({ text }), path: PATH })).toEqual({
       outcome: "ok",
       value: {
         clauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
+        namedClauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), kind: "mechanical", anchor: { kind: "file" } }],
         clauseOfCheck: new Map([["date-used-directly#clock-sources", clauseAddressSchema.parse("CD-17#clock-sources")]]),
         formatsOfToday: {},
       },
@@ -106,7 +127,7 @@ describe("readVersionOneNames", () => {
   });
 
   it("fails file-malformed with the reason when the map's text is not the names map", () => {
-    const text = '{ "version": 1, "clauses": [{ "clause": "CD-17#clock-sources", "sight": { "kind": "outside-the-cases" }, "checks": ["a#b"] }, { "clause": "CD-18#other", "sight": { "kind": "outside-the-cases" }, "checks": ["a#b"] }], "recordKinds": {} }';
+    const text = '{ "version": 1, "clauses": [{ "clause": "CD-17#clock-sources", "sight": { "kind": "outside-the-cases" }, "checks": ["a#b"], "anchor": { "kind": "file" } }, { "clause": "CD-18#other", "sight": { "kind": "outside-the-cases" }, "checks": ["a#b"], "anchor": { "kind": "file" } }], "recordKinds": {} }';
     expect(readVersionOneNames({ fileText: fileTextHolding({ text }), path: PATH })).toEqual({
       outcome: "failed",
       error: { kind: "file-malformed", path: PATH, detail: "✖ a#b is named by more than one clause" },

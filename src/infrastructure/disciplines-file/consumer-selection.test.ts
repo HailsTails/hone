@@ -14,13 +14,14 @@ import {
   ruleSetRootOf,
   selectionFrom,
 } from "./consumer-selection.ts";
-import type { Held, RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
+import type { RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
+import type { Held } from "../../application/ports/rule-set/rule-set-files.ts";
 import { selectionFileOf } from "./selection-file.ts";
 import type { ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
-import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 const INSTALL_ROOT = absoluteRootOf("/install");
@@ -28,8 +29,8 @@ const SELECTION_PATH = "/repo/disciplines.json";
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
-const AUDIT = "audit" as const;
-const ESLINT = "eslint" as const;
+const AUDIT = "audit";
+const ESLINT = "eslint";
 
 const ONE_EDITION = clauseEditionsSchema.parse(undefined);
 const EDITIONS_ONE_AND_TWO = clauseEditionsSchema.parse(["1", "2"]);
@@ -42,7 +43,6 @@ const mechanical = (request: {
 }): ClauseDefinition => ({
   kind: "mechanical",
   id: clauseIdSchema.parse(request.id),
-  summary: "a mechanical clause",
   mechanisms: request.mechanisms,
   anchor: { kind: "keyword", keyword: request.keyword },
   exceptions: "allowed",
@@ -54,7 +54,6 @@ const auditClause = (id: string): ClauseDefinition => mechanical({ id, mechanism
 const LIBRARY_CONSTRUCTION: ClauseDefinition = {
   kind: "judgement",
   id: clauseIdOf("library-construction"),
-  summary: "wrap libraries",
   enforcedBy: "review",
 };
 
@@ -322,8 +321,8 @@ describe("selectionFrom selecting clauses", () => {
       },
     });
     expect(rules.discipline.mock.calls).toEqual([
-      [{ ruleSetRoot: "/install", discipline: "CD-14" }],
-      [{ ruleSetRoot: "/repo/team-rules", discipline: "TM-1" }],
+      [{ ruleSetRoot: "/install", installRoot: "/install", discipline: "CD-14" }],
+      [{ ruleSetRoot: "/repo/team-rules", installRoot: "/install", discipline: "TM-1" }],
     ]);
   });
 
@@ -409,7 +408,7 @@ describe("selectionFrom selecting clauses", () => {
       outcome: "ok",
       value: { bindings: [{ clause: { pieceRoot: "/repo/mechanisms/audit/TM-1" } }] },
     });
-    expect(rules.discipline.mock.calls).toEqual([[{ ruleSetRoot: "/repo", discipline: "TM-1" }]]);
+    expect(rules.discipline.mock.calls).toEqual([[{ ruleSetRoot: "/repo", installRoot: "/install", discipline: "TM-1" }]]);
   });
 
   it("lists the unlisted mechanical clauses of an adopted discipline as uncovered, never its judgement clauses", () => {
@@ -532,8 +531,8 @@ describe("selectionFrom reading each rule-set file", () => {
       },
     });
     expect(rules.discipline.mock.calls).toEqual([
-      [{ ruleSetRoot: "/install", discipline: "CD-14" }],
-      [{ ruleSetRoot: "/repo/team-rules", discipline: "CD-14" }],
+      [{ ruleSetRoot: "/install", installRoot: "/install", discipline: "CD-14" }],
+      [{ ruleSetRoot: "/repo/team-rules", installRoot: "/install", discipline: "CD-14" }],
     ]);
   });
 });

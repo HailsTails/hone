@@ -1,0 +1,260 @@
+{
+  "flag": [
+    {
+      "name": "if statement",
+      "fileName": "branch.test.ts",
+      "source": "const ok = true;\nif (ok) {\n  expect(ok).toBe(true);\n}\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "let declaration",
+      "fileName": "mutable.test.ts",
+      "source": "let total = 1;\nexpect(total).toBe(1);\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "ternary expression",
+      "fileName": "ternary.test.ts",
+      "source": "const ok = true;\nconst expected = ok ? 1 : 2;\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "computing method call",
+      "fileName": "compute.test.ts",
+      "source": "const rows = [{ id: 1 }];\nconst expected = rows.map((row) => row.id);\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "nullish fallback",
+      "fileName": "fallback.test.ts",
+      "source": "const given: number | undefined = undefined;\nconst expected = given ?? 1;\n",
+      "expectedLines": [
+        2
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "logical operator",
+      "fileName": "logical.test.ts",
+      "source": "const ready = true;\nconst expected = ready && 1;\n",
+      "expectedLines": [
+        2
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "optional call",
+      "fileName": "optional.test.ts",
+      "source": "const observers: { enter?: () => void } = {};\nobservers.enter?.();\n",
+      "expectedLines": [
+        2
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "switch statement",
+      "fileName": "switch.test.ts",
+      "source": "const kind = \"a\";\nswitch (kind) {\n  case \"a\":\n    break;\n}\n",
+      "expectedLines": [
+        2
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "computing namespace call",
+      "fileName": "serialise.test.ts",
+      "source": "const row = { id: 1 };\nconst expected = JSON.stringify(row);\n",
+      "expectedLines": [
+        2
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "branching under the second edition",
+      "fileName": "branch-second.test.ts",
+      "source": "const ok = true;\nif (ok) {\n  expect(ok).toBe(true);\n}\n",
+      "expectedLines": [
+        2
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "join on node:path with several segments",
+      "fileName": "node-path.test.ts",
+      "source": "import path from \"node:path\";\nexpect(path.join(\"a\", \"b\", \"c\")).toBe(\"a/b/c\");\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "a library helper given an object",
+      "fileName": "library.test.ts",
+      "source": "import _ from \"lodash\";\nexpect(_.find([{ id: \"a\" }], { id: \"a\" }, 0, 1)).toEqual({ id: \"a\" });\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "Object.entries given an object",
+      "fileName": "object-entries.test.ts",
+      "source": "expect(Object.entries({ a: 1 })).toEqual([[\"a\", 1]]);\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "join on a dynamic import of node:path",
+      "fileName": "dynamic-path.test.ts",
+      "source": "const path = await import(\"node:path\");\nexpect(path.join(\"a\", \"b\", \"c\")).toBe(\"a/b/c\");\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "join on a required node:path",
+      "fileName": "required-path.test.ts",
+      "source": "const path = require(\"node:path\");\nexpect(path.join(\"a\", \"b\", \"c\")).toBe(\"a/b/c\");\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "join on an import-equals of node:path",
+      "fileName": "import-equals-path.test.ts",
+      "source": "import path = require(\"node:path\");\nexpect(path.join(\"a\", \"b\", \"c\")).toBe(\"a/b/c\");\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "join on a member destructured from node:path",
+      "fileName": "posix-path.test.ts",
+      "source": "import path from \"node:path\";\nconst { posix } = path;\nexpect(posix.join(\"a\", \"b\", \"c\")).toBe(\"a/b/c\");\n",
+      "expectedLines": [
+        3
+      ]
+    },
+    {
+      "name": "join on node:path held in an object literal",
+      "fileName": "held-path.test.ts",
+      "source": "import path from \"node:path\";\nconst deps = { path };\nexpect(deps.path.join(\"a\", \"b\", \"c\")).toBe(\"a/b/c\");\n",
+      "expectedLines": [
+        3
+      ]
+    },
+    {
+      "name": "entries on an alias of Object",
+      "fileName": "object-alias.test.ts",
+      "source": "const o = Object;\nexpect(o.entries({ a: 1 })).toEqual([[\"a\", 1]]);\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "find given an object as this",
+      "fileName": "find-this.test.ts",
+      "source": "declare const rows: readonly { readonly id: string }[];\ndeclare const isA: (row: { readonly id: string }) => boolean;\nexpect(rows.find(isA, {})).toEqual({ id: \"a\" });\n",
+      "expectedLines": [
+        3
+      ]
+    },
+    {
+      "name": "split given a splitter object",
+      "fileName": "split-protocol.test.ts",
+      "source": "declare const text: string;\ndeclare const splitter: (text: string) => string[];\nexpect(text.split({ [Symbol.split]: splitter })).toEqual([\"a\"]);\n",
+      "expectedLines": [
+        3
+      ]
+    },
+    {
+      "name": "includes given an object",
+      "fileName": "includes-object.test.ts",
+      "source": "const rows = [{ id: \"a\" }];\nexpect(rows.includes({ id: \"a\" })).toBe(false);\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "reduce given an object to start from",
+      "fileName": "reduce-object.test.ts",
+      "source": "declare const sum: (total: { readonly total: number }, row: number) => { readonly total: number };\nexpect([1].reduce(sum, { total: 0 })).toEqual({ total: 1 });\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "a port method given a variable",
+      "fileName": "port-variable.test.ts",
+      "source": "declare const paths: { readonly join: (request: { readonly segments: readonly string[] }) => string };\nconst request = { segments: [\"a\"] };\nexpect(paths.join(request)).toBe(\"a\");\n",
+      "expectedLines": [
+        3
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "hardcoded arrange act assert",
+      "fileName": "straight.test.ts",
+      "source": "const rows = [1, 2];\nexpect(rows).toEqual([1, 2]);\n",
+      "expectedLines": []
+    },
+    {
+      "name": "branching in production code",
+      "fileName": "branch.ts",
+      "source": "export const pick = (ok: boolean): number => {\n  if (ok) return 1;\n  return 2;\n};\n",
+      "expectedLines": []
+    },
+    {
+      "name": "throw is covered by CD-10",
+      "fileName": "throws.test.ts",
+      "source": "throw new Error(\"bad\");\n",
+      "expectedLines": []
+    },
+    {
+      "name": "nullish fallback under the first edition",
+      "fileName": "fallback.test.ts",
+      "source": "const given: number | undefined = undefined;\nconst expected = given ?? 1;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "hardcoded expectations under the second edition",
+      "fileName": "straight-second.test.ts",
+      "source": "const rows = [1, 2];\nexpect(rows).toEqual([1, 2]);\n",
+      "expectedLines": [],
+      "edition": "2"
+    },
+    {
+      "name": "element access under the second edition",
+      "fileName": "index.test.ts",
+      "source": "const calls = [[1]];\nexpect(calls[0]).toEqual([1]);\n",
+      "expectedLines": [],
+      "edition": "2"
+    },
+    {
+      "name": "the adopter's own port method given an object",
+      "fileName": "own-port.test.ts",
+      "source": "declare const paths: { readonly join: (request: { readonly segments: readonly string[] }) => string };\nexpect(paths.join({ segments: [\"a\", \"b\"] })).toBe(\"a/b\");\n",
+      "expectedLines": []
+    },
+    {
+      "name": "the adopter's own method given more arguments than any built-in of its name takes",
+      "fileName": "own-arity.test.ts",
+      "source": "declare const screen: { readonly keys: (text: string, literal: boolean, submit: boolean) => void };\nscreen.keys(\"x\", true, true);\n",
+      "expectedLines": []
+    },
+    {
+      "name": "the adopter's own port imported from a relative module",
+      "fileName": "own-import.test.ts",
+      "source": "import { paths } from \"./paths.ts\";\nexpect(paths.join({ segments: [\"a\"] })).toBe(\"a\");\n",
+      "expectedLines": []
+    }
+  ]
+}

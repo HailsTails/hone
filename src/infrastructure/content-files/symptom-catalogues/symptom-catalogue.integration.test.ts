@@ -1,15 +1,10 @@
 import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
-import { assert, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { readBoundCatalogue } from "./bound-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { TEST_BODY_SECTIONS } from "../../engines/audit/CD-27/test-body-logic.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { readDisciplineFile } from "../rule-sets/rule-set-reader.ts";
-import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
 import type {
   Case,
@@ -25,75 +20,12 @@ import type {
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/symptoms/symptom-notes.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressText, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
-import type { Result } from "../../../domain/result.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-
-type CatalogueCoverage = {
-  readonly uncatalogued: readonly string[];
-  readonly unknown: readonly string[];
-  readonly unreadable: readonly LoadFailure[];
-};
-
-type CheckCoverage = {
-  readonly unchecked: readonly string[];
-  readonly unmechanical: readonly string[];
-  readonly engineMismatches: readonly string[];
-};
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 type CheckAddressRow = { readonly address: string; readonly clause: string };
-
-type DisciplineSource = {
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly ruleSetRoot: AbsolutePath;
-};
-
-const disciplineFileIn = (request: DisciplineSource & { readonly folder: string }): Result<DisciplineFile, LoadFailure> => {
-  const discipline = disciplineIdSchema.safeParse(request.folder);
-  return discipline.success
-    ? readDisciplineFile({ ...request, discipline: discipline.data })
-    : { outcome: "failed", error: { kind: "unknown-discipline", address: request.folder } };
-};
-
-const definedClausesOf = (request: { readonly discipline: DisciplineFile }): readonly string[] =>
-  request.discipline.clauses.map((clause) => `${request.discipline.id}#${clause.id}`);
-
-type MechanicalClause = { readonly clause: string; readonly mechanisms: readonly string[] };
-
-const mechanicalClausesOf = (request: { readonly discipline: DisciplineFile }): readonly MechanicalClause[] =>
-  request.discipline.clauses.flatMap((clause) =>
-    clause.kind === "mechanical" ? [{ clause: `${request.discipline.id}#${clause.id}`, mechanisms: clause.mechanisms } satisfies MechanicalClause] : [],
-  );
-
-const mechanismSetText = (request: { readonly mechanisms: readonly string[] }): string => [...request.mechanisms].sort().join(" ");
-
-const engineFitOf = (request: { readonly check: Check; readonly mechanical: MechanicalClause }): "fits" | "differs" =>
-  mechanismSetText({ mechanisms: request.check.engines.map((engine) => engine.mechanism) }) === mechanismSetText(request.mechanical)
-    ? "fits"
-    : "differs";
-
-const checkCoverageOf = (
-  request: DisciplineSource & { readonly catalogue: SymptomCatalogue; readonly disciplines: readonly string[] },
-): CheckCoverage => {
-  const mechanical = request.disciplines.flatMap((folder) => {
-    const reading = disciplineFileIn({ ...request, folder });
-    return reading.outcome === "ok" ? mechanicalClausesOf({ discipline: reading.value }) : [];
-  });
-  const { checks } = request.catalogue;
-  const clauseOf = (check: Check): string => clauseAddressText({ address: check.clause });
-  return {
-    unchecked: mechanical.filter((entry) => !checks.some((check) => clauseOf(check) === entry.clause)).map((entry) => entry.clause),
-    unmechanical: checks.filter((check) => !mechanical.some((entry) => entry.clause === clauseOf(check))).map((check) => checkAddressOf({ check })),
-    engineMismatches: checks
-      .filter((check) => mechanical.some((entry) => entry.clause === clauseOf(check) && engineFitOf({ check, mechanical: entry }) === "differs"))
-      .map((check) => checkAddressOf({ check })),
-  };
-};
 
 const checkAddressTableOf = (request: { readonly catalogue: SymptomCatalogue }): readonly CheckAddressRow[] =>
   request.catalogue.checks.map((check) => ({ address: checkAddressOf({ check }), clause: clauseAddressText({ address: check.clause }) }));
@@ -112,19 +44,6 @@ const unresolvedAddressesOf = (request: { readonly catalogue: SymptomCatalogue }
   return [...new Set([...fromChecks, ...fromClauses].map((check) => checkAddressOf({ check })))];
 };
 
-const catalogueCoverageOf = (
-  request: DisciplineSource & { readonly catalogue: SymptomCatalogue; readonly disciplines: readonly string[] },
-): CatalogueCoverage => {
-  const readings = request.disciplines.map((folder) => disciplineFileIn({ ...request, folder }));
-  const defined = readings.flatMap((reading) => (reading.outcome === "ok" ? definedClausesOf({ discipline: reading.value }) : []));
-  const catalogued = request.catalogue.clauses.map(({ clause }) => clauseAddressText({ address: clause }));
-  return {
-    uncatalogued: defined.filter((address) => !catalogued.includes(address)),
-    unknown: catalogued.filter((address) => !defined.includes(address)),
-    unreadable: readings.flatMap((reading) => (reading.outcome === "failed" ? [reading.error] : [])),
-  };
-};
-
 const formSectionsOf = (request: { readonly catalogue: SymptomCatalogue; readonly clause: string }): readonly string[] =>
   request.catalogue.clauses
     .filter(({ clause }) => clauseAddressText({ address: clause }) === request.clause)
@@ -135,20 +54,8 @@ const correctUseNotesOf = (request: { readonly guide: CatalogueGuide }): readonl
     .filter((symptom) => symptom.correctUses.length > 0)
     .map((symptom) => symptomNoteLineOf({ ...request.guide, symptom }));
 
-const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
-
-const foldersUnder = (request: { readonly table: Readonly<Record<string, string>>; readonly prefix: string }): readonly string[] =>
-  [
-    ...new Set(
-      Object.keys(request.table)
-        .filter((key) => key.startsWith(request.prefix))
-        .map((key) => folderOf({ key })),
-    ),
-  ].sort();
-
 const proposedReasonsOf = (request: { readonly recipes: readonly Recipe[] }): readonly string[] =>
   request.recipes.filter((recipe) => recipe.reason.standing === "proposed").map((recipe) => recipe.name);
-
 
 type UnowedPointer = { readonly symptom: string; readonly case: string; readonly pointer: string };
 
@@ -190,10 +97,6 @@ declare global {
 }
 
 const REPO_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }));
-
-const disciplineTexts = import.meta.glob(["./rules/*/discipline.json"], { base: "../../../../", query: "?raw", import: "default", eager: true });
-
-const DISCIPLINES = foldersUnder({ table: disciplineTexts, prefix: "./rules/" });
 
 const FILE_TEXT = createDefaultFileTextPort({});
 
@@ -278,8 +181,6 @@ const OUTSIDE_ADDRESSES = [
 ];
 
 describe("the catalogue guards over written-out pages and catalogues, so each can fail", () => {
-  const INSTALL_ROOT = absoluteRootOf("/install");
-
   const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
   const AUTHORISED_LOCATION: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
@@ -312,8 +213,6 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 
   const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-  const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
-
   const MUTATION_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-mutation") };
 
   const REASSIGNMENT_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") };
@@ -328,72 +227,9 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 
   const MUTATION_CHECK: Check = { name: "parameter-mutation", symptom: WRITE_INTO_A_PARAMETER, clause: MUTATION_CLAUSE, engines: [WALKER], forms: [] };
 
-  const CD44_JUDGEMENT_FILE: FileTextPort = {
-    read: vi.fn<FileTextPort["read"]>().mockReturnValue({
-      outcome: "ok",
-      value:
-        '{\n  "version": 1,\n  "id": "CD-44",\n  "clauses": [\n    { "kind": "judgement", "id": "parameter-mutation", "summary": "Write into no parameter.", "enforcedBy": "review" },\n    { "kind": "judgement", "id": "parameter-reassignment", "summary": "Rebind no parameter.", "enforcedBy": "review" }\n  ]\n}',
-    }),
-    exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
-    write: vi.fn<FileTextPort["write"]>(),
-  };
-
-  const CD44_MECHANICAL_FILE: FileTextPort = {
-    read: vi.fn<FileTextPort["read"]>().mockReturnValue({
-      outcome: "ok",
-      value:
-        '{\n  "version": 1,\n  "id": "CD-44",\n  "clauses": [\n    {\n      "kind": "mechanical",\n      "id": "parameter-mutation",\n      "summary": "Write into no parameter.",\n      "mechanisms": ["audit"],\n      "anchor": { "kind": "file" },\n      "cases": { "flag": [{ "name": "push", "fileName": "push.ts", "source": "export const append = (list: number[]): void => {\\n  list.push(1);\\n};\\n", "expectedLines": [2] }], "allow": [{ "name": "copy", "fileName": "copy.ts", "source": "export const append = (list: readonly number[]): readonly number[] => [...list, 1];\\n", "expectedLines": [] }] }\n    },\n    {\n      "kind": "mechanical",\n      "id": "parameter-reassignment",\n      "summary": "Rebind no parameter.",\n      "mechanisms": ["eslint"],\n      "anchor": { "kind": "keyword", "keyword": "=" },\n      "cases": { "flag": [{ "name": "assign", "fileName": "bump.ts", "source": "export const bump = (count: number): number => {\\n  count = 2;\\n  return count;\\n};\\n", "expectedLines": [2] }], "allow": [{ "name": "new value", "fileName": "next.ts", "source": "export const next = (count: number): number => count + 1;\\n", "expectedLines": [] }] }\n    },\n    { "kind": "judgement", "id": "parameter-intent", "summary": "Say what a parameter is for.", "enforcedBy": "review" }\n  ]\n}',
-    }),
-    exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
-    write: vi.fn<FileTextPort["write"]>(),
-  };
-
   const ONE_PLACE: Principle = { name: "one-place-decides", title: "One place decides" };
 
   const DOER: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE, standing: "accepted" };
-
-  it("names each clause a discipline defines that the catalogue lacks, and each catalogued clause no discipline defines", () => {
-    expect(
-      catalogueCoverageOf({
-        catalogue: {
-          ...NOTHING_CATALOGUED,
-          clauses: [
-            { clause: MUTATION_CLAUSE, sight: { kind: "one-symptom", symptom: WRITE_INTO_A_PARAMETER } },
-            { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, sight: { kind: "one-symptom", symptom: REBINDING } },
-          ],
-        },
-        fileText: CD44_JUDGEMENT_FILE,
-        path: PATH,
-        ruleSetRoot: INSTALL_ROOT,
-        disciplines: ["CD-44"],
-      }),
-    ).toEqual({ uncatalogued: ["CD-44#parameter-reassignment"], unknown: ["CD-27#test-body-logic"], unreadable: [] });
-  });
-
-  it("names a mechanical clause with no check, a check on a judgement clause, and a check run by engines other than its clause's mechanisms", () => {
-    expect(
-      checkCoverageOf({
-        catalogue: {
-          ...NOTHING_CATALOGUED,
-          engines: [WALKER, ESLINT],
-          symptoms: [WRITE_INTO_A_PARAMETER, REBINDING],
-          clauses: PARAMETER_CLAUSES,
-          checks: [
-            { ...MUTATION_CHECK, engines: [WALKER, ESLINT] },
-            { name: "parameter-intent", symptom: REBINDING, clause: INTENT_CLAUSE, engines: [WALKER], forms: [] },
-          ],
-        },
-        fileText: CD44_MECHANICAL_FILE,
-        path: PATH,
-        ruleSetRoot: INSTALL_ROOT,
-        disciplines: ["CD-44"],
-      }),
-    ).toEqual({
-      unchecked: ["CD-44#parameter-reassignment"],
-      unmechanical: ["rebinding#parameter-intent"],
-      engineMismatches: ["write-into-a-parameter#parameter-mutation"],
-    });
-  });
 
   it("names an address that resolves to an earlier check holding the same address", () => {
     expect(
@@ -445,35 +281,11 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     expect(reading).toMatchObject({ outcome: "ok", value: { held: "catalogue" } });
   });
 
-  it("lists each clause of every rules/*/discipline.json exactly once, and no other clause", () => {
-    assert(reading.outcome === "ok");
-    assert(reading.value.held === "catalogue");
-
-    expect(DISCIPLINES).toHaveLength(40);
-    expect(
-      catalogueCoverageOf({ catalogue: reading.value.catalogue, fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT, disciplines: DISCIPLINES }),
-    ).toEqual({
-      uncatalogued: [],
-      unknown: [],
-      unreadable: [],
-    });
-    expect(reading.value.catalogue.clauses).toHaveLength(60);
-  });
-
   it("reads CD-27#test-body-logic by form, one symptom for each section its findings name, in the walker's order", () => {
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
 
     expect(formSectionsOf({ catalogue: reading.value.catalogue, clause: "CD-27#test-body-logic" })).toEqual(TEST_BODY_SECTIONS);
-  });
-
-  it("gives each mechanical clause of every rules/*/discipline.json its checks, run by the engines of its mechanisms, and no check to a judgement clause", () => {
-    assert(reading.outcome === "ok");
-    assert(reading.value.held === "catalogue");
-
-    expect(
-      checkCoverageOf({ catalogue: reading.value.catalogue, fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT, disciplines: DISCIPLINES }),
-    ).toEqual({ unchecked: [], unmechanical: [], engineMismatches: [] });
   });
 
   it("holds one outside address for each check, beside the clause it answers today", () => {

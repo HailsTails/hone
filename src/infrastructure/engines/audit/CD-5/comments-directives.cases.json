@@ -1,0 +1,114 @@
+{
+  "flag": [
+    {
+      "name": "todo without tracker",
+      "fileName": "bare-todo.ts",
+      "source": "// TODO: rename this for clarity\nexport const someValue = 1;\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "biome-ignore without tracker",
+      "fileName": "bare-biome-ignore.ts",
+      "source": "export const portNumber = (): number => {\n  // biome-ignore lint/style/noMagicNumbers: literal port\n  return 8080;\n};\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "ts-expect-error without tracker",
+      "fileName": "expect-error.ts",
+      "source": "// @ts-expect-error\nexport const broken: number = \"text\";\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "eslint-disable with blank parentheses",
+      "fileName": "blank-tracker.ts",
+      "source": "// eslint-disable-next-line no-console ( )\nconsole.log(1);\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "biome-ignore with a word in parentheses",
+      "fileName": "word-tracker.ts",
+      "source": "// biome-ignore lint/style/noMagicNumbers: literal port (legacy)\nexport const portNumber = 8080;\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "todo with empty parentheses",
+      "fileName": "empty-todo.ts",
+      "source": "// TODO() rename this\nexport const someValue = 1;\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "ts-ignore without tracker",
+      "fileName": "ts-ignore.ts",
+      "source": "// @ts-ignore\nexport const broken: number = \"text\";\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "ts-nocheck in a triple-slash comment without tracker",
+      "fileName": "ts-nocheck.ts",
+      "source": "/// @ts-nocheck\nexport const broken: number = \"text\";\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "ts-ignore on the last line of a block comment without tracker",
+      "fileName": "block-ts-ignore.ts",
+      "source": "/*\n * legacy shape\n * @ts-ignore */\nexport const broken: number = \"text\";\n",
+      "expectedLines": [
+        1
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "todo with spec tracker",
+      "fileName": "tracked-todo.ts",
+      "source": "// TODO(spec-42) rename this\nexport const someValue = 1;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "biome-ignore with spec tracker",
+      "fileName": "tracked-ignore.ts",
+      "source": "// biome-ignore lint/style/noMagicNumbers: literal port (spec-7)\nexport const portNumber = 8080;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "biome-ignore with issue reference",
+      "fileName": "issue-ignore.ts",
+      "source": "// biome-ignore lint/style/noMagicNumbers: literal port (#42)\nexport const portNumber = 8080;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "ts-expect-error with ticket reference",
+      "fileName": "tracked-expect-error.ts",
+      "source": "// @ts-expect-error legacy shape (PROJ-7)\nexport const broken: number = \"text\";\n",
+      "expectedLines": []
+    },
+    {
+      "name": "ts-nocheck in a block comment, which TypeScript does not honour",
+      "fileName": "block-ts-nocheck.ts",
+      "source": "/* @ts-nocheck */\nexport const checked: number = 1;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "ordinary comment is left to review",
+      "fileName": "plain.ts",
+      "source": "// Ordinary prose remains outside this detector.\nexport type ProfileName = string;\n",
+      "expectedLines": []
+    }
+  ]
+}

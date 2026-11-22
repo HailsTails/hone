@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { catalogueFileOf, type HeldBesideItems, type PlacedItem } from "./item-document.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
 
 const PRINCIPLE: PlacedItem = { name: "tests-are-ours", within: undefined, title: "Tests are ours", item: { kind: "principle", facts: {} } };
 
@@ -31,7 +32,7 @@ const CHECK: PlacedItem = {
 };
 
 const BESIDE: HeldBesideItems = {
-  engines: [{ name: "walker", mechanism: mechanismIdSchema.parse("audit") }],
+  engines: [{ name: "walker", mechanism: "audit" }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
   formatsOfToday: { debt: "file-carve-out" },

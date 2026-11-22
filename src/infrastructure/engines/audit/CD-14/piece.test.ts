@@ -41,7 +41,6 @@ const CD14: DisciplineFile = {
     {
       kind: "judgement",
       id: clauseIdOf("class-syntax"),
-      summary: "no authored class syntax",
       enforcedBy: "review",
     },
   ],

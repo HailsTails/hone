@@ -13,7 +13,8 @@ import { createDefaultFileTextPort } from "../../../../node/file-system/file-tex
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
-import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
@@ -82,19 +83,22 @@ const tableFileText = (request: { readonly table: RawTable }): FileTextPort => (
     outcome: "ok",
     value: requiredEntry({ table: request.table, key: path.replace("/install/", "./") }),
   }),
-  exists: () => "present",
+  exists: ({ path }) => (request.table[path.replace("/install/", "./")] === undefined ? "absent" : "present"),
   write: vi.fn<FileTextPort["write"]>(),
 });
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
-  const discipline = readDisciplineFile({
+  const held = readHeldDiscipline({
     fileText: request.fileText,
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
     ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
   });
-  assert(discipline.outcome === "ok", `${request.discipline} discipline.json reads through the rule-set reader`);
-  return discipline.value;
+  assert(held.outcome === "ok", `${request.discipline} reads through the install's discipline reader`);
+  const discipline = held.value;
+  assert(discipline.held === "present", `the install holds ${request.discipline}`);
+  return discipline.file;
 };
 
 const rowsOf = (request: {
@@ -154,7 +158,7 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infrastructure/engines/eslint/*/piece.json"], {
+const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
   base: "../../../../../../",
   query: "?raw",
   import: "default",

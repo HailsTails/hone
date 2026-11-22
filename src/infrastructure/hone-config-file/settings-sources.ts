@@ -2,7 +2,8 @@ import type { DirectoryPort } from "../../application/ports/file-system/director
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { disciplineFilePath, pieceFilePath, readDisciplineFile, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
+import { pieceFilePath, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../content-files/rule-sets/held-discipline.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
@@ -50,15 +51,15 @@ const settingsDocumentOf = (request: SourcesOptions): Result<SettingsDocument, V
 
 const mechanicalDefinitionOf = (request: PieceRequest): Result<{ readonly discipline: DisciplineFile; readonly definition: MechanicalDefinition }, VersionTwoLoadFailure> => {
   const address = clauseAddressText({ address: request.clause });
-  const location = { path: request.path, ruleSetRoot: request.ruleSetRoot, discipline: request.clause.discipline };
-  if (request.fileText.exists({ path: disciplineFilePath(location) }) === "absent") {
+  const held = readHeldDiscipline({ fileText: request.fileText, path: request.path, ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.clause.discipline });
+  if (held.outcome === "failed") {
+    return held;
+  }
+  if (held.value.held === "absent") {
     return failed({ kind: "unknown-discipline", address });
   }
-  const discipline = readDisciplineFile({ ...location, fileText: request.fileText });
-  if (discipline.outcome === "failed") {
-    return discipline;
-  }
-  const definition = discipline.value.clauses.find((clause) => clause.id === request.clause.clause);
+  const discipline = held.value.file;
+  const definition = discipline.clauses.find((clause) => clause.id === request.clause.clause);
   if (definition === undefined) {
     return failed({ kind: "unknown-clause", address });
   }
@@ -68,7 +69,7 @@ const mechanicalDefinitionOf = (request: PieceRequest): Result<{ readonly discip
   if (!definition.mechanisms.includes(request.mechanism)) {
     return failed({ kind: "mechanism-not-allowed", address, mechanism: request.mechanism });
   }
-  return { outcome: "ok", value: { discipline: discipline.value, definition } };
+  return { outcome: "ok", value: { discipline, definition } };
 };
 
 const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoadFailure> => {

@@ -1,7 +1,7 @@
 import { createConformanceTesting } from "./application/conformance/conformance-testing.ts";
 import type { ClauseConformanceOf, ClauseUnderTestOf, RepoPathOf } from "./application/conformance/conformance-testing-types.ts";
 import { installRootOfApiEntry } from "./infrastructure/command-line/installation/install-root.ts";
-import { createRuleSetFileReader } from "./infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { createRuleSetFileReader } from "./infrastructure/content-files/rule-sets/rule-set-file-reader.ts";
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";

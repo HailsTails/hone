@@ -12,7 +12,7 @@ const TEAM_ROOT = absolutePathSchema.parse("/repo/team-rules");
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
 const NAMES_TEXT =
-  '{ "version": 1, "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#parameter-reassignment"] }], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }';
+  '{ "version": 1, "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#parameter-reassignment"], "anchor": { "kind": "file" } }], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }';
 
 const MAKES_A_NEW_VALUE_TEXT = '# Makes a new value from what it has\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "no-hidden-effects" }] }\n```\n';
 

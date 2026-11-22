@@ -3,8 +3,10 @@ import type { FileTextPort } from "../../application/ports/file-system/file-text
 import { CATALOGUE_NAME } from "../../domain/language-layer/catalogue-name.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../domain/result.ts";
-import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
+import { anchorKindSchema, readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
+import type { AnchorKind } from "../../domain/finding/anchor.ts";
 import { type CatalogueFile, recordKindNameSchema, recordKindWireSchema, sightWireSchema } from "../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 
@@ -14,8 +16,13 @@ const formatOfTodaySchema = recordKindWireSchema.shape.todaysFormat.exclude(["no
 
 export type FormatsOfToday = Readonly<Partial<Record<z.output<typeof recordKindNameSchema>, z.output<typeof formatOfTodaySchema>>>>;
 
+export type NamedClause =
+  | { readonly clause: ClauseAddress; readonly kind: "mechanical"; readonly anchor: AnchorKind }
+  | { readonly clause: ClauseAddress; readonly kind: "judgement" };
+
 export type VersionOneNames = {
   readonly clauses: CatalogueFile["clauses"];
+  readonly namedClauses: readonly NamedClause[];
   readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
   readonly formatsOfToday: FormatsOfToday;
 };
@@ -25,7 +32,7 @@ const checkAddressSchema = z.string().regex(new RegExp(`^${CATALOGUE_NAME}#${CAT
 const versionOneNamesSchema = z
   .strictObject({
     version: z.literal(1),
-    clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema, checks: z.array(checkAddressSchema) })),
+    clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema, checks: z.array(checkAddressSchema), anchor: anchorKindSchema.optional() })),
     recordKinds: z.partialRecord(recordKindNameSchema, formatOfTodaySchema),
   })
   .superRefine((file, context) => {
@@ -33,12 +40,23 @@ const versionOneNamesSchema = z
     [...new Set(checks.filter((check, index) => checks.indexOf(check) !== index))].forEach((check) => {
       context.addIssue({ code: "custom", message: `${check} is named by more than one clause` });
     });
+    file.clauses
+      .filter((entry) => (entry.anchor === undefined) === entry.checks.length > 0)
+      .forEach((entry) => {
+        context.addIssue({ code: "custom", message: `${clauseAddressText({ address: entry.clause })} needs an anchor exactly when it names a check` });
+      });
   });
 
-export const NO_VERSION_ONE_NAMES: VersionOneNames = { clauses: [], clauseOfCheck: new Map(), formatsOfToday: {} };
+export const NO_VERSION_ONE_NAMES: VersionOneNames = { clauses: [], namedClauses: [], clauseOfCheck: new Map(), formatsOfToday: {} };
+
+type NamesEntry = z.output<typeof versionOneNamesSchema>["clauses"][number];
+
+const namedClauseOf = (entry: NamesEntry): NamedClause =>
+  entry.anchor === undefined ? { clause: entry.clause, kind: "judgement" } : { clause: entry.clause, kind: "mechanical", anchor: entry.anchor };
 
 const namesOf = (file: z.output<typeof versionOneNamesSchema>): VersionOneNames => ({
   clauses: file.clauses.map(({ clause, sight }) => ({ clause, sight })),
+  namedClauses: file.clauses.map(namedClauseOf),
   clauseOfCheck: new Map(file.clauses.flatMap(({ clause, checks }) => checks.map((check): readonly [string, ClauseAddress] => [check, clause]))),
   formatsOfToday: file.recordKinds,
 });

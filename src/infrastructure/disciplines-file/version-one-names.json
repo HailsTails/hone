@@ -9,7 +9,10 @@
       },
       "checks": [
         "claimed-type#cast-to-any"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-1#explicit-any",
@@ -19,7 +22,11 @@
       },
       "checks": [
         "untyped-value#explicit-any"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "any"
+      }
     },
     {
       "clause": "CD-1#implicit-any-let",
@@ -29,7 +36,11 @@
       },
       "checks": [
         "untyped-value#implicit-any-let"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "let"
+      }
     },
     {
       "clause": "CD-2#cast-expressions",
@@ -39,7 +50,10 @@
       },
       "checks": [
         "claimed-type#unlisted-cast-site"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-2#non-null-assertions",
@@ -49,7 +63,11 @@
       },
       "checks": [
         "claimed-type#non-null-assertions"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "!"
+      }
     },
     {
       "clause": "CD-3#strict",
@@ -59,7 +77,10 @@
       },
       "checks": [
         "strictness-weakened#strict"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-3#no-unchecked-indexed-access",
@@ -69,7 +90,10 @@
       },
       "checks": [
         "strictness-weakened#no-unchecked-indexed-access"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-3#exact-optional-property-types",
@@ -79,7 +103,10 @@
       },
       "checks": [
         "strictness-weakened#exact-optional-property-types"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-3#no-implicit-override",
@@ -89,7 +116,10 @@
       },
       "checks": [
         "strictness-weakened#no-implicit-override"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-3#no-fallthrough-cases-in-switch",
@@ -99,7 +129,10 @@
       },
       "checks": [
         "strictness-weakened#no-fallthrough-cases-in-switch"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-3#no-property-access-from-index-signature",
@@ -109,7 +142,10 @@
       },
       "checks": [
         "strictness-weakened#no-property-access-from-index-signature"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-3#use-unknown-in-catch-variables",
@@ -119,7 +155,10 @@
       },
       "checks": [
         "strictness-weakened#use-unknown-in-catch-variables"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-4#boundary-validation",
@@ -140,7 +179,10 @@
       },
       "checks": [
         "untracked-escape#directive-pointers"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-6#identifier-names",
@@ -150,7 +192,10 @@
       },
       "checks": [
         "shorthand-name#identifier-names"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-6#naming-convention",
@@ -160,7 +205,11 @@
       },
       "checks": [
         "name-off-its-casing#naming-convention"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "identifier"
+      }
     },
     {
       "clause": "CD-7#categorical-paths",
@@ -170,7 +219,10 @@
       },
       "checks": [
         "drawer-path#drawer-names"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-7#filename-case",
@@ -180,7 +232,10 @@
       },
       "checks": [
         "name-off-its-casing#filename-case"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-7a#factory-return-types",
@@ -190,7 +245,10 @@
       },
       "checks": [
         "type-derived-from-code#factory-return-types"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-8#switch-defaults",
@@ -200,7 +258,10 @@
       },
       "checks": [
         "default-on-a-closed-union#default-arm"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-9#result-failures",
@@ -222,7 +283,10 @@
       },
       "checks": [
         "throw-or-catch-in-a-test#throw-statement"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-10#throw-only-error",
@@ -232,7 +296,11 @@
       },
       "checks": [
         "thrown-non-error#throw-only-error"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "throw"
+      }
     },
     {
       "clause": "CD-11#error-envelopes",
@@ -274,7 +342,11 @@
       },
       "checks": [
         "authored-class-or-this#class-keyword"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "class"
+      }
     },
     {
       "clause": "CD-14#static-only-class",
@@ -284,7 +356,11 @@
       },
       "checks": [
         "authored-class-or-this#static-members-only"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "class"
+      }
     },
     {
       "clause": "CD-14#library-construction",
@@ -302,7 +378,10 @@
       },
       "checks": [
         "loop-keyword#loop-statement"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-17#clock-sources",
@@ -312,7 +391,10 @@
       },
       "checks": [
         "date-used-directly#clock-sources"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-18#process-lifecycle-ports",
@@ -330,7 +412,10 @@
       },
       "checks": [
         "outside-import-past-a-boundary#import-or-require"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-21#default-factories",
@@ -363,7 +448,10 @@
       },
       "checks": [
         "unit-without-a-running-test#companion-test-file"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-25#dependency-isolation",
@@ -373,7 +461,10 @@
       },
       "checks": [
         "double-with-a-body#stub-implementation"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-26#module-mocking",
@@ -383,7 +474,10 @@
       },
       "checks": [
         "module-or-global-patched#module-mock-call"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-27#test-body-logic",
@@ -479,7 +573,10 @@
         "computed-value-in-a-test#test-body",
         "text-past-its-reader#test-body",
         "double-with-a-body#logic-in-a-passed-function"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-27#focused-tests",
@@ -489,7 +586,11 @@
       },
       "checks": [
         "test-switched-off#focused-tests"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "only"
+      }
     },
     {
       "clause": "CD-27#skipped-tests",
@@ -499,7 +600,11 @@
       },
       "checks": [
         "test-switched-off#skipped-tests"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "skip"
+      }
     },
     {
       "clause": "CD-28#unit-responsibility",
@@ -569,7 +674,11 @@
       },
       "checks": [
         "positional-parameters#parameter-count"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "function"
+      }
     },
     {
       "clause": "CD-40#named-object-argument",
@@ -587,7 +696,11 @@
       },
       "checks": [
         "tangled-function#cognitive-complexity"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "function"
+      }
     },
     {
       "clause": "CD-41#function-length",
@@ -597,7 +710,11 @@
       },
       "checks": [
         "long-function#function-length"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "function"
+      }
     },
     {
       "clause": "CD-41#orchestration-only",
@@ -615,7 +732,11 @@
       },
       "checks": [
         "work-inside-a-condition#else-after-an-exit"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "else"
+      }
     },
     {
       "clause": "CD-43#boolean-signatures",
@@ -625,7 +746,10 @@
       },
       "checks": [
         "boolean-in-a-signature#boolean-annotation"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-44#parameter-mutation",
@@ -635,7 +759,10 @@
       },
       "checks": [
         "write-into-a-parameter#parameter-mutation"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     },
     {
       "clause": "CD-44#parameter-reassignment",
@@ -645,7 +772,11 @@
       },
       "checks": [
         "rebinding#parameter-reassignment"
-      ]
+      ],
+      "anchor": {
+        "kind": "keyword",
+        "keyword": "="
+      }
     },
     {
       "clause": "CD-45#parse-once",
@@ -663,7 +794,10 @@
       },
       "checks": [
         "inherited-environment-in-a-subprocess#git-spawn-environment"
-      ]
+      ],
+      "anchor": {
+        "kind": "file"
+      }
     }
   ],
   "recordKinds": {

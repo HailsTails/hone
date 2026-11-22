@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { RuleSetFiles } from "../../../application/ports/rule-set/rule-set-files.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseEditionsSchema, editionSchema } from "../edition.ts";
 import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
@@ -78,7 +77,7 @@ const allowCaseSchema = sourceCaseSchema.refine(
   { error: "an allow case names expected lines" },
 );
 
-const anchorKindSchema = z.discriminatedUnion("kind", [
+export const anchorKindSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("keyword"), keyword: z.string() }),
   z.object({ kind: z.literal("file") }),
 ]);
@@ -92,31 +91,44 @@ const ruleSetMechanismSchema = z.string().transform((text, context): MechanismId
   return z.NEVER;
 });
 
+export const clauseCasesSchema = z.object({
+  flag: z
+    .array(flagCaseSchema)
+    .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause has no flag case" }),
+  allow: z
+    .array(allowCaseSchema)
+    .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause has no allow case" }),
+});
+
 const clauseDefinitionSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("mechanical"),
-    id: clauseIdSchema,
-    summary: z.string(),
-    mechanisms: z
-      .array(ruleSetMechanismSchema)
-      .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause names no mechanism" }),
-    anchor: anchorKindSchema,
-    exceptions: z.enum(["allowed", "refused"]).default("allowed"),
-    cases: z.object({
-      flag: z
-        .array(flagCaseSchema)
-        .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause has no flag case" }),
-      allow: z
-        .array(allowCaseSchema)
-        .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause has no allow case" }),
-    }),
-  }),
-  z.object({
-    kind: z.literal("judgement"),
-    id: clauseIdSchema,
-    summary: z.string(),
-    enforcedBy: z.literal("review"),
-  }),
+  z
+    .object({
+      kind: z.literal("mechanical"),
+      id: clauseIdSchema,
+      summary: z.string(),
+      mechanisms: z
+        .array(ruleSetMechanismSchema)
+        .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause names no mechanism" }),
+      anchor: anchorKindSchema,
+      exceptions: z.enum(["allowed", "refused"]).default("allowed"),
+      cases: clauseCasesSchema,
+    })
+    .transform((clause) => ({
+      kind: clause.kind,
+      id: clause.id,
+      mechanisms: clause.mechanisms,
+      anchor: clause.anchor,
+      exceptions: clause.exceptions,
+      cases: clause.cases,
+    })),
+  z
+    .object({
+      kind: z.literal("judgement"),
+      id: clauseIdSchema,
+      summary: z.string(),
+      enforcedBy: z.literal("review"),
+    })
+    .transform((clause) => ({ kind: clause.kind, id: clause.id, enforcedBy: clause.enforcedBy })),
 ]);
 
 const disciplineFileSchema = z.object({
@@ -222,11 +234,10 @@ export const pieceFilePath = (request: {
 
 export const readDisciplineFile = (request: {
   readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly ruleSetRoot: AbsolutePath;
+  readonly path: string;
   readonly discipline: DisciplineId;
 }): Result<DisciplineFile, VersionTwoLoadFailure> => {
-  const path = disciplineFilePath(request);
+  const { path } = request;
   const document = readVersionOneJson({ fileText: request.fileText, path });
   if (document.outcome === "failed") {
     return document;
@@ -316,8 +327,3 @@ export const readPieceFile = (request: {
   }
   return { outcome: "ok", value: piece };
 };
-
-export const createRuleSetFileReader = (options: { readonly fileText: FileTextPort; readonly path: PathPort }): RuleSetFiles => ({
-  disciplineFile: (request) => readDisciplineFile({ ...options, ...request }),
-  pieceFile: (request) => readPieceFile({ ...options, ...request }),
-});

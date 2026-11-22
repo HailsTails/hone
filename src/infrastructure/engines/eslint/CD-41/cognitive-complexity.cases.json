@@ -1,0 +1,54 @@
+{
+  "flag": [
+    {
+      "name": "sixteen sequential ifs",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (flag0) {\n    run();\n  }\n  if (flag1) {\n    run();\n  }\n  if (flag2) {\n    run();\n  }\n  if (flag3) {\n    run();\n  }\n  if (flag4) {\n    run();\n  }\n  if (flag5) {\n    run();\n  }\n  if (flag6) {\n    run();\n  }\n  if (flag7) {\n    run();\n  }\n  if (flag8) {\n    run();\n  }\n  if (flag9) {\n    run();\n  }\n  if (flag10) {\n    run();\n  }\n  if (flag11) {\n    run();\n  }\n  if (flag12) {\n    run();\n  }\n  if (flag13) {\n    run();\n  }\n  if (flag14) {\n    run();\n  }\n  if (flag15) {\n    run();\n  }\n}\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "six nested ifs",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (level0) {\n    if (level1) {\n      if (level2) {\n        if (level3) {\n          if (level4) {\n            if (level5) {\n              run();\n            }\n          }\n        }\n      }\n    }\n  }\n}\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "a second operator starts a new run",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (flag0) {\n    run();\n  }\n  if (flag1) {\n    run();\n  }\n  if (flag2) {\n    run();\n  }\n  if (flag3) {\n    run();\n  }\n  if (flag4) {\n    run();\n  }\n  if (flag5) {\n    run();\n  }\n  if (flag6) {\n    run();\n  }\n  if (flag7) {\n    run();\n  }\n  if (flag8) {\n    run();\n  }\n  if (flag9) {\n    run();\n  }\n  if (flag10) {\n    run();\n  }\n  if (flag11) {\n    run();\n  }\n  if (flag12) {\n    run();\n  }\n  if (flag13) {\n    run();\n  }\n  void (left && right || other);\n}\n",
+      "expectedLines": [
+        1
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "fifteen sequential ifs",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (flag0) {\n    run();\n  }\n  if (flag1) {\n    run();\n  }\n  if (flag2) {\n    run();\n  }\n  if (flag3) {\n    run();\n  }\n  if (flag4) {\n    run();\n  }\n  if (flag5) {\n    run();\n  }\n  if (flag6) {\n    run();\n  }\n  if (flag7) {\n    run();\n  }\n  if (flag8) {\n    run();\n  }\n  if (flag9) {\n    run();\n  }\n  if (flag10) {\n    run();\n  }\n  if (flag11) {\n    run();\n  }\n  if (flag12) {\n    run();\n  }\n  if (flag13) {\n    run();\n  }\n  if (flag14) {\n    run();\n  }\n}\n",
+      "expectedLines": []
+    },
+    {
+      "name": "five nested ifs",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (level0) {\n    if (level1) {\n      if (level2) {\n        if (level3) {\n          if (level4) {\n            run();\n          }\n        }\n      }\n    }\n  }\n}\n",
+      "expectedLines": []
+    },
+    {
+      "name": "a run of one operator counts once",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (flag0) {\n    run();\n  }\n  if (flag1) {\n    run();\n  }\n  if (flag2) {\n    run();\n  }\n  if (flag3) {\n    run();\n  }\n  if (flag4) {\n    run();\n  }\n  if (flag5) {\n    run();\n  }\n  if (flag6) {\n    run();\n  }\n  if (flag7) {\n    run();\n  }\n  if (flag8) {\n    run();\n  }\n  if (flag9) {\n    run();\n  }\n  if (flag10) {\n    run();\n  }\n  if (flag11) {\n    run();\n  }\n  if (flag12) {\n    run();\n  }\n  if (flag13) {\n    run();\n  }\n  void (left && right && other);\n}\n",
+      "expectedLines": []
+    },
+    {
+      "name": "a nested function is scored on its own",
+      "fileName": "src/decide.ts",
+      "source": "export function decide(): void {\n  if (flag0) {\n    run();\n  }\n  if (flag1) {\n    run();\n  }\n  if (flag2) {\n    run();\n  }\n  if (flag3) {\n    run();\n  }\n  if (flag4) {\n    run();\n  }\n  if (flag5) {\n    run();\n  }\n  if (flag6) {\n    run();\n  }\n  if (flag7) {\n    run();\n  }\n  const inner = (): void => {\n    if (inner0) {\n      run();\n    }\n    if (inner1) {\n      run();\n    }\n    if (inner2) {\n      run();\n    }\n    if (inner3) {\n      run();\n    }\n    if (inner4) {\n      run();\n    }\n    if (inner5) {\n      run();\n    }\n    if (inner6) {\n      run();\n    }\n  };\n  inner();\n}\n",
+      "expectedLines": []
+    }
+  ]
+}

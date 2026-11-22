@@ -118,7 +118,7 @@ const disciplineOf = (request: Omit<ClauseRequest, "mechanism">): Result<Discipl
   if (loaded !== undefined) {
     return { outcome: "ok", value: loaded.discipline };
   }
-  const held = request.ruleSetFiles.discipline({ ruleSetRoot: request.ruleSetRoot, discipline: request.address.discipline });
+  const held = request.ruleSetFiles.discipline({ ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.address.discipline });
   if (held.outcome === "failed") {
     return held;
   }

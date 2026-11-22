@@ -1,21 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
 import type { HeldBesideItems } from "./item-document.ts";
 import { createItemFolderCatalogueRepository } from "./read-item-folder-catalogue.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const ROOT = absolutePathSchema.parse("/content");
+const ROOT = absoluteRootOf("/content");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => ROOT });
 
-const CLOCK_SOURCES = clauseAddressSchema.parse("XX-1#clock-sources");
+const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("clock-sources") };
 
 const BESIDE: HeldBesideItems = {
-  engines: [{ name: "walker", mechanism: mechanismIdSchema.parse("checker") }],
+  engines: [{ name: "walker", mechanism: "audit" }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
   formatsOfToday: { "authorised-location": "authorised-location" },
@@ -112,7 +113,7 @@ describe("createItemFolderCatalogueRepository", () => {
           cases: [{ name: "does-one-job", title: "Does one job" }],
           recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
           recordKinds: [{ name: "authorised-location", todaysFormat: "authorised-location" }, { name: "debt", todaysFormat: "none-yet" }],
-          engines: [{ name: "walker", mechanism: "checker" }],
+          engines: [{ name: "walker", mechanism: "audit" }],
           symptoms: [{ name: "date-used-directly", title: "Date used directly", recipes: [{ name: "world-values-through-a-port" }] }],
           checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" }, clause: CLOCK_SOURCES }],
         },

@@ -7,7 +7,8 @@ import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-s
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
-import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
@@ -51,19 +52,22 @@ const tableFileText = (request: { readonly table: RawTable }): FileTextPort => (
     assert(text !== undefined, `the fake table holds no entry for ${key}`);
     return { outcome: "ok", value: text };
   },
-  exists: () => "present",
+  exists: ({ path }) => (request.table[path.replace("/install/", "./")] === undefined ? "absent" : "present"),
   write: vi.fn<FileTextPort["write"]>(),
 });
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
-  const discipline = readDisciplineFile({
+  const held = readHeldDiscipline({
     fileText: request.fileText,
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
     ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
   });
-  assert(discipline.outcome === "ok", `${request.discipline} discipline.json reads through the rule-set reader`);
-  return discipline.value;
+  assert(held.outcome === "ok", `${request.discipline} reads through the install's discipline reader`);
+  const discipline = held.value;
+  assert(discipline.held === "present", `the install holds ${request.discipline}`);
+  return discipline.file;
 };
 
 const rowsOf = (request: {
@@ -132,7 +136,7 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infrastructure/engines/audit/*/piece.json"], {
+const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
   base: "../../../../../",
   query: "?raw",
   import: "default",
@@ -157,13 +161,9 @@ const CONFORMANCE_ROWS = conformanceRows({
 
 const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
 
-describe("every audit piece on disk is registered with a piece.json and a discipline.json", () => {
+describe("every audit piece on disk is registered with a piece.json", () => {
   it("has a piece.json for each audit piece folder", () => {
     expect(foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" })).toEqual(walkerDisciplines);
-  });
-
-  it("has a discipline.json for each audit piece folder", () => {
-    expect(foldersUnder({ table: ruleSetTexts, prefix: "./rules/" })).toEqual(expect.arrayContaining([...walkerDisciplines]));
   });
 });
 

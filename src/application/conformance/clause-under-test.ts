@@ -43,11 +43,15 @@ export const boundClauseOf = (request: RuleSetReading & ClauseRequest): Result<B
   if (ruleSetRoot.outcome === "failed") {
     return setupFailed({ kind: "rule-set-unloadable", detail: `${request.ruleSetRoot} does not resolve: ${ruleSetRoot.error.kind}` });
   }
-  const discipline = request.ruleSetFiles.disciplineFile({ ruleSetRoot: ruleSetRoot.value, discipline: address.discipline });
-  if (discipline.outcome === "failed") {
-    return unloadable({ failure: discipline.error, loadFailureDetail });
+  const held = request.ruleSetFiles.disciplineFile({ ruleSetRoot: ruleSetRoot.value, installRoot: request.installRoot, discipline: address.discipline });
+  if (held.outcome === "failed") {
+    return unloadable({ failure: held.error, loadFailureDetail });
   }
-  const definition = discipline.value.clauses.find(
+  if (held.value.held === "absent") {
+    return unloadable({ failure: { kind: "unknown-discipline", address: request.clause }, loadFailureDetail });
+  }
+  const discipline = held.value.file;
+  const definition = discipline.clauses.find(
     (clause): clause is MechanicalClause => clause.id === address.clause && clause.kind === "mechanical",
   );
   if (definition === undefined) {
@@ -56,7 +60,7 @@ export const boundClauseOf = (request: RuleSetReading & ClauseRequest): Result<B
   if (!definition.mechanisms.includes(request.mechanism)) {
     return unloadable({ failure: { kind: "mechanism-not-allowed", address: request.clause, mechanism: request.mechanism }, loadFailureDetail });
   }
-  const piece = request.ruleSetFiles.pieceFile({ ruleSetRoot: ruleSetRoot.value, installRoot: request.installRoot, mechanism: request.mechanism, discipline: discipline.value });
+  const piece = request.ruleSetFiles.pieceFile({ ruleSetRoot: ruleSetRoot.value, installRoot: request.installRoot, mechanism: request.mechanism, discipline });
   if (piece.outcome === "failed") {
     return unloadable({ failure: piece.error, loadFailureDetail });
   }

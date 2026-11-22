@@ -135,9 +135,13 @@ const ESLINT_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/consumer-pr
 
 const INSTALLED_SOURCE = String.raw`(?!(?:[^/]*\/)*tests\/)(?!.*\.test\.ts$).*`;
 
-const WALKER_INSTALLED = String.raw`(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-23|src\/infrastructure\/engines\/audit\/runner|src\/infrastructure\/engines\/audit\/CD-23)\/${INSTALLED_SOURCE}`;
+const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-23\/(?:piece\.json|[^/]+\.cases\.json)`;
 
-const ESLINT_INSTALLED = String.raw`(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-14|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}`;
+const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-14\/(?:piece\.json|[^/]+\.cases\.json)`;
+
+const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-23|src\/infrastructure\/engines\/audit\/runner|src\/infrastructure\/engines\/audit\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA})`;
+
+const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-14|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA})`;
 
 const WALKER_INSTALL_LIST = new RegExp(`^${WALKER_INSTALLED}$`);
 
