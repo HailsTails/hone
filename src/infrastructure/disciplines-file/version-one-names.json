@@ -643,28 +643,32 @@
       "sight": {
         "kind": "outside-the-cases"
       },
-      "checks": []
+      "checks": [],
+      "review": "structured logs redact PII strings unless a field is explicitly opted in"
     },
     {
       "clause": "CD-33#sensitive-brands",
       "sight": {
         "kind": "outside-the-cases"
       },
-      "checks": []
+      "checks": [],
+      "review": "sensitive branded types redact everywhere, with no opt-out"
     },
     {
       "clause": "CD-34#no-repo-secrets",
       "sight": {
         "kind": "outside-the-cases"
       },
-      "checks": []
+      "checks": [],
+      "review": "secrets never enter source, history, logs or URLs"
     },
     {
       "clause": "CD-39#cite-by-id",
       "sight": {
         "kind": "outside-the-cases"
       },
-      "checks": []
+      "checks": [],
+      "review": "reviews and rationale cite principles and rules by identifier"
     },
     {
       "clause": "CD-40#parameter-count",

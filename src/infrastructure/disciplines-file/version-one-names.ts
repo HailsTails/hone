@@ -32,7 +32,7 @@ const checkAddressSchema = z.string().regex(new RegExp(`^${CATALOGUE_NAME}#${CAT
 const versionOneNamesSchema = z
   .strictObject({
     version: z.literal(1),
-    clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema, checks: z.array(checkAddressSchema), anchor: anchorKindSchema.optional() })),
+    clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema, checks: z.array(checkAddressSchema), anchor: anchorKindSchema.optional(), review: z.string().min(1).optional() })),
     recordKinds: z.partialRecord(recordKindNameSchema, formatOfTodaySchema),
   })
   .superRefine((file, context) => {

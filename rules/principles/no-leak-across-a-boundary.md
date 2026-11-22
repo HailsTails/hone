@@ -12,3 +12,4 @@
 - **Record:** an externally defined model adopted as the definitive thing. Evans's *Conformist*. It is a statement on a [boundary record](../record-kinds/boundary-record.md).
 - **Source:** This is Evans's anticorruption layer, applied to failures as well as data, in both directions.
 - **Quoted reasons:** "we always map to our own type to decouple even if they are basically the same contents." "Throws are not about start up. They are about speaking the language of the caller at the boundary."
+- **Review:** validation runs once at the boundary and its types do not leak inward

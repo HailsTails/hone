@@ -75,6 +75,20 @@ describe("versionOneNamesOf", () => {
     });
   });
 
+  it("reads a clause outside the cases that carries its review line", () => {
+    expect(
+      versionOneNamesOf({
+        document: { version: 1, clauses: [{ clause: "CD-39#cite-by-id", sight: { kind: "outside-the-cases" }, checks: [], review: "reviews cite principles by identifier" }], recordKinds: {} },
+      }),
+    ).toMatchObject({ outcome: "ok", value: { namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-39"), clause: clauseIdOf("cite-by-id") }, kind: "judgement" }] } });
+  });
+
+  it("fails when a review line is empty", () => {
+    expect(
+      versionOneNamesOf({ document: { version: 1, clauses: [{ clause: "CD-39#cite-by-id", sight: { kind: "outside-the-cases" }, checks: [], review: "" }], recordKinds: {} } }),
+    ).toMatchObject({ outcome: "failed" });
+  });
+
   it("fails when a clause names a check without an anchor", () => {
     expect(
       versionOneNamesOf({ document: { version: 1, clauses: [{ clause: "CD-17#clock-sources", sight: { kind: "outside-the-cases" }, checks: ["a#b"] }], recordKinds: {} } }),
