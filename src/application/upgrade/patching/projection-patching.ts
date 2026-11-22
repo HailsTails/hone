@@ -37,9 +37,12 @@ const plannedPatchOf = (
       error: {
         kind: "plan-refused",
         refusal: {
-          kind: "config-candidate-unreadable",
-          file: request.file,
-          detail: read.error.detail,
+          kind: "team-config-refused",
+          refusal: {
+            kind: "config-candidate-unreadable",
+            file: request.file,
+            detail: read.error.detail,
+          },
         },
         removedByVersionOne: [],
       },

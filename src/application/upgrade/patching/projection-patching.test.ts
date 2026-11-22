@@ -26,10 +26,10 @@ const ok = { outcome: "ok", value: undefined } as const;
 
 const portsHolding = (files: Record<string, string>): ProofWritePorts => ({
   fileText: {
-    read: ({ path }) => {
+    read: ({ path }): ReturnType<FileTextPort["read"]> => {
       const text = files[path];
       return text === undefined
-        ? { outcome: "failed", error: { detail: "ENOENT" } }
+        ? { outcome: "failed", error: { kind: "unreadable", path, detail: "ENOENT" } }
         : { outcome: "ok", value: text };
     },
     exists: vi.fn<FileTextPort["exists"]>(),
@@ -85,7 +85,10 @@ describe("patchedProjectionsOf", () => {
       outcome: "failed",
       error: {
         kind: "plan-refused",
-        refusal: { kind: "config-candidate-unreadable", file: PROJECTION, detail: "ENOENT" },
+        refusal: {
+          kind: "team-config-refused",
+          refusal: { kind: "config-candidate-unreadable", file: PROJECTION, detail: "ENOENT" },
+        },
         removedByVersionOne: [],
       },
     });
