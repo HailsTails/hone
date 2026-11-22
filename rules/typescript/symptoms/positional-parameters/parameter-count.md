@@ -1,11 +1,7 @@
 # parameter-count
 
 ```json
-{
-  "engines": [
-    "eslint"
-  ]
-}
+{}
 ```
 
 - **Misses:** our own functions with exactly two parameters.

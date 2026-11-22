@@ -1,11 +1,7 @@
 # focused-tests
 
 ```json
-{
-  "engines": [
-    "eslint"
-  ]
-}
+{}
 ```
 
 - **Misses:** `.todo`.

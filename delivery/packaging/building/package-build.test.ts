@@ -189,7 +189,7 @@ const SOURCE: Readonly<Record<string, string>> = {
   "/package/src/infrastructure/engines/typescript-compiler/runner/runner.ts": "export const runner = {};\n",
   "/package/src/infrastructure/engines/typescript-compiler/CD-15/piece.json": '{ "version": 1, "clauses": [ { "clause": "loops", "settings": { "module": "loops.ts" } } ] }',
   "/package/src/infrastructure/engines/typescript-compiler/CD-15/loops.ts": "export const check = {};\n",
-  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [] }',
+  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [], "recordKinds": {} }',
   "/package/rules/CD-15/discipline.json": '{ "version": 1 }\n',
   "/package/rules/CD-15/README.md": "# CD-15\n",
   "/package/docs/why-chain-contract.md": "# Why-chain contract\n",

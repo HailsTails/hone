@@ -1,11 +1,7 @@
 # stub-implementation
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** hand-written doubles.

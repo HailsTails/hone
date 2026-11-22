@@ -62,7 +62,7 @@ const FILE: CatalogueFile = {
     },
   ],
   clauses: [{ clause: clauseAddressSchema.parse("CD-1#any-cast"), sight: { kind: "one-symptom", symptom: "claimed-type" } }],
-  checks: [{ symptom: "claimed-type", name: "cast-to-any", clause: clauseAddressSchema.parse("CD-1#any-cast"), engines: ["walker"] }],
+  checks: [{ symptom: "claimed-type", name: "cast-to-any", clause: clauseAddressSchema.parse("CD-1#any-cast") }],
   namedBans: [],
 };
 

@@ -5,7 +5,7 @@ import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { disciplineFilePath, pieceFilePath, readDisciplineFile, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
-import { createSymptomCatalogueRepository } from "../content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
@@ -118,6 +118,6 @@ export const createSettingsSources = (options: SourcesOptions): SettingsSources 
   settingsFile: (_request) => settingsDocumentOf(options),
   ruleSetRoot: (request) =>
     ruleSetRootOf({ ruleSet: request.ruleSet, ruleSets: request.ruleSets, repoRoot: options.repoRoot, installRoot: options.installRoot, path: options.path }),
-  catalogue: (request) => createSymptomCatalogueRepository({ fileText: options.fileText, directory: options.directory, path: options.path, ruleSetRoot: request.ruleSetRoot }).read({}),
+  catalogue: (request) => readBoundCatalogue({ fileText: options.fileText, directory: options.directory, path: options.path, ruleSetRoot: request.ruleSetRoot, installRoot: options.installRoot }),
   pieceClause: (request) => pieceClauseOf({ ...options, ...request }),
 });

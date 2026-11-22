@@ -1,11 +1,7 @@
 # exact-optional-property-types
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Flags beyond the symptom:** edition 1: a flag set to `true`.

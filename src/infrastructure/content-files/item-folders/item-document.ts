@@ -1,6 +1,7 @@
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type CatalogueFile, recordKindNameSchema, SUPPORTED_VERSION } from "../symptom-catalogues/symptom-catalogue-wire.ts";
+import type { FormatsOfToday } from "../../disciplines-file/version-one-names.ts";
 import type { ItemFacts } from "./item-facts.ts";
 
 export type PlacedItem = {
@@ -14,6 +15,7 @@ export type HeldBesideItems = {
   readonly engines: CatalogueFile["engines"];
   readonly clauses: CatalogueFile["clauses"];
   readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
+  readonly formatsOfToday: FormatsOfToday;
 };
 
 type OfKind<Kind extends ItemFacts["kind"]> = PlacedItem & { readonly item: Extract<ItemFacts, { readonly kind: Kind }> };
@@ -30,10 +32,11 @@ const allAssembled = <Value>(assembled: readonly Assembled<Value>[]): Assembled<
   return failure?.outcome === "failed" ? failure : { outcome: "ok", value: assembled.flatMap((each) => (each.outcome === "ok" ? [each.value] : [])) };
 };
 
-const recordKindOf = (placed: OfKind<"record-kind">): Assembled<CatalogueFile["recordKinds"][number]> => {
+const recordKindOf = (request: { readonly placed: OfKind<"record-kind">; readonly formatsOfToday: FormatsOfToday }): Assembled<CatalogueFile["recordKinds"][number]> => {
+  const { placed } = request;
   const name = recordKindNameSchema.safeParse(placed.name);
   return name.success
-    ? { outcome: "ok", value: { name: name.data, title: placed.title, ...placed.item.facts } }
+    ? { outcome: "ok", value: { name: name.data, title: placed.title, ...placed.item.facts, todaysFormat: request.formatsOfToday[name.data] ?? "none-yet" } }
     : { outcome: "failed", error: `${placed.name} is not the name of a record kind` };
 };
 
@@ -60,7 +63,7 @@ const unheldChecksOf = (request: { readonly checks: readonly CatalogueFile["chec
 
 export const catalogueFileOf = (request: { readonly items: readonly PlacedItem[]; readonly beside: HeldBesideItems }): Assembled<CatalogueFile> => {
   const { items, beside } = request;
-  const recordKinds = allAssembled(items.filter(ofKind("record-kind")).map(recordKindOf));
+  const recordKinds = allAssembled(items.filter(ofKind("record-kind")).map((placed) => recordKindOf({ placed, formatsOfToday: beside.formatsOfToday })));
   if (recordKinds.outcome === "failed") {
     return recordKinds;
   }

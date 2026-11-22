@@ -2,7 +2,6 @@
 
 ```json
 {
-  "phrase": "an authorised location",
-  "todaysFormat": "authorised-location"
+  "phrase": "an authorised location"
 }
 ```

@@ -2,7 +2,6 @@
 
 ```json
 {
-  "phrase": "a boundary record",
-  "todaysFormat": "authorised-location"
+  "phrase": "a boundary record"
 }
 ```

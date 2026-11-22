@@ -1,6 +1,7 @@
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
+import { createEngineBindingsOf } from "../infrastructure/engines/piece-engines.ts";
 import { createSymptomCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { exceptionRepositoryOf } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
@@ -41,6 +42,7 @@ export const installedPortsOver = (node: NodePorts): ToolPorts => {
     foundTreeRecordsSourceOf,
     loadFailureDetail,
     symptomCatalogueOf: createSymptomCatalogueOf({ directory: node.directory }),
+    engineBindingsOf: createEngineBindingsOf({ directory: node.directory }),
     settingsFormat: SETTINGS_FILE_FORMAT,
     settingsSourcesOf: createSettingsSources,
   };

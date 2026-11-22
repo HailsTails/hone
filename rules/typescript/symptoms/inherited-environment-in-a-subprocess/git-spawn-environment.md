@@ -1,11 +1,7 @@
 # git-spawn-environment
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `env` built from `process.env` under an accepted name.

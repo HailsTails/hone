@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cataloguePagesOf } from "./catalogue-pages.ts";
 
-const NAMES = { path: "src/infrastructure/disciplines-file/version-one-names.json", text: '{ "version": 1, "clauses": [] }' };
+const NAMES = { path: "src/infrastructure/disciplines-file/version-one-names.json", text: '{ "version": 1, "clauses": [], "recordKinds": {} }' };
 
 const PRINCIPLE = { path: "rules/principles/one-place-decides.md", text: "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n" };
 

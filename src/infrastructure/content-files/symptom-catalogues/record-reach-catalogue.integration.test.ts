@@ -2,7 +2,7 @@ import { createDefaultDirectoryPort } from "../../node/file-system/file-system-p
 import { assert, describe, expect, it } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "./bound-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { IMPORTED_PARTY_SYMPTOMS, RUNTIME_REACH } from "../../../domain/records/answering/record-reach.ts";
 import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -19,7 +19,7 @@ const symptomsNamedByRecordReachButNotCatalogued = (request: { readonly catalogu
 
 const REPO_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }));
 
-const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), ruleSetRoot: REPO_ROOT }).read({});
+const reading = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), ruleSetRoot: REPO_ROOT, installRoot: REPO_ROOT });
 
 describe("symptomsNamedByRecordReachButNotCatalogued over a written-out catalogue, so the guard can fail", () => {
   it("lists every symptom a record's reach names when the catalogue holds none", () => {

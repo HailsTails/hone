@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
+import type { EngineBindingsOf } from "../../ports/engine-bindings-repository.ts";
 import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
@@ -58,6 +59,8 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
 
 const NO_CATALOGUE: SymptomCatalogueOf = () => ({ read: () => ({ outcome: "ok", value: { held: "none" } }) });
 
+const NO_BINDINGS: EngineBindingsOf = () => ({ read: () => ({ outcome: "ok", value: new Map() }) });
+
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
     const command = EMPTY_REPOSITORY_COMMAND;
@@ -68,6 +71,7 @@ describe("plannedProjectionOf", () => {
       directory: { list: notUsed, create: notUsed },
       recordsReader: { recordsReadingOf: notUsed },
       symptomCatalogueOf: NO_CATALOGUE,
+      engineBindingsOf: NO_BINDINGS,
       settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
       settingsSourcesOf: notUsed,
     })({

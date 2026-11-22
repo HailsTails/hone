@@ -5,14 +5,19 @@ import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts"
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import { type CatalogueFile, sightWireSchema } from "../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import { type CatalogueFile, recordKindNameSchema, recordKindWireSchema, sightWireSchema } from "../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 
 export const VERSION_ONE_NAMES_SEGMENTS: readonly string[] = ["src", "infrastructure", "disciplines-file", "version-one-names.json"];
 
+const formatOfTodaySchema = recordKindWireSchema.shape.todaysFormat.exclude(["none-yet"]);
+
+export type FormatsOfToday = Readonly<Partial<Record<z.output<typeof recordKindNameSchema>, z.output<typeof formatOfTodaySchema>>>>;
+
 export type VersionOneNames = {
   readonly clauses: CatalogueFile["clauses"];
   readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
+  readonly formatsOfToday: FormatsOfToday;
 };
 
 const checkAddressSchema = z.string().regex(new RegExp(`^${CATALOGUE_NAME}#${CATALOGUE_NAME}$`), { error: "is not a check address of the form <symptom>#<check>" });
@@ -21,6 +26,7 @@ const versionOneNamesSchema = z
   .strictObject({
     version: z.literal(1),
     clauses: z.array(z.strictObject({ clause: clauseAddressSchema, sight: sightWireSchema, checks: z.array(checkAddressSchema) })),
+    recordKinds: z.partialRecord(recordKindNameSchema, formatOfTodaySchema),
   })
   .superRefine((file, context) => {
     const checks = file.clauses.flatMap((entry) => entry.checks);
@@ -29,11 +35,12 @@ const versionOneNamesSchema = z
     });
   });
 
-export const NO_VERSION_ONE_NAMES: VersionOneNames = { clauses: [], clauseOfCheck: new Map() };
+export const NO_VERSION_ONE_NAMES: VersionOneNames = { clauses: [], clauseOfCheck: new Map(), formatsOfToday: {} };
 
 const namesOf = (file: z.output<typeof versionOneNamesSchema>): VersionOneNames => ({
   clauses: file.clauses.map(({ clause, sight }) => ({ clause, sight })),
   clauseOfCheck: new Map(file.clauses.flatMap(({ clause, checks }) => checks.map((check): readonly [string, ClauseAddress] => [check, clause]))),
+  formatsOfToday: file.recordKinds,
 });
 
 export const versionOneNamesOf = (request: { readonly document: unknown }): Result<VersionOneNames, string> => {

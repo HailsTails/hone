@@ -1,11 +1,7 @@
 # non-null-assertions
 
 ```json
-{
-  "engines": [
-    "eslint"
-  ]
-}
+{}
 ```
 
 - **Misses:** `any` reached through an outside dependency's types.

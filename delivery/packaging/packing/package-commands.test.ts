@@ -181,7 +181,7 @@ const SOURCE_WITHOUT_LOCK: Readonly<Record<string, string>> = {
   "/package/src/testing.ts": "export {};\n",
   "/package/src/hone.ts": "await run();\n",
   "/package/src/infrastructure/engines/typescript-compiler/runner/runner.ts": "await project();\n",
-  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [] }',
+  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [], "recordKinds": {} }',
 };
 
 const EMPTY_LOCK = `lockfileVersion: '9.0'

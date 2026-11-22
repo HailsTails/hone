@@ -1,11 +1,7 @@
 # unlisted-cast-site
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `any` reached through an outside dependency's types.

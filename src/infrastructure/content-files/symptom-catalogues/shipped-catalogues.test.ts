@@ -24,6 +24,24 @@ describe("shippedCataloguesOf", () => {
     });
   });
 
+  it("fails with the load failure when the install's pieces cannot be read", () => {
+    const fileText: FileTextPort = {
+      read: vi.fn<FileTextPort["read"]>(),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/audit"), detail: "EACCES" } }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+    expect(shippedCataloguesOf({ fileText, directory, path: PATH, installRoot: INSTALL_ROOT })).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/audit", detail: "EACCES" },
+    });
+  });
+
   it("fails with the load failure when the catalogue cannot be read", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/install/src/infrastructure/disciplines-file/version-one-names.json", detail: "EACCES" } }),

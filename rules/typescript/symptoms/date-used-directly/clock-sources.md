@@ -1,11 +1,7 @@
 # clock-sources
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Flags beyond the symptom:** `Date.now` in comments and strings.

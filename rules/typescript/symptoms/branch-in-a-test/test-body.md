@@ -1,11 +1,7 @@
 # test-body
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Flags beyond the symptom:** unit's own API (edition 1).

@@ -9,7 +9,7 @@ import { answerFindings, type RaisedFinding } from "../../src/domain/records/ans
 import { readHoneRecords } from "../../src/application/records/read-hone-records.ts";
 import { createRecordsFolder } from "../../src/infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { recordsUnmeasuredOf } from "../../src/domain/records/measurement/records-unmeasured.ts";
-import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
@@ -116,7 +116,7 @@ const REPO_ROOT = absolutePathSchema.parse(path.join({ segments: [`${import.meta
 
 const scratch = createDefaultScratchFilesPort({});
 
-const holding = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: REPO_ROOT }).read({});
+const holding = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: REPO_ROOT, installRoot: REPO_ROOT });
 assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
 assert(holding.value.held === "catalogue", "the shipped symptom catalogue is present");
 

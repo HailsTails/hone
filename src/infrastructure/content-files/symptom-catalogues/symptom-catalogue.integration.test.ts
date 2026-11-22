@@ -2,7 +2,7 @@ import { createDefaultDirectoryPort } from "../../node/file-system/file-system-p
 import { assert, describe, expect, it, vi } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "./bound-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { TEST_BODY_SECTIONS } from "../../engines/audit/CD-27/test-body-logic.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
@@ -438,7 +438,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
   });
 });
 
-const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT }).read({});
+const reading = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT, installRoot: REPO_ROOT });
 
 describe("rules/typescript/symptoms.json, read from this repository through the catalogue's reader", () => {
   it("reads into the typed catalogue", () => {

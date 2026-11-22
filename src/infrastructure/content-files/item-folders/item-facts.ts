@@ -13,7 +13,7 @@ const caseFactsSchema = caseWireSchema.omit(OMITTED_NAME_AND_TITLE);
 
 const recipeFactsSchema = catalogueFileSchema.shape.recipes.element.omit(OMITTED_NAME_AND_TITLE);
 
-const recordKindFactsSchema = recordKindWireSchema.omit(OMITTED_NAME_AND_TITLE);
+const recordKindFactsSchema = recordKindWireSchema.omit({ ...OMITTED_NAME_AND_TITLE, todaysFormat: true });
 
 const symptomFactsSchema = symptomWireSchema.omit(OMITTED_NAME_AND_TITLE);
 

@@ -145,7 +145,7 @@ const clauseSettingDeclarationSchema = z
     }
   });
 
-const pieceFileSchema = z.object({
+export const pieceFileSchema = z.object({
   version: z.literal(SUPPORTED_VERSION),
   discipline: disciplineIdSchema,
   mechanism: ruleSetMechanismSchema,

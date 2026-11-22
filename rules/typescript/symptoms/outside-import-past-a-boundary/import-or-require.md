@@ -1,11 +1,7 @@
 # import-or-require
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `import()`, `require`, globals.

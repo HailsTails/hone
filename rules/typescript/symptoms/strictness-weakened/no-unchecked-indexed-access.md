@@ -1,11 +1,7 @@
 # no-unchecked-indexed-access
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Flags beyond the symptom:** edition 1: a flag set to `true`.

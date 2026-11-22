@@ -37,6 +37,7 @@ const commandOver = (request: { readonly git: GitPort }): VersionOneCommandPorts
 const PORTS: UpgradePorts = {
   recordsReader: { recordsReadingOf: vi.fn() },
   symptomCatalogueOf: vi.fn(),
+  engineBindingsOf: vi.fn(),
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),
   directory: { list: vi.fn(), create: vi.fn() },

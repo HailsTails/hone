@@ -3,7 +3,7 @@ import { createSelectionRepository } from "../infrastructure/disciplines-file/co
 import type { ExceptionRecord } from "../domain/records/discipline-exceptions/exception-record.ts";
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
@@ -125,7 +125,7 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 };
 
 const toolCatalogue = (): SymptomCatalogue => {
-  const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
+  const reading = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT });
   assert(reading.outcome === "ok", "this repository's catalogue reads");
   assert(reading.value.held === "catalogue", "this repository holds a catalogue");
   return reading.value.catalogue;

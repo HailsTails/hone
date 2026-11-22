@@ -77,7 +77,7 @@ export const cataloguePagesOf = (request: { readonly files: readonly SourceFile[
   }
   const file = catalogueFileOf({
     items: items.value.map((each) => each.placed),
-    beside: { engines: ENGINE_REGISTRY, clauses: names.value.clauses, clauseOfCheck: names.value.clauseOfCheck },
+    beside: { engines: ENGINE_REGISTRY, clauses: names.value.clauses, clauseOfCheck: names.value.clauseOfCheck, formatsOfToday: names.value.formatsOfToday },
   });
   if (file.outcome === "failed") {
     return file;

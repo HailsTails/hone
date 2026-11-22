@@ -8,8 +8,9 @@ import type { Result } from "../../../domain/result.ts";
 import type {
   AlwaysRecordable,
   Case,
+  CatalogueContent,
   CataloguedClause,
-  Check,
+  CheckContent,
   ClauseSight,
   CorrectUse,
   Engine,
@@ -22,7 +23,6 @@ import type {
   RecordKind,
   Rule,
   Symptom,
-  SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 
 export const SUPPORTED_VERSION = 1;
@@ -83,7 +83,6 @@ export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
   clause: clauseAddressSchema,
-  engines: z.array(catalogueNameSchema).min(1),
 });
 
 export const catalogueFileSchema = z.strictObject({
@@ -357,7 +356,7 @@ const formsOf = (request: { readonly clause: CataloguedClause; readonly symptom:
     ? request.clause.sight.forms.filter((form) => form.symptom.name === request.symptom.name).map((form) => form.section)
     : [];
 
-type Checking = { readonly symptoms: readonly Symptom[]; readonly clauses: readonly CataloguedClause[]; readonly engines: readonly Engine[] };
+type Checking = { readonly symptoms: readonly Symptom[]; readonly clauses: readonly CataloguedClause[] };
 
 const checkedClauseOf = (request: Checking & { readonly wire: CheckWire }): Resolution<CataloguedClause> => {
   const clause = request.clauses.find((candidate) => sameClauseAddress({ left: candidate.clause, right: request.wire.clause }) === "same");
@@ -370,14 +369,12 @@ const sightedCheckOf = (request: {
   readonly wire: CheckWire;
   readonly symptom: Symptom;
   readonly clause: CataloguedClause;
-  readonly engines: readonly Engine[];
-}): Resolution<Check> =>
+}): Resolution<CheckContent> =>
   sightedNamesOf({ clause: request.clause }).includes(request.symptom.name)
     ? resolved({
         name: request.wire.name,
         symptom: request.symptom,
         clause: request.clause.clause,
-        engines: request.engines,
         forms: formsOf({ clause: request.clause, symptom: request.symptom }),
       })
     : {
@@ -387,17 +384,16 @@ const sightedCheckOf = (request: {
         ],
       };
 
-const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<Check> => {
+const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<CheckContent> => {
   const { wire } = request;
   const symptom = heldEntryNamed({ listing: "checks", entries: request.symptoms, name: wire.symptom });
   const clause = checkedClauseOf(request);
-  const engines = allResolved(wire.engines.map((name) => heldEntryNamed({ listing: "checks", entries: request.engines, name })));
-  return symptom.outcome === "failed" || clause.outcome === "failed" || engines.outcome === "failed"
-    ? { outcome: "failed", error: [...faultsOf(symptom), ...faultsOf(clause), ...faultsOf(engines)] }
-    : sightedCheckOf({ wire, symptom: symptom.value, clause: clause.value, engines: engines.value });
+  return symptom.outcome === "failed" || clause.outcome === "failed"
+    ? { outcome: "failed", error: [...faultsOf(symptom), ...faultsOf(clause)] }
+    : sightedCheckOf({ wire, symptom: symptom.value, clause: clause.value });
 };
 
-const uncheckedSightingsOf = (request: { readonly clause: CataloguedClause; readonly checks: readonly Check[] }): readonly string[] => {
+const uncheckedSightingsOf = (request: { readonly clause: CataloguedClause; readonly checks: readonly CheckContent[] }): readonly string[] => {
   const checked = checksOf({ catalogue: request, clause: request.clause.clause });
   return checked.length === 0
     ? []
@@ -406,7 +402,7 @@ const uncheckedSightingsOf = (request: { readonly clause: CataloguedClause; read
         .map((name) => `${clauseAddressText({ address: request.clause.clause })} sees ${name}, which no check names`);
 };
 
-const resolvedChecksOf = (request: Checking & { readonly wires: readonly CheckWire[] }): Resolution<readonly Check[]> => {
+const resolvedChecksOf = (request: Checking & { readonly wires: readonly CheckWire[] }): Resolution<readonly CheckContent[]> => {
   const checks = allResolved(request.wires.map((wire) => checkOf({ ...request, wire })));
   if (checks.outcome === "failed") {
     return checks;
@@ -415,7 +411,7 @@ const resolvedChecksOf = (request: Checking & { readonly wires: readonly CheckWi
   return unchecked.length > 0 ? { outcome: "failed", error: unchecked } : checks;
 };
 
-const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<SymptomCatalogue> => {
+const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<CatalogueContent> => {
   const definitions = definitionsOf(request);
   if (definitions.outcome === "failed") {
     return definitions;
@@ -430,7 +426,7 @@ const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<Symp
     return clauses;
   }
   return mapped({
-    resolution: resolvedChecksOf({ symptoms: symptoms.value, clauses: clauses.value, engines: definitions.value.engines, wires: request.file.checks }),
+    resolution: resolvedChecksOf({ symptoms: symptoms.value, clauses: clauses.value, wires: request.file.checks }),
     to: (checks) => ({
       ...definitions.value,
       symptoms: symptoms.value,
@@ -493,7 +489,7 @@ const checkedCatalogueFileSchema = catalogueFileSchema.superRefine((file, contex
 
 const refusalText = (request: { readonly faults: readonly string[] }): string => request.faults.map((fault) => `✖ ${fault}`).join("\n");
 
-export const symptomCatalogueFromFile = (request: { readonly file: CatalogueFile }): Result<SymptomCatalogue, string> => {
+export const catalogueContentFromFile = (request: { readonly file: CatalogueFile }): Result<CatalogueContent, string> => {
   const repeats = repeatedNamesOf({ file: request.file });
   if (repeats.length > 0) {
     return { outcome: "failed", error: refusalText({ faults: repeats }) };
@@ -502,7 +498,7 @@ export const symptomCatalogueFromFile = (request: { readonly file: CatalogueFile
   return catalogue.outcome === "failed" ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) } : catalogue;
 };
 
-export const symptomCatalogueOf = (request: { readonly document: unknown }): Result<SymptomCatalogue, string> => {
+export const catalogueContentOf = (request: { readonly document: unknown }): Result<CatalogueContent, string> => {
   const parsed = checkedCatalogueFileSchema.safeParse(request.document);
   if (!parsed.success) {
     return { outcome: "failed", error: z.prettifyError(parsed.error) };

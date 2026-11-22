@@ -3,7 +3,7 @@ import type { FileTextPort } from "../../../application/ports/file-system/file-t
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { SymptomCatalogueOf, SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
-import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { ContentHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -19,7 +19,7 @@ type CatalogueSource = {
   readonly ruleSetRoot: AbsolutePath;
 };
 
-const readSymptomCatalogue = (request: CatalogueSource): Result<CatalogueHolding, VersionTwoLoadFailure> => {
+const readSymptomCatalogue = (request: CatalogueSource): Result<ContentHolding, VersionTwoLoadFailure> => {
   const itemRoot = request.path.join({ segments: [request.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] });
   const root = absolutePathSchema.safeParse(itemRoot);
   if (!root.success) {
@@ -29,7 +29,7 @@ const readSymptomCatalogue = (request: CatalogueSource): Result<CatalogueHolding
   if (names.outcome === "failed") {
     return names;
   }
-  const beside = { engines: ENGINE_REGISTRY, clauses: names.value.clauses, clauseOfCheck: names.value.clauseOfCheck };
+  const beside = { engines: ENGINE_REGISTRY, clauses: names.value.clauses, clauseOfCheck: names.value.clauseOfCheck, formatsOfToday: names.value.formatsOfToday };
   return createItemFolderCatalogueRepository({ fileText: request.fileText, directory: request.directory, path: request.path, root: root.data, beside }).read({});
 };
 

@@ -2,11 +2,11 @@ import type { DirectoryPort } from "../../../application/ports/file-system/direc
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
-import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { ContentHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import { symptomCatalogueFromFile } from "../symptom-catalogues/symptom-catalogue-wire.ts";
+import { catalogueContentFromFile } from "../symptom-catalogues/symptom-catalogue-wire.ts";
 import { catalogueFileOf, type HeldBesideItems, type PlacedItem } from "./item-document.ts";
 import { itemFactsOf } from "./item-facts.ts";
 import { fileRoleOf, identityOf } from "./item-identity.ts";
@@ -55,15 +55,15 @@ const placedItemsOf = (request: ItemFolder & { readonly files: readonly string[]
   return failure?.outcome === "failed" ? failure : { outcome: "ok", value: reads.flatMap((each) => (each.outcome === "ok" ? [each.value] : [])) };
 };
 
-const holdingOf = (request: { readonly root: AbsolutePath; readonly beside: HeldBesideItems; readonly items: readonly PlacedItem[] }): Result<CatalogueHolding, VersionTwoLoadFailure> => {
+const holdingOf = (request: { readonly root: AbsolutePath; readonly beside: HeldBesideItems; readonly items: readonly PlacedItem[] }): Result<ContentHolding, VersionTwoLoadFailure> => {
   const file = catalogueFileOf({ items: request.items, beside: request.beside });
-  const catalogue = file.outcome === "failed" ? file : symptomCatalogueFromFile({ file: file.value });
-  return catalogue.outcome === "failed"
-    ? { outcome: "failed", error: malformed({ path: request.root, detail: catalogue.error }) }
-    : { outcome: "ok", value: { held: "catalogue", catalogue: catalogue.value } };
+  const content = file.outcome === "failed" ? file : catalogueContentFromFile({ file: file.value });
+  return content.outcome === "failed"
+    ? { outcome: "failed", error: malformed({ path: request.root, detail: content.error }) }
+    : { outcome: "ok", value: { held: "catalogue", content: content.value } };
 };
 
-const readItemFolderCatalogue = (request: ItemFolder): Result<CatalogueHolding, VersionTwoLoadFailure> => {
+const readItemFolderCatalogue = (request: ItemFolder): Result<ContentHolding, VersionTwoLoadFailure> => {
   if (request.fileText.exists({ path: request.root }) === "absent") {
     return { outcome: "ok", value: { held: "none" } };
   }

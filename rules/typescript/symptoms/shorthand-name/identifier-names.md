@@ -1,11 +1,7 @@
 # identifier-names
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** shorthand not on the list.

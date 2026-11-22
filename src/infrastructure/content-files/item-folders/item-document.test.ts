@@ -21,22 +21,23 @@ const BANNING_RULE: PlacedItem = {
   item: { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted", namedBans: ["lodash", "fp-ts"] } },
 };
 
-const DEBT: PlacedItem = { name: "debt", within: undefined, title: "Debt", item: { kind: "record-kind", facts: { phrase: "debt", todaysFormat: "none-yet" } } };
+const DEBT: PlacedItem = { name: "debt", within: undefined, title: "Debt", item: { kind: "record-kind", facts: { phrase: "debt" } } };
 
 const CHECK: PlacedItem = {
   name: "clock-sources",
   within: "date-used-directly",
   title: "Clock sources",
-  item: { kind: "check", facts: { engines: ["walker"] } },
+  item: { kind: "check", facts: {} },
 };
 
 const BESIDE: HeldBesideItems = {
   engines: [{ name: "walker", mechanism: mechanismIdSchema.parse("audit") }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
+  formatsOfToday: { debt: "file-carve-out" },
 };
 
-const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map() };
+const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map(), formatsOfToday: {} };
 
 describe("catalogueFileOf", () => {
   it("gathers each kind into its list, naming each item from its place and titling it from its heading, beside what no item holds", () => {
@@ -48,11 +49,11 @@ describe("catalogueFileOf", () => {
         rules: [{ name: "written-out-answers", title: "Written-out answers", principle: "tests-are-ours", standing: "accepted" }],
         cases: [],
         recipes: [],
-        recordKinds: [{ name: "debt", title: "Debt", phrase: "debt", todaysFormat: "none-yet" }],
+        recordKinds: [{ name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" }],
         engines: [{ name: "walker", mechanism: "audit" }],
         symptoms: [],
         clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-        checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: CLOCK_SOURCES, engines: ["walker"] }],
+        checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: CLOCK_SOURCES }],
         namedBans: [],
       },
     });
@@ -73,6 +74,13 @@ describe("catalogueFileOf", () => {
     expect(catalogueFileOf({ items: [second, PRINCIPLE], beside: NOTHING_BESIDE })).toMatchObject({
       outcome: "ok",
       value: { principles: [{ name: "one-place-decides" }, { name: "tests-are-ours" }] },
+    });
+  });
+
+  it("gives a record kind the version 1 names leave out no format of today", () => {
+    expect(catalogueFileOf({ items: [DEBT], beside: NOTHING_BESIDE })).toMatchObject({
+      outcome: "ok",
+      value: { recordKinds: [{ name: "debt", title: "Debt", phrase: "debt", todaysFormat: "none-yet" }] },
     });
   });
 

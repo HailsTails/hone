@@ -12,7 +12,7 @@ import type { AuthoriseRequest } from "../../src/application/ports/authorising.t
 import { readHoneRecords } from "../../src/application/records/read-hone-records.ts";
 import { createRecordsFolder } from "../../src/infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createRecordsStore } from "../../src/infrastructure/hone-records-folder/writing/records-store.ts";
-import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { Result } from "../../src/domain/result.ts";
@@ -149,7 +149,7 @@ const SHIPPED_ROOT = absolutePathSchema.parse(path.join({ segments: [`${import.m
 
 const scratch = createDefaultScratchFilesPort({});
 
-const holding = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: SHIPPED_ROOT }).read({});
+const holding = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: SHIPPED_ROOT, installRoot: SHIPPED_ROOT });
 assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
 assert(holding.value.held === "catalogue", "the shipped symptom catalogue is present");
 

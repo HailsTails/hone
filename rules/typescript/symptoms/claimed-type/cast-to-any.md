@@ -1,11 +1,7 @@
 # cast-to-any
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `any` reached through an outside dependency's types.

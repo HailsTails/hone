@@ -1,11 +1,7 @@
 # no-property-access-from-index-signature
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Flags beyond the symptom:** edition 1: a flag set to `true`.

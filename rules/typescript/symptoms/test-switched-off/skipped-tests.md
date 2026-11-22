@@ -1,11 +1,7 @@
 # skipped-tests
 
 ```json
-{
-  "engines": [
-    "eslint"
-  ]
-}
+{}
 ```
 
 - **Misses:** `.todo`.

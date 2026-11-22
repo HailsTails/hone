@@ -2,7 +2,6 @@
 
 ```json
 {
-  "phrase": "a dependency record",
-  "todaysFormat": "none-yet"
+  "phrase": "a dependency record"
 }
 ```

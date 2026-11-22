@@ -18,17 +18,18 @@ const BESIDE: HeldBesideItems = {
   engines: [{ name: "walker", mechanism: mechanismIdSchema.parse("checker") }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
+  formatsOfToday: { "authorised-location": "authorised-location" },
 };
 
-const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map() };
+const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map(), formatsOfToday: {} };
 
 const DOES_ONE_JOB = '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "rule": "written-out-answers" }] }\n```\n';
 
 const TESTS_ARE_OURS = "# Tests are ours\n\n```json\n{}\n```\n\nWhy tests are ours, which the tool never reads.\n";
 
-const AUTHORISED_LOCATION = '# Authorised location\n\n```json\n{ "phrase": "an authorised location", "todaysFormat": "authorised-location" }\n```\n';
+const AUTHORISED_LOCATION = '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n';
 
-const DEBT = '# Debt\n\n```json\n{ "phrase": "debt", "todaysFormat": "none-yet" }\n```\n';
+const DEBT = '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n';
 
 const WRITTEN_OUT_ANSWERS = '# Written-out answers\n\n```json\n{ "principle": "tests-are-ours", "standing": "accepted" }\n```\n';
 
@@ -37,7 +38,7 @@ const WORLD_VALUES = '# World values through a port\n\n```json\n{ "serves": { "r
 const DATE_USED_DIRECTLY =
   '# Date used directly\n\n```json\n{ "group": "The outside world reached directly", "seen": "Any use of Date.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "rule": "written-out-answers" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": ["world-values-through-a-port"], "correctUses": [{ "situation": "correct use", "kind": "debt" }] }\n```\n';
 
-const CLOCK_SOURCES_CHECK = '# Clock sources\n\n```json\n{ "engines": ["walker"] }\n```\n';
+const CLOCK_SOURCES_CHECK = '# Clock sources\n\n```json\n{}\n```\n';
 
 const fileTextReading = (read: FileTextPort["read"]): FileTextPort => ({
   read,
@@ -105,15 +106,15 @@ describe("createItemFolderCatalogueRepository", () => {
       outcome: "ok",
       value: {
         held: "catalogue",
-        catalogue: {
+        content: {
           principles: [{ name: "tests-are-ours", title: "Tests are ours" }],
           rules: [{ name: "written-out-answers", title: "Written-out answers", principle: { name: "tests-are-ours" }, standing: "accepted" }],
           cases: [{ name: "does-one-job", title: "Does one job" }],
           recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
-          recordKinds: [{ name: "authorised-location" }, { name: "debt" }],
+          recordKinds: [{ name: "authorised-location", todaysFormat: "authorised-location" }, { name: "debt", todaysFormat: "none-yet" }],
           engines: [{ name: "walker", mechanism: "checker" }],
           symptoms: [{ name: "date-used-directly", title: "Date used directly", recipes: [{ name: "world-values-through-a-port" }] }],
-          checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" }, clause: CLOCK_SOURCES, engines: [{ name: "walker" }] }],
+          checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" }, clause: CLOCK_SOURCES }],
         },
       },
     });

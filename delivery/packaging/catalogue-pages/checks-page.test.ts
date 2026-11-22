@@ -37,14 +37,14 @@ const FILE: CatalogueFile = {
   ],
   clauses: [],
   checks: [
-    { symptom: "claimed-type", name: "cast-to-any", clause: clauseAddressSchema.parse("CD-1#any-cast"), engines: ["walker", "eslint"] },
-    { symptom: "claimed-type", name: "non-null-assertions", clause: clauseAddressSchema.parse("CD-1#non-null"), engines: ["eslint"] },
+    { symptom: "claimed-type", name: "cast-to-any", clause: clauseAddressSchema.parse("CD-1#any-cast") },
+    { symptom: "claimed-type", name: "non-null-assertions", clause: clauseAddressSchema.parse("CD-1#non-null") },
   ],
   namedBans: [],
 };
 
 describe("checksPageOf", () => {
-  it("renders each check under its symptom with its engines and prose, leaving out a symptom with no checks", () => {
+  it("renders each check under its symptom with its prose, leaving out a symptom with no checks", () => {
     expect(
       checksPageOf({
         file: FILE,
@@ -52,7 +52,7 @@ describe("checksPageOf", () => {
       }),
     ).toEqual({
       path: "rules/typescript/checks.md",
-      text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Engines:** walker, eslint.\n\n- **Misses:** casts in [tests](../rules/tests-stub-ports.md).\n\n### non-null-assertions\n\n- **Engines:** eslint.\n",
+      text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Misses:** casts in [tests](../rules/tests-stub-ports.md).\n\n### non-null-assertions\n",
     });
   });
 });

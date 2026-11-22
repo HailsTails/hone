@@ -151,6 +151,7 @@ const proofRequestOf = (request: UpgradeInput & { readonly prepared: Prepared })
       directory: ports.directory,
       recordsReader: ports.recordsReader,
       symptomCatalogueOf: ports.symptomCatalogueOf,
+      engineBindingsOf: ports.engineBindingsOf,
       settingsFormat: ports.settingsFormat,
       settingsSourcesOf: ports.settingsSourcesOf,
     }),

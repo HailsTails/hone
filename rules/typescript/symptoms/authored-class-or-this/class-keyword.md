@@ -1,12 +1,7 @@
 # class-keyword
 
 ```json
-{
-  "engines": [
-    "walker",
-    "eslint"
-  ]
-}
+{}
 ```
 
 - **Misses:** `this` outside a class.

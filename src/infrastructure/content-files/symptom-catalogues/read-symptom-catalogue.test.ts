@@ -16,20 +16,20 @@ const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/instal
 const NAMES_PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
 
 const NAMES_TEXT =
-  '{ "version": 1, "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#parameter-reassignment"] }] }';
+  '{ "version": 1, "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#parameter-reassignment"] }], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }';
 
 const MAKES_A_NEW_VALUE_TEXT = '# Makes a new value from what it has\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "no-hidden-effects" }] }\n```\n';
 
 const NO_HIDDEN_EFFECTS_TEXT = "# No hidden effects\n\n```json\n{}\n```\n";
 
-const AUTHORISED_LOCATION_TEXT = '# Authorised location\n\n```json\n{ "phrase": "an authorised location", "todaysFormat": "authorised-location" }\n```\n';
+const AUTHORISED_LOCATION_TEXT = '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n';
 
-const DEBT_TEXT = '# Debt\n\n```json\n{ "phrase": "debt", "todaysFormat": "file-carve-out" }\n```\n';
+const DEBT_TEXT = '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n';
 
 const REBINDING_TEXT =
   '# Rebinding\n\n```json\n{ "group": "Effects and state", "seen": "A `let` assigned again.", "mayIndicate": [{ "case": "makes-a-new-value-from-what-it-has", "points": [{ "principle": "no-hidden-effects" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }\n```\n';
 
-const PARAMETER_REASSIGNMENT_TEXT = '# parameter-reassignment\n\n```json\n{ "engines": ["eslint"] }\n```\n';
+const PARAMETER_REASSIGNMENT_TEXT = '# parameter-reassignment\n\n```json\n{}\n```\n';
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -109,12 +109,12 @@ const ITEM_FOLDER_DIRECTORY: DirectoryPort = {
   };
 
 describe("createSymptomCatalogueRepository", () => {
-  it("reads the items under the rule set's rules folder, with the clauses the version 1 names give and the engines the registry names", () => {
+  it("reads the items under the rule set's rules folder, with the clauses and formats of today the version 1 names give and the engines the registry names", () => {
     expect(createSymptomCatalogueRepository({ fileText: ITEM_FOLDER_FILE_TEXT, directory: ITEM_FOLDER_DIRECTORY, path: PATH, ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
       outcome: "ok",
       value: {
         held: "catalogue",
-        catalogue: {
+        content: {
           principles: [NO_HIDDEN_EFFECTS],
           rules: [],
           cases: [MAKES_A_NEW_VALUE],
@@ -124,7 +124,7 @@ describe("createSymptomCatalogueRepository", () => {
           engines: [WALKER, ESLINT],
           symptoms: [REBINDING],
           clauses: [{ clause: PARAMETER_REASSIGNMENT, sight: { kind: "one-symptom", symptom: REBINDING } }],
-          checks: [{ name: "parameter-reassignment", symptom: REBINDING, clause: PARAMETER_REASSIGNMENT, engines: [ESLINT], forms: [] }],
+          checks: [{ name: "parameter-reassignment", symptom: REBINDING, clause: PARAMETER_REASSIGNMENT, forms: [] }],
           namedBans: [],
         },
       },

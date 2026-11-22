@@ -57,17 +57,18 @@ export type AlwaysRecordable = { readonly debt: RecordKind; readonly authorisedL
 
 export type Engine = { readonly name: string; readonly mechanism: MechanismId };
 
-export type Check = {
+export type CheckContent = {
   readonly name: string;
   readonly symptom: Symptom;
   readonly clause: ClauseAddress;
-  readonly engines: readonly Engine[];
   readonly forms: readonly string[];
 };
 
+export type Check = CheckContent & { readonly engines: readonly Engine[] };
+
 export type NamedBan = { readonly outsideDependency: string };
 
-export type SymptomCatalogue = {
+type CatalogueBody = {
   readonly principles: readonly Principle[];
   readonly rules: readonly Rule[];
   readonly cases: readonly Case[];
@@ -77,11 +78,16 @@ export type SymptomCatalogue = {
   readonly engines: readonly Engine[];
   readonly symptoms: readonly Symptom[];
   readonly clauses: readonly CataloguedClause[];
-  readonly checks: readonly Check[];
   readonly namedBans: readonly NamedBan[];
 };
 
+export type CatalogueContent = CatalogueBody & { readonly checks: readonly CheckContent[] };
+
+export type SymptomCatalogue = CatalogueBody & { readonly checks: readonly Check[] };
+
 export type CatalogueHolding = { readonly held: "catalogue"; readonly catalogue: SymptomCatalogue } | { readonly held: "none" };
+
+export type ContentHolding = { readonly held: "catalogue"; readonly content: CatalogueContent } | { readonly held: "none" };
 
 export type SymptomReading =
   | { readonly reading: "named"; readonly symptom: Symptom }

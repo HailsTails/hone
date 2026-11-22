@@ -133,6 +133,30 @@ describe("createSettingsSources", () => {
     expect(sourcesOver({ files: INSTALL_FILES }).catalogue({ ruleSetRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
   });
 
+  it("reads a declared rule set's pieces from its mechanisms folder when it gives its catalogue", () => {
+    const sources = createSettingsSources({
+      directory: {
+        list: vi
+          .fn<DirectoryPort["list"]>()
+          .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/tools/hone-rules/mechanisms/audit"), detail: "EACCES" } }),
+        create: vi.fn<DirectoryPort["create"]>(),
+      },
+      repoRoot: REPO_ROOT,
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts",
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>(),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+        write: vi.fn<FileTextPort["write"]>(),
+      },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    });
+    expect(sources.catalogue({ ruleSetRoot: absoluteRootOf("/repo/tools/hone-rules") })).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: "/repo/tools/hone-rules/mechanisms/audit", detail: "EACCES" },
+    });
+  });
+
   it("reads the piece of a mechanical clause with its definition's anchor and exceptions", () => {
     expect(pieceOf({ files: INSTALL_FILES, clause: "CD-15#loops", mechanism: "audit" })).toMatchObject({
       outcome: "ok",

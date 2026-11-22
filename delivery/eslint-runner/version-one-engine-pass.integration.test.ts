@@ -14,7 +14,7 @@ import type { ModuleLoaderPort } from "../../src/application/ports/host/module-l
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import type { Finding } from "../../src/domain/finding/governance.ts";
-import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import type { Check } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { RuleSetCatalogue } from "../../src/domain/settings/check-choices.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
@@ -251,7 +251,7 @@ const CLASS_FINDING: Finding = {
 };
 
 const catalogues = () => {
-  const holding = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
+  const holding = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT });
   assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
   assert(holding.value.held === "catalogue", "the shipped symptom catalogue is present");
   return [{ ruleSet: TOOL_RULE_SET, catalogue: holding.value.catalogue }];

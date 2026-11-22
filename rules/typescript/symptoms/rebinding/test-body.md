@@ -1,11 +1,7 @@
 # test-body
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** a local `let` in production.

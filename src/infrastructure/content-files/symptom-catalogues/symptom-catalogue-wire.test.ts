@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Case, Engine, Principle, Recipe, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { catalogueFileSchema, symptomCatalogueFromFile, symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { catalogueFileSchema, catalogueContentFromFile, catalogueContentOf } from "./symptom-catalogue-wire.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const RECORD_KINDS_DOCUMENT = [
@@ -64,8 +64,8 @@ const DOCUMENT = {
     { clause: "CD-32#pii-redaction", sight: { kind: "outside-the-cases" } },
   ],
   checks: [
-    { symptom: "loop-keyword", name: "loops", clause: "CD-15#loops", engines: ["walker", "eslint"] },
-    { symptom: "loop-keyword", name: "test-body", clause: "CD-27#test-body-logic", engines: ["walker"] },
+    { symptom: "loop-keyword", name: "loops", clause: "CD-15#loops" },
+    { symptom: "loop-keyword", name: "test-body", clause: "CD-27#test-body-logic" },
   ],
   namedBans: [{ outsideDependency: "lodash" }],
 };
@@ -174,9 +174,9 @@ const SYMPTOM_HOLDING_DOCUMENT = {
   clauses: [{ clause: "CD-42#useless-else", sight: { kind: "one-symptom", symptom: "work-inside-a-condition" } }],
 };
 
-describe("symptomCatalogueOf", () => {
+describe("catalogueContentOf", () => {
   it("resolves every name a document gives to the entry it names, field by field", () => {
-    expect(symptomCatalogueOf({ document: DOCUMENT })).toEqual({
+    expect(catalogueContentOf({ document: DOCUMENT })).toEqual({
       outcome: "ok",
       value: {
         principles: [NO_HIDDEN_EFFECTS],
@@ -194,8 +194,8 @@ describe("symptomCatalogueOf", () => {
           { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, sight: { kind: "outside-the-cases" } },
         ],
         checks: [
-          { name: "loops", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, engines: [WALKER, ESLINT], forms: [] },
-          { name: "test-body", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, engines: [WALKER], forms: ["a-let"] },
+          { name: "loops", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, forms: [] },
+          { name: "test-body", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, forms: ["a-let"] },
         ],
         namedBans: [{ outsideDependency: "lodash" }],
       },
@@ -204,7 +204,7 @@ describe("symptomCatalogueOf", () => {
 
   it("gives a check on a clause that sees symptoms by form only the forms of its own symptom", () => {
     expect(
-      symptomCatalogueOf({
+      catalogueContentOf({
         document: {
           ...SYMPTOM_HOLDING_DOCUMENT,
           symptoms: [SYMPTOM_DOCUMENT, { ...SYMPTOM_DOCUMENT, name: "rebinding", title: "Rebinding" }],
@@ -222,8 +222,8 @@ describe("symptomCatalogueOf", () => {
             },
           ],
           checks: [
-            { symptom: "work-inside-a-condition", name: "test-body", clause: "CD-27#test-body-logic", engines: ["eslint"] },
-            { symptom: "rebinding", name: "test-body", clause: "CD-27#test-body-logic", engines: ["eslint"] },
+            { symptom: "work-inside-a-condition", name: "test-body", clause: "CD-27#test-body-logic" },
+            { symptom: "rebinding", name: "test-body", clause: "CD-27#test-body-logic" },
           ],
         },
       }),
@@ -235,7 +235,7 @@ describe("symptomCatalogueOf", () => {
 
   it("reads the situation an indication of a case is about, and takes one case once in each situation", () => {
     expect(
-      symptomCatalogueOf({
+      catalogueContentOf({
         document: {
           ...SYMPTOM_HOLDING_DOCUMENT,
           symptoms: [
@@ -269,7 +269,7 @@ describe("symptomCatalogueOf", () => {
   });
 
   it("reads a catalogue that holds only the record kinds every symptom takes", () => {
-    expect(symptomCatalogueOf({ document: EMPTY_DOCUMENT })).toEqual({
+    expect(catalogueContentOf({ document: EMPTY_DOCUMENT })).toEqual({
       outcome: "ok",
       value: {
         principles: [],
@@ -357,8 +357,8 @@ describe("symptomCatalogueOf", () => {
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         checks: [
-          { symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else", engines: ["eslint"] },
-          { symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else", engines: ["eslint"] },
+          { symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else" },
+          { symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else" },
         ],
       },
       refusal:
@@ -380,8 +380,8 @@ describe("symptomCatalogueOf", () => {
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         checks: [
-          { symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else", engines: ["eslint"] },
-          { symptom: "work-inside-a-condition", name: "else-after-an-exit", clause: "hone/CD-42#useless-else", engines: ["eslint"] },
+          { symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else" },
+          { symptom: "work-inside-a-condition", name: "else-after-an-exit", clause: "hone/CD-42#useless-else" },
         ],
       },
       refusal: "✖ the checks of work-inside-a-condition holds CD-42#useless-else more than once",
@@ -531,33 +531,20 @@ describe("symptomCatalogueOf", () => {
     },
     {
       name: "a check on a symptom the catalogue does not hold",
-      document: { ...SYMPTOM_HOLDING_DOCUMENT, checks: [{ symptom: "rebinding", name: "useless-else", clause: "CD-42#useless-else", engines: ["eslint"] }] },
+      document: { ...SYMPTOM_HOLDING_DOCUMENT, checks: [{ symptom: "rebinding", name: "useless-else", clause: "CD-42#useless-else" }] },
       refusal: "✖ checks names rebinding, which the catalogue does not hold",
     },
     {
       name: "a check on a clause the catalogue does not hold",
-      document: { ...SYMPTOM_HOLDING_DOCUMENT, checks: [{ symptom: "work-inside-a-condition", name: "loops", clause: "CD-15#loops", engines: ["eslint"] }] },
+      document: { ...SYMPTOM_HOLDING_DOCUMENT, checks: [{ symptom: "work-inside-a-condition", name: "loops", clause: "CD-15#loops" }] },
       refusal: "✖ checks names CD-15#loops, which the catalogue does not hold",
-    },
-    {
-      name: "a check run by an engine the catalogue does not hold",
-      document: {
-        ...SYMPTOM_HOLDING_DOCUMENT,
-        checks: [{ symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else", engines: ["walker"] }],
-      },
-      refusal: "✖ checks names walker, which the catalogue does not hold",
-    },
-    {
-      name: "a check run by no engine",
-      document: { ...SYMPTOM_HOLDING_DOCUMENT, checks: [{ symptom: "work-inside-a-condition", name: "useless-else", clause: "CD-42#useless-else", engines: [] }] },
-      refusal: "✖ Too small: expected array to have >=1 items\n  → at checks[0].engines",
     },
     {
       name: "a check on a symptom its clause does not see",
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         symptoms: [SYMPTOM_DOCUMENT, { ...SYMPTOM_DOCUMENT, name: "rebinding", title: "Rebinding" }],
-        checks: [{ symptom: "rebinding", name: "useless-else", clause: "CD-42#useless-else", engines: ["eslint"] }],
+        checks: [{ symptom: "rebinding", name: "useless-else", clause: "CD-42#useless-else" }],
       },
       refusal: "✖ checks names rebinding#useless-else on CD-42#useless-else, which does not see rebinding",
     },
@@ -566,7 +553,7 @@ describe("symptomCatalogueOf", () => {
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         clauses: [{ clause: "CD-32#pii-redaction", sight: { kind: "outside-the-cases" } }],
-        checks: [{ symptom: "work-inside-a-condition", name: "pii-redaction", clause: "CD-32#pii-redaction", engines: ["eslint"] }],
+        checks: [{ symptom: "work-inside-a-condition", name: "pii-redaction", clause: "CD-32#pii-redaction" }],
       },
       refusal: "✖ checks names work-inside-a-condition#pii-redaction on CD-32#pii-redaction, which does not see work-inside-a-condition",
     },
@@ -587,7 +574,7 @@ describe("symptomCatalogueOf", () => {
             },
           },
         ],
-        checks: [{ symptom: "work-inside-a-condition", name: "test-body", clause: "CD-27#test-body-logic", engines: ["eslint"] }],
+        checks: [{ symptom: "work-inside-a-condition", name: "test-body", clause: "CD-27#test-body-logic" }],
       },
       refusal: "✖ CD-27#test-body-logic sees rebinding, which no check names",
     },
@@ -607,22 +594,22 @@ describe("symptomCatalogueOf", () => {
       refusal: "✖ Invalid input: expected 1\n  → at version",
     },
   ])("refuses $name", ({ document, refusal }) => {
-    expect(symptomCatalogueOf({ document })).toEqual({ outcome: "failed", error: refusal });
+    expect(catalogueContentOf({ document })).toEqual({ outcome: "failed", error: refusal });
   });
 });
 
-describe("symptomCatalogueFromFile", () => {
+describe("catalogueContentFromFile", () => {
   it("resolves a parsed file to the catalogue the document gives", () => {
-    expect(symptomCatalogueFromFile({ file: catalogueFileSchema.parse(DOCUMENT) })).toEqual(symptomCatalogueOf({ document: DOCUMENT }));
+    expect(catalogueContentFromFile({ file: catalogueFileSchema.parse(DOCUMENT) })).toEqual(catalogueContentOf({ document: DOCUMENT }));
   });
 
   it("refuses a file that holds one name twice", () => {
     const file = catalogueFileSchema.parse({ ...EMPTY_DOCUMENT, principles: [PRINCIPLES_DOCUMENT[0], PRINCIPLES_DOCUMENT[0]] });
-    expect(symptomCatalogueFromFile({ file })).toEqual({ outcome: "failed", error: "✖ principles holds no-hidden-effects more than once" });
+    expect(catalogueContentFromFile({ file })).toEqual({ outcome: "failed", error: "✖ principles holds no-hidden-effects more than once" });
   });
 
   it("refuses a file that names what it does not hold", () => {
     const file = catalogueFileSchema.parse({ ...EMPTY_DOCUMENT, rules: [{ name: "guard-first", title: "Guard first", principle: "gone", standing: "accepted" }] });
-    expect(symptomCatalogueFromFile({ file })).toEqual({ outcome: "failed", error: expect.stringMatching(/^✖ .*gone/) });
+    expect(catalogueContentFromFile({ file })).toEqual({ outcome: "failed", error: expect.stringMatching(/^✖ .*gone/) });
   });
 });

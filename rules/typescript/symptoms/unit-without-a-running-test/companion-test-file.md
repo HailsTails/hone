@@ -1,11 +1,7 @@
 # companion-test-file
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** an empty or non-running sibling.

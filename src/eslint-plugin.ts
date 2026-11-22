@@ -4,7 +4,7 @@ import { createDefaultDirectoryPort } from "./infrastructure/node/file-system/fi
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
-import { createSymptomCatalogueRepository } from "./infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "./infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "./domain/language-layer/symptom-catalogue-location.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { Result } from "./domain/result.ts";
@@ -28,7 +28,7 @@ const path = createDefaultPathPort({});
 const fileText = createDefaultFileTextPort({});
 
 const pluginAt = async (request: { readonly installRoot: AbsolutePath }): Promise<Result<HonePlugin, string>> => {
-  const catalogue = createSymptomCatalogueRepository({ fileText, directory: createDefaultDirectoryPort({}), path, ruleSetRoot: request.installRoot }).read({});
+  const catalogue = readBoundCatalogue({ fileText, directory: createDefaultDirectoryPort({}), path, ruleSetRoot: request.installRoot, installRoot: request.installRoot });
   if (catalogue.outcome === "failed") {
     return { outcome: "failed", error: loadFailureText({ failure: catalogue.error }) };
   }

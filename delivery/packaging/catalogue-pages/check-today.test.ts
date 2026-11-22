@@ -41,7 +41,7 @@ const FILE: CatalogueFile = {
     },
     { clause: clauseAddressSchema.parse("CD-2#review-clause"), sight: { kind: "method", recipe: "composition-root", outcomeSeenBy: ["reviewed", "person-first"] } },
   ],
-  checks: [{ symptom: "checked", name: "a-check", clause: clauseAddressSchema.parse("CD-1#checked-clause"), engines: ["walker"] }],
+  checks: [{ symptom: "checked", name: "a-check", clause: clauseAddressSchema.parse("CD-1#checked-clause") }],
   namedBans: [],
 };
 

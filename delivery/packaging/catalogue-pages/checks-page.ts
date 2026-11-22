@@ -11,7 +11,6 @@ const checkBlockOf = (request: PageSource & { readonly check: Check }): string =
   blocksOf({
     blocks: [
       `### ${request.check.name}`,
-      `- **Engines:** ${request.check.engines.join(", ")}.`,
       proseAt({ prose: request.prose, path: itemPaths.check(request.check), pagePath: PAGE }),
     ],
   });

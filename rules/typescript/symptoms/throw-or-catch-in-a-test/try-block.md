@@ -1,11 +1,7 @@
 # try-block
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `catch`.

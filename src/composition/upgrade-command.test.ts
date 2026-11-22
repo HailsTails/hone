@@ -76,6 +76,7 @@ const PORTS: UpgradeOnlyPorts = {
   loadFailureDetail: vi.fn(),
   recordsReader: { recordsReadingOf: vi.fn() },
   symptomCatalogueOf: vi.fn(),
+  engineBindingsOf: vi.fn(),
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),
 };

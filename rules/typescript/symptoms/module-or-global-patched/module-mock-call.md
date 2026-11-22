@@ -1,11 +1,7 @@
 # module-mock-call
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `vi.stubGlobal`, `process.env` set in a test.

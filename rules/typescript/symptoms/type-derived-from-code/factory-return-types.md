@@ -1,11 +1,7 @@
 # factory-return-types
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Flags beyond the symptom:** text in comments.

@@ -1,11 +1,7 @@
 # throw-statement
 
 ```json
-{
-  "engines": [
-    "walker"
-  ]
-}
+{}
 ```
 
 - **Misses:** `catch`.

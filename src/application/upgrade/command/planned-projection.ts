@@ -10,6 +10,7 @@ import { toolCatalogueOf } from "../../run/tool-catalogue.ts";
 import { type SettingsReading, readSettings } from "../../run/settings/read-settings.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { SettingsSourcesOf } from "../../ports/settings-sources.ts";
+import type { EngineBindingsOf } from "../../ports/engine-bindings-repository.ts";
 import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
@@ -29,6 +30,7 @@ export type PlannedProjectionPorts = {
   readonly directory: DirectoryPort;
   readonly recordsReader: RecordsReader;
   readonly symptomCatalogueOf: SymptomCatalogueOf;
+  readonly engineBindingsOf: EngineBindingsOf;
   readonly settingsFormat: SettingsFileFormat;
   readonly settingsSourcesOf: SettingsSourcesOf;
 };
@@ -93,7 +95,7 @@ export const plannedProjectionOf =
   (context: Context): ProjectionFilesOf =>
   async ({ settings, documents }) => {
     const { command, repoRoot, installRoot } = context;
-    const catalogue = toolCatalogueOf({ fileText: command.fileText, path: command.path, installRoot, symptomCatalogueOf: context.symptomCatalogueOf });
+    const catalogue = toolCatalogueOf({ fileText: command.fileText, path: command.path, installRoot, symptomCatalogueOf: context.symptomCatalogueOf, engineBindingsOf: context.engineBindingsOf });
     if (catalogue.outcome === "failed") {
       return refusedBy({ failure: catalogue.error });
     }

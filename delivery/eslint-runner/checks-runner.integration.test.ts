@@ -11,7 +11,7 @@ import type { FileTextPort } from "../../src/application/ports/file-system/file-
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
-import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
@@ -151,12 +151,15 @@ const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner 
       }),
   });
 
-const CATALOGUE_HOLDING = createSymptomCatalogueRepository({
+const REPOSITORY_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }));
+
+const CATALOGUE_HOLDING = readBoundCatalogue({
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
-  ruleSetRoot: absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] })),
-}).read({});
+  ruleSetRoot: REPOSITORY_ROOT,
+  installRoot: REPOSITORY_ROOT,
+});
 
 assert(CATALOGUE_HOLDING.outcome === "ok", "this repository's catalogue reads");
 

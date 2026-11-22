@@ -13,6 +13,7 @@ import { createSettingsSources } from "../infrastructure/hone-config-file/settin
 import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { createSymptomCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { createEngineBindingsOf } from "../infrastructure/engines/piece-engines.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { ModuleExtension } from "../application/ports/host/module-extension.ts";
@@ -94,6 +95,7 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       path: request.ports.path,
       installRoot: request.locations.installRoot,
       symptomCatalogueOf: createSymptomCatalogueOf({ directory: request.ports.directory }),
+      engineBindingsOf: createEngineBindingsOf({ directory: request.ports.directory }),
     }),
   settings: (stage) => settingsStage({ ...request, ...stage }),
   records: (stage) => recordsStage({ ...request, ...stage }),

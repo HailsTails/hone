@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
-import { createSymptomCatalogueRepository } from "../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../../content-files/symptom-catalogues/bound-catalogue.ts";
 import type { CatalogueHolding, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
@@ -50,11 +50,13 @@ const catalogueCheckRowsOf = (request: { readonly catalogue: SymptomCatalogue })
   request.catalogue.checks.map((check) => ({ check: `${check.symptom.name}#${check.name}`, engines: check.engines.map((engine) => engine.name), clause: clauseAddressText({ address: check.clause }) }));
 
 const shippedCatalogueHolding = (): Result<CatalogueHolding, VersionTwoLoadFailure> =>
-  createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}),
+  readBoundCatalogue({
+    directory: createDefaultDirectoryPort({}),
     fileText: createDefaultFileTextPort({}),
     path: createDefaultPathPort({}),
     ruleSetRoot: absolutePathSchema.parse(REPOSITORY_ROOT),
-  }).read({});
+    installRoot: absolutePathSchema.parse(REPOSITORY_ROOT),
+  });
 
 const byCheck = (left: GuideCheckRow, right: GuideCheckRow): number => left.check.localeCompare(right.check);
 

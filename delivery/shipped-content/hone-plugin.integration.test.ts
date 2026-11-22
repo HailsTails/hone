@@ -1,6 +1,6 @@
 import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { assert, describe, expect, it } from "vitest";
-import { createSymptomCatalogueRepository } from "../../src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { checkOfRuleId, eslintRuleIdsOf } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
@@ -15,12 +15,15 @@ const SILENT_BOUNDARY: EslintMajorBoundary = {
   declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
 };
 
-const CATALOGUE_HOLDING = createSymptomCatalogueRepository({
+const REPOSITORY_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }));
+
+const CATALOGUE_HOLDING = readBoundCatalogue({
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
-  ruleSetRoot: absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] })),
-}).read({});
+  ruleSetRoot: REPOSITORY_ROOT,
+  installRoot: REPOSITORY_ROOT,
+});
 
 assert(CATALOGUE_HOLDING.outcome === "ok", "this repository's catalogue reads");
 
