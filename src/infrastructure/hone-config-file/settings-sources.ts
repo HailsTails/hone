@@ -1,3 +1,4 @@
+import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
@@ -19,6 +20,7 @@ import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 
 type SourcesOptions = {
   readonly fileText: FileTextPort;
+  readonly directory: DirectoryPort;
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
@@ -116,6 +118,6 @@ export const createSettingsSources = (options: SourcesOptions): SettingsSources 
   settingsFile: (_request) => settingsDocumentOf(options),
   ruleSetRoot: (request) =>
     ruleSetRootOf({ ruleSet: request.ruleSet, ruleSets: request.ruleSets, repoRoot: options.repoRoot, installRoot: options.installRoot, path: options.path }),
-  catalogue: (request) => createSymptomCatalogueRepository({ fileText: options.fileText, path: options.path, ruleSetRoot: request.ruleSetRoot }).read({}),
+  catalogue: (request) => createSymptomCatalogueRepository({ fileText: options.fileText, directory: options.directory, path: options.path, ruleSetRoot: request.ruleSetRoot }).read({}),
   pieceClause: (request) => pieceClauseOf({ ...options, ...request }),
 });

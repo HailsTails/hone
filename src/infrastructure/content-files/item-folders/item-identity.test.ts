@@ -9,6 +9,13 @@ describe("fileRoleOf", () => {
     { path: "typescript/symptoms/README.md", role: "other" },
     { path: "typescript/notes.txt", role: "other" },
     { path: "typescript/symptoms.json", role: "other" },
+    { path: "typescript/symptoms.md", role: "other" },
+    { path: "principles.md", role: "other" },
+    { path: "CD-17/CHECKS.md", role: "other" },
+    { path: "notes/stray.md", role: "other" },
+    { path: "rules/written-out-answers.md", role: "item" },
+    { path: "typescript/recipes/result-union.md", role: "item" },
+    { path: "typescript/symptoms/a/b/c.md", role: "item" },
   ])("gives $path the role $role", ({ path, role }) => {
     expect(fileRoleOf({ path })).toBe(role);
   });

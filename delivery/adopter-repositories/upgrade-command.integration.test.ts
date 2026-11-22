@@ -737,7 +737,7 @@ describe("hone upgrade over a real repository that selects only some disciplines
       writes: [
         [
           {
-            text: "upgraded to version 2\nmarked claimed-type#unlisted-cast-site not-adopted: its discipline was not selected in version 1\nmarked claimed-type#non-null-assertions not-adopted: its discipline was not selected in version 1\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+            text: "upgraded to version 2\nmarked claimed-type#non-null-assertions not-adopted: its discipline was not selected in version 1\nmarked claimed-type#unlisted-cast-site not-adopted: its discipline was not selected in version 1\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
           },
         ],
       ],
@@ -758,7 +758,7 @@ describe("hone upgrade over a real repository that selects only CD-10", () => {
       writes: [
         [
           {
-            text: "upgraded to version 2\nmarked branch-in-a-test#test-body not-adopted: its discipline was not selected in version 1\nmarked throw-or-catch-in-a-test#try-block not-adopted: its discipline was not selected in version 1\nmarked rebinding#test-body not-adopted: its discipline was not selected in version 1\nmarked computed-value-in-a-test#test-body not-adopted: its discipline was not selected in version 1\nmarked text-past-its-reader#test-body not-adopted: its discipline was not selected in version 1\nmarked double-with-a-body#logic-in-a-passed-function not-adopted: its discipline was not selected in version 1\nmarked double-with-a-body#stub-implementation not-adopted: its discipline was not selected in version 1\nmarked rebinding#parameter-reassignment not-adopted: its discipline was not selected in version 1\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
+            text: "upgraded to version 2\nmarked branch-in-a-test#test-body not-adopted: its discipline was not selected in version 1\nmarked computed-value-in-a-test#test-body not-adopted: its discipline was not selected in version 1\nmarked double-with-a-body#logic-in-a-passed-function not-adopted: its discipline was not selected in version 1\nmarked rebinding#test-body not-adopted: its discipline was not selected in version 1\nmarked text-past-its-reader#test-body not-adopted: its discipline was not selected in version 1\nmarked throw-or-catch-in-a-test#try-block not-adopted: its discipline was not selected in version 1\nmarked double-with-a-body#stub-implementation not-adopted: its discipline was not selected in version 1\nmarked rebinding#parameter-reassignment not-adopted: its discipline was not selected in version 1\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\n",
           },
         ],
       ],

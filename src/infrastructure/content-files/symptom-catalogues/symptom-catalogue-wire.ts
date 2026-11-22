@@ -53,7 +53,7 @@ export const symptomWireSchema = z.strictObject({
   correctUses: z.array(correctUseWireSchema),
 });
 
-const sightWireSchema = z.discriminatedUnion("kind", [
+export const sightWireSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("one-symptom"), symptom: catalogueNameSchema }),
   z.strictObject({
     kind: z.literal("symptom-by-form"),

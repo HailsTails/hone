@@ -17,10 +17,10 @@ const CLOCK_SOURCES = clauseAddressSchema.parse("XX-1#clock-sources");
 const BESIDE: HeldBesideItems = {
   engines: [{ name: "walker", mechanism: mechanismIdSchema.parse("checker") }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-  namedBans: [],
+  clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
 };
 
-const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], namedBans: [] };
+const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map() };
 
 const DOES_ONE_JOB = '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "rule": "written-out-answers" }] }\n```\n';
 
@@ -37,7 +37,7 @@ const WORLD_VALUES = '# World values through a port\n\n```json\n{ "standing": "a
 const DATE_USED_DIRECTLY =
   '# Date used directly\n\n```json\n{ "seen": "Any use of Date.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "rule": "written-out-answers" }] }], "breachUsuallySits": "in the unit", "recipes": ["world-values-through-a-port"], "correctUses": [{ "situation": "correct use", "kind": "debt" }] }\n```\n';
 
-const CLOCK_SOURCES_CHECK = '# Clock sources\n\n```json\n{ "clause": "XX-1#clock-sources", "engines": ["walker"] }\n```\n';
+const CLOCK_SOURCES_CHECK = '# Clock sources\n\n```json\n{ "engines": ["walker"] }\n```\n';
 
 const fileTextReading = (read: FileTextPort["read"]): FileTextPort => ({
   read,
@@ -71,6 +71,7 @@ const FULL_LISTING = vi
   .mockReturnValueOnce({
     outcome: "ok",
     value: [
+      { name: "checks.md", kind: "file" },
       { name: "recipes", kind: "directory" },
       { name: "symptoms", kind: "directory" },
     ],
@@ -86,7 +87,7 @@ const FULL_LISTING = vi
   .mockReturnValueOnce({ outcome: "ok", value: [{ name: "clock-sources.md", kind: "file" }] });
 
 describe("createItemFolderCatalogueRepository", () => {
-  it("assembles a catalogue from the item files under its kind folders, each named by its file and titled by its heading, reading no list page", () => {
+  it("assembles a catalogue from the item files under its kind folders, each named by its file and titled by its heading, reading no other file", () => {
     const fileText = fileTextReading(
       vi
         .fn<FileTextPort["read"]>()
@@ -130,7 +131,7 @@ describe("createItemFolderCatalogueRepository", () => {
 
   it("holds none when the root holds no item", () => {
     const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [{ name: "notes.txt", kind: "file" }] }),
+      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [{ name: "SPIRIT.md", kind: "file" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     expect(createItemFolderCatalogueRepository({ fileText: fileTextReading(vi.fn<FileTextPort["read"]>()), directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({
@@ -150,7 +151,7 @@ describe("createItemFolderCatalogueRepository", () => {
     });
   });
 
-  it("fails naming a file that sits where no kind of item is kept", () => {
+  it("fails naming a file inside a kind folder that sits where no item is kept", () => {
     const directory: DirectoryPort = {
       list: vi
         .fn<DirectoryPort["list"]>()

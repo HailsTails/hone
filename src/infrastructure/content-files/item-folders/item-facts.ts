@@ -7,7 +7,7 @@ const OMITTED_NAME_AND_TITLE = { name: true, title: true } as const;
 
 const principleFactsSchema = catalogueFileSchema.shape.principles.element.omit(OMITTED_NAME_AND_TITLE);
 
-const ruleFactsSchema = catalogueFileSchema.shape.rules.element.omit(OMITTED_NAME_AND_TITLE);
+const ruleFactsSchema = catalogueFileSchema.shape.rules.element.omit(OMITTED_NAME_AND_TITLE).extend({ namedBans: z.array(z.string().min(1)).min(1).optional() });
 
 const caseFactsSchema = caseWireSchema.omit(OMITTED_NAME_AND_TITLE);
 
@@ -17,7 +17,7 @@ const recordKindFactsSchema = recordKindWireSchema.omit(OMITTED_NAME_AND_TITLE);
 
 const symptomFactsSchema = symptomWireSchema.omit(OMITTED_NAME_AND_TITLE);
 
-const checkFactsSchema = checkWireSchema.omit({ symptom: true, name: true });
+const checkFactsSchema = checkWireSchema.omit({ symptom: true, name: true, clause: true });
 
 export type ItemFacts =
   | { readonly kind: "principle"; readonly facts: z.output<typeof principleFactsSchema> }

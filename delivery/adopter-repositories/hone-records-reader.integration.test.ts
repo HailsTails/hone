@@ -116,7 +116,7 @@ const REPO_ROOT = absolutePathSchema.parse(path.join({ segments: [`${import.meta
 
 const scratch = createDefaultScratchFilesPort({});
 
-const holding = createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: REPO_ROOT }).read({});
+const holding = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: REPO_ROOT }).read({});
 assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
 assert(holding.value.held === "catalogue", "the shipped symptom catalogue is present");
 

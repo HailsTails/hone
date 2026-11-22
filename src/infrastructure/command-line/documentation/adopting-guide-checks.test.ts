@@ -1,3 +1,4 @@
+import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
 import { describe, expect, it } from "vitest";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
@@ -49,7 +50,7 @@ const catalogueCheckRowsOf = (request: { readonly catalogue: SymptomCatalogue })
   request.catalogue.checks.map((check) => ({ check: `${check.symptom.name}#${check.name}`, engines: check.engines.map((engine) => engine.name), clause: clauseAddressText({ address: check.clause }) }));
 
 const shippedCatalogueHolding = (): Result<CatalogueHolding, VersionTwoLoadFailure> =>
-  createSymptomCatalogueRepository({
+  createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}),
     fileText: createDefaultFileTextPort({}),
     path: createDefaultPathPort({}),
     ruleSetRoot: absolutePathSchema.parse(REPOSITORY_ROOT),

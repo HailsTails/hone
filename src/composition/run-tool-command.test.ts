@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
@@ -22,6 +23,9 @@ const dispatchedOver = (request: { readonly subcommands: Subcommands; readonly c
 
 const subcommandRan = (request: { readonly subcommand: Subcommand; readonly command: VersionOneCommandRequest }): Promise<void> =>
   toolSubcommandsOf({ ...INSTALLED_PORTS, ...request.command })[request.subcommand](request.command);
+
+const subcommandRanOverDirectory = (request: { readonly subcommand: Subcommand; readonly command: VersionOneCommandRequest; readonly directory: DirectoryPort }): Promise<void> =>
+  toolSubcommandsOf({ ...INSTALLED_PORTS, ...request.command, directory: request.directory })[request.subcommand](request.command);
 
 const ENTRY_URL = "file:///install/src/hone.ts";
 
@@ -447,21 +451,11 @@ describe("TOOL_SUBCOMMANDS authorise, which has no version 1 form", () => {
 
 const CONFIG_ABSENT_LINE = "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n";
 
-const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
+const ALWAYS_RECORDABLE_KINDS: Readonly<Record<string, string>> = {
+  "/install/rules/record-kinds/authorised-location.md": '# Authorised location\n\n```json\n{ "phrase": "an authorised location", "todaysFormat": "authorised-location" }\n```\n',
+  "/install/rules/record-kinds/debt.md": '# Debt\n\n```json\n{ "phrase": "debt", "todaysFormat": "file-carve-out" }\n```\n',
+};
 
-declare global {
-  interface ImportMeta {
-    readonly glob: (
-      patterns: readonly string[],
-      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
-    ) => Readonly<Record<string, string>>;
-  }
-}
-
-const SHIPPED_CATALOGUE = requiredEntry({
-  table: import.meta.glob(["./rules/typescript/symptoms.json"], { base: "../../", query: "?raw", import: "default", eager: true }),
-  key: "./rules/typescript/symptoms.json",
-});
 
 describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
   it.each([
@@ -474,9 +468,22 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
     { subcommand: "authorise", given: AUTHORISE_ARGUMENTS },
   ] as const)("prints the config-absent line and exits 2, given $subcommand", async ({ subcommand, given }) => {
     const processPort = processWith({ arguments: given });
-    const command = commandOver({ process: processPort, fileText: memoryFileTextOf({ files: {}, outsideFiles: { [CATALOGUE_PATH]: SHIPPED_CATALOGUE } }) });
+    const command = commandOver({ process: processPort, fileText: memoryFileTextOf({ files: {}, outsideFiles: ALWAYS_RECORDABLE_KINDS }) });
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "record-kinds", kind: "directory" }] })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "authorised-location.md", kind: "file" },
+            { name: "debt.md", kind: "file" },
+          ],
+        }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
 
-    await subcommandRan({ subcommand, command: command });
+    await subcommandRanOverDirectory({ subcommand, command, directory });
 
     expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: CONFIG_ABSENT_LINE }]], exits: [[{ code: 2 }]] });
   });

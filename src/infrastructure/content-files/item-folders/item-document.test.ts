@@ -3,6 +3,8 @@ import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-a
 import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { catalogueFileOf, type HeldBesideItems, type PlacedItem } from "./item-document.ts";
 
+const CLOCK_SOURCES = clauseAddressSchema.parse("CD-17#clock-sources");
+
 const PRINCIPLE: PlacedItem = { name: "tests-are-ours", within: undefined, title: "Tests are ours", item: { kind: "principle", facts: {} } };
 
 const RULE: PlacedItem = {
@@ -12,22 +14,29 @@ const RULE: PlacedItem = {
   item: { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted" } },
 };
 
+const BANNING_RULE: PlacedItem = {
+  name: "outside-dependencies-justified",
+  within: undefined,
+  title: "Outside dependencies justified",
+  item: { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted", namedBans: ["lodash", "fp-ts"] } },
+};
+
 const DEBT: PlacedItem = { name: "debt", within: undefined, title: "Debt", item: { kind: "record-kind", facts: { phrase: "debt", todaysFormat: "none-yet" } } };
 
 const CHECK: PlacedItem = {
   name: "clock-sources",
   within: "date-used-directly",
   title: "Clock sources",
-  item: { kind: "check", facts: { clause: clauseAddressSchema.parse("CD-17#clock-sources"), engines: ["walker"] } },
+  item: { kind: "check", facts: { engines: ["walker"] } },
 };
 
 const BESIDE: HeldBesideItems = {
   engines: [{ name: "walker", mechanism: mechanismIdSchema.parse("audit") }],
-  clauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-  namedBans: [{ outsideDependency: "lodash" }],
+  clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
+  clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
 };
 
-const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], namedBans: [] };
+const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map() };
 
 describe("catalogueFileOf", () => {
   it("gathers each kind into its list, naming each item from its place and titling it from its heading, beside what no item holds", () => {
@@ -42,9 +51,19 @@ describe("catalogueFileOf", () => {
         recordKinds: [{ name: "debt", title: "Debt", phrase: "debt", todaysFormat: "none-yet" }],
         engines: [{ name: "walker", mechanism: "audit" }],
         symptoms: [],
-        clauses: [{ clause: clauseAddressSchema.parse("CD-17#clock-sources"), sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-        checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: clauseAddressSchema.parse("CD-17#clock-sources"), engines: ["walker"] }],
-        namedBans: [{ outsideDependency: "lodash" }],
+        clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
+        checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: CLOCK_SOURCES, engines: ["walker"] }],
+        namedBans: [],
+      },
+    });
+  });
+
+  it("gives the named bans the rules hold, and keeps them off the rules", () => {
+    expect(catalogueFileOf({ items: [BANNING_RULE], beside: NOTHING_BESIDE })).toMatchObject({
+      outcome: "ok",
+      value: {
+        rules: [{ name: "outside-dependencies-justified", title: "Outside dependencies justified", principle: "tests-are-ours", standing: "accepted" }],
+        namedBans: [{ outsideDependency: "lodash" }, { outsideDependency: "fp-ts" }],
       },
     });
   });
@@ -59,5 +78,19 @@ describe("catalogueFileOf", () => {
 
   it("refuses a record kind whose name is no record kind", () => {
     expect(catalogueFileOf({ items: [{ ...DEBT, name: "lien" }], beside: NOTHING_BESIDE })).toEqual({ outcome: "failed", error: "lien is not the name of a record kind" });
+  });
+
+  it("refuses a check that no clause of the version 1 names gives", () => {
+    expect(catalogueFileOf({ items: [CHECK], beside: NOTHING_BESIDE })).toEqual({
+      outcome: "failed",
+      error: "date-used-directly#clock-sources is named by no clause in the version 1 names",
+    });
+  });
+
+  it("refuses version 1 names that give a check no item holds", () => {
+    expect(catalogueFileOf({ items: [], beside: BESIDE })).toEqual({
+      outcome: "failed",
+      error: "the version 1 names give date-used-directly#clock-sources, which no item holds",
+    });
   });
 });

@@ -1,0 +1,669 @@
+{
+  "version": 1,
+  "clauses": [
+    {
+      "clause": "CD-1#any-cast",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "claimed-type"
+      },
+      "checks": [
+        "claimed-type#cast-to-any"
+      ]
+    },
+    {
+      "clause": "CD-1#explicit-any",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "untyped-value"
+      },
+      "checks": [
+        "untyped-value#explicit-any"
+      ]
+    },
+    {
+      "clause": "CD-1#implicit-any-let",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "untyped-value"
+      },
+      "checks": [
+        "untyped-value#implicit-any-let"
+      ]
+    },
+    {
+      "clause": "CD-2#cast-expressions",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "claimed-type"
+      },
+      "checks": [
+        "claimed-type#unlisted-cast-site"
+      ]
+    },
+    {
+      "clause": "CD-2#non-null-assertions",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "claimed-type"
+      },
+      "checks": [
+        "claimed-type#non-null-assertions"
+      ]
+    },
+    {
+      "clause": "CD-3#strict",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#strict"
+      ]
+    },
+    {
+      "clause": "CD-3#no-unchecked-indexed-access",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#no-unchecked-indexed-access"
+      ]
+    },
+    {
+      "clause": "CD-3#exact-optional-property-types",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#exact-optional-property-types"
+      ]
+    },
+    {
+      "clause": "CD-3#no-implicit-override",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#no-implicit-override"
+      ]
+    },
+    {
+      "clause": "CD-3#no-fallthrough-cases-in-switch",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#no-fallthrough-cases-in-switch"
+      ]
+    },
+    {
+      "clause": "CD-3#no-property-access-from-index-signature",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#no-property-access-from-index-signature"
+      ]
+    },
+    {
+      "clause": "CD-3#use-unknown-in-catch-variables",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "strictness-weakened"
+      },
+      "checks": [
+        "strictness-weakened#use-unknown-in-catch-variables"
+      ]
+    },
+    {
+      "clause": "CD-4#boundary-validation",
+      "sight": {
+        "kind": "method",
+        "recipe": "zod-at-the-producers-adapter",
+        "outcomeSeenBy": [
+          "schema-past-its-adapter"
+        ]
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-5#comments-directives",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "untracked-escape"
+      },
+      "checks": [
+        "untracked-escape#directive-pointers"
+      ]
+    },
+    {
+      "clause": "CD-6#identifier-names",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "shorthand-name"
+      },
+      "checks": [
+        "shorthand-name#identifier-names"
+      ]
+    },
+    {
+      "clause": "CD-6#naming-convention",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "name-off-its-casing"
+      },
+      "checks": [
+        "name-off-its-casing#naming-convention"
+      ]
+    },
+    {
+      "clause": "CD-7#categorical-paths",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "drawer-path"
+      },
+      "checks": [
+        "drawer-path#drawer-names"
+      ]
+    },
+    {
+      "clause": "CD-7#filename-case",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "name-off-its-casing"
+      },
+      "checks": [
+        "name-off-its-casing#filename-case"
+      ]
+    },
+    {
+      "clause": "CD-7a#factory-return-types",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "type-derived-from-code"
+      },
+      "checks": [
+        "type-derived-from-code#factory-return-types"
+      ]
+    },
+    {
+      "clause": "CD-8#switch-defaults",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "default-on-a-closed-union"
+      },
+      "checks": [
+        "default-on-a-closed-union#default-arm"
+      ]
+    },
+    {
+      "clause": "CD-9#result-failures",
+      "sight": {
+        "kind": "method",
+        "recipe": "result-union",
+        "outcomeSeenBy": [
+          "throw-between-our-units",
+          "failure-shaped-as-success"
+        ]
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-10#throws-in-tests",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "throw-or-catch-in-a-test"
+      },
+      "checks": [
+        "throw-or-catch-in-a-test#throw-statement"
+      ]
+    },
+    {
+      "clause": "CD-10#throw-only-error",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "thrown-non-error"
+      },
+      "checks": [
+        "thrown-non-error#throw-only-error"
+      ]
+    },
+    {
+      "clause": "CD-11#error-envelopes",
+      "sight": {
+        "kind": "method",
+        "recipe": "result-union",
+        "outcomeSeenBy": [
+          "catch-all-failure-kind",
+          "authored-class-or-this"
+        ]
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-12#repository-ports",
+      "sight": {
+        "kind": "method",
+        "recipe": "port-in-the-domain",
+        "outcomeSeenBy": [
+          "port-outside-the-domain",
+          "inner-layer-imports-outer"
+        ]
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-13#layer-boundaries",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "inner-layer-imports-outer"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-14#class-syntax",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "authored-class-or-this"
+      },
+      "checks": [
+        "authored-class-or-this#class-keyword"
+      ]
+    },
+    {
+      "clause": "CD-14#static-only-class",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "authored-class-or-this"
+      },
+      "checks": [
+        "authored-class-or-this#static-members-only"
+      ]
+    },
+    {
+      "clause": "CD-14#library-construction",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "library-class-built-in-place"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-15#loops",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "loop-keyword"
+      },
+      "checks": [
+        "loop-keyword#loop-statement"
+      ]
+    },
+    {
+      "clause": "CD-17#clock-sources",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "date-used-directly"
+      },
+      "checks": [
+        "date-used-directly#clock-sources"
+      ]
+    },
+    {
+      "clause": "CD-18#process-lifecycle-ports",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "process-global-used-in-place"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-19#import-boundaries",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "outside-import-past-a-boundary"
+      },
+      "checks": [
+        "outside-import-past-a-boundary#import-or-require"
+      ]
+    },
+    {
+      "clause": "CD-21#default-factories",
+      "sight": {
+        "kind": "method",
+        "recipe": "composition-root",
+        "outcomeSeenBy": [
+          "adapter-built-outside-the-root",
+          "port-outside-the-domain"
+        ]
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-22#middleware-context",
+      "sight": {
+        "kind": "method",
+        "recipe": "bounded-context-generic",
+        "outcomeSeenBy": [
+          "default-for-a-required-value"
+        ]
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-23#export-test-sibling",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "unit-without-a-running-test"
+      },
+      "checks": [
+        "unit-without-a-running-test#companion-test-file"
+      ]
+    },
+    {
+      "clause": "CD-25#dependency-isolation",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "double-with-a-body"
+      },
+      "checks": [
+        "double-with-a-body#stub-implementation"
+      ]
+    },
+    {
+      "clause": "CD-26#module-mocking",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "module-or-global-patched"
+      },
+      "checks": [
+        "module-or-global-patched#module-mock-call"
+      ]
+    },
+    {
+      "clause": "CD-27#test-body-logic",
+      "sight": {
+        "kind": "symptom-by-form",
+        "forms": [
+          {
+            "section": "branching-with-if",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "a-try-block",
+            "symptom": "throw-or-catch-in-a-test"
+          },
+          {
+            "section": "a-ternary",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "a-let",
+            "symptom": "rebinding"
+          },
+          {
+            "section": "a-method-that-picks-or-tests-an-element",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "a-method-that-computes-a-value",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "a-method-that-mutates",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "a-short-circuit",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "an-optional-chain-after-an-index",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "an-optional-chain-on-a-mock-call",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "an-optional-chain-on-a-mock-result",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "an-optional-chain-on-a-property",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "an-optional-call",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "a-switch",
+            "symptom": "branch-in-a-test"
+          },
+          {
+            "section": "serialising-or-parsing-json",
+            "symptom": "text-past-its-reader"
+          },
+          {
+            "section": "merging-objects",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "building-an-object-from-entries",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "building-an-array-from-a-length",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "a-math-call",
+            "symptom": "computed-value-in-a-test"
+          },
+          {
+            "section": "logic-inside-a-function-the-test-passes-on",
+            "symptom": "double-with-a-body"
+          }
+        ]
+      },
+      "checks": [
+        "branch-in-a-test#test-body",
+        "throw-or-catch-in-a-test#try-block",
+        "rebinding#test-body",
+        "computed-value-in-a-test#test-body",
+        "text-past-its-reader#test-body",
+        "double-with-a-body#logic-in-a-passed-function"
+      ]
+    },
+    {
+      "clause": "CD-27#focused-tests",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "test-switched-off"
+      },
+      "checks": [
+        "test-switched-off#focused-tests"
+      ]
+    },
+    {
+      "clause": "CD-27#skipped-tests",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "test-switched-off"
+      },
+      "checks": [
+        "test-switched-off#skipped-tests"
+      ]
+    },
+    {
+      "clause": "CD-28#unit-responsibility",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "behaviour-tested-away-from-its-owner"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-29#test-pyramid",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "integration-heavy-suite"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-30#composition-only",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "behaviour-tested-away-from-its-owner"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-31#no-coverage-thresholds",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "coverage-gate"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-32#pii-redaction",
+      "sight": {
+        "kind": "outside-the-cases"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-33#sensitive-brands",
+      "sight": {
+        "kind": "outside-the-cases"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-34#no-repo-secrets",
+      "sight": {
+        "kind": "outside-the-cases"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-39#cite-by-id",
+      "sight": {
+        "kind": "outside-the-cases"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-40#parameter-count",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "positional-parameters"
+      },
+      "checks": [
+        "positional-parameters#parameter-count"
+      ]
+    },
+    {
+      "clause": "CD-40#named-object-argument",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "positional-parameters"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-41#cognitive-complexity",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "tangled-function"
+      },
+      "checks": [
+        "tangled-function#cognitive-complexity"
+      ]
+    },
+    {
+      "clause": "CD-41#function-length",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "long-function"
+      },
+      "checks": [
+        "long-function#function-length"
+      ]
+    },
+    {
+      "clause": "CD-41#orchestration-only",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "orchestrator-that-computes"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-42#useless-else",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "work-inside-a-condition"
+      },
+      "checks": [
+        "work-inside-a-condition#else-after-an-exit"
+      ]
+    },
+    {
+      "clause": "CD-43#boolean-signatures",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "boolean-in-a-signature"
+      },
+      "checks": [
+        "boolean-in-a-signature#boolean-annotation"
+      ]
+    },
+    {
+      "clause": "CD-44#parameter-mutation",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "write-into-a-parameter"
+      },
+      "checks": [
+        "write-into-a-parameter#parameter-mutation"
+      ]
+    },
+    {
+      "clause": "CD-44#parameter-reassignment",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "rebinding"
+      },
+      "checks": [
+        "rebinding#parameter-reassignment"
+      ]
+    },
+    {
+      "clause": "CD-45#parse-once",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "schema-past-its-adapter"
+      },
+      "checks": []
+    },
+    {
+      "clause": "CD-47#hermetic-git-spawns",
+      "sight": {
+        "kind": "one-symptom",
+        "symptom": "inherited-environment-in-a-subprocess"
+      },
+      "checks": [
+        "inherited-environment-in-a-subprocess#git-spawn-environment"
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { CommandRequest } from "../../ports/command-request.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { RecordsAtBase, RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
@@ -25,6 +26,7 @@ import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
 export type PlannedProjectionPorts = {
+  readonly directory: DirectoryPort;
   readonly recordsReader: RecordsReader;
   readonly symptomCatalogueOf: SymptomCatalogueOf;
   readonly settingsFormat: SettingsFileFormat;
@@ -44,7 +46,7 @@ const refusedBy = (request: { readonly failure: RunLoadFailure }): Result<never,
 
 const settingsReadingOf = (request: Context & { readonly settings: SettingsFile; readonly catalogue: SymptomCatalogue }): Result<SettingsReading, ProjectionFailure> => {
   const { command, repoRoot, installRoot, settings, catalogue, settingsFormat } = request;
-  const real = request.settingsSourcesOf({ fileText: command.fileText, path: command.path, repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }) });
+  const real = request.settingsSourcesOf({ fileText: command.fileText, directory: request.directory, path: command.path, repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }) });
   const read = readSettings({
     sources: { ...real, settingsFile: () => ({ outcome: "ok", value: { path: SETTINGS_FILE_NAME, document: settingsFormat.documentOf({ settings }) } }) },
     settingsFormat,

@@ -1,5 +1,6 @@
 import { installRootOfApiEntry } from "./infrastructure/command-line/installation/install-root.ts";
 import { loadFailureText } from "./infrastructure/printed-report/load-failures/load-failure-text.ts";
+import { createDefaultDirectoryPort } from "./infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "./infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
@@ -27,7 +28,7 @@ const path = createDefaultPathPort({});
 const fileText = createDefaultFileTextPort({});
 
 const pluginAt = async (request: { readonly installRoot: AbsolutePath }): Promise<Result<HonePlugin, string>> => {
-  const catalogue = createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: request.installRoot }).read({});
+  const catalogue = createSymptomCatalogueRepository({ fileText, directory: createDefaultDirectoryPort({}), path, ruleSetRoot: request.installRoot }).read({});
   if (catalogue.outcome === "failed") {
     return { outcome: "failed", error: loadFailureText({ failure: catalogue.error }) };
   }

@@ -1,3 +1,4 @@
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type CatalogueFile, recordKindNameSchema, SUPPORTED_VERSION } from "../symptom-catalogues/symptom-catalogue-wire.ts";
 import type { ItemFacts } from "./item-facts.ts";
@@ -9,7 +10,11 @@ export type PlacedItem = {
   readonly item: ItemFacts;
 };
 
-export type HeldBesideItems = Pick<CatalogueFile, "engines" | "clauses" | "namedBans">;
+export type HeldBesideItems = {
+  readonly engines: CatalogueFile["engines"];
+  readonly clauses: CatalogueFile["clauses"];
+  readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
+};
 
 type OfKind<Kind extends ItemFacts["kind"]> = PlacedItem & { readonly item: Extract<ItemFacts, { readonly kind: Kind }> };
 
@@ -32,26 +37,56 @@ const recordKindOf = (placed: OfKind<"record-kind">): Assembled<CatalogueFile["r
     : { outcome: "failed", error: `${placed.name} is not the name of a record kind` };
 };
 
+const ruleOf = (placed: OfKind<"rule">): CatalogueFile["rules"][number] => ({
+  name: placed.name,
+  title: placed.title,
+  principle: placed.item.facts.principle,
+  standing: placed.item.facts.standing,
+});
+
+const checkOf = (request: { readonly placed: OfKind<"check">; readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress> }): Assembled<CatalogueFile["checks"][number]> => {
+  const symptom = request.placed.within ?? "";
+  const address = `${symptom}#${request.placed.name}`;
+  const clause = request.clauseOfCheck.get(address);
+  return clause === undefined
+    ? { outcome: "failed", error: `${address} is named by no clause in the version 1 names` }
+    : { outcome: "ok", value: { symptom, name: request.placed.name, clause, ...request.placed.item.facts } };
+};
+
+const unheldChecksOf = (request: { readonly checks: readonly CatalogueFile["checks"][number][]; readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress> }): readonly string[] => {
+  const held = new Set(request.checks.map((check) => `${check.symptom}#${check.name}`));
+  return [...request.clauseOfCheck.keys()].filter((address) => !held.has(address));
+};
+
 export const catalogueFileOf = (request: { readonly items: readonly PlacedItem[]; readonly beside: HeldBesideItems }): Assembled<CatalogueFile> => {
   const { items, beside } = request;
   const recordKinds = allAssembled(items.filter(ofKind("record-kind")).map(recordKindOf));
   if (recordKinds.outcome === "failed") {
     return recordKinds;
   }
+  const checks = allAssembled(items.filter(ofKind("check")).map((placed) => checkOf({ placed, clauseOfCheck: beside.clauseOfCheck })));
+  if (checks.outcome === "failed") {
+    return checks;
+  }
+  const [unheld] = unheldChecksOf({ checks: checks.value, clauseOfCheck: beside.clauseOfCheck });
+  if (unheld !== undefined) {
+    return { outcome: "failed", error: `the version 1 names give ${unheld}, which no item holds` };
+  }
+  const rules = items.filter(ofKind("rule"));
   return {
     outcome: "ok",
     value: {
       version: SUPPORTED_VERSION,
       principles: items.filter(ofKind("principle")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
-      rules: items.filter(ofKind("rule")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
+      rules: rules.map(ruleOf),
       cases: items.filter(ofKind("case")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
       recipes: items.filter(ofKind("recipe")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
       recordKinds: recordKinds.value,
       engines: beside.engines,
       symptoms: items.filter(ofKind("symptom")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
       clauses: beside.clauses,
-      checks: items.filter(ofKind("check")).map((placed) => ({ symptom: placed.within ?? "", name: placed.name, ...placed.item.facts })),
-      namedBans: beside.namedBans,
+      checks: checks.value,
+      namedBans: rules.flatMap((placed) => placed.item.facts.namedBans ?? []).map((outsideDependency) => ({ outsideDependency })),
     },
   };
 };

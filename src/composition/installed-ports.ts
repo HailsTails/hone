@@ -1,7 +1,7 @@
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
-import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { createSymptomCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { exceptionRepositoryOf } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { foundTreeRecordsSourceOf } from "../infrastructure/discipline-exceptions-folder/found-tree-records-source.ts";
@@ -40,7 +40,7 @@ export const installedPortsOver = (node: NodePorts): ToolPorts => {
     recordsEditor,
     foundTreeRecordsSourceOf,
     loadFailureDetail,
-    symptomCatalogueOf: createSymptomCatalogueRepository,
+    symptomCatalogueOf: createSymptomCatalogueOf({ directory: node.directory }),
     settingsFormat: SETTINGS_FILE_FORMAT,
     settingsSourcesOf: createSettingsSources,
   };

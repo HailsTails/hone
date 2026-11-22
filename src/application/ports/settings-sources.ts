@@ -8,6 +8,7 @@ import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../domain/result.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
+import type { DirectoryPort } from "./file-system/directory-port.ts";
 import type { FileTextPort } from "./file-system/file-text-port.ts";
 import type { ModuleExtension } from "./host/module-extension.ts";
 import type { PathPort } from "./host/path-port.ts";
@@ -39,6 +40,7 @@ export type SettingsSources = {
 
 export type SettingsSourcesOf = (request: {
   readonly fileText: FileTextPort;
+  readonly directory: DirectoryPort;
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;

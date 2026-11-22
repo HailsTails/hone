@@ -1,3 +1,4 @@
+import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
 import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
 import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
@@ -250,7 +251,7 @@ const CLASS_FINDING: Finding = {
 };
 
 const catalogues = () => {
-  const holding = createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
+  const holding = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
   assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
   assert(holding.value.held === "catalogue", "the shipped symptom catalogue is present");
   return [{ ruleSet: TOOL_RULE_SET, catalogue: holding.value.catalogue }];

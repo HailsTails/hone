@@ -1,0 +1,31 @@
+# Wide input
+
+```json
+{
+  "seen": "A parameter type holding fields the unit never reads.",
+  "mayIndicate": [
+    {
+      "case": "does-one-job",
+      "points": [
+        {
+          "rule": "handed-what-it-uses"
+        }
+      ]
+    },
+    {
+      "case": "gives-a-value-its-type",
+      "points": [
+        {
+          "rule": "handed-what-it-uses"
+        }
+      ]
+    }
+  ],
+  "breachUsuallySits": "in the unit's declared input",
+  "recipes": [
+    "one-argument-object",
+    "entity-module"
+  ],
+  "correctUses": []
+}
+```

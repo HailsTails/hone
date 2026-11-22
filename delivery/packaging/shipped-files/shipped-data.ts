@@ -1,6 +1,6 @@
 const SHIPPED_DATA: readonly RegExp[] = [
   /^rules\/[^/]+\/discipline\.json$/,
-  /^rules\/typescript\/symptoms\.json$/,
+  /^src\/infrastructure\/disciplines-file\/version-one-names\.json$/,
   /^rules\/.+\.md$/,
   /^methods\/.+\.md$/,
   /^src\/infrastructure\/engines\/.+\.md$/,

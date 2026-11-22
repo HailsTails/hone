@@ -17,7 +17,6 @@ import { createDefaultDirectoryTreePort } from "../infrastructure/node/file-syst
 import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
@@ -126,7 +125,7 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 };
 
 const toolCatalogue = (): SymptomCatalogue => {
-  const reading = createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
+  const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
   assert(reading.outcome === "ok", "this repository's catalogue reads");
   assert(reading.value.held === "catalogue", "this repository holds a catalogue");
   return reading.value.catalogue;
@@ -207,7 +206,7 @@ const versionTwoStages = versionTwoStagesOver({
       renamedSince: vi.fn<GitPort["renamedSince"]>(),
     },
     gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
-    directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
+    directory,
     recordsSourceOf: vi.fn<RecordsSourceOf>(),
   },
   locations: { repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", baseRevision: undefined },

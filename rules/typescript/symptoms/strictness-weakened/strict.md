@@ -1,0 +1,9 @@
+# strict
+
+```json
+{
+  "engines": [
+    "walker"
+  ]
+}
+```

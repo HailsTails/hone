@@ -72,7 +72,6 @@ const placementOfFolders = (request: { readonly folders: readonly string[]; read
   if (request.folders.length === 1 && rootKind !== undefined) {
     return named({ kind: rootKind, name: request.stem, within: undefined });
   }
-
   if (request.folders.length === 2 && languageKind !== undefined) {
     return named({ kind: languageKind, name: request.stem, within: undefined });
   }
@@ -86,9 +85,18 @@ const segmentsOf = (request: { readonly path: string }): readonly string[] => re
 
 const fileOf = (request: { readonly path: string }): string => segmentsOf(request).at(-1) ?? "";
 
+type FolderPlace = "under-a-kind-folder" | "elsewhere";
+
+const folderPlaceOf = (request: { readonly folders: readonly string[] }): FolderPlace => {
+  const [first, second] = request.folders;
+  const underRootKind = first !== undefined && ROOT_KIND_FOLDERS.has(first);
+  const underLanguageKind = second !== undefined && LANGUAGE_KIND_FOLDERS.has(second);
+  return underRootKind || underLanguageKind ? "under-a-kind-folder" : "elsewhere";
+};
+
 export const fileRoleOf = (request: { readonly path: string }): FileRole => {
   const file = fileOf(request);
-  return file !== LIST_PAGE_FILE && file.endsWith(ITEM_EXTENSION) ? "item" : "other";
+  return file !== LIST_PAGE_FILE && file.endsWith(ITEM_EXTENSION) && folderPlaceOf({ folders: segmentsOf(request).slice(0, -1) }) === "under-a-kind-folder" ? "item" : "other";
 };
 
 export const identityOf = (request: { readonly path: string }): Placement =>

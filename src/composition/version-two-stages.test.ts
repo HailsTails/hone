@@ -216,7 +216,7 @@ describe("versionTwoStagesOver", () => {
   it("fails as a catalogue not read, absent, when the install holds no symptom catalogue", () => {
     expect(stagesOver({ git: GIT_LISTING_NOTHING, baseRevision: undefined }).catalogue()).toEqual({
       outcome: "failed",
-      error: { kind: "catalogue-not-read", path: "/install/rules/typescript/symptoms.json", reason: { reason: "absent" } },
+      error: { kind: "catalogue-not-read", path: "/install/rules", reason: { reason: "absent" } },
     });
   });
 

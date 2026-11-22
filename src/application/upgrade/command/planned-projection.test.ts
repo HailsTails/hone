@@ -24,7 +24,7 @@ const notUsed = (): never => {
 };
 
 const PATH: PathPort = {
-  join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules/typescript/symptoms.json"),
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules"),
   joinRepository: notUsed,
   relative: notUsed,
   directoryOf: notUsed,
@@ -65,6 +65,7 @@ describe("plannedProjectionOf", () => {
       command,
       repoRoot: absoluteRootOf("/repo"),
       installRoot: absoluteRootOf("/install"),
+      directory: { list: notUsed, create: notUsed },
       recordsReader: { recordsReadingOf: notUsed },
       symptomCatalogueOf: NO_CATALOGUE,
       settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
@@ -75,9 +76,9 @@ describe("plannedProjectionOf", () => {
     });
     expect(projected).toEqual({ outcome: "failed", error: {
         kind: "projection-failed",
-        failure: { kind: "catalogue-not-read", path: "/install/rules/typescript/symptoms.json", reason: { reason: "absent" } },
+        failure: { kind: "catalogue-not-read", path: "/install/rules", reason: { reason: "absent" } },
       },
     });
-    expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules", "typescript", "symptoms.json"] });
+    expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });
   });
 });

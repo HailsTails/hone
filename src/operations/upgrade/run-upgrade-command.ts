@@ -148,6 +148,7 @@ const proofRequestOf = (request: UpgradeInput & { readonly prepared: Prepared })
       command,
       repoRoot: located.repoRoot,
       installRoot: located.installRoot,
+      directory: ports.directory,
       recordsReader: ports.recordsReader,
       symptomCatalogueOf: ports.symptomCatalogueOf,
       settingsFormat: ports.settingsFormat,

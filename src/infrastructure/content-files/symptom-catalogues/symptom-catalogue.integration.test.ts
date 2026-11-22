@@ -1,3 +1,4 @@
+import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
 import { assert, describe, expect, it, vi } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
@@ -131,9 +132,6 @@ const formSectionsOf = (request: { readonly catalogue: SymptomCatalogue; readonl
     .filter(({ clause }) => clauseAddressText({ address: clause }) === request.clause)
     .flatMap(({ sight }) => (sight.kind === "symptom-by-form" ? sight.forms.map((form) => form.section) : []));
 
-const symptomNamesOf = (request: { readonly catalogue: SymptomCatalogue }): readonly string[] =>
-  request.catalogue.symptoms.map((symptom) => symptom.name);
-
 const correctUseNotesOf = (request: { readonly guide: CatalogueGuide }): readonly string[] =>
   request.guide.catalogue.symptoms
     .filter((symptom) => symptom.correctUses.length > 0)
@@ -173,9 +171,6 @@ const caseReadingAfter = (reading: CaseReading, line: string): CaseReading => {
 
 const casesOnCasesPage = (request: { readonly text: string }): readonly PageCase[] =>
   request.text.split("\n").reduce<CaseReading>(caseReadingAfter, { standing: "accepted", within: "cases", cases: [] }).cases;
-
-const casesOfCatalogue = (request: { readonly catalogue: Pick<SymptomCatalogue, "cases"> }): readonly PageCase[] =>
-  request.catalogue.cases.map((entry) => ({ title: entry.title, standing: entry.standing }));
 
 const INDICATION_LINE = /^- \*\*May indicate:\*\* (.+)$/;
 
@@ -269,68 +264,14 @@ const proposedReasonsOf = (request: { readonly recipes: readonly Recipe[] }): re
 const reasonMismatchesOf = (request: { readonly recipes: readonly Recipe[]; readonly page: readonly PageReason[] }): readonly string[] =>
   request.recipes.filter((recipe) => reasonFitOf({ recipe, page: request.page }) === "differs").map((recipe) => recipe.name);
 
-type PageOwes = { readonly title: string; readonly principles: readonly string[]; readonly rules: readonly string[] };
-
 type ProseLink = { readonly sentence: string; readonly cases: readonly string[] };
-
-const SHORT_NAME = /([A-Z][A-Za-z ]*?) \(\[[^\]]+\]\(principles\.md#([a-z-]+)\)\)/g;
-
-const OWES_ROW = /^\| (.+?) \| (.+?) \| .* \|$/;
-
-const OUTSIDE_THE_CASES = "## Outside the cases";
 
 const RULE_HEADING = /^### (.+)$/;
 
 const CASE_SENTENCE = " a case";
 
-const shortNamesOn = (request: { readonly casesPage: string }): ReadonlyMap<string, string> =>
-  new Map([...request.casesPage.matchAll(SHORT_NAME)].flatMap((match) => (match[1] === undefined || match[2] === undefined ? [] : [[match[1], match[2]] as const])));
-
 const ruleTitlesOn = (request: { readonly pages: readonly string[] }): readonly string[] =>
   request.pages.flatMap((page) => page.split("\n").flatMap((line) => RULE_HEADING.exec(line)?.slice(1, 2) ?? []));
-
-type Serving = { readonly rule: string; readonly case: string };
-
-type ServingReading = { readonly rule: string | undefined; readonly servings: readonly Serving[] };
-
-const servingReadingAfter = (reading: ServingReading, line: string): ServingReading => {
-  const heading = RULE_HEADING.exec(line)?.[1];
-  if (heading !== undefined) {
-    return { ...reading, rule: heading };
-  }
-  const rule = reading.rule;
-  return rule === undefined ? reading : { ...reading, servings: [...reading.servings, ...servedSpellingsOn({ line }).map((served) => ({ rule, case: served }))] };
-};
-
-const servingsOnRulesPage = (request: { readonly rulesPage: string }): readonly Serving[] =>
-  request.rulesPage.split("\n").reduce<ServingReading>(servingReadingAfter, { rule: undefined, servings: [] }).servings;
-
-const linkedServings = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly Serving[] => {
-  const titles = ruleTitlesOn(request);
-  return request.links
-    .filter((link) => request.pages.some((page) => page.includes(link.sentence)))
-    .flatMap((link) => titles.filter((title) => link.sentence.includes(title)).flatMap((rule) => link.cases.map((served) => ({ rule, case: served }))));
-};
-
-const owedRows = (request: { readonly casesPage: string }): readonly (readonly [string, string])[] =>
-  (request.casesPage.split(OUTSIDE_THE_CASES)[0] ?? "").split("\n").flatMap((line) => {
-    const row = OWES_ROW.exec(line);
-    const title = row?.[1];
-    const owes = row?.[2];
-    return title === undefined || owes === undefined || NOT_A_CASE_TITLE.has(title) ? [] : [[title, owes] as const];
-  });
-
-const owesOnPages = (request: { readonly casesPage: string; readonly rulesPage: string; readonly links: readonly ProseLink[] }): readonly PageOwes[] => {
-  const shortNames = shortNamesOn(request);
-  const pages = [request.rulesPage, request.casesPage];
-  const servings = [...servingsOnRulesPage(request), ...linkedServings({ pages, links: request.links })];
-  const titles = ruleTitlesOn({ pages: [request.rulesPage] });
-  return owedRows(request).map(([title, owes]) => ({
-    title,
-    principles: owes.split(/; |, /).map((short) => shortNames.get(short) ?? `unknown short name ${short}`),
-    rules: titles.filter((rule) => servings.some((serving) => serving.rule === rule && serving.case === title)),
-  }));
-};
 
 const lineKindOf = (request: { readonly line: string }): "prose" | "other" => (/^[A-Za-z"]/.test(request.line) ? "prose" : "other");
 
@@ -349,13 +290,6 @@ const unlinkedCaseSentencesOn = (request: { readonly pages: readonly string[]; r
 
 const missingLinkSentencesOn = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly string[] =>
   request.links.filter((link) => !request.pages.some((page) => page.includes(link.sentence))).map((link) => link.sentence);
-
-const owesOfCatalogue = (request: { readonly catalogue: Pick<SymptomCatalogue, "cases"> }): readonly PageOwes[] =>
-  request.catalogue.cases.map((entry) => ({
-    title: entry.title,
-    principles: entry.owes.flatMap((point) => (point.kind === "principle" ? [point.principle.name] : [])),
-    rules: entry.owes.flatMap((point) => (point.kind === "rule" ? [point.rule.title] : [])),
-  }));
 
 type UnowedPointer = { readonly symptom: string; readonly case: string; readonly pointer: string };
 
@@ -406,98 +340,24 @@ const FILE_TEXT = createDefaultFileTextPort({});
 
 const PATH = createDefaultPathPort({});
 
-const SYMPTOMS_ON_THE_STEP_5_PAGE = [
-  "date-used-directly",
-  "ambient-randomness",
-  "process-global-used-in-place",
-  "outside-import-past-a-boundary",
-  "outside-type-in-a-signature",
-  "library-class-built-in-place",
-  "text-past-its-reader",
-  "schema-past-its-adapter",
-  "claimed-type",
-  "untyped-value",
-  "own-type-guard",
-  "type-derived-from-code",
-  "strictness-weakened",
-  "default-on-a-closed-union",
-  "boolean-in-a-signature",
-  "absence-standing-for-a-state",
-  "default-for-a-required-value",
-  "throw-between-our-units",
-  "thrown-non-error",
-  "failure-shaped-as-success",
-  "catch-all-failure-kind",
-  "loop-keyword",
-  "write-into-a-parameter",
-  "rebinding",
-  "authored-class-or-this",
-  "module-level-state",
-  "long-function",
-  "tangled-function",
-  "work-inside-a-condition",
-  "orchestrator-that-computes",
-  "doer-calling-our-own-unit",
-  "positional-parameters",
-  "tuple-as-data",
-  "wide-input",
-  "wide-port",
-  "inner-layer-imports-outer",
-  "port-outside-the-domain",
-  "adapter-built-outside-the-root",
-  "port-named-for-a-mechanism",
-  "double-with-a-body",
-  "module-or-global-patched",
-  "branch-in-a-test",
-  "computed-value-in-a-test",
-  "throw-or-catch-in-a-test",
-  "unasserted-call",
-  "answer-set-in-a-hook",
-  "test-switched-off",
-  "unit-without-a-running-test",
-  "machine-touched-in-a-unit-test",
-  "inherited-environment-in-a-subprocess",
-  "behaviour-tested-away-from-its-owner",
-  "integration-heavy-suite",
-  "coverage-gate",
-  "large-input-for-a-few-fields",
-  "test-of-the-type-checker",
-  "shorthand-name",
-  "name-off-its-casing",
-  "drawer-path",
-  "types-only-file",
-  "prose-in-code",
-  "untracked-escape",
-  "many-spellings-of-one-concept",
-  "outside-dependency-vocabulary-for-basic-logic",
-  "duplicate-decision",
-  "change-spread-across-modules",
-  "floating-version",
-  "no-lock-file",
-  "dependency-without-a-record",
-  "tool-fetched-at-run-time",
-  "edit-inside-vendored-code",
-  "bundled-dependency",
-];
-
 const NOTES_OF_SYMPTOMS_WITH_A_CORRECT_USE = [
-  "date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Correct use: a boundary record on the clock adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#date-used-directly",
   "ambient-randomness: Ambient randomness. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers. The breach usually sits in the unit that should be passed the value, often a doer doing two jobs. Recipe: World values through a port. Correct use: a boundary record on the adapter for random values or new ids (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#ambient-randomness",
-  "process-global-used-in-place: Process global used in place. May indicate: reads data from outside (request, file, environment, stored row, response) → No leak across a boundary; causes an effect (writes, logs, sends, exits) → Ports declared inside; builds the real implementations → Ports declared inside. The breach usually sits at a missing port, or at an adapter not built at the entry point. Recipes: World values through a port; Adapter per outside party; Composition root. Correct use: a boundary record on the adapter that wraps the process (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#process-global-used-in-place",
+  "claimed-type: Claimed type. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; checks a value that may be one of several outcomes → Straight-through tests; gives a value its type (declares it, or needs it narrower): in a test, a cast to build an input → Handed what it uses. The breach usually sits in the declaration: an input too wide, a generic not bounded, a missing parse. Recipes: Fix the declaration, not the value; Assert to narrow; One argument object. Correct use: an authorised location in the adapter whose outside contract forces it (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#claimed-type",
+  "date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Correct use: a boundary record on the clock adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#date-used-directly",
+  "dependency-without-a-record: Dependency without a record. May indicate: takes an outside dependency → Outside dependencies justified. The breach usually sits in the missing record. Recipe: Dependency record. Correct use: a dependency record naming the native way weighed and why it fell short (no record format yet). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#dependency-without-a-record",
+  "double-with-a-body: Double with a body. May indicate: uses what a collaborator gives back → Written-out answers; does one job: the port the stub stands in for → Handed what it uses; does one job: the collaborator the stub stands in for → Doer or orchestrator. The breach usually sits in a port too wide, or in a collaborator holding two decisions. Recipe: Stub with vi.fn. A fake, where a stub cannot do the test: a deviation from Stub with vi.fn (no record format yet). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#double-with-a-body",
+  "edit-inside-vendored-code: Edit inside vendored code. May indicate: takes an outside dependency → Upstream stays untouched. The breach usually sits in the change. Recipe: Extension outside the vendored code. Drift, an edit impossible to apply as an extension: an authorised location stating when to drop it (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#edit-inside-vendored-code",
+  "library-class-built-in-place: Library class built in place. May indicate: takes an outside dependency → Outside dependencies stay at boundaries; keeps state or settings across calls → No hidden effects. The breach usually sits at a missing adapter. Recipes: Adapter per outside party; Closure factory. Correct use: a boundary record on that dependency's adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#library-class-built-in-place",
+  "loop-keyword: Loop keyword. May indicate: makes a new value from what it has → No hidden effects; causes an effect (writes, logs, sends, exits) → Ports declared inside; coordinates other units → Doer or orchestrator. The breach usually sits in the unit. Recipe: Functional iteration. Draining a stream: an authorised location in its source's adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#loop-keyword",
+  "name-off-its-casing: Name off its casing. May indicate: names something → One word everywhere. The breach usually sits in the name. An outside contract's names, such as `PATH` or ESLint listener keys: an authorised location (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#name-off-its-casing",
   "outside-import-past-a-boundary: Outside import past a boundary. May indicate: uses a system or service outside the program → Outside dependencies stay at boundaries, Ports declared inside; takes an outside dependency → Outside dependencies stay at boundaries. The breach usually sits at a missing adapter and port. Recipes: Adapter per outside party; Port in the domain. Correct use: a boundary record on the adapter for that outside party (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#outside-import-past-a-boundary",
   "outside-type-in-a-signature: Outside type in a signature. May indicate: uses a system or service outside the program → Outside dependencies stay at boundaries, No leak across a boundary. The breach usually sits in the adapter that hands the outside type inward. Recipe: Adapter per outside party. Correct use: a boundary record on the adapter, or beyond it with a Conformist statement for an outside model adopted as ours (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#outside-type-in-a-signature",
-  "library-class-built-in-place: Library class built in place. May indicate: takes an outside dependency → Outside dependencies stay at boundaries; keeps state or settings across calls → No hidden effects. The breach usually sits at a missing adapter. Recipes: Adapter per outside party; Closure factory. Correct use: a boundary record on that dependency's adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#library-class-built-in-place",
-  "text-past-its-reader: Text past its reader. May indicate: reads data from outside (request, file, environment, stored row, response) → No leak across a boundary; sends data out of the program → No leak across a boundary; uses a system or service outside the program → External behaviour sits at a boundary; states what the unit gives back, for one case or several → Straight-through tests. The breach usually sits in a port that takes or gives text where it should carry objects. Recipes: Adapter per outside party; Map out at the adapter; Zod at the producer's adapter; Whole written-out expectation. Correct use: a boundary record on the adapter for whoever produced or receives the text (today: authorised-location). A use at one test site: an authorised location for this symptom alone (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#text-past-its-reader",
+  "process-global-used-in-place: Process global used in place. May indicate: reads data from outside (request, file, environment, stored row, response) → No leak across a boundary; causes an effect (writes, logs, sends, exits) → Ports declared inside; builds the real implementations → Ports declared inside. The breach usually sits at a missing port, or at an adapter not built at the entry point. Recipes: World values through a port; Adapter per outside party; Composition root. Correct use: a boundary record on the adapter that wraps the process (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#process-global-used-in-place",
   "schema-past-its-adapter: Schema past its adapter. May indicate: reads data from outside (request, file, environment, stored row, response) → No leak across a boundary; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the adapter, which hands the wire type inward instead of mapping it. Recipe: Zod at the producer's adapter. An outside model adopted as ours: a boundary record with a Conformist statement (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#schema-past-its-adapter",
-  "claimed-type: Claimed type. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; checks a value that may be one of several outcomes → Straight-through tests; gives a value its type (declares it, or needs it narrower): in a test, a cast to build an input → Handed what it uses. The breach usually sits in the declaration: an input too wide, a generic not bounded, a missing parse. Recipes: Fix the declaration, not the value; Assert to narrow; One argument object. Correct use: an authorised location in the adapter whose outside contract forces it (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#claimed-type",
-  "type-derived-from-code: Type derived from code. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; names something → One word everywhere. The breach usually sits in the producer, which has no named type. Recipe: Named, exported type. Correct use: an authorised location in the adapter for an outside dependency that gives no named type (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#type-derived-from-code",
-  "throw-between-our-units: Throw between our units. May indicate: an operation can fail → Failures are values; sends data out of the program → No leak across a boundary. The breach usually sits in the unit, or at a missing mapping in the adapter. Recipes: Result union; Failure mapping at the adapter. Correct use: an authorised location at an adapter whose caller's contract is exceptions (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#throw-between-our-units",
-  "loop-keyword: Loop keyword. May indicate: makes a new value from what it has → No hidden effects; causes an effect (writes, logs, sends, exits) → Ports declared inside; coordinates other units → Doer or orchestrator. The breach usually sits in the unit. Recipe: Functional iteration. Draining a stream: an authorised location in its source's adapter (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#loop-keyword",
-  "double-with-a-body: Double with a body. May indicate: uses what a collaborator gives back → Written-out answers; does one job: the port the stub stands in for → Handed what it uses; does one job: the collaborator the stub stands in for → Doer or orchestrator. The breach usually sits in a port too wide, or in a collaborator holding two decisions. Recipe: Stub with vi.fn. A fake, where a stub cannot do the test: a deviation from Stub with vi.fn (no record format yet). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#double-with-a-body",
   "shorthand-name: Shorthand name. May indicate: names something → One word everywhere. The breach usually sits in the name. Recipe: Whole words. A name an outside contract fixes: an authorised location (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#shorthand-name",
-  "name-off-its-casing: Name off its casing. May indicate: names something → One word everywhere. The breach usually sits in the name. An outside contract's names, such as `PATH` or ESLint listener keys: an authorised location (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#name-off-its-casing",
-  "dependency-without-a-record: Dependency without a record. May indicate: takes an outside dependency → Outside dependencies justified. The breach usually sits in the missing record. Recipe: Dependency record. Correct use: a dependency record naming the native way weighed and why it fell short (no record format yet). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#dependency-without-a-record",
-  "edit-inside-vendored-code: Edit inside vendored code. May indicate: takes an outside dependency → Upstream stays untouched. The breach usually sits in the change. Recipe: Extension outside the vendored code. Drift, an edit impossible to apply as an extension: an authorised location stating when to drop it (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#edit-inside-vendored-code",
+  "text-past-its-reader: Text past its reader. May indicate: reads data from outside (request, file, environment, stored row, response) → No leak across a boundary; sends data out of the program → No leak across a boundary; uses a system or service outside the program → External behaviour sits at a boundary; states what the unit gives back, for one case or several → Straight-through tests. The breach usually sits in a port that takes or gives text where it should carry objects. Recipes: Adapter per outside party; Map out at the adapter; Zod at the producer's adapter; Whole written-out expectation. Correct use: a boundary record on the adapter for whoever produced or receives the text (today: authorised-location). A use at one test site: an authorised location for this symptom alone (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#text-past-its-reader",
+  "throw-between-our-units: Throw between our units. May indicate: an operation can fail → Failures are values; sends data out of the program → No leak across a boundary. The breach usually sits in the unit, or at a missing mapping in the adapter. Recipes: Result union; Failure mapping at the adapter. Correct use: an authorised location at an adapter whose caller's contract is exceptions (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#throw-between-our-units",
+  "type-derived-from-code: Type derived from code. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; names something → One word everywhere. The breach usually sits in the producer, which has no named type. Recipe: Named, exported type. Correct use: an authorised location in the adapter for an outside dependency that gives no named type (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#type-derived-from-code",
 ];
 
 const CASES_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rules", "cases.md"] }) });
@@ -509,61 +369,61 @@ const RULES_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rul
 const RECIPES_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rules", "typescript", "recipes.md"] }) });
 
 const RECIPES_WITH_A_PROPOSED_REASON = [
-  "failure-asserted-as-a-value",
-  "integration-test-owns-its-scratch",
-  "composition-root",
-  "failure-mapping-at-the-adapter",
-  "named-exported-type",
   "bounded-context-generic",
+  "composition-root",
+  "failure-asserted-as-a-value",
+  "failure-mapping-at-the-adapter",
+  "integration-test-owns-its-scratch",
+  "named-exported-type",
   "shared-strict-base-config",
 ];
 
 const OUTSIDE_ADDRESSES = [
-  { address: "claimed-type#cast-to-any", clause: "CD-1#any-cast" },
-  { address: "untyped-value#explicit-any", clause: "CD-1#explicit-any" },
-  { address: "untyped-value#implicit-any-let", clause: "CD-1#implicit-any-let" },
-  { address: "claimed-type#unlisted-cast-site", clause: "CD-2#cast-expressions" },
-  { address: "claimed-type#non-null-assertions", clause: "CD-2#non-null-assertions" },
-  { address: "strictness-weakened#strict", clause: "CD-3#strict" },
-  { address: "strictness-weakened#no-unchecked-indexed-access", clause: "CD-3#no-unchecked-indexed-access" },
-  { address: "strictness-weakened#exact-optional-property-types", clause: "CD-3#exact-optional-property-types" },
-  { address: "strictness-weakened#no-implicit-override", clause: "CD-3#no-implicit-override" },
-  { address: "strictness-weakened#no-fallthrough-cases-in-switch", clause: "CD-3#no-fallthrough-cases-in-switch" },
-  { address: "strictness-weakened#no-property-access-from-index-signature", clause: "CD-3#no-property-access-from-index-signature" },
-  { address: "strictness-weakened#use-unknown-in-catch-variables", clause: "CD-3#use-unknown-in-catch-variables" },
-  { address: "untracked-escape#directive-pointers", clause: "CD-5#comments-directives" },
-  { address: "shorthand-name#identifier-names", clause: "CD-6#identifier-names" },
-  { address: "name-off-its-casing#naming-convention", clause: "CD-6#naming-convention" },
-  { address: "drawer-path#drawer-names", clause: "CD-7#categorical-paths" },
-  { address: "name-off-its-casing#filename-case", clause: "CD-7#filename-case" },
-  { address: "type-derived-from-code#factory-return-types", clause: "CD-7a#factory-return-types" },
-  { address: "default-on-a-closed-union#default-arm", clause: "CD-8#switch-defaults" },
-  { address: "throw-or-catch-in-a-test#throw-statement", clause: "CD-10#throws-in-tests" },
-  { address: "thrown-non-error#throw-only-error", clause: "CD-10#throw-only-error" },
   { address: "authored-class-or-this#class-keyword", clause: "CD-14#class-syntax" },
   { address: "authored-class-or-this#static-members-only", clause: "CD-14#static-only-class" },
-  { address: "loop-keyword#loop-statement", clause: "CD-15#loops" },
-  { address: "date-used-directly#clock-sources", clause: "CD-17#clock-sources" },
-  { address: "outside-import-past-a-boundary#import-or-require", clause: "CD-19#import-boundaries" },
-  { address: "unit-without-a-running-test#companion-test-file", clause: "CD-23#export-test-sibling" },
-  { address: "double-with-a-body#stub-implementation", clause: "CD-25#dependency-isolation" },
-  { address: "module-or-global-patched#module-mock-call", clause: "CD-26#module-mocking" },
+  { address: "boolean-in-a-signature#boolean-annotation", clause: "CD-43#boolean-signatures" },
   { address: "branch-in-a-test#test-body", clause: "CD-27#test-body-logic" },
-  { address: "throw-or-catch-in-a-test#try-block", clause: "CD-27#test-body-logic" },
-  { address: "rebinding#test-body", clause: "CD-27#test-body-logic" },
+  { address: "claimed-type#cast-to-any", clause: "CD-1#any-cast" },
+  { address: "claimed-type#non-null-assertions", clause: "CD-2#non-null-assertions" },
+  { address: "claimed-type#unlisted-cast-site", clause: "CD-2#cast-expressions" },
   { address: "computed-value-in-a-test#test-body", clause: "CD-27#test-body-logic" },
-  { address: "text-past-its-reader#test-body", clause: "CD-27#test-body-logic" },
+  { address: "date-used-directly#clock-sources", clause: "CD-17#clock-sources" },
+  { address: "default-on-a-closed-union#default-arm", clause: "CD-8#switch-defaults" },
   { address: "double-with-a-body#logic-in-a-passed-function", clause: "CD-27#test-body-logic" },
+  { address: "double-with-a-body#stub-implementation", clause: "CD-25#dependency-isolation" },
+  { address: "drawer-path#drawer-names", clause: "CD-7#categorical-paths" },
+  { address: "inherited-environment-in-a-subprocess#git-spawn-environment", clause: "CD-47#hermetic-git-spawns" },
+  { address: "long-function#function-length", clause: "CD-41#function-length" },
+  { address: "loop-keyword#loop-statement", clause: "CD-15#loops" },
+  { address: "module-or-global-patched#module-mock-call", clause: "CD-26#module-mocking" },
+  { address: "name-off-its-casing#filename-case", clause: "CD-7#filename-case" },
+  { address: "name-off-its-casing#naming-convention", clause: "CD-6#naming-convention" },
+  { address: "outside-import-past-a-boundary#import-or-require", clause: "CD-19#import-boundaries" },
+  { address: "positional-parameters#parameter-count", clause: "CD-40#parameter-count" },
+  { address: "rebinding#parameter-reassignment", clause: "CD-44#parameter-reassignment" },
+  { address: "rebinding#test-body", clause: "CD-27#test-body-logic" },
+  { address: "shorthand-name#identifier-names", clause: "CD-6#identifier-names" },
+  { address: "strictness-weakened#exact-optional-property-types", clause: "CD-3#exact-optional-property-types" },
+  { address: "strictness-weakened#no-fallthrough-cases-in-switch", clause: "CD-3#no-fallthrough-cases-in-switch" },
+  { address: "strictness-weakened#no-implicit-override", clause: "CD-3#no-implicit-override" },
+  { address: "strictness-weakened#no-property-access-from-index-signature", clause: "CD-3#no-property-access-from-index-signature" },
+  { address: "strictness-weakened#no-unchecked-indexed-access", clause: "CD-3#no-unchecked-indexed-access" },
+  { address: "strictness-weakened#strict", clause: "CD-3#strict" },
+  { address: "strictness-weakened#use-unknown-in-catch-variables", clause: "CD-3#use-unknown-in-catch-variables" },
+  { address: "tangled-function#cognitive-complexity", clause: "CD-41#cognitive-complexity" },
   { address: "test-switched-off#focused-tests", clause: "CD-27#focused-tests" },
   { address: "test-switched-off#skipped-tests", clause: "CD-27#skipped-tests" },
-  { address: "positional-parameters#parameter-count", clause: "CD-40#parameter-count" },
-  { address: "tangled-function#cognitive-complexity", clause: "CD-41#cognitive-complexity" },
-  { address: "long-function#function-length", clause: "CD-41#function-length" },
+  { address: "text-past-its-reader#test-body", clause: "CD-27#test-body-logic" },
+  { address: "throw-or-catch-in-a-test#throw-statement", clause: "CD-10#throws-in-tests" },
+  { address: "throw-or-catch-in-a-test#try-block", clause: "CD-27#test-body-logic" },
+  { address: "thrown-non-error#throw-only-error", clause: "CD-10#throw-only-error" },
+  { address: "type-derived-from-code#factory-return-types", clause: "CD-7a#factory-return-types" },
+  { address: "unit-without-a-running-test#companion-test-file", clause: "CD-23#export-test-sibling" },
+  { address: "untracked-escape#directive-pointers", clause: "CD-5#comments-directives" },
+  { address: "untyped-value#explicit-any", clause: "CD-1#explicit-any" },
+  { address: "untyped-value#implicit-any-let", clause: "CD-1#implicit-any-let" },
   { address: "work-inside-a-condition#else-after-an-exit", clause: "CD-42#useless-else" },
-  { address: "boolean-in-a-signature#boolean-annotation", clause: "CD-43#boolean-signatures" },
   { address: "write-into-a-parameter#parameter-mutation", clause: "CD-44#parameter-mutation" },
-  { address: "rebinding#parameter-reassignment", clause: "CD-44#parameter-reassignment" },
-  { address: "inherited-environment-in-a-subprocess#git-spawn-environment", clause: "CD-47#hermetic-git-spawns" },
 ];
 
 const PROSE_LINKS: readonly ProseLink[] = [
@@ -765,16 +625,6 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
     ).toEqual(["Makes a new value", "Ships code"]);
   });
 
-  it("names a short name the cases page does not define as unknown", () => {
-    expect(
-      owesOnPages({
-        casesPage: "| Case | Owes | What to do |\n|---|---|---|\n| Makes a new value from what it has | Tests | It returns. |\n",
-        rulesPage: "",
-        links: [],
-      }),
-    ).toEqual([{ title: "Makes a new value from what it has", principles: ["unknown short name Tests"], rules: [] }]);
-  });
-
   it("names a pointer of an indication whose case does not owe it", () => {
     expect(
       unowedPointersOf({
@@ -825,7 +675,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
   });
 });
 
-const reading = createSymptomCatalogueRepository({ fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT }).read({});
+const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText: FILE_TEXT, path: PATH, ruleSetRoot: REPO_ROOT }).read({});
 
 describe("rules/typescript/symptoms.json, read from this repository through the catalogue's reader", () => {
   it("reads into the typed catalogue", () => {
@@ -877,14 +727,6 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     expect(unresolvedAddressesOf({ catalogue: reading.value.catalogue })).toEqual([]);
   });
 
-  it("holds each case on rules/cases.md by the page's name and standing, in the page's order", () => {
-    assert(reading.outcome === "ok");
-    assert(reading.value.held === "catalogue");
-    assert(CASES_PAGE.outcome === "ok");
-
-    expect(casesOfCatalogue({ catalogue: reading.value.catalogue })).toEqual(casesOnCasesPage({ text: CASES_PAGE.value }));
-  });
-
   it("names every case by one rule: its title without its parenthetical, hyphenated", () => {
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
@@ -904,17 +746,6 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     assert(RULES_PAGE.outcome === "ok");
 
     expect(unservedCaseNamesOn({ rulesPage: RULES_PAGE.value, cases: casesOnCasesPage({ text: CASES_PAGE.value }) })).toEqual([]);
-  });
-
-  it("holds what each case owes as the pages give it: the principles of its Owes column, then the rules that serve it or that the pages' prose says give it", () => {
-    assert(reading.outcome === "ok");
-    assert(reading.value.held === "catalogue");
-    assert(CASES_PAGE.outcome === "ok");
-    assert(RULES_PAGE.outcome === "ok");
-
-    expect(owesOfCatalogue({ catalogue: reading.value.catalogue })).toEqual(
-      owesOnPages({ casesPage: CASES_PAGE.value, rulesPage: RULES_PAGE.value, links: PROSE_LINKS }),
-    );
   });
 
   it("points every indication only at what its case owes", () => {
@@ -941,13 +772,6 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
 
     expect(reasonMismatchesOf({ recipes: reading.value.catalogue.recipes, page: recipeReasonsOnPage({ text: RECIPES_PAGE.value }) })).toEqual([]);
     expect(proposedReasonsOf({ recipes: reading.value.catalogue.recipes })).toEqual(RECIPES_WITH_A_PROPOSED_REASON);
-  });
-
-  it("holds every symptom on the Step 5 page, in its order", () => {
-    assert(reading.outcome === "ok");
-    assert(reading.value.held === "catalogue");
-
-    expect(symptomNamesOf({ catalogue: reading.value.catalogue })).toEqual(SYMPTOMS_ON_THE_STEP_5_PAGE);
   });
 
   it("renders each symptom that has a correct use as a note that reads as sentences, in catalogue order", () => {

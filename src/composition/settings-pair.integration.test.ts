@@ -1,3 +1,4 @@
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { assert, describe, expect, it, vi } from "vitest";
 import { createSelectionRepository, readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
@@ -34,7 +35,7 @@ const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "befo
 const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "after"] }) });
 
 const toolCatalogue = (): SymptomCatalogue => {
-  const reading = createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
+  const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
   assert(reading.outcome === "ok", "this repository's catalogue reads");
   assert(reading.value.held === "catalogue", "this repository holds a catalogue");
   return reading.value.catalogue;

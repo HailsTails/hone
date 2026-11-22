@@ -1,0 +1,5 @@
+# No hidden effects
+
+```json
+{}
+```

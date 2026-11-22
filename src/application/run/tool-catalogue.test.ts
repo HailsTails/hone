@@ -7,7 +7,7 @@ import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 
 const INSTALL = absoluteRootOf("/install");
 
-const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
+const CATALOGUE_PATH = "/install/rules";
 
 const POSIX: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue(CATALOGUE_PATH) };
 

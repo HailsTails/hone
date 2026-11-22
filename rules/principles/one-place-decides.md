@@ -1,0 +1,5 @@
+# One place decides
+
+```json
+{}
+```

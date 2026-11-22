@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
@@ -82,6 +83,7 @@ const inMemoryFileText = (request: { readonly files: Readonly<Record<string, str
 
 const sourcesOver = (request: { readonly files: Readonly<Record<string, string>> }) =>
   createSettingsSources({
+    directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",

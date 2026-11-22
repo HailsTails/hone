@@ -65,7 +65,7 @@ const specifierOf: SpecifierOf = ({ modulePath }) => {
 };
 
 const catalogue = () => {
-  const reading = createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
+  const reading = createSymptomCatalogueRepository({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT }).read({});
   assert(reading.outcome === "ok", "this repository's catalogue reads");
   assert(reading.value.held === "catalogue", "this repository holds a catalogue");
   return reading.value.catalogue;
@@ -73,7 +73,7 @@ const catalogue = () => {
 
 const bindingOf = (request: { readonly clause: string }): ProjectedBinding => {
   const address = clauseAddressSchema.parse(request.clause);
-  const sources = createSettingsSources({ repoRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
+  const sources = createSettingsSources({ directory: createDefaultDirectoryPort({}), repoRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path });
   const piece = sources.pieceClause({ ruleSetRoot: INSTALL_ROOT, clause: address, mechanism: ESLINT });
   assert(piece.outcome === "ok", `${request.clause} resolves its eslint piece`);
   return { mechanism: ESLINT, clause: { address, pieceRoot: piece.value.pieceRoot, settings: piece.value.settings } };
