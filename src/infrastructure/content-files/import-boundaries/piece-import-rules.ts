@@ -29,7 +29,8 @@ export type PieceImportFindings = {
 export type PieceImportFindingsFailure =
   | { readonly kind: "type-packages-missing"; readonly path: string }
   | { readonly kind: "type-packages-malformed"; readonly path: string; readonly detail: string }
-  | { readonly kind: "unknown-mechanism"; readonly file: string; readonly mechanism: string };
+  | { readonly kind: "unknown-mechanism"; readonly file: string; readonly mechanism: string }
+  | { readonly kind: "not-a-discipline"; readonly file: string; readonly folder: string };
 
 export type ImportForm = "type-only" | "value" | "dynamic";
 
@@ -71,6 +72,8 @@ const folderPrefixOf = (request: { readonly root: string }): string => {
   return root === "" ? "" : `${root}/`;
 };
 
+const RUNNER_FOLDER = "runner";
+
 const pieceLocationOf = (request: {
   readonly file: string;
   readonly ruleSetRoot: string;
@@ -86,13 +89,18 @@ const pieceLocationOf = (request: {
     return { outcome: "ok", value: [] };
   }
   const [mechanismText, discipline, ...rest] = file.slice(prefix.length).split("/");
-  if (discipline === undefined || !isDisciplineId(discipline) || rest.length === 0) {
+  if (mechanismText === undefined || discipline === undefined || rest.length === 0 || discipline === RUNNER_FOLDER) {
     return { outcome: "ok", value: [] };
   }
   const mechanism = mechanismIdSchema.safeParse(mechanismText);
+  if (!isDisciplineId(discipline)) {
+    return mechanism.success
+      ? { outcome: "failed", error: { kind: "not-a-discipline", file: request.file, folder: discipline } }
+      : { outcome: "ok", value: [] };
+  }
   return mechanism.success
     ? { outcome: "ok", value: [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, discipline }] }
-    : { outcome: "failed", error: { kind: "unknown-mechanism", file: request.file, mechanism: mechanismText ?? "" } };
+    : { outcome: "failed", error: { kind: "unknown-mechanism", file: request.file, mechanism: mechanismText } };
 };
 
 export const pieceFilesOf = (request: {

@@ -110,6 +110,16 @@ describe("pieceFilesOf", () => {
     expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: [] });
   });
 
+  it.each([
+    { file: "packages/hone/src/infrastructure/engines/audit/not-a-discipline/class-syntax.ts", folder: "not-a-discipline" },
+    { file: "packages/hone/src/infrastructure/engines/audit/cd-14/class-syntax.ts", folder: "cd-14" },
+  ])("refuses the folder $folder under the audit mechanism, which is no discipline id", ({ file, folder }) => {
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({
+      outcome: "failed",
+      error: { kind: "not-a-discipline", file, folder },
+    });
+  });
+
   it("refuses a piece folder under a mechanism other than audit or eslint", () => {
     const file = "packages/hone/src/infrastructure/engines/oxlint/CD-14/class-syntax.ts";
 
