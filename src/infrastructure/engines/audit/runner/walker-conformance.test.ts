@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { Result } from "../../../../domain/result.ts";
@@ -17,12 +17,12 @@ import { createDefaultEntryKindPort } from "../../../node/file-system/file-syste
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort, createPathPort } from "../../../node/path-port.ts";
+import { createDefaultPathPort } from "../../../node/path-port.ts";
+import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
 import { loadParsePort, typeScriptPeersNamed } from "./toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "./runner.ts";
-import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 type RawTable = Readonly<Record<string, string>>;
 
@@ -32,7 +32,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -45,21 +45,11 @@ const foldersUnder = (request: { readonly table: RawTable; readonly prefix: stri
     ),
   ].sort();
 
-const tableFileText = (request: { readonly table: RawTable }): FileTextPort => ({
-  read: ({ path }) => {
-    const key = path.replace("/install/", "./");
-    const text = request.table[key];
-    assert(text !== undefined, `the fake table holds no entry for ${key}`);
-    return { outcome: "ok", value: text };
-  },
-  exists: ({ path }) => (request.table[path.replace("/install/", "./")] === undefined ? "absent" : "present"),
-  write: vi.fn<FileTextPort["write"]>(),
-});
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
   const held = readHeldDiscipline({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
@@ -79,7 +69,7 @@ const rowsOf = (request: {
   const discipline = disciplineOf(request);
   const piece = readPieceFile({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     mechanism: request.mechanism,
@@ -107,12 +97,11 @@ const rowsOf = (request: {
 };
 
 const conformanceRows = (request: {
-  readonly table: RawTable;
   readonly disciplines: readonly string[];
   readonly mechanism: MechanismId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
-  const fileText = tableFileText({ table: request.table });
+  const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
     rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
   );
@@ -153,7 +142,6 @@ const walkerModules = import.meta.glob(["./src/infrastructure/engines/audit/*/*.
 const walkerDisciplines = foldersUnder({ table: walkerModules, prefix: "./src/infrastructure/engines/audit/" });
 
 const CONFORMANCE_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: walkerDisciplines,
   mechanism: "audit",
   mechanismRoot: `${import.meta.dirname}/..`,
@@ -167,7 +155,7 @@ describe("every audit piece on disk is registered with a piece.json", () => {
   });
 });
 
-describe("the audit runner, loaded as core loads it, conforms to every registered clause's shared cases read as build-time raw modules (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
+describe("the audit runner, loaded as core loads it, conforms to every registered clause's shared cases read from the shipped files (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
   it.each(CONFORMANCE_ROWS)("$name has no conformance failure over its flag and allow cases", async (row) => {
     expect(await checkConformance({ clause: row.clause, cases: row.cases, runner: walkerRunner })).toEqual({
       outcome: "ok",

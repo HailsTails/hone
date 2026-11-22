@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
 import { runnerModuleSchema, type StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
@@ -8,7 +8,7 @@ import { createDefaultEntryKindPort } from "../../../node/file-system/file-syste
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort, createPathPort } from "../../../node/path-port.ts";
+import { createDefaultPathPort } from "../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discipline.ts";
@@ -23,7 +23,6 @@ import * as walkerRunnerModule from "../runner/runner.ts";
 import { TEST_BODY_SECTIONS } from "./test-body-logic.ts";
 import * as eslintRunnerModule from "../../eslint/runner/runner.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 declare global {
   interface ImportMeta {
@@ -232,7 +231,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -245,21 +244,11 @@ const foldersUnder = (request: { readonly table: RawTable; readonly prefix: stri
     ),
   ].sort();
 
-const tableFileText = (request: { readonly table: RawTable }): FileTextPort => ({
-  read: ({ path }) => {
-    const key = path.replace("/install/", "./");
-    const text = request.table[key];
-    assert(text !== undefined, `the fake table holds no entry for ${key}`);
-    return { outcome: "ok", value: text };
-  },
-  exists: ({ path }) => (request.table[path.replace("/install/", "./")] === undefined ? "absent" : "present"),
-  write: vi.fn<FileTextPort["write"]>(),
-});
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
   const held = readHeldDiscipline({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
@@ -279,7 +268,7 @@ const rowsOf = (request: {
   const discipline = disciplineOf(request);
   const piece = readPieceFile({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     mechanism: request.mechanism,
@@ -307,12 +296,11 @@ const rowsOf = (request: {
 };
 
 const conformanceRows = (request: {
-  readonly table: RawTable;
   readonly disciplines: readonly string[];
   readonly mechanism: MechanismId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
-  const fileText = tableFileText({ table: request.table });
+  const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
     rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
   );
@@ -332,14 +320,12 @@ const ruleSetTexts = import.meta.glob(
 );
 
 const AUDIT_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" }),
   mechanism: "audit",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/audit`,
 });
 
 const ESLINT_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
   mechanism: "eslint",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/eslint`,
