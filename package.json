@@ -20,9 +20,9 @@
     "typecheck:eslint-9": "tsc --noEmit -p tsconfig.eslint-9.json",
     "typecheck:eslint-10": "tsc --noEmit -p tsconfig.eslint-10.json",
     "typecheck": "pnpm run typecheck:eslint-9 && pnpm run typecheck:eslint-10",
-    "lint": "biome check --error-on-warnings --config-path=lint.biome.json .",
+    "format": "oxfmt && oxfmt",
     "test": "vitest run --config vitest.config.ts",
-    "check": "pnpm run typecheck && biome check --error-on-warnings --config-path=lint.biome.json . && vitest run --config vitest.config.ts",
+    "check": "pnpm run typecheck && oxfmt --check && vitest run --config vitest.config.ts",
     "self-check": "node delivery/self-check/self-check.ts check --repo .",
     "install-proof": "node delivery/install-proof/install-proof.ts",
     "build-package": "node delivery/packaging/building/build-package.ts",
@@ -54,13 +54,13 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
     "@types/node": "25.9.1",
     "@typescript-eslint/eslint-plugin": "8.73.0",
     "@typescript-eslint/parser": "8.73.0",
     "esbuild": "0.25.12",
     "eslint": "10.15.0",
     "eslint-9": "npm:eslint@9.39.5",
+    "oxfmt": "0.79.0",
     "typescript": "6.0.3",
     "typescript-floor": "npm:typescript@4.8.4",
     "vitest": "4.1.11"
