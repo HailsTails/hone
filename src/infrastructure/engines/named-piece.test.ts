@@ -33,6 +33,19 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
+  it("resolves a shared implementation from its check name", () => {
+    const implementationRoot = "/install/src/infrastructure/engines/audit/strictness-weakened/strict";
+    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(PIECE_PATH).mockReturnValueOnce(implementationRoot);
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "ok",
+      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"compiler-overrides.ts"},"implementation":{"symptom":"strictness-weakened","check":"strict"}}',
+    });
+    expect(readNamedPiece({ ...SUBJECT, path: { join }, fileText: { exists: () => "present", read } })).toMatchObject({
+      outcome: "ok", value: { pieceRoot: implementationRoot },
+    });
+    expect(join).toHaveBeenLastCalledWith({ segments: ["/install", "src", "infrastructure", "engines", "audit", "strictness-weakened", "strict"] });
+  });
+
   it("names the requested check when its declaration is absent", () => {
     const join = vi.fn<PathPort["join"]>().mockReturnValue(PIECE_PATH);
     const read = vi.fn<FileTextPort["read"]>();

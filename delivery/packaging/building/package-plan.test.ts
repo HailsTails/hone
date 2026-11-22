@@ -61,6 +61,41 @@ describe("piecePathsIn", () => {
 });
 
 describe("packagePlanOf", () => {
+  it("builds the implementation of each named piece and ships its declaration and cases", () => {
+    const sourcePaths = [
+      "src/infrastructure/engines/eslint/test-switched-off/focused-tests/piece.json",
+      "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json",
+      "src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.ts",
+      "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/cases.json",
+    ];
+    const pieces = [
+      {
+        path: "src/infrastructure/engines/eslint/test-switched-off/focused-tests/piece.json",
+        text: '{"version":2,"settings":{"pluginModule":"test-switches.ts","rule":"focused-tests"}}',
+      },
+      {
+        path: "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json",
+        text: '{"version":2,"settings":{"pluginModule":"test-switches.ts","rule":"skipped-tests"},"implementation":{"symptom":"test-switched-off","check":"focused-tests"}}',
+      },
+    ];
+    expect(piecePathsIn({ sourcePaths })).toEqual([
+      "src/infrastructure/engines/eslint/test-switched-off/focused-tests/piece.json",
+      "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json",
+    ]);
+    expect(packagePlanOf({ sourcePaths, pieces })).toMatchObject({
+      outcome: "ok",
+      value: {
+        entryPoints: expect.arrayContaining(["src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.ts"]),
+        exported: ["src/infrastructure/engines/eslint/test-switched-off/focused-tests/test-switches.js"],
+        copied: ["src/infrastructure/engines/eslint/test-switched-off/skipped-tests/cases.json"],
+        pieces: [
+          { path: "src/infrastructure/engines/eslint/test-switched-off/focused-tests/piece.json", text: expect.stringContaining('"pluginModule": "test-switches.js"') },
+          { path: "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json", text: expect.stringContaining('"pluginModule": "test-switches.js"') },
+        ],
+      },
+    });
+  });
+
   const plan = packagePlanOf({ sourcePaths: SOURCE_PATHS, pieces: [AUDIT_PIECE, ESLINT_PIECE] });
 
   it("builds the one command, each public entry, each runner and each piece module a shipped piece names, once each", () => {
