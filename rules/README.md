@@ -245,7 +245,7 @@ Outside dependency: what was called a package. An internal package is our own co
 - **Needs:** syntax, types, graph (imports between files), app (the app's structure), files (config, names, build output), history, person.
 - **Today:**
   - *reuse:* a clause is enough for a first cut.
-  - *partial:* a clause sees part of the symptom.
+  - *partial:* every check of the symptom states what it misses.
   - *review:* only a review clause covers it today.
   - *new:* nothing covers it today.
 - **Margin:** what it flags that is not the symptom / what it misses. "Review owes" names what only a person sees.

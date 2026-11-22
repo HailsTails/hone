@@ -1,7 +1,7 @@
 import { clauseAddressText } from "../../../src/domain/rule-set/clause-address.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 
-export type CheckToday = "reuse" | "only review" | "review" | "new";
+export type CheckToday = "reuse" | "partial" | "only review" | "review" | "new";
 
 type Symptom = CatalogueFile["symptoms"][number];
 
@@ -31,8 +31,9 @@ const reviewedBy = (request: { readonly file: CatalogueFile; readonly symptom: S
 };
 
 export const checkTodayOf = (request: { readonly file: CatalogueFile; readonly symptom: Symptom }): CheckToday => {
-  if (request.file.checks.some((check) => check.symptom === request.symptom.name)) {
-    return "reuse";
+  const checks = request.file.checks.filter((check) => check.symptom === request.symptom.name);
+  if (checks.length > 0) {
+    return checks.every((check) => check.misses !== undefined) ? "partial" : "reuse";
   }
   if (request.symptom.seenBy[0] === "person") {
     return "only review";
