@@ -19,6 +19,10 @@ export type DirectoryTreeRemovalFailure = {
 };
 
 export type DirectoryTreePort = {
-  readonly list: (request: { readonly path: AbsolutePath }) => Result<readonly TreeEntry[], DirectoryTreeListFailure>;
-  readonly remove: (request: { readonly path: AbsolutePath }) => Result<void, DirectoryTreeRemovalFailure>;
+  readonly list: (request: {
+    readonly path: AbsolutePath;
+  }) => Result<readonly TreeEntry[], DirectoryTreeListFailure>;
+  readonly remove: (request: {
+    readonly path: AbsolutePath;
+  }) => Result<void, DirectoryTreeRemovalFailure>;
 };

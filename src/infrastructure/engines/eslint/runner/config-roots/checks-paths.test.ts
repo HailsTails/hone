@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { directoryOf, fileNameOf, filesNamed, repositoryDirectoryOf } from "./checks-paths.ts";
+
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { directoryOf, fileNameOf, filesNamed, repositoryDirectoryOf } from "./checks-paths.ts";
 
 describe("directoryOf", () => {
   it("gives the folder a file sits in", () => {
@@ -14,7 +15,9 @@ describe("directoryOf", () => {
 
 describe("repositoryDirectoryOf", () => {
   it("gives the folder a file sits in as a repository path", () => {
-    expect(repositoryDirectoryOf({ path: repoPathOf("packages/a/package.json") })).toBe("packages/a");
+    expect(repositoryDirectoryOf({ path: repoPathOf("packages/a/package.json") })).toBe(
+      "packages/a",
+    );
   });
 
   it("names the repository root for a file at the root", () => {
@@ -32,7 +35,11 @@ describe("filesNamed", () => {
   it("gives the tracked paths whose file name is the one asked for, at any depth", () => {
     expect(
       filesNamed({
-        trackedPaths: [repoPathOf("package.json"), repoPathOf("packages/a/package.json"), repoPathOf("packages/a/src/a.ts")],
+        trackedPaths: [
+          repoPathOf("package.json"),
+          repoPathOf("packages/a/package.json"),
+          repoPathOf("packages/a/src/a.ts"),
+        ],
         name: "package.json",
       }),
     ).toEqual(["package.json", "packages/a/package.json"]);

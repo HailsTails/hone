@@ -1,12 +1,15 @@
-import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
-import type { CatalogueHolding } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { AnchorKind } from "../../domain/finding/anchor.ts";
+import type { CatalogueHolding } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../domain/result.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import type { Result } from "../../domain/result.ts";
+import type {
+  ClauseExceptions,
+  ClauseSettingDeclarations,
+} from "../../domain/rule-set/rule-set-types.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import type { DirectoryPort } from "./file-system/directory-port.ts";
 import type { FileTextPort } from "./file-system/file-text-port.ts";
@@ -25,12 +28,16 @@ export type PieceClause = {
 };
 
 export type SettingsSources = {
-  readonly settingsFile: (request: Record<string, never>) => Result<SettingsDocument, VersionTwoLoadFailure>;
+  readonly settingsFile: (
+    request: Record<string, never>,
+  ) => Result<SettingsDocument, VersionTwoLoadFailure>;
   readonly ruleSetRoot: (request: {
     readonly ruleSet: ClauseAddress["ruleSet"];
     readonly ruleSets: readonly DeclaredRuleSet[];
   }) => Result<AbsolutePath, VersionTwoLoadFailure>;
-  readonly catalogue: (request: { readonly ruleSetRoot: AbsolutePath }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
+  readonly catalogue: (request: {
+    readonly ruleSetRoot: AbsolutePath;
+  }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
   readonly pieceClause: (request: {
     readonly ruleSetRoot: AbsolutePath;
     readonly clause: ClauseAddress;

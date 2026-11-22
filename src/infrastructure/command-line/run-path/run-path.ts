@@ -1,10 +1,13 @@
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
-import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { Result } from "../../../domain/result.ts";
+import {
+  SETTINGS_FILE_NAME,
+  VERSION_ONE_SETTINGS_FILE_NAME,
+} from "../../../domain/settings/settings-file.ts";
 
 export type RunPath = "version-1" | "version-2" | "no-settings";
 
@@ -15,13 +18,18 @@ type RunPathRequest = {
 };
 
 const presenceOf = (request: RunPathRequest & { readonly name: string }): FilePresence =>
-  request.fileText.exists({ path: request.path.join({ segments: [request.repoRoot, request.name] }) });
+  request.fileText.exists({
+    path: request.path.join({ segments: [request.repoRoot, request.name] }),
+  });
 
 export const runPathOf = (request: RunPathRequest): Result<RunPath, RunLoadFailure> => {
   const versionOne = presenceOf({ ...request, name: VERSION_ONE_SETTINGS_FILE_NAME });
   const versionTwo = presenceOf({ ...request, name: SETTINGS_FILE_NAME });
   if (versionOne === "present" && versionTwo === "present") {
-    return { outcome: "failed", error: { kind: "settings-in-both-versions", repo: request.repoRoot } };
+    return {
+      outcome: "failed",
+      error: { kind: "settings-in-both-versions", repo: request.repoRoot },
+    };
   }
   if (versionOne === "present") {
     return { outcome: "ok", value: "version-1" };

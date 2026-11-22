@@ -4,43 +4,33 @@
       "name": "noFallthroughCasesInSwitch set to false",
       "fileName": "packages/a/tsconfig.json",
       "source": "{\n  \"compilerOptions\": {\n    \"noFallthroughCasesInSwitch\": false\n  }\n}\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "noFallthroughCasesInSwitch restated as true",
       "fileName": "tsconfig.json",
       "source": "{ \"compilerOptions\": { \"target\": \"ESNext\", \"noFallthroughCasesInSwitch\": true } }\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "noFallthroughCasesInSwitch set to false under the second edition",
       "fileName": "packages/a/tsconfig.json",
       "source": "{\n  \"compilerOptions\": {\n    \"noFallthroughCasesInSwitch\": false\n  }\n}\n",
-      "expectedLines": [
-        1
-      ],
+      "expectedLines": [1],
       "edition": "2"
     },
     {
       "name": "a base that cannot be read",
       "fileName": "packages/a/tsconfig.json",
       "source": "{ \"extends\": \"../../tsconfig.base.json\", \"compilerOptions\": { \"target\": \"ESNext\" } }\n",
-      "expectedLines": [
-        1
-      ],
+      "expectedLines": [1],
       "edition": "2"
     },
     {
       "name": "noFallthroughCasesInSwitch unset with no base",
       "fileName": "packages/b/tsconfig.json",
       "source": "{ \"compilerOptions\": { \"outDir\": \"dist\", \"target\": \"ESNext\" } }\n",
-      "expectedLines": [
-        1
-      ],
+      "expectedLines": [1],
       "edition": "2"
     }
   ],

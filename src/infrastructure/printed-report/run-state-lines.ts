@@ -1,14 +1,19 @@
+import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import { RECORDS_FOLDER } from "../../domain/records/hone-records/records-layout.ts";
 import type { RecordsUnmeasured } from "../../domain/records/measurement/records-unmeasured.ts";
-import type { ConventionKey } from "../../domain/settings/conventions.ts";
-import type { SettingsNote } from "../../domain/settings/settings-note.ts";
-import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
-import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
+import type {
+  AssessmentLeftElsewhere,
+  EngineNotRun,
+  RunProjectionProblem,
+  RunUnmeasured,
+} from "../../domain/report/run-report.ts";
 import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { ConventionKey } from "../../domain/settings/conventions.ts";
+import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
+import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import { counted, quoted } from "./printed-text.ts";
-import type { AssessmentLeftElsewhere, EngineNotRun, RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
 
 export type ProjectCommand = { readonly projectCommand: string };
 
@@ -16,9 +21,15 @@ const PASS_A_BASE = "pass --base-revision with the branch's base, such as origin
 
 const LEAVE_FORFEITURE_ELSEWHERE = `leave forfeiture to another run with "forfeiture": "elsewhere" in ${SETTINGS_FILE_NAME} or --forfeiture elsewhere`;
 
-const GENERATED_CONFIGURATION = "or, where a tool such as sku generates the configuration, last in the configuration the tool takes";
+const GENERATED_CONFIGURATION =
+  "or, where a tool such as sku generates the configuration, last in the configuration the tool takes";
 
-type BaseNeeds = { readonly unchecked: string; readonly nextStep: string; readonly gitAttempt: string; readonly needs: string };
+type BaseNeeds = {
+  readonly unchecked: string;
+  readonly nextStep: string;
+  readonly gitAttempt: string;
+  readonly needs: string;
+};
 
 const BASE_NEEDS: Readonly<Record<RecordsUnmeasured["kind"], BaseNeeds>> = {
   "forfeiture-unmeasured": {
@@ -46,14 +57,18 @@ const recordsUnmeasuredLine = (request: { readonly unmeasured: RecordsUnmeasured
   }
 };
 
-const projectionFileOf = (request: { readonly engine: Engine }): string => projectionOutputsOf({ engineName: request.engine.name }).configuration;
+const projectionFileOf = (request: { readonly engine: Engine }): string =>
+  projectionOutputsOf({ engineName: request.engine.name }).configuration;
 
-const refreshStep = (request: ProjectCommand): string => `run ${request.projectCommand} and commit every file it writes`;
+const refreshStep = (request: ProjectCommand): string =>
+  `run ${request.projectCommand} and commit every file it writes`;
 
 type EngineRequest = ProjectCommand & { readonly problems: readonly RunProjectionProblem[] };
 
 const sliceNote = (request: EngineRequest & { readonly engine: Engine }): string =>
-  request.problems.some((problem) => problem.scope === "slice" && problem.engine.name === request.engine.name)
+  request.problems.some(
+    (problem) => problem.scope === "slice" && problem.engine.name === request.engine.name,
+  )
     ? `; the ${request.engine.name} lines under projection-problems name the package slices involved`
     : "";
 
@@ -67,7 +82,9 @@ const measuredNothingNextStep = (request: EngineRequest & { readonly engine: Eng
     ? `the ${request.engine.name} lines under projection-problems name what to fix`
     : `check that the ${request.engine.name} configuration lints the files under check`;
 
-const engineNotRunLine = (request: EngineRequest & { readonly unmeasured: EngineNotRun }): string => {
+const engineNotRunLine = (
+  request: EngineRequest & { readonly unmeasured: EngineNotRun },
+): string => {
   const { unmeasured } = request;
   const { engine } = unmeasured;
   const file = projectionFileOf({ engine });
@@ -81,7 +98,9 @@ const engineNotRunLine = (request: EngineRequest & { readonly unmeasured: Engine
   }
 };
 
-export const unmeasuredLine = (request: EngineRequest & { readonly unmeasured: RunUnmeasured }): string => {
+export const unmeasuredLine = (
+  request: EngineRequest & { readonly unmeasured: RunUnmeasured },
+): string => {
   const { unmeasured } = request;
   switch (unmeasured.kind) {
     case "forfeiture-unmeasured":
@@ -94,9 +113,12 @@ export const unmeasuredLine = (request: EngineRequest & { readonly unmeasured: R
 
 type SliceProblem = Extract<RunProjectionProblem, { readonly scope: "slice" }>;
 
-const folderOf = (request: { readonly slice: RepoPath }): string => request.slice.split("/").slice(0, -1).join("/");
+const folderOf = (request: { readonly slice: RepoPath }): string =>
+  request.slice.split("/").slice(0, -1).join("/");
 
-const sliceProblemReason = (request: ProjectCommand & { readonly problem: SliceProblem }): string => {
+const sliceProblemReason = (
+  request: ProjectCommand & { readonly problem: SliceProblem },
+): string => {
   const { engine, slice } = request.problem;
   const folder = folderOf({ slice });
   switch (request.problem.state) {
@@ -109,7 +131,9 @@ const sliceProblemReason = (request: ProjectCommand & { readonly problem: SliceP
   }
 };
 
-export const projectionProblemLine = (request: ProjectCommand & { readonly problem: RunProjectionProblem }): string => {
+export const projectionProblemLine = (
+  request: ProjectCommand & { readonly problem: RunProjectionProblem },
+): string => {
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
@@ -137,4 +161,5 @@ const NOTE_KEY_TEXTS: Readonly<Record<ConventionKey, string>> = {
 export const settingsNoteText = (request: { readonly note: SettingsNote }): string =>
   `${NOTE_KEY_TEXTS[request.note.key]} is declared; no check reads it yet`;
 
-export const settingsNoteLine = (request: { readonly note: SettingsNote }): string => settingsNoteText(request);
+export const settingsNoteLine = (request: { readonly note: SettingsNote }): string =>
+  settingsNoteText(request);

@@ -1,13 +1,34 @@
-import type { RunnerFailure, UnavailablePeer, UnavailablePeers } from "../../../domain/runner/runner-failure.ts";
-import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
-import type { RecordIssue, RecordsDocumentRefusal } from "../../../domain/records/hone-records/hone-record.ts";
-import { NAMED_FOLDER_KINDS, RECORDS_FILE_EXTENSION, RECORDS_FOLDER, SINGLE_FILE_KINDS } from "../../../domain/records/hone-records/records-layout.ts";
-import type { CheckSettingsListing } from "../../../domain/settings/check-choices.ts";
-import { SETTINGS_FILE_NAME, VERSION_ONE_SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import type {
+  RecordIssue,
+  RecordsDocumentRefusal,
+} from "../../../domain/records/hone-records/hone-record.ts";
+import {
+  NAMED_FOLDER_KINDS,
+  RECORDS_FILE_EXTENSION,
+  RECORDS_FOLDER,
+  SINGLE_FILE_KINDS,
+} from "../../../domain/records/hone-records/records-layout.ts";
+import type {
+  AllowedEngines,
+  CatalogueNotRead,
+  EngineNaming,
+  NotReadyYet,
+  RunLoadFailure,
+} from "../../../domain/report/run-load-failure.ts";
 import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
+import type {
+  RunnerFailure,
+  UnavailablePeer,
+  UnavailablePeers,
+} from "../../../domain/runner/runner-failure.ts";
+import type { CheckSettingsListing } from "../../../domain/settings/check-choices.ts";
+import {
+  SETTINGS_FILE_NAME,
+  VERSION_ONE_SETTINGS_FILE_NAME,
+} from "../../../domain/settings/settings-file.ts";
+import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 import { onOneLine, quoted } from "../printed-text.ts";
 import { recordsFileText } from "../records/record-lines.ts";
-import type { AllowedEngines, CatalogueNotRead, EngineNaming, NotReadyYet, RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 
 const LOAD_FAILURE_LEAD = "load failure:";
 
@@ -17,9 +38,11 @@ const ONE_RULE_TODAY = "these checks are one rule today, so they";
 
 const LISTED_TO_RUN = "checkSettings gives settings only to a check listed to run";
 
-const SUPPORTED_VERSION_REPAIR = "add a supported version to the devDependencies of the repository root";
+const SUPPORTED_VERSION_REPAIR =
+  "add a supported version to the devDependencies of the repository root";
 
-const EACH_SUPPORTED_VERSION_REPAIR = "add a supported version of each to the devDependencies of the repository root";
+const EACH_SUPPORTED_VERSION_REPAIR =
+  "add a supported version of each to the devDependencies of the repository root";
 
 const RECORDS_FILES = `a records file is ${SINGLE_FILE_KINDS.map((kind) => `${kind}${RECORDS_FILE_EXTENSION}`).join(" or ")}, or a ${RECORDS_FILE_EXTENSION} file named for its symptom, or for its recipe in ${NAMED_FOLDER_KINDS.at(-1)}, inside the folder ${NAMED_FOLDER_KINDS.slice(0, -1).join(", ")} or ${NAMED_FOLDER_KINDS.at(-1)} of ${RECORDS_FOLDER}`;
 
@@ -48,7 +71,10 @@ const runnerFailureFields = (request: { readonly failure: RunnerFailure }): read
     case "file-unparseable":
       return [failure.kind, failure.file, failure.detail];
     case "toolchain-unavailable":
-      return [failure.kind, `${failure.peers.map((peer) => unavailablePeerText({ peer })).join("; ")}: ${unavailablePeersRepair({ peers: failure.peers })}`];
+      return [
+        failure.kind,
+        `${failure.peers.map((peer) => unavailablePeerText({ peer })).join("; ")}: ${unavailablePeersRepair({ peers: failure.peers })}`,
+      ];
     case "toolchain-shadowed":
       return [
         failure.kind,
@@ -69,7 +95,9 @@ const allowedText = (request: { readonly allowed: AllowedEngines }): string =>
     : "the rule set does not run that check on that engine, though its catalogue says it does; list the check with an engine its rule set runs it on, or correct the rule set";
 
 const settingsListingRepair = (request: { readonly listing: CheckSettingsListing }): string =>
-  request.listing === "unlisted" ? "list it under checks or remove its settings" : "run it or remove its settings";
+  request.listing === "unlisted"
+    ? "list it under checks or remove its settings"
+    : "run it or remove its settings";
 
 const issueText = (request: { readonly issue: RecordIssue }): string => {
   const path = request.issue.path.length === 0 ? WHOLE_DOCUMENT : request.issue.path.join(".");
@@ -91,7 +119,10 @@ const catalogueFields = (request: { readonly failure: CatalogueNotRead }): reado
   const { failure } = request;
   switch (failure.reason.reason) {
     case "absent":
-      return [`${failure.path}:`, `the symptom catalogue is missing from this install; reinstall ${TOOL_IDENTITY.packageName}`];
+      return [
+        `${failure.path}:`,
+        `the symptom catalogue is missing from this install; reinstall ${TOOL_IDENTITY.packageName}`,
+      ];
     case "unreadable":
       return [failure.path, failure.reason.detail];
   }
@@ -105,7 +136,9 @@ const foldersText = (request: { readonly folders: readonly string[] }): string =
   return unnamed > 0 ? `${named} and ${unnamed} more` : named;
 };
 
-const configRootsFields = (request: { readonly what: Extract<NotReadyYet, { readonly thing: "eslint-config-roots" }> }): readonly string[] => {
+const configRootsFields = (request: {
+  readonly what: Extract<NotReadyYet, { readonly thing: "eslint-config-roots" }>;
+}): readonly string[] => {
   return [
     "eslint-config-roots:",
     `this release does not run a repository that holds other version 2 repositories yet; folders holding ${SETTINGS_FILE_NAME}: ${foldersText({ folders: request.what.paths })}; move them out of this repository, and run each on its own with --repo`,
@@ -116,7 +149,10 @@ const notReadyFields = (request: { readonly what: NotReadyYet }): readonly strin
   const { what } = request;
   switch (what.thing) {
     case "command":
-      return [`${what.command}:`, `this release runs ${what.command} on version 1 files only, and this repository holds ${SETTINGS_FILE_NAME}`];
+      return [
+        `${what.command}:`,
+        `this release runs ${what.command} on version 1 files only, and this repository holds ${SETTINGS_FILE_NAME}`,
+      ];
     case "eslint-config-roots":
       return configRootsFields({ what });
   }
@@ -204,9 +240,15 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
     case "config-root-untracked":
       return [`${failure.root}:`, CONFIG_ROOT_REPAIR];
     case "config-absent":
-      return [failure.repo, `holds no ${SETTINGS_FILE_NAME}; give the folder that holds it, usually the repository root`];
+      return [
+        failure.repo,
+        `holds no ${SETTINGS_FILE_NAME}; give the folder that holds it, usually the repository root`,
+      ];
     case "settings-in-both-versions":
-      return [`${failure.repo}:`, `it holds both ${VERSION_ONE_SETTINGS_FILE_NAME} and ${SETTINGS_FILE_NAME}; keep the one this repository runs on and remove the other`];
+      return [
+        `${failure.repo}:`,
+        `it holds both ${VERSION_ONE_SETTINGS_FILE_NAME} and ${SETTINGS_FILE_NAME}; keep the one this repository runs on and remove the other`,
+      ];
     case "not-ready-yet":
       return notReadyFields({ what: failure.what });
   }
@@ -218,7 +260,10 @@ const checkFields = (request: { readonly failure: CheckFailure }): readonly stri
     case "unknown-check":
       return [failure.check];
     case "review-only-listed":
-      return [`${failure.check}:`, "a check enforced by review has no engine and is left out of checks; remove it"];
+      return [
+        `${failure.check}:`,
+        "a check enforced by review has no engine and is left out of checks; remove it",
+      ];
     case "duplicate-check":
       return [failure.key, failure.check, failure.prefixedCheck];
     case "engine-not-allowed":
@@ -232,15 +277,30 @@ const checkFields = (request: { readonly failure: CheckFailure }): readonly stri
     case "check-missing":
       return [failure.check, engineText(failure)];
     case "checks-run-together":
-      return [failure.check, `${failure.others.join(" ")}:`, `${ONE_RULE_TODAY} run together; list each of them as ${failure.check} is listed`];
+      return [
+        failure.check,
+        `${failure.others.join(" ")}:`,
+        `${ONE_RULE_TODAY} run together; list each of them as ${failure.check} is listed`,
+      ];
     case "check-settings-refused":
-      return [failure.check, `${failure.listing}:`, `${LISTED_TO_RUN}; ${settingsListingRepair(failure)}`];
+      return [
+        failure.check,
+        `${failure.listing}:`,
+        `${LISTED_TO_RUN}; ${settingsListingRepair(failure)}`,
+      ];
     case "check-settings-differ":
-      return [failure.check, `${failure.other}:`, `${ONE_RULE_TODAY} take one set of settings; give them the same settings`];
+      return [
+        failure.check,
+        `${failure.other}:`,
+        `${ONE_RULE_TODAY} take one set of settings; give them the same settings`,
+      ];
   }
 };
 
-const recordsFields = (request: { readonly failure: RecordsFailure; readonly upgradeCommand: string | undefined }): readonly string[] => {
+const recordsFields = (request: {
+  readonly failure: RecordsFailure;
+  readonly upgradeCommand: string | undefined;
+}): readonly string[] => {
   const { failure } = request;
   switch (failure.kind) {
     case "records-folder-unreadable":
@@ -249,19 +309,32 @@ const recordsFields = (request: { readonly failure: RecordsFailure; readonly upg
     case "records-file-not-json":
       return [recordsFileText(failure), failure.detail];
     case "not-a-records-file":
-      return [`${recordsFileText(failure)}:`, `${RECORDS_FILES}; move this file to where its kind belongs, or out of ${RECORDS_FOLDER} if it holds no records`];
+      return [
+        `${recordsFileText(failure)}:`,
+        `${RECORDS_FILES}; move this file to where its kind belongs, or out of ${RECORDS_FOLDER} if it holds no records`,
+      ];
     case "not-a-records-name":
-      return [recordsFileText({ file: failure.folder }), `${quoted({ text: failure.name })}:`, "no repository path can hold that name; rename it"];
+      return [
+        recordsFileText({ file: failure.folder }),
+        `${quoted({ text: failure.name })}:`,
+        "no repository path can hold that name; rename it",
+      ];
     case "records-refused":
       return [failure.refusals.map((refusal) => documentRefusalText({ refusal })).join("; ")];
     case "catalogue-not-read":
       return catalogueFields({ failure });
     case "upgrade-needed":
-      return [`${failure.path}:`, `this is a version 1 file; run ${request.upgradeCommand ?? "hone upgrade"}, which rewrites every version 1 file as version 2, and commit what it writes`];
+      return [
+        `${failure.path}:`,
+        `this is a version 1 file; run ${request.upgradeCommand ?? "hone upgrade"}, which rewrites every version 1 file as version 2, and commit what it writes`,
+      ];
   }
 };
 
-const failureFields = (request: { readonly failure: RunLoadFailure; readonly upgradeCommand: string | undefined }): readonly string[] => {
+const failureFields = (request: {
+  readonly failure: RunLoadFailure;
+  readonly upgradeCommand: string | undefined;
+}): readonly string[] => {
   const { failure } = request;
   switch (failure.kind) {
     case "arguments-invalid":
@@ -305,5 +378,12 @@ const failureFields = (request: { readonly failure: RunLoadFailure; readonly upg
   }
 };
 
-export const runLoadFailureLine = (request: { readonly failure: RunLoadFailure; readonly upgradeCommand: string | undefined }): string =>
-  [LOAD_FAILURE_LEAD, request.failure.kind, ...failureFields(request).map((text) => onOneLine({ text }))].join(" ");
+export const runLoadFailureLine = (request: {
+  readonly failure: RunLoadFailure;
+  readonly upgradeCommand: string | undefined;
+}): string =>
+  [
+    LOAD_FAILURE_LEAD,
+    request.failure.kind,
+    ...failureFields(request).map((text) => onOneLine({ text })),
+  ].join(" ");

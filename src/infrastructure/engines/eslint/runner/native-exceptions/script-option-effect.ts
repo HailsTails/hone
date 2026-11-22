@@ -1,10 +1,14 @@
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { ConfigFileSearch, EslintPort, QueryInstance } from "../toolchain/eslint-instance.ts";
-import { type NotPlainReason, repoPathResolved, type ScriptOption } from "./package-script-scanner.ts";
+import {
+  type NotPlainReason,
+  repoPathResolved,
+  type ScriptOption,
+} from "./package-script-scanner.ts";
 
 export type OptionVerdict =
   | { readonly kind: "weakens" }
@@ -25,7 +29,10 @@ type JudgeContext = {
 
 const WEAKENS: Result<OptionVerdict, RunnerFailure> = { outcome: "ok", value: { kind: "weakens" } };
 
-const WEAKENS_NOTHING: Result<OptionVerdict, RunnerFailure> = { outcome: "ok", value: { kind: "weakens-nothing" } };
+const WEAKENS_NOTHING: Result<OptionVerdict, RunnerFailure> = {
+  outcome: "ok",
+  value: { kind: "weakens-nothing" },
+};
 
 const folderSegmentsOf = (request: { readonly location: RepoPath }): readonly string[] =>
   request.location.split("/").slice(0, -1);
@@ -44,28 +51,47 @@ const resolvesTo = (request: {
   readonly context: JudgeContext;
 }): "same-config" | "other-config" => {
   if (request.search.kind !== "found") return "other-config";
-  const location = request.context.path.relative({ from: request.context.repoRoot, to: request.search.path });
-  return location.relation === "within-root" && location.path === request.config ? "same-config" : "other-config";
+  const location = request.context.path.relative({
+    from: request.context.repoRoot,
+    to: request.search.path,
+  });
+  return location.relation === "within-root" && location.path === request.config
+    ? "same-config"
+    : "other-config";
 };
 
-const configVerdict = (request: { readonly context: JudgeContext; readonly location: RepoPath; readonly config: string }): Promise<Result<OptionVerdict, RunnerFailure>> => {
+const configVerdict = (request: {
+  readonly context: JudgeContext;
+  readonly location: RepoPath;
+  readonly config: string;
+}): Promise<Result<OptionVerdict, RunnerFailure>> => {
   const folderSegments = folderSegmentsOf(request);
   const config = repoPathResolved({ baseSegments: folderSegments, path: request.config });
   if (config.outcome === "failed") return Promise.resolve(WEAKENS);
   const files = checkedWithin({ checked: request.context.checked, folderSegments });
   if (files.length === 0) return Promise.resolve(WEAKENS);
-  return Promise.all(files.map((file) => request.context.query.configFileOf({ file }))).then((searches) =>
-    searches.every((search) => resolvesTo({ search, config: config.value, context: request.context }) === "same-config")
-      ? WEAKENS_NOTHING
-      : WEAKENS,
+  return Promise.all(files.map((file) => request.context.query.configFileOf({ file }))).then(
+    (searches) =>
+      searches.every(
+        (search) =>
+          resolvesTo({ search, config: config.value, context: request.context }) === "same-config",
+      )
+        ? WEAKENS_NOTHING
+        : WEAKENS,
   );
 };
 
-const ignorePatternVerdict = (request: { readonly context: JudgeContext; readonly location: RepoPath; readonly pattern: string }): Promise<Result<OptionVerdict, RunnerFailure>> => {
+const ignorePatternVerdict = (request: {
+  readonly context: JudgeContext;
+  readonly location: RepoPath;
+  readonly pattern: string;
+}): Promise<Result<OptionVerdict, RunnerFailure>> => {
   const folderSegments = folderSegmentsOf(request);
   const files = checkedWithin({ checked: request.context.checked, folderSegments });
   if (files.length === 0) return Promise.resolve(WEAKENS);
-  const cwd = request.context.path.resolve({ path: request.context.path.join({ segments: [request.context.repoRoot, ...folderSegments] }) });
+  const cwd = request.context.path.resolve({
+    path: request.context.path.join({ segments: [request.context.repoRoot, ...folderSegments] }),
+  });
   if (cwd.outcome === "failed") return Promise.resolve(WEAKENS);
   return request.context.eslint
     .ignoredByPatterns({
@@ -82,14 +108,22 @@ const ignorePatternVerdict = (request: { readonly context: JudgeContext; readonl
 export const scriptOptionJudge =
   (context: JudgeContext): ScriptOptionJudge =>
   ({ option }) => {
-    if (option.effect.kind === "weakens" || option.settlement.kind === "unresolved") return Promise.resolve(WEAKENS);
+    if (option.effect.kind === "weakens" || option.settlement.kind === "unresolved")
+      return Promise.resolve(WEAKENS);
     if (option.settlement.kind === "not-plain") {
-      return Promise.resolve({ outcome: "ok", value: { kind: "not-plain", reason: option.settlement.reason } });
+      return Promise.resolve({
+        outcome: "ok",
+        value: { kind: "not-plain", reason: option.settlement.reason },
+      });
     }
     switch (option.effect.kind) {
       case "names-config":
         return configVerdict({ context, location: option.location, config: option.effect.config });
       case "ignores-pattern":
-        return ignorePatternVerdict({ context, location: option.location, pattern: option.effect.pattern });
+        return ignorePatternVerdict({
+          context,
+          location: option.location,
+          pattern: option.effect.pattern,
+        });
     }
   };

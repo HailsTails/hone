@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
+
 import type { Finding } from "../finding/governance.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import {
   type Case,
   type Principle,
@@ -12,10 +17,6 @@ import {
   indicatedNamesOf,
   symptomReadingOf,
 } from "./symptom-catalogue.ts";
-import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
-import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -47,11 +48,26 @@ const SENDS_DATA_OUT: Case = {
   owes: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
 };
 
-const ASSERT_TO_NARROW: Recipe = { name: "assert-to-narrow", title: "Assert to narrow", standing: "accepted", reason: { text: "\"it narrows the type\"", standing: "accepted" } };
+const ASSERT_TO_NARROW: Recipe = {
+  name: "assert-to-narrow",
+  title: "Assert to narrow",
+  standing: "accepted",
+  reason: { text: '"it narrows the type"', standing: "accepted" },
+};
 
-const RESULT_UNION: Recipe = { name: "result-union", title: "Result union", standing: "accepted", reason: { text: "\"it makes the output clear\"", standing: "accepted" } };
+const RESULT_UNION: Recipe = {
+  name: "result-union",
+  title: "Result union",
+  standing: "accepted",
+  reason: { text: '"it makes the output clear"', standing: "accepted" },
+};
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -74,7 +90,9 @@ const REBINDING: Symptom = {
   name: "rebinding",
   title: "Rebinding",
   seen: "A `let` assigned again.",
-  mayIndicate: [{ case: MAKES_A_NEW_VALUE, points: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }] }],
+  mayIndicate: [
+    { case: MAKES_A_NEW_VALUE, points: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }] },
+  ],
   breachUsuallySits: "in the unit",
   recipes: [],
   correctUses: [],
@@ -90,9 +108,20 @@ const CATALOGUE: SymptomCatalogue = {
   engines: [],
   symptoms: [BRANCH_IN_A_TEST, REBINDING],
   clauses: [
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") }, sight: { kind: "one-symptom", symptom: REBINDING } },
     {
-      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-44"),
+        clause: clauseIdOf("parameter-reassignment"),
+      },
+      sight: { kind: "one-symptom", symptom: REBINDING },
+    },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-27"),
+        clause: clauseIdOf("test-body-logic"),
+      },
       sight: {
         kind: "symptom-by-form",
         forms: [
@@ -101,8 +130,22 @@ const CATALOGUE: SymptomCatalogue = {
         ],
       },
     },
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") }, sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [REBINDING] } },
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") }, sight: { kind: "outside-the-cases" } },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-9"),
+        clause: clauseIdOf("result-failures"),
+      },
+      sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [REBINDING] },
+    },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-32"),
+        clause: clauseIdOf("pii-redaction"),
+      },
+      sight: { kind: "outside-the-cases" },
+    },
   ],
   checks: [],
   namedBans: [],
@@ -118,50 +161,104 @@ describe("symptomReadingOf", () => {
   it.each<ReadingRow>([
     {
       name: "names the one symptom a clause sees",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-44"),
+          clause: clauseIdOf("parameter-reassignment"),
+        },
+      },
       reading: { reading: "named", symptom: REBINDING },
     },
     {
       name: "names the symptom of the form a by-form clause's finding gives as its section",
       finding: {
-        clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-27"),
+          clause: clauseIdOf("test-body-logic"),
+        },
         remedy: { fix: "write one test per case", page: "CHECKS.md", section: "branching-with-if" },
       },
       reading: { reading: "named", symptom: BRANCH_IN_A_TEST },
     },
     {
       name: "names another form's symptom for another section of the same clause",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-let" } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-27"),
+          clause: clauseIdOf("test-body-logic"),
+        },
+        remedy: { fix: "write the values out", page: "CHECKS.md", section: "a-let" },
+      },
       reading: { reading: "named", symptom: REBINDING },
     },
     {
       name: "is not in the catalogue for a by-form clause's section the catalogue does not list",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, remedy: { fix: "write it out", page: "CHECKS.md", section: "a-new-form" } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-27"),
+          clause: clauseIdOf("test-body-logic"),
+        },
+        remedy: { fix: "write it out", page: "CHECKS.md", section: "a-new-form" },
+      },
       reading: { reading: "not-in-catalogue" },
     },
     {
       name: "is not in the catalogue for a by-form clause's finding with no section",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-27"),
+          clause: clauseIdOf("test-body-logic"),
+        },
+      },
       reading: { reading: "not-in-catalogue" },
     },
     {
       name: "sees no symptom for a clause that demands a method",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-9"),
+          clause: clauseIdOf("result-failures"),
+        },
+      },
       reading: { reading: "sees-no-symptom" },
     },
     {
       name: "sees no symptom for a clause outside the cases",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-32"), clause: clauseIdOf("pii-redaction") } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-32"),
+          clause: clauseIdOf("pii-redaction"),
+        },
+      },
       reading: { reading: "sees-no-symptom" },
     },
     {
       name: "is not in the catalogue for a clause the catalogue does not list",
-      finding: { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") } },
+      finding: {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-17"),
+          clause: clauseIdOf("clock-sources"),
+        },
+      },
       reading: { reading: "not-in-catalogue" },
     },
     {
       name: "is not in the catalogue for the same clause in a team's rule set",
-      finding: { clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") } },
+      finding: {
+        clause: {
+          ruleSet: { name: ruleSetNameOf("team") },
+          discipline: disciplineIdOf("CD-44"),
+          clause: clauseIdOf("parameter-reassignment"),
+        },
+      },
       reading: { reading: "not-in-catalogue" },
     },
   ])("$name", ({ finding, reading }) => {
@@ -176,7 +273,10 @@ describe("indicatedNamesOf", () => {
         symptom: {
           ...REBINDING,
           mayIndicate: [
-            { case: MAKES_A_NEW_VALUE, points: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }] },
+            {
+              case: MAKES_A_NEW_VALUE,
+              points: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
+            },
             { case: CHECKS_A_VALUE, points: [{ kind: "rule", rule: STRAIGHT_THROUGH_TESTS }] },
             { case: SENDS_DATA_OUT, points: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }] },
           ],

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { distTagOf, releaseTextOf, runReleaseText } from "./release-text.ts";
 
@@ -28,7 +29,9 @@ const outputOf = (request: { readonly process: ProcessPort }) => ({
 
 describe("releaseTextOf", () => {
   it("titles the release with the tool's name and the tag", () => {
-    expect(releaseTextOf({ identity: IDENTITY, tag: "v0.1.0-pre.1", part: "title" })).toBe("Tool v0.1.0-pre.1");
+    expect(releaseTextOf({ identity: IDENTITY, tag: "v0.1.0-pre.1", part: "title" })).toBe(
+      "Tool v0.1.0-pre.1",
+    );
   });
 
   it("notes, without naming the version, how to install a pre-release from npm or the attached tarball and the command it provides", () => {
@@ -51,12 +54,17 @@ describe("distTagOf", () => {
     ["v1.0.0", "latest"],
     ["v1.0.0+build-1", "latest"],
     ["v1.0.0+build.1-a", "latest"],
-  ] as const)("publishes %s under %s, reading a pre-release only from the part before build metadata", (tag, distTag) => {
-    expect(distTagOf({ tag })).toBe(distTag);
-  });
+  ] as const)(
+    "publishes %s under %s, reading a pre-release only from the part before build metadata",
+    (tag, distTag) => {
+      expect(distTagOf({ tag })).toBe(distTag);
+    },
+  );
 
   it("is the release text part dist-tag", () => {
-    expect(releaseTextOf({ identity: IDENTITY, tag: "v1.0.0+build-1", part: "dist-tag" })).toBe("latest");
+    expect(releaseTextOf({ identity: IDENTITY, tag: "v1.0.0+build-1", part: "dist-tag" })).toBe(
+      "latest",
+    );
   });
 });
 
@@ -66,7 +74,11 @@ describe("runReleaseText", () => {
 
     runReleaseText({ process: processPort, identity: IDENTITY });
 
-    expect(outputOf({ process: processPort })).toEqual({ writes: [[{ text: "Tool v0.1.0-pre.1" }]], errors: [], exits: [[{ code: 0 }]] });
+    expect(outputOf({ process: processPort })).toEqual({
+      writes: [[{ text: "Tool v0.1.0-pre.1" }]],
+      errors: [],
+      exits: [[{ code: 0 }]],
+    });
   });
 
   it("exits 2 with its usage on standard error when the part is unknown", () => {

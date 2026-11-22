@@ -1,5 +1,5 @@
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
   if (folderScope({ file: request.file }) === "generated") return "skipped";
@@ -32,14 +32,19 @@ export const check: WalkerPiece = {
                   if (!syntaxApi.isCallExpression(node)) return;
                   const callee = node.expression;
                   if (!syntaxApi.isPropertyAccessExpression(callee)) return;
-                  const isImplementationArgument = callee.name.text === "fn" &&
+                  const isImplementationArgument =
+                    callee.name.text === "fn" &&
                     syntaxApi.isIdentifier(callee.expression) &&
-                    callee.expression.text === "vi" && node.arguments.length > 0;
-                  if (!isImplementationArgument && callee.name.text !== "mockImplementation") return;
+                    callee.expression.text === "vi" &&
+                    node.arguments.length > 0;
+                  if (!isImplementationArgument && callee.name.text !== "mockImplementation")
+                    return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
                   const snippet = snippetAt({ source: sourceFile.text, position });
-                  hits.push(...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })));
+                  hits.push(
+                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                  );
                 },
                 finish: () => hits,
               };

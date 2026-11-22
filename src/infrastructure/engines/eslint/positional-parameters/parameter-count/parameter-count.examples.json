@@ -4,17 +4,13 @@
       "name": "arrow with three parameters",
       "fileName": "src/add.ts",
       "source": "export const add = (left: number, right: number, carry: number): number => left + right + carry;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "function with three parameters",
       "fileName": "src/join.ts",
       "source": "export function join(first: string, second: string, third: string): string {\n  return first + second + third;\n}\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

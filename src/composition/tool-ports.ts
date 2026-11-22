@@ -5,12 +5,15 @@ import type { FileCreationPort } from "../application/ports/file-system/file-cre
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { GitTreePort } from "../application/ports/git-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
-import type { FoundTreeRecordsSourceOf, RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
 import type { RecordsEditor } from "../application/ports/records/records-editor.ts";
 import type { RecordsReader } from "../application/ports/records/records-reader.ts";
+import type {
+  FoundTreeRecordsSourceOf,
+  RecordsSourceOf,
+} from "../application/ports/records/records-source-of.ts";
 import type { LoadFailureDetail } from "../application/ports/report/load-failure-detail.ts";
-import type { SettingsFileFormat } from "../application/ports/settings/settings-file-format.ts";
 import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
+import type { SettingsFileFormat } from "../application/ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../application/ports/symptom-catalogue-repository.ts";
 import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
 import type { StagesOver } from "./version-two-stages.ts";

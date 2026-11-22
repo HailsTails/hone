@@ -4,25 +4,19 @@
       "name": "categorical file name",
       "fileName": "src/utils.ts",
       "source": "export type ProfileName = string;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "types file",
       "fileName": "src/types.ts",
       "source": "export type ProfileName = string;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "file under a categorical folder",
       "fileName": "src/helpers/format-price.ts",
       "source": "export const formatPrice = (): string => \"\";\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

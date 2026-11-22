@@ -20,20 +20,12 @@
           "accessor",
           "enumMember"
         ],
-        "modifiers": [
-          "requiresQuotes"
-        ],
+        "modifiers": ["requiresQuotes"],
         "format": null
       },
       {
-        "selector": [
-          "variable",
-          "function",
-          "parameter"
-        ],
-        "modifiers": [
-          "unused"
-        ],
+        "selector": ["variable", "function", "parameter"],
+        "modifiers": ["unused"],
         "format": null,
         "filter": {
           "regex": "^_",
@@ -41,13 +33,8 @@
         }
       },
       {
-        "selector": [
-          "variable",
-          "parameter"
-        ],
-        "modifiers": [
-          "destructured"
-        ],
+        "selector": ["variable", "parameter"],
+        "modifiers": ["destructured"],
         "format": null
       },
       {
@@ -55,22 +42,13 @@
         "format": null
       },
       {
-        "selector": [
-          "classProperty",
-          "classMethod",
-          "accessor",
-          "parameterProperty"
-        ],
-        "modifiers": [
-          "override"
-        ],
+        "selector": ["classProperty", "classMethod", "accessor", "parameterProperty"],
+        "modifiers": ["override"],
         "format": null
       },
       {
         "selector": "variable",
-        "modifiers": [
-          "const"
-        ],
+        "modifiers": ["const"],
         "format": null,
         "custom": {
           "regex": "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*|[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
@@ -95,9 +73,7 @@
       },
       {
         "selector": "function",
-        "modifiers": [
-          "global"
-        ],
+        "modifiers": ["global"],
         "format": null,
         "custom": {
           "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*)?[_$]*$",
@@ -129,12 +105,7 @@
         }
       },
       {
-        "selector": [
-          "classProperty",
-          "classMethod",
-          "accessor",
-          "parameterProperty"
-        ],
+        "selector": ["classProperty", "classMethod", "accessor", "parameterProperty"],
         "format": null,
         "custom": {
           "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
@@ -142,13 +113,8 @@
         }
       },
       {
-        "selector": [
-          "classProperty",
-          "accessor"
-        ],
-        "modifiers": [
-          "static"
-        ],
+        "selector": ["classProperty", "accessor"],
+        "modifiers": ["static"],
         "format": null,
         "custom": {
           "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
@@ -189,9 +155,7 @@
       },
       {
         "selector": "import",
-        "modifiers": [
-          "default"
-        ],
+        "modifiers": ["default"],
         "format": null,
         "custom": {
           "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
@@ -200,9 +164,7 @@
       },
       {
         "selector": "import",
-        "modifiers": [
-          "namespace"
-        ],
+        "modifiers": ["namespace"],
         "format": null,
         "custom": {
           "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",

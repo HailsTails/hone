@@ -1,13 +1,17 @@
-import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { parsedJson } from "../rule-sets/rule-set-reader.ts";
 import { isCatalogueName } from "../../../domain/language-layer/catalogue-name.ts";
 import type { CheckNames } from "../../../domain/language-layer/check-address-text.ts";
-import { enginesFolderSegmentsOf, namedPieceFolderSegmentsOf, pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
+import type { Result } from "../../../domain/result.ts";
 import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { isDisciplineId } from "../../../domain/rule-set/identifiers.ts";
+import {
+  enginesFolderSegmentsOf,
+  namedPieceFolderSegmentsOf,
+  pieceFolderSegmentsOf,
+} from "../../../domain/rule-set/piece-folder.ts";
 import { engineIdSchema, versionOneEngineIdSchema } from "../../hone-config-file/identifiers.ts";
-import type { Result } from "../../../domain/result.ts";
+import { parsedJson } from "../rule-sets/rule-set-reader.ts";
+import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
 
 export type PieceLocation = {
   readonly file: string;
@@ -17,7 +21,11 @@ export type PieceLocation = {
 
 export type PieceImportRefusal = {
   readonly specifier: string;
-  readonly reason: "outside-piece-reach" | "value-import-of-package" | "package-not-listed" | "dynamic-import";
+  readonly reason:
+    | "outside-piece-reach"
+    | "value-import-of-package"
+    | "package-not-listed"
+    | "dynamic-import";
 };
 
 export type FileImportRefusal = PieceImportRefusal & { readonly file: string };
@@ -37,7 +45,8 @@ export type ImportForm = "type-only" | "value" | "dynamic";
 
 export type ModuleImport = { readonly specifier: string; readonly form: ImportForm };
 
-const IMPORT_STATEMENT = /^\s*(?:import|export)\s+(type\s+)?(?:[^;"']*?\s+from\s+)?["']([^"']+)["']/gm;
+const IMPORT_STATEMENT =
+  /^\s*(?:import|export)\s+(type\s+)?(?:[^;"']*?\s+from\s+)?["']([^"']+)["']/gm;
 
 const DYNAMIC_MODULE_LOAD = /\b(?:import|require)\s*\(\s*([^)]*?)\s*\)/g;
 
@@ -47,20 +56,16 @@ type PlacedImport = ModuleImport & { readonly position: number };
 
 export const importsIn = (request: { readonly text: string }): readonly ModuleImport[] =>
   [
-    ...[...request.text.matchAll(IMPORT_STATEMENT)].map(
-      (match): PlacedImport => ({
-        specifier: match[2],
-        form: match[1] === undefined ? "value" : "type-only",
-        position: match.index,
-      }),
-    ),
-    ...[...request.text.matchAll(DYNAMIC_MODULE_LOAD)].map(
-      (match): PlacedImport => ({
-        specifier: match[1].replace(QUOTED, "$2"),
-        form: "dynamic",
-        position: match.index,
-      }),
-    ),
+    ...[...request.text.matchAll(IMPORT_STATEMENT)].map((match): PlacedImport => ({
+      specifier: match[2],
+      form: match[1] === undefined ? "value" : "type-only",
+      position: match.index,
+    })),
+    ...[...request.text.matchAll(DYNAMIC_MODULE_LOAD)].map((match): PlacedImport => ({
+      specifier: match[1].replace(QUOTED, "$2"),
+      form: "dynamic",
+      position: match.index,
+    })),
   ]
     .toSorted((first, second) => first.position - second.position)
     .map((placed) => ({ specifier: placed.specifier, form: placed.form }));
@@ -90,23 +95,62 @@ const pieceLocationOf = (request: {
     return { outcome: "ok", value: [] };
   }
   const [mechanismText, discipline, ...rest] = file.slice(prefix.length).split("/");
-  if (mechanismText === undefined || discipline === undefined || rest.length === 0 || discipline === RUNNER_FOLDER) {
+  if (
+    mechanismText === undefined ||
+    discipline === undefined ||
+    rest.length === 0 ||
+    discipline === RUNNER_FOLDER
+  ) {
     return { outcome: "ok", value: [] };
   }
-  const engineSchema = request.ruleSetRoot === request.installRoot ? engineIdSchema : versionOneEngineIdSchema;
+  const engineSchema =
+    request.ruleSetRoot === request.installRoot ? engineIdSchema : versionOneEngineIdSchema;
   const mechanism = engineSchema.safeParse(mechanismText);
   const [check, ...sources] = rest;
-  if (mechanism.success && isCatalogueName(discipline) && check !== undefined && isCatalogueName(check) && sources.length > 0) {
-    return { outcome: "ok", value: [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, symptom: discipline, check }] };
+  if (
+    mechanism.success &&
+    isCatalogueName(discipline) &&
+    check !== undefined &&
+    isCatalogueName(check) &&
+    sources.length > 0
+  ) {
+    return {
+      outcome: "ok",
+      value: [
+        {
+          file: request.file,
+          ruleSetRoot: request.ruleSetRoot,
+          mechanism: mechanism.data,
+          symptom: discipline,
+          check,
+        },
+      ],
+    };
   }
   if (!isDisciplineId(discipline)) {
     return mechanism.success
-      ? { outcome: "failed", error: { kind: "not-a-discipline", file: request.file, folder: discipline } }
+      ? {
+          outcome: "failed",
+          error: { kind: "not-a-discipline", file: request.file, folder: discipline },
+        }
       : { outcome: "ok", value: [] };
   }
   return mechanism.success
-    ? { outcome: "ok", value: [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, discipline }] }
-    : { outcome: "failed", error: { kind: "unknown-mechanism", file: request.file, mechanism: mechanismText } };
+    ? {
+        outcome: "ok",
+        value: [
+          {
+            file: request.file,
+            ruleSetRoot: request.ruleSetRoot,
+            mechanism: mechanism.data,
+            discipline,
+          },
+        ],
+      }
+    : {
+        outcome: "failed",
+        error: { kind: "unknown-mechanism", file: request.file, mechanism: mechanismText },
+      };
 };
 
 export const pieceFilesOf = (request: {
@@ -114,9 +158,16 @@ export const pieceFilesOf = (request: {
   readonly ruleSetRoots: readonly string[];
   readonly installRoot: string;
 }): Result<readonly PieceLocation[], PieceImportFindingsFailure> => {
-  const located = request.trackedPaths.map((file) => locationOfFile({ file, ruleSetRoots: request.ruleSetRoots, installRoot: request.installRoot }));
+  const located = request.trackedPaths.map((file) =>
+    locationOfFile({ file, ruleSetRoots: request.ruleSetRoots, installRoot: request.installRoot }),
+  );
   const failed = located.find((location) => location.outcome === "failed");
-  return failed ?? { outcome: "ok", value: located.flatMap((location) => (location.outcome === "ok" ? location.value : [])) };
+  return (
+    failed ?? {
+      outcome: "ok",
+      value: located.flatMap((location) => (location.outcome === "ok" ? location.value : [])),
+    }
+  );
 };
 
 const locationOfFile = (request: {
@@ -127,11 +178,18 @@ const locationOfFile = (request: {
   const attempts = request.ruleSetRoots.map((ruleSetRoot) =>
     pieceLocationOf({ file: request.file, ruleSetRoot, installRoot: request.installRoot }),
   );
-  return attempts.find((attempt) => attempt.outcome === "failed" || attempt.value.length > 0) ?? { outcome: "ok", value: [] };
+  return (
+    attempts.find((attempt) => attempt.outcome === "failed" || attempt.value.length > 0) ?? {
+      outcome: "ok",
+      value: [],
+    }
+  );
 };
 
 const specifierKindOf = (request: { readonly specifier: string }): "relative" | "package" =>
-  request.specifier.startsWith("./") || request.specifier.startsWith("../") ? "relative" : "package";
+  request.specifier.startsWith("./") || request.specifier.startsWith("../")
+    ? "relative"
+    : "package";
 
 const relativeRefusal = (request: {
   readonly path: PathPort;
@@ -143,9 +201,13 @@ const relativeRefusal = (request: {
     segments: [request.path.repositoryDirectoryOf({ path: request.piece.file }), request.specifier],
   });
   const location = { ...request.piece, installRoot: request.installRoot };
-  const localReach = "symptom" in location
-    ? [namedPieceFolderSegmentsOf(location), [location.ruleSetRoot, "rules", "typescript", "symptoms", location.symptom]]
-    : [pieceFolderSegmentsOf(location), [location.ruleSetRoot, "rules", location.discipline]];
+  const localReach =
+    "symptom" in location
+      ? [
+          namedPieceFolderSegmentsOf(location),
+          [location.ruleSetRoot, "rules", "typescript", "symptoms", location.symptom],
+        ]
+      : [pieceFolderSegmentsOf(location), [location.ruleSetRoot, "rules", location.discipline]];
   const reach = [
     ...localReach,
     [request.installRoot, "src", "infrastructure", "engines", request.piece.mechanism, "runner"],
@@ -187,7 +249,12 @@ const importRefusal = (request: {
     return dynamicRefusal({ specifier });
   }
   if (specifierKindOf({ specifier }) === "relative") {
-    return relativeRefusal({ path: request.path, installRoot: request.installRoot, piece: request.piece, specifier });
+    return relativeRefusal({
+      path: request.path,
+      installRoot: request.installRoot,
+      piece: request.piece,
+      specifier,
+    });
   }
   return packageRefusal({ moduleImport: request.moduleImport, typePackages: request.typePackages });
 };
@@ -199,7 +266,9 @@ export const pieceImportRefusals = (request: {
   readonly source: string;
   readonly typePackages: readonly string[];
 }): readonly PieceImportRefusal[] =>
-  importsIn({ text: request.source }).flatMap((moduleImport) => importRefusal({ ...request, moduleImport }));
+  importsIn({ text: request.source }).flatMap((moduleImport) =>
+    importRefusal({ ...request, moduleImport }),
+  );
 
 type TypePackagesByMechanism = Readonly<Record<string, readonly string[]>>;
 
@@ -210,7 +279,15 @@ const typePackagesOf = (request: {
   readonly typePackageTexts: Readonly<Record<string, string>>;
 }): Result<readonly string[], PieceImportFindingsFailure> => {
   const listPath = request.path.joinRepository({
-    segments: [request.installRoot, "src", "infrastructure", "engines", request.mechanism, "runner", "piece-type-packages.json"],
+    segments: [
+      request.installRoot,
+      "src",
+      "infrastructure",
+      "engines",
+      request.mechanism,
+      "runner",
+      "piece-type-packages.json",
+    ],
   });
   const text = Object.entries(request.typePackageTexts).find(
     ([key]) => request.path.joinRepository({ segments: [key] }) === listPath,
@@ -220,11 +297,17 @@ const typePackagesOf = (request: {
   }
   const json = parsedJson({ text: text[1] });
   if (json.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "type-packages-malformed", path: listPath, detail: json.error } };
+    return {
+      outcome: "failed",
+      error: { kind: "type-packages-malformed", path: listPath, detail: json.error },
+    };
   }
   const parsed = pieceTypePackagesSchema.safeParse(json.value);
   if (!parsed.success) {
-    return { outcome: "failed", error: { kind: "type-packages-malformed", path: listPath, detail: parsed.error.message } };
+    return {
+      outcome: "failed",
+      error: { kind: "type-packages-malformed", path: listPath, detail: parsed.error.message },
+    };
   }
   return { outcome: "ok", value: parsed.data };
 };
@@ -237,7 +320,10 @@ const typePackagesByMechanism = (request: {
 }): Result<TypePackagesByMechanism, PieceImportFindingsFailure> =>
   [...new Set(request.pieces.map((piece) => piece.mechanism))].reduce<
     Result<TypePackagesByMechanism, PieceImportFindingsFailure>
-  >((collected, mechanism) => withTypePackages({ ...request, collected, mechanism }), { outcome: "ok", value: {} });
+  >((collected, mechanism) => withTypePackages({ ...request, collected, mechanism }), {
+    outcome: "ok",
+    value: {},
+  });
 
 const withTypePackages = (request: {
   readonly path: PathPort;
@@ -253,7 +339,10 @@ const withTypePackages = (request: {
   if (listed.outcome === "failed") {
     return listed;
   }
-  return { outcome: "ok", value: { ...request.collected.value, [request.mechanism]: listed.value } };
+  return {
+    outcome: "ok",
+    value: { ...request.collected.value, [request.mechanism]: listed.value },
+  };
 };
 
 const refusalsIn = (request: {
@@ -267,7 +356,11 @@ const refusalsIn = (request: {
   request.pieces
     .filter((piece) => piece.file === request.file)
     .flatMap((piece) =>
-      pieceImportRefusals({ ...request, piece, typePackages: request.packages[piece.mechanism] }).map((refusal) => ({
+      pieceImportRefusals({
+        ...request,
+        piece,
+        typePackages: request.packages[piece.mechanism],
+      }).map((refusal) => ({
         file: request.file,
         ...refusal,
       })),

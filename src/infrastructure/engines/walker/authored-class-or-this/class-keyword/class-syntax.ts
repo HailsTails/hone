@@ -1,6 +1,6 @@
 import { folderScope } from "../../runner/pieces/source-scope.ts";
-import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
+import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
 
 type Ambience = "ambient" | "runtime";
 
@@ -44,7 +44,9 @@ const classKeywordOf = (
 const lineTextAt = (request: { readonly tree: SyntaxTree; readonly position: number }): string => {
   const { line } = request.tree.getLineAndCharacterOfPosition(request.position);
   const starts = request.tree.getLineStarts();
-  return request.tree.text.slice(starts[line] ?? 0, starts[line + 1] ?? request.tree.text.length).trim();
+  return request.tree.text
+    .slice(starts[line] ?? 0, starts[line + 1] ?? request.tree.text.length)
+    .trim();
 };
 
 const authoredClassKeyword = (
@@ -81,7 +83,9 @@ export const check: WalkerPiece = {
                   const position = keyword.getStart(sourceFile);
                   const anchor = anchorAt({ position });
                   const snippet = lineTextAt({ tree: sourceFile, position });
-                  hits.push(...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })));
+                  hits.push(
+                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                  );
                 },
                 finish: () => hits,
               };

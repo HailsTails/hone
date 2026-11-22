@@ -1,21 +1,25 @@
 import { z } from "zod";
-import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import { hitSchema, runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
-import type { Hit, InlineDisable } from "../../../../domain/runner/runner-result-types.ts";
+
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
+import type { Result } from "../../../../domain/result.ts";
 import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
-import type { Result } from "../../../../domain/result.ts";
-import type { PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
+import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import type { Hit, InlineDisable } from "../../../../domain/runner/runner-result-types.ts";
+import {
+  hitSchema,
+  runnerResultSchema,
+} from "../../protocol/runner-module/runner-result-schema.ts";
 import { type DirectiveEscape, directiveEscapesIn, escapesOf } from "./pieces/type-directives.ts";
+import type { PieceHit, WalkerFile } from "./pieces/walker-piece.ts";
+import type { PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
 import type {
   CommentRange,
   SyntaxNode,
   SyntaxTree,
   TypeScriptParsePort,
 } from "./toolchain/typescript-parse.ts";
-import type { PieceHit, WalkerFile } from "./pieces/walker-piece.ts";
 
 export type WalkerFileObservations = {
   readonly hits: readonly Hit[];
@@ -116,7 +120,7 @@ const cachedFile = (request: { readonly file: WalkerFile }): FileTextCache => {
         return text;
       },
     },
-    failure: () => text?.outcome === "failed" ? text.error : undefined,
+    failure: () => (text?.outcome === "failed" ? text.error : undefined),
   };
 };
 
@@ -148,15 +152,16 @@ const parsedSource = (request: {
   } catch (thrown) {
     return {
       outcome: "failed",
-      error: { kind: "file-unparseable", file: request.file.file, detail: thrownDetail({ thrown }) },
+      error: {
+        kind: "file-unparseable",
+        file: request.file.file,
+        detail: thrownDetail({ thrown }),
+      },
     };
   }
 };
 
-const anchorAt = (request: {
-  readonly tree: SyntaxTree;
-  readonly position: number;
-}): Anchor => {
+const anchorAt = (request: { readonly tree: SyntaxTree; readonly position: number }): Anchor => {
   const position = Math.min(Math.max(request.position, 0), request.tree.text.length);
   const location = request.tree.getLineAndCharacterOfPosition(position);
   return { line: location.line + 1, column: location.character };
@@ -168,7 +173,8 @@ const beginFile = (request: {
 }): Outcome<ActiveFilePiece> => {
   const { piece, check } = request.selected;
   if (check.kind === "complete") return { outcome: "ok", value: { piece, completion: check } };
-  if (check.kind === "skipped") return pieceInvalid({ piece, detail: "a skipped file has no source observers" });
+  if (check.kind === "skipped")
+    return pieceInvalid({ piece, detail: "a skipped file has no source observers" });
   try {
     const parsed = sourceObserversSchema.safeParse(
       check.begin({
@@ -178,7 +184,10 @@ const beginFile = (request: {
       }),
     );
     if (!parsed.success) return pieceInvalid({ piece, detail: parsed.error.message });
-    return { outcome: "ok", value: { piece, completion: { kind: "syntax", observers: parsed.data } } };
+    return {
+      outcome: "ok",
+      value: { piece, completion: { kind: "syntax", observers: parsed.data } },
+    };
   } catch (thrown) {
     return pieceInvalid({ piece, detail: thrownDetail({ thrown }) });
   }
@@ -194,7 +203,10 @@ const observeSource = (request: {
   const comments: CommentRange[] = [];
   const emptyMembership = new Set<SyntaxNode>();
   let failure: RunnerFailure | undefined;
-  const invoke = (call: { readonly source: SyntaxFilePiece; readonly notify: () => unknown }): void => {
+  const invoke = (call: {
+    readonly source: SyntaxFilePiece;
+    readonly notify: () => unknown;
+  }): void => {
     if (failure !== undefined) return;
     try {
       call.notify();
@@ -221,13 +233,18 @@ const observeSource = (request: {
         invoke({ source, notify: () => source.observers.enter?.({ node: frame.node }) });
       });
     }
-    request.parse.syntaxApi.getLeadingCommentRanges(request.tree.text, frame.node.pos)?.forEach(comment);
-    request.parse.syntaxApi.getTrailingCommentRanges(request.tree.text, frame.node.end)?.forEach(comment);
-    const membership = frame.relation === "semantic"
-      ? new Set(request.parse.children({ node: frame.node }))
-      : frame.node.kind === request.parse.syntaxApi.SyntaxKind.SyntaxList
-        ? frame.membership
-        : emptyMembership;
+    request.parse.syntaxApi
+      .getLeadingCommentRanges(request.tree.text, frame.node.pos)
+      ?.forEach(comment);
+    request.parse.syntaxApi
+      .getTrailingCommentRanges(request.tree.text, frame.node.end)
+      ?.forEach(comment);
+    const membership =
+      frame.relation === "semantic"
+        ? new Set(request.parse.children({ node: frame.node }))
+        : frame.node.kind === request.parse.syntaxApi.SyntaxKind.SyntaxList
+          ? frame.membership
+          : emptyMembership;
     frame.node.getChildren(request.tree).forEach((node) => {
       visit({ node, relation: membership.has(node) ? "semantic" : "syntax", membership });
     });
@@ -257,9 +274,14 @@ const attributedHits = (request: {
   readonly piece: PreparedWalkerPiece;
   readonly hits: readonly PieceHit[];
 }): Outcome<readonly PieceHit[]> => {
-  if (request.hits.some((hit) => !request.piece.clauses.some((clause) =>
-    sameClauseAddress({ left: hit.clause, right: clause.address }) === "same",
-  ))) {
+  if (
+    request.hits.some(
+      (hit) =>
+        !request.piece.clauses.some(
+          (clause) => sameClauseAddress({ left: hit.clause, right: clause.address }) === "same",
+        ),
+    )
+  ) {
     return pieceInvalid({
       piece: request.piece,
       detail: "the piece emitted a hit for a clause outside its selected clauses",
@@ -268,13 +290,16 @@ const attributedHits = (request: {
   return { outcome: "ok", value: request.hits };
 };
 
-const finishFile = (request: { readonly active: ActiveFilePiece }): Outcome<readonly PieceHit[]> => {
+const finishFile = (request: {
+  readonly active: ActiveFilePiece;
+}): Outcome<readonly PieceHit[]> => {
   if (request.active.completion.kind === "complete") {
     return attributedHits({ piece: request.active.piece, hits: request.active.completion.hits });
   }
   try {
     const parsed = pieceHitsSchema.safeParse(request.active.completion.observers.finish());
-    if (!parsed.success) return pieceInvalid({ piece: request.active.piece, detail: parsed.error.message });
+    if (!parsed.success)
+      return pieceInvalid({ piece: request.active.piece, detail: parsed.error.message });
     return attributedHits({ piece: request.active.piece, hits: parsed.data });
   } catch (thrown) {
     return pieceInvalid({ piece: request.active.piece, detail: thrownDetail({ thrown }) });
@@ -291,14 +316,20 @@ const completedFile = (request: {
   return {
     outcome: "ok",
     value: {
-      hits: finished.value.flatMap((hits) => hits.map((hit) => ({ ...hit, file: request.file.file }))),
+      hits: finished.value.flatMap((hits) =>
+        hits.map((hit) => ({ ...hit, file: request.file.file })),
+      ),
       nativeExceptions: request.nativeExceptions,
-      applicable: request.active.flatMap((active) => active.piece.clauses.map((clause) => clause.address)),
+      applicable: request.active.flatMap((active) =>
+        active.piece.clauses.map((clause) => clause.address),
+      ),
     },
   };
 };
 
-const syntaxClausesOf = (request: { readonly active: readonly ActiveFilePiece[] }): readonly ClauseAddress[] =>
+const syntaxClausesOf = (request: {
+  readonly active: readonly ActiveFilePiece[];
+}): readonly ClauseAddress[] =>
   request.active.flatMap((active) =>
     active.completion.kind === "syntax" ? active.piece.clauses.map((clause) => clause.address) : [],
   );
@@ -306,7 +337,9 @@ const syntaxClausesOf = (request: { readonly active: readonly ActiveFilePiece[] 
 export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWalkerFileResult => {
   const cache = cachedFile(request);
   const file = cache.file;
-  const prepared = collect({ outcomes: request.pieces.map((piece) => prepareFile({ piece, file })) });
+  const prepared = collect({
+    outcomes: request.pieces.map((piece) => prepareFile({ piece, file })),
+  });
   if (prepared.outcome === "failed") return prepared;
   const readFailure = cache.failure();
   if (readFailure !== undefined) return { outcome: "failed", error: readFailure };
@@ -324,7 +357,9 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
   }
   const parsed = parsedSource({ file, parse: request.parse });
   if (parsed.outcome === "failed") return parsed;
-  const active = collect({ outcomes: applicable.map((selected) => beginFile({ selected, tree: parsed.value })) });
+  const active = collect({
+    outcomes: applicable.map((selected) => beginFile({ selected, tree: parsed.value })),
+  });
   if (active.outcome === "failed") return active;
   const observed = observeSource({
     tree: parsed.value,
@@ -345,7 +380,10 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
       syntaxApi: request.parse.syntaxApi,
       file: file.file,
       comments: observed.value,
-      escapes: escapesOf({ escapes: request.escapes, clauses: syntaxClausesOf({ active: active.value }) }),
+      escapes: escapesOf({
+        escapes: request.escapes,
+        clauses: syntaxClausesOf({ active: active.value }),
+      }),
       anchorAt: ({ position }) => anchorAt({ tree: parsed.value, position }),
     }),
   });

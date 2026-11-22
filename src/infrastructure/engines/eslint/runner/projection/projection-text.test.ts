@@ -1,56 +1,73 @@
 import { describe, expect, it } from "vitest";
+
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { type ProjectedPiece, projectionText } from "./projection-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
+import { type ProjectedPiece, projectionText } from "./projection-text.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
 };
 
-const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
-const noTmpFiles = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("PD-1"), clause: clauseIdOf("no-tmp-files") };
+const classSyntax = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
+const noTmpFiles = {
+  ruleSet: { name: ruleSetNameOf("probe") },
+  discipline: disciplineIdOf("PD-1"),
+  clause: clauseIdOf("no-tmp-files"),
+};
 const eslint = "eslint" as const;
 const audit = "walker" as const;
 
 const cd14Piece: ProjectedPiece = {
   pluginNamespace: "hone",
-  pluginImport: "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts",
+  pluginImport:
+    "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts",
   clauses: [{ address: classSyntax, ruleId: "hone/no-class-authoring", options: [] }],
 };
 
@@ -62,7 +79,11 @@ const probePiece: ProjectedPiece = {
 
 const authorisedInB: ExceptionRecord = {
   kind: "authorised-location",
-  provenance: { kind: "existing-authorisation", source: "fictional unit fixture mechanisms/eslint/runner/projection.test.ts#authorisedInB; not historical authorisation" },
+  provenance: {
+    kind: "existing-authorisation",
+    source:
+      "fictional unit fixture mechanisms/eslint/runner/projection.test.ts#authorisedInB; not historical authorisation",
+  },
   clause: classSyntax,
   mechanism: eslint,
   file: repoPathOf("src/b.ts"),
@@ -80,7 +101,11 @@ const carveOutInA: ExceptionRecord = {
 
 const authorisedRoute: ExceptionRecord = {
   kind: "authorised-location",
-  provenance: { kind: "existing-authorisation", source: "fictional unit fixture mechanisms/eslint/runner/projection.test.ts#authorisedRoute; not historical authorisation" },
+  provenance: {
+    kind: "existing-authorisation",
+    source:
+      "fictional unit fixture mechanisms/eslint/runner/projection.test.ts#authorisedRoute; not historical authorisation",
+  },
   clause: noTmpFiles,
   mechanism: eslint,
   file: repoPathOf("route/[id].ts"),
@@ -287,7 +312,12 @@ describe("projectionText", () => {
     expect(
       projectionText({
         selectedPieces: [
-          { ...cd14Piece, clauses: [{ address: classSyntax, ruleId: "hone/no-class-authoring", options: [{ max: 2 }] }] },
+          {
+            ...cd14Piece,
+            clauses: [
+              { address: classSyntax, ruleId: "hone/no-class-authoring", options: [{ max: 2 }] },
+            ],
+          },
         ],
         records: [],
       }),
@@ -301,9 +331,9 @@ describe("projectionText", () => {
   });
 
   it("emits the off block of a record whichever mechanism it carries", () => {
-    expect(projectionText({ selectedPieces: [cd14Piece], records: [authorisedInBUnderAudit] })).toBe(
-      authorisedInBOnlyProjection,
-    );
+    expect(
+      projectionText({ selectedPieces: [cd14Piece], records: [authorisedInBUnderAudit] }),
+    ).toBe(authorisedInBOnlyProjection);
   });
 
   it("orders the files of a block by code unit, so src/B.ts precedes src/a.ts", () => {
@@ -312,7 +342,8 @@ describe("projectionText", () => {
         selectedPieces: [cd14Piece],
         records: [carveOutInA, { ...authorisedInB, file: repoPathOf("src/B.ts") }],
       }),
-    ).toBe(`import piece0 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
+    )
+      .toBe(`import piece0 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
 
 export default [
   {
@@ -335,19 +366,25 @@ export default [
 
   it("gives a file excepted from several clauses one block turning all their rules off, apart from files excepted from fewer", () => {
     expect(
-      projectionText({ selectedPieces: [cd14Piece, probePiece], records: [carveOutInA, authorisedInB, tmpFilesInA] }),
+      projectionText({
+        selectedPieces: [cd14Piece, probePiece],
+        records: [carveOutInA, authorisedInB, tmpFilesInA],
+      }),
     ).toBe(sharedFileProjection);
   });
 
   it("groups the same files whatever order their records arrive in", () => {
     expect(
-      projectionText({ selectedPieces: [probePiece, cd14Piece], records: [tmpFilesInA, authorisedInB, carveOutInA] }),
+      projectionText({
+        selectedPieces: [probePiece, cd14Piece],
+        records: [tmpFilesInA, authorisedInB, carveOutInA],
+      }),
     ).toBe(sharedFileProjection);
   });
 
   it("lists a file once when both an authorised location and a carve-out except it from the same clause", () => {
-    expect(projectionText({ selectedPieces: [cd14Piece], records: [authorisedInB, carveOutInB] })).toBe(
-      authorisedInBOnlyProjection,
-    );
+    expect(
+      projectionText({ selectedPieces: [cd14Piece], records: [authorisedInB, carveOutInB] }),
+    ).toBe(authorisedInBOnlyProjection);
   });
 });

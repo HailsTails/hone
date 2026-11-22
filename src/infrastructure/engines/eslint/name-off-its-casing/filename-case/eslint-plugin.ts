@@ -15,17 +15,24 @@ const PATH_SEPARATOR = /[\\/]/u;
 const segmentDisposition = (request: { readonly segment: string }): FilenameDisposition =>
   NAME_CASE.test(request.segment) ? "conventional" : "unconventional";
 
-const extensionsDisposition = (request: { readonly extensions: readonly string[] }): FilenameDisposition =>
+const extensionsDisposition = (request: {
+  readonly extensions: readonly string[];
+}): FilenameDisposition =>
   request.extensions.every((segment) => segmentDisposition({ segment }) === "conventional")
     ? "conventional"
     : "unconventional";
 
-const routeDisposition = (request: { readonly name: string; readonly route: string }): FilenameDisposition => {
+const routeDisposition = (request: {
+  readonly name: string;
+  readonly route: string;
+}): FilenameDisposition => {
   const rest = request.name.slice(request.route.length);
   if (rest === "") {
     return "conventional";
   }
-  return rest.startsWith(".") ? extensionsDisposition({ extensions: rest.slice(1).split(".") }) : "unconventional";
+  return rest.startsWith(".")
+    ? extensionsDisposition({ extensions: rest.slice(1).split(".") })
+    : "unconventional";
 };
 
 const plainDisposition = (request: { readonly name: string }): FilenameDisposition => {

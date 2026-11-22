@@ -8,5 +8,7 @@ export type DirectoryRemovalFailure = {
 };
 
 export type DirectoryRemovalPort = {
-  readonly removeEmpty: (request: { readonly path: AbsolutePath }) => Result<void, DirectoryRemovalFailure>;
+  readonly removeEmpty: (request: {
+    readonly path: AbsolutePath;
+  }) => Result<void, DirectoryRemovalFailure>;
 };

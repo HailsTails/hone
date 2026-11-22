@@ -5,10 +5,6 @@
   },
   "settings": {
     "module": "cast-expressions.ts",
-    "escapingDirectives": [
-      "@ts-expect-error",
-      "@ts-ignore",
-      "@ts-nocheck"
-    ]
+    "escapingDirectives": ["@ts-expect-error", "@ts-ignore", "@ts-nocheck"]
   }
 }

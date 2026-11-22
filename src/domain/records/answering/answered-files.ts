@@ -6,7 +6,11 @@ const answeredBy = (request: { readonly record: HoneRecord }): readonly Answered
   switch (record.kind) {
     case "debt":
     case "authorised-location":
-      return reachedFilesOf({ symptom: record.symptom.name, reach: record.reach, file: record.file });
+      return reachedFilesOf({
+        symptom: record.symptom.name,
+        reach: record.reach,
+        file: record.file,
+      });
     case "deviation":
     case "boundary-record":
     case "dependency-record":
@@ -30,5 +34,7 @@ const reachedFilesOf = (request: {
   }
 };
 
-export const answeredFilesOf = (request: { readonly records: readonly PlacedRecord[] }): readonly AnsweredFile[] =>
+export const answeredFilesOf = (request: {
+  readonly records: readonly PlacedRecord[];
+}): readonly AnsweredFile[] =>
   request.records.flatMap((placed) => answeredBy({ record: placed.record }));

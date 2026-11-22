@@ -1,21 +1,34 @@
 import { assert, describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../runner/toolchain/eslint-toolchain.ts";
 import cd7Plugin from "./eslint-plugin.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: cd7Plugin }).default;
 
 const loadedToolchain = await loadEslintToolchain({
-  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultEslintToolchainPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
-assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
-assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+assert(
+  loadedToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
+assert(
+  /^10\./.test(loadedToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
+);
 
 const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
@@ -110,19 +123,22 @@ const allowCases: readonly SourceCase[] = [
 ];
 
 describe("CD-7 filename-case rule through the ESLint runner's lintSourceCases", () => {
-  it.each([...flagCases, ...allowCases])("flags exactly the expected lines of the case $name", async (sourceCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone-cd7",
-        rule: "filename-case",
-        options: [],
-        cases: [sourceCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
-    });
-  });
+  it.each([...flagCases, ...allowCases])(
+    "flags exactly the expected lines of the case $name",
+    async (sourceCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone-cd7",
+          rule: "filename-case",
+          options: [],
+          cases: [sourceCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
+      });
+    },
+  );
 });

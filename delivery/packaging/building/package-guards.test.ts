@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { bundledPackageCodeOf, deadLinksOf, misplacedEntriesOf, undeclaredImportsOf, unlockedRangesOf, versionMentionsOf } from "./package-guards.ts";
+
 import type { LockedPackage } from "../published-manifest/pnpm-lock.ts";
+import {
+  bundledPackageCodeOf,
+  deadLinksOf,
+  misplacedEntriesOf,
+  undeclaredImportsOf,
+  unlockedRangesOf,
+  versionMentionsOf,
+} from "./package-guards.ts";
 
 const output = (request: {
   readonly path: string;
@@ -22,7 +30,15 @@ describe("undeclaredImportsOf", () => {
         outputs: [
           output({
             path: "chunks/chunk-A.js",
-            externalImports: ["node:fs", "eslint", "eslint/use-at-your-own-risk", "typescript", "zod", "zod/v4", "@eslint/plugin-kit"],
+            externalImports: [
+              "node:fs",
+              "eslint",
+              "eslint/use-at-your-own-risk",
+              "typescript",
+              "zod",
+              "zod/v4",
+              "@eslint/plugin-kit",
+            ],
           }),
         ],
         declared: ["eslint", "typescript", "zod", "@eslint/plugin-kit"],
@@ -91,11 +107,21 @@ const LOCKED: readonly LockedPackage[] = [
 
 describe("unlockedRangesOf", () => {
   it("accepts dependencies published as caret ranges whose floor is the version the lock holds", () => {
-    expect(unlockedRangesOf({ ranges: { zod: "^4.4.3", "@eslint/plugin-kit": "^0.7.3" }, locked: LOCKED })).toEqual([]);
+    expect(
+      unlockedRangesOf({
+        ranges: { zod: "^4.4.3", "@eslint/plugin-kit": "^0.7.3" },
+        locked: LOCKED,
+      }),
+    ).toEqual([]);
   });
 
   it("names a dependency whose caret range starts below or above the version the lock holds", () => {
-    expect(unlockedRangesOf({ ranges: { zod: "^4.4.2", "@eslint/plugin-kit": "^0.7.4" }, locked: LOCKED })).toEqual([
+    expect(
+      unlockedRangesOf({
+        ranges: { zod: "^4.4.2", "@eslint/plugin-kit": "^0.7.4" },
+        locked: LOCKED,
+      }),
+    ).toEqual([
       "zod is published as ^4.4.2, whose floor is not the locked 4.4.3",
       "@eslint/plugin-kit is published as ^0.7.4, whose floor is not the locked 0.7.3",
     ]);
@@ -126,7 +152,9 @@ describe("bundledPackageCodeOf", () => {
   });
 
   it("names each installed package whose code the bundle carries", () => {
-    expect(bundledPackageCodeOf({ packageRoots: ["node_modules/zod", "../../node_modules/levn"] })).toEqual([
+    expect(
+      bundledPackageCodeOf({ packageRoots: ["node_modules/zod", "../../node_modules/levn"] }),
+    ).toEqual([
       "node_modules/zod is bundled into the package",
       "../../node_modules/levn is bundled into the package",
     ]);
@@ -138,7 +166,10 @@ describe("deadLinksOf", () => {
     expect(
       deadLinksOf({
         files: [
-          { path: "README.md", text: "[a](ADOPTING.md#2-install) [b](methods/) [c](https://example.com) [d](#runtime)" },
+          {
+            path: "README.md",
+            text: "[a](ADOPTING.md#2-install) [b](methods/) [c](https://example.com) [d](#runtime)",
+          },
           { path: "ADOPTING.md", text: "[back](README.md)" },
           { path: "methods/README.md", text: "" },
           { path: "rules/CD-1/README.md", text: "[up](../../ADOPTING.md#9-apply)" },
@@ -169,9 +200,18 @@ describe("versionMentionsOf", () => {
     expect(
       versionMentionsOf({
         files: [
-          { path: "README.md", text: "Download `hailstails-hone-<version>.tgz`; TypeScript 4.8.4 or later." },
-          { path: "MIGRATING.md", text: "Version `0.1.0-pre.1` shipped as `honed-0.1.0-pre.1.tgz`." },
-          { path: "ADOPTING.md", text: "Not `other-core-0.1.0-pre.3.tgz`, and not 0.1.0-pre.30 or 10.1.0-pre.3." },
+          {
+            path: "README.md",
+            text: "Download `hailstails-hone-<version>.tgz`; TypeScript 4.8.4 or later.",
+          },
+          {
+            path: "MIGRATING.md",
+            text: "Version `0.1.0-pre.1` shipped as `honed-0.1.0-pre.1.tgz`.",
+          },
+          {
+            path: "ADOPTING.md",
+            text: "Not `other-core-0.1.0-pre.3.tgz`, and not 0.1.0-pre.30 or 10.1.0-pre.3.",
+          },
           { path: "rules/CD-1/discipline.json", text: "hailstails-hone-0.0.0.tgz 0.1.0-pre.3" },
         ],
         tarballStem: "hailstails-hone",
@@ -190,7 +230,10 @@ describe("versionMentionsOf", () => {
         tarballStem: "hailstails-hone",
         version: "0.1.0-pre.3",
       }),
-    ).toEqual(["README.md names hailstails-hone-0.0.0.tgz", "ADOPTING.md names hailstails-hone-0.1.0-pre.3.tgz"]);
+    ).toEqual([
+      "README.md names hailstails-hone-0.0.0.tgz",
+      "ADOPTING.md names hailstails-hone-0.1.0-pre.3.tgz",
+    ]);
   });
 
   it("names each shipped page that names the package's current version, with or without a v", () => {
@@ -198,12 +241,20 @@ describe("versionMentionsOf", () => {
       versionMentionsOf({
         files: [
           { path: "README.md", text: "The current version, `0.1.0`, is stable; so is 0.1.0." },
-          { path: "ADOPTING.md", text: "See the [`v0.1.0` release](https://github.com/example/tool/releases/tag/v0.1.0)." },
+          {
+            path: "ADOPTING.md",
+            text: "See the [`v0.1.0` release](https://github.com/example/tool/releases/tag/v0.1.0).",
+          },
           { path: "docs/notes.md", text: "Not 0.1.0-pre.3, 0.1.0.1 or 10.1.0." },
         ],
         tarballStem: "hailstails-hone",
         version: "0.1.0",
       }),
-    ).toEqual(["README.md names 0.1.0", "README.md names 0.1.0", "ADOPTING.md names v0.1.0", "ADOPTING.md names v0.1.0"]);
+    ).toEqual([
+      "README.md names 0.1.0",
+      "README.md names 0.1.0",
+      "ADOPTING.md names v0.1.0",
+      "ADOPTING.md names v0.1.0",
+    ]);
   });
 });

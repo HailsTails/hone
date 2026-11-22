@@ -1,18 +1,32 @@
-import { removedText } from "../../../domain/settings/assessment.ts";
-import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
-import { COMMANDS, type CommandOption, REPO_OPTION, SUBCOMMANDS, type Subcommand } from "./command-line.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
+import { removedText } from "../../../domain/settings/assessment.ts";
+import {
+  COMMANDS,
+  type CommandOption,
+  REPO_OPTION,
+  SUBCOMMANDS,
+  type Subcommand,
+} from "./command-line.ts";
 
 export type ArgumentProblem =
   | { readonly kind: "command-missing" }
   | { readonly kind: "command-unknown"; readonly given: string }
   | { readonly kind: "flag-extra"; readonly flag: string; readonly given: string }
-  | { readonly kind: "argument-unexpected"; readonly subcommand: Subcommand; readonly given: string }
+  | {
+      readonly kind: "argument-unexpected";
+      readonly subcommand: Subcommand;
+      readonly given: string;
+    }
   | { readonly kind: "option-unknown"; readonly subcommand: Subcommand; readonly given: string }
   | { readonly kind: "option-joined"; readonly option: CommandOption; readonly given: string }
   | { readonly kind: "value-missing"; readonly option: CommandOption }
   | { readonly kind: "option-repeated"; readonly option: CommandOption }
-  | { readonly kind: "option-required"; readonly subcommand: Subcommand; readonly option: CommandOption }
+  | {
+      readonly kind: "option-required";
+      readonly subcommand: Subcommand;
+      readonly option: CommandOption;
+    }
   | {
       readonly kind: "choice-invalid";
       readonly option: CommandOption;

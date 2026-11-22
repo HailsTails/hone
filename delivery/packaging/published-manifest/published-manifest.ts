@@ -1,12 +1,17 @@
 import { z } from "zod";
-import { parsedJson } from "../../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import type { PeerKind } from "../../../src/domain/runner/runner-failure.ts";
+
 import type { Result } from "../../../src/domain/result.ts";
 import type { ToolIdentity } from "../../../src/domain/rule-set/tool-identity.ts";
+import type { PeerKind } from "../../../src/domain/runner/runner-failure.ts";
+import { parsedJson } from "../../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
 
 export type ManifestFailure = { readonly kind: "manifest-invalid"; readonly detail: string };
 
-export type TypedExport = { readonly subpath: string; readonly declaration: string; readonly module: string };
+export type TypedExport = {
+  readonly subpath: string;
+  readonly declaration: string;
+  readonly module: string;
+};
 
 type TypedExportConditions = { readonly types: string; readonly default: string };
 
@@ -37,12 +42,17 @@ const MANIFEST_EXPORT = "./package.json";
 
 const exportPathOf = (path: string): string => `./${path}`;
 
-const typedExportEntry = (request: { readonly typed: TypedExport }): readonly [string, TypedExportConditions] => [
+const typedExportEntry = (request: {
+  readonly typed: TypedExport;
+}): readonly [string, TypedExportConditions] => [
   exportPathOf(request.typed.subpath),
   { types: exportPathOf(request.typed.declaration), default: exportPathOf(request.typed.module) },
 ];
 
-const bareExportEntry = (request: { readonly path: string }): readonly [string, string] => [request.path, request.path];
+const bareExportEntry = (request: { readonly path: string }): readonly [string, string] => [
+  request.path,
+  request.path,
+];
 
 type RepositoryLinks = {
   readonly repository: { readonly type: "git"; readonly url: string };
@@ -58,7 +68,8 @@ const repositoryLinksOf = (request: { readonly repository: string }): Repository
   bugs: { url: `${request.repository}/issues` },
 });
 
-const manifestText = (request: { readonly manifest: object }): string => `${JSON.stringify(request.manifest, null, 2)}\n`;
+const manifestText = (request: { readonly manifest: object }): string =>
+  `${JSON.stringify(request.manifest, null, 2)}\n`;
 
 const sectionsOf = <Sections>(request: {
   readonly developmentManifest: string;
@@ -77,14 +88,22 @@ const sectionsOf = <Sections>(request: {
 export const peerNamesOf = (request: {
   readonly developmentManifest: string;
 }): Result<readonly string[], ManifestFailure> => {
-  const peers = sectionsOf({ developmentManifest: request.developmentManifest, schema: peerSectionsSchema });
-  return peers.outcome === "failed" ? peers : { outcome: "ok", value: Object.keys(peers.value.peerDependencies) };
+  const peers = sectionsOf({
+    developmentManifest: request.developmentManifest,
+    schema: peerSectionsSchema,
+  });
+  return peers.outcome === "failed"
+    ? peers
+    : { outcome: "ok", value: Object.keys(peers.value.peerDependencies) };
 };
 
 export const peerKindsOf = (request: {
   readonly developmentManifest: string;
 }): Result<Readonly<Record<string, PeerKind>>, ManifestFailure> => {
-  const peers = sectionsOf({ developmentManifest: request.developmentManifest, schema: peerKindSectionsSchema });
+  const peers = sectionsOf({
+    developmentManifest: request.developmentManifest,
+    schema: peerKindSectionsSchema,
+  });
   return peers.outcome === "failed"
     ? peers
     : {
@@ -103,13 +122,25 @@ export type DependencyRanges = Readonly<Record<string, string>>;
 export const dependencyRangesOf = (request: {
   readonly developmentManifest: string;
 }): Result<DependencyRanges, ManifestFailure> => {
-  const sections = sectionsOf({ developmentManifest: request.developmentManifest, schema: dependencySectionsSchema });
-  return sections.outcome === "failed" ? sections : { outcome: "ok", value: sections.value.dependencies };
+  const sections = sectionsOf({
+    developmentManifest: request.developmentManifest,
+    schema: dependencySectionsSchema,
+  });
+  return sections.outcome === "failed"
+    ? sections
+    : { outcome: "ok", value: sections.value.dependencies };
 };
 
-export const packageVersionOf = (request: { readonly developmentManifest: string }): Result<string, ManifestFailure> => {
-  const sections = sectionsOf({ developmentManifest: request.developmentManifest, schema: versionSectionSchema });
-  return sections.outcome === "failed" ? sections : { outcome: "ok", value: sections.value.version };
+export const packageVersionOf = (request: {
+  readonly developmentManifest: string;
+}): Result<string, ManifestFailure> => {
+  const sections = sectionsOf({
+    developmentManifest: request.developmentManifest,
+    schema: versionSectionSchema,
+  });
+  return sections.outcome === "failed"
+    ? sections
+    : { outcome: "ok", value: sections.value.version };
 };
 
 export const publishManifestOf = (request: {
@@ -121,7 +152,10 @@ export const publishManifestOf = (request: {
   readonly typed: readonly TypedExport[];
   readonly nodeRange: string;
 }): Result<string, ManifestFailure> => {
-  const published = sectionsOf({ developmentManifest: request.developmentManifest, schema: publishedSectionsSchema });
+  const published = sectionsOf({
+    developmentManifest: request.developmentManifest,
+    schema: publishedSectionsSchema,
+  });
   if (published.outcome === "failed") {
     return published;
   }

@@ -7,9 +7,7 @@
         "kind": "one-symptom",
         "symptom": "claimed-type"
       },
-      "checks": [
-        "claimed-type#cast-to-any"
-      ],
+      "checks": ["claimed-type#cast-to-any"],
       "anchor": {
         "kind": "file"
       }
@@ -20,9 +18,7 @@
         "kind": "one-symptom",
         "symptom": "untyped-value"
       },
-      "checks": [
-        "untyped-value#explicit-any"
-      ],
+      "checks": ["untyped-value#explicit-any"],
       "anchor": {
         "kind": "keyword",
         "keyword": "any"
@@ -34,9 +30,7 @@
         "kind": "one-symptom",
         "symptom": "untyped-value"
       },
-      "checks": [
-        "untyped-value#implicit-any-let"
-      ],
+      "checks": ["untyped-value#implicit-any-let"],
       "anchor": {
         "kind": "keyword",
         "keyword": "let"
@@ -48,9 +42,7 @@
         "kind": "one-symptom",
         "symptom": "claimed-type"
       },
-      "checks": [
-        "claimed-type#unlisted-cast-site"
-      ],
+      "checks": ["claimed-type#unlisted-cast-site"],
       "anchor": {
         "kind": "file"
       }
@@ -61,9 +53,7 @@
         "kind": "one-symptom",
         "symptom": "claimed-type"
       },
-      "checks": [
-        "claimed-type#non-null-assertions"
-      ],
+      "checks": ["claimed-type#non-null-assertions"],
       "anchor": {
         "kind": "keyword",
         "keyword": "!"
@@ -75,9 +65,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#strict"
-      ],
+      "checks": ["strictness-weakened#strict"],
       "anchor": {
         "kind": "file"
       }
@@ -88,9 +76,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#no-unchecked-indexed-access"
-      ],
+      "checks": ["strictness-weakened#no-unchecked-indexed-access"],
       "anchor": {
         "kind": "file"
       }
@@ -101,9 +87,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#exact-optional-property-types"
-      ],
+      "checks": ["strictness-weakened#exact-optional-property-types"],
       "anchor": {
         "kind": "file"
       }
@@ -114,9 +98,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#no-implicit-override"
-      ],
+      "checks": ["strictness-weakened#no-implicit-override"],
       "anchor": {
         "kind": "file"
       }
@@ -127,9 +109,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#no-fallthrough-cases-in-switch"
-      ],
+      "checks": ["strictness-weakened#no-fallthrough-cases-in-switch"],
       "anchor": {
         "kind": "file"
       }
@@ -140,9 +120,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#no-property-access-from-index-signature"
-      ],
+      "checks": ["strictness-weakened#no-property-access-from-index-signature"],
       "anchor": {
         "kind": "file"
       }
@@ -153,9 +131,7 @@
         "kind": "one-symptom",
         "symptom": "strictness-weakened"
       },
-      "checks": [
-        "strictness-weakened#use-unknown-in-catch-variables"
-      ],
+      "checks": ["strictness-weakened#use-unknown-in-catch-variables"],
       "anchor": {
         "kind": "file"
       }
@@ -165,9 +141,7 @@
       "sight": {
         "kind": "method",
         "recipe": "zod-at-the-producers-adapter",
-        "outcomeSeenBy": [
-          "schema-past-its-adapter"
-        ]
+        "outcomeSeenBy": ["schema-past-its-adapter"]
       },
       "checks": []
     },
@@ -177,9 +151,7 @@
         "kind": "one-symptom",
         "symptom": "untracked-escape"
       },
-      "checks": [
-        "untracked-escape#directive-pointers"
-      ],
+      "checks": ["untracked-escape#directive-pointers"],
       "anchor": {
         "kind": "file"
       }
@@ -190,9 +162,7 @@
         "kind": "one-symptom",
         "symptom": "shorthand-name"
       },
-      "checks": [
-        "shorthand-name#identifier-names"
-      ],
+      "checks": ["shorthand-name#identifier-names"],
       "anchor": {
         "kind": "file"
       }
@@ -203,9 +173,7 @@
         "kind": "one-symptom",
         "symptom": "name-off-its-casing"
       },
-      "checks": [
-        "name-off-its-casing#naming-convention"
-      ],
+      "checks": ["name-off-its-casing#naming-convention"],
       "anchor": {
         "kind": "keyword",
         "keyword": "identifier"
@@ -217,9 +185,7 @@
         "kind": "one-symptom",
         "symptom": "drawer-path"
       },
-      "checks": [
-        "drawer-path#drawer-names"
-      ],
+      "checks": ["drawer-path#drawer-names"],
       "anchor": {
         "kind": "file"
       }
@@ -230,9 +196,7 @@
         "kind": "one-symptom",
         "symptom": "name-off-its-casing"
       },
-      "checks": [
-        "name-off-its-casing#filename-case"
-      ],
+      "checks": ["name-off-its-casing#filename-case"],
       "anchor": {
         "kind": "file"
       }
@@ -243,9 +207,7 @@
         "kind": "one-symptom",
         "symptom": "type-derived-from-code"
       },
-      "checks": [
-        "type-derived-from-code#factory-return-types"
-      ],
+      "checks": ["type-derived-from-code#factory-return-types"],
       "anchor": {
         "kind": "file"
       }
@@ -256,9 +218,7 @@
         "kind": "one-symptom",
         "symptom": "default-on-a-closed-union"
       },
-      "checks": [
-        "default-on-a-closed-union#default-arm"
-      ],
+      "checks": ["default-on-a-closed-union#default-arm"],
       "anchor": {
         "kind": "file"
       }
@@ -268,10 +228,7 @@
       "sight": {
         "kind": "method",
         "recipe": "result-union",
-        "outcomeSeenBy": [
-          "throw-between-our-units",
-          "failure-shaped-as-success"
-        ]
+        "outcomeSeenBy": ["throw-between-our-units", "failure-shaped-as-success"]
       },
       "checks": []
     },
@@ -281,9 +238,7 @@
         "kind": "one-symptom",
         "symptom": "throw-or-catch-in-a-test"
       },
-      "checks": [
-        "throw-or-catch-in-a-test#throw-statement"
-      ],
+      "checks": ["throw-or-catch-in-a-test#throw-statement"],
       "anchor": {
         "kind": "file"
       }
@@ -294,9 +249,7 @@
         "kind": "one-symptom",
         "symptom": "thrown-non-error"
       },
-      "checks": [
-        "thrown-non-error#throw-only-error"
-      ],
+      "checks": ["thrown-non-error#throw-only-error"],
       "anchor": {
         "kind": "keyword",
         "keyword": "throw"
@@ -307,10 +260,7 @@
       "sight": {
         "kind": "method",
         "recipe": "result-union",
-        "outcomeSeenBy": [
-          "catch-all-failure-kind",
-          "authored-class-or-this"
-        ]
+        "outcomeSeenBy": ["catch-all-failure-kind", "authored-class-or-this"]
       },
       "checks": []
     },
@@ -319,10 +269,7 @@
       "sight": {
         "kind": "method",
         "recipe": "port-in-the-domain",
-        "outcomeSeenBy": [
-          "port-outside-the-domain",
-          "inner-layer-imports-outer"
-        ]
+        "outcomeSeenBy": ["port-outside-the-domain", "inner-layer-imports-outer"]
       },
       "checks": []
     },
@@ -340,9 +287,7 @@
         "kind": "one-symptom",
         "symptom": "authored-class-or-this"
       },
-      "checks": [
-        "authored-class-or-this#class-keyword"
-      ],
+      "checks": ["authored-class-or-this#class-keyword"],
       "anchor": {
         "kind": "keyword",
         "keyword": "class"
@@ -354,9 +299,7 @@
         "kind": "one-symptom",
         "symptom": "authored-class-or-this"
       },
-      "checks": [
-        "authored-class-or-this#static-members-only"
-      ],
+      "checks": ["authored-class-or-this#static-members-only"],
       "anchor": {
         "kind": "keyword",
         "keyword": "class"
@@ -376,9 +319,7 @@
         "kind": "one-symptom",
         "symptom": "loop-keyword"
       },
-      "checks": [
-        "loop-keyword#loop-statement"
-      ],
+      "checks": ["loop-keyword#loop-statement"],
       "anchor": {
         "kind": "file"
       }
@@ -389,9 +330,7 @@
         "kind": "one-symptom",
         "symptom": "date-used-directly"
       },
-      "checks": [
-        "date-used-directly#clock-sources"
-      ],
+      "checks": ["date-used-directly#clock-sources"],
       "anchor": {
         "kind": "file"
       }
@@ -410,9 +349,7 @@
         "kind": "one-symptom",
         "symptom": "outside-import-past-a-boundary"
       },
-      "checks": [
-        "outside-import-past-a-boundary#import-or-require"
-      ],
+      "checks": ["outside-import-past-a-boundary#import-or-require"],
       "anchor": {
         "kind": "file"
       }
@@ -422,10 +359,7 @@
       "sight": {
         "kind": "method",
         "recipe": "composition-root",
-        "outcomeSeenBy": [
-          "adapter-built-outside-the-root",
-          "port-outside-the-domain"
-        ]
+        "outcomeSeenBy": ["adapter-built-outside-the-root", "port-outside-the-domain"]
       },
       "checks": []
     },
@@ -434,9 +368,7 @@
       "sight": {
         "kind": "method",
         "recipe": "bounded-context-generic",
-        "outcomeSeenBy": [
-          "default-for-a-required-value"
-        ]
+        "outcomeSeenBy": ["default-for-a-required-value"]
       },
       "checks": []
     },
@@ -446,9 +378,7 @@
         "kind": "one-symptom",
         "symptom": "unit-without-a-running-test"
       },
-      "checks": [
-        "unit-without-a-running-test#companion-test-file"
-      ],
+      "checks": ["unit-without-a-running-test#companion-test-file"],
       "anchor": {
         "kind": "file"
       }
@@ -459,9 +389,7 @@
         "kind": "one-symptom",
         "symptom": "double-with-a-body"
       },
-      "checks": [
-        "double-with-a-body#stub-implementation"
-      ],
+      "checks": ["double-with-a-body#stub-implementation"],
       "anchor": {
         "kind": "file"
       }
@@ -472,9 +400,7 @@
         "kind": "one-symptom",
         "symptom": "module-or-global-patched"
       },
-      "checks": [
-        "module-or-global-patched#module-mock-call"
-      ],
+      "checks": ["module-or-global-patched#module-mock-call"],
       "anchor": {
         "kind": "file"
       }
@@ -500,9 +426,7 @@
         "kind": "one-symptom",
         "symptom": "test-switched-off"
       },
-      "checks": [
-        "test-switched-off#focused-tests"
-      ],
+      "checks": ["test-switched-off#focused-tests"],
       "anchor": {
         "kind": "keyword",
         "keyword": "only"
@@ -514,9 +438,7 @@
         "kind": "one-symptom",
         "symptom": "test-switched-off"
       },
-      "checks": [
-        "test-switched-off#skipped-tests"
-      ],
+      "checks": ["test-switched-off#skipped-tests"],
       "anchor": {
         "kind": "keyword",
         "keyword": "skip"
@@ -592,9 +514,7 @@
         "kind": "one-symptom",
         "symptom": "positional-parameters"
       },
-      "checks": [
-        "positional-parameters#parameter-count"
-      ],
+      "checks": ["positional-parameters#parameter-count"],
       "anchor": {
         "kind": "keyword",
         "keyword": "function"
@@ -614,9 +534,7 @@
         "kind": "one-symptom",
         "symptom": "tangled-function"
       },
-      "checks": [
-        "tangled-function#cognitive-complexity"
-      ],
+      "checks": ["tangled-function#cognitive-complexity"],
       "anchor": {
         "kind": "keyword",
         "keyword": "function"
@@ -628,9 +546,7 @@
         "kind": "one-symptom",
         "symptom": "long-function"
       },
-      "checks": [
-        "long-function#function-length"
-      ],
+      "checks": ["long-function#function-length"],
       "anchor": {
         "kind": "keyword",
         "keyword": "function"
@@ -650,9 +566,7 @@
         "kind": "one-symptom",
         "symptom": "work-inside-a-condition"
       },
-      "checks": [
-        "work-inside-a-condition#else-after-an-exit"
-      ],
+      "checks": ["work-inside-a-condition#else-after-an-exit"],
       "anchor": {
         "kind": "keyword",
         "keyword": "else"
@@ -664,9 +578,7 @@
         "kind": "one-symptom",
         "symptom": "boolean-in-a-signature"
       },
-      "checks": [
-        "boolean-in-a-signature#boolean-annotation"
-      ],
+      "checks": ["boolean-in-a-signature#boolean-annotation"],
       "anchor": {
         "kind": "file"
       }
@@ -677,9 +589,7 @@
         "kind": "one-symptom",
         "symptom": "write-into-a-parameter"
       },
-      "checks": [
-        "write-into-a-parameter#parameter-mutation"
-      ],
+      "checks": ["write-into-a-parameter#parameter-mutation"],
       "anchor": {
         "kind": "file"
       }
@@ -690,9 +600,7 @@
         "kind": "one-symptom",
         "symptom": "rebinding"
       },
-      "checks": [
-        "rebinding#parameter-reassignment"
-      ],
+      "checks": ["rebinding#parameter-reassignment"],
       "anchor": {
         "kind": "keyword",
         "keyword": "="
@@ -712,9 +620,7 @@
         "kind": "one-symptom",
         "symptom": "inherited-environment-in-a-subprocess"
       },
-      "checks": [
-        "inherited-environment-in-a-subprocess#git-spawn-environment"
-      ],
+      "checks": ["inherited-environment-in-a-subprocess#git-spawn-environment"],
       "anchor": {
         "kind": "file"
       }

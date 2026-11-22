@@ -1,8 +1,8 @@
-import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { ShownPathOfRepository } from "../../../application/ports/installation/shown-path-of.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import { type PackageLink, packageLinkOf } from "./package-link.ts";
 
 type ShownRequest = {
@@ -18,30 +18,42 @@ const SHOWN_SEPARATOR = "/";
 const PARENT_FOLDER = "..";
 
 const insidePackage = (request: { readonly within: string }): "inside" | "outside" =>
-  request.within === PARENT_FOLDER || request.within.startsWith(`${PARENT_FOLDER}${SHOWN_SEPARATOR}`) ? "outside" : "inside";
+  request.within === PARENT_FOLDER ||
+  request.within.startsWith(`${PARENT_FOLDER}${SHOWN_SEPARATOR}`)
+    ? "outside"
+    : "inside";
 
 const throughLink = (request: ShownRequest & { readonly target: string }): string => {
   if (request.link.kind === "unlinked") {
     return request.target;
   }
   const location = request.path.relative({ from: request.link.installRoot, to: request.target });
-  return location.relation === "within-root" && insidePackage({ within: location.path }) === "inside"
+  return location.relation === "within-root" &&
+    insidePackage({ within: location.path }) === "inside"
     ? request.path.join({ segments: [request.link.linkRoot, location.path] })
     : request.target;
 };
 
 export const shownPathOf = (request: ShownRequest & { readonly target: string }): string => {
   const target = throughLink(request);
-  const location = request.repoRoot === undefined ? undefined : request.path.relative({ from: request.repoRoot, to: target });
-  return location?.relation === "within-root" ? location.path : target.replaceAll(NATIVE_SEPARATOR, SHOWN_SEPARATOR);
+  const location =
+    request.repoRoot === undefined
+      ? undefined
+      : request.path.relative({ from: request.repoRoot, to: target });
+  return location?.relation === "within-root"
+    ? location.path
+    : target.replaceAll(NATIVE_SEPARATOR, SHOWN_SEPARATOR);
 };
 
 export const shownPathOfRepository: ShownPathOfRepository = (request) => {
   const link = packageLinkOf(request);
-  return ({ target }) => shownPathOf({ path: request.path, repoRoot: request.repoRoot, link, target });
+  return ({ target }) =>
+    shownPathOf({ path: request.path, repoRoot: request.repoRoot, link, target });
 };
 
-const shownRunnerFailureOf = (request: ShownRequest & { readonly failure: RunnerFailure }): RunnerFailure => {
+const shownRunnerFailureOf = (
+  request: ShownRequest & { readonly failure: RunnerFailure },
+): RunnerFailure => {
   const { failure } = request;
   switch (failure.kind) {
     case "piece-invalid":
@@ -57,7 +69,9 @@ const shownRunnerFailureOf = (request: ShownRequest & { readonly failure: Runner
   }
 };
 
-export const shownFailureOf = (request: ShownRequest & { readonly failure: LoadFailure }): LoadFailure => {
+export const shownFailureOf = (
+  request: ShownRequest & { readonly failure: LoadFailure },
+): LoadFailure => {
   const { failure } = request;
   switch (failure.kind) {
     case "file-unreadable":
@@ -75,7 +89,10 @@ export const shownFailureOf = (request: ShownRequest & { readonly failure: LoadF
         folder: shownPathOf({ ...request, target: failure.folder }),
       };
     case "runner-failed":
-      return { ...failure, failure: shownRunnerFailureOf({ ...request, failure: failure.failure }) };
+      return {
+        ...failure,
+        failure: shownRunnerFailureOf({ ...request, failure: failure.failure }),
+      };
     default:
       return failure;
   }

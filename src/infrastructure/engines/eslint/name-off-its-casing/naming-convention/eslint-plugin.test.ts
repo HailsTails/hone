@@ -1,21 +1,34 @@
 import { assert, describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../runner/toolchain/eslint-toolchain.ts";
 import cd6Plugin from "./eslint-plugin.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: cd6Plugin }).default;
 
 const loadedToolchain = await loadEslintToolchain({
-  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultEslintToolchainPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
-assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
-assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+assert(
+  loadedToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
+assert(
+  /^10\./.test(loadedToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
+);
 
 const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
@@ -53,7 +66,7 @@ const flagCases: readonly SourceCase[] = [
   {
     name: "a default import with an interior underscore",
     fileName: repoPathOf("default-import.ts"),
-    source: "import Foo_Bar from \"./foo-bar.ts\";\nexport { Foo_Bar };\n",
+    source: 'import Foo_Bar from "./foo-bar.ts";\nexport { Foo_Bar };\n',
     expectedLines: [1],
   },
   {
@@ -80,13 +93,14 @@ const allowCases: readonly SourceCase[] = [
   {
     name: "a property that requires quotes",
     fileName: repoPathOf("quoted-property.ts"),
-    source: "export const headers = {\n  \"content-type\": \"text/plain\",\n};\n",
+    source: 'export const headers = {\n  "content-type": "text/plain",\n};\n',
     expectedLines: [],
   },
   {
     name: "a pascal case class and interface",
     fileName: repoPathOf("pascal-types.ts"),
-    source: "export interface Reader {\n  readonly size: number;\n}\nexport class FileReader implements Reader {\n  readonly size = 1;\n}\n",
+    source:
+      "export interface Reader {\n  readonly size: number;\n}\nexport class FileReader implements Reader {\n  readonly size = 1;\n}\n",
     expectedLines: [],
   },
   {
@@ -98,220 +112,192 @@ const allowCases: readonly SourceCase[] = [
 ];
 
 describe("CD-6 naming-convention rule through the ESLint runner's lintSourceCases", () => {
-  it.each([...flagCases, ...allowCases])("flags exactly the expected lines of the case $name", async (sourceCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone-cd6",
-        rule: "naming-convention",
-        options: [
-          {
-            "selector": [
-              "objectLiteralProperty",
-              "objectLiteralMethod",
-              "typeProperty",
-              "typeMethod",
-              "classProperty",
-              "classMethod",
-              "accessor",
-              "enumMember"
-            ],
-            "modifiers": [
-              "requiresQuotes"
-            ],
-            "format": null
-          },
-          {
-            "selector": [
-              "variable",
-              "function",
-              "parameter"
-            ],
-            "modifiers": [
-              "unused"
-            ],
-            "format": null,
-            "filter": {
-              "regex": "^_",
-              "match": true
-            }
-          },
-          {
-            "selector": [
-              "variable",
-              "parameter"
-            ],
-            "modifiers": [
-              "destructured"
-            ],
-            "format": null
-          },
-          {
-            "selector": "import",
-            "format": null
-          },
-          {
-            "selector": [
-              "classProperty",
-              "classMethod",
-              "accessor",
-              "parameterProperty"
-            ],
-            "modifiers": [
-              "override"
-            ],
-            "format": null
-          },
-          {
-            "selector": "variable",
-            "modifiers": [
-              "const"
-            ],
-            "format": null,
-            "custom": {
-              "regex": "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*|[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
-              "match": true
-            }
-          },
-          {
-            "selector": "variable",
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "function",
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "function",
-            "modifiers": [
-              "global"
-            ],
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*)?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "parameter",
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "typeLike",
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "enumMember",
-            "format": null,
-            "custom": {
-              "regex": "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)$",
-              "match": true
-            }
-          },
-          {
-            "selector": [
-              "classProperty",
-              "classMethod",
-              "accessor",
-              "parameterProperty"
-            ],
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": [
-              "classProperty",
-              "accessor"
-            ],
-            "modifiers": [
-              "static"
-            ],
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "objectLiteralProperty",
-            "format": null,
-            "custom": {
-              "regex": "^(?:[a-z0-9][A-Za-z0-9]*)$",
-              "match": true
-            }
-          },
-          {
-            "selector": "objectLiteralMethod",
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "typeProperty",
-            "format": null,
-            "custom": {
-              "regex": "^(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
-              "match": true
-            }
-          },
-          {
-            "selector": "typeMethod",
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "import",
-            "modifiers": [
-              "default"
-            ],
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
-              "match": true
-            }
-          },
-          {
-            "selector": "import",
-            "modifiers": [
-              "namespace"
-            ],
-            "format": null,
-            "custom": {
-              "regex": "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
-              "match": true
-            }
-          }
-        ],
-        cases: [sourceCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
-    });
-  });
+  it.each([...flagCases, ...allowCases])(
+    "flags exactly the expected lines of the case $name",
+    async (sourceCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone-cd6",
+          rule: "naming-convention",
+          options: [
+            {
+              selector: [
+                "objectLiteralProperty",
+                "objectLiteralMethod",
+                "typeProperty",
+                "typeMethod",
+                "classProperty",
+                "classMethod",
+                "accessor",
+                "enumMember",
+              ],
+              modifiers: ["requiresQuotes"],
+              format: null,
+            },
+            {
+              selector: ["variable", "function", "parameter"],
+              modifiers: ["unused"],
+              format: null,
+              filter: {
+                regex: "^_",
+                match: true,
+              },
+            },
+            {
+              selector: ["variable", "parameter"],
+              modifiers: ["destructured"],
+              format: null,
+            },
+            {
+              selector: "import",
+              format: null,
+            },
+            {
+              selector: ["classProperty", "classMethod", "accessor", "parameterProperty"],
+              modifiers: ["override"],
+              format: null,
+            },
+            {
+              selector: "variable",
+              modifiers: ["const"],
+              format: null,
+              custom: {
+                regex:
+                  "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*|[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
+                match: true,
+              },
+            },
+            {
+              selector: "variable",
+              format: null,
+              custom: {
+                regex:
+                  "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "function",
+              format: null,
+              custom: {
+                regex:
+                  "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "function",
+              modifiers: ["global"],
+              format: null,
+              custom: {
+                regex:
+                  "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*)?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "parameter",
+              format: null,
+              custom: {
+                regex:
+                  "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "typeLike",
+              format: null,
+              custom: {
+                regex: "^[_$]*(?:[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "enumMember",
+              format: null,
+              custom: {
+                regex: "^(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)$",
+                match: true,
+              },
+            },
+            {
+              selector: ["classProperty", "classMethod", "accessor", "parameterProperty"],
+              format: null,
+              custom: {
+                regex: "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: ["classProperty", "accessor"],
+              modifiers: ["static"],
+              format: null,
+              custom: {
+                regex: "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "objectLiteralProperty",
+              format: null,
+              custom: {
+                regex: "^(?:[a-z0-9][A-Za-z0-9]*)$",
+                match: true,
+              },
+            },
+            {
+              selector: "objectLiteralMethod",
+              format: null,
+              custom: {
+                regex: "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "typeProperty",
+              format: null,
+              custom: {
+                regex: "^(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))$",
+                match: true,
+              },
+            },
+            {
+              selector: "typeMethod",
+              format: null,
+              custom: {
+                regex: "^[_$]*(?:[a-z0-9][A-Za-z0-9]*)?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "import",
+              modifiers: ["default"],
+              format: null,
+              custom: {
+                regex:
+                  "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*)|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)?[_$]*$",
+                match: true,
+              },
+            },
+            {
+              selector: "import",
+              modifiers: ["namespace"],
+              format: null,
+              custom: {
+                regex:
+                  "^[_$]*(?:[a-z0-9][A-Za-z0-9]*|[A-Z](?:[A-Za-z0-9]*[a-z][A-Za-z0-9]*|[0-9]*))?[_$]*$",
+                match: true,
+              },
+            },
+          ],
+          cases: [sourceCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sourceCase.name, flaggedLines: sourceCase.expectedLines }],
+      });
+    },
+  );
 });

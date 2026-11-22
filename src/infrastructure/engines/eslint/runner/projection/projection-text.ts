@@ -1,11 +1,14 @@
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText, sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
-import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import { enabledRuleEntry, reservedNamespace } from "../toolchain/eslint-instance.ts";
-import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
-import { escapedGlobPath } from "./projection.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import {
+  clauseAddressText,
+  sameClauseAddress,
+} from "../../../../../domain/rule-set/clause-address.ts";
+import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
+import { enabledRuleEntry, reservedNamespace } from "../toolchain/eslint-instance.ts";
+import { escapedGlobPath } from "./projection.ts";
 
 export type ProjectedClause = {
   readonly address: ClauseAddress;
@@ -114,7 +117,9 @@ const fileRecordGroupBlock = (request: {
         rules: offLines({
           ruleIds: [
             ...new Set(
-              request.group.clauses.flatMap((address) => ruleIdsOfClause({ pieces: request.pieces, address })),
+              request.group.clauses.flatMap((address) =>
+                ruleIdsOfClause({ pieces: request.pieces, address }),
+              ),
             ),
           ],
         }),
@@ -131,25 +136,38 @@ const clauseWideBlock = (request: {
       `    name: ${quoted({
         text: `${reservedNamespace}/${request.record.kind}/${clauseAddressText({ address: request.record.clause })}`,
       })},`,
-      rulesLine({ rules: offLines({ ruleIds: ruleIdsOfClause({ pieces: request.pieces, address: request.record.clause }) }) }),
+      rulesLine({
+        rules: offLines({
+          ruleIds: ruleIdsOfClause({ pieces: request.pieces, address: request.record.clause }),
+        }),
+      }),
     ],
   });
 
-const clauseWideOrder = (request: { readonly left: ClauseWideRecord; readonly right: ClauseWideRecord }): number =>
+const clauseWideOrder = (request: {
+  readonly left: ClauseWideRecord;
+  readonly right: ClauseWideRecord;
+}): number =>
   codeUnitOrder({
     left: clauseAddressText({ address: request.left.clause }),
     right: clauseAddressText({ address: request.right.clause }),
   });
 
-const fileRecordsOf = (request: { readonly records: readonly ExceptionRecord[] }): readonly FileRecord[] =>
+const fileRecordsOf = (request: {
+  readonly records: readonly ExceptionRecord[];
+}): readonly FileRecord[] =>
   request.records.flatMap((record) => (record.kind === "clause-wide-carve-out" ? [] : [record]));
 
-const distinctSortedClauses = (request: { readonly clauses: readonly ClauseAddress[] }): readonly ClauseAddress[] =>
+const distinctSortedClauses = (request: {
+  readonly clauses: readonly ClauseAddress[];
+}): readonly ClauseAddress[] =>
   [...new Map(request.clauses.map((address) => [clauseAddressText({ address }), address]))]
     .sort(([left], [right]) => codeUnitOrder({ left, right }))
     .map(([, address]) => address);
 
-const clausesOfEachFile = (request: { readonly records: readonly FileRecord[] }): readonly FileClauses[] =>
+const clausesOfEachFile = (request: {
+  readonly records: readonly FileRecord[];
+}): readonly FileClauses[] =>
   [...Map.groupBy(request.records, (record) => record.file)].map(([file, records]) => {
     const clauses = distinctSortedClauses({ clauses: records.map((record) => record.clause) });
     return {
@@ -159,13 +177,24 @@ const clausesOfEachFile = (request: { readonly records: readonly FileRecord[] })
     };
   });
 
-const fileRecordGroups = (request: { readonly records: readonly ExceptionRecord[] }): readonly FileRecordGroup[] =>
-  [...Map.groupBy(clausesOfEachFile({ records: fileRecordsOf(request) }), (fileClauses) => fileClauses.clausesText)]
+const fileRecordGroups = (request: {
+  readonly records: readonly ExceptionRecord[];
+}): readonly FileRecordGroup[] =>
+  [
+    ...Map.groupBy(
+      clausesOfEachFile({ records: fileRecordsOf(request) }),
+      (fileClauses) => fileClauses.clausesText,
+    ),
+  ]
     .sort(([left], [right]) => codeUnitOrder({ left, right }))
     .map(([clausesText, sharers]) => ({
       clausesText,
-      clauses: distinctSortedClauses({ clauses: sharers.flatMap((fileClauses) => fileClauses.clauses) }),
-      files: sharers.map((fileClauses) => fileClauses.file).sort((left, right) => codeUnitOrder({ left, right })),
+      clauses: distinctSortedClauses({
+        clauses: sharers.flatMap((fileClauses) => fileClauses.clauses),
+      }),
+      files: sharers
+        .map((fileClauses) => fileClauses.file)
+        .sort((left, right) => codeUnitOrder({ left, right })),
     }));
 
 const sortedClauseWideRecords = (request: {
@@ -175,13 +204,17 @@ const sortedClauseWideRecords = (request: {
     .flatMap((record) => (record.kind === "clause-wide-carve-out" ? [record] : []))
     .sort((left, right) => clauseWideOrder({ left, right }));
 
-const sortedPieces = (request: { readonly pieces: readonly ProjectedPiece[] }): readonly ProjectedPiece[] =>
+const sortedPieces = (request: {
+  readonly pieces: readonly ProjectedPiece[];
+}): readonly ProjectedPiece[] =>
   [...request.pieces].sort((left, right) =>
     codeUnitOrder({ left: left.pluginNamespace, right: right.pluginNamespace }),
   );
 
 const importLines = (request: { readonly pieces: readonly ProjectedPiece[] }): readonly string[] =>
-  request.pieces.map((piece, index) => `import piece${index} from ${quoted({ text: piece.pluginImport })};`);
+  request.pieces.map(
+    (piece, index) => `import piece${index} from ${quoted({ text: piece.pluginImport })};`,
+  );
 
 const configBlocks = (request: {
   readonly pieces: readonly ProjectedPiece[];

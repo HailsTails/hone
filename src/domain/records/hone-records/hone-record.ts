@@ -1,7 +1,13 @@
-import type { Case, Check, Pointed, Recipe, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type {
+  Case,
+  Check,
+  Pointed,
+  Recipe,
+  Symptom,
+} from "../../language-layer/symptom-catalogue.ts";
 import type { BaseRevisionAvailability } from "../../repository/base-revision-availability.ts";
-import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
 import type { WhyChain } from "../why-chain.ts";
 
 export type RecordIssue = { readonly path: readonly PropertyKey[]; readonly message: string };
@@ -26,9 +32,13 @@ export type Carried<Lack extends string> = {
 
 export type Stated = { readonly held: "stated" };
 
-export type SymptomReach = { readonly reaches: "whole-symptom" } | { readonly reaches: "one-check"; readonly check: Check };
+export type SymptomReach =
+  | { readonly reaches: "whole-symptom" }
+  | { readonly reaches: "one-check"; readonly check: Check };
 
-export type AuthorisedReach = SymptomReach | { readonly reaches: "unknown-check"; readonly check: string };
+export type AuthorisedReach =
+  | SymptomReach
+  | { readonly reaches: "unknown-check"; readonly check: string };
 
 export type Debt = {
   readonly kind: "debt";
@@ -55,7 +65,9 @@ export type AuthorisedLocation = {
   readonly symptom: Symptom;
   readonly reach: AuthorisedReach;
   readonly file: RepoPath;
-  readonly holding: (Stated & { readonly owing: Owing; readonly whyChain: WhyChain }) | Carried<AuthorisedLocationLack>;
+  readonly holding:
+    | (Stated & { readonly owing: Owing; readonly whyChain: WhyChain })
+    | Carried<AuthorisedLocationLack>;
 };
 
 export type Deviation = {
@@ -73,7 +85,9 @@ export type BoundaryRecord = {
   readonly kind: "boundary-record";
   readonly module: RepoPath;
   readonly outsideParty: OutsideParty;
-  readonly holding: (Stated & { readonly ports: readonly string[]; readonly conformist?: Conformist }) | Carried<BoundaryRecordLack>;
+  readonly holding:
+    | (Stated & { readonly ports: readonly string[]; readonly conformist?: Conformist })
+    | Carried<BoundaryRecordLack>;
 };
 
 export type DependencyRecord = {
@@ -86,7 +100,12 @@ export type DependencyRecord = {
 
 export type HoneRecord = Debt | AuthorisedLocation | Deviation | BoundaryRecord | DependencyRecord;
 
-export type RecordsFolderKind = "authorised-locations" | "debt" | "deviations" | "boundary-records" | "dependency-records";
+export type RecordsFolderKind =
+  | "authorised-locations"
+  | "debt"
+  | "deviations"
+  | "boundary-records"
+  | "dependency-records";
 
 export type RecordPlace = { readonly file: RepoPath; readonly index: number };
 
@@ -97,7 +116,11 @@ export type RecordRefusal =
   | { readonly kind: "unknown-symptom"; readonly symptom: string }
   | { readonly kind: "unknown-check"; readonly symptom: string; readonly check: string }
   | { readonly kind: "unknown-recipe"; readonly recipe: string }
-  | { readonly kind: "recipe-reason-not-the-catalogues"; readonly recipe: Recipe; readonly recipeReason: string }
+  | {
+      readonly kind: "recipe-reason-not-the-catalogues";
+      readonly recipe: Recipe;
+      readonly recipeReason: string;
+    }
   | { readonly kind: "named-ban"; readonly dependency: string }
   | { readonly kind: "unknown-runtime-facility"; readonly outsideParty: string }
   | { readonly kind: "misplaced"; readonly belongsIn: RepoPath }
@@ -105,7 +128,10 @@ export type RecordRefusal =
   | { readonly kind: "carried-changed-since-base" }
   | { readonly kind: "duplicate"; readonly of: RecordPlace };
 
-export type RefusedRecord = { readonly place: RecordPlace; readonly refusals: readonly RecordRefusal[] };
+export type RefusedRecord = {
+  readonly place: RecordPlace;
+  readonly refusals: readonly RecordRefusal[];
+};
 
 export type RecordsDocument = { readonly file: RepoPath; readonly document: unknown };
 
@@ -119,7 +145,9 @@ export type CarriedListing = {
   readonly standing: CarriedStanding;
 };
 
-export type BaseMeasurement = { readonly measured: "yes" } | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
+export type BaseMeasurement =
+  | { readonly measured: "yes" }
+  | { readonly measured: "no"; readonly base: BaseRevisionAvailability };
 
 export type RecordNote = { readonly place: RecordPlace; readonly note: CatalogueNote };
 
@@ -132,4 +160,8 @@ export type RecordsReading = {
 
 export type RecordsDocumentRefusal =
   | { readonly kind: "not-a-records-file"; readonly file: RepoPath }
-  | { readonly kind: "document-refused"; readonly file: RepoPath; readonly issues: readonly RecordIssue[] };
+  | {
+      readonly kind: "document-refused";
+      readonly file: RepoPath;
+      readonly issues: readonly RecordIssue[];
+    };

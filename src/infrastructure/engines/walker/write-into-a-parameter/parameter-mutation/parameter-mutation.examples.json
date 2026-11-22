@@ -4,25 +4,19 @@
       "name": "field assignment on a parameter",
       "fileName": "field.ts",
       "source": "type Profile = { name: string };\nexport const rename = (profile: Profile, name: string): void => {\n  profile.name = name;\n};\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     },
     {
       "name": "push on a parameter",
       "fileName": "push.ts",
       "source": "export const append = (list: number[], value: number): void => {\n  list.push(value);\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "delete on a parameter field",
       "fileName": "delete.ts",
       "source": "export const strip = (record: { extra?: string }): void => {\n  delete record.extra;\n};\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     }
   ],
   "allow": [

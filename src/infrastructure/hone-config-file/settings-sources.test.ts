@@ -1,15 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
-import { createPathPort } from "../node/path-port.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { engineIdSchema } from "./identifiers.ts";
-import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
-import { createSettingsSources } from "./settings-sources.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
+import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
+import { createPathPort } from "../node/path-port.ts";
+import { engineIdSchema } from "./identifiers.ts";
+import { createSettingsSources } from "./settings-sources.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -81,7 +82,8 @@ const INSTALL_FILES: Readonly<Record<string, string>> = {
   "/repo/hone.config.json": SETTINGS_TEXT,
   "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
   "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/piece.json": CD_15_PIECE,
-  "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json": LOOPS_CASES,
+  "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json":
+    LOOPS_CASES,
   "/install/src/infrastructure/engines/walker/runner/runner.ts": RUNNER_TEXT,
 };
 
@@ -90,7 +92,9 @@ const TEAM_FILES: Readonly<Record<string, string>> = {
   "/install/src/infrastructure/engines/walker/runner/runner.ts": RUNNER_TEXT,
 };
 
-const inMemoryFileText = (request: { readonly files: Readonly<Record<string, string>> }): FileTextPort => {
+const inMemoryFileText = (request: {
+  readonly files: Readonly<Record<string, string>>;
+}): FileTextPort => {
   const files = new Map(Object.entries(request.files));
   return {
     read: ({ path }) => {
@@ -119,7 +123,12 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
 
 const TEAM_ROOT = absoluteRootOf("/repo/tools/hone-rules");
 
-const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly ruleSetRoot: AbsolutePath; readonly clause: string; readonly mechanism: string }) =>
+const pieceOf = (request: {
+  readonly files: Readonly<Record<string, string>>;
+  readonly ruleSetRoot: AbsolutePath;
+  readonly clause: string;
+  readonly mechanism: string;
+}) =>
   sourcesOver({ files: request.files }).pieceClause({
     ruleSetRoot: request.ruleSetRoot,
     clause: clauseAddressSchema.parse(request.clause),
@@ -135,11 +144,16 @@ describe("createSettingsSources", () => {
   });
 
   it("names the repository when it has no hone.config.json", () => {
-    expect(sourcesOver({ files: {} }).settingsFile({})).toEqual({ outcome: "failed", error: { kind: "selection-absent", repo: "/repo" } });
+    expect(sourcesOver({ files: {} }).settingsFile({})).toEqual({
+      outcome: "failed",
+      error: { kind: "selection-absent", repo: "/repo" },
+    });
   });
 
   it("names the file when hone.config.json is not JSON", () => {
-    expect(sourcesOver({ files: { "/repo/hone.config.json": "{ version" } }).settingsFile({})).toMatchObject({
+    expect(
+      sourcesOver({ files: { "/repo/hone.config.json": "{ version" } }).settingsFile({}),
+    ).toMatchObject({
       outcome: "failed",
       error: { kind: "file-malformed", path: "/repo/hone.config.json" },
     });
@@ -147,7 +161,12 @@ describe("createSettingsSources", () => {
 
   it("finds Hone's own rule set at the install root and a declared one under the repository", () => {
     const sources = sourcesOver({ files: INSTALL_FILES });
-    const ruleSets: readonly DeclaredRuleSet[] = [{ name: ruleSetNameOf("team"), location: { location: "folder", path: repoPathOf("tools/hone-rules") } }];
+    const ruleSets: readonly DeclaredRuleSet[] = [
+      {
+        name: ruleSetNameOf("team"),
+        location: { location: "folder", path: repoPathOf("tools/hone-rules") },
+      },
+    ];
     expect({
       hone: sources.ruleSetRoot({ ruleSet: "hone", ruleSets }),
       team: sources.ruleSetRoot({ ruleSet: { name: ruleSetNameOf("team") }, ruleSets }),
@@ -158,15 +177,23 @@ describe("createSettingsSources", () => {
   });
 
   it("holds no symptom catalogue where a rule set has none", () => {
-    expect(sourcesOver({ files: INSTALL_FILES }).catalogue({ ruleSetRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
+    expect(sourcesOver({ files: INSTALL_FILES }).catalogue({ ruleSetRoot: INSTALL_ROOT })).toEqual({
+      outcome: "ok",
+      value: { held: "none" },
+    });
   });
 
   it("reads a declared rule set's pieces from its mechanisms folder when it gives its catalogue", () => {
     const sources = createSettingsSources({
       directory: {
-        list: vi
-          .fn<DirectoryPort["list"]>()
-          .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/tools/hone-rules/mechanisms/audit"), detail: "EACCES" } }),
+        list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({
+          outcome: "failed",
+          error: {
+            kind: "directory-unreadable",
+            path: absoluteRootOf("/repo/tools/hone-rules/mechanisms/audit"),
+            detail: "EACCES",
+          },
+        }),
         create: vi.fn<DirectoryPort["create"]>(),
       },
       repoRoot: REPO_ROOT,
@@ -174,19 +201,35 @@ describe("createSettingsSources", () => {
       moduleExtension: ".ts",
       fileText: {
         read: vi.fn<FileTextPort["read"]>(),
-        exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+        exists: vi
+          .fn<FileTextPort["exists"]>()
+          .mockReturnValueOnce("absent")
+          .mockReturnValueOnce("absent")
+          .mockReturnValueOnce("present")
+          .mockReturnValueOnce("absent"),
         write: vi.fn<FileTextPort["write"]>(),
       },
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
     });
     expect(sources.catalogue({ ruleSetRoot: absoluteRootOf("/repo/tools/hone-rules") })).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: "/repo/tools/hone-rules/mechanisms/audit", detail: "EACCES" },
+      error: {
+        kind: "file-unreadable",
+        path: "/repo/tools/hone-rules/mechanisms/audit",
+        detail: "EACCES",
+      },
     });
   });
 
   it("reads the piece of a mechanical clause with its definition's anchor and exceptions", () => {
-    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#loops", mechanism: "walker" })).toMatchObject({
+    expect(
+      pieceOf({
+        files: INSTALL_FILES,
+        ruleSetRoot: INSTALL_ROOT,
+        clause: "CD-15#loops",
+        mechanism: "walker",
+      }),
+    ).toMatchObject({
       outcome: "ok",
       value: {
         anchor: { kind: "file" },
@@ -198,28 +241,56 @@ describe("createSettingsSources", () => {
   });
 
   it("refuses a discipline the rule set lacks", () => {
-    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-99#loops", mechanism: "walker" })).toEqual({
+    expect(
+      pieceOf({
+        files: INSTALL_FILES,
+        ruleSetRoot: INSTALL_ROOT,
+        clause: "CD-99#loops",
+        mechanism: "walker",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "unknown-discipline", address: "CD-99#loops" },
     });
   });
 
   it("refuses a clause its discipline lacks", () => {
-    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#nothing", mechanism: "walker" })).toEqual({
+    expect(
+      pieceOf({
+        files: INSTALL_FILES,
+        ruleSetRoot: INSTALL_ROOT,
+        clause: "CD-15#nothing",
+        mechanism: "walker",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "unknown-clause", address: "CD-15#nothing" },
     });
   });
 
   it("refuses a judgement clause", () => {
-    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#loop-intent", mechanism: "walker" })).toEqual({
+    expect(
+      pieceOf({
+        files: INSTALL_FILES,
+        ruleSetRoot: INSTALL_ROOT,
+        clause: "CD-15#loop-intent",
+        mechanism: "walker",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "judgement-clause-selected", address: "CD-15#loop-intent" },
     });
   });
 
   it("refuses a mechanism the clause does not allow", () => {
-    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#loops", mechanism: "eslint" })).toEqual({
+    expect(
+      pieceOf({
+        files: INSTALL_FILES,
+        ruleSetRoot: INSTALL_ROOT,
+        clause: "CD-15#loops",
+        mechanism: "eslint",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "mechanism-not-allowed", address: "CD-15#loops", mechanism: "eslint" },
     });
@@ -230,8 +301,10 @@ describe("createSettingsSources", () => {
       pieceOf({
         files: {
           "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
-          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/piece.json": CD_15_PIECE,
-          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json": LOOPS_CASES,
+          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/piece.json":
+            CD_15_PIECE,
+          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json":
+            LOOPS_CASES,
         },
         ruleSetRoot: INSTALL_ROOT,
         clause: "CD-15#loops",
@@ -241,7 +314,14 @@ describe("createSettingsSources", () => {
   });
 
   it("refuses a team clause whose discipline has no piece for the mechanism", () => {
-    expect(pieceOf({ files: TEAM_FILES, ruleSetRoot: TEAM_ROOT, clause: "TM-1#loops", mechanism: "walker" })).toEqual({
+    expect(
+      pieceOf({
+        files: TEAM_FILES,
+        ruleSetRoot: TEAM_ROOT,
+        clause: "TM-1#loops",
+        mechanism: "walker",
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "piece-missing", address: "TM-1#loops", mechanism: AUDIT },
     });
@@ -250,12 +330,18 @@ describe("createSettingsSources", () => {
   it("refuses a team clause its discipline's piece has no entry for", () => {
     expect(
       pieceOf({
-        files: { ...TEAM_FILES, "/repo/tools/hone-rules/mechanisms/audit/TM-1/piece.json": TM_1_PIECE },
+        files: {
+          ...TEAM_FILES,
+          "/repo/tools/hone-rules/mechanisms/audit/TM-1/piece.json": TM_1_PIECE,
+        },
         ruleSetRoot: TEAM_ROOT,
         clause: "TM-1#labels",
         mechanism: "walker",
       }),
-    ).toEqual({ outcome: "failed", error: { kind: "piece-missing", address: "TM-1#labels", mechanism: AUDIT } });
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "piece-missing", address: "TM-1#labels", mechanism: AUDIT },
+    });
   });
 
   it("refuses an install clause that no piece runs", () => {
@@ -271,7 +357,11 @@ describe("createSettingsSources", () => {
       }),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "rule-set-invalid", path: "/install/src/infrastructure/disciplines-file/version-one-names.json", detail: "no piece runs CD-15#loops" },
+      error: {
+        kind: "rule-set-invalid",
+        path: "/install/src/infrastructure/disciplines-file/version-one-names.json",
+        detail: "no piece runs CD-15#loops",
+      },
     });
   });
 });

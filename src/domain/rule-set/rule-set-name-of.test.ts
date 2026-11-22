@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { isRuleSetName } from "./identifiers.ts";
 import { ruleSetNameOf } from "./rule-set-name-of.ts";
 

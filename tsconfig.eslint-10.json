@@ -2,18 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "eslint": [
-        "./node_modules/eslint/lib/types/index.d.ts"
-      ],
-      "eslint/use-at-your-own-risk": [
-        "./node_modules/eslint/lib/types/use-at-your-own-risk.d.ts"
-      ],
-      "eslint-9": [
-        "./node_modules/eslint/lib/types/index.d.ts"
-      ],
-      "eslint-9/use-at-your-own-risk": [
-        "./node_modules/eslint/lib/types/use-at-your-own-risk.d.ts"
-      ]
+      "eslint": ["./node_modules/eslint/lib/types/index.d.ts"],
+      "eslint/use-at-your-own-risk": ["./node_modules/eslint/lib/types/use-at-your-own-risk.d.ts"],
+      "eslint-9": ["./node_modules/eslint/lib/types/index.d.ts"],
+      "eslint-9/use-at-your-own-risk": ["./node_modules/eslint/lib/types/use-at-your-own-risk.d.ts"]
     }
   },
   "exclude": [

@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type { PlacedRecord } from "../records/hone-records/hone-record.ts";
-import { RUN_SECTION_NAMES, type RunSectionName, type RunSectionRole, runSectionRoleOf, runVerdictOf } from "./report-sections.ts";
-import type { RunReport } from "./run-report.ts";
+
 import type { Check, Symptom } from "../language-layer/symptom-catalogue.ts";
+import type { PlacedRecord } from "../records/hone-records/hone-record.ts";
 import { repoPathOf } from "../repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import {
+  RUN_SECTION_NAMES,
+  type RunSectionName,
+  type RunSectionRole,
+  runSectionRoleOf,
+  runVerdictOf,
+} from "./report-sections.ts";
+import type { RunReport } from "./run-report.ts";
 
 const CLAIMED_TYPE: Symptom = {
   name: "claimed-type",
@@ -49,7 +56,12 @@ const CLAIMED_TYPE: Symptom = {
   correctUses: [
     {
       situation: "a schema proves the type",
-      kind: { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" },
+      kind: {
+        name: "authorised-location",
+        title: "Authorised location",
+        phrase: "an authorised location",
+        todaysFormat: "authorised-location",
+      },
     },
   ],
 };
@@ -122,13 +134,27 @@ describe("runSectionRoleOf", () => {
 
 describe("runVerdictOf", () => {
   it("passes a run whose failing sections are all empty, whatever its informational sections hold", () => {
-    expect(runVerdictOf({ report: { ...EMPTY_REPORT, excluded: [repoPathOf("dist")], "settings-notes": [{ kind: "declared-not-read", key: "layers" }] } })).toBe("pass");
+    expect(
+      runVerdictOf({
+        report: {
+          ...EMPTY_REPORT,
+          excluded: [repoPathOf("dist")],
+          "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
+        },
+      }),
+    ).toBe("pass");
   });
 
   it("passes a run whose only entries are paid debt and a record's catalogue note, since neither fails a run", () => {
     const debt: PlacedRecord = {
       place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
-      record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "whole-symptom" }, file: repoPathOf("src/a.ts"), holding: { held: "stated" } },
+      record: {
+        kind: "debt",
+        symptom: CLAIMED_TYPE,
+        reach: { reaches: "whole-symptom" },
+        file: repoPathOf("src/a.ts"),
+        holding: { held: "stated" },
+      },
     };
     const location: PlacedRecord = {
       place: { file: repoPathOf("hone-records/authorised-locations/claimed-type.json"), index: 0 },
@@ -137,7 +163,12 @@ describe("runVerdictOf", () => {
         symptom: CLAIMED_TYPE,
         reach: { reaches: "unknown-check", check: "cast-old" },
         file: repoPathOf("src/a.ts"),
-        holding: { held: "carried", entry: {}, lacks: ["case", "owes", "whyChain"], standing: "established" },
+        holding: {
+          held: "carried",
+          entry: {},
+          lacks: ["case", "owes", "whyChain"],
+          standing: "established",
+        },
       },
     };
     expect(
@@ -145,7 +176,12 @@ describe("runVerdictOf", () => {
         report: {
           ...EMPTY_REPORT,
           paid: [{ debt, answeredBy: [location] }],
-          "record-notes": [{ place: location.place, note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "cast-old" } }],
+          "record-notes": [
+            {
+              place: location.place,
+              note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "cast-old" },
+            },
+          ],
         },
       }),
     ).toBe("pass");
@@ -155,16 +191,32 @@ describe("runVerdictOf", () => {
     const castExpressions: Check = {
       name: "cast-expressions",
       symptom: CLAIMED_TYPE,
-      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") },
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-2"),
+        clause: clauseIdOf("cast-expressions"),
+      },
       engines: [{ name: "eslint" }],
       forms: [],
     };
-    expect(runVerdictOf({ report: { ...EMPTY_REPORT, available: [castExpressions] } })).toBe("pass");
+    expect(runVerdictOf({ report: { ...EMPTY_REPORT, available: [castExpressions] } })).toBe(
+      "pass",
+    );
   });
 
   it("fails a run with an entry in a failing section", () => {
-    expect(runVerdictOf({ report: { ...EMPTY_REPORT, refused: [{ place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 }, refusals: [{ kind: "carried-changed-since-base" }] }] } })).toBe(
-      "fail",
-    );
+    expect(
+      runVerdictOf({
+        report: {
+          ...EMPTY_REPORT,
+          refused: [
+            {
+              place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 },
+              refusals: [{ kind: "carried-changed-since-base" }],
+            },
+          ],
+        },
+      }),
+    ).toBe("fail");
   });
 });

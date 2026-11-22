@@ -1,11 +1,11 @@
+import { gatheredOutcomes, listedOutcome } from "../../domain/gathered-outcomes.ts";
+import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../domain/result.ts";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
-import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { gatheredOutcomes, listedOutcome } from "../../domain/gathered-outcomes.ts";
-import type { Result } from "../../domain/result.ts";
 
 type FileWrite = {
   readonly fileText: FileTextPort;
@@ -14,13 +14,19 @@ type FileWrite = {
   readonly projected: ProjectedFile;
 };
 
-const existingTextOf = (request: { readonly fileText: FileTextPort; readonly location: string }): Result<string | undefined, RunLoadFailure> => {
+const existingTextOf = (request: {
+  readonly fileText: FileTextPort;
+  readonly location: string;
+}): Result<string | undefined, RunLoadFailure> => {
   if (request.fileText.exists({ path: request.location }) === "absent") {
     return { outcome: "ok", value: undefined };
   }
   const read = request.fileText.read({ path: request.location });
   return read.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "file-unreadable", path: request.location, detail: read.error.detail } }
+    ? {
+        outcome: "failed",
+        error: { kind: "file-unreadable", path: request.location, detail: read.error.detail },
+      }
     : { outcome: "ok", value: read.value.replaceAll("\r\n", "\n") };
 };
 
@@ -36,7 +42,10 @@ const writtenFileOf = (request: FileWrite): Result<ProjectionWrite, RunLoadFailu
   }
   const written = request.fileText.write({ path: location, text: projected.text });
   return written.outcome === "failed"
-    ? { outcome: "failed", error: { kind: "file-unwritable", path: location, detail: written.error.detail } }
+    ? {
+        outcome: "failed",
+        error: { kind: "file-unwritable", path: location, detail: written.error.detail },
+      }
     : { outcome: "ok", value: { path: projected.file, effect: "written" } };
 };
 
@@ -46,4 +55,8 @@ export const projectedFilesWrittenOf = (request: {
   readonly repoRoot: AbsolutePath;
   readonly files: readonly ProjectedFile[];
 }): Result<readonly ProjectionWrite[], RunLoadFailure> =>
-  gatheredOutcomes({ outcomes: request.files.map((projected) => listedOutcome({ outcome: writtenFileOf({ ...request, projected }) })) });
+  gatheredOutcomes({
+    outcomes: request.files.map((projected) =>
+      listedOutcome({ outcome: writtenFileOf({ ...request, projected }) }),
+    ),
+  });

@@ -1,5 +1,5 @@
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
   if (folderScope({ file: request.file }) === "generated") return "skipped";
@@ -36,11 +36,14 @@ export const check: WalkerPiece = {
                     callee.name.text !== "mock" ||
                     !syntaxApi.isIdentifier(callee.expression) ||
                     callee.expression.text !== "vi"
-                  ) return;
+                  )
+                    return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
                   const snippet = snippetAt({ source: sourceFile.text, position });
-                  hits.push(...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })));
+                  hits.push(
+                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                  );
                 },
                 finish: () => hits,
               };

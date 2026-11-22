@@ -1,6 +1,18 @@
 import type { Result } from "../../src/domain/result.ts";
 
-export const CHANGE_TYPES = ["feat", "fix", "perf", "revert", "docs", "refactor", "test", "build", "ci", "chore", "style"] as const;
+export const CHANGE_TYPES = [
+  "feat",
+  "fix",
+  "perf",
+  "revert",
+  "docs",
+  "refactor",
+  "test",
+  "build",
+  "ci",
+  "chore",
+  "style",
+] as const;
 
 export type ChangeType = (typeof CHANGE_TYPES)[number];
 
@@ -13,17 +25,27 @@ export type ConventionalSubject = {
   readonly description: string;
 };
 
-export type SubjectRejection = { readonly kind: "unshaped" } | { readonly kind: "unknown-type"; readonly type: string };
+export type SubjectRejection =
+  | { readonly kind: "unshaped" }
+  | { readonly kind: "unknown-type"; readonly type: string };
 
 export type ChangeEntry =
   | { readonly kind: "conventional"; readonly subject: ConventionalSubject }
-  | { readonly kind: "unclassified"; readonly subject: string; readonly compatibility: Compatibility };
+  | {
+      readonly kind: "unclassified";
+      readonly subject: string;
+      readonly compatibility: Compatibility;
+    };
 
-const SUBJECT_SHAPE = /^(?<type>[a-z]+)(?:\((?<scope>[a-z0-9][a-z0-9._/-]*)\))?(?<breaking>!)?: (?<description>\S.*)$/;
+const SUBJECT_SHAPE =
+  /^(?<type>[a-z]+)(?:\((?<scope>[a-z0-9][a-z0-9._/-]*)\))?(?<breaking>!)?: (?<description>\S.*)$/;
 
-const changeTypeOf = (request: { readonly type: string }): ChangeType | undefined => CHANGE_TYPES.find((type) => type === request.type);
+const changeTypeOf = (request: { readonly type: string }): ChangeType | undefined =>
+  CHANGE_TYPES.find((type) => type === request.type);
 
-export const conventionalSubjectOf = (request: { readonly subject: string }): Result<ConventionalSubject, SubjectRejection> => {
+export const conventionalSubjectOf = (request: {
+  readonly subject: string;
+}): Result<ConventionalSubject, SubjectRejection> => {
   const groups = SUBJECT_SHAPE.exec(request.subject)?.groups;
   if (groups?.type === undefined || groups.description === undefined) {
     return { outcome: "failed", error: { kind: "unshaped" } };
@@ -50,7 +72,10 @@ const LINE_BREAK = "\n";
 const footerCompatibilityOf = (request: { readonly bodyLines: readonly string[] }): Compatibility =>
   request.bodyLines.some((line) => BREAKING_FOOTER.test(line)) ? "breaking" : "compatible";
 
-const combinedCompatibility = (request: { readonly subject: Compatibility; readonly footer: Compatibility }): Compatibility =>
+const combinedCompatibility = (request: {
+  readonly subject: Compatibility;
+  readonly footer: Compatibility;
+}): Compatibility =>
   request.subject === "breaking" || request.footer === "breaking" ? "breaking" : "compatible";
 
 export const changeEntryOf = (request: { readonly message: string }): ChangeEntry => {
@@ -60,7 +85,13 @@ export const changeEntryOf = (request: { readonly message: string }): ChangeEntr
   return conventional.outcome === "ok"
     ? {
         kind: "conventional",
-        subject: { ...conventional.value, compatibility: combinedCompatibility({ subject: conventional.value.compatibility, footer }) },
+        subject: {
+          ...conventional.value,
+          compatibility: combinedCompatibility({
+            subject: conventional.value.compatibility,
+            footer,
+          }),
+        },
       }
     : { kind: "unclassified", subject, compatibility: footer };
 };

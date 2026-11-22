@@ -4,25 +4,19 @@
       "name": "let without a type or initialiser",
       "fileName": "src/total.ts",
       "source": "let total;\nexport { total };\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "var without a type or initialiser",
       "fileName": "src/count.ts",
       "source": "var count;\nexport { count };\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "one report for two untyped bindings",
       "fileName": "src/pair.ts",
       "source": "let first, second;\nexport { first, second };\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

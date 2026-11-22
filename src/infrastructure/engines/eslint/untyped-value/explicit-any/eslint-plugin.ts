@@ -1,6 +1,10 @@
-import type { Rule } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultNativeRuleSources, type NativeRuleSources, typescriptEslintRules } from "../../runner/pieces/native-rules.ts";
+import {
+  defaultNativeRuleSources,
+  type NativeRuleSources,
+  typescriptEslintRules,
+} from "../../runner/pieces/native-rules.ts";
 import { siteRule } from "../../runner/pieces/rule-sites.ts";
+import type { Rule } from "../../runner/toolchain/eslint-instance.ts";
 
 type DeclaredBinding = {
   readonly init?: unknown;
@@ -15,35 +19,51 @@ const TYPESCRIPT_FILE = /\.[cm]?tsx?$/u;
 
 const LOOP_HEADS: ReadonlySet<string> = new Set(["ForInStatement", "ForOfStatement"]);
 
-const bindingDisposition = (request: { readonly binding: DeclaredBinding }): ImplicitAnyDisposition =>
-  (request.binding.init ?? null) === null && !("typeAnnotation" in request.binding.id && request.binding.id.typeAnnotation)
+const bindingDisposition = (request: {
+  readonly binding: DeclaredBinding;
+}): ImplicitAnyDisposition =>
+  (request.binding.init ?? null) === null &&
+  !("typeAnnotation" in request.binding.id && request.binding.id.typeAnnotation)
     ? "implicit-any"
     : "typed-or-initialised";
 
 const governedFile = (request: { readonly filename: string }): "governed" | "not-governed" =>
-  TYPESCRIPT_FILE.test(request.filename) && !DECLARATION_FILE.test(request.filename) ? "governed" : "not-governed";
+  TYPESCRIPT_FILE.test(request.filename) && !DECLARATION_FILE.test(request.filename)
+    ? "governed"
+    : "not-governed";
 
 const loopHeadDisposition = (request: { readonly node: Rule.Node }): "loop-head" | "statement" =>
-  request.node.parent !== null && LOOP_HEADS.has(request.node.parent.type) ? "loop-head" : "statement";
+  request.node.parent !== null && LOOP_HEADS.has(request.node.parent.type)
+    ? "loop-head"
+    : "statement";
 
 const implicitAnyLet = siteRule({
   meta: {
     type: "problem",
-    docs: { description: "Disallow let and var declarations with neither a type nor an initialiser (CD-1)" },
+    docs: {
+      description:
+        "Disallow let and var declarations with neither a type nor an initialiser (CD-1)",
+    },
     schema: [],
     messages: {
-      implicitAny: "CD-1: give this variable a type annotation or an initialiser so it is not implicitly any.",
+      implicitAny:
+        "CD-1: give this variable a type annotation or an initialiser so it is not implicitly any.",
     },
   },
   observe: (context) => ({
     variableDeclarations: (node) => {
-      if (node.kind === "const" || governedFile({ filename: context.filename }) === "not-governed") {
+      if (
+        node.kind === "const" ||
+        governedFile({ filename: context.filename }) === "not-governed"
+      ) {
         return;
       }
       if (loopHeadDisposition({ node }) === "loop-head") {
         return;
       }
-      const implicit = node.declarations.find((binding) => bindingDisposition({ binding }) === "implicit-any");
+      const implicit = node.declarations.find(
+        (binding) => bindingDisposition({ binding }) === "implicit-any",
+      );
       if (implicit === undefined || implicit.id.type !== "Identifier") {
         return;
       }

@@ -25,11 +25,17 @@ export type CausalProblem = {
   readonly message: string;
 };
 
-const causeNamed = (request: { readonly cause: Stems }): string => wordsOf({ stems: request.cause }).join(", ");
+const causeNamed = (request: { readonly cause: Stems }): string =>
+  wordsOf({ stems: request.cause }).join(", ");
 
 const symptomProblems = (request: { readonly symptom: Stems }): readonly CausalProblem[] =>
   request.symptom.size === 0
-    ? [{ path: ["whys", 0, "why"], message: "names no symptom: ask why the exception's own subject happens, naming it" }]
+    ? [
+        {
+          path: ["whys", 0, "why"],
+          message: "names no symptom: ask why the exception's own subject happens, naming it",
+        },
+      ]
     : [];
 
 const restatementProblems = (request: {
@@ -53,7 +59,8 @@ const linkProblems = (request: {
 }): readonly CausalProblem[] =>
   request.introduced.slice(0, -1).flatMap((cause, position) =>
     cause.size > 0 &&
-    stemsShared({ left: cause, right: stemsOf({ text: request.whys[position + 1]?.why ?? "" }) }).size === 0
+    stemsShared({ left: cause, right: stemsOf({ text: request.whys[position + 1]?.why ?? "" }) })
+      .size === 0
       ? [
           {
             path: ["whys", position + 1, "why"],
@@ -88,17 +95,21 @@ const readbackProblems = (request: {
   return [
     ...(THEREFORE.test(request.readback)
       ? []
-      : ["`whyChain.readback` must read from the root back to the symptom with \"therefore\""]),
+      : ['`whyChain.readback` must read from the root back to the symptom with "therefore"']),
     ...(root.size > 0 && stemsShared({ left: root, right: readback }).size === 0
       ? [`\`whyChain.readback\` must name the root it starts from (${causeNamed({ cause: root })})`]
       : []),
     ...(symptomNamed < Math.min(MINIMUM_SYMPTOM_STEMS_NAMED, request.symptom.size)
-      ? [`\`whyChain.readback\` must name the symptom why 1 asks about (${causeNamed({ cause: request.symptom })})`]
+      ? [
+          `\`whyChain.readback\` must name the symptom why 1 asks about (${causeNamed({ cause: request.symptom })})`,
+        ]
       : []),
   ].map((message) => ({ path: ["readback"], message }));
 };
 
-export const causalProblemsOf = (request: { readonly chain: Pick<WhyChain, "whys" | "rootCause" | "readback"> }): readonly CausalProblem[] => {
+export const causalProblemsOf = (request: {
+  readonly chain: Pick<WhyChain, "whys" | "rootCause" | "readback">;
+}): readonly CausalProblem[] => {
   const { whys, rootCause, readback } = request.chain;
   const symptom = stemsOf({ text: whys[0].why });
   const answers = whys.map((step) => stemsOf({ text: step.because }));

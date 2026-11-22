@@ -4,41 +4,31 @@
       "name": "snake_case function",
       "fileName": "src/load.ts",
       "source": "export function load_profile(): void {}\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "PascalCase enum member",
       "fileName": "src/colour.ts",
       "source": "export enum Colour {\n  Red,\n}\n",
-      "expectedLines": [
-        2
-      ]
+      "expectedLines": [2]
     },
     {
       "name": "snake_case object property",
       "fileName": "src/settings.ts",
       "source": "export const settings = { max_size: 1 };\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "lower-case type alias",
       "fileName": "src/profile.ts",
       "source": "export type profile = string;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "snake_case let binding",
       "fileName": "src/count.ts",
       "source": "let item_count = 0;\nexport { item_count };\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

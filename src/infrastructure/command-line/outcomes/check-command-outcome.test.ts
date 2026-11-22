@@ -1,14 +1,24 @@
 import { describe, expect, it } from "vitest";
+
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { Case, Principle, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type {
+  Case,
+  Principle,
+  RecordKind,
+  Rule,
+  Symptom,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../printed-report/symptoms/symptom-notes.ts";
-import { checkCommandOutcome, guidedCheckCommandOutcome } from "./check-command-outcome.ts";
-import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { REPORT_OUTPUTS } from "../../../domain/settings/report-output.ts";
+import {
+  NO_SYMPTOM_GUIDE,
+  type SymptomGuide,
+} from "../../printed-report/symptoms/symptom-notes.ts";
+import { checkCommandOutcome, guidedCheckCommandOutcome } from "./check-command-outcome.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -36,7 +46,11 @@ const EMPTY_REPORT: CheckReport = {
 };
 
 const CLASS_IN_A: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
   file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
@@ -45,14 +59,38 @@ const CLASS_IN_A: Finding = {
 
 describe("checkCommandOutcome", () => {
   it("exits 0 and prints the report when the verdict is pass", () => {
-    expect(checkCommandOutcome({ result: { outcome: "ok", value: { report: EMPTY_REPORT, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } } })).toEqual({
+    expect(
+      checkCommandOutcome({
+        result: {
+          outcome: "ok",
+          value: {
+            report: EMPTY_REPORT,
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+          },
+        },
+      }),
+    ).toEqual({
       code: 0,
       text: "verdict: pass\n",
     });
   });
 
   it("exits 1 and prints the report when the verdict is fail", () => {
-    expect(checkCommandOutcome({ result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } } })).toEqual({
+    expect(
+      checkCommandOutcome({
+        result: {
+          outcome: "ok",
+          value: {
+            report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+          },
+        },
+      }),
+    ).toEqual({
       code: 1,
       text: "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nverdict: fail\n",
     });
@@ -63,29 +101,60 @@ describe("checkCommandOutcome", () => {
       checkCommandOutcome({
         result: {
           outcome: "ok",
-          value: { report: { ...EMPTY_REPORT, unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }] }, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND },
+          value: {
+            report: {
+              ...EMPTY_REPORT,
+              unmeasured: [{ kind: "forfeiture-unmeasured", base: { state: "not-given" } }],
+            },
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+          },
         },
       }),
     ).toEqual({
       code: 1,
-      text: "unmeasured (1)\nforfeiture-unmeasured no-base-revision: no --base-revision was given, so file carve-outs cannot be checked for decay; pass --base-revision with the branch's base, such as origin/main, or leave decay to another run with \"assessment\": { \"forfeiture\": \"elsewhere\" } in disciplines.json or --forfeiture elsewhere\nverdict: fail\n",
+      text: 'unmeasured (1)\nforfeiture-unmeasured no-base-revision: no --base-revision was given, so file carve-outs cannot be checked for decay; pass --base-revision with the branch\'s base, such as origin/main, or leave decay to another run with "assessment": { "forfeiture": "elsewhere" } in disciplines.json or --forfeiture elsewhere\nverdict: fail\n',
     });
   });
 
-  it.each(REPORT_OUTPUTS)("exits 1 for a failing report whatever the %s output prints", (output) => {
-    expect(
-      checkCommandOutcome({ result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output, projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } } })
-        .code,
-    ).toBe(1);
-  });
+  it.each(REPORT_OUTPUTS)(
+    "exits 1 for a failing report whatever the %s output prints",
+    (output) => {
+      expect(
+        checkCommandOutcome({
+          result: {
+            outcome: "ok",
+            value: {
+              report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+              output,
+              projectCommand: PROJECT_COMMAND,
+              pruneCommand: PRUNE_COMMAND,
+            },
+          },
+        }).code,
+      ).toBe(1);
+    },
+  );
 
-  it.each(REPORT_OUTPUTS)("exits 0 for a passing report whatever the %s output prints", (output) => {
-    expect(
-      checkCommandOutcome({
-        result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, excluded: [repoPathOf("generated")] }, output, projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },
-      }).code,
-    ).toBe(0);
-  });
+  it.each(REPORT_OUTPUTS)(
+    "exits 0 for a passing report whatever the %s output prints",
+    (output) => {
+      expect(
+        checkCommandOutcome({
+          result: {
+            outcome: "ok",
+            value: {
+              report: { ...EMPTY_REPORT, excluded: [repoPathOf("generated")] },
+              output,
+              projectCommand: PROJECT_COMMAND,
+              pruneCommand: PRUNE_COMMAND,
+            },
+          },
+        }).code,
+      ).toBe(0);
+    },
+  );
 
   it("exits 1 printing only the failing sections and the verdict for the failures-only output", () => {
     expect(
@@ -93,18 +162,35 @@ describe("checkCommandOutcome", () => {
         result: {
           outcome: "ok",
           value: {
-            report: { ...EMPTY_REPORT, excluded: [repoPathOf("generated")], findings: [CLASS_IN_A] },
-            output: "failures-only", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND,
+            report: {
+              ...EMPTY_REPORT,
+              excluded: [repoPathOf("generated")],
+              findings: [CLASS_IN_A],
+            },
+            output: "failures-only",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
           },
         },
       }),
-    ).toEqual({ code: 1, text: "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nverdict: fail\n" });
+    ).toEqual({
+      code: 1,
+      text: "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nverdict: fail\n",
+    });
   });
 
   it("exits 1 printing only the verdict for the verdict-only output", () => {
     expect(
       checkCommandOutcome({
-        result: { outcome: "ok", value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output: "verdict-only", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND } },
+        result: {
+          outcome: "ok",
+          value: {
+            report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+            output: "verdict-only",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+          },
+        },
       }),
     ).toEqual({ code: 1, text: "verdict: fail\n" });
   });
@@ -114,14 +200,29 @@ describe("checkCommandOutcome on a load failure", () => {
   it("exits 2 and prints the load failure line when an input could not be loaded", () => {
     expect(
       checkCommandOutcome({
-        result: { outcome: "failed", error: { kind: "file-malformed", path: "/repo/disciplines.json", detail: "Unexpected end" } },
+        result: {
+          outcome: "failed",
+          error: {
+            kind: "file-malformed",
+            path: "/repo/disciplines.json",
+            detail: "Unexpected end",
+          },
+        },
       }),
-    ).toEqual({ code: 2, text: "load failure: file-malformed /repo/disciplines.json Unexpected end\n" });
+    ).toEqual({
+      code: 2,
+      text: "load failure: file-malformed /repo/disciplines.json Unexpected end\n",
+    });
   });
 
   it("exits 2 and prints the load failure line when the arguments are invalid", () => {
     expect(
-      checkCommandOutcome({ result: { outcome: "failed", error: { kind: "arguments-invalid", detail: "--repo is required" } } }),
+      checkCommandOutcome({
+        result: {
+          outcome: "failed",
+          error: { kind: "arguments-invalid", detail: "--repo is required" },
+        },
+      }),
     ).toEqual({ code: 2, text: "load failure: arguments-invalid --repo is required\n" });
   });
 
@@ -130,16 +231,28 @@ describe("checkCommandOutcome on a load failure", () => {
       checkCommandOutcome({
         result: {
           outcome: "failed",
-          error: { kind: "runner-failed", mechanism: WALKER, failure: { kind: "runner-invalid-output", detail: "run rejected" } },
+          error: {
+            kind: "runner-failed",
+            mechanism: WALKER,
+            failure: { kind: "runner-invalid-output", detail: "run rejected" },
+          },
         },
       }),
-    ).toEqual({ code: 2, text: "load failure: runner-failed audit runner-invalid-output run rejected\n" });
+    ).toEqual({
+      code: 2,
+      text: "load failure: runner-failed audit runner-invalid-output run rejected\n",
+    });
   });
 });
 
 const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
 
-const DOER_OR_ORCHESTRATOR: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+const DOER_OR_ORCHESTRATOR: Rule = {
+  name: "doer-or-orchestrator",
+  title: "Doer or orchestrator",
+  principle: ONE_PLACE_DECIDES,
+  standing: "accepted",
+};
 
 const KEEPS_STATE: Case = {
   name: "keeps-state-or-settings-across-calls",
@@ -148,7 +261,12 @@ const KEEPS_STATE: Case = {
   owes: [{ kind: "principle", principle: ONE_PLACE_DECIDES }],
 };
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -179,7 +297,16 @@ const CLASS_GUIDE: SymptomGuide = {
     alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
     engines: [],
     symptoms: [CLASS_DECLARED],
-    clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, sight: { kind: "one-symptom", symptom: CLASS_DECLARED } }],
+    clauses: [
+      {
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-14"),
+          clause: clauseIdOf("class-syntax"),
+        },
+        sight: { kind: "one-symptom", symptom: CLASS_DECLARED },
+      },
+    ],
     checks: [],
     namedBans: [],
   },
@@ -187,14 +314,24 @@ const CLASS_GUIDE: SymptomGuide = {
 
 const UNREAD_GUIDE: SymptomGuide = {
   guide: "unreadable",
-  failure: "file-malformed node_modules/@hailstails/hone/rules/typescript/symptoms.json Unexpected end",
+  failure:
+    "file-malformed node_modules/@hailstails/hone/rules/typescript/symptoms.json Unexpected end",
 };
 
 describe("guidedCheckCommandOutcome", () => {
   it("exits 0 and prints the report when the verdict is pass", () => {
     expect(
       guidedCheckCommandOutcome({
-        result: { outcome: "ok", value: { report: EMPTY_REPORT, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: NO_SYMPTOM_GUIDE } },
+        result: {
+          outcome: "ok",
+          value: {
+            report: EMPTY_REPORT,
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: NO_SYMPTOM_GUIDE,
+          },
+        },
       }),
     ).toEqual({ code: 0, text: "verdict: pass\n" });
   });
@@ -204,7 +341,13 @@ describe("guidedCheckCommandOutcome", () => {
       guidedCheckCommandOutcome({
         result: {
           outcome: "ok",
-          value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: CLASS_GUIDE },
+          value: {
+            report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: CLASS_GUIDE,
+          },
         },
       }),
     ).toEqual({
@@ -218,7 +361,13 @@ describe("guidedCheckCommandOutcome", () => {
       guidedCheckCommandOutcome({
         result: {
           outcome: "ok",
-          value: { report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] }, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: UNREAD_GUIDE },
+          value: {
+            report: { ...EMPTY_REPORT, findings: [CLASS_IN_A] },
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: UNREAD_GUIDE,
+          },
         },
       }),
     ).toEqual({
@@ -230,7 +379,16 @@ describe("guidedCheckCommandOutcome", () => {
   it("exits 0 for a clean report when the catalogue was not read, saying so in readFirst", () => {
     expect(
       guidedCheckCommandOutcome({
-        result: { outcome: "ok", value: { report: EMPTY_REPORT, output: "full", projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, guide: UNREAD_GUIDE } },
+        result: {
+          outcome: "ok",
+          value: {
+            report: EMPTY_REPORT,
+            output: "full",
+            projectCommand: PROJECT_COMMAND,
+            pruneCommand: PRUNE_COMMAND,
+            guide: UNREAD_GUIDE,
+          },
+        },
       }),
     ).toEqual({
       code: 0,
@@ -241,8 +399,18 @@ describe("guidedCheckCommandOutcome", () => {
   it("exits 2 and prints the load failure line when an input could not be loaded", () => {
     expect(
       guidedCheckCommandOutcome({
-        result: { outcome: "failed", error: { kind: "file-malformed", path: "/repo/rules/typescript/symptoms.json", detail: "Unexpected end" } },
+        result: {
+          outcome: "failed",
+          error: {
+            kind: "file-malformed",
+            path: "/repo/rules/typescript/symptoms.json",
+            detail: "Unexpected end",
+          },
+        },
       }),
-    ).toEqual({ code: 2, text: "load failure: file-malformed /repo/rules/typescript/symptoms.json Unexpected end\n" });
+    ).toEqual({
+      code: 2,
+      text: "load failure: file-malformed /repo/rules/typescript/symptoms.json Unexpected end\n",
+    });
   });
 });

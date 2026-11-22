@@ -1,16 +1,17 @@
 import { z } from "zod";
+
+import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
+import type { Result } from "../../../domain/result.ts";
+import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
+import type { ConformanceFailure } from "../../../domain/runner/conformance-types.ts";
 import {
   type RunnerFailure,
   rejectedCall,
   runnerInvalidOutput,
 } from "../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
-import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
-import { caseVerdictSchema, runnerResultSchema } from "./runner-module/runner-result-schema.ts";
 import type { CaseVerdict } from "../../../domain/runner/runner-result-types.ts";
-import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { ConformanceFailure } from "../../../domain/runner/conformance-types.ts";
+import { caseVerdictSchema, runnerResultSchema } from "./runner-module/runner-result-schema.ts";
 
 const caseVerdictsResultSchema = runnerResultSchema({
   value: z.array(caseVerdictSchema).readonly(),
@@ -30,7 +31,8 @@ const unmatchedVerdict = (request: {
   readonly cases: readonly SourceCase[];
 }): string | undefined => {
   const missing = request.cases.find(
-    (sourceCase) => verdictsNaming({ verdicts: request.verdicts, caseName: sourceCase.name }).length !== 1,
+    (sourceCase) =>
+      verdictsNaming({ verdicts: request.verdicts, caseName: sourceCase.name }).length !== 1,
   );
   if (missing !== undefined) {
     return `case ${missing.name} has no single verdict`;
@@ -56,7 +58,9 @@ const caseConformance = (request: {
   if (expectedLines.join(" ") === flaggedLines.join(" ")) {
     return [];
   }
-  return [{ clause: request.clause.address, caseName: sourceCase.name, expectedLines, flaggedLines }];
+  return [
+    { clause: request.clause.address, caseName: sourceCase.name, expectedLines, flaggedLines },
+  ];
 };
 
 const conformanceOf = (request: {
@@ -78,7 +82,9 @@ const conformanceOf = (request: {
   }
   return {
     outcome: "ok",
-    value: request.cases.flatMap((sourceCase) => caseConformance({ sourceCase, verdicts, clause: request.clause })),
+    value: request.cases.flatMap((sourceCase) =>
+      caseConformance({ sourceCase, verdicts, clause: request.clause }),
+    ),
   };
 };
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createModuleLoaderPort, type ImportModule } from "./module-loader-port.ts";
 
 const PATH = "/install/mechanisms/audit/runner/runner.ts";
@@ -17,7 +18,9 @@ describe("createModuleLoaderPort", () => {
 
     await createModuleLoaderPort({ importModule }).load({ path: PATH });
 
-    expect(importModule).toHaveBeenCalledWith({ path: "/install/mechanisms/audit/runner/runner.ts" });
+    expect(importModule).toHaveBeenCalledWith({
+      path: "/install/mechanisms/audit/runner/runner.ts",
+    });
   });
 
   it("loads as module-unloadable with the path and message when the import rejects", async () => {

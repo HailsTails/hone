@@ -1,37 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { causalWhySchema, checkableTextSchema, fiveWhysSchema, legacyWhySchema, ownerSchema, rootCauseSchema, substantiveTextSchema, whyChainSchema } from "./why-chain.ts";
+
 import { causalProblemsOf, type WhyChain } from "../../domain/records/why-chain.ts";
+import {
+  causalWhySchema,
+  checkableTextSchema,
+  fiveWhysSchema,
+  legacyWhySchema,
+  ownerSchema,
+  rootCauseSchema,
+  substantiveTextSchema,
+  whyChainSchema,
+} from "./why-chain.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootEvidence: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootEvidence:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
@@ -46,7 +63,7 @@ const ROOT_EVIDENCE_UNLOCATED =
 const ROOT_CHECK_RENAMED = "`whyChain.rootCheck` is `whyChain.rootEvidence` in version 2";
 
 const READBACK_REQUIRED =
-  "`whyChain.readback` is required beside `rootEvidence` in a causal chain: read from the root back to the symptom with \"therefore\"";
+  '`whyChain.readback` is required beside `rootEvidence` in a causal chain: read from the root back to the symptom with "therefore"';
 
 const withoutRootEvidence: Omit<WhyChain, "rootEvidence"> = {
   whys: CAUSAL_WHY_CHAIN.whys,
@@ -79,7 +96,12 @@ describe("whyChainSchema names the version 2 field rootEvidence in what it refus
   });
 
   it("asks for something checkable when rootEvidence cites nothing", () => {
-    expect(whyChainSchema.safeParse({ ...CAUSAL_WHY_CHAIN, rootEvidence: "the monorepo move is still incomplete today" })).toMatchObject({
+    expect(
+      whyChainSchema.safeParse({
+        ...CAUSAL_WHY_CHAIN,
+        rootEvidence: "the monorepo move is still incomplete today",
+      }),
+    ).toMatchObject({
       success: false,
       error: { issues: [{ path: ["rootEvidence"], message: ROOT_EVIDENCE_UNLOCATED }] },
     });
@@ -97,12 +119,19 @@ describe("whyChainSchema does not read the version 1 name rootCheck", () => {
   it("refuses a chain that states its evidence as rootCheck, naming rootCheck as unrecognised and asking for rootEvidence", () => {
     expect(whyChainSchema.safeParse(versionOneNamed)).toMatchObject({
       success: false,
-      error: { issues: [{ path: ["rootEvidence"], message: ROOT_EVIDENCE_REQUIRED }, { path: [], message: ROOT_CHECK_RENAMED }] },
+      error: {
+        issues: [
+          { path: ["rootEvidence"], message: ROOT_EVIDENCE_REQUIRED },
+          { path: [], message: ROOT_CHECK_RENAMED },
+        ],
+      },
     });
   });
 
   it("refuses a chain that holds rootCheck beside rootEvidence, naming rootCheck as unrecognised", () => {
-    expect(whyChainSchema.safeParse({ ...CAUSAL_WHY_CHAIN, rootCheck: CAUSAL_WHY_CHAIN.rootEvidence })).toMatchObject({
+    expect(
+      whyChainSchema.safeParse({ ...CAUSAL_WHY_CHAIN, rootCheck: CAUSAL_WHY_CHAIN.rootEvidence }),
+    ).toMatchObject({
       success: false,
       error: { issues: [{ path: [], message: ROOT_CHECK_RENAMED }] },
     });
@@ -123,7 +152,13 @@ describe("whyChainSchema does not read the version 1 name rootCheck", () => {
 describe("causalProblemsOf reads only the parts of a chain the causal contract judges", () => {
   it("raises no problem for whys, a root cause and a readback alone", () => {
     expect(
-      causalProblemsOf({ chain: { whys: CAUSAL_WHY_CHAIN.whys, rootCause: CAUSAL_WHY_CHAIN.rootCause, readback: CAUSAL_WHY_CHAIN.readback } }),
+      causalProblemsOf({
+        chain: {
+          whys: CAUSAL_WHY_CHAIN.whys,
+          rootCause: CAUSAL_WHY_CHAIN.rootCause,
+          readback: CAUSAL_WHY_CHAIN.readback,
+        },
+      }),
     ).toEqual([]);
   });
 });
@@ -132,22 +167,33 @@ describe("the building blocks the version 1 reading shares", () => {
   const WHY = CAUSAL_WHY_CHAIN.whys[0];
 
   it("substantiveTextSchema refuses a placeholder with the refusal it is given", () => {
-    expect(substantiveTextSchema({ refusal: "say more" }).safeParse("tbd")).toMatchObject({ success: false, error: { issues: [{ message: "say more" }] } });
+    expect(substantiveTextSchema({ refusal: "say more" }).safeParse("tbd")).toMatchObject({
+      success: false,
+      error: { issues: [{ message: "say more" }] },
+    });
   });
 
   it("checkableTextSchema refuses text that cites nothing checkable with the unlocated refusal", () => {
-    expect(checkableTextSchema({ missing: "say more", unlocated: "cite it" }).safeParse("a long enough sentence")).toMatchObject({
+    expect(
+      checkableTextSchema({ missing: "say more", unlocated: "cite it" }).safeParse(
+        "a long enough sentence",
+      ),
+    ).toMatchObject({
       success: false,
       error: { issues: [{ message: "cite it" }] },
     });
   });
 
   it("legacyWhySchema accepts evidence that cites nothing checkable", () => {
-    expect(legacyWhySchema.safeParse({ ...WHY, evidence: "a long enough sentence" }).success).toBe(true);
+    expect(legacyWhySchema.safeParse({ ...WHY, evidence: "a long enough sentence" }).success).toBe(
+      true,
+    );
   });
 
   it("causalWhySchema refuses evidence that cites nothing checkable", () => {
-    expect(causalWhySchema.safeParse({ ...WHY, evidence: "a long enough sentence" }).success).toBe(false);
+    expect(causalWhySchema.safeParse({ ...WHY, evidence: "a long enough sentence" }).success).toBe(
+      false,
+    );
   });
 
   it("fiveWhysSchema refuses anything but five whys", () => {

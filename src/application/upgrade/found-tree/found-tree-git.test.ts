@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import { foundTreeGitOf } from "./found-tree-git.ts";
 import { FOUND_TREE_REVISION } from "./found-tree-reach.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -42,7 +43,10 @@ const treeLacking = (): Tree => ({
 });
 
 const treeUnreadable = (): Tree => ({
-  read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/src/a.ts", detail: "EACCES" } }),
+  read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+    outcome: "failed",
+    error: { kind: "unreadable", path: "/repo/src/a.ts", detail: "EACCES" },
+  }),
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
 });
 
@@ -56,7 +60,10 @@ const QUERY = { repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION, file: FI
 describe("foundTreeGitOf, git with the tree the upgrade found as its base", () => {
   it("reports nothing changed since the base, which is the tree itself, and never asks git", () => {
     const { found, git } = foundTreeOver({ fileText: treeLacking() });
-    expect({ changed: found.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }), asked: vi.mocked(git.changedSince).mock.calls }).toEqual({
+    expect({
+      changed: found.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
+      asked: vi.mocked(git.changedSince).mock.calls,
+    }).toEqual({
       changed: { outcome: "ok", value: [] },
       asked: [],
     });
@@ -64,7 +71,10 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
 
   it("reports nothing renamed since the base, which is the tree itself, and never asks git", () => {
     const { found, git } = foundTreeOver({ fileText: treeLacking() });
-    expect({ renamed: found.renamedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }), asked: vi.mocked(git.renamedSince).mock.calls }).toEqual({
+    expect({
+      renamed: found.renamedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
+      asked: vi.mocked(git.renamedSince).mock.calls,
+    }).toEqual({
       renamed: { outcome: "ok", value: new Map() },
       asked: [],
     });
@@ -74,14 +84,20 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
     const fileText = treeHolding({ text: "export const a = 1;\n" });
     const { found } = foundTreeOver({ fileText });
     expect({ text: found.textInBase(QUERY), read: vi.mocked(fileText.read).mock.calls }).toEqual({
-      text: { outcome: "ok", value: { presence: "present-in-base", text: "export const a = 1;\n" } },
+      text: {
+        outcome: "ok",
+        value: { presence: "present-in-base", text: "export const a = 1;\n" },
+      },
       read: [[{ path: "/repo/src/a.ts" }]],
     });
   });
 
   it("reports a file the working tree lacks as absent from the base", () => {
     const { found } = foundTreeOver({ fileText: treeLacking() });
-    expect(found.textInBase(QUERY)).toEqual({ outcome: "ok", value: { presence: "absent-from-base" } });
+    expect(found.textInBase(QUERY)).toEqual({
+      outcome: "ok",
+      value: { presence: "absent-from-base" },
+    });
   });
 
   it("fails, naming the tree, when a file the working tree holds cannot be read, rather than calling it absent", () => {
@@ -95,7 +111,10 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
   it("reports a file's membership in the base from the working tree", () => {
     const present = foundTreeOver({ fileText: treeHolding({ text: "x" }) });
     const absent = foundTreeOver({ fileText: treeLacking() });
-    expect({ present: present.found.contentInBase(QUERY), absent: absent.found.contentInBase(QUERY) }).toEqual({
+    expect({
+      present: present.found.contentInBase(QUERY),
+      absent: absent.found.contentInBase(QUERY),
+    }).toEqual({
       present: { outcome: "ok", value: "present-in-base" },
       absent: { outcome: "ok", value: "absent-from-base" },
     });

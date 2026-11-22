@@ -15,9 +15,16 @@ export type VersionTwoProjectInput = {
   readonly repoRoot: AbsolutePath;
 };
 
-export const versionTwoProjectedOf = async (request: VersionTwoProjectInput): Promise<Result<readonly ProjectionWrite[], RunLoadFailure>> => {
+export const versionTwoProjectedOf = async (
+  request: VersionTwoProjectInput,
+): Promise<Result<readonly ProjectionWrite[], RunLoadFailure>> => {
   const projected = await versionTwoProjectionOver({ stages: request.stages });
   return projected.outcome === "failed"
     ? projected
-    : projectedFilesWrittenOf({ fileText: request.fileText, path: request.path, repoRoot: request.repoRoot, files: projected.value });
+    : projectedFilesWrittenOf({
+        fileText: request.fileText,
+        path: request.path,
+        repoRoot: request.repoRoot,
+        files: projected.value,
+      });
 };

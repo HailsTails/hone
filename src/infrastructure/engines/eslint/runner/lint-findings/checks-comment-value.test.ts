@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+
 import { commentValueOf } from "./checks-comment-value.ts";
 
 describe("commentValueOf", () => {
   it("gives a line comment's text after its slashes", () => {
-    expect(commentValueOf({ text: "// eslint-disable-next-line hone/a" })).toBe(" eslint-disable-next-line hone/a");
+    expect(commentValueOf({ text: "// eslint-disable-next-line hone/a" })).toBe(
+      " eslint-disable-next-line hone/a",
+    );
   });
 
   it("gives a block comment's text between its delimiters", () => {

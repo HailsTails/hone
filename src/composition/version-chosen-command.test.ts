@@ -1,16 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+
+import type { CommandRequest } from "../application/ports/command-request.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
-import type { FilePresence } from "../domain/repository/file-presence.ts";
 import type { GitPort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
-import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
-import type { CommandRequest } from "../application/ports/command-request.ts";
-import type { CommandHandler } from "./composed-command.ts";
+import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+import type { FilePresence } from "../domain/repository/file-presence.ts";
 import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
-import { notReadyCommandOf, settingsRequiringCommandOf, type VersionChoice, versionChosenCommandOf } from "./version-chosen-command.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { CommandHandler } from "./composed-command.ts";
+import {
+  notReadyCommandOf,
+  settingsRequiringCommandOf,
+  type VersionChoice,
+  versionChosenCommandOf,
+} from "./version-chosen-command.ts";
 
 type Presences = { readonly versionOne: FilePresence; readonly versionTwo: FilePresence };
 
@@ -29,11 +35,17 @@ const processWith = (request: { readonly arguments: readonly string[] }): Proces
   exitWith: vi.fn<ProcessPort["exitWith"]>(),
 });
 
-const commandOver = (request: { readonly process: ProcessPort; readonly present: Presences }): CommandRequest & { readonly exceptionRepositoryOf: ExceptionRepositoryOf } => ({
+const commandOver = (request: {
+  readonly process: ProcessPort;
+  readonly present: Presences;
+}): CommandRequest & { readonly exceptionRepositoryOf: ExceptionRepositoryOf } => ({
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: {
-    exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce(request.present.versionOne).mockReturnValueOnce(request.present.versionTwo),
+    exists: vi
+      .fn<FileTextPort["exists"]>()
+      .mockReturnValueOnce(request.present.versionOne)
+      .mockReturnValueOnce(request.present.versionTwo),
     read: vi.fn<FileTextPort["read"]>(),
     write: vi.fn<FileTextPort["write"]>(),
   },
@@ -61,9 +73,13 @@ const chosenRan = (request: {
   readonly chooser: (choice: VersionChoice) => CommandHandler;
   readonly chosen: Chosen;
   readonly command: ReturnType<typeof commandOver>;
-}): Promise<void> => request.chooser({ ...request.chosen, ports: request.command })(request.command);
+}): Promise<void> =>
+  request.chooser({ ...request.chosen, ports: request.command })(request.command);
 
-const notReadyRan = (request: { readonly subcommand: Subcommand; readonly command: ReturnType<typeof commandOver> }): Promise<void> =>
+const notReadyRan = (request: {
+  readonly subcommand: Subcommand;
+  readonly command: ReturnType<typeof commandOver>;
+}): Promise<void> =>
   notReadyCommandOf({ ports: request.command, command: request.subcommand })(request.command);
 
 describe("versionChosenCommandOf", () => {
@@ -71,18 +87,30 @@ describe("versionChosenCommandOf", () => {
     { repo: "versionOne", present: VERSION_ONE_ONLY, ran: { versionOne: 1, versionTwo: 0 } },
     { repo: "versionTwo", present: VERSION_TWO_ONLY, ran: { versionOne: 0, versionTwo: 1 } },
     { repo: "neither", present: NEITHER, ran: { versionOne: 0, versionTwo: 1 } },
-  ])("runs the handler for the settings file the repository holds, given $repo", async ({ present, ran }) => {
-    const chosen = handlers();
-    const command = commandOver({ process: processWith({ arguments: ["--repo", "/repo"] }), present });
+  ])(
+    "runs the handler for the settings file the repository holds, given $repo",
+    async ({ present, ran }) => {
+      const chosen = handlers();
+      const command = commandOver({
+        process: processWith({ arguments: ["--repo", "/repo"] }),
+        present,
+      });
 
-    await chosenRan({ chooser: versionChosenCommandOf, chosen, command: command });
+      await chosenRan({ chooser: versionChosenCommandOf, chosen, command: command });
 
-    expect({ versionOne: vi.mocked(chosen.versionOne).mock.calls.length, versionTwo: vi.mocked(chosen.versionTwo).mock.calls.length }).toEqual(ran);
-  });
+      expect({
+        versionOne: vi.mocked(chosen.versionOne).mock.calls.length,
+        versionTwo: vi.mocked(chosen.versionTwo).mock.calls.length,
+      }).toEqual(ran);
+    },
+  );
 
   it("hands the version 1 handler the very request it was given, unchanged", async () => {
     const chosen = handlers();
-    const command = commandOver({ process: processWith({ arguments: ["--repo", "/repo"] }), present: VERSION_ONE_ONLY });
+    const command = commandOver({
+      process: processWith({ arguments: ["--repo", "/repo"] }),
+      present: VERSION_ONE_ONLY,
+    });
 
     await chosenRan({ chooser: versionChosenCommandOf, chosen, command: command });
 
@@ -92,7 +120,11 @@ describe("versionChosenCommandOf", () => {
   it("leaves a request with no repository to the version 1 handler, which refuses it as it does today", async () => {
     const chosen = handlers();
 
-    await chosenRan({ chooser: versionChosenCommandOf, chosen, command: commandOver({ process: processWith({ arguments: [] }), present: NEITHER }) });
+    await chosenRan({
+      chooser: versionChosenCommandOf,
+      chosen,
+      command: commandOver({ process: processWith({ arguments: [] }), present: NEITHER }),
+    });
 
     expect(vi.mocked(chosen.versionOne).mock.calls.length).toBe(1);
   });
@@ -101,15 +133,28 @@ describe("versionChosenCommandOf", () => {
     const chosen = handlers();
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
-    await chosenRan({ chooser: versionChosenCommandOf, chosen, command: commandOver({ process: processPort, present: BOTH }) });
+    await chosenRan({
+      chooser: versionChosenCommandOf,
+      chosen,
+      command: commandOver({ process: processPort, present: BOTH }),
+    });
 
     expect({
-      ran: [vi.mocked(chosen.versionOne).mock.calls.length, vi.mocked(chosen.versionTwo).mock.calls.length],
+      ran: [
+        vi.mocked(chosen.versionOne).mock.calls.length,
+        vi.mocked(chosen.versionTwo).mock.calls.length,
+      ],
       writes: vi.mocked(processPort.writeOut).mock.calls,
       exits: vi.mocked(processPort.exitWith).mock.calls,
     }).toEqual({
       ran: [0, 0],
-      writes: [[{ text: "load failure: settings-in-both-versions /repo: it holds both disciplines.json and hone.config.json; keep the one this repository runs on and remove the other\n" }]],
+      writes: [
+        [
+          {
+            text: "load failure: settings-in-both-versions /repo: it holds both disciplines.json and hone.config.json; keep the one this repository runs on and remove the other\n",
+          },
+        ],
+      ],
       exits: [[{ code: 2 }]],
     });
   });
@@ -120,15 +165,28 @@ describe("settingsRequiringCommandOf", () => {
     const chosen = handlers();
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
-    await chosenRan({ chooser: settingsRequiringCommandOf, chosen, command: commandOver({ process: processPort, present: NEITHER }) });
+    await chosenRan({
+      chooser: settingsRequiringCommandOf,
+      chosen,
+      command: commandOver({ process: processPort, present: NEITHER }),
+    });
 
     expect({
-      ran: [vi.mocked(chosen.versionOne).mock.calls.length, vi.mocked(chosen.versionTwo).mock.calls.length],
+      ran: [
+        vi.mocked(chosen.versionOne).mock.calls.length,
+        vi.mocked(chosen.versionTwo).mock.calls.length,
+      ],
       writes: vi.mocked(processPort.writeOut).mock.calls,
       exits: vi.mocked(processPort.exitWith).mock.calls,
     }).toEqual({
       ran: [0, 0],
-      writes: [[{ text: "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n" }]],
+      writes: [
+        [
+          {
+            text: "load failure: config-absent /repo holds no hone.config.json; give the folder that holds it, usually the repository root\n",
+          },
+        ],
+      ],
       exits: [[{ code: 2 }]],
     });
   });
@@ -136,23 +194,45 @@ describe("settingsRequiringCommandOf", () => {
   it.each([
     { repo: "versionOne", present: VERSION_ONE_ONLY, ran: [1, 0] },
     { repo: "versionTwo", present: VERSION_TWO_ONLY, ran: [0, 1] },
-  ])("runs the handler for the settings file the repository holds, given $repo", async ({ present, ran }) => {
-    const chosen = handlers();
+  ])(
+    "runs the handler for the settings file the repository holds, given $repo",
+    async ({ present, ran }) => {
+      const chosen = handlers();
 
-    await chosenRan({ chooser: settingsRequiringCommandOf, chosen, command: commandOver({ process: processWith({ arguments: ["--repo", "/repo"] }), present }) });
+      await chosenRan({
+        chooser: settingsRequiringCommandOf,
+        chosen,
+        command: commandOver({ process: processWith({ arguments: ["--repo", "/repo"] }), present }),
+      });
 
-    expect([vi.mocked(chosen.versionOne).mock.calls.length, vi.mocked(chosen.versionTwo).mock.calls.length]).toEqual(ran);
-  });
+      expect([
+        vi.mocked(chosen.versionOne).mock.calls.length,
+        vi.mocked(chosen.versionTwo).mock.calls.length,
+      ]).toEqual(ran);
+    },
+  );
 });
 
 describe("notReadyCommandOf", () => {
   it("prints one not-ready-yet line naming the command, and exits 2", async () => {
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
-    await notReadyRan({ subcommand: "prune-debt", command: commandOver({ process: processPort, present: NEITHER }) });
+    await notReadyRan({
+      subcommand: "prune-debt",
+      command: commandOver({ process: processPort, present: NEITHER }),
+    });
 
-    expect({ writes: vi.mocked(processPort.writeOut).mock.calls, exits: vi.mocked(processPort.exitWith).mock.calls }).toEqual({
-      writes: [[{ text: "load failure: not-ready-yet prune-debt: this release runs prune-debt on version 1 files only, and this repository holds hone.config.json\n" }]],
+    expect({
+      writes: vi.mocked(processPort.writeOut).mock.calls,
+      exits: vi.mocked(processPort.exitWith).mock.calls,
+    }).toEqual({
+      writes: [
+        [
+          {
+            text: "load failure: not-ready-yet prune-debt: this release runs prune-debt on version 1 files only, and this repository holds hone.config.json\n",
+          },
+        ],
+      ],
       exits: [[{ code: 2 }]],
     });
   });

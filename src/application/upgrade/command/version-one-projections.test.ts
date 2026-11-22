@@ -1,21 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
-import type { CheckRequest } from "../../run/check/run-check.ts";
+
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { ProjectionWrite } from "../../../domain/runner/runner-result-types.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { EnginePort } from "../../ports/engine/engine-port.ts";
-import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
-import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
-import { type VersionOneProject, versionOneProjectionsOfRepository } from "./version-one-projections.ts";
-import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import type { CheckRequest } from "../../run/check/run-check.ts";
+import {
+  type VersionOneProject,
+  versionOneProjectionsOfRepository,
+} from "./version-one-projections.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -31,8 +35,14 @@ const path: PathPort = {
 
 const UNUSED_ENGINE: EnginePort = {
   load: vi.fn<EnginePort["load"]>(),
-  run: { checks: vi.fn<EnginePort["run"]["checks"]>(), withRecords: vi.fn<EnginePort["run"]["withRecords"]>() },
-  project: { checks: vi.fn<EnginePort["project"]["checks"]>(), withRecords: vi.fn<EnginePort["project"]["withRecords"]>() },
+  run: {
+    checks: vi.fn<EnginePort["run"]["checks"]>(),
+    withRecords: vi.fn<EnginePort["run"]["withRecords"]>(),
+  },
+  project: {
+    checks: vi.fn<EnginePort["project"]["checks"]>(),
+    withRecords: vi.fn<EnginePort["project"]["withRecords"]>(),
+  },
   conform: vi.fn<EnginePort["conform"]>(),
 };
 
@@ -44,7 +54,8 @@ const ORPHAN = repoPathOf("old/disciplines.eslint.mjs");
 
 const CONFIG = repoPathOf("eslint.config.mjs");
 
-const CONFIG_TEXT = 'import projection from "./disciplines.eslint.mjs";\nexport default [...projection];\n';
+const CONFIG_TEXT =
+  'import projection from "./disciplines.eslint.mjs";\nexport default [...projection];\n';
 
 const CHECK: CheckRequest = {
   repoRoot: REPO_ROOT,
@@ -64,7 +75,10 @@ const CHECK: CheckRequest = {
     renamedSince: vi.fn<GitPort["renamedSince"]>(),
   },
   selectionRepository: { read: vi.fn<SelectionRepository["read"]>() },
-  exceptionRepository: { read: vi.fn<ExceptionRepository["read"]>(), readAt: vi.fn<ExceptionRepository["readAt"]>() },
+  exceptionRepository: {
+    read: vi.fn<ExceptionRepository["read"]>(),
+    readAt: vi.fn<ExceptionRepository["readAt"]>(),
+  },
   exceptionEntryParser: {
     parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>(),
     importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
@@ -81,7 +95,10 @@ const fileTextHolding = (request: { readonly configText: string }): FileTextPort
   write: vi.fn<FileTextPort["write"]>(),
 });
 
-const requestOver = (request: { readonly project: VersionOneProject; readonly fileText: FileTextPort }) => ({
+const requestOver = (request: {
+  readonly project: VersionOneProject;
+  readonly fileText: FileTextPort;
+}) => ({
   project: request.project,
   check: CHECK,
   selectionRepositoryOf: SELECTION_REPOSITORY_OF,
@@ -95,17 +112,28 @@ const requestOver = (request: { readonly project: VersionOneProject; readonly fi
 const projecting = (request: { readonly writes: readonly ProjectionWrite[] }) =>
   vi.fn<VersionOneProject>().mockResolvedValue({ outcome: "ok", value: request.writes });
 
-const FOUND = [{ projection: "disciplines.eslint.mjs", teamConfigs: [{ file: "eslint.config.mjs", text: CONFIG_TEXT }] }];
+const FOUND = [
+  {
+    projection: "disciplines.eslint.mjs",
+    teamConfigs: [{ file: "eslint.config.mjs", text: CONFIG_TEXT }],
+  },
+];
 
 describe("versionOneProjectionsOfRepository", () => {
   it("runs version 1's project over the check with the file text port, and pairs each unchanged projection with the config that imports it", async () => {
     const project = projecting({ writes: [{ path: PROJECTION, effect: "unchanged" }] });
     const fileText = fileTextHolding({ configText: CONFIG_TEXT });
-    await expect(versionOneProjectionsOfRepository(requestOver({ project, fileText }))()).resolves.toEqual({
+    await expect(
+      versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
+    ).resolves.toEqual({
       removed: [],
       outcome: { outcome: "ok", value: FOUND },
     });
-    expect(project).toHaveBeenCalledExactlyOnceWith({ ...CHECK, fileText, selectionRepositoryOf: SELECTION_REPOSITORY_OF });
+    expect(project).toHaveBeenCalledExactlyOnceWith({
+      ...CHECK,
+      fileText,
+      selectionRepositoryOf: SELECTION_REPOSITORY_OF,
+    });
   });
 
   it("names the slice version 1's project removed, and lists no projection for it", async () => {
@@ -116,7 +144,9 @@ describe("versionOneProjectionsOfRepository", () => {
       ],
     });
     const fileText = fileTextHolding({ configText: CONFIG_TEXT });
-    await expect(versionOneProjectionsOfRepository(requestOver({ project, fileText }))()).resolves.toEqual({
+    await expect(
+      versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
+    ).resolves.toEqual({
       removed: ["old/disciplines.eslint.mjs"],
       outcome: { outcome: "ok", value: FOUND },
     });
@@ -125,19 +155,37 @@ describe("versionOneProjectionsOfRepository", () => {
   it("refuses naming the projection when no tracked file imports it", async () => {
     const project = projecting({ writes: [{ path: PROJECTION, effect: "unchanged" }] });
     const fileText = fileTextHolding({ configText: "export default [];\n" });
-    await expect(versionOneProjectionsOfRepository(requestOver({ project, fileText }))()).resolves.toEqual({
+    await expect(
+      versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
+    ).resolves.toEqual({
       removed: [],
-      outcome: { outcome: "failed", error: { kind: "team-config-refused", refusal: { kind: "no-file-imports-projection", projection: "disciplines.eslint.mjs" } } },
+      outcome: {
+        outcome: "failed",
+        error: {
+          kind: "team-config-refused",
+          refusal: { kind: "no-file-imports-projection", projection: "disciplines.eslint.mjs" },
+        },
+      },
     });
   });
 
   it("refuses naming the load failure's detail when version 1's project fails", async () => {
-    const failure: LoadFailure = { kind: "git-failed", detail: "git ls-files: not a git repository" };
-    const project = vi.fn<VersionOneProject>().mockResolvedValue({ outcome: "failed", error: failure });
+    const failure: LoadFailure = {
+      kind: "git-failed",
+      detail: "git ls-files: not a git repository",
+    };
+    const project = vi
+      .fn<VersionOneProject>()
+      .mockResolvedValue({ outcome: "failed", error: failure });
     const fileText = fileTextHolding({ configText: CONFIG_TEXT });
-    await expect(versionOneProjectionsOfRepository(requestOver({ project, fileText }))()).resolves.toEqual({
+    await expect(
+      versionOneProjectionsOfRepository(requestOver({ project, fileText }))(),
+    ).resolves.toEqual({
       removed: [],
-      outcome: { outcome: "failed", error: { kind: "project-failed", detail: "git-failed git ls-files: not a git repository" } },
+      outcome: {
+        outcome: "failed",
+        error: { kind: "project-failed", detail: "git-failed git ls-files: not a git repository" },
+      },
     });
   });
 });

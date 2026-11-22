@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createProcessPort, type ProcessSurface } from "./process-port.ts";
 
 const processSurfaceOver = (surface: Partial<ProcessSurface>): ProcessSurface => ({
@@ -35,13 +36,18 @@ describe("createProcessPort", () => {
       text: "usage: check\n",
     });
 
-    expect({ out: write.mock.calls, error: writeError.mock.calls }).toEqual({ out: [], error: [[{ text: "usage: check\n" }]] });
+    expect({ out: write.mock.calls, error: writeError.mock.calls }).toEqual({
+      out: [],
+      error: [[{ text: "usage: check\n" }]],
+    });
   });
 
   it("sets the exit code given to exitWith", () => {
     const setExitCode = vi.fn<ProcessSurface["setExitCode"]>();
 
-    createProcessPort({ processSurface: processSurfaceOver({ setExitCode }) }).exitWith({ code: 2 });
+    createProcessPort({ processSurface: processSurfaceOver({ setExitCode }) }).exitWith({
+      code: 2,
+    });
 
     expect(setExitCode).toHaveBeenCalledWith({ code: 2 });
   });

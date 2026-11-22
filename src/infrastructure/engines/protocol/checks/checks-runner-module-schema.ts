@@ -1,13 +1,27 @@
 import { z } from "zod";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import type { DeepReadonly, DeepReadonlyKeepingTuples, Equal } from "../runner-module/type-equality.ts";
-import type { ChecksRunReport, LoadedChecksRunner } from "./checks-runner-types.ts";
+
 import type { ParsedChecksRunner } from "../../../../application/ports/engine/engine-run.ts";
-import type { ChecksSliceProblem, MisnamedRuleId, NotReadyYetFailure, ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
+import type {
+  ChecksSliceProblem,
+  MisnamedRuleId,
+  NotReadyYetFailure,
+  ProjectedFile,
+} from "../../../../domain/runner/checks-run-report.ts";
+import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { nativeExceptionSchema } from "../embedded/embedded-run-report-schema.ts";
-import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
-import { hitSchema, measuredPairSchema, nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import { runnerFailureSchema } from "../runner-module/runner-failure-schema.ts";
+import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
+import {
+  hitSchema,
+  measuredPairSchema,
+  nativeExceptionKindSchema,
+} from "../runner-module/runner-result-schema.ts";
+import type {
+  DeepReadonly,
+  DeepReadonlyKeepingTuples,
+  Equal,
+} from "../runner-module/type-equality.ts";
+import type { ChecksRunReport, LoadedChecksRunner } from "./checks-runner-types.ts";
 
 export const checksRunnerModuleSchema = z.object({
   projectedKinds: z.array(nativeExceptionKindSchema),
@@ -25,7 +39,13 @@ const misnamedDirectiveShape = {
 
 export const misnamedRuleIdSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("names-no-check"), ...misnamedDirectiveShape }).readonly(),
-  z.strictObject({ kind: z.literal("version-1-id"), ...misnamedDirectiveShape, replacedBy: z.tuple([z.string().min(1)], z.string().min(1)).readonly() }).readonly(),
+  z
+    .strictObject({
+      kind: z.literal("version-1-id"),
+      ...misnamedDirectiveShape,
+      replacedBy: z.tuple([z.string().min(1)], z.string().min(1)).readonly(),
+    })
+    .readonly(),
 ]);
 
 export const checksSliceProblemSchema = z
@@ -60,26 +80,57 @@ const notReadyYetFailureSchema = z
 
 export const checksRunResultSchema = z.union([
   z.object({ outcome: z.literal("ok"), value: checksRunReportSchema }).readonly(),
-  z.object({ outcome: z.literal("failed"), error: z.union([runnerFailureSchema, notReadyYetFailureSchema]) }).readonly(),
+  z
+    .object({
+      outcome: z.literal("failed"),
+      error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
+    })
+    .readonly(),
 ]);
 
 export const projectedFileSchema = z.object({ file: repoPathSchema, text: z.string() }).readonly();
 
 export const checksProjectResultSchema = z.union([
   z.object({ outcome: z.literal("ok"), value: z.array(projectedFileSchema).readonly() }).readonly(),
-  z.object({ outcome: z.literal("failed"), error: z.union([runnerFailureSchema, notReadyYetFailureSchema]) }).readonly(),
+  z
+    .object({
+      outcome: z.literal("failed"),
+      error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
+    })
+    .readonly(),
 ]);
 
-export const isProjectedFileSchemaEqual: Equal<DeepReadonly<z.output<typeof projectedFileSchema>>, ProjectedFile> = true;
+export const isProjectedFileSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof projectedFileSchema>>,
+  ProjectedFile
+> = true;
 
-export const isParsedChecksRunnerSchemaEqual: Equal<DeepReadonly<z.output<typeof checksRunnerModuleSchema>>, ParsedChecksRunner> = true;
+export const isParsedChecksRunnerSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof checksRunnerModuleSchema>>,
+  ParsedChecksRunner
+> = true;
 
-export const isChecksModuleKeySetEqual: Equal<keyof LoadedChecksRunner, keyof z.output<typeof checksRunnerModuleSchema>> = true;
+export const isChecksModuleKeySetEqual: Equal<
+  keyof LoadedChecksRunner,
+  keyof z.output<typeof checksRunnerModuleSchema>
+> = true;
 
-export const isChecksRunReportSchemaEqual: Equal<DeepReadonlyKeepingTuples<z.output<typeof checksRunReportSchema>>, ChecksRunReport> = true;
+export const isChecksRunReportSchemaEqual: Equal<
+  DeepReadonlyKeepingTuples<z.output<typeof checksRunReportSchema>>,
+  ChecksRunReport
+> = true;
 
-export const isChecksSliceProblemSchemaEqual: Equal<DeepReadonly<z.output<typeof checksSliceProblemSchema>>, ChecksSliceProblem> = true;
+export const isChecksSliceProblemSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof checksSliceProblemSchema>>,
+  ChecksSliceProblem
+> = true;
 
-export const isMisnamedRuleIdSchemaEqual: Equal<DeepReadonlyKeepingTuples<z.output<typeof misnamedRuleIdSchema>>, MisnamedRuleId> = true;
+export const isMisnamedRuleIdSchemaEqual: Equal<
+  DeepReadonlyKeepingTuples<z.output<typeof misnamedRuleIdSchema>>,
+  MisnamedRuleId
+> = true;
 
-export const isNotReadyYetFailureSchemaEqual: Equal<DeepReadonly<z.output<typeof notReadyYetFailureSchema>>, NotReadyYetFailure> = true;
+export const isNotReadyYetFailureSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof notReadyYetFailureSchema>>,
+  NotReadyYetFailure
+> = true;

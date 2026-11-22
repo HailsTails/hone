@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+
 import { anchorSchema } from "./anchor-schema.ts";
 
 describe("anchorSchema", () => {
   it("accepts a one-based line and a zero-based column", () => {
-    expect(anchorSchema.safeParse({ line: 1, column: 0 })).toEqual({ success: true, data: { line: 1, column: 0 } });
+    expect(anchorSchema.safeParse({ line: 1, column: 0 })).toEqual({
+      success: true,
+      data: { line: 1, column: 0 },
+    });
   });
 
   it("refuses line zero", () => {

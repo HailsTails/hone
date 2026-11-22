@@ -6,10 +6,7 @@
   "settings": {
     "module": "test-body-logic.ts"
   },
-  "editions": [
-    "1",
-    "2"
-  ],
+  "editions": ["1", "2"],
   "implementation": {
     "symptom": "branch-in-a-test",
     "check": "test-body"

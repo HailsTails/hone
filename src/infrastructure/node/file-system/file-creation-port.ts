@@ -1,10 +1,13 @@
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { FileCreationPort } from "../../../application/ports/file-system/file-creation-port.ts";
+import { failureDetailOf } from "../../../domain/failure-detail.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { createFileExclusively } from "./file-system-port.ts";
 
 export type FileCreationSurface = {
-  readonly createExclusively: (request: { readonly path: AbsolutePath; readonly text: string }) => void;
+  readonly createExclusively: (request: {
+    readonly path: AbsolutePath;
+    readonly text: string;
+  }) => void;
 };
 
 const NAME_TAKEN_CODE = "EEXIST";
@@ -12,9 +15,15 @@ const NAME_TAKEN_CODE = "EEXIST";
 type Refusal = "name-taken" | "other";
 
 const refusalOf = (request: { readonly thrown: unknown }): Refusal =>
-  request.thrown instanceof Error && "code" in request.thrown && request.thrown.code === NAME_TAKEN_CODE ? "name-taken" : "other";
+  request.thrown instanceof Error &&
+  "code" in request.thrown &&
+  request.thrown.code === NAME_TAKEN_CODE
+    ? "name-taken"
+    : "other";
 
-export const createFileCreationPort = (options: { readonly surface: FileCreationSurface }): FileCreationPort => ({
+export const createFileCreationPort = (options: {
+  readonly surface: FileCreationSurface;
+}): FileCreationPort => ({
   createNew: (request) => {
     try {
       options.surface.createExclusively({ path: request.path, text: request.text });

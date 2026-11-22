@@ -1,12 +1,12 @@
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { ProjectionWrite } from "../../../../../domain/runner/runner-result-types.ts";
 import type { CoreInstall } from "./core-install.ts";
 import type { ProjectionStates } from "./projection-states.ts";
 
@@ -32,7 +32,10 @@ const relativeImportOf = (request: {
   readonly importingDirectory: AbsolutePath;
   readonly modulePath: string;
 }): PluginImport => {
-  const location = request.path.relative({ from: request.importingDirectory, to: request.modulePath });
+  const location = request.path.relative({
+    from: request.importingDirectory,
+    to: request.modulePath,
+  });
   if (location.relation === "different-root") {
     return { placement: "piece-on-another-root" };
   }
@@ -48,7 +51,9 @@ const pathInsidePackage = (request: {
   readonly modulePath: string;
 }): string | undefined => {
   const location = request.path.relative({ from: request.packageRoot, to: request.modulePath });
-  return location.relation === "within-root" && !location.path.startsWith(PARENT_PREFIX) ? location.path : undefined;
+  return location.relation === "within-root" && !location.path.startsWith(PARENT_PREFIX)
+    ? location.path
+    : undefined;
 };
 
 const packageImportOf = (request: {
@@ -56,8 +61,14 @@ const packageImportOf = (request: {
   readonly install: Extract<CoreInstall, { readonly form: "package" }>;
   readonly modulePath: string;
 }): PluginImport | undefined => {
-  const inside = pathInsidePackage({ path: request.path, packageRoot: request.install.root, modulePath: request.modulePath });
-  return inside === undefined ? undefined : { placement: "importable", specifier: `${request.install.name}/${inside}` };
+  const inside = pathInsidePackage({
+    path: request.path,
+    packageRoot: request.install.root,
+    modulePath: request.modulePath,
+  });
+  return inside === undefined
+    ? undefined
+    : { placement: "importable", specifier: `${request.install.name}/${inside}` };
 };
 
 export const pluginImportOf = (request: {
@@ -69,8 +80,17 @@ export const pluginImportOf = (request: {
 }): PluginImport => {
   const modulePath = request.path.join({ segments: [request.pieceRoot, request.pluginModule] });
   const packaged =
-    request.install.form === "package" ? packageImportOf({ path: request.path, install: request.install, modulePath }) : undefined;
-  return packaged ?? relativeImportOf({ path: request.path, importingDirectory: request.importingDirectory, modulePath });
+    request.install.form === "package"
+      ? packageImportOf({ path: request.path, install: request.install, modulePath })
+      : undefined;
+  return (
+    packaged ??
+    relativeImportOf({
+      path: request.path,
+      importingDirectory: request.importingDirectory,
+      modulePath,
+    })
+  );
 };
 
 export const projectionState = (request: {
@@ -90,7 +110,9 @@ type ProjectionFile = {
   readonly file: RepoPath;
 };
 
-export const currentProjection = (request: ProjectionFile): Result<CurrentProjection, RunnerFailure> => {
+export const currentProjection = (
+  request: ProjectionFile,
+): Result<CurrentProjection, RunnerFailure> => {
   const projectionFile = request.path.join({ segments: [request.repoRoot, request.file] });
   if (request.fileText.exists({ path: projectionFile }) === "absent") {
     return { outcome: "ok", value: { presence: "absent" } };
@@ -102,10 +124,15 @@ export const currentProjection = (request: ProjectionFile): Result<CurrentProjec
       error: { kind: "file-unreadable", file: request.file, detail: text.error.detail },
     };
   }
-  return { outcome: "ok", value: { presence: "present", text: text.value.replaceAll("\r\n", "\n") } };
+  return {
+    outcome: "ok",
+    value: { presence: "present", text: text.value.replaceAll("\r\n", "\n") },
+  };
 };
 
-const writtenProjection = (request: ProjectionFile & { readonly text: string }): Result<ProjectionWrite, RunnerFailure> => {
+const writtenProjection = (
+  request: ProjectionFile & { readonly text: string },
+): Result<ProjectionWrite, RunnerFailure> => {
   const written = request.fileText.write({
     path: request.path.join({ segments: [request.repoRoot, request.file] }),
     text: request.text,
@@ -116,7 +143,9 @@ const writtenProjection = (request: ProjectionFile & { readonly text: string }):
   return { outcome: "ok", value: { path: request.file, effect: "written" } };
 };
 
-export const writeProjection = (request: ProjectionFile & { readonly text: string }): Result<ProjectionWrite, RunnerFailure> => {
+export const writeProjection = (
+  request: ProjectionFile & { readonly text: string },
+): Result<ProjectionWrite, RunnerFailure> => {
   const current = currentProjection(request);
   if (current.outcome === "failed") {
     return current;
@@ -127,21 +156,34 @@ export const writeProjection = (request: ProjectionFile & { readonly text: strin
   return writtenProjection(request);
 };
 
-const fileState = (request: ProjectionFile): Result<readonly [RepoPath, CurrentProjection], RunnerFailure> => {
+const fileState = (
+  request: ProjectionFile,
+): Result<readonly [RepoPath, CurrentProjection], RunnerFailure> => {
   const current = currentProjection(request);
-  return current.outcome === "failed" ? current : { outcome: "ok", value: [request.file, current.value] };
+  return current.outcome === "failed"
+    ? current
+    : { outcome: "ok", value: [request.file, current.value] };
 };
 
 export const currentProjectionsOf = (
   request: Omit<ProjectionFile, "file"> & { readonly files: readonly RepoPath[] },
 ): Result<ProjectionStates, RunnerFailure> => {
-  const states = gatheredOutcomes({ outcomes: request.files.map((file) => listedOutcome({ outcome: fileState({ ...request, file }) })) });
+  const states = gatheredOutcomes({
+    outcomes: request.files.map((file) =>
+      listedOutcome({ outcome: fileState({ ...request, file }) }),
+    ),
+  });
   return states.outcome === "failed" ? states : { outcome: "ok", value: new Map(states.value) };
 };
 
 export type ProjectionFiles = {
-  readonly currentOf: (request: { readonly files: readonly RepoPath[] }) => Result<ProjectionStates, RunnerFailure>;
-  readonly writeAt: (request: { readonly file: RepoPath; readonly text: string }) => Result<ProjectionWrite, RunnerFailure>;
+  readonly currentOf: (request: {
+    readonly files: readonly RepoPath[];
+  }) => Result<ProjectionStates, RunnerFailure>;
+  readonly writeAt: (request: {
+    readonly file: RepoPath;
+    readonly text: string;
+  }) => Result<ProjectionWrite, RunnerFailure>;
   readonly removeAt: (request: { readonly file: RepoPath }) => Result<void, RunnerFailure>;
 };
 
@@ -154,7 +196,9 @@ export const projectionFilesOver = (request: {
   currentOf: ({ files }) => currentProjectionsOf({ ...request, files }),
   writeAt: ({ file, text }) => writeProjection({ ...request, file, text }),
   removeAt: ({ file }) => {
-    const removed = request.fileRemoval.remove({ path: request.path.join({ segments: [request.repoRoot, file] }) });
+    const removed = request.fileRemoval.remove({
+      path: request.path.join({ segments: [request.repoRoot, file] }),
+    });
     return removed.outcome === "failed"
       ? { outcome: "failed", error: { kind: "tool-failed", detail: removed.error.detail } }
       : { outcome: "ok", value: undefined };

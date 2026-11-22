@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { counted, onOneLine, quoted } from "./printed-text.ts";
 
 describe("onOneLine", () => {

@@ -1,5 +1,5 @@
-import type { AST, Rule } from "../../runner/toolchain/eslint-instance.ts";
 import { siteRule } from "../../runner/pieces/rule-sites.ts";
+import type { AST, Rule } from "../../runner/toolchain/eslint-instance.ts";
 
 type CalleeNode = {
   readonly type: string;

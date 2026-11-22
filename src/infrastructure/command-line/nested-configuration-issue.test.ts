@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { NESTED_CONFIGURATION_ISSUE } from "./nested-configuration-issue.ts";
 
 describe("NESTED_CONFIGURATION_ISSUE", () => {

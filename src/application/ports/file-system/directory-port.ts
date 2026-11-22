@@ -22,5 +22,7 @@ export type DirectoryPort = {
   readonly list: (request: {
     readonly path: AbsolutePath;
   }) => Result<readonly DirectoryEntry[], DirectoryFailure>;
-  readonly create: (request: { readonly path: AbsolutePath }) => Result<void, DirectoryCreationFailure>;
+  readonly create: (request: {
+    readonly path: AbsolutePath;
+  }) => Result<void, DirectoryCreationFailure>;
 };

@@ -1,12 +1,21 @@
+import {
+  type CheckSite,
+  checkSiteText,
+  findingSiteOf,
+  nativeSitesOf,
+} from "../../../domain/finding/check-site.ts";
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
-import type { InlineReach, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
-import type { AnsweredFinding } from "../../../domain/records/answering/answering.ts";
 import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
-import { type Check, indicatedNamesOf, type SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type CheckSite, checkSiteText, findingSiteOf, nativeSitesOf } from "../../../domain/finding/check-site.ts";
+import {
+  type Check,
+  indicatedNamesOf,
+  type SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { AnsweredFinding } from "../../../domain/records/answering/answering.ts";
+import type { CheckEdition } from "../../../domain/report/run-report.ts";
+import type { InlineReach, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { onOneLine } from "../printed-text.ts";
 import { referencesText } from "../records/record-lines.ts";
-import type { CheckEdition } from "../../../domain/report/run-report.ts";
 import { scriptOptionAdviceOf } from "../records/script-option-advice.ts";
 
 type CatalogueRequest = { readonly catalogue: SymptomCatalogue };
@@ -15,17 +24,23 @@ const locatedText = (request: { readonly site: CheckSite; readonly finding: Find
   `${checkSiteText(request)} ${request.finding.file}:${request.finding.anchor.line}:${request.finding.anchor.column} ${onOneLine({ text: request.finding.snippet })}`;
 
 const indicationNote = (request: { readonly site: CheckSite }): string =>
-  request.site.sited === "check" ? ` may indicate: ${indicatedNamesOf({ symptom: request.site.check.symptom }).join(", ")}` : "";
+  request.site.sited === "check"
+    ? ` may indicate: ${indicatedNamesOf({ symptom: request.site.check.symptom }).join(", ")}`
+    : "";
 
 const fixNote = (request: { readonly finding: Finding }): string =>
-  request.finding.remedy === undefined ? "" : ` fix: ${onOneLine({ text: request.finding.remedy.fix })} (${request.finding.remedy.page}#${request.finding.remedy.section})`;
+  request.finding.remedy === undefined
+    ? ""
+    : ` fix: ${onOneLine({ text: request.finding.remedy.fix })} (${request.finding.remedy.page}#${request.finding.remedy.section})`;
 
 export const findingLine = (request: CatalogueRequest & { readonly finding: Finding }): string => {
   const site = findingSiteOf(request);
   return `${locatedText({ site, finding: request.finding })}${indicationNote({ site })}${fixNote(request)}`;
 };
 
-export const answeredLine = (request: CatalogueRequest & { readonly answered: AnsweredFinding }): string => {
+export const answeredLine = (
+  request: CatalogueRequest & { readonly answered: AnsweredFinding },
+): string => {
   const { finding, by } = request.answered;
   return `${locatedText({ site: findingSiteOf({ catalogue: request.catalogue, finding }), finding })}${referencesText({ lead: "answered by", records: by })}`;
 };
@@ -35,11 +50,13 @@ export const editionLine = (request: { readonly reading: CheckEdition }): string
 
 export const checkLine = (request: { readonly check: Check }): string => checkAddressOf(request);
 
-export const notRunLine = (request: { readonly check: Check }): string => `${checkAddressOf(request)} adopted, engine not run: enforced by review`;
+export const notRunLine = (request: { readonly check: Check }): string =>
+  `${checkAddressOf(request)} adopted, engine not run: enforced by review`;
 
 const INLINE_REACH_NOTE: Readonly<Record<InlineReach, string>> = {
   "one-clause": "",
-  "every-selected-clause": " names no rule and escapes every selected check: naming the rule is the cheap fix",
+  "every-selected-clause":
+    " names no rule and escapes every selected check: naming the rule is the cheap fix",
 };
 
 const scriptOptionNote = (request: { readonly cause: ScriptOptionCause }): string => {
@@ -47,7 +64,9 @@ const scriptOptionNote = (request: { readonly cause: ScriptOptionCause }): strin
   return request.cause.kind === "weakens-run" ? ` ${problem}: ${fix}` : `: ${problem}; ${fix}`;
 };
 
-const inlineDetail = (request: { readonly exception: { readonly file: string; readonly line: number; readonly text: string } }): string =>
+const inlineDetail = (request: {
+  readonly exception: { readonly file: string; readonly line: number; readonly text: string };
+}): string =>
   `${request.exception.file}:${request.exception.line} ${onOneLine({ text: request.exception.text })}`;
 
 const unrecordedDetail = (request: { readonly exception: AttributedNativeException }): string => {
@@ -67,5 +86,9 @@ const unrecordedDetail = (request: { readonly exception: AttributedNativeExcepti
   }
 };
 
-export const unrecordedLines = (request: CatalogueRequest & { readonly exception: AttributedNativeException }): readonly string[] =>
-  nativeSitesOf(request).map((site) => `${checkSiteText({ site })} ${request.exception.kind} ${unrecordedDetail(request)}`);
+export const unrecordedLines = (
+  request: CatalogueRequest & { readonly exception: AttributedNativeException },
+): readonly string[] =>
+  nativeSitesOf(request).map(
+    (site) => `${checkSiteText({ site })} ${request.exception.kind} ${unrecordedDetail(request)}`,
+  );

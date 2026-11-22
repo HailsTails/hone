@@ -1,28 +1,47 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../runner/toolchain/typescript-toolchain.ts";
-import type { PreparedWalkerCheck, SourceObservers, WalkerFile, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
-import { check } from "./parameter-mutation.ts";
-import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { textsDisk } from "../../runner/pieces/walker-disk.ts";
+import type {
+  PreparedWalkerCheck,
+  SourceObservers,
+  WalkerFile,
+  WalkerRepository,
+} from "../../runner/pieces/walker-piece.ts";
+import type { SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../runner/toolchain/typescript-toolchain.ts";
+import { check } from "./parameter-mutation.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/mutation.ts");
-const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-mutation") };
+const ADDRESS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-44"),
+  clause: clauseIdOf("parameter-mutation"),
+};
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
@@ -41,17 +60,35 @@ type ObservationFixture = {
 };
 
 const sourceObservations = (request: { readonly source: string }): ObservationFixture => {
-  const repository: WalkerRepository = { files: [FILE], exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"), disk: EMPTY_DISK };
+  const repository: WalkerRepository = {
+    files: [FILE],
+    exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"),
+    disk: EMPTY_DISK,
+  };
   const prepared = check.prepare({ clauses: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
-  const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({ outcome: "ok", value: request.source });
+  const readText = vi
+    .fn<WalkerFile["readText"]>()
+    .mockReturnValue({ outcome: "ok", value: request.source });
   const file = prepared.value.prepareFile({ file: FILE, readText });
   expect(file).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
   assert(file.outcome === "ok" && file.value.kind === "syntax");
   expect(readText).not.toHaveBeenCalled();
-  const tree = SYNTAX_API.createSourceFile(FILE, request.source, SYNTAX_API.ScriptTarget.Latest, true);
-  const anchorAt = vi.fn<(request: { readonly position: number }) => Anchor>().mockReturnValue({ line: 3, column: 2 });
-  return { tree, observers: file.value.begin({ sourceFile: tree, anchorAt }), anchorAt, finish: prepared.value.finish };
+  const tree = SYNTAX_API.createSourceFile(
+    FILE,
+    request.source,
+    SYNTAX_API.ScriptTarget.Latest,
+    true,
+  );
+  const anchorAt = vi
+    .fn<(request: { readonly position: number }) => Anchor>()
+    .mockReturnValue({ line: 3, column: 2 });
+  return {
+    tree,
+    observers: file.value.begin({ sourceFile: tree, anchorAt }),
+    anchorAt,
+    finish: prepared.value.finish,
+  };
 };
 
 describe("CD44 existing parameter mutation capability", () => {
@@ -63,11 +100,18 @@ describe("CD44 existing parameter mutation capability", () => {
     { name: "nested root-only directory", fileName: "src/vendor/view.ts" },
   ])("admits $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
-    const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
+    const prepared = check.prepare({
+      clauses: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
     assert(prepared.outcome === "ok");
     const readText = vi.fn<WalkerFile["readText"]>();
 
-    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
+    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({
+      outcome: "ok",
+      value: { kind: "syntax" },
+    });
     expect(readText).not.toHaveBeenCalled();
   });
 
@@ -77,23 +121,34 @@ describe("CD44 existing parameter mutation capability", () => {
     { name: "root-only excluded directory", fileName: "vendor/view.ts" },
   ])("excludes $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
-    const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
+    const prepared = check.prepare({
+      clauses: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
     assert(prepared.outcome === "ok");
     const readText = vi.fn<WalkerFile["readText"]>();
 
-    expect(prepared.value.prepareFile({ file, readText })).toEqual({ outcome: "ok", value: { kind: "skipped" } });
+    expect(prepared.value.prepareFile({ file, readText })).toEqual({
+      outcome: "ok",
+      value: { kind: "skipped" },
+    });
     expect(readText).not.toHaveBeenCalled();
   });
 
   it("activates later destructured names before an earlier parameter initializer", () => {
-    const observed = sourceObservations({ source: "function f(first = (later.x = 1), { later }) { later.y = 2; }" });
+    const observed = sourceObservations({
+      source: "function f(first = (later.x = 1), { later }) { later.y = 2; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const initializer = declaration.parameters[0]?.initializer;
     assert(initializer !== undefined && SYNTAX_API.isParenthesizedExpression(initializer));
     const bodyStatement = declaration.body?.statements[0];
     assert(bodyStatement !== undefined && SYNTAX_API.isExpressionStatement(bodyStatement));
-    observed.anchorAt.mockReturnValueOnce({ line: 1, column: 20 }).mockReturnValueOnce({ line: 1, column: 47 });
+    observed.anchorAt
+      .mockReturnValueOnce({ line: 1, column: 20 })
+      .mockReturnValueOnce({ line: 1, column: 47 });
 
     observed.observers.enter?.({ node: declaration });
     observed.observers.enter?.({ node: initializer.expression });
@@ -102,7 +157,11 @@ describe("CD44 existing parameter mutation capability", () => {
     observed.observers.leave?.({ node: declaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 1, column: 20 }, snippet: "later.x = 1), { later }) { later.y = 2; }" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 1, column: 20 },
+        snippet: "later.x = 1), { later }) { later.y = 2; }",
+      },
       { clause: ADDRESS, anchor: { line: 1, column: 47 }, snippet: "later.y = 2; }" },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 20 }], [{ position: 47 }]]);
@@ -110,13 +169,18 @@ describe("CD44 existing parameter mutation capability", () => {
   });
 
   it("retains outer names inside an arrow and removes its inner names on leave", () => {
-    const observed = sourceObservations({ source: "function f(outer) { const inner = (local) => { outer.x = 1; local.y = 2; }; outer.z = 3; local.z = 4; }" });
+    const observed = sourceObservations({
+      source:
+        "function f(outer) { const inner = (local) => { outer.x = 1; local.y = 2; }; outer.z = 3; local.z = 4; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const variable = declaration.body?.statements[0];
     assert(variable !== undefined && SYNTAX_API.isVariableStatement(variable));
     const inner = variable.declarationList.declarations[0]?.initializer;
-    assert(inner !== undefined && SYNTAX_API.isArrowFunction(inner) && SYNTAX_API.isBlock(inner.body));
+    assert(
+      inner !== undefined && SYNTAX_API.isArrowFunction(inner) && SYNTAX_API.isBlock(inner.body),
+    );
     const outerMutation = inner.body.statements[0];
     const innerMutation = inner.body.statements[1];
     const afterInner = declaration.body?.statements[1];
@@ -137,15 +201,26 @@ describe("CD44 existing parameter mutation capability", () => {
     observed.observers.leave?.({ node: declaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "outer.x = 1; local.y = 2; }; outer.z = 3; local.z = 4; }" },
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "local.y = 2; }; outer.z = 3; local.z = 4; }" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "outer.x = 1; local.y = 2; }; outer.z = 3; local.z = 4; }",
+      },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "local.y = 2; }; outer.z = 3; local.z = 4; }",
+      },
       { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "outer.z = 3; local.z = 4; }" },
     ]);
     expect(observed.anchorAt).toHaveBeenCalledTimes(3);
   });
 
   it("uses nested renamed, array and rest bindings while retaining the unbound property-key gap", () => {
-    const observed = sourceObservations({ source: "function f({ key: { input } }, [, item, ...rest]) { input.x = 1; item.push(1); rest.sort(); key.x = 2; }" });
+    const observed = sourceObservations({
+      source:
+        "function f({ key: { input } }, [, item, ...rest]) { input.x = 1; item.push(1); rest.sort(); key.x = 2; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const field = declaration.body?.statements[0];
@@ -165,14 +240,24 @@ describe("CD44 existing parameter mutation capability", () => {
     observed.observers.leave?.({ node: declaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "input.x = 1; item.push(1); rest.sort(); key.x = 2; }" },
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "item.push(1); rest.sort(); key.x = 2; }" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "input.x = 1; item.push(1); rest.sort(); key.x = 2; }",
+      },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "item.push(1); rest.sort(); key.x = 2; }",
+      },
       { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "rest.sort(); key.x = 2; }" },
     ]);
   });
 
   it("retains property and element access roots for equals and delete", () => {
-    const observed = sourceObservations({ source: "function f(input) { input.deep[0].x = 1; delete input.deep[0].x; }" });
+    const observed = sourceObservations({
+      source: "function f(input) { input.deep[0].x = 1; delete input.deep[0].x; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const assignment = declaration.body?.statements[0];
@@ -186,13 +271,20 @@ describe("CD44 existing parameter mutation capability", () => {
     observed.observers.leave?.({ node: declaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "input.deep[0].x = 1; delete input.deep[0].x; }" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: "input.deep[0].x = 1; delete input.deep[0].x; }",
+      },
       { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "delete input.deep[0].x; }" },
     ]);
   });
 
   it("keeps direct, compound, computed-method and alias mutations outside the existing predicate", () => {
-    const observed = sourceObservations({ source: "function f(input) { input = other; input.x += 1; input.x++; delete input; input['push'](1); input.set('k', 1); const copy = input; copy.x = 2; (input).x = 3; }" });
+    const observed = sourceObservations({
+      source:
+        "function f(input) { input = other; input.x += 1; input.x++; delete input; input['push'](1); input.set('k', 1); const copy = input; copy.x = 2; (input).x = 3; }",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const direct = declaration.body?.statements[0];
@@ -228,7 +320,10 @@ describe("CD44 existing parameter mutation capability", () => {
   });
 
   it("preserves the eighty-character source snippet at a mutation node", () => {
-    const observed = sourceObservations({ source: "function f(input) { input.a = 1; }\n01234567890123456789012345678901234567890123456789012345678901234567890123456789" });
+    const observed = sourceObservations({
+      source:
+        "function f(input) { input.a = 1; }\n01234567890123456789012345678901234567890123456789012345678901234567890123456789",
+    });
     const declaration = observed.tree.statements[0];
     assert(declaration !== undefined && SYNTAX_API.isFunctionDeclaration(declaration));
     const statement = declaration.body?.statements[0];
@@ -239,7 +334,12 @@ describe("CD44 existing parameter mutation capability", () => {
     observed.observers.leave?.({ node: declaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "input.a = 1; } 01234567890123456789012345678901234567890123456789012345678901234…" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet:
+          "input.a = 1; } 01234567890123456789012345678901234567890123456789012345678901234…",
+      },
     ]);
   });
 });

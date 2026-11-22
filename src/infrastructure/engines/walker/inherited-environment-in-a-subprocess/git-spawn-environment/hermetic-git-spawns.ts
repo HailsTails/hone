@@ -1,15 +1,26 @@
-import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
-const TEST_FILE_SUFFIXES: readonly string[] = [".test.ts", ".test.tsx", ".test.mjs", ".test.js", ".spec.ts", ".spec.mjs"];
+const TEST_FILE_SUFFIXES: readonly string[] = [
+  ".test.ts",
+  ".test.tsx",
+  ".test.mjs",
+  ".test.js",
+  ".spec.ts",
+  ".spec.mjs",
+];
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
   if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return TEST_FILE_SUFFIXES.some((suffix) => request.file.endsWith(suffix)) ? "eligible" : "skipped";
+  return TEST_FILE_SUFFIXES.some((suffix) => request.file.endsWith(suffix))
+    ? "eligible"
+    : "skipped";
 };
 
-const GIT_SPAWN_PATTERN = /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exec|execa|execaSync)\s*\(\s*(?:"git"|'git'|`git`)/;
-const HERMETIC_ENVIRONMENT_PATTERN = /\benv\s*:\s*[^,\n]*\b(?:hermeticGitEnvironment|withoutInheritedGitBindings|environment)\b/;
+const GIT_SPAWN_PATTERN =
+  /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exec|execa|execaSync)\s*\(\s*(?:"git"|'git'|`git`)/;
+const HERMETIC_ENVIRONMENT_PATTERN =
+  /\benv\s*:\s*[^,\n]*\b(?:hermeticGitEnvironment|withoutInheritedGitBindings|environment)\b/;
 const AMBIENT_ENVIRONMENT_PATTERN = /\benv\s*:\s*[^,\n]*\bprocess\.env\b/;
 
 export const check: WalkerPiece = {
@@ -29,7 +40,8 @@ export const check: WalkerPiece = {
           if (
             !span.some((nearby) => AMBIENT_ENVIRONMENT_PATTERN.test(nearby)) &&
             span.some((nearby) => HERMETIC_ENVIRONMENT_PATTERN.test(nearby))
-          ) return [];
+          )
+            return [];
           return clauses.map((clause) => ({
             clause: clause.address,
             anchor: { line: index + 1, column: 0 },

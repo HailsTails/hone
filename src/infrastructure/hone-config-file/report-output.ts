@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
   REPORT_OUTPUTS,
   type ReportOutput,
@@ -11,5 +12,11 @@ export const reportOutputSchema = z.enum(REPORT_OUTPUTS);
 
 export const versionTwoReportOutputSchema = z.enum(VERSION_TWO_REPORT_OUTPUTS);
 
-export const isReportOutputSchemaEqual: Equal<z.output<typeof reportOutputSchema>, ReportOutput> = true;
-export const isVersionTwoReportOutputSchemaEqual: Equal<z.output<typeof versionTwoReportOutputSchema>, VersionTwoReportOutput> = true;
+export const isReportOutputSchemaEqual: Equal<
+  z.output<typeof reportOutputSchema>,
+  ReportOutput
+> = true;
+export const isVersionTwoReportOutputSchemaEqual: Equal<
+  z.output<typeof versionTwoReportOutputSchema>,
+  VersionTwoReportOutput
+> = true;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { repoPathSchema } from "./repo-path.ts";
+
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { repoPathSchema } from "./repo-path.ts";
 
 const ACCEPTED = [
   "a.ts",

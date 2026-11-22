@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GitPort } from "../../ports/git-port.ts";
-import type { GitFailure } from "../../../domain/repository/git-failure.ts";
-import type { Result } from "../../../domain/result.ts";
-import { baseRevisionAvailabilityOf, computeTouchedSet } from "./touched-set.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { Result } from "../../../domain/result.ts";
+import type { GitPort } from "../../ports/git-port.ts";
+import { baseRevisionAvailabilityOf, computeTouchedSet } from "./touched-set.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 const A = repoPathOf("a.ts");
@@ -94,7 +95,6 @@ describe("computeTouchedSet", () => {
       base: { state: "git-failed", revision: "abc123", gitMessage: "fatal: bad revision" },
     });
   });
-
 });
 
 describe("baseRevisionAvailabilityOf", () => {
@@ -105,7 +105,8 @@ describe("baseRevisionAvailabilityOf", () => {
         failure: {
           kind: "git-failed",
           command: "git ls-tree",
-          detail: "\n  fatal: path 'pkg/discipline-exceptions.json' does not exist in 'HEAD'  \nhint: more\n",
+          detail:
+            "\n  fatal: path 'pkg/discipline-exceptions.json' does not exist in 'HEAD'  \nhint: more\n",
         },
       }),
     ).toEqual({
@@ -117,7 +118,10 @@ describe("baseRevisionAvailabilityOf", () => {
 
   it("keeps an empty message when git wrote none", () => {
     expect(
-      baseRevisionAvailabilityOf({ revision: "HEAD", failure: { kind: "git-failed", command: "git ls-tree", detail: "" } }),
+      baseRevisionAvailabilityOf({
+        revision: "HEAD",
+        failure: { kind: "git-failed", command: "git ls-tree", detail: "" },
+      }),
     ).toEqual({ state: "git-failed", revision: "HEAD", gitMessage: "" });
   });
 });

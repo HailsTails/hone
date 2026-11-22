@@ -4,9 +4,7 @@
       "name": "class with only static members",
       "fileName": "src/paths.ts",
       "source": "export class Paths {\n  static root = \"/\";\n}\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     }
   ],
   "allow": [

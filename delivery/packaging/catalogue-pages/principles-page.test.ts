@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { principlesPageOf } from "./principles-page.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+import { principlesPageOf } from "./principles-page.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
@@ -13,9 +14,19 @@ const FILE: CatalogueFile = {
     { name: "no-hidden-effects", title: "No hidden effects" },
   ],
   rules: [
-    { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: "one-place-decides", standing: "accepted" },
+    {
+      name: "doer-or-orchestrator",
+      title: "Doer or orchestrator",
+      principle: "one-place-decides",
+      standing: "accepted",
+    },
     { name: "one-job", title: "One job", principle: "one-place-decides", standing: "proposed" },
-    { name: "effects-named", title: "Effects named", principle: "no-hidden-effects", standing: "proposed" },
+    {
+      name: "effects-named",
+      title: "Effects named",
+      principle: "no-hidden-effects",
+      standing: "proposed",
+    },
   ],
   cases: [],
   recipes: [],
@@ -33,7 +44,12 @@ describe("principlesPageOf", () => {
       principlesPageOf({
         file: FILE,
         path: PATH,
-        prose: new Map([["principles/one-place-decides.md", "- **Must hold:** One decision, one unit. See [the rule](../rules/doer-or-orchestrator.md)."]]),
+        prose: new Map([
+          [
+            "principles/one-place-decides.md",
+            "- **Must hold:** One decision, one unit. See [the rule](../rules/doer-or-orchestrator.md).",
+          ],
+        ]),
       }),
     ).toEqual({
       path: "rules/principles.md",

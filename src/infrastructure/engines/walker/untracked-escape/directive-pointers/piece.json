@@ -8,9 +8,7 @@
   },
   "checkSettings": {
     "trackerPatterns": {
-      "default": [
-        "^\\(\\S+\\)$"
-      ]
+      "default": ["^\\(\\S+\\)$"]
     }
   }
 }

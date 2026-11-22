@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { type ReportOutput, reportOutputInEffect, reportOutputOfVersionOne, type VersionTwoReportOutput } from "./report-output.ts";
+
+import {
+  type ReportOutput,
+  reportOutputInEffect,
+  reportOutputOfVersionOne,
+  type VersionTwoReportOutput,
+} from "./report-output.ts";
 
 describe("reportOutputOfVersionOne", () => {
   it.each<{ readonly output: ReportOutput; readonly carried: VersionTwoReportOutput }>([
@@ -27,6 +33,8 @@ describe("reportOutputInEffect", () => {
   });
 
   it("is the requested output when it matches the configured one", () => {
-    expect(reportOutputInEffect({ requested: "actionable", configured: "actionable" })).toBe("actionable");
+    expect(reportOutputInEffect({ requested: "actionable", configured: "actionable" })).toBe(
+      "actionable",
+    );
   });
 });

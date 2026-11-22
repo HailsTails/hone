@@ -1,18 +1,31 @@
 import { describe, expect, it } from "vitest";
+
 import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { answeredFilesOf } from "./answered-files.ts";
-import { repoPathOf } from "../../repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
-const CLAIMED_TYPE: Symptom = { name: "claimed-type", title: "Claimed type", seen: "a value is given a type it was not checked for", mayIndicate: [], breachUsuallySits: "at the boundary", recipes: [], correctUses: [] };
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "a value is given a type it was not checked for",
+  mayIndicate: [],
+  breachUsuallySits: "at the boundary",
+  recipes: [],
+  correctUses: [],
+};
 
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("explicit-any") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-1"),
+    clause: clauseIdOf("explicit-any"),
+  },
   engines: [{ name: "eslint" }],
   forms: [],
 };
@@ -21,7 +34,10 @@ const FILE_A = repoPathOf("src/a.ts");
 
 const FILE_B = repoPathOf("src/b.ts");
 
-const placed = (request: { readonly record: PlacedRecord["record"]; readonly index: number }): PlacedRecord => ({
+const placed = (request: {
+  readonly record: PlacedRecord["record"];
+  readonly index: number;
+}): PlacedRecord => ({
   place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: request.index },
   record: request.record,
 });
@@ -31,8 +47,26 @@ describe("answeredFilesOf", () => {
     expect(
       answeredFilesOf({
         records: [
-          placed({ index: 0, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "whole-symptom" }, file: FILE_A, holding: { held: "stated" } } }),
-          placed({ index: 1, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "one-check", check: CAST_CHECK }, file: FILE_B, holding: { held: "stated" } } }),
+          placed({
+            index: 0,
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: { reaches: "whole-symptom" },
+              file: FILE_A,
+              holding: { held: "stated" },
+            },
+          }),
+          placed({
+            index: 1,
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: { reaches: "one-check", check: CAST_CHECK },
+              file: FILE_B,
+              holding: { held: "stated" },
+            },
+          }),
         ],
       }),
     ).toEqual([
@@ -83,7 +117,15 @@ describe("answeredFilesOf", () => {
     expect(
       answeredFilesOf({
         records: [
-          placed({ index: 0, record: { kind: "dependency-record", dependency: "zod", nativeWay: "parsing", whyNotEnough: "Repeated." } }),
+          placed({
+            index: 0,
+            record: {
+              kind: "dependency-record",
+              dependency: "zod",
+              nativeWay: "parsing",
+              whyNotEnough: "Repeated.",
+            },
+          }),
         ],
       }),
     ).toEqual([]);

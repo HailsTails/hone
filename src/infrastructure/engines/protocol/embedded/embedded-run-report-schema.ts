@@ -1,10 +1,23 @@
 import { z } from "zod";
+
+import type {
+  SliceProblem,
+  UnprojectedFolderReport,
+} from "../../../../domain/runner/mechanism-run.ts";
+import type {
+  InlineReach,
+  NativeException,
+  ProjectionState,
+  ScriptOptionCause,
+} from "../../../../domain/runner/runner-result-types.ts";
 import { clauseAddressObjectSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import {
+  hitSchema,
+  measuredSchema,
+  reportedCheckSchema,
+} from "../runner-module/runner-result-schema.ts";
 import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
-import { hitSchema, measuredSchema, reportedCheckSchema } from "../runner-module/runner-result-schema.ts";
-import type { InlineReach, NativeException, ProjectionState, ScriptOptionCause } from "../../../../domain/runner/runner-result-types.ts";
-import type { SliceProblem, UnprojectedFolderReport } from "../../../../domain/runner/mechanism-run.ts";
 
 const namedCheck = { check: reportedCheckSchema.optional() };
 
@@ -24,14 +37,25 @@ export const inlineDisableSchema = z
 
 const scriptOptionCauseSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("weakens-run") }).readonly(),
-  z.object({ kind: z.literal("after-another-command"), command: z.string(), invocation: z.string() }).readonly(),
+  z
+    .object({
+      kind: z.literal("after-another-command"),
+      command: z.string(),
+      invocation: z.string(),
+    })
+    .readonly(),
   z.object({ kind: z.literal("wrapped"), command: z.string(), wrapper: z.string() }).readonly(),
   z.object({ kind: z.literal("unreadable"), command: z.string() }).readonly(),
 ]);
 
 export const nativeExceptionSchema = z.discriminatedUnion("kind", [
   z
-    .object({ kind: z.literal("ignore"), ...namedCheck, clause: clauseAddressObjectSchema, file: repoPathSchema })
+    .object({
+      kind: z.literal("ignore"),
+      ...namedCheck,
+      clause: clauseAddressObjectSchema,
+      file: repoPathSchema,
+    })
     .readonly(),
   z
     .object({
@@ -77,7 +101,13 @@ export const nativeExceptionSchema = z.discriminatedUnion("kind", [
 export const sliceProblemSchema = z
   .object({
     slice: repoPathSchema,
-    state: z.enum(["out-of-date", "missing", "not-applied", "unconfigured", "nested-configuration"]),
+    state: z.enum([
+      "out-of-date",
+      "missing",
+      "not-applied",
+      "unconfigured",
+      "nested-configuration",
+    ]),
   })
   .readonly();
 
@@ -104,15 +134,27 @@ export type EmbeddedRunReport = z.infer<typeof embeddedRunReportSchema>;
 export type ReturnedEmbeddedRunReport = Omit<EmbeddedRunReport, "unprojectedFolders"> &
   Partial<Pick<EmbeddedRunReport, "unprojectedFolders">>;
 
-export const isInlineReachEqual: Equal<z.infer<typeof inlineDisableSchema>["reach"], InlineReach> = true;
-
-export const isScriptOptionCauseEqual: Equal<z.infer<typeof scriptOptionCauseSchema>, ScriptOptionCause> = true;
-
-export const isProjectionStateEqual: Equal<EmbeddedRunReport["projection"], ProjectionState> =
+export const isInlineReachEqual: Equal<z.infer<typeof inlineDisableSchema>["reach"], InlineReach> =
   true;
 
-export const isNativeExceptionSchemaEqual: Equal<DeepReadonly<z.output<typeof nativeExceptionSchema>>, NativeException> = true;
+export const isScriptOptionCauseEqual: Equal<
+  z.infer<typeof scriptOptionCauseSchema>,
+  ScriptOptionCause
+> = true;
 
-export const isSliceProblemSchemaEqual: Equal<DeepReadonly<z.output<typeof sliceProblemSchema>>, SliceProblem> = true;
+export const isProjectionStateEqual: Equal<EmbeddedRunReport["projection"], ProjectionState> = true;
 
-export const isUnprojectedFolderSchemaEqual: Equal<DeepReadonly<z.output<typeof unprojectedFolderSchema>>, UnprojectedFolderReport> = true;
+export const isNativeExceptionSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof nativeExceptionSchema>>,
+  NativeException
+> = true;
+
+export const isSliceProblemSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof sliceProblemSchema>>,
+  SliceProblem
+> = true;
+
+export const isUnprojectedFolderSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof unprojectedFolderSchema>>,
+  UnprojectedFolderReport
+> = true;

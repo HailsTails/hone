@@ -1,17 +1,30 @@
 import { describe, expect, it } from "vitest";
-import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
+
+import type {
+  Check,
+  Engine,
+  Principle,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "../../language-layer/symptom-catalogue.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
 import { mappedRecords } from "./records-mapping.ts";
-import { repoPathOf } from "../../repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -36,17 +49,47 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
-const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
+const LAYERING_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-13"),
+  clause: clauseIdOf("layering"),
+};
 
-const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT], forms: [] };
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: LOOPS_CLAUSE,
+  engines: [WALKER, ESLINT],
+  forms: [],
+};
 
-const CATALOGUE_LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+const CATALOGUE_LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
 
-const CATALOGUE_REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+const CATALOGUE_REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-let"],
+};
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS],
@@ -75,7 +118,9 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: SETTINGS_CATALOGUE }];
+const CATALOGUES: readonly RuleSetCatalogue[] = [
+  { ruleSet: "hone", catalogue: SETTINGS_CATALOGUE },
+];
 
 const AUDIT = "walker" as const;
 
@@ -90,9 +135,17 @@ const REBINDING_CHECK: Check = {
   clause: TEST_BODY_CLAUSE,
 };
 
-const LOOP_KEYWORD_TEST_BODY: Check = { ...LOOP_KEYWORD_LOOPS, name: "test-body", clause: TEST_BODY_CLAUSE };
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  ...LOOP_KEYWORD_LOOPS,
+  name: "test-body",
+  clause: TEST_BODY_CLAUSE,
+};
 
-const WHY = { why: "a loop was written", because: "it was quicker", evidence: "the commit" } as const;
+const WHY = {
+  why: "a loop was written",
+  because: "it was quicker",
+  evidence: "the commit",
+} as const;
 
 const WHY_CHAIN = {
   whys: [WHY, WHY, WHY, WHY, WHY],
@@ -100,7 +153,11 @@ const WHY_CHAIN = {
   owner: "the team",
 } as const;
 
-const PROVENANCE: InheritedDebtProvenance = { kind: "inherited-debt", source: "the old repository", decision: "keep until rewritten" };
+const PROVENANCE: InheritedDebtProvenance = {
+  kind: "inherited-debt",
+  source: "the old repository",
+  decision: "keep until rewritten",
+};
 
 const WHOLE_CLAUSE = { reach: "whole-clause" } as const;
 
@@ -114,8 +171,19 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy loop" },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" },
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+            },
             answer: FINDINGS_ON_LOOPS,
           },
         ],
@@ -150,7 +218,13 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
     ).toEqual({
       outcome: "ok",
       value: {
-        documents: [{ file: "hone-records/debt/loop-keyword.json", version: 2, records: [{ answers: "loop-keyword#loops", file: "src/a.ts" }] }],
+        documents: [
+          {
+            file: "hone-records/debt/loop-keyword.json",
+            version: 2,
+            records: [{ answers: "loop-keyword#loops", file: "src/a.ts" }],
+          },
+        ],
       },
     });
   });
@@ -162,8 +236,19 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy loop" },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" },
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+            },
             answer: { credit: "findings", checks: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_LOOPS] },
           },
         ],
@@ -189,8 +274,19 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: TEST_BODY_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy" },
-            entry: { kind: "file-carve-out", clause: "CD-27#test-body-logic", file: "src/a.ts", reason: "legacy" },
+            record: {
+              kind: "file-carve-out",
+              clause: TEST_BODY_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-27#test-body-logic",
+              file: "src/a.ts",
+              reason: "legacy",
+            },
             answer: { credit: "findings", checks: [REBINDING_CHECK, LOOP_KEYWORD_LOOPS] },
           },
         ],
@@ -223,8 +319,21 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy loop", whyChain: WHY_CHAIN },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop", whyChain: WHY_CHAIN },
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+              whyChain: WHY_CHAIN,
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+              whyChain: WHY_CHAIN,
+            },
             answer: FINDINGS_ON_LOOPS,
           },
         ],
@@ -240,7 +349,13 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
               {
                 answers: "loop-keyword#loops",
                 file: "src/a.ts",
-                carried: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop", whyChain: WHY_CHAIN },
+                carried: {
+                  kind: "file-carve-out",
+                  clause: "CD-15#loops",
+                  file: "src/a.ts",
+                  reason: "legacy loop",
+                  whyChain: WHY_CHAIN,
+                },
               },
             ],
           },
@@ -256,8 +371,19 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, provenance: PROVENANCE },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", provenance: PROVENANCE },
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              provenance: PROVENANCE,
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              provenance: PROVENANCE,
+            },
             answer: FINDINGS_ON_LOOPS,
           },
         ],
@@ -273,7 +399,12 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
               {
                 answers: "loop-keyword#loops",
                 file: "src/a.ts",
-                carried: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", provenance: PROVENANCE },
+                carried: {
+                  kind: "file-carve-out",
+                  clause: "CD-15#loops",
+                  file: "src/a.ts",
+                  provenance: PROVENANCE,
+                },
               },
             ],
           },
@@ -283,7 +414,12 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   });
 
   it("carries an authorised location nothing answered at each check of its clause, word for word", () => {
-    const entry = { kind: "authorised-location", clause: "CD-27#test-body-logic", file: "src/a.ts", reason: "the tests need it" } as const;
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-27#test-body-logic",
+      file: "src/a.ts",
+      reason: "the tests need it",
+    } as const;
     expect(
       mappedRecords({
         catalogues: CATALOGUES,
@@ -316,7 +452,12 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   });
 
   it("carries an authorised location only at the check its findings named", () => {
-    const entry = { kind: "authorised-location", clause: "CD-27#test-body-logic", file: "src/a.ts", reason: "the tests need it" } as const;
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-27#test-body-logic",
+      file: "src/a.ts",
+      reason: "the tests need it",
+    } as const;
     expect(
       mappedRecords({
         catalogues: CATALOGUES,
@@ -344,7 +485,12 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
   });
 
   it("carries an authorised location once at a check its findings named twice", () => {
-    const entry = { kind: "authorised-location", clause: "CD-27#test-body-logic", file: "src/a.ts", reason: "the tests need it" } as const;
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-27#test-body-logic",
+      file: "src/a.ts",
+      reason: "the tests need it",
+    } as const;
     expect(
       mappedRecords({
         catalogues: CATALOGUES,
@@ -360,13 +506,24 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
     ).toEqual({
       outcome: "ok",
       value: {
-        documents: [{ file: "hone-records/authorised-locations/rebinding.json", version: 2, records: [{ answers: "rebinding#test-body", file: "src/a.ts", carried: entry }] }],
+        documents: [
+          {
+            file: "hone-records/authorised-locations/rebinding.json",
+            version: 2,
+            records: [{ answers: "rebinding#test-body", file: "src/a.ts", carried: entry }],
+          },
+        ],
       },
     });
   });
 
   it("carries an authorised location at each of the two checks its findings named, in the file of each check's symptom", () => {
-    const entry = { kind: "authorised-location", clause: "CD-27#test-body-logic", file: "src/a.ts", reason: "the tests need it" } as const;
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-27#test-body-logic",
+      file: "src/a.ts",
+      reason: "the tests need it",
+    } as const;
     expect(
       mappedRecords({
         catalogues: CATALOGUES,
@@ -383,8 +540,16 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
       outcome: "ok",
       value: {
         documents: [
-          { file: "hone-records/authorised-locations/loop-keyword.json", version: 2, records: [{ answers: "loop-keyword#test-body", file: "src/a.ts", carried: entry }] },
-          { file: "hone-records/authorised-locations/rebinding.json", version: 2, records: [{ answers: "rebinding#test-body", file: "src/a.ts", carried: entry }] },
+          {
+            file: "hone-records/authorised-locations/loop-keyword.json",
+            version: 2,
+            records: [{ answers: "loop-keyword#test-body", file: "src/a.ts", carried: entry }],
+          },
+          {
+            file: "hone-records/authorised-locations/rebinding.json",
+            version: 2,
+            records: [{ answers: "rebinding#test-body", file: "src/a.ts", carried: entry }],
+          },
         ],
       },
     });
@@ -392,7 +557,13 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
 
   it("carries an authorised location that has an existing-authorisation provenance, whole", () => {
     const provenance = { kind: "existing-authorisation", source: "the old repository" } as const;
-    const entry = { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "ported", provenance } as const;
+    const entry = {
+      kind: "authorised-location",
+      clause: "CD-15#loops",
+      file: "src/a.ts",
+      reason: "ported",
+      provenance,
+    } as const;
     expect(
       mappedRecords({
         catalogues: CATALOGUES,
@@ -428,11 +599,20 @@ describe("mappedRecords refusing what carries over to nothing", () => {
         inputs: [
           {
             kind: "clause-wide-carve-out",
-            record: { kind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, reason: "generated code", whyChain: WHY_CHAIN },
+            record: {
+              kind: "clause-wide-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              reason: "generated code",
+              whyChain: WHY_CHAIN,
+            },
           },
         ],
       }),
-    ).toEqual({ outcome: "failed", error: [{ kind: "clause-wide-carve-out", clause: "CD-15#loops" }] });
+    ).toEqual({
+      outcome: "failed",
+      error: [{ kind: "clause-wide-carve-out", clause: "CD-15#loops" }],
+    });
   });
 
   it("refuses a stale file carve-out, naming the clause and the file", () => {
@@ -442,15 +622,33 @@ describe("mappedRecords refusing what carries over to nothing", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy loop" },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" },
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+            },
             answer: { credit: "nothing" },
           },
         ],
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "record-answers-nothing", clause: "CD-15#loops", file: "src/a.ts", credited: "nothing" }],
+      error: [
+        {
+          kind: "record-answers-nothing",
+          clause: "CD-15#loops",
+          file: "src/a.ts",
+          credited: "nothing",
+        },
+      ],
     });
   });
 
@@ -461,15 +659,33 @@ describe("mappedRecords refusing what carries over to nothing", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy loop" },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" },
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+            },
             answer: { credit: "suppression-only" },
           },
         ],
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "record-answers-nothing", clause: "CD-15#loops", file: "src/a.ts", credited: "suppression-only" }],
+      error: [
+        {
+          kind: "record-answers-nothing",
+          clause: "CD-15#loops",
+          file: "src/a.ts",
+          credited: "suppression-only",
+        },
+      ],
     });
   });
 
@@ -481,18 +697,29 @@ describe("mappedRecords refusing what carries over to nothing", () => {
           {
             kind: "authorised-location",
             record: { clause: LOOPS_CLAUSE, file: SRC_A },
-            entry: { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "ported" },
+            entry: {
+              kind: "authorised-location",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "ported",
+            },
             answer: WHOLE_CLAUSE,
           },
         ],
       }),
-    ).toEqual({ outcome: "failed", error: [{ kind: "clause-without-check", clause: "CD-15#loops" }] });
+    ).toEqual({
+      outcome: "failed",
+      error: [{ kind: "clause-without-check", clause: "CD-15#loops" }],
+    });
   });
 });
 
 describe("mappedRecords refusing a symptom name that cannot name a records file", () => {
   it("refuses an authorised location at a check whose symptom name is not a records name, naming it", () => {
-    const check: Check = { ...LOOP_KEYWORD_LOOPS, symptom: { ...LOOP_KEYWORD_LOOPS.symptom, name: "Bad Name" } };
+    const check: Check = {
+      ...LOOP_KEYWORD_LOOPS,
+      symptom: { ...LOOP_KEYWORD_LOOPS.symptom, name: "Bad Name" },
+    };
     expect(
       mappedRecords({
         catalogues: [{ ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: [check] } }],
@@ -500,7 +727,12 @@ describe("mappedRecords refusing a symptom name that cannot name a records file"
           {
             kind: "authorised-location",
             record: { clause: LOOPS_CLAUSE, file: SRC_A },
-            entry: { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "ported" },
+            entry: {
+              kind: "authorised-location",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "ported",
+            },
             answer: WHOLE_CLAUSE,
           },
         ],
@@ -517,7 +749,12 @@ describe("mappedRecords ordering", () => {
         inputs: [
           {
             kind: "file-carve-out",
-            record: { kind: "file-carve-out", clause: TEST_BODY_CLAUSE, mechanism: AUDIT, file: SRC_B },
+            record: {
+              kind: "file-carve-out",
+              clause: TEST_BODY_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_B,
+            },
             entry: { kind: "file-carve-out", clause: "CD-27#test-body-logic", file: "src/b.ts" },
             answer: { credit: "findings", checks: [REBINDING_CHECK] },
           },
@@ -547,7 +784,11 @@ describe("mappedRecords ordering", () => {
               { answers: "loop-keyword#loops", file: "src/a.ts" },
             ],
           },
-          { file: "hone-records/debt/rebinding.json", version: 2, records: [{ answers: "rebinding#test-body", file: "src/b.ts" }] },
+          {
+            file: "hone-records/debt/rebinding.json",
+            version: 2,
+            records: [{ answers: "rebinding#test-body", file: "src/b.ts" }],
+          },
         ],
       },
     });

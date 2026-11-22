@@ -1,8 +1,13 @@
 import { z } from "zod";
+
 import type { ClauseAddress, ToolRuleSet } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET, clauseAddressPartsOf } from "../../domain/rule-set/clause-address.ts";
-import { clauseIdSchema, disciplineIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
 import type { DeepReadonly, Equal } from "../engines/protocol/runner-module/type-equality.ts";
+import {
+  clauseIdSchema,
+  disciplineIdSchema,
+  ruleSetNameSchema,
+} from "../hone-config-file/identifiers.ts";
 
 export const isToolRuleSetEqual: Equal<typeof TOOL_RULE_SET, ToolRuleSet> = true;
 

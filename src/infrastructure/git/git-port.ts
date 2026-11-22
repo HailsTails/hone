@@ -1,9 +1,3 @@
-import { createDefaultExecutionPort, type ExecutionPolicy } from "../node/process/execution-port.ts";
-import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import type { Result } from "../../domain/result.ts";
-import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import type {
   BaseContentMembership,
   BaseFileText,
@@ -13,6 +7,15 @@ import type {
   GitPort,
   GitTreePort,
 } from "../../application/ports/git-port.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { Result } from "../../domain/result.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import {
+  createDefaultExecutionPort,
+  type ExecutionPolicy,
+} from "../node/process/execution-port.ts";
 
 export type GitEnvironment = Readonly<Record<string, string | undefined>>;
 
@@ -63,7 +66,8 @@ const environmentWithoutRepositoryLocation = (request: {
 
 const GIT_EXECUTION_POLICY: ExecutionPolicy = {
   executable: "git",
-  environment: ({ ambient }) => environmentWithoutRepositoryLocation({ ambientEnvironment: ambient }),
+  environment: ({ ambient }) =>
+    environmentWithoutRepositoryLocation({ ambientEnvironment: ambient }),
   timeoutMilliseconds: undefined,
   maximumOutputBytes: LARGEST_GIT_OUTPUT_BYTES,
 };
@@ -76,7 +80,10 @@ const parsedRepoPaths = (request: {
   if (refused !== undefined) {
     return { outcome: "failed", error: refused.text };
   }
-  return { outcome: "ok", value: parsed.flatMap((entry) => (entry.result.success ? [entry.result.data] : [])) };
+  return {
+    outcome: "ok",
+    value: parsed.flatMap((entry) => (entry.result.success ? [entry.result.data] : [])),
+  };
 };
 
 const gitOutput = (request: {
@@ -145,7 +152,13 @@ const changedPaths = (
 ): Result<readonly RepoPath[], GitFailure> => {
   const committed = gitPaths({
     ...request,
-    gitArguments: ["diff", "--name-only", "-z", "--end-of-options", `${request.baseRevision}...HEAD`],
+    gitArguments: [
+      "diff",
+      "--name-only",
+      "-z",
+      "--end-of-options",
+      `${request.baseRevision}...HEAD`,
+    ],
   });
   if (committed.outcome === "failed") {
     return committed;
@@ -161,11 +174,16 @@ const changedPaths = (
   if (untracked.outcome === "failed") {
     return untracked;
   }
-  return { outcome: "ok", value: [...new Set([...committed.value, ...uncommitted.value, ...untracked.value])] };
+  return {
+    outcome: "ok",
+    value: [...new Set([...committed.value, ...uncommitted.value, ...untracked.value])],
+  };
 };
 
 const objectNameStatus = (request: { readonly text: string }): "valid" | "invalid" =>
-  (request.text.length === 40 || request.text.length === 64) && !/[^0-9a-f]/.test(request.text) ? "valid" : "invalid";
+  (request.text.length === 40 || request.text.length === 64) && !/[^0-9a-f]/.test(request.text)
+    ? "valid"
+    : "invalid";
 
 const contentMembership = (
   request: GitContext & GitContentQuery,
@@ -190,7 +208,14 @@ const contentMembership = (
   }
   const tree = gitOutput({
     ...request,
-    gitArguments: ["ls-tree", "-r", "-z", "--format=%(objectname)", "--end-of-options", request.baseRevision],
+    gitArguments: [
+      "ls-tree",
+      "-r",
+      "-z",
+      "--format=%(objectname)",
+      "--end-of-options",
+      request.baseRevision,
+    ],
   });
   if (tree.outcome === "failed") {
     return tree;
@@ -209,13 +234,25 @@ const contentMembership = (
       },
     };
   }
-  return { outcome: "ok", value: treeHashes.includes(candidateHash) ? "present-in-base" : "absent-from-base" };
+  return {
+    outcome: "ok",
+    value: treeHashes.includes(candidateHash) ? "present-in-base" : "absent-from-base",
+  };
 };
 
-const fileTextInBase = (request: GitContext & GitContentQuery): Result<BaseFileText, GitFailure> => {
+const fileTextInBase = (
+  request: GitContext & GitContentQuery,
+): Result<BaseFileText, GitFailure> => {
   const listed = gitPaths({
     ...request,
-    gitArguments: ["ls-tree", "-z", "--name-only", "--end-of-options", request.baseRevision, request.file],
+    gitArguments: [
+      "ls-tree",
+      "-z",
+      "--name-only",
+      "--end-of-options",
+      request.baseRevision,
+      request.file,
+    ],
   });
   if (listed.outcome === "failed") {
     return listed;
@@ -223,20 +260,31 @@ const fileTextInBase = (request: GitContext & GitContentQuery): Result<BaseFileT
   if (!listed.value.includes(request.file)) {
     return { outcome: "ok", value: { presence: "absent-from-base" } };
   }
-  const blob = gitOutput({ ...request, gitArguments: ["cat-file", "blob", "--end-of-options", `${request.baseRevision}:${request.file}`] });
+  const blob = gitOutput({
+    ...request,
+    gitArguments: [
+      "cat-file",
+      "blob",
+      "--end-of-options",
+      `${request.baseRevision}:${request.file}`,
+    ],
+  });
   if (blob.outcome === "failed") {
     return blob;
   }
   return { outcome: "ok", value: { presence: "present-in-base", text: blob.value.stdout } };
 };
 
-const NAME_STATUS_ENTRY = /(?<pairedStatus>[RC]\d*)\0(?<from>[^\0]+)\0(?<to>[^\0]+)\0|(?![RC])[A-Z]\d*\0[^\0]+\0/gy;
+const NAME_STATUS_ENTRY =
+  /(?<pairedStatus>[RC]\d*)\0(?<from>[^\0]+)\0(?<to>[^\0]+)\0|(?![RC])[A-Z]\d*\0[^\0]+\0/gy;
 
 const RENAME_STATUS = /^R/;
 
 type ListedRename = { readonly from: string; readonly to: string };
 
-const listedRenamesOf = (request: { readonly stdout: string }): Result<readonly ListedRename[], "incomplete"> => {
+const listedRenamesOf = (request: {
+  readonly stdout: string;
+}): Result<readonly ListedRename[], "incomplete"> => {
   const entries = [...request.stdout.matchAll(NAME_STATUS_ENTRY)];
   const consumed = entries.reduce((length, entry) => length + entry[0].length, 0);
   if (consumed !== request.stdout.length) {
@@ -245,42 +293,70 @@ const listedRenamesOf = (request: { readonly stdout: string }): Result<readonly 
   return {
     outcome: "ok",
     value: entries.flatMap(({ groups }): readonly ListedRename[] =>
-      groups?.pairedStatus !== undefined && RENAME_STATUS.test(groups.pairedStatus) && groups.from !== undefined && groups.to !== undefined
+      groups?.pairedStatus !== undefined &&
+      RENAME_STATUS.test(groups.pairedStatus) &&
+      groups.from !== undefined &&
+      groups.to !== undefined
         ? [{ from: groups.from, to: groups.to }]
         : [],
     ),
   };
 };
 
-const basePathByHeadPathOf = (request: { readonly rename: ListedRename }): Result<readonly [RepoPath, RepoPath], string> => {
+const basePathByHeadPathOf = (request: {
+  readonly rename: ListedRename;
+}): Result<readonly [RepoPath, RepoPath], string> => {
   const from = repoPathSchema.safeParse(request.rename.from);
   if (!from.success) {
     return { outcome: "failed", error: request.rename.from };
   }
   const to = repoPathSchema.safeParse(request.rename.to);
-  return to.success ? { outcome: "ok", value: [to.data, from.data] } : { outcome: "failed", error: request.rename.to };
+  return to.success
+    ? { outcome: "ok", value: [to.data, from.data] }
+    : { outcome: "failed", error: request.rename.to };
 };
 
 const renamedPaths = (
   request: GitContext & { readonly baseRevision: string },
 ): Result<ReadonlyMap<RepoPath, RepoPath>, GitFailure> => {
-  const output = gitOutput({ ...request, gitArguments: ["diff", "--name-status", "-M", "-z", "--end-of-options", request.baseRevision] });
+  const output = gitOutput({
+    ...request,
+    gitArguments: ["diff", "--name-status", "-M", "-z", "--end-of-options", request.baseRevision],
+  });
   if (output.outcome === "failed") {
     return output;
   }
   const { command } = output.value;
   const listed = listedRenamesOf({ stdout: output.value.stdout });
   if (listed.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "git-failed", command, detail: "git diff did not return a complete NUL-separated name-status listing" } };
+    return {
+      outcome: "failed",
+      error: {
+        kind: "git-failed",
+        command,
+        detail: "git diff did not return a complete NUL-separated name-status listing",
+      },
+    };
   }
   const parsed = listed.value.map((rename) => basePathByHeadPathOf({ rename }));
   const refused = parsed.find((rename) => rename.outcome === "failed");
   if (refused !== undefined && refused.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "git-failed", command, detail: `git listed a path that is not a repo path: ${refused.error}` } };
+    return {
+      outcome: "failed",
+      error: {
+        kind: "git-failed",
+        command,
+        detail: `git listed a path that is not a repo path: ${refused.error}`,
+      },
+    };
   }
   return {
     outcome: "ok",
-    value: new Map(parsed.flatMap((rename): readonly (readonly [RepoPath, RepoPath])[] => (rename.outcome === "ok" ? [rename.value] : []))),
+    value: new Map(
+      parsed.flatMap((rename): readonly (readonly [RepoPath, RepoPath])[] =>
+        rename.outcome === "ok" ? [rename.value] : [],
+      ),
+    ),
   };
 };
 
@@ -293,7 +369,12 @@ export const createGitPort = (options: {
   });
   return {
     trackedPaths: (request) =>
-      gitPaths({ spawn: options.spawn, environment, repoRoot: request.repoRoot, gitArguments: ["ls-files", "-z"] }),
+      gitPaths({
+        spawn: options.spawn,
+        environment,
+        repoRoot: request.repoRoot,
+        gitArguments: ["ls-files", "-z"],
+      }),
     changedSince: (request) =>
       changedPaths({
         spawn: options.spawn,
@@ -301,7 +382,8 @@ export const createGitPort = (options: {
         repoRoot: request.repoRoot,
         baseRevision: request.baseRevision,
       }),
-    contentInBase: (request) => contentMembership({ ...request, spawn: options.spawn, environment }),
+    contentInBase: (request) =>
+      contentMembership({ ...request, spawn: options.spawn, environment }),
     textInBase: (request) => fileTextInBase({ ...request, spawn: options.spawn, environment }),
     renamedSince: (request) => renamedPaths({ ...request, spawn: options.spawn, environment }),
   };
@@ -342,17 +424,28 @@ const commitsAfterRevision = (
 ): Result<readonly CommitRecord[], GitFailure> => {
   const entries = gitListing({
     ...request,
-    gitArguments: ["log", "--reverse", "-z", "--format=%P%n%B", "--end-of-options", `${request.revision}..HEAD`],
+    gitArguments: [
+      "log",
+      "--reverse",
+      "-z",
+      "--format=%P%n%B",
+      "--end-of-options",
+      `${request.revision}..HEAD`,
+    ],
     separator: "\0",
   });
-  return entries.outcome === "failed" ? entries : { outcome: "ok", value: entries.value.map((entry) => commitRecordOf({ entry })) };
+  return entries.outcome === "failed"
+    ? entries
+    : { outcome: "ok", value: entries.value.map((entry) => commitRecordOf({ entry })) };
 };
 
 export const createGitTreePort = (options: {
   readonly spawn: GitSpawn;
   readonly ambientEnvironment: GitEnvironment;
 }): GitTreePort => {
-  const environment = environmentWithoutRepositoryLocation({ ambientEnvironment: options.ambientEnvironment });
+  const environment = environmentWithoutRepositoryLocation({
+    ambientEnvironment: options.ambientEnvironment,
+  });
   return {
     pathsAt: (request) =>
       gitPaths({
@@ -381,7 +474,12 @@ export const createGitHistoryPort = (options: {
         separator: "\n",
       }),
     commitsAfter: (request) =>
-      commitsAfterRevision({ spawn: options.spawn, environment, repoRoot: request.repoRoot, revision: request.revision }),
+      commitsAfterRevision({
+        spawn: options.spawn,
+        environment,
+        repoRoot: request.repoRoot,
+        revision: request.revision,
+      }),
   };
 };
 
@@ -392,9 +490,10 @@ const defaultGitSpawn = (_options: Record<string, never>): GitSpawn => {
     if (executed.outcome === "failed") {
       return {
         outcome: "errored",
-        detail: executed.error.kind === "terminated"
-          ? `git was ended by signal ${executed.error.signal}`
-          : executed.error.detail,
+        detail:
+          executed.error.kind === "terminated"
+            ? `git was ended by signal ${executed.error.signal}`
+            : executed.error.detail,
       };
     }
     return { outcome: "exited", ...executed.value };

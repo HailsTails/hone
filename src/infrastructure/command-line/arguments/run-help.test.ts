@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
+
 import { RUN_SYNOPSIS, RUN_SUBCOMMANDS, runHelpText } from "./run-help.ts";
 
 describe("the version 2 commands", () => {
   it("are check, project, record-debt, prune-debt, authorise and upgrade, with split-records gone", () => {
-    expect(RUN_SUBCOMMANDS).toEqual(["check", "project", "record-debt", "prune-debt", "authorise", "upgrade"]);
+    expect(RUN_SUBCOMMANDS).toEqual([
+      "check",
+      "project",
+      "record-debt",
+      "prune-debt",
+      "authorise",
+      "upgrade",
+    ]);
   });
 
   it("print a synopsis of every command's usage", () => {
-    expect(RUN_SYNOPSIS).toBe(`hone check --repo <dir> [--base-revision <revision>] [--report-output <full|actionable|counts|verdict-only>] [--forfeiture <this-run|elsewhere>]
+    expect(RUN_SYNOPSIS)
+      .toBe(`hone check --repo <dir> [--base-revision <revision>] [--report-output <full|actionable|counts|verdict-only>] [--forfeiture <this-run|elsewhere>]
 hone project --repo <dir>
 hone record-debt --repo <dir> --base-revision <revision> [--leave <path>]...
 hone prune-debt --repo <dir> [--base-revision <revision>] [--forfeiture <this-run|elsewhere>]
@@ -42,7 +51,8 @@ run hone <command> --help for a command's options and exit codes
   });
 
   it("prints a command's options and exit codes in version 2's words", () => {
-    expect(runHelpText({ topic: "check" })).toBe(`usage: hone check --repo <dir> [--base-revision <revision>] [--report-output <full|actionable|counts|verdict-only>] [--forfeiture <this-run|elsewhere>]
+    expect(runHelpText({ topic: "check" }))
+      .toBe(`usage: hone check --repo <dir> [--base-revision <revision>] [--report-output <full|actionable|counts|verdict-only>] [--forfeiture <this-run|elsewhere>]
 
 check the repository against the checks hone.config.json lists and print the report, ending in its verdict
 
@@ -85,7 +95,8 @@ exit codes:
   });
 
   it("prints prune-debt's help with its exit code 0 agreeing with its summary", () => {
-    expect(runHelpText({ topic: "prune-debt" })).toBe(`usage: hone prune-debt --repo <dir> [--base-revision <revision>] [--forfeiture <this-run|elsewhere>]
+    expect(runHelpText({ topic: "prune-debt" }))
+      .toBe(`usage: hone prune-debt --repo <dir> [--base-revision <revision>] [--forfeiture <this-run|elsewhere>]
 
 remove from hone-records the debt a run shows is paid, stale or forfeited, printing each debt removed
 
@@ -103,4 +114,5 @@ exit codes:
   0  every debt the run showed paid, stale or forfeited was removed, or none was shown
   2  a load failure: an input could not be loaded, an engine failed, the records could not be written, or Hone failed unexpectedly
 `);
-  });});
+  });
+});

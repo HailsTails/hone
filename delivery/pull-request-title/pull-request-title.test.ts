@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { runPullRequestTitleCheck } from "./pull-request-title.ts";
 
@@ -20,7 +21,9 @@ const EXPECTED_FORM =
 
 describe("runPullRequestTitleCheck", () => {
   it("passes a conventional title and says what it reads", () => {
-    const processPort = processWith({ arguments: ["feat(release)!: prepare release pull requests"] });
+    const processPort = processWith({
+      arguments: ["feat(release)!: prepare release pull requests"],
+    });
 
     runPullRequestTitleCheck({ process: processPort });
 
@@ -50,7 +53,13 @@ describe("runPullRequestTitleCheck", () => {
 
     expect(outputOf({ process: processPort })).toEqual({
       writes: [],
-      errors: [[{ text: `pull request title "Keep versions out of the docs" is not a conventional commit subject. ${EXPECTED_FORM}` }]],
+      errors: [
+        [
+          {
+            text: `pull request title "Keep versions out of the docs" is not a conventional commit subject. ${EXPECTED_FORM}`,
+          },
+        ],
+      ],
       exits: [[{ code: 1 }]],
     });
   });
@@ -62,20 +71,29 @@ describe("runPullRequestTitleCheck", () => {
 
     expect(outputOf({ process: processPort })).toEqual({
       writes: [],
-      errors: [[{ text: `pull request title "feature: add a release script" has the unknown type feature. ${EXPECTED_FORM}` }]],
+      errors: [
+        [
+          {
+            text: `pull request title "feature: add a release script" has the unknown type feature. ${EXPECTED_FORM}`,
+          },
+        ],
+      ],
       exits: [[{ code: 1 }]],
     });
   });
 
-  it.each([[[]], [["feat: one", "feat: two"]]])("exits 2 with its usage when not given exactly one title: %j", (titleArguments) => {
-    const processPort = processWith({ arguments: titleArguments });
+  it.each([[[]], [["feat: one", "feat: two"]]])(
+    "exits 2 with its usage when not given exactly one title: %j",
+    (titleArguments) => {
+      const processPort = processWith({ arguments: titleArguments });
 
-    runPullRequestTitleCheck({ process: processPort });
+      runPullRequestTitleCheck({ process: processPort });
 
-    expect(outputOf({ process: processPort })).toEqual({
-      writes: [],
-      errors: [[{ text: "usage: pull-request-title <title>\n" }]],
-      exits: [[{ code: 2 }]],
-    });
-  });
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [],
+        errors: [[{ text: "usage: pull-request-title <title>\n" }]],
+        exits: [[{ code: 2 }]],
+      });
+    },
+  );
 });

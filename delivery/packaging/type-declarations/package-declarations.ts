@@ -10,7 +10,10 @@ export type EmittedDeclaration = {
   readonly refusals: readonly string[];
 };
 
-export type DeclarationEmit = { readonly declarations: readonly EmittedDeclaration[]; readonly diagnostics: readonly string[] };
+export type DeclarationEmit = {
+  readonly declarations: readonly EmittedDeclaration[];
+  readonly diagnostics: readonly string[];
+};
 
 export type DeclarationFailure = { readonly kind: "declarations-failed"; readonly detail: string };
 
@@ -40,9 +43,11 @@ const BUILT_ENTRY_EXTENSION = ".js";
 
 const RELATIVE_SPECIFIER = /^\.\.?\//;
 
-const declarationPathOf = (request: { readonly source: string }): string => request.source.replace(SOURCE_EXTENSION, DECLARATION_EXTENSION);
+const declarationPathOf = (request: { readonly source: string }): string =>
+  request.source.replace(SOURCE_EXTENSION, DECLARATION_EXTENSION);
 
-const modulePathOf = (request: { readonly source: string }): string => request.source.replace(SOURCE_EXTENSION, BUILT_ENTRY_EXTENSION);
+const modulePathOf = (request: { readonly source: string }): string =>
+  request.source.replace(SOURCE_EXTENSION, BUILT_ENTRY_EXTENSION);
 
 export const typedExportOf = (request: { readonly entry: PublicTypeEntry }): TypedExport => ({
   subpath: request.entry.subpath,
@@ -50,9 +55,14 @@ export const typedExportOf = (request: { readonly entry: PublicTypeEntry }): Typ
   module: modulePathOf(request.entry),
 });
 
-export const declarationReachedBy = (request: { readonly from: string; readonly specifier: string }): string | undefined =>
+export const declarationReachedBy = (request: {
+  readonly from: string;
+  readonly specifier: string;
+}): string | undefined =>
   RELATIVE_SPECIFIER.test(request.specifier)
-    ? new URL(request.specifier, `file:///${request.from}`).pathname.slice(1).replace(MODULE_EXTENSION, DECLARATION_EXTENSION)
+    ? new URL(request.specifier, `file:///${request.from}`).pathname
+        .slice(1)
+        .replace(MODULE_EXTENSION, DECLARATION_EXTENSION)
     : undefined;
 
 const specifiersOf = (request: {
@@ -77,18 +87,29 @@ const reachedFrom = (request: {
   ];
   return next.length === 0
     ? request.reached
-    : reachedFrom({ declarations: request.declarations, reached: new Set([...request.reached, ...next]), frontier: next });
+    : reachedFrom({
+        declarations: request.declarations,
+        reached: new Set([...request.reached, ...next]),
+        frontier: next,
+      });
 };
 
 const declarationsByPath = (request: {
   readonly declarations: readonly EmittedDeclaration[];
-}): ReadonlyMap<string, EmittedDeclaration> => new Map(request.declarations.map((declaration) => [declaration.path, declaration]));
+}): ReadonlyMap<string, EmittedDeclaration> =>
+  new Map(request.declarations.map((declaration) => [declaration.path, declaration]));
 
 export const reachableDeclarations = (request: {
   readonly declarations: readonly EmittedDeclaration[];
   readonly roots: readonly string[];
 }): readonly string[] =>
-  [...reachedFrom({ declarations: declarationsByPath(request), reached: new Set(request.roots), frontier: request.roots })].sort();
+  [
+    ...reachedFrom({
+      declarations: declarationsByPath(request),
+      reached: new Set(request.roots),
+      frontier: request.roots,
+    }),
+  ].sort();
 
 const packageImportProblems = (request: {
   readonly declarations: ReadonlyMap<string, EmittedDeclaration>;
@@ -97,8 +118,13 @@ const packageImportProblems = (request: {
 }): readonly string[] =>
   request.reached.flatMap((path) =>
     specifiersOf({ declarations: request.declarations, path })
-      .filter((specifier) => !RELATIVE_SPECIFIER.test(specifier) && !request.requiredPeers.includes(specifier))
-      .map((specifier) => `${path} imports ${specifier}, which is neither shipped nor a required peer`),
+      .filter(
+        (specifier) =>
+          !RELATIVE_SPECIFIER.test(specifier) && !request.requiredPeers.includes(specifier),
+      )
+      .map(
+        (specifier) => `${path} imports ${specifier}, which is neither shipped nor a required peer`,
+      ),
   );
 
 const publicationProblems = (request: {
@@ -108,8 +134,14 @@ const publicationProblems = (request: {
   readonly requiredPeers: readonly string[];
 }): readonly string[] => [
   ...request.emit.diagnostics.map((diagnostic) => `declaration emit reported: ${diagnostic}`),
-  ...request.reached.flatMap((path) => (request.declarations.get(path)?.refusals ?? []).map((refusal) => `declaration emit reported: ${refusal}`)),
-  ...request.reached.filter((path) => !request.declarations.has(path)).map((path) => `${path} is reached but was not emitted`),
+  ...request.reached.flatMap((path) =>
+    (request.declarations.get(path)?.refusals ?? []).map(
+      (refusal) => `declaration emit reported: ${refusal}`,
+    ),
+  ),
+  ...request.reached
+    .filter((path) => !request.declarations.has(path))
+    .map((path) => `${path} is reached but was not emitted`),
   ...packageImportProblems(request),
 ];
 
@@ -123,7 +155,12 @@ export const publishedDeclarationsOf = (request: {
     declarations: request.emit.declarations,
     roots: request.entries.map((entry) => declarationPathOf(entry)),
   });
-  const problems = publicationProblems({ emit: request.emit, declarations, reached, requiredPeers: request.requiredPeers });
+  const problems = publicationProblems({
+    emit: request.emit,
+    declarations,
+    reached,
+    requiredPeers: request.requiredPeers,
+  });
   return problems.length > 0
     ? { outcome: "failed", error: problems }
     : {
@@ -141,11 +178,18 @@ export const declarationFilesOf = async (request: {
   readonly entries: readonly PublicTypeEntry[];
   readonly requiredPeers: readonly string[];
 }): Promise<Result<readonly PublishedFile[], string>> => {
-  const emitted = await request.port.emit({ sourceRoot: request.sourceRoot, entryPoints: request.entries.map((entry) => entry.source) });
+  const emitted = await request.port.emit({
+    sourceRoot: request.sourceRoot,
+    entryPoints: request.entries.map((entry) => entry.source),
+  });
   if (emitted.outcome === "failed") {
     return { outcome: "failed", error: `FAIL: emit declarations: ${emitted.error.detail}` };
   }
-  const published = publishedDeclarationsOf({ emit: emitted.value, entries: request.entries, requiredPeers: request.requiredPeers });
+  const published = publishedDeclarationsOf({
+    emit: emitted.value,
+    entries: request.entries,
+    requiredPeers: request.requiredPeers,
+  });
   return published.outcome === "failed"
     ? { outcome: "failed", error: `FAIL: publish declarations: ${published.error.join("; ")}` }
     : published;

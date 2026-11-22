@@ -1,12 +1,13 @@
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { type ChecksRepository, checksRepositoryOver } from "../checks-runner/checks-repository.ts";
 import {
   type ConfigLookup,
   configLookupDeclaring,
@@ -15,7 +16,6 @@ import {
   teamConfigLookupFor,
 } from "../config-roots/config-lookup.ts";
 import { selectionLookupSchema } from "../native-exceptions/eslint-file-schemas.ts";
-import { type ChecksRepository, checksRepositoryOver } from "../checks-runner/checks-repository.ts";
 
 const VERSION_ONE_SETTINGS_FILE = "disciplines.json";
 
@@ -27,7 +27,9 @@ type VersionOneLookupRequest = {
 };
 
 const declaredLookup = (request: VersionOneLookupRequest): EslintConfigLookup | undefined => {
-  const text = request.fileText.read({ path: request.path.join({ segments: [request.repoRoot, VERSION_ONE_SETTINGS_FILE] }) });
+  const text = request.fileText.read({
+    path: request.path.join({ segments: [request.repoRoot, VERSION_ONE_SETTINGS_FILE] }),
+  });
   const json = text.outcome === "ok" ? parsedJson({ text: text.value }) : undefined;
   const parsed = json?.outcome === "ok" ? selectionLookupSchema.safeParse(json.value) : undefined;
   return parsed?.success ? parsed.data.eslintConfigLookup : undefined;
@@ -36,8 +38,14 @@ const declaredLookup = (request: VersionOneLookupRequest): EslintConfigLookup | 
 const versionOneConfigLookup = (request: VersionOneLookupRequest): EslintConfigLookup =>
   configLookupDeclaring({ ...request, declared: declaredLookup(request) });
 
-const versionOneTeamConfigLookup = (request: VersionOneLookupRequest): Result<ConfigLookup, RunnerFailure> =>
-  teamConfigLookupFor({ ...request, lookup: versionOneConfigLookup(request), settingsFile: VERSION_ONE_SETTINGS_FILE });
+const versionOneTeamConfigLookup = (
+  request: VersionOneLookupRequest,
+): Result<ConfigLookup, RunnerFailure> =>
+  teamConfigLookupFor({
+    ...request,
+    lookup: versionOneConfigLookup(request),
+    settingsFile: VERSION_ONE_SETTINGS_FILE,
+  });
 
 export type TrackedPathsRequest = { readonly trackedPaths: readonly RepoPath[] };
 

@@ -1,46 +1,54 @@
 import { describe, expect, it } from "vitest";
-import type { Selection } from "../../domain/settings/selection/selection.ts";
+
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
-import type { Result } from "../../domain/result.ts";
-import { headRecordsOf } from "./head-records.ts";
-import type { HeadRecord, HeadRecordsRefusal } from "../../domain/records/upgrade/head-records.ts";
 import type { VersionOneWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { HeadRecord, HeadRecordsRefusal } from "../../domain/records/upgrade/head-records.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import type { Selection } from "../../domain/settings/selection/selection.ts";
+import { headRecordsOf } from "./head-records.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
@@ -50,7 +58,11 @@ const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
 const AUDIT = "walker" as const;
 
-const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
 const SELECTION: Selection = {
   selected: [{ address: LOOPS, mechanism: AUDIT, exceptions: "allowed" }],
@@ -76,8 +88,15 @@ const CARVE_OUT: PlacedEntry = {
 
 const AT_2 = { layout: "single-file", file: RECORDS_FILE, index: 2 } as const;
 
-const headRecords = (request: { readonly entries: readonly PlacedEntry[] }): Result<readonly HeadRecord[], HeadRecordsRefusal> =>
-  headRecordsOf({ entries: request.entries, selection: SELECTION, fileExceptionWhyChains: "optional", baseline: UNMEASURED_EXCEPTION_BASELINE });
+const headRecords = (request: {
+  readonly entries: readonly PlacedEntry[];
+}): Result<readonly HeadRecord[], HeadRecordsRefusal> =>
+  headRecordsOf({
+    entries: request.entries,
+    selection: SELECTION,
+    fileExceptionWhyChains: "optional",
+    baseline: UNMEASURED_EXCEPTION_BASELINE,
+  });
 
 describe("headRecordsOf", () => {
   it("pairs an authorised location with the entry as the file holds it", () => {
@@ -86,8 +105,19 @@ describe("headRecordsOf", () => {
       value: [
         {
           kind: "authorised-location",
-          record: { kind: "authorised-location", clause: LOOPS, mechanism: AUDIT, file: "src/a.ts", reason: "kept" },
-          entry: { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "kept" },
+          record: {
+            kind: "authorised-location",
+            clause: LOOPS,
+            mechanism: AUDIT,
+            file: "src/a.ts",
+            reason: "kept",
+          },
+          entry: {
+            kind: "authorised-location",
+            clause: "CD-15#loops",
+            file: "src/a.ts",
+            reason: "kept",
+          },
         },
       ],
     });
@@ -99,8 +129,19 @@ describe("headRecordsOf", () => {
       value: [
         {
           kind: "file-carve-out",
-          record: { kind: "file-carve-out", clause: LOOPS, mechanism: AUDIT, file: "src/b.ts", reason: "legacy loop" },
-          entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/b.ts", reason: "legacy loop" },
+          record: {
+            kind: "file-carve-out",
+            clause: LOOPS,
+            mechanism: AUDIT,
+            file: "src/b.ts",
+            reason: "legacy loop",
+          },
+          entry: {
+            kind: "file-carve-out",
+            clause: "CD-15#loops",
+            file: "src/b.ts",
+            reason: "legacy loop",
+          },
         },
       ],
     });
@@ -112,41 +153,113 @@ describe("headRecordsOf", () => {
       value: [
         {
           kind: "file-carve-out",
-          record: { kind: "file-carve-out", clause: LOOPS, mechanism: AUDIT, file: "src/b.ts", reason: "legacy loop" },
-          entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/b.ts", reason: "legacy loop" },
+          record: {
+            kind: "file-carve-out",
+            clause: LOOPS,
+            mechanism: AUDIT,
+            file: "src/b.ts",
+            reason: "legacy loop",
+          },
+          entry: {
+            kind: "file-carve-out",
+            clause: "CD-15#loops",
+            file: "src/b.ts",
+            reason: "legacy loop",
+          },
         },
         {
           kind: "authorised-location",
-          record: { kind: "authorised-location", clause: LOOPS, mechanism: AUDIT, file: "src/a.ts", reason: "kept" },
-          entry: { kind: "authorised-location", clause: "CD-15#loops", file: "src/a.ts", reason: "kept" },
+          record: {
+            kind: "authorised-location",
+            clause: LOOPS,
+            mechanism: AUDIT,
+            file: "src/a.ts",
+            reason: "kept",
+          },
+          entry: {
+            kind: "authorised-location",
+            clause: "CD-15#loops",
+            file: "src/a.ts",
+            reason: "kept",
+          },
         },
       ],
     });
   });
 
   it("pairs a file carve-out that carries a provenance with the whole entry, provenance included", () => {
-    const provenance = { kind: "inherited-debt", source: "the old repository", decision: "keep until rewritten" } as const;
+    const provenance = {
+      kind: "inherited-debt",
+      source: "the old repository",
+      decision: "keep until rewritten",
+    } as const;
     expect(
-      headRecords({ entries: [{ place: AT_1, entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/b.ts", reason: "legacy loop", provenance } }] }),
+      headRecords({
+        entries: [
+          {
+            place: AT_1,
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/b.ts",
+              reason: "legacy loop",
+              provenance,
+            },
+          },
+        ],
+      }),
     ).toEqual({
       outcome: "ok",
       value: [
         {
           kind: "file-carve-out",
-          record: { kind: "file-carve-out", clause: LOOPS, mechanism: AUDIT, file: "src/b.ts", reason: "legacy loop", provenance },
-          entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/b.ts", reason: "legacy loop", provenance },
+          record: {
+            kind: "file-carve-out",
+            clause: LOOPS,
+            mechanism: AUDIT,
+            file: "src/b.ts",
+            reason: "legacy loop",
+            provenance,
+          },
+          entry: {
+            kind: "file-carve-out",
+            clause: "CD-15#loops",
+            file: "src/b.ts",
+            reason: "legacy loop",
+            provenance,
+          },
         },
       ],
     });
   });
 
   it("pairs a clause-wide carve-out with no entry, since version 2 holds none of it", () => {
-    expect(headRecords({ entries: [{ place: AT_0, entry: { kind: "clause-wide-carve-out", clause: "CD-15#loops", reason: "generated", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN } }] })).toEqual({
+    expect(
+      headRecords({
+        entries: [
+          {
+            place: AT_0,
+            entry: {
+              kind: "clause-wide-carve-out",
+              clause: "CD-15#loops",
+              reason: "generated",
+              whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
+            },
+          },
+        ],
+      }),
+    ).toEqual({
       outcome: "ok",
       value: [
         {
           kind: "clause-wide-carve-out",
-          record: { kind: "clause-wide-carve-out", clause: LOOPS, mechanism: AUDIT, reason: "generated", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
+          record: {
+            kind: "clause-wide-carve-out",
+            clause: LOOPS,
+            mechanism: AUDIT,
+            reason: "generated",
+            whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
+          },
         },
       ],
     });
@@ -167,18 +280,44 @@ describe("headRecordsOf", () => {
         kind: "invalid-records",
         invalid: [
           { place: AT_1, problem: { kind: "duplicate", of: AT_0 } },
-          { place: AT_2, problem: { kind: "clause-not-selected", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-16"), clause: clauseIdOf("unselected") } } },
+          {
+            place: AT_2,
+            problem: {
+              kind: "clause-not-selected",
+              clause: {
+                ruleSet: TOOL_RULE_SET,
+                discipline: disciplineIdOf("CD-16"),
+                clause: clauseIdOf("unselected"),
+              },
+            },
+          },
         ],
       },
     });
   });
 
   it("refuses an entry whose clause the selection does not run", () => {
-    expect(headRecords({ entries: [{ place: AT_0, entry: { ...AUTHORISED.entry, clause: "CD-16#unselected" } }] })).toEqual({
+    expect(
+      headRecords({
+        entries: [{ place: AT_0, entry: { ...AUTHORISED.entry, clause: "CD-16#unselected" } }],
+      }),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "invalid-records",
-        invalid: [{ place: AT_0, problem: { kind: "clause-not-selected", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-16"), clause: clauseIdOf("unselected") } } }],
+        invalid: [
+          {
+            place: AT_0,
+            problem: {
+              kind: "clause-not-selected",
+              clause: {
+                ruleSet: TOOL_RULE_SET,
+                discipline: disciplineIdOf("CD-16"),
+                clause: clauseIdOf("unselected"),
+              },
+            },
+          },
+        ],
       },
     });
   });
@@ -186,7 +325,18 @@ describe("headRecordsOf", () => {
   it("refuses an entry that is not a JSON value rather than dropping its record, however many valid entries follow", () => {
     expect(
       headRecords({
-        entries: [{ place: AT_0, entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/b.ts", reason: undefined } }, AUTHORISED],
+        entries: [
+          {
+            place: AT_0,
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/b.ts",
+              reason: undefined,
+            },
+          },
+          AUTHORISED,
+        ],
       }),
     ).toEqual({
       outcome: "failed",

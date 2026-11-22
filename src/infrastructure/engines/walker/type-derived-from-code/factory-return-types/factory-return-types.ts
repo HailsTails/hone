@@ -1,5 +1,5 @@
-import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -22,9 +22,12 @@ export const check: WalkerPiece = {
         const hits = text.value.split(/\r?\n/).flatMap((line, index) => {
           const trimmed = line.trim();
           if (
-            trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*") ||
+            trimmed.startsWith("//") ||
+            trimmed.startsWith("*") ||
+            trimmed.startsWith("/*") ||
             !RETURN_TYPE_TYPEOF.test(line)
-          ) return [];
+          )
+            return [];
           const collapsed = trimmed.replace(/\s+/g, " ");
           const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
           return clauses.map((clause) => ({

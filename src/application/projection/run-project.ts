@@ -1,12 +1,11 @@
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import type { ProjectionRequest } from "../ports/engine/runner-module.ts";
+import type { LoadFailure } from "../../domain/report/load-failure.ts";
+import type { Result } from "../../domain/result.ts";
 import type { ProjectionWrite } from "../../domain/runner/runner-result-types.ts";
+import type { ProjectionRequest } from "../ports/engine/runner-module.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { SelectionRepositoryOf } from "../ports/selection/selection-repository.ts";
-import type { Result } from "../../domain/result.ts";
-import type { LoadFailure } from "../../domain/report/load-failure.ts";
-import type { CheckedTree } from "../run/checked-tree-of.ts";
 import {
   allOk,
   type CheckRequest,
@@ -16,8 +15,12 @@ import {
   runnerFailed,
   treeOf,
 } from "../run/check/run-check.ts";
+import type { CheckedTree } from "../run/checked-tree-of.ts";
 
-export type ProjectRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "selectionRepository" | "fileText" | "shownPathOf"> & {
+export type ProjectRequest = Omit<
+  CheckRequest,
+  "baseRevision" | "assessment" | "selectionRepository" | "fileText" | "shownPathOf"
+> & {
   readonly fileText: FileTextPort;
   readonly selectionRepositoryOf: SelectionRepositoryOf;
 };
@@ -38,10 +41,12 @@ const projectionRequestOf = (request: ProjectionInputs): ProjectionRequest => ({
   records: recordsOf({ records: request.records, mechanism: request.loaded.mechanism }),
 });
 
-const projectionWritesOf = (request: ProjectionInputs): Promise<Result<readonly ProjectionWrite[], LoadFailure>> =>
-  request.project.engine.project.withRecords({ runner: request.loaded.runner, request: projectionRequestOf(request) }).then(
-    (runnerResult) => runnerFailed({ mechanism: request.loaded.mechanism, runnerResult }),
-  );
+const projectionWritesOf = (
+  request: ProjectionInputs,
+): Promise<Result<readonly ProjectionWrite[], LoadFailure>> =>
+  request.project.engine.project
+    .withRecords({ runner: request.loaded.runner, request: projectionRequestOf(request) })
+    .then((runnerResult) => runnerFailed({ mechanism: request.loaded.mechanism, runnerResult }));
 
 export const runProject = async (
   request: ProjectRequest,
@@ -61,7 +66,12 @@ export const runProject = async (
   const writes = allOk({
     results: await Promise.all(
       inputs.value.mechanisms.map((loaded) =>
-        projectionWritesOf({ project: request, records: inputs.value.records, tree: tree.value, loaded }),
+        projectionWritesOf({
+          project: request,
+          records: inputs.value.records,
+          tree: tree.value,
+          loaded,
+        }),
       ),
     ),
   });

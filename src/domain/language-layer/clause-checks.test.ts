@@ -1,15 +1,28 @@
 import { describe, expect, it } from "vitest";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";
+
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import type { RuleSetCatalogue } from "../settings/check-choices.ts";
 import { checksOfClause } from "./clause-checks.ts";
-import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
-import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
+import type {
+  Check,
+  Engine,
+  Principle,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "./symptom-catalogue.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION_KIND: RecordKind = {
   name: "authorised-location",
@@ -42,17 +55,47 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
-const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
+const LAYERING_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-13"),
+  clause: clauseIdOf("layering"),
+};
 
-const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: LOOPS_CLAUSE,
+  engines: [WALKER, ESLINT_ENGINE],
+  forms: [],
+};
 
-const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
 
-const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-let"],
+};
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS],
@@ -81,22 +124,47 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const CATALOGUES: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: SETTINGS_CATALOGUE }];
+const CATALOGUES: readonly RuleSetCatalogue[] = [
+  { ruleSet: "hone", catalogue: SETTINGS_CATALOGUE },
+];
 
 describe("checksOfClause", () => {
   it("finds the one check of a clause in its rule set's catalogue", () => {
-    expect(checksOfClause({ catalogues: CATALOGUES, clause: LOOPS_CLAUSE })).toEqual([LOOP_KEYWORD_LOOPS]);
+    expect(checksOfClause({ catalogues: CATALOGUES, clause: LOOPS_CLAUSE })).toEqual([
+      LOOP_KEYWORD_LOOPS,
+    ]);
   });
 
   it("finds each check of a clause that has two", () => {
-    expect(checksOfClause({ catalogues: CATALOGUES, clause: TEST_BODY_CLAUSE })).toEqual([SETTINGS_CATALOGUE.checks[1], SETTINGS_CATALOGUE.checks[2]]);
+    expect(checksOfClause({ catalogues: CATALOGUES, clause: TEST_BODY_CLAUSE })).toEqual([
+      SETTINGS_CATALOGUE.checks[1],
+      SETTINGS_CATALOGUE.checks[2],
+    ]);
   });
 
   it("finds nothing for a clause that has no check", () => {
-    expect(checksOfClause({ catalogues: CATALOGUES, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") } })).toEqual([]);
+    expect(
+      checksOfClause({
+        catalogues: CATALOGUES,
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-13"),
+          clause: clauseIdOf("layering"),
+        },
+      }),
+    ).toEqual([]);
   });
 
   it("finds nothing for a clause of a rule set that has no catalogue", () => {
-    expect(checksOfClause({ catalogues: CATALOGUES, clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") } })).toEqual([]);
+    expect(
+      checksOfClause({
+        catalogues: CATALOGUES,
+        clause: {
+          ruleSet: { name: ruleSetNameOf("team") },
+          discipline: disciplineIdOf("CD-15"),
+          clause: clauseIdOf("loops"),
+        },
+      }),
+    ).toEqual([]);
   });
 });

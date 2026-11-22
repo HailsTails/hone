@@ -1,8 +1,12 @@
 import { z } from "zod";
+
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import type { ToolIdentity } from "../../src/domain/rule-set/tool-identity.ts";
 
-const releaseTextArgumentsSchema = z.tuple([z.enum(["title", "notes", "dist-tag"]), z.string().min(1)]);
+const releaseTextArgumentsSchema = z.tuple([
+  z.enum(["title", "notes", "dist-tag"]),
+  z.string().min(1),
+]);
 
 export type ReleaseTextPart = z.infer<typeof releaseTextArgumentsSchema>[0];
 
@@ -35,7 +39,10 @@ export const releaseTextOf = (request: {
   }
 };
 
-export const runReleaseText = (request: { readonly process: ProcessPort; readonly identity: ToolIdentity }): void => {
+export const runReleaseText = (request: {
+  readonly process: ProcessPort;
+  readonly identity: ToolIdentity;
+}): void => {
   const parsed = releaseTextArgumentsSchema.safeParse(request.process.arguments);
   if (!parsed.success) {
     request.process.writeError({ text: USAGE });

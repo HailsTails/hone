@@ -27,7 +27,11 @@ export type ProjectionRequest = {
 
 export type ChecksBinding = {
   readonly mechanism: string;
-  readonly clause: { readonly address: ClauseAddress; readonly pieceRoot: string; readonly settings: unknown };
+  readonly clause: {
+    readonly address: ClauseAddress;
+    readonly pieceRoot: string;
+    readonly settings: unknown;
+  };
 };
 
 export type ChecksRunRequest = {

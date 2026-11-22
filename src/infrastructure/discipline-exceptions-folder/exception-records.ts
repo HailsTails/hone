@@ -1,17 +1,16 @@
 import { z } from "zod";
-import type { Selection } from "../../domain/settings/selection/selection.ts";
-import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
-import { clauseAddressSchema } from "./clause-address.ts";
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
-import { sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
-import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
-import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { basePathOf } from "../../domain/repository/renamed-path.ts";
-import type { Result } from "../../domain/result.ts";
-import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
-import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
+
+import type { ExceptionEntryParser } from "../../application/ports/records/exception-entries.ts";
+import {
+  type ExceptionBaseline,
+  type MeasuredBaseline,
+  judgedAtBase,
+} from "../../domain/records/discipline-exceptions/exception-baseline.ts";
+import type {
+  ImportEvidence,
+  PlacedEntry,
+  StructuralExceptionEntry,
+} from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type {
   AuthorisedLocationEntry,
   ExceptionReading,
@@ -20,14 +19,28 @@ import type {
   InvalidRecord,
   RecordPlace,
 } from "../../domain/records/discipline-exceptions/exception-record.ts";
-import type { ImportEvidence, PlacedEntry, StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
-import { type ExceptionBaseline, type MeasuredBaseline, judgedAtBase } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
-import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
 import type { RecordedWhyChain } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import type { ExceptionEntryParser } from "../../application/ports/records/exception-entries.ts";
+import { basePathOf } from "../../domain/repository/renamed-path.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { Result } from "../../domain/result.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import { sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
+import { TOOL_IDENTITY } from "../../domain/rule-set/tool-identity.ts";
+import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
+import type { Selection } from "../../domain/settings/selection/selection.ts";
+import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
+import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
+import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
+import { clauseAddressSchema } from "./clause-address.ts";
+import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
 
-type IndexedRecord = { readonly index: number; readonly place: RecordPlace; readonly record: ExceptionRecord };
+type IndexedRecord = {
+  readonly index: number;
+  readonly place: RecordPlace;
+  readonly record: ExceptionRecord;
+};
 
 type EntryProblem = InvalidRecord["problem"];
 
@@ -61,7 +74,10 @@ const exceptionsFileSchema = z.object({
   ),
 });
 
-export const isStructuralExceptionEntryEqual: Equal<z.infer<typeof exceptionsFileSchema>["exceptions"][number], StructuralExceptionEntry> = true;
+export const isStructuralExceptionEntryEqual: Equal<
+  z.infer<typeof exceptionsFileSchema>["exceptions"][number],
+  StructuralExceptionEntry
+> = true;
 
 export const exceptionEntriesOfDocument = (request: {
   readonly document: unknown;
@@ -76,9 +92,13 @@ const RECORDS_DOCUMENT_KEYS: readonly string[] = Object.keys(exceptionsFileSchem
 
 const documentKeysSchema = z.record(z.string(), z.unknown());
 
-export const foreignKeysOfDocument = (request: { readonly document: unknown }): readonly string[] => {
+export const foreignKeysOfDocument = (request: {
+  readonly document: unknown;
+}): readonly string[] => {
   const keys = documentKeysSchema.safeParse(request.document);
-  return keys.success ? Object.keys(keys.data).filter((key) => !RECORDS_DOCUMENT_KEYS.includes(key)) : [];
+  return keys.success
+    ? Object.keys(keys.data).filter((key) => !RECORDS_DOCUMENT_KEYS.includes(key))
+    : [];
 };
 
 const LEGACY_DIRECTORY_OF = {
@@ -91,7 +111,10 @@ type ImportProvenanceKind = keyof typeof LEGACY_DIRECTORY_OF;
 const LEGACY_SOURCE = /^(?<directory>[^/#]+)\/(?<stem>cd-[0-9a-z]+)\.json#(?<index>\d+)$/;
 
 const legacySourceGroupsSchema = z.object({
-  directory: z.enum([LEGACY_DIRECTORY_OF["inherited-debt"], LEGACY_DIRECTORY_OF["existing-authorisation"]]),
+  directory: z.enum([
+    LEGACY_DIRECTORY_OF["inherited-debt"],
+    LEGACY_DIRECTORY_OF["existing-authorisation"],
+  ]),
   stem: z.string(),
   index: z.coerce.number().int().nonnegative(),
 });
@@ -105,7 +128,9 @@ type LegacySource = {
   readonly index: number;
 };
 
-const recordedTextSchema = z.string().refine((text) => text.trim().length > 0, { error: "must not be blank" });
+const recordedTextSchema = z
+  .string()
+  .refine((text) => text.trim().length > 0, { error: "must not be blank" });
 
 const existingAuthorisationProvenanceSchema = z.strictObject({
   kind: z.literal("existing-authorisation"),
@@ -134,13 +159,28 @@ type Unjudged<Entry> = Entry extends { readonly whyChain: RecordedWhyChain }
 
 const unjudgedWhyChainSchema = z.custom<UnjudgedWhyChain>((whyChain) => whyChain !== undefined);
 
-const reasonOnlyFields = { reason: recordedTextSchema, whyChain: z.never().optional(), provenance: z.never().optional() };
+const reasonOnlyFields = {
+  reason: recordedTextSchema,
+  whyChain: z.never().optional(),
+  provenance: z.never().optional(),
+};
 
-const chainedAuthorisedLocationSchema = z.strictObject({ ...authorisedLocationFields, whyChain: unjudgedWhyChainSchema, provenance: existingAuthorisationProvenanceSchema.optional() });
+const chainedAuthorisedLocationSchema = z.strictObject({
+  ...authorisedLocationFields,
+  whyChain: unjudgedWhyChainSchema,
+  provenance: existingAuthorisationProvenanceSchema.optional(),
+});
 
-const importedAuthorisedLocationSchema = z.strictObject({ ...authorisedLocationFields, whyChain: z.never().optional(), provenance: existingAuthorisationProvenanceSchema });
+const importedAuthorisedLocationSchema = z.strictObject({
+  ...authorisedLocationFields,
+  whyChain: z.never().optional(),
+  provenance: existingAuthorisationProvenanceSchema,
+});
 
-const reasonedAuthorisedLocationSchema = z.strictObject({ ...authorisedLocationFields, ...reasonOnlyFields });
+const reasonedAuthorisedLocationSchema = z.strictObject({
+  ...authorisedLocationFields,
+  ...reasonOnlyFields,
+});
 
 const fileCarveOutFields = {
   kind: z.literal("file-carve-out"),
@@ -149,11 +189,23 @@ const fileCarveOutFields = {
   reason: z.string().optional(),
 };
 
-const chainedFileCarveOutSchema = z.strictObject({ ...fileCarveOutFields, whyChain: unjudgedWhyChainSchema, provenance: inheritedDebtProvenanceSchema.optional() });
+const chainedFileCarveOutSchema = z.strictObject({
+  ...fileCarveOutFields,
+  whyChain: unjudgedWhyChainSchema,
+  provenance: inheritedDebtProvenanceSchema.optional(),
+});
 
-const importedFileCarveOutSchema = z.strictObject({ ...fileCarveOutFields, whyChain: z.never().optional(), provenance: inheritedDebtProvenanceSchema });
+const importedFileCarveOutSchema = z.strictObject({
+  ...fileCarveOutFields,
+  whyChain: z.never().optional(),
+  provenance: inheritedDebtProvenanceSchema,
+});
 
-const plainFileCarveOutSchema = z.strictObject({ ...fileCarveOutFields, whyChain: z.never().optional(), provenance: z.never().optional() });
+const plainFileCarveOutSchema = z.strictObject({
+  ...fileCarveOutFields,
+  whyChain: z.never().optional(),
+  provenance: z.never().optional(),
+});
 
 type FileEvidenceSchemas = {
   readonly "authorised-location": z.ZodType<Unjudged<AuthorisedLocationEntry>>;
@@ -162,23 +214,45 @@ type FileEvidenceSchemas = {
 
 const FILE_EVIDENCE_SCHEMAS_OF: Readonly<Record<FileExceptionWhyChains, FileEvidenceSchemas>> = {
   required: {
-    "authorised-location": z.union([chainedAuthorisedLocationSchema, importedAuthorisedLocationSchema]),
-    "file-carve-out": z.union([chainedFileCarveOutSchema, importedFileCarveOutSchema, plainFileCarveOutSchema]),
+    "authorised-location": z.union([
+      chainedAuthorisedLocationSchema,
+      importedAuthorisedLocationSchema,
+    ]),
+    "file-carve-out": z.union([
+      chainedFileCarveOutSchema,
+      importedFileCarveOutSchema,
+      plainFileCarveOutSchema,
+    ]),
   },
   optional: {
-    "authorised-location": z.union([chainedAuthorisedLocationSchema, importedAuthorisedLocationSchema, reasonedAuthorisedLocationSchema]),
-    "file-carve-out": z.union([chainedFileCarveOutSchema, importedFileCarveOutSchema, plainFileCarveOutSchema]),
+    "authorised-location": z.union([
+      chainedAuthorisedLocationSchema,
+      importedAuthorisedLocationSchema,
+      reasonedAuthorisedLocationSchema,
+    ]),
+    "file-carve-out": z.union([
+      chainedFileCarveOutSchema,
+      importedFileCarveOutSchema,
+      plainFileCarveOutSchema,
+    ]),
   },
 };
 
-const legacySourceOf = (request: { readonly source: string }): LegacySource | "not-legacy-source" => {
+const legacySourceOf = (request: {
+  readonly source: string;
+}): LegacySource | "not-legacy-source" => {
   const groups = legacySourceGroupsSchema.safeParse(LEGACY_SOURCE.exec(request.source)?.groups);
   if (!groups.success) {
     return "not-legacy-source";
   }
   const path = repoPathSchema.safeParse(`${groups.data.directory}/${groups.data.stem}.json`);
   return path.success
-    ? { path: path.data, directory: groups.data.directory, discipline: groups.data.stem.toUpperCase(), index: groups.data.index }
+    ? {
+        path: path.data,
+        directory: groups.data.directory,
+        discipline: groups.data.stem.toUpperCase(),
+        index: groups.data.index,
+      }
     : "not-legacy-source";
 };
 
@@ -195,8 +269,9 @@ const sameEntry = (request: {
   readonly atHead: StructuralExceptionEntry;
   readonly repointed: Repointing;
 }): "same" | "different" =>
-  JSON.stringify(request.atBase, (_key, value: unknown) => (typeof value === "string" ? request.repointed({ text: value }) : value)) ===
-  JSON.stringify(request.atHead)
+  JSON.stringify(request.atBase, (_key, value: unknown) =>
+    typeof value === "string" ? request.repointed({ text: value }) : value,
+  ) === JSON.stringify(request.atHead)
     ? "same"
     : "different";
 
@@ -222,7 +297,8 @@ const legacyListing = (request: {
     return "not-listed";
   }
   const records = legacyRecordsSchema.safeParse(document.value);
-  return records.success && records.data[request.source.index]?.files.includes(request.file) === true
+  return records.success &&
+    records.data[request.source.index]?.files.includes(request.file) === true
     ? "listed"
     : "not-listed";
 };
@@ -232,9 +308,15 @@ const IMPORT_WAY_OUT: Readonly<Record<ImportedIdentity["kind"], string>> = {
   "file-carve-out": "give it a whyChain, or remove its provenance to keep it as debt",
 };
 
-const importRefused = (request: { readonly detail: string; readonly kind: ImportedIdentity["kind"] }): Result<never, EntryProblem> => ({
+const importRefused = (request: {
+  readonly detail: string;
+  readonly kind: ImportedIdentity["kind"];
+}): Result<never, EntryProblem> => ({
   outcome: "failed",
-  error: { kind: "import-unverified", detail: `${request.detail}: ${IMPORT_WAY_OUT[request.kind]}` },
+  error: {
+    kind: "import-unverified",
+    detail: `${request.detail}: ${IMPORT_WAY_OUT[request.kind]}`,
+  },
 });
 
 const REGULAR_EXPRESSION_SYNTAX = /[.*+?^${}()|[\]\\]/g;
@@ -250,7 +332,9 @@ const NOT_INSIDE_A_LONGER_PATH_AFTER = `(?!${PATH_CHARACTER_BESIDES_DOT}|\\.${PA
 const AS_RECORDED: Repointing = ({ text }) => text;
 
 const repointingOf = (request: { readonly baseline: MeasuredBaseline }): Repointing => {
-  const headPathOf = new Map<string, RepoPath>([...request.baseline.basePathOfRenamed].map(([headPath, basePath]) => [basePath, headPath]));
+  const headPathOf = new Map<string, RepoPath>(
+    [...request.baseline.basePathOfRenamed].map(([headPath, basePath]) => [basePath, headPath]),
+  );
   if (headPathOf.size === 0) {
     return AS_RECORDED;
   }
@@ -262,7 +346,10 @@ const repointingOf = (request: { readonly baseline: MeasuredBaseline }): Repoint
   return ({ text }) => text.replace(basePaths, (basePath) => headPathOf.get(basePath) ?? basePath);
 };
 
-const baseFormsOf = (request: { readonly baseline: MeasuredBaseline }): readonly Repointing[] => [AS_RECORDED, repointingOf(request)];
+const baseFormsOf = (request: { readonly baseline: MeasuredBaseline }): readonly Repointing[] => [
+  AS_RECORDED,
+  repointingOf(request),
+];
 
 const heldAtBase = (request: {
   readonly entry: StructuralExceptionEntry;
@@ -291,18 +378,27 @@ const importAgainstBase = <ImportedRecord>(request: {
   const forms = baseFormsOf({ baseline });
   if (
     baseline.entriesAtBase.some((atBase) =>
-      forms.some((repointed) => sameIdentity({ atBase, identity: request.identity, repointed }) === "same"),
+      forms.some(
+        (repointed) => sameIdentity({ atBase, identity: request.identity, repointed }) === "same",
+      ),
     )
   ) {
-    return importRefused({ detail: "the imported record was edited since the base revision", kind: request.identity.kind });
+    return importRefused({
+      detail: "the imported record was edited since the base revision",
+      kind: request.identity.kind,
+    });
   }
-  const fileAtBase = basePathOf({ file: request.identity.file, basePathOfRenamed: baseline.basePathOfRenamed });
+  const fileAtBase = basePathOf({
+    file: request.identity.file,
+    basePathOfRenamed: baseline.basePathOfRenamed,
+  });
   const source = legacySourceOf({ source: request.provenance.source });
   const listed =
     source !== "not-legacy-source" &&
     source.directory === LEGACY_DIRECTORY_OF[request.provenance.kind] &&
     source.discipline === request.discipline.toUpperCase() &&
-    legacyListing({ sourceTextsAtBase: baseline.sourceTextsAtBase, source, file: fileAtBase }) === "listed";
+    legacyListing({ sourceTextsAtBase: baseline.sourceTextsAtBase, source, file: fileAtBase }) ===
+      "listed";
   return listed
     ? { outcome: "ok", value: request.record }
     : importRefused({
@@ -327,9 +423,7 @@ const verifiedImport = <ImportedRecord>(request: {
     againstBase: (base) => importAgainstBase({ ...request, baseline: base }),
   });
 
-const recordedFile = (request: {
-  readonly file: string;
-}): Result<RepoPath, EntryProblem> => {
+const recordedFile = (request: { readonly file: string }): Result<RepoPath, EntryProblem> => {
   const parsed = repoPathSchema.safeParse(request.file);
   return parsed.success
     ? { outcome: "ok", value: parsed.data }
@@ -343,16 +437,23 @@ const chainRefused = (request: { readonly detail: string }): Result<never, Entry
   error: { kind: "why-chain-refused", detail: request.detail },
 });
 
-const causalChainOf = (request: { readonly whyChain: unknown; readonly preface: readonly string[] }): Result<RecordedWhyChain, EntryProblem> => {
+const causalChainOf = (request: {
+  readonly whyChain: unknown;
+  readonly preface: readonly string[];
+}): Result<RecordedWhyChain, EntryProblem> => {
   const parsed = versionOneWhyChainSchema.safeParse(request.whyChain);
   return parsed.success
     ? { outcome: "ok", value: parsed.data }
     : chainRefused({ detail: [...request.preface, z.prettifyError(parsed.error)].join("\n") });
 };
 
-const legacyChainOf = (request: { readonly whyChain: unknown }): Result<RecordedWhyChain, EntryProblem> => {
+const legacyChainOf = (request: {
+  readonly whyChain: unknown;
+}): Result<RecordedWhyChain, EntryProblem> => {
   const parsed = legacyWhyChainSchema.safeParse(request.whyChain);
-  return parsed.success ? { outcome: "ok", value: parsed.data } : chainRefused({ detail: z.prettifyError(parsed.error) });
+  return parsed.success
+    ? { outcome: "ok", value: parsed.data }
+    : chainRefused({ detail: z.prettifyError(parsed.error) });
 };
 
 const judgedWhyChain = (request: {
@@ -383,7 +484,9 @@ const unselectedKindOf = (request: {
       ["clause-not-run", request.selection.notRun],
     ] as const
   ).find(([, addresses]) =>
-    addresses.some((address) => sameClauseAddress({ left: address, right: request.clause }) === "same"),
+    addresses.some(
+      (address) => sameClauseAddress({ left: address, right: request.clause }) === "same",
+    ),
   )?.[0] ?? "clause-not-selected";
 
 const selectedClauseOf = (request: {
@@ -398,11 +501,14 @@ const selectedClauseOf = (request: {
     };
   }
   const clause = address.data;
-  const selected = request.selection.selected.find((candidate) =>
-    sameClauseAddress({ left: candidate.address, right: clause }) === "same",
+  const selected = request.selection.selected.find(
+    (candidate) => sameClauseAddress({ left: candidate.address, right: clause }) === "same",
   );
   if (selected === undefined) {
-    return { outcome: "failed", error: { kind: unselectedKindOf({ selection: request.selection, clause }), clause } };
+    return {
+      outcome: "failed",
+      error: { kind: unselectedKindOf({ selection: request.selection, clause }), clause },
+    };
   }
   if (selected.exceptions === "refused") {
     return { outcome: "failed", error: { kind: "non-exemptible-clause", clause } };
@@ -423,7 +529,10 @@ const fileRecordOf = (request: {
     const whyChain = judgedWhyChain({ whyChain: evidence.whyChain, entry, baseline });
     return whyChain.outcome === "failed"
       ? whyChain
-      : { outcome: "ok", value: { ...evidence, whyChain: whyChain.value, clause, mechanism, file } };
+      : {
+          outcome: "ok",
+          value: { ...evidence, whyChain: whyChain.value, clause, mechanism, file },
+        };
   }
   if (evidence.provenance === undefined) {
     return { outcome: "ok", value: { ...evidence, clause, mechanism, file } };
@@ -458,8 +567,18 @@ const parsedRecord = (request: {
       }
       const evidence = request.fileEvidence["authorised-location"].safeParse(entry);
       return evidence.success
-        ? fileRecordOf({ evidence: evidence.data, entry, clause, mechanism, file: file.value, baseline: request.baseline })
-        : { outcome: "failed", error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) } };
+        ? fileRecordOf({
+            evidence: evidence.data,
+            entry,
+            clause,
+            mechanism,
+            file: file.value,
+            baseline: request.baseline,
+          })
+        : {
+            outcome: "failed",
+            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
+          };
     }
     case "file-carve-out": {
       const file = recordedFile({ file: entry.file });
@@ -468,17 +587,37 @@ const parsedRecord = (request: {
       }
       const evidence = request.fileEvidence["file-carve-out"].safeParse(entry);
       return evidence.success
-        ? fileRecordOf({ evidence: evidence.data, entry, clause, mechanism, file: file.value, baseline: request.baseline })
-        : { outcome: "failed", error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) } };
+        ? fileRecordOf({
+            evidence: evidence.data,
+            entry,
+            clause,
+            mechanism,
+            file: file.value,
+            baseline: request.baseline,
+          })
+        : {
+            outcome: "failed",
+            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
+          };
     }
     case "clause-wide-carve-out": {
-      const whyChain = judgedWhyChain({ whyChain: entry.whyChain, entry, baseline: request.baseline });
+      const whyChain = judgedWhyChain({
+        whyChain: entry.whyChain,
+        entry,
+        baseline: request.baseline,
+      });
       if (whyChain.outcome === "failed") {
         return whyChain;
       }
       return {
         outcome: "ok",
-        value: { kind: entry.kind, clause, mechanism, reason: entry.reason, whyChain: whyChain.value },
+        value: {
+          kind: entry.kind,
+          clause,
+          mechanism,
+          reason: entry.reason,
+          whyChain: whyChain.value,
+        },
       };
     }
   }
@@ -491,7 +630,10 @@ const identityComparison = (request: {
   readonly right: ExceptionRecord;
 }): IdentityComparison => {
   const { left, right } = request;
-  if (left.kind !== right.kind || sameClauseAddress({ left: left.clause, right: right.clause }) === "different") {
+  if (
+    left.kind !== right.kind ||
+    sameClauseAddress({ left: left.clause, right: right.clause }) === "different"
+  ) {
     return "different-identity";
   }
   switch (left.kind) {
@@ -512,7 +654,8 @@ const originalRecordOf = (request: {
   request.valid.find(
     (earlier) =>
       earlier.index < request.candidate.index &&
-      identityComparison({ left: earlier.record, right: request.candidate.record }) === "same-identity",
+      identityComparison({ left: earlier.record, right: request.candidate.record }) ===
+        "same-identity",
   );
 
 type ParsedEntry = {
@@ -521,7 +664,9 @@ type ParsedEntry = {
   readonly record: Result<ExceptionRecord, EntryProblem>;
 };
 
-const validRecordsOf = (request: { readonly parsed: readonly ParsedEntry[] }): readonly IndexedRecord[] =>
+const validRecordsOf = (request: {
+  readonly parsed: readonly ParsedEntry[];
+}): readonly IndexedRecord[] =>
   request.parsed.flatMap(({ index, place, record }): readonly IndexedRecord[] =>
     record.outcome === "ok" ? [{ index, place, record: record.value }] : [],
   );
@@ -534,7 +679,10 @@ const invalidRecordOf = (request: {
   if (record.outcome === "failed") {
     return [{ place, problem: record.error }];
   }
-  const original = originalRecordOf({ valid: request.valid, candidate: { index, place, record: record.value } });
+  const original = originalRecordOf({
+    valid: request.valid,
+    candidate: { index, place, record: record.value },
+  });
   if (original === undefined) {
     return [];
   }
@@ -547,7 +695,9 @@ const invalidRecordsOf = (request: {
 }): readonly InvalidRecord[] =>
   request.parsed.flatMap((entry) => invalidRecordOf({ entry, valid: request.valid }));
 
-const firstRecordsOf = (request: { readonly valid: readonly IndexedRecord[] }): readonly ExceptionRecord[] =>
+const firstRecordsOf = (request: {
+  readonly valid: readonly IndexedRecord[];
+}): readonly ExceptionRecord[] =>
   request.valid
     .filter((candidate) => originalRecordOf({ valid: request.valid, candidate }) === undefined)
     .map(({ record }) => record);
@@ -559,13 +709,16 @@ export const parseExceptionEntries = (request: {
   readonly fileExceptionWhyChains: FileExceptionWhyChains;
 }): ExceptionReading => {
   const fileEvidence = FILE_EVIDENCE_SCHEMAS_OF[request.fileExceptionWhyChains];
-  const parsed = request.entries.map(
-    ({ place, entry }, index): ParsedEntry => ({
-      index,
-      place,
-      record: parsedRecord({ entry, selection: request.selection, baseline: request.baseline, fileEvidence }),
+  const parsed = request.entries.map(({ place, entry }, index): ParsedEntry => ({
+    index,
+    place,
+    record: parsedRecord({
+      entry,
+      selection: request.selection,
+      baseline: request.baseline,
+      fileEvidence,
     }),
-  );
+  }));
   const valid = validRecordsOf({ parsed });
   return { records: firstRecordsOf({ valid }), invalid: invalidRecordsOf({ parsed, valid }) };
 };
@@ -581,7 +734,9 @@ const importedEvidenceOf = (request: { readonly entry: StructuralExceptionEntry 
   }
 };
 
-const importEvidenceOf = (request: { readonly entry: StructuralExceptionEntry }): ImportEvidence => {
+const importEvidenceOf = (request: {
+  readonly entry: StructuralExceptionEntry;
+}): ImportEvidence => {
   const evidence = importedEvidenceOf(request);
   if (evidence === undefined || !evidence.success) {
     return { imported: "no" };
@@ -589,7 +744,9 @@ const importEvidenceOf = (request: { readonly entry: StructuralExceptionEntry })
   return { imported: "yes", source: evidence.data.provenance.source };
 };
 
-const importSourcePathsOf = (request: { readonly entry: StructuralExceptionEntry }): readonly RepoPath[] => {
+const importSourcePathsOf = (request: {
+  readonly entry: StructuralExceptionEntry;
+}): readonly RepoPath[] => {
   const evidence = importEvidenceOf(request);
   if (evidence.imported === "no") {
     return [];
@@ -601,13 +758,19 @@ const importSourcePathsOf = (request: { readonly entry: StructuralExceptionEntry
 export const importedEntriesIn = (request: {
   readonly entries: readonly StructuralExceptionEntry[];
 }): "present" | "absent" =>
-  request.entries.some((entry) => importEvidenceOf({ entry }).imported === "yes") ? "present" : "absent";
+  request.entries.some((entry) => importEvidenceOf({ entry }).imported === "yes")
+    ? "present"
+    : "absent";
 
 export const importSourcesOf = (request: {
   readonly entries: readonly StructuralExceptionEntry[];
-}): readonly RepoPath[] => [...new Set(request.entries.flatMap((entry) => importSourcePathsOf({ entry })))];
+}): readonly RepoPath[] => [
+  ...new Set(request.entries.flatMap((entry) => importSourcePathsOf({ entry }))),
+];
 
-export const exceptionEntriesOfText = (request: { readonly text: string }): readonly StructuralExceptionEntry[] => {
+export const exceptionEntriesOfText = (request: {
+  readonly text: string;
+}): readonly StructuralExceptionEntry[] => {
   const document = parsedJson({ text: request.text });
   if (document.outcome === "failed") {
     return [];
@@ -616,9 +779,18 @@ export const exceptionEntriesOfText = (request: { readonly text: string }): read
   return entries.outcome === "ok" ? entries.value : [];
 };
 
-export const exceptionEntryParser: ExceptionEntryParser = { parseExceptionEntries, importedEntriesIn, importSourcesOf };
+export const exceptionEntryParser: ExceptionEntryParser = {
+  parseExceptionEntries,
+  importedEntriesIn,
+  importSourcesOf,
+};
 
 const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
 
-export const placedInSingleFile = (request: { readonly entries: readonly StructuralExceptionEntry[] }): readonly PlacedEntry[] =>
-  request.entries.map((entry, index) => ({ place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index }, entry }));
+export const placedInSingleFile = (request: {
+  readonly entries: readonly StructuralExceptionEntry[];
+}): readonly PlacedEntry[] =>
+  request.entries.map((entry, index) => ({
+    place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index },
+    entry,
+  }));

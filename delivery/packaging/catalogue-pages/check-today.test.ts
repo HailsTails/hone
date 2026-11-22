@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { checkTodayOf } from "./check-today.ts";
+
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
+import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import { checkTodayOf } from "./check-today.ts";
 
 type Symptom = CatalogueFile["symptoms"][number];
 
@@ -19,11 +20,20 @@ const CHECKED: Symptom = {
   correctUses: [],
 };
 
-const PERSON_FIRST: Symptom = { ...CHECKED, name: "person-first", title: "Person first", seenBy: ["person", "types"] };
+const PERSON_FIRST: Symptom = {
+  ...CHECKED,
+  name: "person-first",
+  title: "Person first",
+  seenBy: ["person", "types"],
+};
 
 const REVIEWED: Symptom = { ...CHECKED, name: "reviewed", title: "Reviewed", seenBy: ["types"] };
 
-const SEEN_ONLY_BY_A_CHECKED_CLAUSE: Symptom = { ...CHECKED, name: "seen-only-by-a-checked-clause", title: "Seen only by a checked clause" };
+const SEEN_ONLY_BY_A_CHECKED_CLAUSE: Symptom = {
+  ...CHECKED,
+  name: "seen-only-by-a-checked-clause",
+  title: "Seen only by a checked clause",
+};
 
 const UNSEEN: Symptom = { ...CHECKED, name: "unseen", title: "Unseen" };
 
@@ -38,12 +48,40 @@ const FILE: CatalogueFile = {
   symptoms: [CHECKED, PERSON_FIRST, REVIEWED, SEEN_ONLY_BY_A_CHECKED_CLAUSE, UNSEEN],
   clauses: [
     {
-      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") },
-      sight: { kind: "symptom-by-form", forms: [{ section: "Form", symptom: "seen-only-by-a-checked-clause" }] },
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-1"),
+        clause: clauseIdOf("checked-clause"),
+      },
+      sight: {
+        kind: "symptom-by-form",
+        forms: [{ section: "Form", symptom: "seen-only-by-a-checked-clause" }],
+      },
     },
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("review-clause") }, sight: { kind: "method", recipe: "composition-root", outcomeSeenBy: ["reviewed", "person-first"] } },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-2"),
+        clause: clauseIdOf("review-clause"),
+      },
+      sight: {
+        kind: "method",
+        recipe: "composition-root",
+        outcomeSeenBy: ["reviewed", "person-first"],
+      },
+    },
   ],
-  checks: [{ symptom: "checked", name: "a-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") } }],
+  checks: [
+    {
+      symptom: "checked",
+      name: "a-check",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-1"),
+        clause: clauseIdOf("checked-clause"),
+      },
+    },
+  ],
   namedBans: [],
 };
 
@@ -55,7 +93,18 @@ describe("checkTodayOf", () => {
   it("is partial when every check the symptom has states what it misses", () => {
     const file: CatalogueFile = {
       ...FILE,
-      checks: [{ symptom: "checked", name: "a-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") }, misses: "the `let` form." }],
+      checks: [
+        {
+          symptom: "checked",
+          name: "a-check",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-1"),
+            clause: clauseIdOf("checked-clause"),
+          },
+          misses: "the `let` form.",
+        },
+      ],
     };
     expect(checkTodayOf({ file, symptom: CHECKED })).toBe("partial");
   });
@@ -64,8 +113,25 @@ describe("checkTodayOf", () => {
     const file: CatalogueFile = {
       ...FILE,
       checks: [
-        { symptom: "checked", name: "a-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") }, misses: "the `let` form." },
-        { symptom: "checked", name: "b-check", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("checked-clause") } },
+        {
+          symptom: "checked",
+          name: "a-check",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-1"),
+            clause: clauseIdOf("checked-clause"),
+          },
+          misses: "the `let` form.",
+        },
+        {
+          symptom: "checked",
+          name: "b-check",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-1"),
+            clause: clauseIdOf("checked-clause"),
+          },
+        },
       ],
     };
     expect(checkTodayOf({ file, symptom: CHECKED })).toBe("reuse");

@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { cataloguePagesOf } from "./catalogue-pages.ts";
+
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+import { cataloguePagesOf } from "./catalogue-pages.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
-const NAMES = { path: "src/infrastructure/disciplines-file/version-one-names.json", text: '{ "version": 1, "clauses": [], "recordKinds": {} }' };
+const NAMES = {
+  path: "src/infrastructure/disciplines-file/version-one-names.json",
+  text: '{ "version": 1, "clauses": [], "recordKinds": {} }',
+};
 
-const PRINCIPLE = { path: "rules/principles/one-place-decides.md", text: "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n" };
+const PRINCIPLE = {
+  path: "rules/principles/one-place-decides.md",
+  text: "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n",
+};
 
 const README = { path: "rules/README.md", text: "# Rules\n\nNo item.\n" };
 
@@ -14,7 +21,9 @@ const OUTSIDE_RULES = { path: "docs/principles/elsewhere.md", text: "Not an item
 
 describe("cataloguePagesOf", () => {
   it("renders the six pages from the item files under rules and the version 1 names", () => {
-    expect(cataloguePagesOf({ path: PATH, files: [NAMES, README, PRINCIPLE, OUTSIDE_RULES] })).toEqual({
+    expect(
+      cataloguePagesOf({ path: PATH, files: [NAMES, README, PRINCIPLE, OUTSIDE_RULES] }),
+    ).toEqual({
       outcome: "ok",
       value: [
         {
@@ -38,7 +47,18 @@ describe("cataloguePagesOf", () => {
   });
 
   it("fails naming the file when an item has no facts", () => {
-    expect(cataloguePagesOf({ path: PATH, files: [NAMES, { path: "rules/principles/one-place-decides.md", text: "# One place decides\n\nNo facts.\n" }] })).toEqual({
+    expect(
+      cataloguePagesOf({
+        path: PATH,
+        files: [
+          NAMES,
+          {
+            path: "rules/principles/one-place-decides.md",
+            text: "# One place decides\n\nNo facts.\n",
+          },
+        ],
+      }),
+    ).toEqual({
       outcome: "failed",
       error: "rules/principles/one-place-decides.md holds no fenced json block of facts",
     });

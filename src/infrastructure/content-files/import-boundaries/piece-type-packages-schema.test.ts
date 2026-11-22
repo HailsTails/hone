@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
 
 describe("pieceTypePackagesSchema", () => {

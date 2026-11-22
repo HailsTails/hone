@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { documentsWithAdded, documentsWithRemoved, placeOfAddition } from "./records-edit.ts";
+
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { documentsWithAdded, documentsWithRemoved, placeOfAddition } from "./records-edit.ts";
 
 const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
@@ -16,14 +17,18 @@ const HELD = { file: DEBT_FILE, document: { version: 2, records: [FIRST, SECOND]
 
 describe("adding records to the documents hone-records holds", () => {
   it("starts a version 2 document for a file no document holds", () => {
-    expect(documentsWithAdded({ documents: [], additions: [{ file: DEBT_FILE, entry: FIRST }] })).toEqual({
+    expect(
+      documentsWithAdded({ documents: [], additions: [{ file: DEBT_FILE, entry: FIRST }] }),
+    ).toEqual({
       outcome: "ok",
       value: [{ file: DEBT_FILE, document: { version: 2, records: [FIRST] } }],
     });
   });
 
   it("appends to a document, keeping the records it holds as they are", () => {
-    expect(documentsWithAdded({ documents: [HELD], additions: [{ file: DEBT_FILE, entry: THIRD }] })).toEqual({
+    expect(
+      documentsWithAdded({ documents: [HELD], additions: [{ file: DEBT_FILE, entry: THIRD }] }),
+    ).toEqual({
       outcome: "ok",
       value: [{ file: DEBT_FILE, document: { version: 2, records: [FIRST, SECOND, THIRD] } }],
     });
@@ -48,28 +53,45 @@ describe("adding records to the documents hone-records holds", () => {
   });
 
   it("refuses to add to a document that is not a records document, so it never rewrites what it cannot read", () => {
-    expect(documentsWithAdded({ documents: [{ file: DEBT_FILE, document: { records: [] } }], additions: [{ file: DEBT_FILE, entry: THIRD }] })).toEqual({
+    expect(
+      documentsWithAdded({
+        documents: [{ file: DEBT_FILE, document: { records: [] } }],
+        additions: [{ file: DEBT_FILE, entry: THIRD }],
+      }),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "records-documents", refusals: [{ kind: "document-refused", file: DEBT_FILE, issues: expect.any(Array) }] },
+      error: {
+        kind: "records-documents",
+        refusals: [{ kind: "document-refused", file: DEBT_FILE, issues: expect.any(Array) }],
+      },
     });
   });
 });
 
 describe("where an added record would sit", () => {
   it("is the first place of a file no document holds", () => {
-    expect(placeOfAddition({ documents: [], addition: { file: DEBT_FILE, entry: FIRST } })).toEqual({ file: DEBT_FILE, index: 0 });
+    expect(placeOfAddition({ documents: [], addition: { file: DEBT_FILE, entry: FIRST } })).toEqual(
+      { file: DEBT_FILE, index: 0 },
+    );
   });
 
   it("is the place after the records a document holds", () => {
-    expect(placeOfAddition({ documents: [HELD], addition: { file: DEBT_FILE, entry: THIRD } })).toEqual({ file: DEBT_FILE, index: 2 });
+    expect(
+      placeOfAddition({ documents: [HELD], addition: { file: DEBT_FILE, entry: THIRD } }),
+    ).toEqual({ file: DEBT_FILE, index: 2 });
   });
 });
 
 describe("removing records from the documents hone-records holds", () => {
   it("writes the document back without the records at the places, keeping the others as they are", () => {
-    expect(documentsWithRemoved({ documents: [HELD], places: [{ file: DEBT_FILE, index: 0 }] })).toEqual({
+    expect(
+      documentsWithRemoved({ documents: [HELD], places: [{ file: DEBT_FILE, index: 0 }] }),
+    ).toEqual({
       outcome: "ok",
-      value: { write: [{ file: DEBT_FILE, document: { version: 2, records: [SECOND] } }], remove: [] },
+      value: {
+        write: [{ file: DEBT_FILE, document: { version: 2, records: [SECOND] } }],
+        remove: [],
+      },
     });
   });
 
@@ -86,13 +108,24 @@ describe("removing records from the documents hone-records holds", () => {
   });
 
   it("changes no document it removes nothing from", () => {
-    expect(documentsWithRemoved({ documents: [HELD], places: [] })).toEqual({ outcome: "ok", value: { write: [], remove: [] } });
+    expect(documentsWithRemoved({ documents: [HELD], places: [] })).toEqual({
+      outcome: "ok",
+      value: { write: [], remove: [] },
+    });
   });
 
   it("refuses a document that is not a records document", () => {
-    expect(documentsWithRemoved({ documents: [{ file: DEBT_FILE, document: "text" }], places: [{ file: DEBT_FILE, index: 0 }] })).toEqual({
+    expect(
+      documentsWithRemoved({
+        documents: [{ file: DEBT_FILE, document: "text" }],
+        places: [{ file: DEBT_FILE, index: 0 }],
+      }),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "records-documents", refusals: [{ kind: "document-refused", file: DEBT_FILE, issues: expect.any(Array) }] },
+      error: {
+        kind: "records-documents",
+        refusals: [{ kind: "document-refused", file: DEBT_FILE, issues: expect.any(Array) }],
+      },
     });
   });
 });

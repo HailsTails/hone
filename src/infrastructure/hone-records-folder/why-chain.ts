@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { type Why, type WhyChain, causalProblemsOf } from "../../domain/records/why-chain.ts";
 
 const RESTATEMENT_PHRASES = [
@@ -19,7 +20,8 @@ const RESTATEMENT_OPENING = new RegExp(
 const MINIMUM_ANSWER_CHARACTERS = 12;
 const MINIMUM_OWNER_CHARACTERS = 2;
 const ONE_REPEATED_CHARACTER = /^(.)\1+$/;
-const PROSE_LOOKALIKES = /\b(?:e\.g\b\.?|i\.e\b\.?|a\.k\.a\.|etc\.|[ap]\.m\.)|(?<![\w./\\-])(?:and\/or|n\/a|w\/o|yes\/no)(?![\w./\\-])/gi;
+const PROSE_LOOKALIKES =
+  /\b(?:e\.g\b\.?|i\.e\b\.?|a\.k\.a\.|etc\.|[ap]\.m\.)|(?<![\w./\\-])(?:and\/or|n\/a|w\/o|yes\/no)(?![\w./\\-])/gi;
 const CHECKABLE_LOCATORS: readonly RegExp[] = [
   /https?:\/\/\S/i,
   /[\w.-][\\/][\w.-]/,
@@ -31,20 +33,18 @@ const CHECKABLE_LOCATORS: readonly RegExp[] = [
 const rootCauseReading = (request: {
   readonly rootCause: string;
 }): "restates-the-exception" | "names-a-cause" =>
-  RESTATEMENT_OPENING.test(request.rootCause.trim())
-    ? "restates-the-exception"
-    : "names-a-cause";
+  RESTATEMENT_OPENING.test(request.rootCause.trim()) ? "restates-the-exception" : "names-a-cause";
 
-const answerSubstance = (request: {
-  readonly answer: string;
-}): "substantive" | "placeholder" =>
+const answerSubstance = (request: { readonly answer: string }): "substantive" | "placeholder" =>
   request.answer.trim().length >= MINIMUM_ANSWER_CHARACTERS &&
   !ONE_REPEATED_CHARACTER.test(request.answer.trim())
     ? "substantive"
     : "placeholder";
 
 const evidenceReading = (request: { readonly evidence: string }): "checkable" | "unlocated" =>
-  CHECKABLE_LOCATORS.some((locator) => locator.test(request.evidence.replace(PROSE_LOOKALIKES, " ")))
+  CHECKABLE_LOCATORS.some((locator) =>
+    locator.test(request.evidence.replace(PROSE_LOOKALIKES, " ")),
+  )
     ? "checkable"
     : "unlocated";
 
@@ -55,14 +55,21 @@ export const substantiveTextSchema = (request: { readonly refusal: string }) =>
       error: request.refusal,
     });
 
-export const checkableTextSchema = (request: { readonly missing: string; readonly unlocated: string }) =>
-  substantiveTextSchema({ refusal: request.missing }).refine((evidence) => evidenceReading({ evidence }) === "checkable", {
-    error: request.unlocated,
-  });
+export const checkableTextSchema = (request: {
+  readonly missing: string;
+  readonly unlocated: string;
+}) =>
+  substantiveTextSchema({ refusal: request.missing }).refine(
+    (evidence) => evidenceReading({ evidence }) === "checkable",
+    {
+      error: request.unlocated,
+    },
+  );
 
 const WHY_QUESTION_MISSING = "is missing its `why` question";
 const BECAUSE_MISSING = "carries no real `because` answer: a placeholder is an absent answer";
-const EVIDENCE_MISSING = "carries no real `evidence`: cite a command, path, record id, PR, or named ruling";
+const EVIDENCE_MISSING =
+  "carries no real `evidence`: cite a command, path, record id, PR, or named ruling";
 const EVIDENCE_UNLOCATED =
   "carries no checkable `evidence`: cite a path, a line, a record or PR number, a measurement or a link";
 const ROOT_CAUSE_REQUIRED =
@@ -72,7 +79,7 @@ const ROOT_EVIDENCE_REQUIRED =
 const ROOT_EVIDENCE_UNLOCATED =
   "`whyChain.rootEvidence` cites nothing checkable: name the path, record, measurement or link you checked today";
 const READBACK_REQUIRED =
-  "`whyChain.readback` is required beside `rootEvidence` in a causal chain: read from the root back to the symptom with \"therefore\"";
+  '`whyChain.readback` is required beside `rootEvidence` in a causal chain: read from the root back to the symptom with "therefore"';
 const OWNER_REQUIRED =
   "`whyChain.owner` is required: a record dir, a capture id, or the holder of the reserved authority";
 
@@ -124,18 +131,28 @@ export const ownerSchema = z
 const WHY_CHAIN_NOT_AN_OBJECT = "`whyChain` is not a JSON object";
 
 const unknownFieldRefusal = (key: string): string =>
-  key === "rootCheck" ? "`whyChain.rootCheck` is `whyChain.rootEvidence` in version 2" : `\`whyChain.${key}\` is not a field of a why chain`;
+  key === "rootCheck"
+    ? "`whyChain.rootCheck` is `whyChain.rootEvidence` in version 2"
+    : `\`whyChain.${key}\` is not a field of a why chain`;
 
 export const whyChainSchema: z.ZodType<WhyChain> = z
   .strictObject(
     {
       whys: fiveWhysSchema({ why: causalWhySchema }),
       rootCause: rootCauseSchema,
-      rootEvidence: checkableTextSchema({ missing: ROOT_EVIDENCE_REQUIRED, unlocated: ROOT_EVIDENCE_UNLOCATED }),
+      rootEvidence: checkableTextSchema({
+        missing: ROOT_EVIDENCE_REQUIRED,
+        unlocated: ROOT_EVIDENCE_UNLOCATED,
+      }),
       readback: substantiveTextSchema({ refusal: READBACK_REQUIRED }),
       owner: ownerSchema,
     },
-    { error: (issue) => (issue.code === "unrecognized_keys" ? issue.keys.map(unknownFieldRefusal).join("; ") : WHY_CHAIN_NOT_AN_OBJECT) },
+    {
+      error: (issue) =>
+        issue.code === "unrecognized_keys"
+          ? issue.keys.map(unknownFieldRefusal).join("; ")
+          : WHY_CHAIN_NOT_AN_OBJECT,
+    },
   )
   .superRefine((chain, context) => {
     causalProblemsOf({ chain }).forEach((problem) => {

@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import {
   createExecutionPort,
   createExecutionSpawn,
@@ -6,7 +8,6 @@ import {
   type ExecutionSpawn,
   type ExecutionSpawnProvider,
 } from "./execution-port.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const WORKING_DIRECTORY = absoluteRootOf("D:\\work\\project files");
 
@@ -105,9 +106,14 @@ describe("createExecutionPort", () => {
     };
     const environment = vi.spyOn(policy, "environment");
     const spawn = vi.fn<ExecutionSpawn>().mockReturnValue({
-      outcome: "ok", value: { status: 0, stdout: "", stderr: "" },
+      outcome: "ok",
+      value: { status: 0, stdout: "", stderr: "" },
     });
-    const execution = createExecutionPort({ spawn, policy, ambientEnvironment: { PATH: "fixture path" } });
+    const execution = createExecutionPort({
+      spawn,
+      policy,
+      ambientEnvironment: { PATH: "fixture path" },
+    });
     const constructionCalls = environment.mock.calls.length;
 
     const first = execution.run({ arguments: ["first"] });
@@ -116,8 +122,12 @@ describe("createExecutionPort", () => {
     expect(first).toEqual({
       outcome: "failed",
       error: {
-        kind: "policy-invalid", detail: expect.stringContaining("environment binding failed"),
-        stdout: "", stderr: "", code: undefined, signal: undefined,
+        kind: "policy-invalid",
+        detail: expect.stringContaining("environment binding failed"),
+        stdout: "",
+        stderr: "",
+        code: undefined,
+        signal: undefined,
       },
     });
     expect(second).toEqual(first);
@@ -199,43 +209,52 @@ describe("createExecutionSpawn", () => {
         maxBuffer: 16777216,
       }),
     });
-    expect(spawnProvider).not.toHaveBeenCalledWith(expect.objectContaining({ options: expect.objectContaining({ shell: true }) }));
-    expect(spawnProvider).not.toHaveBeenCalledWith(expect.objectContaining({ options: expect.objectContaining({ detached: true }) }));
+    expect(spawnProvider).not.toHaveBeenCalledWith(
+      expect.objectContaining({ options: expect.objectContaining({ shell: true }) }),
+    );
+    expect(spawnProvider).not.toHaveBeenCalledWith(
+      expect.objectContaining({ options: expect.objectContaining({ detached: true }) }),
+    );
   });
 
   it.each([
     { code: "ETIMEDOUT", kind: "timed-out" },
     { code: "ENOBUFS", kind: "output-limit-exceeded" },
     { code: "ENOENT", kind: "launch-failed" },
-  ])("classifies native $code before a simultaneous signal and retains available diagnostics", ({ code, kind }) => {
-    const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockReturnValue({
-      pid: 42,
-      output: [null, "partial out", "partial err"],
-      stdout: "partial out",
-      stderr: "partial err",
-      status: null,
-      signal: "SIGTERM",
-      error: Object.assign(new Error("native launch detail"), { code }),
-    });
-
-    expect(createExecutionSpawn({ spawnProvider })({
-      executable: "node",
-      arguments: ["tool.mjs"],
-      environment: {},
-      timeoutMilliseconds: undefined,
-      maximumOutputBytes: 1024,
-    })).toEqual({
-      outcome: "failed",
-      error: {
-        kind,
-        detail: expect.stringContaining("native launch detail"),
+  ])(
+    "classifies native $code before a simultaneous signal and retains available diagnostics",
+    ({ code, kind }) => {
+      const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockReturnValue({
+        pid: 42,
+        output: [null, "partial out", "partial err"],
         stdout: "partial out",
         stderr: "partial err",
-        code,
+        status: null,
         signal: "SIGTERM",
-      },
-    });
-  });
+        error: Object.assign(new Error("native launch detail"), { code }),
+      });
+
+      expect(
+        createExecutionSpawn({ spawnProvider })({
+          executable: "node",
+          arguments: ["tool.mjs"],
+          environment: {},
+          timeoutMilliseconds: undefined,
+          maximumOutputBytes: 1024,
+        }),
+      ).toEqual({
+        outcome: "failed",
+        error: {
+          kind,
+          detail: expect.stringContaining("native launch detail"),
+          stdout: "partial out",
+          stderr: "partial err",
+          code,
+          signal: "SIGTERM",
+        },
+      });
+    },
+  );
 
   it("reports a signalled null exit as terminated with retained output", () => {
     const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockReturnValue({
@@ -247,13 +266,15 @@ describe("createExecutionSpawn", () => {
       signal: "SIGKILL",
     });
 
-    expect(createExecutionSpawn({ spawnProvider })({
-      executable: "node",
-      arguments: [],
-      environment: {},
-      timeoutMilliseconds: undefined,
-      maximumOutputBytes: 1024,
-    })).toEqual({
+    expect(
+      createExecutionSpawn({ spawnProvider })({
+        executable: "node",
+        arguments: [],
+        environment: {},
+        timeoutMilliseconds: undefined,
+        maximumOutputBytes: 1024,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: expect.objectContaining({
         kind: "terminated",
@@ -275,13 +296,15 @@ describe("createExecutionSpawn", () => {
       signal: null,
     });
 
-    expect(createExecutionSpawn({ spawnProvider })({
-      executable: "node",
-      arguments: [],
-      environment: {},
-      timeoutMilliseconds: undefined,
-      maximumOutputBytes: 1024,
-    })).toEqual({
+    expect(
+      createExecutionSpawn({ spawnProvider })({
+        executable: "node",
+        arguments: [],
+        environment: {},
+        timeoutMilliseconds: undefined,
+        maximumOutputBytes: 1024,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: expect.objectContaining({
         kind: "host-failed",
@@ -294,20 +317,24 @@ describe("createExecutionSpawn", () => {
   });
 
   it("preserves available output, code and signal from a caught external host failure", () => {
-    const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockThrow(Object.assign(new Error("host failure"), {
-      stdout: "caught out",
-      stderr: "caught err",
-      code: "EHOST",
-      signal: "SIGTERM",
-    }));
+    const spawnProvider = vi.fn<ExecutionSpawnProvider>().mockThrow(
+      Object.assign(new Error("host failure"), {
+        stdout: "caught out",
+        stderr: "caught err",
+        code: "EHOST",
+        signal: "SIGTERM",
+      }),
+    );
 
-    expect(createExecutionSpawn({ spawnProvider })({
-      executable: "node",
-      arguments: [],
-      environment: {},
-      timeoutMilliseconds: undefined,
-      maximumOutputBytes: 1024,
-    })).toEqual({
+    expect(
+      createExecutionSpawn({ spawnProvider })({
+        executable: "node",
+        arguments: [],
+        environment: {},
+        timeoutMilliseconds: undefined,
+        maximumOutputBytes: 1024,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "host-failed",

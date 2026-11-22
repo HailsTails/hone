@@ -11,5 +11,6 @@ export const reportOutputInEffect = <Output extends string>(request: {
   readonly configured: Output;
 }): Output => request.requested ?? request.configured;
 
-export const reportOutputOfVersionOne = (request: { readonly output: ReportOutput }): VersionTwoReportOutput =>
-  request.output === "failures-only" ? "actionable" : request.output;
+export const reportOutputOfVersionOne = (request: {
+  readonly output: ReportOutput;
+}): VersionTwoReportOutput => (request.output === "failures-only" ? "actionable" : request.output);

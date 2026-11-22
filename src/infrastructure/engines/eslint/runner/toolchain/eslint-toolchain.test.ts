@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import type { PackageLocationPort } from "../../../../node/modules/package-location-port.ts";
+import { eslint9ToolchainModules } from "./eslint-9/eslint-9-engine.ts";
 import type { EslintClass } from "./eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
@@ -8,13 +10,15 @@ import {
   eslintBoundaryFor,
   loadEslintToolchain,
 } from "./eslint-toolchain.ts";
-import { eslint9ToolchainModules } from "./eslint-9/eslint-9-engine.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
 const ESLINT_LINES: readonly EslintLine[] = ["eslint-10", "eslint-9"];
 
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({
+  installRoot: `${import.meta.dirname}/../../../../../..`,
+  installForm: "source",
+});
 
 const LINE_MODULES: Readonly<Record<EslintLine, EslintToolchainModules>> = {
   "eslint-10": DEVELOPMENT_PEERS.modules,
@@ -33,22 +37,46 @@ const REAL_10 = eslintPeersOn({ line: "eslint-10" });
 
 const INSTALL_ROOT = "/repo/tools/hone";
 
-const REPOSITORY_LOCATION: ReturnType<PackageLocationPort["locate"]> = { outcome: "ok", value: "/repo/node_modules/package/index.js" };
+const REPOSITORY_LOCATION: ReturnType<PackageLocationPort["locate"]> = {
+  outcome: "ok",
+  value: "/repo/node_modules/package/index.js",
+};
 
-const ESLINT_UNRESOLVED: Error & { code?: string } = new Error(`Cannot find package 'eslint' imported from ${INSTALL_ROOT}/x.ts`);
+const ESLINT_UNRESOLVED: Error & { code?: string } = new Error(
+  `Cannot find package 'eslint' imported from ${INSTALL_ROOT}/x.ts`,
+);
 ESLINT_UNRESOLVED.code = "ERR_MODULE_NOT_FOUND";
 
-const PARSER_UNRESOLVED: Error & { code?: string } = new Error(`Cannot find package '@typescript-eslint/parser' imported from ${INSTALL_ROOT}/x.ts`);
+const PARSER_UNRESOLVED: Error & { code?: string } = new Error(
+  `Cannot find package '@typescript-eslint/parser' imported from ${INSTALL_ROOT}/x.ts`,
+);
 PARSER_UNRESOLVED.code = "ERR_MODULE_NOT_FOUND";
 
-const PLUGIN_UNRESOLVED: Error & { code?: string } = new Error(`Cannot find package '@typescript-eslint/eslint-plugin' imported from ${INSTALL_ROOT}/x.ts`);
+const PLUGIN_UNRESOLVED: Error & { code?: string } = new Error(
+  `Cannot find package '@typescript-eslint/eslint-plugin' imported from ${INSTALL_ROOT}/x.ts`,
+);
 PLUGIN_UNRESOLVED.code = "ERR_MODULE_NOT_FOUND";
 
-const ESLINT_NOT_INSTALLED = { packageName: "eslint", peer: "optional", supported: "^9.39.5 || ^10.15.0", found: "not installed" };
+const ESLINT_NOT_INSTALLED = {
+  packageName: "eslint",
+  peer: "optional",
+  supported: "^9.39.5 || ^10.15.0",
+  found: "not installed",
+};
 
-const PARSER_NOT_INSTALLED = { packageName: "@typescript-eslint/parser", peer: "optional", supported: "^8.73.0", found: "not installed" };
+const PARSER_NOT_INSTALLED = {
+  packageName: "@typescript-eslint/parser",
+  peer: "optional",
+  supported: "^8.73.0",
+  found: "not installed",
+};
 
-const PLUGIN_NOT_INSTALLED = { packageName: "@typescript-eslint/eslint-plugin", peer: "optional", supported: "^8.73.0", found: "not installed" };
+const PLUGIN_NOT_INSTALLED = {
+  packageName: "@typescript-eslint/eslint-plugin",
+  peer: "optional",
+  supported: "^8.73.0",
+  found: "not installed",
+};
 
 const locatedBy = (locate: PackageLocationPort["locate"]): EslintToolchainPeers => ({
   ...REAL_10,
@@ -56,16 +84,19 @@ const locatedBy = (locate: PackageLocationPort["locate"]): EslintToolchainPeers 
 });
 
 describe("loadEslintToolchain over the development install", () => {
-  it.each(ESLINT_LINES)("loads the %s toolchain and names the ESLint version it loaded", async (line) => {
-    await expect(loadEslintToolchain({ peers: eslintPeersOn({ line }) })).resolves.toMatchObject({
-      outcome: "ok",
-      value: {
-        eslintVersion: expect.stringMatching(/^(9|10)\./),
-        createEslint: expect.any(Function),
-        typescriptParser: expect.objectContaining({ parseForESLint: expect.any(Function) }),
-      },
-    });
-  });
+  it.each(ESLINT_LINES)(
+    "loads the %s toolchain and names the ESLint version it loaded",
+    async (line) => {
+      await expect(loadEslintToolchain({ peers: eslintPeersOn({ line }) })).resolves.toMatchObject({
+        outcome: "ok",
+        value: {
+          eslintVersion: expect.stringMatching(/^(9|10)\./),
+          createEslint: expect.any(Function),
+          typescriptParser: expect.objectContaining({ parseForESLint: expect.any(Function) }),
+        },
+      });
+    },
+  );
 
   it("asks where eslint, the parser and the plugin resolve, and never typescript, which the parser bounds", async () => {
     const locate = vi.fn<PackageLocationPort["locate"]>().mockReturnValue(REPOSITORY_LOCATION);
@@ -94,13 +125,21 @@ describe("loadEslintToolchain when a peer is missing, unsupported or shadowed", 
     vi.restoreAllMocks();
   });
 
-  it.each(["8.57.1", "9.11.1", "11.0.0"])("names the installed eslint %s as outside the supported range", async (version) => {
-    vi.spyOn(await eslintClassOn({ line: "eslint-10" }), "version", "get").mockReturnValue(version);
-    await expect(loadEslintToolchain({ peers: REAL_10 })).resolves.toEqual({
-      outcome: "failed",
-      error: { kind: "toolchain-unavailable", peers: [{ ...ESLINT_NOT_INSTALLED, found: version }] },
-    });
-  });
+  it.each(["8.57.1", "9.11.1", "11.0.0"])(
+    "names the installed eslint %s as outside the supported range",
+    async (version) => {
+      vi.spyOn(await eslintClassOn({ line: "eslint-10" }), "version", "get").mockReturnValue(
+        version,
+      );
+      await expect(loadEslintToolchain({ peers: REAL_10 })).resolves.toEqual({
+        outcome: "failed",
+        error: {
+          kind: "toolchain-unavailable",
+          peers: [{ ...ESLINT_NOT_INSTALLED, found: version }],
+        },
+      });
+    },
+  );
 
   it("names @typescript-eslint/parser as not installed when it does not resolve", async () => {
     const locate = vi
@@ -131,7 +170,14 @@ describe("loadEslintToolchain when a peer is missing, unsupported or shadowed", 
     await expect(
       loadEslintToolchain({
         peers: {
-          location: { installRoot: INSTALL_ROOT, installForm: "package", locate: () => ({ outcome: "ok", value: `${INSTALL_ROOT}/node_modules/eslint/lib/api.js` }) },
+          location: {
+            installRoot: INSTALL_ROOT,
+            installForm: "package",
+            locate: () => ({
+              outcome: "ok",
+              value: `${INSTALL_ROOT}/node_modules/eslint/lib/api.js`,
+            }),
+          },
           modules: { ...REAL_10.modules, eslint },
         },
       }),
@@ -165,7 +211,10 @@ describe("loadEslintToolchain when more than one peer is unavailable", () => {
     const locate = vi
       .fn<PackageLocationPort["locate"]>()
       .mockThrowOnce(ESLINT_UNRESOLVED)
-      .mockReturnValueOnce({ outcome: "ok", value: `${INSTALL_ROOT}/node_modules/@typescript-eslint/parser/dist/index.js` })
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value: `${INSTALL_ROOT}/node_modules/@typescript-eslint/parser/dist/index.js`,
+      })
       .mockThrowOnce(PLUGIN_UNRESOLVED);
     await expect(loadEslintToolchain({ peers: locatedBy(locate) })).resolves.toEqual({
       outcome: "failed",
@@ -181,14 +230,23 @@ describe("loadEslintToolchain when more than one peer is unavailable", () => {
   it("names only eslint, never importing the plugin, when eslint is missing and the installed plugin would fail on it", async () => {
     const typescriptEslintPlugin = vi
       .fn<EslintToolchainModules["typescriptEslintPlugin"]>()
-      .mockRejectedValue(new Error("Cannot find module 'eslint'\nRequire stack:\n- /repo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js"));
+      .mockRejectedValue(
+        new Error(
+          "Cannot find module 'eslint'\nRequire stack:\n- /repo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js",
+        ),
+      );
     const locate = vi
       .fn<PackageLocationPort["locate"]>()
       .mockThrowOnce(ESLINT_UNRESOLVED)
       .mockReturnValue(REPOSITORY_LOCATION);
     await expect(
-      loadEslintToolchain({ peers: { ...locatedBy(locate), modules: { ...REAL_10.modules, typescriptEslintPlugin } } }),
-    ).resolves.toEqual({ outcome: "failed", error: { kind: "toolchain-unavailable", peers: [ESLINT_NOT_INSTALLED] } });
+      loadEslintToolchain({
+        peers: { ...locatedBy(locate), modules: { ...REAL_10.modules, typescriptEslintPlugin } },
+      }),
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: { kind: "toolchain-unavailable", peers: [ESLINT_NOT_INSTALLED] },
+    });
     expect(typescriptEslintPlugin).not.toHaveBeenCalled();
   });
 
@@ -213,10 +271,16 @@ describe("eslintBoundaryFor", () => {
   });
 
   it("chooses the ESLint 10 boundary for an ESLint 10 release", async () => {
-    await expect(eslintBoundaryFor({ version: "10.15.0" })).resolves.toMatchObject({ outcome: "ok", value: { nearestLookup: { flags: [] } } });
+    await expect(eslintBoundaryFor({ version: "10.15.0" })).resolves.toMatchObject({
+      outcome: "ok",
+      value: { nearestLookup: { flags: [] } },
+    });
   });
 
   it("fails naming the release of an ESLint major that has no boundary", async () => {
-    await expect(eslintBoundaryFor({ version: "8.57.0" })).resolves.toEqual({ outcome: "failed", error: "no ESLint boundary exists for ESLint 8.57.0" });
+    await expect(eslintBoundaryFor({ version: "8.57.0" })).resolves.toEqual({
+      outcome: "failed",
+      error: "no ESLint boundary exists for ESLint 8.57.0",
+    });
   });
 });

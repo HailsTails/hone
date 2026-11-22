@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGitHistoryPort, createGitPort, createGitTreePort, type GitRun, type GitSpawn } from "./git-port.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import {
+  createGitHistoryPort,
+  createGitPort,
+  createGitTreePort,
+  type GitRun,
+  type GitSpawn,
+} from "./git-port.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -67,7 +74,10 @@ describe("createGitPort trackedPaths", () => {
 
   it("names the first path that is not a repo path when several are refused", () => {
     const trackedListing = gitOver(
-      vi.fn<GitSpawn>().mockReturnValue({ ...EXITED_WITH_LISTING, stdout: "a.ts\0../first.ts\0b.ts\0../second.ts\0" }),
+      vi.fn<GitSpawn>().mockReturnValue({
+        ...EXITED_WITH_LISTING,
+        stdout: "a.ts\0../first.ts\0b.ts\0../second.ts\0",
+      }),
     ).trackedPaths({ repoRoot: REPO_ROOT });
 
     expect(trackedListing).toEqual({
@@ -151,7 +161,10 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "shared.ts\0a.ts\0" })
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "a.ts\0z.ts\0untracked.ts\0" });
 
-    const changedListing = gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    const changedListing = gitOver(spawn).changedSince({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(changedListing).toEqual({
       outcome: "ok",
@@ -173,14 +186,20 @@ describe("createGitPort changedSince", () => {
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "c.ts\0b.ts\0" })
       .mockReturnValueOnce(EXITED_EMPTY);
 
-    const changedListing = gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    const changedListing = gitOver(spawn).changedSince({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(changedListing).toHaveProperty("value.length", 3);
   });
 
   it("returns git-failed when the committed diff fails", () => {
     const changedListing = gitOver(
-      vi.fn<GitSpawn>().mockReturnValueOnce(EXITED_NOT_A_REPOSITORY).mockReturnValueOnce(EXITED_EMPTY),
+      vi
+        .fn<GitSpawn>()
+        .mockReturnValueOnce(EXITED_NOT_A_REPOSITORY)
+        .mockReturnValueOnce(EXITED_EMPTY),
     ).changedSince({ repoRoot: REPO_ROOT, baseRevision: "no-such-revision" });
 
     expect(changedListing).toMatchObject({
@@ -190,27 +209,39 @@ describe("createGitPort changedSince", () => {
   });
 
   it("fails without returning a successful prefix when the untracked operation cannot complete", () => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce(EXITED_WITH_LISTING)
       .mockReturnValueOnce(EXITED_EMPTY)
       .mockReturnValueOnce(ERRORED_ON_BUFFER);
 
-    const changedListing = gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    const changedListing = gitOver(spawn).changedSince({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(changedListing).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo ls-files --others --exclude-standard -z", detail: "spawnSync git ENOBUFS" },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo ls-files --others --exclude-standard -z",
+        detail: "spawnSync git ENOBUFS",
+      },
     });
     expect(spawn).toHaveBeenCalledTimes(3);
   });
 
   it("refuses an invalid later untracked path without publishing any successful prefix", () => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce(EXITED_WITH_LISTING)
       .mockReturnValueOnce(EXITED_EMPTY)
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "new.ts\0../outside.ts\0" });
 
-    const changedListing = gitOver(spawn).changedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
+    const changedListing = gitOver(spawn).changedSince({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+    });
 
     expect(changedListing).toEqual({
       outcome: "failed",
@@ -231,34 +262,83 @@ const CONTENT_FILE = repoPathOf("src/example.ts");
 
 describe("createGitPort contentInBase", () => {
   it("finds exact candidate content in the selected tree using option-safe arguments and Git policy", () => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: `${CANDIDATE_HASH}\r\n` })
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: `${OTHER_HASH}\0${CANDIDATE_HASH}\0` });
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "-selected-base", file: repoPathOf("-candidate.ts") });
+    const membership = gitOver(spawn).contentInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "-selected-base",
+      file: repoPathOf("-candidate.ts"),
+    });
 
     expect(membership).toEqual({ outcome: "ok", value: "present-in-base" });
     expect(spawn.mock.calls).toEqual([
-      [{ file: "git", arguments: ["-C", "/repo", "hash-object", "--", "-candidate.ts"], maxBuffer: 268435456, environment: { PATH: "/usr/bin", HOME: "/home/someone" } }],
-      [{ file: "git", arguments: ["-C", "/repo", "ls-tree", "-r", "-z", "--format=%(objectname)", "--end-of-options", "-selected-base"], maxBuffer: 268435456, environment: { PATH: "/usr/bin", HOME: "/home/someone" } }],
+      [
+        {
+          file: "git",
+          arguments: ["-C", "/repo", "hash-object", "--", "-candidate.ts"],
+          maxBuffer: 268435456,
+          environment: { PATH: "/usr/bin", HOME: "/home/someone" },
+        },
+      ],
+      [
+        {
+          file: "git",
+          arguments: [
+            "-C",
+            "/repo",
+            "ls-tree",
+            "-r",
+            "-z",
+            "--format=%(objectname)",
+            "--end-of-options",
+            "-selected-base",
+          ],
+          maxBuffer: 268435456,
+          environment: { PATH: "/usr/bin", HOME: "/home/someone" },
+        },
+      ],
     ]);
   });
 
   it.each([
-    { name: "unmatched content despite other tree objects", hashOutput: `${SHA256_HASH}\n`, treeOutput: `${OTHER_SHA256_HASH}\0` },
+    {
+      name: "unmatched content despite other tree objects",
+      hashOutput: `${SHA256_HASH}\n`,
+      treeOutput: `${OTHER_SHA256_HASH}\0`,
+    },
     { name: "a successfully read empty base tree", hashOutput: CANDIDATE_HASH, treeOutput: "" },
   ])("returns absent for $name", ({ hashOutput, treeOutput }) => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: hashOutput })
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: treeOutput });
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "base", file: CONTENT_FILE });
+    const membership = gitOver(spawn).contentInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+      file: CONTENT_FILE,
+    });
 
     expect(membership).toEqual({ outcome: "ok", value: "absent-from-base" });
     expect(spawn).toHaveBeenCalledTimes(2);
-    expect(spawn).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      arguments: ["-C", "/repo", "ls-tree", "-r", "-z", "--format=%(objectname)", "--end-of-options", "base"],
-    }));
+    expect(spawn).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        arguments: [
+          "-C",
+          "/repo",
+          "ls-tree",
+          "-r",
+          "-z",
+          "--format=%(objectname)",
+          "--end-of-options",
+          "base",
+        ],
+      }),
+    );
   });
 
   it.each([
@@ -268,53 +348,93 @@ describe("createGitPort contentInBase", () => {
   ])("refuses $name candidate hash output before querying the tree", ({ stdout }) => {
     const spawn = vi.fn<GitSpawn>().mockReturnValueOnce({ ...EXITED_EMPTY, stdout });
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "base", file: CONTENT_FILE });
+    const membership = gitOver(spawn).contentInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+      file: CONTENT_FILE,
+    });
 
     expect(membership).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo hash-object -- src/example.ts", detail: expect.stringMatching(/\S/) },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo hash-object -- src/example.ts",
+        detail: expect.stringMatching(/\S/),
+      },
     });
     expect(spawn).toHaveBeenCalledTimes(1);
   });
 
   it.each([
-    { name: "malformed later entry despite a matching prefix", stdout: `${CANDIDATE_HASH}\0not-an-object\0` },
+    {
+      name: "malformed later entry despite a matching prefix",
+      stdout: `${CANDIDATE_HASH}\0not-an-object\0`,
+    },
     { name: "unterminated tree entry", stdout: CANDIDATE_HASH },
   ])("refuses $name rather than returning content membership", ({ stdout }) => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: `${CANDIDATE_HASH}\n` })
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout });
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "base", file: CONTENT_FILE });
+    const membership = gitOver(spawn).contentInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+      file: CONTENT_FILE,
+    });
 
     expect(membership).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo ls-tree -r -z --format=%(objectname) --end-of-options base", detail: expect.stringMatching(/\S/) },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo ls-tree -r -z --format=%(objectname) --end-of-options base",
+        detail: expect.stringMatching(/\S/),
+      },
     });
   });
 
   it("preserves candidate process failure without attempting a selected-tree query", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValueOnce(ERRORED_ON_BUFFER);
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "base", file: CONTENT_FILE });
+    const membership = gitOver(spawn).contentInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+      file: CONTENT_FILE,
+    });
 
     expect(membership).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo hash-object -- src/example.ts", detail: "spawnSync git ENOBUFS" },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo hash-object -- src/example.ts",
+        detail: "spawnSync git ENOBUFS",
+      },
     });
     expect(spawn).toHaveBeenCalledTimes(1);
   });
 
   it("preserves an invalid selected base as GitFailure rather than absent membership", () => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: `${CANDIDATE_HASH}\n` })
-      .mockReturnValueOnce({ ...EXITED_NOT_A_REPOSITORY, stderr: "fatal: not a valid object name missing-base" });
+      .mockReturnValueOnce({
+        ...EXITED_NOT_A_REPOSITORY,
+        stderr: "fatal: not a valid object name missing-base",
+      });
 
-    const membership = gitOver(spawn).contentInBase({ repoRoot: REPO_ROOT, baseRevision: "missing-base", file: CONTENT_FILE });
+    const membership = gitOver(spawn).contentInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "missing-base",
+      file: CONTENT_FILE,
+    });
 
     expect(membership).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo ls-tree -r -z --format=%(objectname) --end-of-options missing-base", detail: "fatal: not a valid object name missing-base" },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo ls-tree -r -z --format=%(objectname) --end-of-options missing-base",
+        detail: "fatal: not a valid object name missing-base",
+      },
     });
     expect(spawn).toHaveBeenCalledTimes(2);
   });
@@ -322,37 +442,89 @@ describe("createGitPort contentInBase", () => {
 
 describe("createGitPort textInBase", () => {
   it("reads the file's text at the selected revision using option-safe arguments", () => {
-    const spawn = vi.fn<GitSpawn>()
+    const spawn = vi
+      .fn<GitSpawn>()
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "src/example.ts\0" })
       .mockReturnValueOnce({ ...EXITED_EMPTY, stdout: "export const example = 1;\n" });
 
-    const reading = gitOver(spawn).textInBase({ repoRoot: REPO_ROOT, baseRevision: "-selected-base", file: CONTENT_FILE });
+    const reading = gitOver(spawn).textInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "-selected-base",
+      file: CONTENT_FILE,
+    });
 
-    expect(reading).toEqual({ outcome: "ok", value: { presence: "present-in-base", text: "export const example = 1;\n" } });
+    expect(reading).toEqual({
+      outcome: "ok",
+      value: { presence: "present-in-base", text: "export const example = 1;\n" },
+    });
     expect(spawn.mock.calls).toEqual([
-      [{ file: "git", arguments: ["-C", "/repo", "ls-tree", "-z", "--name-only", "--end-of-options", "-selected-base", "src/example.ts"], maxBuffer: 268435456, environment: { PATH: "/usr/bin", HOME: "/home/someone" } }],
-      [{ file: "git", arguments: ["-C", "/repo", "cat-file", "blob", "--end-of-options", "-selected-base:src/example.ts"], maxBuffer: 268435456, environment: { PATH: "/usr/bin", HOME: "/home/someone" } }],
+      [
+        {
+          file: "git",
+          arguments: [
+            "-C",
+            "/repo",
+            "ls-tree",
+            "-z",
+            "--name-only",
+            "--end-of-options",
+            "-selected-base",
+            "src/example.ts",
+          ],
+          maxBuffer: 268435456,
+          environment: { PATH: "/usr/bin", HOME: "/home/someone" },
+        },
+      ],
+      [
+        {
+          file: "git",
+          arguments: [
+            "-C",
+            "/repo",
+            "cat-file",
+            "blob",
+            "--end-of-options",
+            "-selected-base:src/example.ts",
+          ],
+          maxBuffer: 268435456,
+          environment: { PATH: "/usr/bin", HOME: "/home/someone" },
+        },
+      ],
     ]);
   });
 
   it("is absent without reading a blob when the selected tree does not list the file", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValueOnce(EXITED_EMPTY);
 
-    const reading = gitOver(spawn).textInBase({ repoRoot: REPO_ROOT, baseRevision: "base", file: CONTENT_FILE });
+    const reading = gitOver(spawn).textInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "base",
+      file: CONTENT_FILE,
+    });
 
     expect(reading).toEqual({ outcome: "ok", value: { presence: "absent-from-base" } });
     expect(spawn).toHaveBeenCalledTimes(1);
   });
 
   it("preserves an invalid selected base as GitFailure rather than absent text", () => {
-    const spawn = vi.fn<GitSpawn>()
-      .mockReturnValueOnce({ ...EXITED_NOT_A_REPOSITORY, stderr: "fatal: not a valid object name missing-base" });
+    const spawn = vi.fn<GitSpawn>().mockReturnValueOnce({
+      ...EXITED_NOT_A_REPOSITORY,
+      stderr: "fatal: not a valid object name missing-base",
+    });
 
-    const reading = gitOver(spawn).textInBase({ repoRoot: REPO_ROOT, baseRevision: "missing-base", file: CONTENT_FILE });
+    const reading = gitOver(spawn).textInBase({
+      repoRoot: REPO_ROOT,
+      baseRevision: "missing-base",
+      file: CONTENT_FILE,
+    });
 
     expect(reading).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo ls-tree -z --name-only --end-of-options missing-base src/example.ts", detail: "fatal: not a valid object name missing-base" },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo ls-tree -z --name-only --end-of-options missing-base src/example.ts",
+        detail: "fatal: not a valid object name missing-base",
+      },
     });
   });
 });
@@ -361,11 +533,32 @@ describe("createGitPort renamedSince", () => {
   it("diffs the base against the worktree with rename detection, using option-safe arguments", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
-    const renames = gitOver(spawn).renamedSince({ repoRoot: REPO_ROOT, baseRevision: "-selected-base" });
+    const renames = gitOver(spawn).renamedSince({
+      repoRoot: REPO_ROOT,
+      baseRevision: "-selected-base",
+    });
 
     expect({ renames, calls: spawn.mock.calls }).toEqual({
       renames: { outcome: "ok", value: new Map() },
-      calls: [[{ file: "git", arguments: ["-C", "/repo", "diff", "--name-status", "-M", "-z", "--end-of-options", "-selected-base"], maxBuffer: 268435456, environment: { PATH: "/usr/bin", HOME: "/home/someone" } }]],
+      calls: [
+        [
+          {
+            file: "git",
+            arguments: [
+              "-C",
+              "/repo",
+              "diff",
+              "--name-status",
+              "-M",
+              "-z",
+              "--end-of-options",
+              "-selected-base",
+            ],
+            maxBuffer: 268435456,
+            environment: { PATH: "/usr/bin", HOME: "/home/someone" },
+          },
+        ],
+      ],
     });
   });
 
@@ -373,7 +566,8 @@ describe("createGitPort renamedSince", () => {
     const renames = gitOver(
       vi.fn<GitSpawn>().mockReturnValue({
         ...EXITED_EMPTY,
-        stdout: "M\0src/kept.ts\0R100\0src/old.ts\0src/moved/old.ts\0A\0src/added.ts\0D\0src/gone.ts\0R087\0lib/a.ts\0lib/b.ts\0",
+        stdout:
+          "M\0src/kept.ts\0R100\0src/old.ts\0src/moved/old.ts\0A\0src/added.ts\0D\0src/gone.ts\0R087\0lib/a.ts\0lib/b.ts\0",
       }),
     ).renamedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
 
@@ -388,7 +582,9 @@ describe("createGitPort renamedSince", () => {
 
   it("refuses a rename naming a path that is not a repo path", () => {
     const renames = gitOver(
-      vi.fn<GitSpawn>().mockReturnValue({ ...EXITED_EMPTY, stdout: "R100\0src/old.ts\0../outside.ts\0" }),
+      vi
+        .fn<GitSpawn>()
+        .mockReturnValue({ ...EXITED_EMPTY, stdout: "R100\0src/old.ts\0../outside.ts\0" }),
     ).renamedSince({ repoRoot: REPO_ROOT, baseRevision: "base" });
 
     expect(renames).toEqual({
@@ -418,7 +614,10 @@ describe("createGitPort renamedSince", () => {
 
   it("preserves an invalid selected base as GitFailure rather than no renames", () => {
     const renames = gitOver(
-      vi.fn<GitSpawn>().mockReturnValue({ ...EXITED_NOT_A_REPOSITORY, stderr: "fatal: bad revision 'missing-base'" }),
+      vi.fn<GitSpawn>().mockReturnValue({
+        ...EXITED_NOT_A_REPOSITORY,
+        stderr: "fatal: bad revision 'missing-base'",
+      }),
     ).renamedSince({ repoRoot: REPO_ROOT, baseRevision: "missing-base" });
 
     expect(renames).toEqual({
@@ -436,25 +635,53 @@ describe("createGitTreePort pathsAt", () => {
   it("lists every path at the revision with option-safe arguments", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_WITH_LISTING);
 
-    const listing = createGitTreePort({ spawn, ambientEnvironment: AMBIENT_ENVIRONMENT }).pathsAt({ repoRoot: REPO_ROOT, revision: "origin/main" });
+    const listing = createGitTreePort({ spawn, ambientEnvironment: AMBIENT_ENVIRONMENT }).pathsAt({
+      repoRoot: REPO_ROOT,
+      revision: "origin/main",
+    });
 
     expect({ listing, calls: spawn.mock.calls }).toEqual({
       listing: { outcome: "ok", value: ["c.ts", "src/a.ts"] },
-      calls: [[expect.objectContaining({ arguments: ["-C", "/repo", "ls-tree", "-r", "-z", "--name-only", "--end-of-options", "origin/main"] })]],
+      calls: [
+        [
+          expect.objectContaining({
+            arguments: [
+              "-C",
+              "/repo",
+              "ls-tree",
+              "-r",
+              "-z",
+              "--name-only",
+              "--end-of-options",
+              "origin/main",
+            ],
+          }),
+        ],
+      ],
     });
   });
 
   it("hands git the ambient environment without the repository location", () => {
     const treeSpawn = vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY);
 
-    createGitTreePort({ spawn: treeSpawn, ambientEnvironment: AMBIENT_ENVIRONMENT }).pathsAt({ repoRoot: REPO_ROOT, revision: "HEAD" });
+    createGitTreePort({ spawn: treeSpawn, ambientEnvironment: AMBIENT_ENVIRONMENT }).pathsAt({
+      repoRoot: REPO_ROOT,
+      revision: "HEAD",
+    });
 
-    expect(treeSpawn).toHaveBeenCalledWith(expect.objectContaining({ environment: expect.not.objectContaining({ [REPOSITORY_LOCATION]: expect.anything() }) }));
+    expect(treeSpawn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        environment: expect.not.objectContaining({ [REPOSITORY_LOCATION]: expect.anything() }),
+      }),
+    );
   });
 
   it("returns git-failed carrying stderr when git cannot read the revision", () => {
     const listing = createGitTreePort({
-      spawn: vi.fn<GitSpawn>().mockReturnValue({ ...EXITED_NOT_A_REPOSITORY, stderr: "fatal: Not a valid object name nope" }),
+      spawn: vi.fn<GitSpawn>().mockReturnValue({
+        ...EXITED_NOT_A_REPOSITORY,
+        stderr: "fatal: Not a valid object name nope",
+      }),
       ambientEnvironment: {},
     }).pathsAt({ repoRoot: REPO_ROOT, revision: "nope" });
 
@@ -471,23 +698,40 @@ describe("createGitTreePort pathsAt", () => {
 
 describe("createGitHistoryPort mergedTags", () => {
   it("lists the tags matching the pattern that are merged into HEAD, one per line", () => {
-    const spawn = vi.fn<GitSpawn>().mockReturnValue({ ...EXITED_EMPTY, stdout: "v0.1.0-pre.1\nv0.1.0-pre.2\n" });
+    const spawn = vi
+      .fn<GitSpawn>()
+      .mockReturnValue({ ...EXITED_EMPTY, stdout: "v0.1.0-pre.1\nv0.1.0-pre.2\n" });
 
-    const tags = createGitHistoryPort({ spawn, ambientEnvironment: AMBIENT_ENVIRONMENT }).mergedTags({ repoRoot: REPO_ROOT, pattern: "v*" });
+    const tags = createGitHistoryPort({
+      spawn,
+      ambientEnvironment: AMBIENT_ENVIRONMENT,
+    }).mergedTags({ repoRoot: REPO_ROOT, pattern: "v*" });
 
     expect(tags).toEqual({ outcome: "ok", value: ["v0.1.0-pre.1", "v0.1.0-pre.2"] });
-    expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ file: "git", arguments: ["-C", "/repo", "tag", "--list", "--merged", "HEAD", "v*"] }));
+    expect(spawn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file: "git",
+        arguments: ["-C", "/repo", "tag", "--list", "--merged", "HEAD", "v*"],
+      }),
+    );
   });
 
   it("returns git-failed carrying stderr when git exits non-zero", () => {
-    const tags = createGitHistoryPort({ spawn: vi.fn<GitSpawn>().mockReturnValue(EXITED_NOT_A_REPOSITORY), ambientEnvironment: AMBIENT_ENVIRONMENT }).mergedTags({
+    const tags = createGitHistoryPort({
+      spawn: vi.fn<GitSpawn>().mockReturnValue(EXITED_NOT_A_REPOSITORY),
+      ambientEnvironment: AMBIENT_ENVIRONMENT,
+    }).mergedTags({
       repoRoot: REPO_ROOT,
       pattern: "v*",
     });
 
     expect(tags).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "git -C /repo tag --list --merged HEAD v*", detail: "fatal: not a git repository" },
+      error: {
+        kind: "git-failed",
+        command: "git -C /repo tag --list --merged HEAD v*",
+        detail: "fatal: not a git repository",
+      },
     });
   });
 });
@@ -496,10 +740,14 @@ describe("createGitHistoryPort commitsAfter", () => {
   it("lists every commit after the revision up to HEAD, oldest first, with its parent count and its message without trailing newlines", () => {
     const spawn = vi.fn<GitSpawn>().mockReturnValue({
       ...EXITED_EMPTY,
-      stdout: "aaa\nfix: one (#1)\n\0aaa bbb\nMerge branch 'main'\n\0ccc\nfeat: two (#2)\n\nBREAKING CHANGE: renamed\n\0",
+      stdout:
+        "aaa\nfix: one (#1)\n\0aaa bbb\nMerge branch 'main'\n\0ccc\nfeat: two (#2)\n\nBREAKING CHANGE: renamed\n\0",
     });
 
-    const commits = createGitHistoryPort({ spawn, ambientEnvironment: AMBIENT_ENVIRONMENT }).commitsAfter({ repoRoot: REPO_ROOT, revision: "v0.1.0-pre.3" });
+    const commits = createGitHistoryPort({
+      spawn,
+      ambientEnvironment: AMBIENT_ENVIRONMENT,
+    }).commitsAfter({ repoRoot: REPO_ROOT, revision: "v0.1.0-pre.3" });
 
     expect(commits).toEqual({
       outcome: "ok",
@@ -512,7 +760,16 @@ describe("createGitHistoryPort commitsAfter", () => {
     expect(spawn).toHaveBeenCalledWith(
       expect.objectContaining({
         file: "git",
-        arguments: ["-C", "/repo", "log", "--reverse", "-z", "--format=%P%n%B", "--end-of-options", "v0.1.0-pre.3..HEAD"],
+        arguments: [
+          "-C",
+          "/repo",
+          "log",
+          "--reverse",
+          "-z",
+          "--format=%P%n%B",
+          "--end-of-options",
+          "v0.1.0-pre.3..HEAD",
+        ],
       }),
     );
   });
@@ -527,7 +784,10 @@ describe("createGitHistoryPort commitsAfter", () => {
   });
 
   it("lists no commits for empty output", () => {
-    const commits = createGitHistoryPort({ spawn: vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY), ambientEnvironment: AMBIENT_ENVIRONMENT }).commitsAfter({
+    const commits = createGitHistoryPort({
+      spawn: vi.fn<GitSpawn>().mockReturnValue(EXITED_EMPTY),
+      ambientEnvironment: AMBIENT_ENVIRONMENT,
+    }).commitsAfter({
       repoRoot: REPO_ROOT,
       revision: "v0.1.0-pre.3",
     });
@@ -536,7 +796,10 @@ describe("createGitHistoryPort commitsAfter", () => {
   });
 
   it("returns git-failed with the spawn's detail when git cannot run", () => {
-    const commits = createGitHistoryPort({ spawn: vi.fn<GitSpawn>().mockReturnValue(ERRORED_ON_BUFFER), ambientEnvironment: AMBIENT_ENVIRONMENT }).commitsAfter({
+    const commits = createGitHistoryPort({
+      spawn: vi.fn<GitSpawn>().mockReturnValue(ERRORED_ON_BUFFER),
+      ambientEnvironment: AMBIENT_ENVIRONMENT,
+    }).commitsAfter({
       repoRoot: REPO_ROOT,
       revision: "v0.1.0-pre.3",
     });
@@ -545,7 +808,8 @@ describe("createGitHistoryPort commitsAfter", () => {
       outcome: "failed",
       error: {
         kind: "git-failed",
-        command: "git -C /repo log --reverse -z --format=%P%n%B --end-of-options v0.1.0-pre.3..HEAD",
+        command:
+          "git -C /repo log --reverse -z --format=%P%n%B --end-of-options v0.1.0-pre.3..HEAD",
         detail: "spawnSync git ENOBUFS",
       },
     });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { reportOutputSchema, versionTwoReportOutputSchema } from "./report-output.ts";
 
 describe("versionTwoReportOutputSchema", () => {

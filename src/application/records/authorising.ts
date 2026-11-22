@@ -1,12 +1,17 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { Result } from "../../domain/result.ts";
-import type { RecordPlace, RecordRefusal, RecordsAtBase, RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
-import { symptomNameOf } from "../../domain/records/record-address.ts";
-import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
+import type {
+  RecordPlace,
+  RecordRefusal,
+  RecordsAtBase,
+  RecordsDocument,
+} from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
-import type { RecordsReader } from "../ports/records/records-reader.ts";
+import { symptomNameOf } from "../../domain/records/record-address.ts";
+import type { Result } from "../../domain/result.ts";
 import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
+import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
 
 export type AuthorisingPorts = {
   readonly recordsReader: RecordsReader;
@@ -22,8 +27,24 @@ type Judging = AuthorisingPorts & {
 const UNMEASURED_BASE: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
 const entryOf = (request: { readonly request: AuthoriseRequest }): RecordAddition["entry"] => {
-  const { answers, file, case: caseName, owes, whys, rootCause, rootEvidence, readback, owner } = request.request;
-  return { answers, file, case: caseName, owes, whyChain: { whys, rootCause, rootEvidence, readback, owner } };
+  const {
+    answers,
+    file,
+    case: caseName,
+    owes,
+    whys,
+    rootCause,
+    rootEvidence,
+    readback,
+    owner,
+  } = request.request;
+  return {
+    answers,
+    file,
+    case: caseName,
+    owes,
+    whyChain: { whys, rootCause, rootEvidence, readback, owner },
+  };
 };
 
 const refusedOutcome = (request: { readonly refusals: readonly RecordRefusal[] }): Authorising => {
@@ -33,32 +54,64 @@ const refusedOutcome = (request: { readonly refusals: readonly RecordRefusal[] }
     : { judged: "refused", refusals: request.refusals };
 };
 
-const refusalsAt = (request: { readonly refused: readonly { readonly place: RecordPlace; readonly refusals: readonly RecordRefusal[] }[]; readonly place: RecordPlace }): readonly RecordRefusal[] =>
-  request.refused.filter((candidate) => candidate.place.file === request.place.file && candidate.place.index === request.place.index).flatMap((candidate) => candidate.refusals);
+const refusalsAt = (request: {
+  readonly refused: readonly {
+    readonly place: RecordPlace;
+    readonly refusals: readonly RecordRefusal[];
+  }[];
+  readonly place: RecordPlace;
+}): readonly RecordRefusal[] =>
+  request.refused
+    .filter(
+      (candidate) =>
+        candidate.place.file === request.place.file &&
+        candidate.place.index === request.place.index,
+    )
+    .flatMap((candidate) => candidate.refusals);
 
 const judgedAddition = (request: Judging): Result<Authorising, RecordsEditFailure> => {
-  const added = request.recordsEditor.documentsWithAdded({ documents: request.documents, additions: [request.addition] });
+  const added = request.recordsEditor.documentsWithAdded({
+    documents: request.documents,
+    additions: [request.addition],
+  });
   if (added.outcome === "failed") {
     return added;
   }
   const reading = request.recordsReader.recordsReadingOf({
-    documents: [...request.documents.filter((document) => document.file !== request.addition.file), ...added.value],
+    documents: [
+      ...request.documents.filter((document) => document.file !== request.addition.file),
+      ...added.value,
+    ],
     catalogue: request.catalogue,
     base: UNMEASURED_BASE,
   });
   if (reading.outcome === "failed") {
     return { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } };
   }
-  const refusals = refusalsAt({ refused: reading.value.refused, place: request.recordsEditor.placeOfAddition(request) });
-  return { outcome: "ok", value: refusals.length === 0 ? { judged: "accepted", edit: { write: added.value, remove: [] } } : refusedOutcome({ refusals }) };
+  const refusals = refusalsAt({
+    refused: reading.value.refused,
+    place: request.recordsEditor.placeOfAddition(request),
+  });
+  return {
+    outcome: "ok",
+    value:
+      refusals.length === 0
+        ? { judged: "accepted", edit: { write: added.value, remove: [] } }
+        : refusedOutcome({ refusals }),
+  };
 };
 
-export const authorisingOf = (request: AuthorisingPorts & {
-  readonly request: AuthoriseRequest;
-  readonly documents: readonly RecordsDocument[];
-  readonly catalogue: SymptomCatalogue;
-}): Result<Authorising, RecordsEditFailure> => {
-  const file = namedRecordsFileOf({ kind: "authorised-locations", name: symptomNameOf({ address: request.request.answers }) });
+export const authorisingOf = (
+  request: AuthorisingPorts & {
+    readonly request: AuthoriseRequest;
+    readonly documents: readonly RecordsDocument[];
+    readonly catalogue: SymptomCatalogue;
+  },
+): Result<Authorising, RecordsEditFailure> => {
+  const file = namedRecordsFileOf({
+    kind: "authorised-locations",
+    name: symptomNameOf({ address: request.request.answers }),
+  });
   if (file.outcome === "failed") {
     return { outcome: "ok", value: { judged: "refused", refusals: [file.error] } };
   }

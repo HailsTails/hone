@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
+import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
   type ConfigRoot,
@@ -13,47 +18,54 @@ import {
   slicePathOf,
   unprojectedFoldersOf,
 } from "./projection-slices.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
 };
 
-const classSyntax = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const classSyntax = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
 const eslint = "eslint" as const;
 
 const tracked = (paths: readonly string[]) => repoPathSchema.array().parse(paths);
@@ -83,7 +95,11 @@ const clauseWide: ExceptionRecord = {
 describe("configRootsOf", () => {
   it("is only the repository root when no package carries its own eslint.config", () => {
     expect(
-      configRootsOf({ trackedPaths: tracked(["eslint.config.mjs", "src/a.ts", "package.json"]), declared: [], lookup: "nearest-to-file" }),
+      configRootsOf({
+        trackedPaths: tracked(["eslint.config.mjs", "src/a.ts", "package.json"]),
+        declared: [],
+        lookup: "nearest-to-file",
+      }),
     ).toEqual([REPOSITORY]);
   });
 
@@ -151,7 +167,10 @@ describe("slicePathOf", () => {
 describe("sliceRecordsOf", () => {
   it("gives the repository root every record unchanged", () => {
     expect(
-      sliceRecordsOf({ root: REPOSITORY, records: [carveOutIn("packages/a/src/old.ts"), carveOutIn("src/old.ts"), clauseWide] }),
+      sliceRecordsOf({
+        root: REPOSITORY,
+        records: [carveOutIn("packages/a/src/old.ts"), carveOutIn("src/old.ts"), clauseWide],
+      }),
     ).toEqual([carveOutIn("packages/a/src/old.ts"), carveOutIn("src/old.ts"), clauseWide]);
   });
 
@@ -171,15 +190,18 @@ describe("sliceRecordsOf", () => {
   });
 
   it("keeps a record under a nested package in the enclosing package's slice too", () => {
-    expect(sliceRecordsOf({ root: PACKAGE_A, records: [carveOutIn("packages/a/tools/old.ts")] })).toEqual([
-      carveOutIn("tools/old.ts"),
-    ]);
+    expect(
+      sliceRecordsOf({ root: PACKAGE_A, records: [carveOutIn("packages/a/tools/old.ts")] }),
+    ).toEqual([carveOutIn("tools/old.ts")]);
   });
 });
 
 describe("packageFoldersOf", () => {
   it("is the folder of every package root, leaving out the repository root", () => {
-    expect([...packageFoldersOf({ roots: [REPOSITORY, PACKAGE_A, NESTED_IN_A] })]).toEqual(["packages/a", "packages/a/tools"]);
+    expect([...packageFoldersOf({ roots: [REPOSITORY, PACKAGE_A, NESTED_IN_A] })]).toEqual([
+      "packages/a",
+      "packages/a/tools",
+    ]);
   });
 });
 
@@ -187,11 +209,15 @@ describe("governingPackageOf", () => {
   const packages = packageFoldersOf({ roots: [REPOSITORY, PACKAGE_A, NESTED_IN_A, PACKAGE_B] });
 
   it("is the deepest package folder holding the file", () => {
-    expect(governingPackageOf({ file: repoPathOf("packages/a/tools/run.ts"), packages })).toBe("packages/a/tools");
+    expect(governingPackageOf({ file: repoPathOf("packages/a/tools/run.ts"), packages })).toBe(
+      "packages/a/tools",
+    );
   });
 
   it("is the package folder for a file directly under it", () => {
-    expect(governingPackageOf({ file: repoPathOf("packages/a/x.ts"), packages })).toBe("packages/a");
+    expect(governingPackageOf({ file: repoPathOf("packages/a/x.ts"), packages })).toBe(
+      "packages/a",
+    );
   });
 
   it("is no package for a file outside every package, even one whose folder starts like a package", () => {
@@ -245,7 +271,13 @@ describe("unprojectedFoldersOf", () => {
   ]);
 
   it("names each outermost folder inside a folder holding its own disciplines.json whose own ESLint config its files load, holding a file under check, beside the folder holding that disciplines.json", () => {
-    expect(unprojectedFoldersOf({ trackedPaths: OWN_CONFIG_TREE, files: FILES, lookup: "nearest-to-file" })).toEqual([
+    expect(
+      unprojectedFoldersOf({
+        trackedPaths: OWN_CONFIG_TREE,
+        files: FILES,
+        lookup: "nearest-to-file",
+      }),
+    ).toEqual([
       { folder: "fixtures/deep/tool", selectionFolder: "fixtures/deep" },
       { folder: "fixtures/linted", selectionFolder: "fixtures/linted" },
     ]);
@@ -254,7 +286,12 @@ describe("unprojectedFoldersOf", () => {
   it("names the outermost folder holding its own disciplines.json as the one a person would govern from this repository", () => {
     expect(
       unprojectedFoldersOf({
-        trackedPaths: tracked(["eslint.config.mjs", "nested/disciplines.json", "nested/inner/disciplines.json", "nested/inner/src/eslint.config.mjs"]),
+        trackedPaths: tracked([
+          "eslint.config.mjs",
+          "nested/disciplines.json",
+          "nested/inner/disciplines.json",
+          "nested/inner/src/eslint.config.mjs",
+        ]),
         files: tracked(["nested/inner/src/n.ts"]),
         lookup: "nearest-to-file",
       }),
@@ -272,7 +309,13 @@ describe("unprojectedFoldersOf", () => {
   });
 
   it("names no folder when every file loads the repository root's config", () => {
-    expect(unprojectedFoldersOf({ trackedPaths: OWN_CONFIG_TREE, files: FILES, lookup: "repository-root" })).toEqual([]);
+    expect(
+      unprojectedFoldersOf({
+        trackedPaths: OWN_CONFIG_TREE,
+        files: FILES,
+        lookup: "repository-root",
+      }),
+    ).toEqual([]);
   });
 });
 

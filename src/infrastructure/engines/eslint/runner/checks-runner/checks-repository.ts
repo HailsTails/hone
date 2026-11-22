@@ -2,10 +2,16 @@ import type { FileRemovalPort } from "../../../../../application/ports/file-syst
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import { type PackageScriptsReader, packageScriptsReaderOf } from "../native-exceptions/package-script-scanner.ts";
-import { type ProjectionFiles, projectionFilesOver } from "../projection/projection.ts";
 import { type LinesReader, linesReaderOf } from "../lint-findings/source-lines.ts";
-import { type SuppressionsReader, suppressionsReaderOf } from "../native-exceptions/suppressions-scanner.ts";
+import {
+  type PackageScriptsReader,
+  packageScriptsReaderOf,
+} from "../native-exceptions/package-script-scanner.ts";
+import {
+  type SuppressionsReader,
+  suppressionsReaderOf,
+} from "../native-exceptions/suppressions-scanner.ts";
+import { type ProjectionFiles, projectionFilesOver } from "../projection/projection.ts";
 
 export type ChecksRepository = {
   readonly projectionFiles: ProjectionFiles;

@@ -1,25 +1,40 @@
-import { accessSync, mkdirSync, readFileSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from "node:fs";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { failureDetailOf as failureDetail } from "../../../domain/failure-detail.ts";
-import type { FilePresence } from "../../../domain/repository/file-presence.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import {
+  accessSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  rmdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+
+import type {
+  DirectoryEntry,
+  DirectoryPort,
+} from "../../../application/ports/file-system/directory-port.ts";
+import type {
+  EntryKind,
+  EntryKindPort,
+} from "../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
-import type { DirectoryEntry, DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
-import type { EntryKind, EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
+import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import { failureDetailOf as failureDetail } from "../../../domain/failure-detail.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 
 export type FileSystemSurface = {
   readonly readText: (request: { readonly path: string }) => string;
-  readonly writeText: (request: {
-    readonly path: string;
-    readonly text: string;
-  }) => void;
+  readonly writeText: (request: { readonly path: string; readonly text: string }) => void;
   readonly access: (request: { readonly path: string }) => void;
 };
 
 const NO_SUCH_FILE_CODE = "ENOENT";
 
 const presenceAfterAccessFailure = (request: { readonly thrown: unknown }): FilePresence =>
-  request.thrown instanceof Error && "code" in request.thrown && request.thrown.code === NO_SUCH_FILE_CODE
+  request.thrown instanceof Error &&
+  "code" in request.thrown &&
+  request.thrown.code === NO_SUCH_FILE_CODE
     ? "absent"
     : "present";
 
@@ -75,15 +90,16 @@ export const defaultFileSystemSurface: FileSystemSurface = {
   },
 };
 
-export const createDefaultFileTextPort = (
-  _options: Record<string, never>,
-): FileTextPort => createFileTextPort({ fileSystem: defaultFileSystemSurface });
+export const createDefaultFileTextPort = (_options: Record<string, never>): FileTextPort =>
+  createFileTextPort({ fileSystem: defaultFileSystemSurface });
 
 export type FileRemovalSurface = {
   readonly removeFile: (request: { readonly path: string }) => void;
 };
 
-export const createFileRemovalPort = (options: { readonly fileSystem: FileRemovalSurface }): FileRemovalPort => ({
+export const createFileRemovalPort = (options: {
+  readonly fileSystem: FileRemovalSurface;
+}): FileRemovalPort => ({
   remove: (request) => {
     try {
       options.fileSystem.removeFile({ path: request.path });
@@ -110,7 +126,10 @@ export const removeEmptyDirectory = (request: { readonly path: AbsolutePath }): 
   rmdirSync(request.path);
 };
 
-export const createFileExclusively = (request: { readonly path: AbsolutePath; readonly text: string }): void => {
+export const createFileExclusively = (request: {
+  readonly path: AbsolutePath;
+  readonly text: string;
+}): void => {
   writeFileSync(request.path, request.text, { flag: "wx" });
 };
 
@@ -127,12 +146,18 @@ export const createDirectoryPort = (options: {
       const entries = options.directory.list({ path: request.path });
       return {
         outcome: "ok",
-        value: [...entries].sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0),
+        value: [...entries].sort((left, right) =>
+          left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+        ),
       };
     } catch (thrown) {
       return {
         outcome: "failed",
-        error: { kind: "directory-unreadable", path: request.path, detail: failureDetail({ thrown }) },
+        error: {
+          kind: "directory-unreadable",
+          path: request.path,
+          detail: failureDetail({ thrown }),
+        },
       };
     }
   },
@@ -143,25 +168,28 @@ export const createDirectoryPort = (options: {
     } catch (thrown) {
       return {
         outcome: "failed",
-        error: { kind: "directory-uncreatable", path: request.path, detail: failureDetail({ thrown }) },
+        error: {
+          kind: "directory-uncreatable",
+          path: request.path,
+          detail: failureDetail({ thrown }),
+        },
       };
     }
   },
 });
 
 const defaultDirectorySurface: DirectorySurface = {
-  list: (request) => readdirSync(request.path, { withFileTypes: true }).map((entry) => ({
-    name: entry.name,
-    kind: entry.isDirectory() ? "directory" : "file",
-  })),
+  list: (request) =>
+    readdirSync(request.path, { withFileTypes: true }).map((entry) => ({
+      name: entry.name,
+      kind: entry.isDirectory() ? "directory" : "file",
+    })),
   create: (request) => {
     mkdirSync(request.path, { recursive: true });
   },
 };
 
-export const createDefaultDirectoryPort = (
-  _options: Record<string, never>,
-): DirectoryPort =>
+export const createDefaultDirectoryPort = (_options: Record<string, never>): DirectoryPort =>
   createDirectoryPort({
     directory: defaultDirectorySurface,
   });
@@ -170,7 +198,9 @@ export type EntryKindSurface = {
   readonly stat: (request: { readonly path: string }) => Exclude<EntryKind, "absent"> | undefined;
 };
 
-export const createEntryKindPort = (options: { readonly surface: EntryKindSurface }): EntryKindPort => ({
+export const createEntryKindPort = (options: {
+  readonly surface: EntryKindSurface;
+}): EntryKindPort => ({
   kindOf: (request) => {
     try {
       return options.surface.stat({ path: request.path }) ?? "absent";

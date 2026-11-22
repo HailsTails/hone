@@ -1,19 +1,40 @@
 import { z } from "zod";
-import { embeddedRunReportSchema } from "./embedded-run-report-schema.ts";
-import { type RunnerFailure, rejectedCall, runnerInvalidOutput } from "../../../../domain/runner/runner-failure.ts";
+
+import type {
+  MechanismProjectionRequest,
+  MechanismRequest,
+} from "../../../../application/ports/engine/mechanism-request.ts";
 import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
-import type { MechanismProjectionRequest, MechanismRequest } from "../../../../application/ports/engine/mechanism-request.ts";
-import { projectionWriteSchema, runnerResultSchema } from "../runner-module/runner-result-schema.ts";
-import type { NativeException, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
-import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/standalone-mechanism-dispatch.ts";
-import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
+import type { Result } from "../../../../domain/result.ts";
 import { clauseAddressText } from "../../../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
-import type { Result } from "../../../../domain/result.ts";
+import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
+import {
+  type RunnerFailure,
+  rejectedCall,
+  runnerInvalidOutput,
+} from "../../../../domain/runner/runner-failure.ts";
+import type {
+  NativeException,
+  ProjectionWrite,
+} from "../../../../domain/runner/runner-result-types.ts";
+import {
+  firstUnrequestedDetail,
+  NOTHING_MEASURED,
+  runMechanism as runStandaloneMechanism,
+  unrequestedNativeException,
+} from "../engine-run/standalone-mechanism-dispatch.ts";
+import {
+  projectionWriteSchema,
+  runnerResultSchema,
+} from "../runner-module/runner-result-schema.ts";
+import { embeddedRunReportSchema } from "./embedded-run-report-schema.ts";
 
 const reportResultSchema = runnerResultSchema({ value: embeddedRunReportSchema });
 
-const projectionWriteResultSchema = runnerResultSchema({ value: z.array(projectionWriteSchema).readonly() });
+const projectionWriteResultSchema = runnerResultSchema({
+  value: z.array(projectionWriteSchema).readonly(),
+});
 
 const embeddedRun = (request: {
   readonly returned: unknown;
@@ -82,12 +103,20 @@ export const runMechanismWithRecords = (
 ): Promise<Result<MechanismRun, RunnerFailure>> => {
   switch (request.runner.exceptionPath) {
     case "standalone":
-      return runStandaloneMechanism({ runner: request.runner, mechanism: request.mechanism, run: request.run });
+      return runStandaloneMechanism({
+        runner: request.runner,
+        mechanism: request.mechanism,
+        run: request.run,
+      });
     case "embedded": {
       const runner = request.runner;
       return Promise.resolve()
         .then(() =>
-          runner.run({ ...request.run, declaredConfigRoots: request.declaredConfigRoots, records: request.records }),
+          runner.run({
+            ...request.run,
+            declaredConfigRoots: request.declaredConfigRoots,
+            records: request.records,
+          }),
         )
         .then(
           (returned) =>

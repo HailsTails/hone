@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { misnamedLine } from "./misnamed-lines.ts";
+
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { misnamedLine } from "./misnamed-lines.ts";
 
 const FILE = repoPathOf("src/a.ts");
 
@@ -17,7 +18,9 @@ describe("misnamedLine", () => {
           replacedBy: ["hone/authored-class-or-this#class-keyword"],
         },
       }),
-    ).toBe("src/a.ts:2 version-1-id hone/no-class-authoring write hone/authored-class-or-this#class-keyword // eslint-disable-next-line hone/no-class-authoring");
+    ).toBe(
+      "src/a.ts:2 version-1-id hone/no-class-authoring write hone/authored-class-or-this#class-keyword // eslint-disable-next-line hone/no-class-authoring",
+    );
   });
 
   it("gives each version 2 id to write when a version 1 id is several checks", () => {
@@ -32,14 +35,24 @@ describe("misnamedLine", () => {
           replacedBy: ["hone/a#first", "hone/a#second"],
         },
       }),
-    ).toBe("src/a.ts:2 version-1-id hone/no-class-authoring write each of hone/a#first, hone/a#second // eslint-disable-next-line hone/no-class-authoring");
+    ).toBe(
+      "src/a.ts:2 version-1-id hone/no-class-authoring write each of hone/a#first, hone/a#second // eslint-disable-next-line hone/no-class-authoring",
+    );
   });
 
   it("keeps a block comment that spans lines on one line", () => {
     expect(
       misnamedLine({
-        misnamed: { kind: "names-no-check", ruleId: "hone/untyped-value#no-such-check", file: FILE, line: 5, text: "/* eslint-disable\nhone/untyped-value#no-such-check */" },
+        misnamed: {
+          kind: "names-no-check",
+          ruleId: "hone/untyped-value#no-such-check",
+          file: FILE,
+          line: 5,
+          text: "/* eslint-disable\nhone/untyped-value#no-such-check */",
+        },
       }),
-    ).toBe("src/a.ts:5 names-no-check hone/untyped-value#no-such-check /* eslint-disable\\nhone/untyped-value#no-such-check */");
+    ).toBe(
+      "src/a.ts:5 names-no-check hone/untyped-value#no-such-check /* eslint-disable\\nhone/untyped-value#no-such-check */",
+    );
   });
 });

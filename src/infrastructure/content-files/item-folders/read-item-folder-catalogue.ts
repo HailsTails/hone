@@ -23,7 +23,10 @@ type ItemFolder = {
 
 type ItemRead = Result<PlacedItem, VersionTwoLoadFailure>;
 
-const malformed = (request: { readonly path: string; readonly detail: string }): VersionTwoLoadFailure => ({
+const malformed = (request: {
+  readonly path: string;
+  readonly detail: string;
+}): VersionTwoLoadFailure => ({
   kind: "file-malformed",
   path: request.path,
   detail: request.detail,
@@ -37,7 +40,10 @@ const placedItemAt = (request: ItemFolder & { readonly file: string }): ItemRead
   }
   const text = request.fileText.read({ path });
   if (text.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "file-unreadable", path, detail: text.error.detail } };
+    return {
+      outcome: "failed",
+      error: { kind: "file-unreadable", path, detail: text.error.detail },
+    };
   }
   const read = itemTextOf({ text: text.value });
   if (read.outcome === "failed") {
@@ -46,16 +52,37 @@ const placedItemAt = (request: ItemFolder & { readonly file: string }): ItemRead
   const facts = itemFactsOf({ kind: identity.value.kind, facts: read.value.facts });
   return facts.outcome === "failed"
     ? { outcome: "failed", error: malformed({ path, detail: facts.error }) }
-    : { outcome: "ok", value: { name: identity.value.name, within: identity.value.within, title: read.value.title, item: facts.value } };
+    : {
+        outcome: "ok",
+        value: {
+          name: identity.value.name,
+          within: identity.value.within,
+          title: read.value.title,
+          item: facts.value,
+        },
+      };
 };
 
-const placedItemsOf = (request: ItemFolder & { readonly files: readonly string[] }): Result<readonly PlacedItem[], VersionTwoLoadFailure> => {
-  const reads = request.files.filter((file) => fileRoleOf({ path: file }) === "item").map((file) => placedItemAt({ ...request, file }));
+const placedItemsOf = (
+  request: ItemFolder & { readonly files: readonly string[] },
+): Result<readonly PlacedItem[], VersionTwoLoadFailure> => {
+  const reads = request.files
+    .filter((file) => fileRoleOf({ path: file }) === "item")
+    .map((file) => placedItemAt({ ...request, file }));
   const failure = reads.find((each) => each.outcome === "failed");
-  return failure?.outcome === "failed" ? failure : { outcome: "ok", value: reads.flatMap((each) => (each.outcome === "ok" ? [each.value] : [])) };
+  return failure?.outcome === "failed"
+    ? failure
+    : {
+        outcome: "ok",
+        value: reads.flatMap((each) => (each.outcome === "ok" ? [each.value] : [])),
+      };
 };
 
-const holdingOf = (request: { readonly root: AbsolutePath; readonly beside: HeldBesideItems; readonly items: readonly PlacedItem[] }): Result<ContentHolding, VersionTwoLoadFailure> => {
+const holdingOf = (request: {
+  readonly root: AbsolutePath;
+  readonly beside: HeldBesideItems;
+  readonly items: readonly PlacedItem[];
+}): Result<ContentHolding, VersionTwoLoadFailure> => {
   const file = catalogueFileOf({ items: request.items, beside: request.beside });
   const content = file.outcome === "failed" ? file : catalogueContentFromFile({ file: file.value });
   return content.outcome === "failed"
@@ -63,21 +90,30 @@ const holdingOf = (request: { readonly root: AbsolutePath; readonly beside: Held
     : { outcome: "ok", value: { held: "catalogue", content: content.value } };
 };
 
-const readItemFolderCatalogue = (request: ItemFolder): Result<ContentHolding, VersionTwoLoadFailure> => {
+const readItemFolderCatalogue = (
+  request: ItemFolder,
+): Result<ContentHolding, VersionTwoLoadFailure> => {
   if (request.fileText.exists({ path: request.root }) === "absent") {
     return { outcome: "ok", value: { held: "none" } };
   }
   const files = filesUnder(request);
   if (files.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "file-unreadable", path: files.error.path, detail: files.error.detail } };
+    return {
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: files.error.path, detail: files.error.detail },
+    };
   }
   const items = placedItemsOf({ ...request, files: files.value });
   if (items.outcome === "failed") {
     return items;
   }
-  return items.value.length === 0 ? { outcome: "ok", value: { held: "none" } } : holdingOf({ root: request.root, beside: request.beside, items: items.value });
+  return items.value.length === 0
+    ? { outcome: "ok", value: { held: "none" } }
+    : holdingOf({ root: request.root, beside: request.beside, items: items.value });
 };
 
-export const createItemFolderCatalogueRepository = (options: ItemFolder): SymptomCatalogueRepository => ({
+export const createItemFolderCatalogueRepository = (
+  options: ItemFolder,
+): SymptomCatalogueRepository => ({
   read: (_request) => readItemFolderCatalogue(options),
 });

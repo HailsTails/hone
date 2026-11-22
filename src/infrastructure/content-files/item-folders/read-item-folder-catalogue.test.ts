@@ -1,45 +1,62 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import type { HeldBesideItems } from "./item-document.ts";
 import { createItemFolderCatalogueRepository } from "./read-item-folder-catalogue.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const ROOT = absoluteRootOf("/content");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => ROOT });
 
-const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("clock-sources") };
+const CLOCK_SOURCES = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("XX-1"),
+  clause: clauseIdOf("clock-sources"),
+};
 
 const BESIDE: HeldBesideItems = {
   engines: [{ name: "walker" }],
-  clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
+  clauses: [
+    { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } },
+  ],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
   formatsOfToday: { "authorised-location": "authorised-location" },
 };
 
-const NOTHING_BESIDE: HeldBesideItems = { engines: [], clauses: [], clauseOfCheck: new Map(), formatsOfToday: {} };
+const NOTHING_BESIDE: HeldBesideItems = {
+  engines: [],
+  clauses: [],
+  clauseOfCheck: new Map(),
+  formatsOfToday: {},
+};
 
-const DOES_ONE_JOB = '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "rule": "written-out-answers" }] }\n```\n';
+const DOES_ONE_JOB =
+  '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "rule": "written-out-answers" }] }\n```\n';
 
-const TESTS_ARE_OURS = "# Tests are ours\n\n```json\n{}\n```\n\nWhy tests are ours, which the tool never reads.\n";
+const TESTS_ARE_OURS =
+  "# Tests are ours\n\n```json\n{}\n```\n\nWhy tests are ours, which the tool never reads.\n";
 
-const AUTHORISED_LOCATION = '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n';
+const AUTHORISED_LOCATION =
+  '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n';
 
 const DEBT = '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n';
 
-const WRITTEN_OUT_ANSWERS = '# Written-out answers\n\n```json\n{ "principle": "tests-are-ours", "standing": "accepted" }\n```\n';
+const WRITTEN_OUT_ANSWERS =
+  '# Written-out answers\n\n```json\n{ "principle": "tests-are-ours", "standing": "accepted" }\n```\n';
 
-const WORLD_VALUES = '# World values through a port\n\n```json\n{ "serves": { "rule": "written-out-answers" }, "standing": "accepted", "reason": { "text": "the world is passed in", "standing": "accepted" } }\n```\n';
+const WORLD_VALUES =
+  '# World values through a port\n\n```json\n{ "serves": { "rule": "written-out-answers" }, "standing": "accepted", "reason": { "text": "the world is passed in", "standing": "accepted" } }\n```\n';
 
 const DATE_USED_DIRECTLY =
   '# Date used directly\n\n```json\n{ "group": "The outside world reached directly", "seen": "Any use of Date.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "rule": "written-out-answers" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": ["world-values-through-a-port"], "correctUses": [{ "situation": "correct use", "kind": "debt" }] }\n```\n';
 
-const CLOCK_SOURCES_CHECK = '# Clock sources\n\n```json\n{}\n```\n';
+const CLOCK_SOURCES_CHECK = "# Clock sources\n\n```json\n{}\n```\n";
 
 const fileTextReading = (read: FileTextPort["read"]): FileTextPort => ({
   read,
@@ -78,7 +95,10 @@ const FULL_LISTING = vi
       { name: "symptoms", kind: "directory" },
     ],
   })
-  .mockReturnValueOnce({ outcome: "ok", value: [{ name: "world-values-through-a-port.md", kind: "file" }] })
+  .mockReturnValueOnce({
+    outcome: "ok",
+    value: [{ name: "world-values-through-a-port.md", kind: "file" }],
+  })
   .mockReturnValueOnce({
     outcome: "ok",
     value: [
@@ -102,41 +122,100 @@ describe("createItemFolderCatalogueRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: DATE_USED_DIRECTLY })
         .mockReturnValueOnce({ outcome: "ok", value: CLOCK_SOURCES_CHECK }),
     );
-    const directory: DirectoryPort = { list: FULL_LISTING, create: vi.fn<DirectoryPort["create"]>() };
-    expect(createItemFolderCatalogueRepository({ fileText, directory, path: PATH, root: ROOT, beside: BESIDE }).read({})).toMatchObject({
+    const directory: DirectoryPort = {
+      list: FULL_LISTING,
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText,
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: BESIDE,
+      }).read({}),
+    ).toMatchObject({
       outcome: "ok",
       value: {
         held: "catalogue",
         content: {
           principles: [{ name: "tests-are-ours", title: "Tests are ours" }],
-          rules: [{ name: "written-out-answers", title: "Written-out answers", principle: { name: "tests-are-ours" }, standing: "accepted" }],
+          rules: [
+            {
+              name: "written-out-answers",
+              title: "Written-out answers",
+              principle: { name: "tests-are-ours" },
+              standing: "accepted",
+            },
+          ],
           cases: [{ name: "does-one-job", title: "Does one job" }],
           recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
-          recordKinds: [{ name: "authorised-location", todaysFormat: "authorised-location" }, { name: "debt", todaysFormat: "none-yet" }],
+          recordKinds: [
+            { name: "authorised-location", todaysFormat: "authorised-location" },
+            { name: "debt", todaysFormat: "none-yet" },
+          ],
           engines: [{ name: "walker" }],
-          symptoms: [{ name: "date-used-directly", title: "Date used directly", recipes: [{ name: "world-values-through-a-port" }] }],
-          checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" }, clause: CLOCK_SOURCES }],
+          symptoms: [
+            {
+              name: "date-used-directly",
+              title: "Date used directly",
+              recipes: [{ name: "world-values-through-a-port" }],
+            },
+          ],
+          checks: [
+            {
+              name: "clock-sources",
+              symptom: { name: "date-used-directly" },
+              clause: CLOCK_SOURCES,
+            },
+          ],
         },
       },
     });
     expect(fileText.read).toHaveBeenNthCalledWith(1, { path: "/content/cases/does-one-job.md" });
-    expect(fileText.read).toHaveBeenNthCalledWith(8, { path: "/content/typescript/symptoms/date-used-directly/clock-sources.md" });
+    expect(fileText.read).toHaveBeenNthCalledWith(8, {
+      path: "/content/typescript/symptoms/date-used-directly/clock-sources.md",
+    });
     expect(fileText.read).toHaveBeenCalledTimes(8);
   });
 
   it("holds none, listing nothing, when the root is absent", () => {
-    const fileText: FileTextPort = { ...fileTextReading(vi.fn<FileTextPort["read"]>()), exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent") };
-    const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
-    expect(createItemFolderCatalogueRepository({ fileText, directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({ outcome: "ok", value: { held: "none" } });
+    const fileText: FileTextPort = {
+      ...fileTextReading(vi.fn<FileTextPort["read"]>()),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+    };
+    const directory: DirectoryPort = {
+      list: vi.fn<DirectoryPort["list"]>(),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText,
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
+    ).toEqual({ outcome: "ok", value: { held: "none" } });
     expect(directory.list).not.toHaveBeenCalled();
   });
 
   it("holds none when the root holds no item", () => {
     const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [{ name: "SPIRIT.md", kind: "file" }] }),
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "SPIRIT.md", kind: "file" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createItemFolderCatalogueRepository({ fileText: fileTextReading(vi.fn<FileTextPort["read"]>()), directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
+    ).toEqual({
       outcome: "ok",
       value: { held: "none" },
     });
@@ -144,10 +223,21 @@ describe("createItemFolderCatalogueRepository", () => {
 
   it("fails naming the folder it could not list", () => {
     const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: ROOT, detail: "EACCES" } }),
+      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({
+        outcome: "failed",
+        error: { kind: "directory-unreadable", path: ROOT, detail: "EACCES" },
+      }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createItemFolderCatalogueRepository({ fileText: fileTextReading(vi.fn<FileTextPort["read"]>()), directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", path: "/content", detail: "EACCES" },
     });
@@ -164,9 +254,21 @@ describe("createItemFolderCatalogueRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "c.md", kind: "file" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createItemFolderCatalogueRepository({ fileText: fileTextReading(vi.fn<FileTextPort["read"]>()), directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "file-malformed", path: "/content/typescript/symptoms/a/b/c.md", detail: "sits where no kind of item is kept" },
+      error: {
+        kind: "file-malformed",
+        path: "/content/typescript/symptoms/a/b/c.md",
+        detail: "sits where no kind of item is kept",
+      },
     });
   });
 
@@ -175,14 +277,31 @@ describe("createItemFolderCatalogueRepository", () => {
       list: vi
         .fn<DirectoryPort["list"]>()
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "principles", kind: "directory" }] })
-        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "tests-are-ours.md", kind: "file" }] }),
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "tests-are-ours.md", kind: "file" }],
+        }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     expect(
-      createItemFolderCatalogueRepository({ fileText: fileTextReading(vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: "# Tests are ours\n\nOnly prose.\n" })), directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({}),
+      createItemFolderCatalogueRepository({
+        fileText: fileTextReading(
+          vi
+            .fn<FileTextPort["read"]>()
+            .mockReturnValueOnce({ outcome: "ok", value: "# Tests are ours\n\nOnly prose.\n" }),
+        ),
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "file-malformed", path: "/content/principles/tests-are-ours.md", detail: "holds no fenced json block of facts" },
+      error: {
+        kind: "file-malformed",
+        path: "/content/principles/tests-are-ours.md",
+        detail: "holds no fenced json block of facts",
+      },
     });
   });
 
@@ -191,15 +310,37 @@ describe("createItemFolderCatalogueRepository", () => {
       list: vi
         .fn<DirectoryPort["list"]>()
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "principles", kind: "directory" }] })
-        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "tests-are-ours.md", kind: "file" }] }),
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "tests-are-ours.md", kind: "file" }],
+        }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     const fileText = fileTextReading(
-      vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/content/principles/tests-are-ours.md", detail: "EACCES" } }),
+      vi.fn<FileTextPort["read"]>().mockReturnValue({
+        outcome: "failed",
+        error: {
+          kind: "unreadable",
+          path: "/content/principles/tests-are-ours.md",
+          detail: "EACCES",
+        },
+      }),
     );
-    expect(createItemFolderCatalogueRepository({ fileText, directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText,
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: "/content/principles/tests-are-ours.md", detail: "EACCES" },
+      error: {
+        kind: "file-unreadable",
+        path: "/content/principles/tests-are-ours.md",
+        detail: "EACCES",
+      },
     });
   });
 
@@ -208,12 +349,31 @@ describe("createItemFolderCatalogueRepository", () => {
       list: vi
         .fn<DirectoryPort["list"]>()
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "rules", kind: "directory" }] })
-        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "written-out-answers.md", kind: "file" }] }),
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "written-out-answers.md", kind: "file" }],
+        }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createItemFolderCatalogueRepository({ fileText: fileTextReading(vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: WRITTEN_OUT_ANSWERS })), directory, path: PATH, root: ROOT, beside: NOTHING_BESIDE }).read({})).toEqual({
+    expect(
+      createItemFolderCatalogueRepository({
+        fileText: fileTextReading(
+          vi
+            .fn<FileTextPort["read"]>()
+            .mockReturnValueOnce({ outcome: "ok", value: WRITTEN_OUT_ANSWERS }),
+        ),
+        directory,
+        path: PATH,
+        root: ROOT,
+        beside: NOTHING_BESIDE,
+      }).read({}),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "file-malformed", path: "/content", detail: expect.stringContaining("names tests-are-ours, which the catalogue does not hold") },
+      error: {
+        kind: "file-malformed",
+        path: "/content",
+        detail: expect.stringContaining("names tests-are-ours, which the catalogue does not hold"),
+      },
     });
   });
 });

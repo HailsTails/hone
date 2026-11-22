@@ -13,7 +13,12 @@ export type RecordsFolderPorts = {
   readonly gitTree: GitTreePort;
 };
 
-export type RecordsSourceOf = (request: RecordsFolderPorts & { readonly repoRoot: AbsolutePath; readonly catalogue: SymptomCatalogue }) => RecordsSource;
+export type RecordsSourceOf = (
+  request: RecordsFolderPorts & {
+    readonly repoRoot: AbsolutePath;
+    readonly catalogue: SymptomCatalogue;
+  },
+) => RecordsSource;
 
 export type FoundTreeRecordsSourceOf = (request: {
   readonly recordsSourceOf: RecordsSourceOf;

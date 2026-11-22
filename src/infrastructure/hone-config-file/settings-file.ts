@@ -1,22 +1,16 @@
 import { z } from "zod";
-import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
-import { forfeitureAssessmentSchema } from "./assessment.ts";
-import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
-import { checkEditionsSchema } from "./check-editions.ts";
-import type { CheckEditions } from "../../domain/settings/clause-settings/check-editions.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
-import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
-import type { EslintConfigLookup } from "../../domain/settings/eslint-config-lookup.ts";
-import { ruleSetNameSchema } from "./identifiers.ts";
-import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
-import { brandedRepoPathSchema, repoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
-import { versionTwoReportOutputSchema } from "./report-output.ts";
-import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
+
+import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
 import type { Result } from "../../domain/result.ts";
-import { type ConventionsWire, conventionsOf, conventionsWireOf } from "./conventions.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
+import type { ForfeitureAssessment } from "../../domain/settings/assessment.ts";
+import type { CheckEditions } from "../../domain/settings/clause-settings/check-editions.ts";
 import type { ConventionsReading } from "../../domain/settings/conventions.ts";
-import { listedAddressSchema } from "./listed-address.ts";
+import type { EslintConfigLookup } from "../../domain/settings/eslint-config-lookup.ts";
 import { listedAddressText } from "../../domain/settings/listed-address.ts";
+import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import {
   type CheckState,
   type DeclaredRuleSet,
@@ -26,7 +20,18 @@ import {
   type SettingsFile,
   type SettingsFileFault,
 } from "../../domain/settings/settings-file.ts";
-import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
+import { eslintConfigLookupSchema } from "../engines/eslint/eslint-config-lookup.ts";
+import {
+  brandedRepoPathSchema,
+  repoPathSchema,
+  repoPathTextSchema,
+} from "../hone-records-folder/repo-path.ts";
+import { forfeitureAssessmentSchema } from "./assessment.ts";
+import { checkEditionsSchema } from "./check-editions.ts";
+import { type ConventionsWire, conventionsOf, conventionsWireOf } from "./conventions.ts";
+import { ruleSetNameSchema } from "./identifiers.ts";
+import { listedAddressSchema } from "./listed-address.ts";
+import { versionTwoReportOutputSchema } from "./report-output.ts";
 
 const RULE_SET_SUFFIX_SEPARATOR = "-";
 
@@ -46,13 +51,20 @@ const DEFAULT_CHECK_EDITIONS: CheckEditions = "pinned";
 
 const JSON_INDENT = 2;
 
-const retiredKeySchema = (request: { readonly refusal: string }) => z.never({ error: request.refusal }).optional();
+const retiredKeySchema = (request: { readonly refusal: string }) =>
+  z.never({ error: request.refusal }).optional();
 
 const ruleSetLocationSchema = z.union([
-  z.enum([".", LEADING_CURRENT_DIRECTORY]).transform((): RuleSetLocation => ({ location: "repo-root" })),
+  z
+    .enum([".", LEADING_CURRENT_DIRECTORY])
+    .transform((): RuleSetLocation => ({ location: "repo-root" })),
   z
     .string()
-    .transform((text) => (text.startsWith(LEADING_CURRENT_DIRECTORY) ? text.slice(LEADING_CURRENT_DIRECTORY.length) : text))
+    .transform((text) =>
+      text.startsWith(LEADING_CURRENT_DIRECTORY)
+        ? text.slice(LEADING_CURRENT_DIRECTORY.length)
+        : text,
+    )
     .pipe(repoPathSchema)
     .transform((path): RuleSetLocation => ({ location: "folder", path })),
 ]);
@@ -69,17 +81,27 @@ const checkStateSchema = z.union(
   { error: `a check takes an engine, "${NOT_RUN}" or "${NOT_ADOPTED}"` },
 );
 
-
 const settingValuesSchema = z.record(z.string(), z.json()).superRefine((values, context) => {
-  RENAMED_SETTINGS.filter(({ pieceName }) => Object.hasOwn(values, pieceName)).forEach(({ name, pieceName }) => {
-    context.addIssue({ code: "custom", path: [pieceName], message: `renamed: "${pieceName}" is "${name}" in version 2` });
-  });
-
+  RENAMED_SETTINGS.filter(({ pieceName }) => Object.hasOwn(values, pieceName)).forEach(
+    ({ name, pieceName }) => {
+      context.addIssue({
+        code: "custom",
+        path: [pieceName],
+        message: `renamed: "${pieceName}" is "${name}" in version 2`,
+      });
+    },
+  );
 });
 
 const folderListSchema = (request: { readonly refusal: string }) =>
   z
-    .array(brandedRepoPathSchema({ text: repoPathTextSchema.refine((folder) => !folder.includes("*"), { error: request.refusal }) }))
+    .array(
+      brandedRepoPathSchema({
+        text: repoPathTextSchema.refine((folder) => !folder.includes("*"), {
+          error: request.refusal,
+        }),
+      }),
+    )
     .default([]);
 
 const settingsFileWireSchema = z.strictObject({
@@ -102,21 +124,39 @@ const settingsFileWireSchema = z.strictObject({
   reportOutput: versionTwoReportOutputSchema.default(DEFAULT_REPORT_OUTPUT),
   checkEditions: checkEditionsSchema.default(DEFAULT_CHECK_EDITIONS),
   eslintConfigLookup: eslintConfigLookupSchema.optional(),
-  eslintConfigRoots: folderListSchema({ refusal: "an eslintConfigRoots entry is a repository folder, not a glob" }),
+  eslintConfigRoots: folderListSchema({
+    refusal: "an eslintConfigRoots entry is a repository folder, not a glob",
+  }),
   generated: z.unknown().optional(),
   layers: z.unknown().optional(),
-  clauses: retiredKeySchema({ refusal: 'renamed: "clauses" is "checks" in version 2, addressed <symptom>#<check>' }),
-  clauseSettings: retiredKeySchema({ refusal: 'renamed: "clauseSettings" is "checkSettings" in version 2, addressed <symptom>#<check>' }),
-  assessment: retiredKeySchema({ refusal: 'renamed: "assessment" is "forfeiture" in version 2, at the top level' }),
-  conventions: retiredKeySchema({ refusal: 'renamed: "conventions" is gone in version 2; its "generated" is a top-level key' }),
-  fileExceptionWhyChains: retiredKeySchema({ refusal: 'removed: "fileExceptionWhyChains"; every record shows its why-chain in version 2' }),
+  clauses: retiredKeySchema({
+    refusal: 'renamed: "clauses" is "checks" in version 2, addressed <symptom>#<check>',
+  }),
+  clauseSettings: retiredKeySchema({
+    refusal:
+      'renamed: "clauseSettings" is "checkSettings" in version 2, addressed <symptom>#<check>',
+  }),
+  assessment: retiredKeySchema({
+    refusal: 'renamed: "assessment" is "forfeiture" in version 2, at the top level',
+  }),
+  conventions: retiredKeySchema({
+    refusal: 'renamed: "conventions" is gone in version 2; its "generated" is a top-level key',
+  }),
+  fileExceptionWhyChains: retiredKeySchema({
+    refusal: 'removed: "fileExceptionWhyChains"; every record shows its why-chain in version 2',
+  }),
 });
 
 type SettingsFileWire = z.infer<typeof settingsFileWireSchema>;
 
-const ruleSetFaultOf = (request: { readonly ruleSets: readonly DeclaredRuleSet[] }): SettingsFileFault | undefined => {
+const ruleSetFaultOf = (request: {
+  readonly ruleSets: readonly DeclaredRuleSet[];
+}): SettingsFileFault | undefined => {
   const names: readonly string[] = request.ruleSets.map(({ name }) => name);
-  const reserved = names.find((name) => name === TOOL_RULE_SET || name.startsWith(`${TOOL_RULE_SET}${RULE_SET_SUFFIX_SEPARATOR}`));
+  const reserved = names.find(
+    (name) =>
+      name === TOOL_RULE_SET || name.startsWith(`${TOOL_RULE_SET}${RULE_SET_SUFFIX_SEPARATOR}`),
+  );
   if (reserved !== undefined) {
     return { kind: "reserved-rule-set-name", name: reserved };
   }
@@ -128,7 +168,10 @@ const ruleSetFaultOf = (request: { readonly ruleSets: readonly DeclaredRuleSet[]
   return collisions[0];
 };
 
-const settingsFileOfWire = (request: { readonly wire: SettingsFileWire; readonly conventions: ConventionsReading }): SettingsFile => ({
+const settingsFileOfWire = (request: {
+  readonly wire: SettingsFileWire;
+  readonly conventions: ConventionsReading;
+}): SettingsFile => ({
   exclude: request.wire.exclude,
   ruleSets: request.wire.ruleSets.map(([name, location]) => ({ name, location })),
   checks: request.wire.checks.map(([address, state]) => ({ address, state })),
@@ -156,10 +199,15 @@ export type SettingsWire = {
   readonly eslintConfigLookup?: EslintConfigLookup;
 } & ConventionsWire;
 
-const byKey = <Value>(request: { readonly left: WireEntry<Value>; readonly right: WireEntry<Value> }): number =>
+const byKey = <Value>(request: {
+  readonly left: WireEntry<Value>;
+  readonly right: WireEntry<Value>;
+}): number =>
   request.left[0] < request.right[0] ? -1 : request.left[0] > request.right[0] ? 1 : 0;
 
-const sortedRecordOf = <Value>(request: { readonly entries: readonly WireEntry<Value>[] }): Readonly<Record<string, Value>> =>
+const sortedRecordOf = <Value>(request: {
+  readonly entries: readonly WireEntry<Value>[];
+}): Readonly<Record<string, Value>> =>
   Object.fromEntries(request.entries.toSorted((left, right) => byKey({ left, right })));
 
 const locationTextOf = (request: { readonly location: RuleSetLocation }): string =>
@@ -176,28 +224,49 @@ const stateTextOf = (request: { readonly state: CheckState }): string => {
   }
 };
 
-const withheldWhenDefault = <Value>(request: { readonly value: Value; readonly standard: Value }): { readonly given?: Value } =>
+const withheldWhenDefault = <Value>(request: {
+  readonly value: Value;
+  readonly standard: Value;
+}): { readonly given?: Value } =>
   request.value === request.standard ? {} : { given: request.value };
 
-const settingsWireOfDefaults = (request: { readonly settings: SettingsFile }): Omit<SettingsWire, "version" | "ruleSets" | "checks"> => {
+const settingsWireOfDefaults = (request: {
+  readonly settings: SettingsFile;
+}): Omit<SettingsWire, "version" | "ruleSets" | "checks"> => {
   const { settings } = request;
-  const forfeiture = withheldWhenDefault({ value: settings.forfeiture, standard: DEFAULT_FORFEITURE }).given;
-  const reportOutput = withheldWhenDefault({ value: settings.reportOutput, standard: DEFAULT_REPORT_OUTPUT }).given;
-  const checkEditions = withheldWhenDefault({ value: settings.checkEditions, standard: DEFAULT_CHECK_EDITIONS }).given;
+  const forfeiture = withheldWhenDefault({
+    value: settings.forfeiture,
+    standard: DEFAULT_FORFEITURE,
+  }).given;
+  const reportOutput = withheldWhenDefault({
+    value: settings.reportOutput,
+    standard: DEFAULT_REPORT_OUTPUT,
+  }).given;
+  const checkEditions = withheldWhenDefault({
+    value: settings.checkEditions,
+    standard: DEFAULT_CHECK_EDITIONS,
+  }).given;
   return {
     ...(settings.checkSettings.length === 0
       ? {}
       : {
           checkSettings: sortedRecordOf({
-            entries: settings.checkSettings.map((given): WireEntry<ClauseSettingValues> => [listedAddressText({ address: given.address }), given.values]),
+            entries: settings.checkSettings.map((given): WireEntry<ClauseSettingValues> => [
+              listedAddressText({ address: given.address }),
+              given.values,
+            ]),
           }),
         }),
     ...(settings.exclude.length === 0 ? {} : { exclude: settings.exclude }),
-    ...(settings.eslintConfigRoots.length === 0 ? {} : { eslintConfigRoots: settings.eslintConfigRoots }),
+    ...(settings.eslintConfigRoots.length === 0
+      ? {}
+      : { eslintConfigRoots: settings.eslintConfigRoots }),
     ...(forfeiture === undefined ? {} : { forfeiture }),
     ...(reportOutput === undefined ? {} : { reportOutput }),
     ...(checkEditions === undefined ? {} : { checkEditions }),
-    ...(settings.eslintConfigLookup.lookup === "declared" ? { eslintConfigLookup: settings.eslintConfigLookup.value } : {}),
+    ...(settings.eslintConfigLookup.lookup === "declared"
+      ? { eslintConfigLookup: settings.eslintConfigLookup.value }
+      : {}),
     ...conventionsWireOf({ reading: settings.conventions }),
   };
 };
@@ -205,10 +274,16 @@ const settingsWireOfDefaults = (request: { readonly settings: SettingsFile }): O
 export const settingsWireOf = (request: { readonly settings: SettingsFile }): SettingsWire => ({
   version: SETTINGS_FILE_VERSION,
   ruleSets: sortedRecordOf({
-    entries: request.settings.ruleSets.map(({ name, location }): WireEntry<string> => [name, locationTextOf({ location })]),
+    entries: request.settings.ruleSets.map(({ name, location }): WireEntry<string> => [
+      name,
+      locationTextOf({ location }),
+    ]),
   }),
   checks: sortedRecordOf({
-    entries: request.settings.checks.map(({ address, state }): WireEntry<string> => [listedAddressText({ address }), stateTextOf({ state })]),
+    entries: request.settings.checks.map(({ address, state }): WireEntry<string> => [
+      listedAddressText({ address }),
+      stateTextOf({ state }),
+    ]),
   }),
   ...settingsWireOfDefaults({ settings: request.settings }),
 });
@@ -216,12 +291,19 @@ export const settingsWireOf = (request: { readonly settings: SettingsFile }): Se
 export const settingsTextOf = (request: { readonly settings: SettingsFile }): string =>
   `${JSON.stringify(settingsWireOf({ settings: request.settings }), null, JSON_INDENT)}\n`;
 
-export const settingsFileOf = (request: { readonly document: unknown }): Result<SettingsFile, SettingsFileFault> => {
+export const settingsFileOf = (request: {
+  readonly document: unknown;
+}): Result<SettingsFile, SettingsFileFault> => {
   const parsed = settingsFileWireSchema.safeParse(request.document);
   if (!parsed.success) {
-    return { outcome: "failed", error: { kind: "malformed", detail: z.prettifyError(parsed.error) } };
+    return {
+      outcome: "failed",
+      error: { kind: "malformed", detail: z.prettifyError(parsed.error) },
+    };
   }
-  const conventions = conventionsOf({ document: { generated: parsed.data.generated, layers: parsed.data.layers ?? {} } });
+  const conventions = conventionsOf({
+    document: { generated: parsed.data.generated, layers: parsed.data.layers ?? {} },
+  });
   if (conventions.outcome === "failed") {
     return { outcome: "failed", error: { kind: "malformed", detail: conventions.error } };
   }
@@ -230,4 +312,8 @@ export const settingsFileOf = (request: { readonly document: unknown }): Result<
   return fault === undefined ? { outcome: "ok", value: file } : { outcome: "failed", error: fault };
 };
 
-export const SETTINGS_FILE_FORMAT: SettingsFileFormat = { fileOf: settingsFileOf, documentOf: settingsWireOf, textOf: settingsTextOf };
+export const SETTINGS_FILE_FORMAT: SettingsFileFormat = {
+  fileOf: settingsFileOf,
+  documentOf: settingsWireOf,
+  textOf: settingsTextOf,
+};

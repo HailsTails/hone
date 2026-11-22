@@ -1,7 +1,7 @@
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
+import type { GitFailure } from "../../domain/repository/git-failure.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { GitFailure } from "../../domain/repository/git-failure.ts";
 
 export type BaseContentMembership = "present-in-base" | "absent-from-base";
 

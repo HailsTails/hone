@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
+
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
+import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const SETTINGS: SettingsFile = {
   exclude: [],
@@ -34,11 +35,19 @@ const PATH: PathPort = {
 };
 
 const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
-  process: { arguments: [], writeOut: () => undefined, writeError: () => undefined, exitWith: () => undefined },
+  process: {
+    arguments: [],
+    writeOut: () => undefined,
+    writeError: () => undefined,
+    exitWith: () => undefined,
+  },
   path: PATH,
   fileText: {
     exists: () => "absent",
-    read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } }),
+    read: ({ path }) => ({
+      outcome: "failed",
+      error: { kind: "unreadable", path, detail: "absent" },
+    }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
   engine: {
@@ -48,9 +57,19 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
     conform: notUsed,
   },
   modules: { load: notUsed },
-  git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
+  git: {
+    trackedPaths: notUsed,
+    changedSince: notUsed,
+    contentInBase: notUsed,
+    textInBase: notUsed,
+    renamedSince: notUsed,
+  },
   exceptionRepositoryOf: notUsed,
-  exceptionEntryParser: { parseExceptionEntries: notUsed, importedEntriesIn: notUsed, importSourcesOf: notUsed },
+  exceptionEntryParser: {
+    parseExceptionEntries: notUsed,
+    importedEntriesIn: notUsed,
+    importSourcesOf: notUsed,
+  },
   selectionRepositoryOf: notUsed,
   shownPathOfRepository: notUsed,
   moduleUrl: "file:///install/src/hone.ts",
@@ -74,9 +93,15 @@ describe("plannedProjectionOf", () => {
       settings: SETTINGS,
       documents: [],
     });
-    expect(projected).toEqual({ outcome: "failed", error: {
+    expect(projected).toEqual({
+      outcome: "failed",
+      error: {
         kind: "projection-failed",
-        failure: { kind: "catalogue-not-read", path: "/install/rules", reason: { reason: "absent" } },
+        failure: {
+          kind: "catalogue-not-read",
+          path: "/install/rules",
+          reason: { reason: "absent" },
+        },
       },
     });
     expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });

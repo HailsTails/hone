@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { SECTION_NAMES, type SectionName, sectionRoleOf, sectionsWithRole } from "./section-roles.ts";
+
+import {
+  SECTION_NAMES,
+  type SectionName,
+  sectionRoleOf,
+  sectionsWithRole,
+} from "./section-roles.ts";
 
 describe("SECTION_NAMES", () => {
   it("names every report section once, in the order the report prints them", () => {
@@ -25,9 +31,12 @@ describe("SECTION_NAMES", () => {
 });
 
 describe("sectionRoleOf", () => {
-  it.each<SectionName>(["excluded", "notAdopted", "notRun", "editions", "exempted", "assessment"])("is informational for %s, which never fails the run", (section) => {
-    expect(sectionRoleOf({ section })).toBe("informational");
-  });
+  it.each<SectionName>(["excluded", "notAdopted", "notRun", "editions", "exempted", "assessment"])(
+    "is informational for %s, which never fails the run",
+    (section) => {
+      expect(sectionRoleOf({ section })).toBe("informational");
+    },
+  );
 
   it.each<SectionName>([
     "findings",
@@ -64,6 +73,13 @@ describe("sectionsWithRole", () => {
   });
 
   it("lists the six informational sections in print order", () => {
-    expect(sectionsWithRole({ role: "informational" })).toEqual(["excluded", "notAdopted", "notRun", "editions", "exempted", "assessment"]);
+    expect(sectionsWithRole({ role: "informational" })).toEqual([
+      "excluded",
+      "notAdopted",
+      "notRun",
+      "editions",
+      "exempted",
+      "assessment",
+    ]);
   });
 });

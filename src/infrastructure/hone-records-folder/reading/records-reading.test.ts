@@ -1,23 +1,70 @@
 import { describe, expect, it } from "vitest";
-import type { Check, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { RecordsAtBase, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
-import { recordsReadingOf } from "./records-reading.ts";
-import { carriedListingOf } from "../../../domain/records/hone-records/record-listings.ts";
+
+import type {
+  Check,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
+import type {
+  RecordsAtBase,
+  SymptomReach,
+} from "../../../domain/records/hone-records/hone-record.ts";
 import { sameRecordIdentity } from "../../../domain/records/hone-records/record-identity.ts";
+import { carriedListingOf } from "../../../domain/records/hone-records/record-listings.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { recordsReadingOf } from "./records-reading.ts";
 
-const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
+const AUTHORISED_LOCATION_KIND: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
 
-const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
-const CLAIMED_TYPE: Symptom = { name: "claimed-type", title: "Claimed type", seen: "A cast.", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
+const CLAIMED_TYPE: Symptom = {
+  name: "claimed-type",
+  title: "Claimed type",
+  seen: "A cast.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
 
-const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, engines: [], forms: [] };
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-2"),
+    clause: clauseIdOf("cast-expressions"),
+  },
+  engines: [],
+  forms: [],
+};
 
-const NON_NULL_CHECK: Check = { name: "non-null-assertions", symptom: CLAIMED_TYPE, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("non-null-assertions") }, engines: [], forms: [] };
+const NON_NULL_CHECK: Check = {
+  name: "non-null-assertions",
+  symptom: CLAIMED_TYPE,
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-2"),
+    clause: clauseIdOf("non-null-assertions"),
+  },
+  engines: [],
+  forms: [],
+};
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -35,9 +82,20 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const TEXT_PAST_ITS_READER: Symptom = { name: "text-past-its-reader", title: "Text past its reader", seen: "A string.", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
+const TEXT_PAST_ITS_READER: Symptom = {
+  name: "text-past-its-reader",
+  title: "Text past its reader",
+  seen: "A string.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
 
-const CATALOGUE_OF_TWO_SYMPTOMS: SymptomCatalogue = { ...CATALOGUE, symptoms: [CLAIMED_TYPE, TEXT_PAST_ITS_READER] };
+const CATALOGUE_OF_TWO_SYMPTOMS: SymptomCatalogue = {
+  ...CATALOGUE,
+  symptoms: [CLAIMED_TYPE, TEXT_PAST_ITS_READER],
+};
 
 const UNMEASURED: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
@@ -51,15 +109,36 @@ const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-ty
 
 const WHY_CHAIN = {
   whys: [
-    { why: "Why does held.ts hold this symptom?", because: "An outside contract fixes the shape the unit must meet at this place.", evidence: "src/held.ts:1." },
-    { why: "Why does an outside contract fix the shape?", because: "The vendor publishes the payload format and validates requests against it.", evidence: "https://example.com/spec." },
-    { why: "Why does the vendor validate requests against the payload format?", because: "Its gateway rejects any field outside the published schema before routing.", evidence: "https://example.com/gateway." },
-    { why: "Why does the gateway reject fields outside the published schema?", because: "Strict schemas let the vendor version its interface without silent drift.", evidence: "https://example.com/versioning." },
-    { why: "Why do strict schemas let the vendor version without drift?", because: "Clients that send unknown fields fail fast, so every client upgrades on purpose.", evidence: "https://example.com/upgrades." },
+    {
+      why: "Why does held.ts hold this symptom?",
+      because: "An outside contract fixes the shape the unit must meet at this place.",
+      evidence: "src/held.ts:1.",
+    },
+    {
+      why: "Why does an outside contract fix the shape?",
+      because: "The vendor publishes the payload format and validates requests against it.",
+      evidence: "https://example.com/spec.",
+    },
+    {
+      why: "Why does the vendor validate requests against the payload format?",
+      because: "Its gateway rejects any field outside the published schema before routing.",
+      evidence: "https://example.com/gateway.",
+    },
+    {
+      why: "Why does the gateway reject fields outside the published schema?",
+      because: "Strict schemas let the vendor version its interface without silent drift.",
+      evidence: "https://example.com/versioning.",
+    },
+    {
+      why: "Why do strict schemas let the vendor version without drift?",
+      because: "Clients that send unknown fields fail fast, so every client upgrades on purpose.",
+      evidence: "https://example.com/upgrades.",
+    },
   ],
   rootCause: "Clients that send unknown fields fail fast, so every client upgrades on purpose.",
   rootEvidence: "On 2026-11-20, https://example.com/upgrades still says unknown fields fail fast.",
-  readback: "Clients that send unknown fields fail fast, therefore the vendor keeps strict schemas, therefore held.ts holds this symptom.",
+  readback:
+    "Clients that send unknown fields fail fast, therefore the vendor keeps strict schemas, therefore held.ts holds this symptom.",
   owner: "owner decision on example/app#1",
 };
 
@@ -68,8 +147,29 @@ describe("recordsReadingOf", () => {
     expect(
       recordsReadingOf({
         documents: [
-          { file: BOUNDARIES_FILE, document: { version: 2, records: [{ module: "src/adapters/system-clock.ts", outsideParty: "runtime:clock", ports: ["Clock"] }] } },
-          { file: DEBT_FILE, document: { version: 2, records: [{ answers: "claimed-type", file: "src/a.ts" }, { answers: "claimed-type", file: "src/b.ts" }] } },
+          {
+            file: BOUNDARIES_FILE,
+            document: {
+              version: 2,
+              records: [
+                {
+                  module: "src/adapters/system-clock.ts",
+                  outsideParty: "runtime:clock",
+                  ports: ["Clock"],
+                },
+              ],
+            },
+          },
+          {
+            file: DEBT_FILE,
+            document: {
+              version: 2,
+              records: [
+                { answers: "claimed-type", file: "src/a.ts" },
+                { answers: "claimed-type", file: "src/b.ts" },
+              ],
+            },
+          },
         ],
         catalogue: CATALOGUE,
         base: UNMEASURED,
@@ -80,10 +180,33 @@ describe("recordsReadingOf", () => {
         records: [
           {
             place: { file: BOUNDARIES_FILE, index: 0 },
-            record: { kind: "boundary-record", module: "src/adapters/system-clock.ts", outsideParty: { kind: "runtime", facility: "clock" }, holding: { held: "stated", ports: ["Clock"] } },
+            record: {
+              kind: "boundary-record",
+              module: "src/adapters/system-clock.ts",
+              outsideParty: { kind: "runtime", facility: "clock" },
+              holding: { held: "stated", ports: ["Clock"] },
+            },
           },
-          { place: { file: DEBT_FILE, index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: "src/a.ts", holding: { held: "stated" } } },
-          { place: { file: DEBT_FILE, index: 1 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: "src/b.ts", holding: { held: "stated" } } },
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: "src/a.ts",
+              holding: { held: "stated" },
+            },
+          },
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: "src/b.ts",
+              holding: { held: "stated" },
+            },
+          },
         ],
         refused: [],
         notes: [],
@@ -95,15 +218,41 @@ describe("recordsReadingOf", () => {
   it("places a refused record by its file and index, beside the records it does not stop", () => {
     expect(
       recordsReadingOf({
-        documents: [{ file: DEBT_FILE, document: { version: 2, records: [{ answers: "claimed-type" }, { answers: "claimed-type", file: "src/b.ts" }] } }],
+        documents: [
+          {
+            file: DEBT_FILE,
+            document: {
+              version: 2,
+              records: [{ answers: "claimed-type" }, { answers: "claimed-type", file: "src/b.ts" }],
+            },
+          },
+        ],
         catalogue: CATALOGUE,
         base: UNMEASURED,
       }),
     ).toEqual({
       outcome: "ok",
       value: {
-        records: [{ place: { file: DEBT_FILE, index: 1 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: "src/b.ts", holding: { held: "stated" } } }],
-        refused: [{ place: { file: DEBT_FILE, index: 0 }, refusals: [{ kind: "form-refused", issues: [expect.objectContaining({ path: ["file"] })] }] }],
+        records: [
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: "src/b.ts",
+              holding: { held: "stated" },
+            },
+          },
+        ],
+        refused: [
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            refusals: [
+              { kind: "form-refused", issues: [expect.objectContaining({ path: ["file"] })] },
+            ],
+          },
+        ],
         notes: [],
         base: { measured: "no", base: { state: "not-given" } },
       },
@@ -113,15 +262,44 @@ describe("recordsReadingOf", () => {
   it("refuses a record whose own text names no file it could be filed in, and still reads the records beside it", () => {
     expect(
       recordsReadingOf({
-        documents: [{ file: DEBT_FILE, document: { version: 2, records: [{ answers: "/x", file: "src/a.ts" }, { answers: "claimed-type", file: "src/b.ts" }] } }],
+        documents: [
+          {
+            file: DEBT_FILE,
+            document: {
+              version: 2,
+              records: [
+                { answers: "/x", file: "src/a.ts" },
+                { answers: "claimed-type", file: "src/b.ts" },
+              ],
+            },
+          },
+        ],
         catalogue: CATALOGUE,
         base: UNMEASURED,
       }),
     ).toEqual({
       outcome: "ok",
       value: {
-        records: [{ place: { file: DEBT_FILE, index: 1 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: "src/b.ts", holding: { held: "stated" } } }],
-        refused: [{ place: { file: DEBT_FILE, index: 0 }, refusals: [{ kind: "form-refused", issues: [expect.objectContaining({ path: ["answers"] })] }] }],
+        records: [
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: "src/b.ts",
+              holding: { held: "stated" },
+            },
+          },
+        ],
+        refused: [
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            refusals: [
+              { kind: "form-refused", issues: [expect.objectContaining({ path: ["answers"] })] },
+            ],
+          },
+        ],
         notes: [],
         base: { measured: "no", base: { state: "not-given" } },
       },
@@ -132,7 +310,21 @@ describe("recordsReadingOf", () => {
     expect(
       recordsReadingOf({
         documents: [
-          { file: AUTHORISED_FILE, document: { version: 2, records: [{ answers: "claimed-type", file: "src/held.ts", case: "needs-it-here", owes: "declared-not-asserted", whyChain: WHY_CHAIN }] } },
+          {
+            file: AUTHORISED_FILE,
+            document: {
+              version: 2,
+              records: [
+                {
+                  answers: "claimed-type",
+                  file: "src/held.ts",
+                  case: "needs-it-here",
+                  owes: "declared-not-asserted",
+                  whyChain: WHY_CHAIN,
+                },
+              ],
+            },
+          },
         ],
         catalogue: CATALOGUE,
         base: UNMEASURED,
@@ -150,21 +342,39 @@ describe("recordsReadingOf", () => {
               file: "src/held.ts",
               holding: {
                 held: "stated",
-                owing: { matches: "not-the-catalogue", note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" } },
+                owing: {
+                  matches: "not-the-catalogue",
+                  note: {
+                    kind: "unknown-case",
+                    case: "needs-it-here",
+                    owes: "declared-not-asserted",
+                  },
+                },
                 whyChain: WHY_CHAIN,
               },
             },
           },
         ],
         refused: [],
-        notes: [{ place: { file: AUTHORISED_FILE, index: 0 }, note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" } }],
+        notes: [
+          {
+            place: { file: AUTHORISED_FILE, index: 0 },
+            note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" },
+          },
+        ],
         base: { measured: "no", base: { state: "not-given" } },
       },
     });
   });
 
   it("says the base revision was measured when it was", () => {
-    expect(recordsReadingOf({ documents: [], catalogue: CATALOGUE, base: { measured: "yes", documents: [] } })).toEqual({
+    expect(
+      recordsReadingOf({
+        documents: [],
+        catalogue: CATALOGUE,
+        base: { measured: "yes", documents: [] },
+      }),
+    ).toEqual({
       outcome: "ok",
       value: { records: [], refused: [], notes: [], base: { measured: "yes" } },
     });
@@ -172,20 +382,57 @@ describe("recordsReadingOf", () => {
 
   it("says why the base revision was not measured, as the value it was handed", () => {
     expect(
-      recordsReadingOf({ documents: [], catalogue: CATALOGUE, base: { measured: "no", base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" } } }),
+      recordsReadingOf({
+        documents: [],
+        catalogue: CATALOGUE,
+        base: {
+          measured: "no",
+          base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" },
+        },
+      }),
     ).toEqual({
       outcome: "ok",
-      value: { records: [], refused: [], notes: [], base: { measured: "no", base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" } } },
+      value: {
+        records: [],
+        refused: [],
+        notes: [],
+        base: {
+          measured: "no",
+          base: { state: "git-failed", revision: "origin/main", gitMessage: "fatal: bad revision" },
+        },
+      },
     });
   });
 
   it("refuses a second record of one kind on one symptom and site, naming the first", () => {
     const record = { answers: "claimed-type", file: "src/a.ts" };
-    expect(recordsReadingOf({ documents: [{ file: DEBT_FILE, document: { version: 2, records: [record, record] } }], catalogue: CATALOGUE, base: UNMEASURED })).toEqual({
+    expect(
+      recordsReadingOf({
+        documents: [{ file: DEBT_FILE, document: { version: 2, records: [record, record] } }],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toEqual({
       outcome: "ok",
       value: {
-        records: [{ place: { file: DEBT_FILE, index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: "src/a.ts", holding: { held: "stated" } } }],
-        refused: [{ place: { file: DEBT_FILE, index: 1 }, refusals: [{ kind: "duplicate", of: { file: DEBT_FILE, index: 0 } }] }],
+        records: [
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: "src/a.ts",
+              holding: { held: "stated" },
+            },
+          },
+        ],
+        refused: [
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            refusals: [{ kind: "duplicate", of: { file: DEBT_FILE, index: 0 } }],
+          },
+        ],
         notes: [],
         base: { measured: "no", base: { state: "not-given" } },
       },
@@ -214,8 +461,26 @@ describe("recordsReadingOf", () => {
       outcome: "ok",
       value: {
         records: [
-          { place: { file: DEBT_FILE, index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "one-check", check: CAST_CHECK }, file: "src/a.ts", holding: { held: "stated" } } },
-          { place: { file: DEBT_FILE, index: 1 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "one-check", check: NON_NULL_CHECK }, file: "src/a.ts", holding: { held: "stated" } } },
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: { reaches: "one-check", check: CAST_CHECK },
+              file: "src/a.ts",
+              holding: { held: "stated" },
+            },
+          },
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: { reaches: "one-check", check: NON_NULL_CHECK },
+              file: "src/a.ts",
+              holding: { held: "stated" },
+            },
+          },
         ],
         refused: [],
         notes: [],
@@ -246,8 +511,26 @@ describe("recordsReadingOf", () => {
       outcome: "ok",
       value: {
         records: [
-          { place: { file: DEBT_FILE, index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: "src/a.ts", holding: { held: "stated" } } },
-          { place: { file: DEBT_FILE, index: 1 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: { reaches: "one-check", check: CAST_CHECK }, file: "src/a.ts", holding: { held: "stated" } } },
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: "src/a.ts",
+              holding: { held: "stated" },
+            },
+          },
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: { reaches: "one-check", check: CAST_CHECK },
+              file: "src/a.ts",
+              holding: { held: "stated" },
+            },
+          },
         ],
         refused: [],
         notes: [],
@@ -257,8 +540,18 @@ describe("recordsReadingOf", () => {
   });
 
   it("keeps an authorised location naming a check its symptom does not have among the records, and notes the check by its place for the report", () => {
-    const entry = { answers: "claimed-type#no-such-check", file: "src/held.ts", carried: { kind: "authorised-location" } };
-    expect(recordsReadingOf({ documents: [{ file: AUTHORISED_FILE, document: { version: 2, records: [entry] } }], catalogue: CATALOGUE, base: UNMEASURED })).toEqual({
+    const entry = {
+      answers: "claimed-type#no-such-check",
+      file: "src/held.ts",
+      carried: { kind: "authorised-location" },
+    };
+    expect(
+      recordsReadingOf({
+        documents: [{ file: AUTHORISED_FILE, document: { version: 2, records: [entry] } }],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toEqual({
       outcome: "ok",
       value: {
         records: [
@@ -269,12 +562,22 @@ describe("recordsReadingOf", () => {
               symptom: CLAIMED_TYPE,
               reach: { reaches: "unknown-check", check: "no-such-check" },
               file: "src/held.ts",
-              holding: { held: "carried", entry: { kind: "authorised-location" }, lacks: ["case", "owes", "whyChain"], standing: "unjudged" },
+              holding: {
+                held: "carried",
+                entry: { kind: "authorised-location" },
+                lacks: ["case", "owes", "whyChain"],
+                standing: "unjudged",
+              },
             },
           },
         ],
         refused: [],
-        notes: [{ place: { file: AUTHORISED_FILE, index: 0 }, note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "no-such-check" } }],
+        notes: [
+          {
+            place: { file: AUTHORISED_FILE, index: 0 },
+            note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "no-such-check" },
+          },
+        ],
         base: { measured: "no", base: { state: "not-given" } },
       },
     });
@@ -286,7 +589,18 @@ describe("recordsReadingOf", () => {
         documents: [
           {
             file: AUTHORISED_FILE,
-            document: { version: 2, records: [{ answers: "claimed-type#no-such-check", file: "src/held.ts", case: "needs-it-here", owes: "declared-not-asserted", whyChain: WHY_CHAIN }] },
+            document: {
+              version: 2,
+              records: [
+                {
+                  answers: "claimed-type#no-such-check",
+                  file: "src/held.ts",
+                  case: "needs-it-here",
+                  owes: "declared-not-asserted",
+                  whyChain: WHY_CHAIN,
+                },
+              ],
+            },
           },
         ],
         catalogue: CATALOGUE,
@@ -296,8 +610,14 @@ describe("recordsReadingOf", () => {
       outcome: "ok",
       value: {
         notes: [
-          { place: { file: AUTHORISED_FILE, index: 0 }, note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "no-such-check" } },
-          { place: { file: AUTHORISED_FILE, index: 0 }, note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" } },
+          {
+            place: { file: AUTHORISED_FILE, index: 0 },
+            note: { kind: "unknown-check", symptom: CLAIMED_TYPE, check: "no-such-check" },
+          },
+          {
+            place: { file: AUTHORISED_FILE, index: 0 },
+            note: { kind: "unknown-case", case: "needs-it-here", owes: "declared-not-asserted" },
+          },
         ],
       },
     });
@@ -305,17 +625,40 @@ describe("recordsReadingOf", () => {
 
   it("refuses a second record of one kind on one check and site, naming the first", () => {
     const record = { answers: "claimed-type#cast-expressions", file: "src/a.ts" };
-    expect(recordsReadingOf({ documents: [{ file: DEBT_FILE, document: { version: 2, records: [record, record] } }], catalogue: CATALOGUE, base: UNMEASURED })).toMatchObject({
+    expect(
+      recordsReadingOf({
+        documents: [{ file: DEBT_FILE, document: { version: 2, records: [record, record] } }],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toMatchObject({
       outcome: "ok",
-      value: { refused: [{ place: { file: DEBT_FILE, index: 1 }, refusals: [{ kind: "duplicate", of: { file: DEBT_FILE, index: 0 } }] }] },
+      value: {
+        refused: [
+          {
+            place: { file: DEBT_FILE, index: 1 },
+            refusals: [{ kind: "duplicate", of: { file: DEBT_FILE, index: 0 } }],
+          },
+        ],
+      },
     });
   });
 
   it("holds two records the same only when each field of their identity is the same, never by joined text", () => {
     expect(
       sameRecordIdentity({
-        left: { kind: "boundary-record", module: repoPathOf("src/a b"), outsideParty: { kind: "package", specifier: "c", dependency: "c" }, holding: { held: "stated", ports: ["P"] } },
-        right: { kind: "boundary-record", module: repoPathOf("src/a"), outsideParty: { kind: "package", specifier: "b c", dependency: "b c" }, holding: { held: "stated", ports: ["P"] } },
+        left: {
+          kind: "boundary-record",
+          module: repoPathOf("src/a b"),
+          outsideParty: { kind: "package", specifier: "c", dependency: "c" },
+          holding: { held: "stated", ports: ["P"] },
+        },
+        right: {
+          kind: "boundary-record",
+          module: repoPathOf("src/a"),
+          outsideParty: { kind: "package", specifier: "b c", dependency: "b c" },
+          holding: { held: "stated", ports: ["P"] },
+        },
       }),
     ).toBe("different");
   });
@@ -323,8 +666,18 @@ describe("recordsReadingOf", () => {
   it("holds a package and a runtime facility different even where their text could meet", () => {
     expect(
       sameRecordIdentity({
-        left: { kind: "boundary-record", module: ADAPTER, outsideParty: { kind: "runtime", facility: "clock" }, holding: { held: "stated", ports: ["Clock"] } },
-        right: { kind: "boundary-record", module: ADAPTER, outsideParty: { kind: "scheme-module", specifier: "runtime:clock" }, holding: { held: "stated", ports: ["Clock"] } },
+        left: {
+          kind: "boundary-record",
+          module: ADAPTER,
+          outsideParty: { kind: "runtime", facility: "clock" },
+          holding: { held: "stated", ports: ["Clock"] },
+        },
+        right: {
+          kind: "boundary-record",
+          module: ADAPTER,
+          outsideParty: { kind: "scheme-module", specifier: "runtime:clock" },
+          holding: { held: "stated", ports: ["Clock"] },
+        },
       }),
     ).toBe("different");
   });
@@ -332,13 +685,35 @@ describe("recordsReadingOf", () => {
   it("refuses a second boundary record for one module and outside party", () => {
     const record = { module: "src/adapters/files", outsideParty: "node:fs", ports: ["FileReader"] };
     expect(
-      recordsReadingOf({ documents: [{ file: BOUNDARIES_FILE, document: { version: 2, records: [record, { ...record, ports: ["FileWriter"] }] } }], catalogue: CATALOGUE, base: UNMEASURED }),
-    ).toMatchObject({ outcome: "ok", value: { refused: [{ place: { file: BOUNDARIES_FILE, index: 1 }, refusals: [{ kind: "duplicate", of: { file: BOUNDARIES_FILE, index: 0 } }] }] } });
+      recordsReadingOf({
+        documents: [
+          {
+            file: BOUNDARIES_FILE,
+            document: { version: 2, records: [record, { ...record, ports: ["FileWriter"] }] },
+          },
+        ],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        refused: [
+          {
+            place: { file: BOUNDARIES_FILE, index: 1 },
+            refusals: [{ kind: "duplicate", of: { file: BOUNDARIES_FILE, index: 0 } }],
+          },
+        ],
+      },
+    });
   });
 
   it.each([
     { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/debt/claimed-type.json") },
-    { symptom: TEXT_PAST_ITS_READER, file: repoPathOf("hone-records/debt/text-past-its-reader.json") },
+    {
+      symptom: TEXT_PAST_ITS_READER,
+      file: repoPathOf("hone-records/debt/text-past-its-reader.json"),
+    },
   ])("accepts debt on $symptom.name: debt is debt, not blockers", ({ symptom, file }) => {
     expect(
       recordsReadingOf({
@@ -351,12 +726,24 @@ describe("recordsReadingOf", () => {
         catalogue: CATALOGUE_OF_TWO_SYMPTOMS,
         base: UNMEASURED,
       }),
-    ).toMatchObject({ outcome: "ok", value: { records: [{ record: { kind: "debt", symptom: { name: symptom.name } } }], refused: [] } });
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        records: [{ record: { kind: "debt", symptom: { name: symptom.name } } }],
+        refused: [],
+      },
+    });
   });
 
   it.each([
-    { symptom: CLAIMED_TYPE, file: repoPathOf("hone-records/authorised-locations/claimed-type.json") },
-    { symptom: TEXT_PAST_ITS_READER, file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json") },
+    {
+      symptom: CLAIMED_TYPE,
+      file: repoPathOf("hone-records/authorised-locations/claimed-type.json"),
+    },
+    {
+      symptom: TEXT_PAST_ITS_READER,
+      file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json"),
+    },
   ])("never refuses an authorised location for being on $symptom.name", ({ symptom, file }) => {
     expect(
       recordsReadingOf({
@@ -365,20 +752,46 @@ describe("recordsReadingOf", () => {
             file,
             document: {
               version: 2,
-              records: [{ answers: symptom.name, file: "src/held.ts", case: "gives-a-value-its-type", owes: "declared-not-asserted", whyChain: WHY_CHAIN }],
+              records: [
+                {
+                  answers: symptom.name,
+                  file: "src/held.ts",
+                  case: "gives-a-value-its-type",
+                  owes: "declared-not-asserted",
+                  whyChain: WHY_CHAIN,
+                },
+              ],
             },
           },
         ],
         catalogue: CATALOGUE_OF_TWO_SYMPTOMS,
         base: UNMEASURED,
       }),
-    ).toMatchObject({ outcome: "ok", value: { records: [{ record: { kind: "authorised-location", symptom: { name: symptom.name } } }], refused: [] } });
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        records: [{ record: { kind: "authorised-location", symptom: { name: symptom.name } } }],
+        refused: [],
+      },
+    });
   });
 
   it("refuses a document that is not version 2, with the form's issues as values", () => {
-    expect(recordsReadingOf({ documents: [{ file: DEBT_FILE, document: { version: 1, records: [] } }], catalogue: CATALOGUE, base: UNMEASURED })).toEqual({
+    expect(
+      recordsReadingOf({
+        documents: [{ file: DEBT_FILE, document: { version: 1, records: [] } }],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toEqual({
       outcome: "failed",
-      error: [{ kind: "document-refused", file: DEBT_FILE, issues: [expect.objectContaining({ code: "invalid_value", path: ["version"] })] }],
+      error: [
+        {
+          kind: "document-refused",
+          file: DEBT_FILE,
+          issues: [expect.objectContaining({ code: "invalid_value", path: ["version"] })],
+        },
+      ],
     });
   });
 
@@ -388,7 +801,12 @@ describe("recordsReadingOf", () => {
         records: [
           {
             place: { file: BOUNDARIES_FILE, index: 0 },
-            record: { kind: "boundary-record", module: ADAPTER, outsideParty: { kind: "runtime", facility: "clock" }, holding: { held: "stated", ports: ["Clock"] } },
+            record: {
+              kind: "boundary-record",
+              module: ADAPTER,
+              outsideParty: { kind: "runtime", facility: "clock" },
+              holding: { held: "stated", ports: ["Clock"] },
+            },
           },
           {
             place: { file: BOUNDARIES_FILE, index: 1 },
@@ -396,10 +814,24 @@ describe("recordsReadingOf", () => {
               kind: "boundary-record",
               module: ADAPTER,
               outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" },
-              holding: { held: "carried", entry: { kind: "authorised-location" }, lacks: ["ports"], standing: "established" },
+              holding: {
+                held: "carried",
+                entry: { kind: "authorised-location" },
+                lacks: ["ports"],
+                standing: "established",
+              },
             },
           },
-          { place: { file: DEBT_FILE, index: 0 }, record: { kind: "debt", symptom: CLAIMED_TYPE, reach: WHOLE_SYMPTOM, file: ADAPTER, holding: { held: "carried", entry: {}, lacks: [], standing: "unjudged" } } },
+          {
+            place: { file: DEBT_FILE, index: 0 },
+            record: {
+              kind: "debt",
+              symptom: CLAIMED_TYPE,
+              reach: WHOLE_SYMPTOM,
+              file: ADAPTER,
+              holding: { held: "carried", entry: {}, lacks: [], standing: "unjudged" },
+            },
+          },
         ],
       }),
     ).toEqual([
@@ -410,7 +842,13 @@ describe("recordsReadingOf", () => {
 
   it("refuses a file that is not a records file", () => {
     const file = repoPathOf("hone-records/carve-outs/claimed-type.json");
-    expect(recordsReadingOf({ documents: [{ file, document: { version: 2, records: [] } }], catalogue: CATALOGUE, base: UNMEASURED })).toEqual({
+    expect(
+      recordsReadingOf({
+        documents: [{ file, document: { version: 2, records: [] } }],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: [{ kind: "not-a-records-file", file }],
     });

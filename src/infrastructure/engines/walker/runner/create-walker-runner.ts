@@ -1,31 +1,39 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+
 import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
-import { hitSchema, runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
-import type { CaseVerdict, Hit, MeasuredPair } from "../../../../domain/runner/runner-result-types.ts";
-import type { StandaloneRunReport } from "../../protocol/runner-module/standalone-run-report-schema.ts";
 import type { EntryKindPort } from "../../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../../../../application/ports/host/path-port.ts";
-import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
-import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import { gatheredOutcomes } from "../../../../domain/gathered-outcomes.ts";
+import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
+import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type {
+  CaseVerdict,
+  Hit,
+  MeasuredPair,
+} from "../../../../domain/runner/runner-result-types.ts";
+import type { StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
+import {
+  hitSchema,
+  runnerResultSchema,
+} from "../../protocol/runner-module/runner-result-schema.ts";
+import type { StandaloneRunReport } from "../../protocol/runner-module/standalone-run-report-schema.ts";
 import { observeWalkerFile } from "./observe-walker-file.ts";
+import type { DirectiveEscape } from "./pieces/type-directives.ts";
+import { walkerPieceSettingsSchema } from "./pieces/walker-check-schema.ts";
+import { CASE_ROOT, portsDisk, textsDisk } from "./pieces/walker-disk.ts";
+import type { WalkerFile, WalkerRepository } from "./pieces/walker-piece.ts";
 import {
   type PreparedWalkerPiece,
   prepareWalkerPieces,
   type SelectedWalkerClause,
 } from "./prepare-walker-pieces.ts";
-import type { DirectiveEscape } from "./pieces/type-directives.ts";
 import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
-import { walkerPieceSettingsSchema } from "./pieces/walker-check-schema.ts";
-import { CASE_ROOT, portsDisk, textsDisk } from "./pieces/walker-disk.ts";
-import type { WalkerFile, WalkerRepository } from "./pieces/walker-piece.ts";
 
 type Outcome<Value> = Result<Value, RunnerFailure>;
 
@@ -74,10 +82,14 @@ const settledClause = (request: {
         selected: [
           {
             clause: request.clause,
-            modulePath: request.path.join({ segments: [request.clause.pieceRoot, settings.data.module] }),
+            modulePath: request.path.join({
+              segments: [request.clause.pieceRoot, settings.data.module],
+            }),
           },
         ],
-        escapes: [{ clause: request.clause.address, directives: settings.data.escapingDirectives ?? [] }],
+        escapes: [
+          { clause: request.clause.address, directives: settings.data.escapingDirectives ?? [] },
+        ],
       },
     ],
   };
@@ -87,18 +99,25 @@ const settledClauses = (request: {
   readonly clauses: readonly RunnerClause[];
   readonly path: PathPort;
 }): Outcome<SettledClauses> => {
-  const settled = gatheredOutcomes({ outcomes: request.clauses.map((clause) => settledClause({ clause, path: request.path })) });
+  const settled = gatheredOutcomes({
+    outcomes: request.clauses.map((clause) => settledClause({ clause, path: request.path })),
+  });
   if (settled.outcome === "failed") return settled;
   return {
     outcome: "ok",
     value: {
       selected: settled.value.flatMap((entry) => entry.selected),
-      escapes: settled.value.flatMap((entry) => entry.escapes).filter((directiveEscape) => directiveEscape.directives.length > 0),
+      escapes: settled.value
+        .flatMap((entry) => entry.escapes)
+        .filter((directiveEscape) => directiveEscape.directives.length > 0),
     },
   };
 };
 
-type PreparedPieces = { readonly pieces: readonly PreparedWalkerPiece[]; readonly escapes: readonly DirectiveEscape[] };
+type PreparedPieces = {
+  readonly pieces: readonly PreparedWalkerPiece[];
+  readonly escapes: readonly DirectiveEscape[];
+};
 
 const preparedPieces = (request: {
   readonly ports: WalkerPorts;
@@ -113,7 +132,9 @@ const preparedPieces = (request: {
     syntaxApi: request.ports.parse.syntaxApi,
     modules: request.ports.modules,
   }).then((pieces) =>
-    pieces.outcome === "failed" ? pieces : { outcome: "ok", value: { pieces: pieces.value, escapes: settled.value.escapes } },
+    pieces.outcome === "failed"
+      ? pieces
+      : { outcome: "ok", value: { pieces: pieces.value, escapes: settled.value.escapes } },
   );
 };
 
@@ -127,7 +148,8 @@ const inSourceOrder = (request: ClauseOrder & { readonly hits: readonly Hit[] })
     (left, right) =>
       left.anchor.line - right.anchor.line ||
       left.anchor.column - right.anchor.column ||
-      clauseRank({ clauses: request.clauses, hit: left }) - clauseRank({ clauses: request.clauses, hit: right }),
+      clauseRank({ clauses: request.clauses, hit: left }) -
+        clauseRank({ clauses: request.clauses, hit: right }),
   );
 
 const observedReport = (request: {
@@ -149,13 +171,18 @@ const observedReport = (request: {
       {
         hits: inSourceOrder({ clauses: request.clauses, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
-        measured: observed.value.applicable.map((clause): MeasuredPair => ({ clause, file: request.file.file })),
+        measured: observed.value.applicable.map((clause): MeasuredPair => ({
+          clause,
+          file: request.file.file,
+        })),
       },
     ],
   };
 };
 
-const finishedPiece = (request: { readonly piece: PreparedWalkerPiece }): Outcome<readonly Hit[]> => {
+const finishedPiece = (request: {
+  readonly piece: PreparedWalkerPiece;
+}): Outcome<readonly Hit[]> => {
   const pieceRoot = request.piece.clauses[0]?.pieceRoot ?? request.piece.modulePath;
   try {
     const parsed = finishedHitsSchema.safeParse(request.piece.check.finish());
@@ -180,7 +207,9 @@ const walkedReport = (request: {
   });
   const fromFiles = gatheredOutcomes({ outcomes: observed });
   if (fromFiles.outcome === "failed") return fromFiles;
-  const finished = gatheredOutcomes({ outcomes: request.prepared.pieces.map((piece) => finishedPiece({ piece })) });
+  const finished = gatheredOutcomes({
+    outcomes: request.prepared.pieces.map((piece) => finishedPiece({ piece })),
+  });
   if (finished.outcome === "failed") return finished;
   return {
     outcome: "ok",
@@ -203,7 +232,10 @@ const repositoryFile = (request: {
       path: request.ports.path.join({ segments: [request.repoRoot, request.file] }),
     });
     if (text.outcome === "failed") {
-      return { outcome: "failed", error: { kind: "file-unreadable", file: request.file, detail: text.error.detail } };
+      return {
+        outcome: "failed",
+        error: { kind: "file-unreadable", file: request.file, detail: text.error.detail },
+      };
     }
     return text;
   },
@@ -219,19 +251,25 @@ const runOverRepository = (request: {
       request.ports.fileText.exists({
         path: request.ports.path.join({ segments: [request.run.repoRoot, file] }),
       }),
-    disk: portsDisk({ root: request.run.repoRoot, entryKind: request.ports.entryKind, fileText: request.ports.fileText }),
+    disk: portsDisk({
+      root: request.run.repoRoot,
+      entryKind: request.ports.entryKind,
+      fileText: request.ports.fileText,
+    }),
   };
-  return preparedPieces({ ports: request.ports, clauses: request.run.clauses, repository }).then((prepared) => {
-    if (prepared.outcome === "failed") return prepared;
-    return walkedReport({
-      ports: request.ports,
-      prepared: prepared.value,
-      clauses: request.run.clauses,
-      files: request.run.trackedPaths.map((file) =>
-        repositoryFile({ ports: request.ports, repoRoot: request.run.repoRoot, file }),
-      ),
-    });
-  });
+  return preparedPieces({ ports: request.ports, clauses: request.run.clauses, repository }).then(
+    (prepared) => {
+      if (prepared.outcome === "failed") return prepared;
+      return walkedReport({
+        ports: request.ports,
+        prepared: prepared.value,
+        clauses: request.run.clauses,
+        files: request.run.trackedPaths.map((file) =>
+          repositoryFile({ ports: request.ports, repoRoot: request.run.repoRoot, file }),
+        ),
+      });
+    },
+  );
 };
 
 const caseFile = (request: { readonly sourceCase: SourceCase }): WalkerFile => ({
@@ -247,27 +285,32 @@ const caseVerdict = (request: {
   const repository: WalkerRepository = {
     files: [request.sourceCase.fileName],
     exists: ({ file }) => (file === request.sourceCase.fileName ? "present" : "absent"),
-    disk: textsDisk({ root: CASE_ROOT, texts: { [request.sourceCase.fileName]: request.sourceCase.source } }),
+    disk: textsDisk({
+      root: CASE_ROOT,
+      texts: { [request.sourceCase.fileName]: request.sourceCase.source },
+    }),
   };
-  return preparedPieces({ ports: request.ports, clauses: [request.clause], repository }).then((prepared) => {
-    if (prepared.outcome === "failed") return prepared;
-    const report = walkedReport({
-      ports: request.ports,
-      prepared: prepared.value,
-      clauses: [request.clause],
-      files: [caseFile(request)],
-    });
-    if (report.outcome === "failed") return report;
-    return {
-      outcome: "ok",
-      value: [
-        {
-          caseName: request.sourceCase.name,
-          flaggedLines: [...new Set(report.value.hits.map((hit) => hit.anchor.line))],
-        },
-      ],
-    };
-  });
+  return preparedPieces({ ports: request.ports, clauses: [request.clause], repository }).then(
+    (prepared) => {
+      if (prepared.outcome === "failed") return prepared;
+      const report = walkedReport({
+        ports: request.ports,
+        prepared: prepared.value,
+        clauses: [request.clause],
+        files: [caseFile(request)],
+      });
+      if (report.outcome === "failed") return report;
+      return {
+        outcome: "ok",
+        value: [
+          {
+            caseName: request.sourceCase.name,
+            flaggedLines: [...new Set(report.value.hits.map((hit) => hit.anchor.line))],
+          },
+        ],
+      };
+    },
+  );
 };
 
 const conformCases = (request: {

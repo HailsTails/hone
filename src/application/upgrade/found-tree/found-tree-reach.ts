@@ -1,8 +1,11 @@
-import type { CheckRequest } from "../../run/check/run-check.ts";
-import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import type { FoundTreeRecordsSourceOf, RecordsSourceOf } from "../../ports/records/records-source-of.ts";
+import type {
+  FoundTreeRecordsSourceOf,
+  RecordsSourceOf,
+} from "../../ports/records/records-source-of.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
+import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
+import type { CheckRequest } from "../../run/check/run-check.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
 import { foundTreeGitOf } from "./found-tree-git.ts";
 
@@ -13,20 +16,41 @@ export const foundTreeCheckReachOf = (request: {
   readonly loadFailureDetail: LoadFailureDetail;
 }): Pick<CheckRequest, "baseRevision" | "git" | "exceptionRepository"> => ({
   baseRevision: FOUND_TREE_REVISION,
-  git: foundTreeGitOf({ git: request.check.git, fileText: request.check.fileText, path: request.check.path }),
-  exceptionRepository: foundTreeExceptionsOf({ repository: request.check.exceptionRepository, loadFailureDetail: request.loadFailureDetail }),
+  git: foundTreeGitOf({
+    git: request.check.git,
+    fileText: request.check.fileText,
+    path: request.check.path,
+  }),
+  exceptionRepository: foundTreeExceptionsOf({
+    repository: request.check.exceptionRepository,
+    loadFailureDetail: request.loadFailureDetail,
+  }),
 });
 
 export const foundTreeRunReachOf = (request: {
   readonly recordsSourceOf: RecordsSourceOf;
   readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
   readonly loadFailureDetail: LoadFailureDetail;
-  readonly command: Pick<VersionOneCommandRequest, "git" | "path" | "exceptionRepositoryOf"> & { readonly fileText: Pick<FileTextPort, "read" | "exists"> };
-}): { readonly baseRevision: string; readonly git: VersionOneCommandRequest["git"]; readonly recordsSourceOf: RecordsSourceOf } => ({
+  readonly command: Pick<VersionOneCommandRequest, "git" | "path" | "exceptionRepositoryOf"> & {
+    readonly fileText: Pick<FileTextPort, "read" | "exists">;
+  };
+}): {
+  readonly baseRevision: string;
+  readonly git: VersionOneCommandRequest["git"];
+  readonly recordsSourceOf: RecordsSourceOf;
+} => ({
   baseRevision: FOUND_TREE_REVISION,
-  git: foundTreeGitOf({ git: request.command.git, fileText: request.command.fileText, path: request.command.path }),
+  git: foundTreeGitOf({
+    git: request.command.git,
+    fileText: request.command.fileText,
+    path: request.command.path,
+  }),
   recordsSourceOf: request.foundTreeRecordsSourceOf({
     recordsSourceOf: request.recordsSourceOf,
-    exceptionsOf: (located) => foundTreeExceptionsOf({ repository: request.command.exceptionRepositoryOf(located), loadFailureDetail: request.loadFailureDetail }),
+    exceptionsOf: (located) =>
+      foundTreeExceptionsOf({
+        repository: request.command.exceptionRepositoryOf(located),
+        loadFailureDetail: request.loadFailureDetail,
+      }),
   }),
 });

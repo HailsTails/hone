@@ -20,4 +20,6 @@ export type SelectionRepositoryOf = (request: {
   readonly path: PathPort;
 }) => SelectionRepository;
 
-export type RunSettingsOf = (request: { readonly repoRoot: AbsolutePath }) => Result<RunSettings<ReportOutput>, LoadFailure>;
+export type RunSettingsOf = (request: {
+  readonly repoRoot: AbsolutePath;
+}) => Result<RunSettings<ReportOutput>, LoadFailure>;

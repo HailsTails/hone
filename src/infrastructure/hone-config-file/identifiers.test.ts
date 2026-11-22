@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
   clauseIdSchema,
   disciplineIdSchema,
@@ -11,17 +12,12 @@ describe("ruleSetNameSchema", () => {
     expect(ruleSetNameSchema.safeParse(text).success).toBe(true);
   });
 
-  it.each([
-    "",
-    "Probe",
-    "2rules",
-    "-rules",
-    "team_rules",
-    "team rules",
-    "team/rules",
-  ])("refuses %j", (text) => {
-    expect(ruleSetNameSchema.safeParse(text).success).toBe(false);
-  });
+  it.each(["", "Probe", "2rules", "-rules", "team_rules", "team rules", "team/rules"])(
+    "refuses %j",
+    (text) => {
+      expect(ruleSetNameSchema.safeParse(text).success).toBe(false);
+    },
+  );
 });
 
 describe("disciplineIdSchema", () => {
@@ -63,10 +59,7 @@ describe("engineIdSchema", () => {
     expect(engineIdSchema.safeParse(text).success).toBe(true);
   });
 
-  it.each(["", "ESLint", "oxlint", "not-run", "not-adopted", "audit/ts"])(
-    "refuses %j",
-    (text) => {
-      expect(engineIdSchema.safeParse(text).success).toBe(false);
-    },
-  );
+  it.each(["", "ESLint", "oxlint", "not-run", "not-adopted", "audit/ts"])("refuses %j", (text) => {
+    expect(engineIdSchema.safeParse(text).success).toBe(false);
+  });
 });

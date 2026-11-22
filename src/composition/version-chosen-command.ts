@@ -1,7 +1,7 @@
-import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
-import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
+import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
 import { commandRunPathOf } from "../infrastructure/command-line/run-path/command-run-path.ts";
 import { type CommandHandler, failureOutcomeOf } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts } from "./tool-ports.ts";
@@ -21,21 +21,42 @@ const printedFailure = (request: {
   readonly repoRoot: AbsolutePath | undefined;
 }): Promise<void> => {
   const { command, failure, repoRoot } = request;
-  printOutcome({ process: command.process, outcome: failureOutcomeOf({ command, path: request.ports.path, failure: { failed: "run", failure, repoRoot } }) });
+  printOutcome({
+    process: command.process,
+    outcome: failureOutcomeOf({
+      command,
+      path: request.ports.path,
+      failure: { failed: "run", failure, repoRoot },
+    }),
+  });
   return Promise.resolve();
 };
 
-type NoSettingsHandler = (request: { readonly command: ToolInvocation; readonly repoRoot: AbsolutePath }) => Promise<void>;
+type NoSettingsHandler = (request: {
+  readonly command: ToolInvocation;
+  readonly repoRoot: AbsolutePath;
+}) => Promise<void>;
 
 const chosenCommandOf =
   (request: VersionChoice & { readonly noSettings: NoSettingsHandler }): CommandHandler =>
   (command) => {
-    const located = commandRunPathOf({ command: { process: command.process, path: request.ports.path, fileText: request.ports.fileText } });
+    const located = commandRunPathOf({
+      command: {
+        process: command.process,
+        path: request.ports.path,
+        fileText: request.ports.fileText,
+      },
+    });
     if (located.kind === "no-repository") {
       return request.versionOne(command);
     }
     if (located.chosen.outcome === "failed") {
-      return printedFailure({ ports: request.ports, command, failure: located.chosen.error, repoRoot: located.repoRoot });
+      return printedFailure({
+        ports: request.ports,
+        command,
+        failure: located.chosen.error,
+        repoRoot: located.repoRoot,
+      });
     }
     switch (located.chosen.value) {
       case "version-1":
@@ -53,10 +74,21 @@ export const versionChosenCommandOf = (request: VersionChoice): CommandHandler =
 export const settingsRequiringCommandOf = (request: VersionChoice): CommandHandler =>
   chosenCommandOf({
     ...request,
-    noSettings: ({ command, repoRoot }) => printedFailure({ ports: request.ports, command, failure: { kind: "config-absent", repo: repoRoot }, repoRoot }),
+    noSettings: ({ command, repoRoot }) =>
+      printedFailure({
+        ports: request.ports,
+        command,
+        failure: { kind: "config-absent", repo: repoRoot },
+        repoRoot,
+      }),
   });
 
 export const notReadyCommandOf =
   (request: { readonly ports: RunPathPorts; readonly command: Subcommand }): CommandHandler =>
   (command) =>
-    printedFailure({ ports: request.ports, command, failure: { kind: "not-ready-yet", what: { thing: "command", command: request.command } }, repoRoot: undefined });
+    printedFailure({
+      ports: request.ports,
+      command,
+      failure: { kind: "not-ready-yet", what: { thing: "command", command: request.command } },
+      repoRoot: undefined,
+    });

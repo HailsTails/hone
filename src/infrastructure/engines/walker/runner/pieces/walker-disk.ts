@@ -13,7 +13,9 @@ export const portsDisk = (request: {
   kindAt: ({ path }) => request.entryKind.kindOf({ path }),
   textAt: ({ path }) => {
     const text = request.fileText.read({ path });
-    return text.outcome === "failed" ? { outcome: "failed", error: { detail: text.error.detail } } : text;
+    return text.outcome === "failed"
+      ? { outcome: "failed", error: { detail: text.error.detail } }
+      : text;
   },
 });
 
@@ -22,9 +24,17 @@ const foldersHolding = (request: { readonly path: string }): readonly string[] =
   return segments.slice(1, -1).map((_, depth) => segments.slice(0, depth + 2).join("/"));
 };
 
-export const textsDisk = (request: { readonly root: string; readonly texts: Readonly<Record<string, string>> }): WalkerDisk => {
-  const files = new Map(Object.entries(request.texts).map(([file, text]) => [`${request.root}/${file}`, text]));
-  const folders = new Set([request.root, ...[...files.keys()].flatMap((path) => foldersHolding({ path }))]);
+export const textsDisk = (request: {
+  readonly root: string;
+  readonly texts: Readonly<Record<string, string>>;
+}): WalkerDisk => {
+  const files = new Map(
+    Object.entries(request.texts).map(([file, text]) => [`${request.root}/${file}`, text]),
+  );
+  const folders = new Set([
+    request.root,
+    ...[...files.keys()].flatMap((path) => foldersHolding({ path })),
+  ]);
   return {
     root: request.root,
     kindAt: ({ path }) => {
@@ -35,7 +45,9 @@ export const textsDisk = (request: { readonly root: string; readonly texts: Read
     },
     textAt: ({ path }) => {
       const text = files.get(path);
-      return text === undefined ? { outcome: "failed", error: { detail: `${path} is not a file` } } : { outcome: "ok", value: text };
+      return text === undefined
+        ? { outcome: "failed", error: { detail: `${path} is not a file` } }
+        : { outcome: "ok", value: text };
     },
   };
 };

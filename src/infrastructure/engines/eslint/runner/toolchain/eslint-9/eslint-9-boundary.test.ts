@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { eslintBoundary } from "./eslint-9-boundary.ts";
 
 describe("the ESLint 9 boundary", () => {
@@ -7,23 +8,35 @@ describe("the ESLint 9 boundary", () => {
   });
 
   it("reads a report's data that holds only texts and numbers as it stands", () => {
-    expect(eslintBoundary.reportDataOf({ descriptor: { loc: { line: 1, column: 0 }, messageId: "a", data: { text: "x", count: 2 } } })).toEqual({
+    expect(
+      eslintBoundary.reportDataOf({
+        descriptor: { loc: { line: 1, column: 0 }, messageId: "a", data: { text: "x", count: 2 } },
+      }),
+    ).toEqual({
       text: "x",
       count: 2,
     });
   });
 
   it("reads a report's data value that is no text, number or flag as the text ESLint 9 would show for it", () => {
-    expect(eslintBoundary.reportDataOf({ descriptor: { loc: { line: 1, column: 0 }, messageId: "a", data: { nested: {} } } })).toEqual({
+    expect(
+      eslintBoundary.reportDataOf({
+        descriptor: { loc: { line: 1, column: 0 }, messageId: "a", data: { nested: {} } },
+      }),
+    ).toEqual({
       nested: "[object Object]",
     });
   });
 
   it("declares the projection as the list of configuration blocks that ESLint 9 names Linter.Config", () => {
-    expect(eslintBoundary.declarationText).toContain("declare const projection: Linter.Config[];\nexport default projection;\n");
+    expect(eslintBoundary.declarationText).toContain(
+      "declare const projection: Linter.Config[];\nexport default projection;\n",
+    );
   });
 
   it("reads a report without data as having none", () => {
-    expect(eslintBoundary.reportDataOf({ descriptor: { loc: { line: 1, column: 0 }, messageId: "a" } })).toBeUndefined();
+    expect(
+      eslintBoundary.reportDataOf({ descriptor: { loc: { line: 1, column: 0 }, messageId: "a" } }),
+    ).toBeUndefined();
   });
 });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { clauseIdOf } from "./clause-id-of.ts";
 import { isClauseId } from "./identifiers.ts";
 

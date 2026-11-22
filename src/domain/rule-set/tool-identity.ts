@@ -17,7 +17,8 @@ export const TOOL_IDENTITY = identified({
   command: "hone",
   ownRuleSet: "hone",
   reservedEslintNamespace: "hone-core",
-  description: "Checks a repository against the disciplines it selects, applies its recorded exceptions and prints one verdict.",
+  description:
+    "Checks a repository against the disciplines it selects, applies its recorded exceptions and prints one verdict.",
   repository: "https://github.com/HailsTails/hone",
   unrelatedNpmPackage: "hone",
 } as const);
@@ -29,6 +30,8 @@ const SCOPE_SEPARATOR = "/";
 const FILE_STEM_SEPARATOR = "-";
 
 export const packageFileStemOf = (request: { readonly packageName: string }): string => {
-  const unscoped = request.packageName.startsWith(SCOPE_MARKER) ? request.packageName.slice(SCOPE_MARKER.length) : request.packageName;
+  const unscoped = request.packageName.startsWith(SCOPE_MARKER)
+    ? request.packageName.slice(SCOPE_MARKER.length)
+    : request.packageName;
   return unscoped.replace(SCOPE_SEPARATOR, FILE_STEM_SEPARATOR);
 };

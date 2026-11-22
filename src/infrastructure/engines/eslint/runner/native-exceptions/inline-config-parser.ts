@@ -45,7 +45,10 @@ export const parseInlineConfigComment = (request: {
     case "other":
       return { kind: "not-an-exception" };
     case "disable":
-      return { kind: "disable", ruleIds: Object.keys(commentParser.parseListConfig(directive.value)) };
+      return {
+        kind: "disable",
+        ruleIds: Object.keys(commentParser.parseListConfig(directive.value)),
+      };
     case "rule-config":
       return ruleConfigComment({ value: directive.value });
   }

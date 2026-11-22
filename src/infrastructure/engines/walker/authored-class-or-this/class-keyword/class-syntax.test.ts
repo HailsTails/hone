@@ -1,28 +1,42 @@
 import { assert, describe, expect, it } from "vitest";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import { createPathPort } from "../../../../node/path-port.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../runner/toolchain/typescript-toolchain.ts";
-import { check } from "./class-syntax.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { createPathPort } from "../../../../node/path-port.ts";
+import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../runner/toolchain/typescript-toolchain.ts";
+import { check } from "./class-syntax.ts";
 
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const defaultParsePort = loadedParsePort.value;
 
 const CLASS_ON_LINE_THREE = "const a = 1;\n\n  class Alpha {}\n";
-const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const ADDRESS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
 
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
@@ -60,7 +74,14 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
     expect(
       await walkerRunner.conform({
         clause: CLAUSE,
-        cases: [{ name, fileName: repoPathSchema.parse(fileName), source: "export class Generated {}\n", expectedLines: [] }],
+        cases: [
+          {
+            name,
+            fileName: repoPathSchema.parse(fileName),
+            source: "export class Generated {}\n",
+            expectedLines: [],
+          },
+        ],
       }),
     ).toEqual({ outcome: "ok", value: [{ caseName: name, flaggedLines: [] }] });
   });

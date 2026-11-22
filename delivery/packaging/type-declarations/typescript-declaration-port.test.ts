@@ -1,15 +1,28 @@
 import { assert, describe, expect, it } from "vitest";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
-import { createDefaultTypeScriptDeclarationPort, publishedDeclarationText } from "./typescript-declaration-port.ts";
+
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
+import {
+  createDefaultTypeScriptDeclarationPort,
+  publishedDeclarationText,
+} from "./typescript-declaration-port.ts";
 
 const REPO_ROOT = `${import.meta.dirname}/../../..`;
 
 const port = createDefaultTypeScriptDeclarationPort({});
 
-const emitted = (request: { readonly entryPoints: readonly string[] }) => port.emit({ sourceRoot: REPO_ROOT, entryPoints: request.entryPoints });
+const emitted = (request: { readonly entryPoints: readonly string[] }) =>
+  port.emit({ sourceRoot: REPO_ROOT, entryPoints: request.entryPoints });
 
 const ENTRIES_EMITTED_TOGETHER = emitted({
-  entryPoints: ["src/domain/runner/piece-failure-types.ts", "src/domain/repository/repo-path-types.ts", "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts", "src/domain/repository/branded.ts"],
+  entryPoints: [
+    "src/domain/runner/piece-failure-types.ts",
+    "src/domain/repository/repo-path-types.ts",
+    "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts",
+    "src/domain/repository/branded.ts",
+  ],
 });
 
 describe("the TypeScript declaration port, emitting in memory with the repository's own TypeScript and tsconfig (CD-47: nothing is spawned or written)", () => {
@@ -20,16 +33,35 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
     expect(entriesEmit.value.diagnostics).toEqual([]);
     expect(entriesEmit.value.declarations).toMatchObject([
       { path: "src/domain/repository/branded.d.ts", specifiers: [], refusals: [] },
-      { path: "src/domain/repository/repo-path-types.d.ts", specifiers: ["./branded.js"], refusals: [] },
-      { path: "src/domain/runner/piece-failure-types.d.ts", specifiers: ["../repository/repo-path-types.js"], refusals: [] },
-      { path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts", specifiers: ["typescript"], refusals: [] },
+      {
+        path: "src/domain/repository/repo-path-types.d.ts",
+        specifiers: ["./branded.js"],
+        refusals: [],
+      },
+      {
+        path: "src/domain/runner/piece-failure-types.d.ts",
+        specifiers: ["../repository/repo-path-types.js"],
+        refusals: [],
+      },
+      {
+        path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts",
+        specifiers: ["typescript"],
+        refusals: [],
+      },
     ]);
   });
 
   it("rewrites relative .ts specifiers to the .js form a published declaration resolves from", async () => {
     await expect(ENTRIES_EMITTED_TOGETHER).resolves.toMatchObject({
       outcome: "ok",
-      value: { declarations: expect.arrayContaining([expect.objectContaining({ path: "src/domain/repository/repo-path-types.d.ts", text: expect.stringContaining('from "./branded.js"') })]) },
+      value: {
+        declarations: expect.arrayContaining([
+          expect.objectContaining({
+            path: "src/domain/repository/repo-path-types.d.ts",
+            text: expect.stringContaining('from "./branded.js"'),
+          }),
+        ]),
+      },
     });
   });
 
@@ -41,7 +73,9 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
           expect.objectContaining({
             path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts",
             specifiers: ["typescript"],
-            text: expect.stringContaining("export declare const defaultTypeScriptModules: TypeScriptModules;"),
+            text: expect.stringContaining(
+              "export declare const defaultTypeScriptModules: TypeScriptModules;",
+            ),
             refusals: [],
           }),
         ]),
@@ -54,7 +88,10 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
       outcome: "ok",
       value: {
         declarations: expect.arrayContaining([
-          expect.objectContaining({ path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts", text: expect.stringContaining("export type SyntaxApi = typeof typescript;") }),
+          expect.objectContaining({
+            path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts",
+            text: expect.stringContaining("export type SyntaxApi = typeof typescript;"),
+          }),
         ]),
       },
     });
@@ -65,27 +102,38 @@ describe("the TypeScript declaration port, emitting in memory with the repositor
       outcome: "ok",
       value: {
         declarations: expect.arrayContaining([
-          expect.objectContaining({ path: "src/domain/repository/branded.d.ts", text: expect.stringContaining("declare const brandName: unique symbol;") }),
+          expect.objectContaining({
+            path: "src/domain/repository/branded.d.ts",
+            text: expect.stringContaining("declare const brandName: unique symbol;"),
+          }),
         ]),
       },
     });
   });
 
   it("reports a diagnostic for an entry that does not exist", async () => {
-    await expect(emitted({ entryPoints: ["src/domain/repository/missing.ts"] })).resolves.toMatchObject({
+    await expect(
+      emitted({ entryPoints: ["src/domain/repository/missing.ts"] }),
+    ).resolves.toMatchObject({
       outcome: "ok",
       value: { diagnostics: [expect.stringContaining("missing.ts")] },
     });
   });
 });
 
-const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: REPO_ROOT, installForm: "source" }) });
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({ installRoot: REPO_ROOT, installForm: "source" }),
+});
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 
 const syntaxApi = loadedParsePort.value.syntaxApi;
 
-const ONLY_TYPES = "a shipped declaration may hold only type declarations, type-only imports and type-only exports";
+const ONLY_TYPES =
+  "a shipped declaration may hold only type declarations, type-only imports and type-only exports";
 
 const VALUE_RE_EXPORT = `a value re-export from ./other.js; ${ONLY_TYPES}`;
 
@@ -98,7 +146,10 @@ describe("publishedDeclarationText, over declaration text parsed and printed wit
         role: "internal",
         text: "export declare const answer: 1;\nexport declare function ask(): void;\nexport declare class Asker {\n}\nexport declare enum Mood {\n    Calm = 0\n}\nexport default answer;\nexport type Answer = 1;\ndeclare const brand: unique symbol;\n",
       }),
-    ).toEqual({ text: "export type Answer = 1;\ndeclare const brand: unique symbol;\n", refusals: [] });
+    ).toEqual({
+      text: "export type Answer = 1;\ndeclare const brand: unique symbol;\n",
+      refusals: [],
+    });
   });
 
   it("leaves a value out of a local export list, drops a list naming only values, and keeps the types beside them", () => {
@@ -109,9 +160,11 @@ describe("publishedDeclarationText, over declaration text parsed and printed wit
         role: "internal",
         text: "declare const answer = 1;\ntype Answer = number;\nexport { answer, Answer };\nexport { answer as reply };\n",
       }),
-    ).toEqual({ text: "declare const answer = 1;\ntype Answer = number;\nexport { Answer };\n", refusals: [] });
+    ).toEqual({
+      text: "declare const answer = 1;\ntype Answer = number;\nexport { Answer };\n",
+      refusals: [],
+    });
   });
-
 });
 
 describe("publishedDeclarationText, for an entry declaration", () => {
@@ -137,29 +190,54 @@ describe("publishedDeclarationText, for an entry declaration", () => {
         role: "entry",
         text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport default plugin;\n",
       }),
-    ).toEqual({ text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport default plugin;\n", refusals: [] });
+    ).toEqual({
+      text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport default plugin;\n",
+      refusals: [],
+    });
   });
 
   it("drops an export equals naming a private value of the entry", () => {
     expect(
-      publishedDeclarationText({ syntaxApi, path: "api/eslint-plugin.d.ts", role: "entry", text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport = plugin;\n" }),
+      publishedDeclarationText({
+        syntaxApi,
+        path: "api/eslint-plugin.d.ts",
+        role: "entry",
+        text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport = plugin;\n",
+      }),
     ).toEqual({ text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\n", refusals: [] });
   });
 
   it("drops a default export naming a private value of an internal file", () => {
     expect(
-      publishedDeclarationText({ syntaxApi, path: "core/plugin.d.ts", role: "internal", text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport default plugin;\n" }),
+      publishedDeclarationText({
+        syntaxApi,
+        path: "core/plugin.d.ts",
+        role: "internal",
+        text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\nexport default plugin;\n",
+      }),
     ).toEqual({ text: "export type Plugin = 1;\ndeclare const plugin: Plugin;\n", refusals: [] });
   });
 
   it("drops a default export naming no private value of the entry", () => {
     expect(
-      publishedDeclarationText({ syntaxApi, path: "api/eslint-plugin.d.ts", role: "entry", text: "export type Plugin = 1;\nexport default other;\n" }),
+      publishedDeclarationText({
+        syntaxApi,
+        path: "api/eslint-plugin.d.ts",
+        role: "entry",
+        text: "export type Plugin = 1;\nexport default other;\n",
+      }),
     ).toEqual({ text: "export type Plugin = 1;\n", refusals: [] });
   });
 
   it("still refuses a value re-export, whose module declares no values", () => {
-    expect(publishedDeclarationText({ syntaxApi, path: "api/audit.d.ts", role: "entry", text: 'export { answer } from "./other.js";\n' })).toEqual({
+    expect(
+      publishedDeclarationText({
+        syntaxApi,
+        path: "api/audit.d.ts",
+        role: "entry",
+        text: 'export { answer } from "./other.js";\n',
+      }),
+    ).toEqual({
       text: "export {};\n",
       refusals: [`api/audit.d.ts: ${VALUE_RE_EXPORT}`],
     });
@@ -174,8 +252,15 @@ describe("the TypeScript declaration port, emitting a public entry that exports 
       value: {
         diagnostics: [],
         declarations: expect.arrayContaining([
-          expect.objectContaining({ path: "src/audit.d.ts", text: expect.stringContaining("export declare const folderScope: (request: {"), refusals: [] }),
-          expect.objectContaining({ path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts", text: expect.not.stringContaining("defaultTypeScriptModules") }),
+          expect.objectContaining({
+            path: "src/audit.d.ts",
+            text: expect.stringContaining("export declare const folderScope: (request: {"),
+            refusals: [],
+          }),
+          expect.objectContaining({
+            path: "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.d.ts",
+            text: expect.not.stringContaining("defaultTypeScriptModules"),
+          }),
         ]),
       },
     });
@@ -193,7 +278,11 @@ describe("publishedDeclarationText, refusing what a shipped declaration may not 
       }),
     ).toEqual({
       text: 'export type { Answer } from "./other.js";\n',
-      refusals: [`entry.d.ts: ${VALUE_RE_EXPORT}`, `entry.d.ts: ${VALUE_RE_EXPORT}`, `entry.d.ts: ${VALUE_RE_EXPORT}`],
+      refusals: [
+        `entry.d.ts: ${VALUE_RE_EXPORT}`,
+        `entry.d.ts: ${VALUE_RE_EXPORT}`,
+        `entry.d.ts: ${VALUE_RE_EXPORT}`,
+      ],
     });
   });
 
@@ -217,7 +306,14 @@ describe("publishedDeclarationText, refusing what a shipped declaration may not 
   });
 
   it("keeps a type imported as a type and exported again", () => {
-    expect(publishedDeclarationText({ syntaxApi, path: "entry.d.ts", role: "internal", text: 'import type { Answer } from "./other.js";\nexport { Answer };\n' })).toEqual({
+    expect(
+      publishedDeclarationText({
+        syntaxApi,
+        path: "entry.d.ts",
+        role: "internal",
+        text: 'import type { Answer } from "./other.js";\nexport { Answer };\n',
+      }),
+    ).toEqual({
       text: 'import type { Answer } from "./other.js";\nexport { Answer };\n',
       refusals: [],
     });
@@ -244,15 +340,28 @@ describe("publishedDeclarationText, refusing what a shipped declaration may not 
       ],
     });
   });
-
 });
 
 describe("publishedDeclarationText, keeping a file a module", () => {
   it("marks a module whose every statement was dropped as a module still", () => {
-    expect(publishedDeclarationText({ syntaxApi, path: "entry.d.ts", role: "internal", text: "export declare const answer: 1;\n" })).toEqual({ text: "export {};\n", refusals: [] });
+    expect(
+      publishedDeclarationText({
+        syntaxApi,
+        path: "entry.d.ts",
+        role: "internal",
+        text: "export declare const answer: 1;\n",
+      }),
+    ).toEqual({ text: "export {};\n", refusals: [] });
   });
 
   it("keeps an empty module marker so a types-only file stays a module", () => {
-    expect(publishedDeclarationText({ syntaxApi, path: "entry.d.ts", role: "internal", text: "type Local = 1;\nexport {};\n" })).toEqual({ text: "type Local = 1;\nexport {};\n", refusals: [] });
+    expect(
+      publishedDeclarationText({
+        syntaxApi,
+        path: "entry.d.ts",
+        role: "internal",
+        text: "type Local = 1;\nexport {};\n",
+      }),
+    ).toEqual({ text: "type Local = 1;\nexport {};\n", refusals: [] });
   });
 });

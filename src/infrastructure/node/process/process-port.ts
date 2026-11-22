@@ -37,6 +37,5 @@ export const defaultProcessSurface: ProcessSurface = {
   },
 };
 
-export const createDefaultProcessPort = (
-  _options: Record<string, never>,
-): ProcessPort => createProcessPort({ processSurface: defaultProcessSurface });
+export const createDefaultProcessPort = (_options: Record<string, never>): ProcessPort =>
+  createProcessPort({ processSurface: defaultProcessSurface });

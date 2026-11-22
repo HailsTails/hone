@@ -4,7 +4,9 @@ import type { Result } from "../../../domain/result.ts";
 import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { DisciplineFile, PieceFile } from "../../../domain/rule-set/rule-set-types.ts";
 
-export type Held<File> = { readonly held: "absent" } | { readonly held: "present"; readonly file: File };
+export type Held<File> =
+  | { readonly held: "absent" }
+  | { readonly held: "present"; readonly file: File };
 
 export type LocatedPieceFile = Omit<PieceFile, "clauses"> & {
   readonly clauses: readonly (PieceFile["clauses"][number] & { readonly pieceRoot: string })[];

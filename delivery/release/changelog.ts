@@ -5,7 +5,12 @@ export const CHANGELOG_FILE = "CHANGELOG.md";
 
 export type ChangeGroup = "Breaking changes" | "Features" | "Fixes" | "Other changes";
 
-const GROUPS_IN_ORDER: readonly ChangeGroup[] = ["Breaking changes", "Features", "Fixes", "Other changes"];
+const GROUPS_IN_ORDER: readonly ChangeGroup[] = [
+  "Breaking changes",
+  "Features",
+  "Fixes",
+  "Other changes",
+];
 
 const GROUP_OF_TYPE: Readonly<Record<ChangeType, ChangeGroup>> = {
   feat: "Features",
@@ -27,7 +32,9 @@ export const changelogGroupOf = (request: { readonly entry: ChangeEntry }): Chan
   if (request.entry.kind === "unclassified") {
     return request.entry.compatibility === "breaking" ? "Breaking changes" : "Other changes";
   }
-  return request.entry.subject.compatibility === "breaking" ? "Breaking changes" : GROUP_OF_TYPE[request.entry.subject.type];
+  return request.entry.subject.compatibility === "breaking"
+    ? "Breaking changes"
+    : GROUP_OF_TYPE[request.entry.subject.type];
 };
 
 const lineOf = (request: { readonly entry: ChangeEntry }): string => {
@@ -38,15 +45,28 @@ const lineOf = (request: { readonly entry: ChangeEntry }): string => {
   return `- ${scope}${request.entry.subject.description}`;
 };
 
-const groupBlock = (request: { readonly group: ChangeGroup; readonly entries: readonly ChangeEntry[] }): readonly string[] => {
-  const lines = request.entries.filter((entry) => changelogGroupOf({ entry }) === request.group).map((entry) => lineOf({ entry }));
+const groupBlock = (request: {
+  readonly group: ChangeGroup;
+  readonly entries: readonly ChangeEntry[];
+}): readonly string[] => {
+  const lines = request.entries
+    .filter((entry) => changelogGroupOf({ entry }) === request.group)
+    .map((entry) => lineOf({ entry }));
   return lines.length === 0 ? [] : [`### ${request.group}`, "", ...lines, ""];
 };
 
-const headingOf = (request: { readonly version: string }): string => `${SECTION_HEADING_PREFIX}${request.version}`;
+const headingOf = (request: { readonly version: string }): string =>
+  `${SECTION_HEADING_PREFIX}${request.version}`;
 
-export const changelogSectionOf = (request: { readonly version: string; readonly entries: readonly ChangeEntry[] }): string =>
-  [headingOf(request), "", ...GROUPS_IN_ORDER.flatMap((group) => groupBlock({ group, entries: request.entries }))].join("\n");
+export const changelogSectionOf = (request: {
+  readonly version: string;
+  readonly entries: readonly ChangeEntry[];
+}): string =>
+  [
+    headingOf(request),
+    "",
+    ...GROUPS_IN_ORDER.flatMap((group) => groupBlock({ group, entries: request.entries })),
+  ].join("\n");
 
 export const changelogWithSection = (request: {
   readonly changelog: string;
@@ -55,11 +75,19 @@ export const changelogWithSection = (request: {
 }): Result<string, string> => {
   const lines = request.changelog.split("\n");
   if (lines.includes(headingOf(request))) {
-    return { outcome: "failed", error: `${CHANGELOG_FILE} already has a section for ${request.version}` };
+    return {
+      outcome: "failed",
+      error: `${CHANGELOG_FILE} already has a section for ${request.version}`,
+    };
   }
   const newest = lines.findIndex((line) => line.startsWith(SECTION_HEADING_PREFIX));
   if (newest === -1) {
     return { outcome: "ok", value: `${request.changelog}\n${request.section}` };
   }
-  return { outcome: "ok", value: [...lines.slice(0, newest), ...request.section.split("\n"), ...lines.slice(newest)].join("\n") };
+  return {
+    outcome: "ok",
+    value: [...lines.slice(0, newest), ...request.section.split("\n"), ...lines.slice(newest)].join(
+      "\n",
+    ),
+  };
 };

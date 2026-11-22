@@ -27,7 +27,10 @@ const everyCaseExits = (request: {
   return enteredCases.length > 0 &&
     enteredCases.every(
       (switchCase) =>
-        exitDisposition({ statement: switchCase.consequent.at(-1), reach: "break-stays-in-switch" }) === "exits",
+        exitDisposition({
+          statement: switchCase.consequent.at(-1),
+          reach: "break-stays-in-switch",
+        }) === "exits",
     )
     ? "exits"
     : "continues";
@@ -55,13 +58,21 @@ const exitDisposition = (request: {
     return exitDisposition({ statement: statement.body.at(-1), reach: request.reach });
   }
   if (statement.type === "IfStatement") {
-    return bothBranchesExit({ consequent: statement.consequent, alternate: statement.alternate, reach: request.reach });
+    return bothBranchesExit({
+      consequent: statement.consequent,
+      alternate: statement.alternate,
+      reach: request.reach,
+    });
   }
-  return statement.type === "SwitchStatement" ? everyCaseExits({ cases: statement.cases }) : "continues";
+  return statement.type === "SwitchStatement"
+    ? everyCaseExits({ cases: statement.cases })
+    : "continues";
 };
 
 const chainPosition = (request: { readonly node: IfSite }): "chain-head" | "else-if" =>
-  request.node.parent.type === "IfStatement" && request.node.parent.alternate === request.node ? "else-if" : "chain-head";
+  request.node.parent.type === "IfStatement" && request.node.parent.alternate === request.node
+    ? "else-if"
+    : "chain-head";
 
 const reportedElses = (request: {
   readonly consequent: StatementNode;
@@ -74,7 +85,13 @@ const reportedElses = (request: {
     return [];
   }
   return request.alternate.type === "IfStatement"
-    ? [request.alternate, ...reportedElses({ consequent: request.alternate.consequent, alternate: request.alternate.alternate })]
+    ? [
+        request.alternate,
+        ...reportedElses({
+          consequent: request.alternate.consequent,
+          alternate: request.alternate.alternate,
+        }),
+      ]
     : [request.alternate];
 };
 
@@ -84,7 +101,8 @@ const uselessElse = siteRule({
     docs: { description: "Disallow else after a branch that always exits (CD-42)" },
     schema: [],
     messages: {
-      uselessElse: "CD-42: the branch above always exits, so drop this else and return the happy path last.",
+      uselessElse:
+        "CD-42: the branch above always exits, so drop this else and return the happy path last.",
     },
   },
   observe: (context) => ({
@@ -92,13 +110,15 @@ const uselessElse = siteRule({
       if (chainPosition({ node }) === "else-if") {
         return;
       }
-      reportedElses({ consequent: node.consequent, alternate: node.alternate }).forEach((alternate) => {
-        const elseKeyword = context.sourceCode.getTokenBefore(alternate);
-        if (elseKeyword === null) {
-          return;
-        }
-        context.report({ loc: elseKeyword.loc, messageId: "uselessElse" });
-      });
+      reportedElses({ consequent: node.consequent, alternate: node.alternate }).forEach(
+        (alternate) => {
+          const elseKeyword = context.sourceCode.getTokenBefore(alternate);
+          if (elseKeyword === null) {
+            return;
+          }
+          context.report({ loc: elseKeyword.loc, messageId: "uselessElse" });
+        },
+      );
     },
   }),
 });

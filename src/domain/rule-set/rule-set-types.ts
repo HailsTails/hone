@@ -1,10 +1,14 @@
 import type { AnchorKind } from "../finding/anchor.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations } from "./authored-rule-set-types.ts";
-import type { ClauseId, DisciplineId, EngineId } from "./identifier-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
+import type { ClauseExceptions, ClauseSettingDeclarations } from "./authored-rule-set-types.ts";
 import type { ClauseEditions, Edition } from "./edition-types.ts";
+import type { ClauseId, DisciplineId, EngineId } from "./identifier-types.ts";
 
-export type { ClauseExceptions, ClauseSettingDeclaration, ClauseSettingDeclarations } from "./authored-rule-set-types.ts";
+export type {
+  ClauseExceptions,
+  ClauseSettingDeclaration,
+  ClauseSettingDeclarations,
+} from "./authored-rule-set-types.ts";
 
 export type SourceCase = {
   readonly name: string;

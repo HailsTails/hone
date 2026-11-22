@@ -1,14 +1,14 @@
+import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import type { Result } from "../../../../../domain/result.ts";
+import { clauseAddressText } from "../../../../../domain/rule-set/clause-address.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressText } from "../../../../../domain/rule-set/clause-address.ts";
-import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
-import type { Anchor } from "../../../../../domain/finding/anchor.ts";
-import type { Result } from "../../../../../domain/result.ts";
 import { stringListClauseSettings } from "../../runner/pieces/piece-clause-settings.ts";
-import { typeDirectiveReaderFor } from "../../runner/pieces/type-directives.ts";
-import type { SyntaxApi, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
-import type { PieceHit, SourceObservers, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { typeDirectiveReaderFor } from "../../runner/pieces/type-directives.ts";
+import type { PieceHit, SourceObservers, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
+import type { SyntaxApi, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -47,11 +47,15 @@ const compiledTracker = (request: {
   }
 };
 
-const trackedClauseOf = (request: { readonly clause: RunnerClause }): Result<readonly TrackedClause[], PieceFailure> => {
+const trackedClauseOf = (request: {
+  readonly clause: RunnerClause;
+}): Result<readonly TrackedClause[], PieceFailure> => {
   const settings = stringListClauseSettings({ clause: request.clause, keys: ["trackerPatterns"] });
   if (settings.outcome === "failed") return settings;
   const trackers = gatheredOutcomes({
-    outcomes: settings.value.trackerPatterns.map((source) => compiledTracker({ clause: request.clause, source })),
+    outcomes: settings.value.trackerPatterns.map((source) =>
+      compiledTracker({ clause: request.clause, source }),
+    ),
   });
   if (trackers.outcome === "failed") return trackers;
   return { outcome: "ok", value: [{ clause: request.clause, trackers: trackers.value }] };
@@ -62,23 +66,40 @@ const trackedClausesOf = (request: {
 }): Result<readonly TrackedClause[], PieceFailure> =>
   gatheredOutcomes({ outcomes: request.clauses.map((clause) => trackedClauseOf({ clause })) });
 
-const chosenReference = (request: { readonly references: readonly string[]; readonly tracked: TrackedClause }): Tracking =>
-  request.references.some((reference) => request.tracked.trackers.some((tracker) => tracker.test(reference)))
+const chosenReference = (request: {
+  readonly references: readonly string[];
+  readonly tracked: TrackedClause;
+}): Tracking =>
+  request.references.some((reference) =>
+    request.tracked.trackers.some((tracker) => tracker.test(reference)),
+  )
     ? "tracked"
     : "untracked";
 
-const trackingAnywhere = (request: { readonly text: string; readonly tracked: TrackedClause }): Tracking =>
+const trackingAnywhere = (request: {
+  readonly text: string;
+  readonly tracked: TrackedClause;
+}): Tracking =>
   chosenReference({
     references: Array.from(request.text.matchAll(TRACKED_REFERENCE_PATTERN), (match) => match[0]),
     tracked: request.tracked,
   });
 
-const trackingAtStart = (request: { readonly text: string; readonly tracked: TrackedClause }): Tracking => {
+const trackingAtStart = (request: {
+  readonly text: string;
+  readonly tracked: TrackedClause;
+}): Tracking => {
   const reference = LEADING_TRACKED_REFERENCE_PATTERN.exec(request.text)?.[1];
-  return chosenReference({ references: reference === undefined ? [] : [reference], tracked: request.tracked });
+  return chosenReference({
+    references: reference === undefined ? [] : [reference],
+    tracked: request.tracked,
+  });
 };
 
-const textAfter = (request: { readonly pattern: RegExp; readonly text: string }): string | undefined => {
+const textAfter = (request: {
+  readonly pattern: RegExp;
+  readonly text: string;
+}): string | undefined => {
   const marker = request.pattern.exec(request.text);
   return marker === null ? undefined : request.text.slice(marker.index + marker[0].length);
 };
@@ -86,9 +107,14 @@ const textAfter = (request: { readonly pattern: RegExp; readonly text: string })
 const untrackedClauses = (request: {
   readonly trackedClauses: readonly TrackedClause[];
   readonly text: string;
-  readonly tracking: (request: { readonly text: string; readonly tracked: TrackedClause }) => Tracking;
+  readonly tracking: (request: {
+    readonly text: string;
+    readonly tracked: TrackedClause;
+  }) => Tracking;
 }): readonly TrackedClause[] =>
-  request.trackedClauses.filter((tracked) => request.tracking({ text: request.text, tracked }) === "untracked");
+  request.trackedClauses.filter(
+    (tracked) => request.tracking({ text: request.text, tracked }) === "untracked",
+  );
 
 type AnchorAt = (request: { readonly position: number }) => Anchor;
 
@@ -106,7 +132,11 @@ const hitsFor = (request: {
 }): readonly PieceHit[] => {
   if (request.untracked.length === 0) return [];
   const anchor = request.anchorAt({ position: request.position });
-  return request.untracked.map((tracked) => ({ clause: tracked.clause.address, anchor, snippet: request.snippet }));
+  return request.untracked.map((tracked) => ({
+    clause: tracked.clause.address,
+    anchor,
+    snippet: request.snippet,
+  }));
 };
 
 const taskHits = (request: FileContext): readonly PieceHit[] => {
@@ -117,7 +147,11 @@ const taskHits = (request: FileContext): readonly PieceHit[] => {
     const afterTodo = textAfter({ pattern: TODO_PATTERN, text: line });
     if (afterTodo === undefined) return [];
     return hitsFor({
-      untracked: untrackedClauses({ trackedClauses: request.trackedClauses, text: afterTodo, tracking: trackingAtStart }),
+      untracked: untrackedClauses({
+        trackedClauses: request.trackedClauses,
+        text: afterTodo,
+        tracking: trackingAtStart,
+      }),
       anchorAt: request.anchorAt,
       position,
       snippet: line.trim(),
@@ -125,15 +159,25 @@ const taskHits = (request: FileContext): readonly PieceHit[] => {
   });
 };
 
-const sourceObserversFor = (request: FileContext & { readonly syntaxApi: SyntaxApi }): SourceObservers => {
+const sourceObserversFor = (
+  request: FileContext & { readonly syntaxApi: SyntaxApi },
+): SourceObservers => {
   const { sourceFile, anchorAt, trackedClauses, syntaxApi } = request;
   const typeDirectiveOf = typeDirectiveReaderFor({ sourceFile, syntaxApi });
   const todoHits = taskHits(request);
   const directiveHits: PieceHit[] = [];
   const typeDirectiveHits: PieceHit[] = [];
-  const commentHits = (comment: { readonly text: string; readonly whole: string; readonly position: number }): readonly PieceHit[] =>
+  const commentHits = (comment: {
+    readonly text: string;
+    readonly whole: string;
+    readonly position: number;
+  }): readonly PieceHit[] =>
     hitsFor({
-      untracked: untrackedClauses({ trackedClauses, text: comment.text, tracking: trackingAnywhere }),
+      untracked: untrackedClauses({
+        trackedClauses,
+        text: comment.text,
+        tracking: trackingAnywhere,
+      }),
       anchorAt,
       position: comment.position,
       snippet: comment.whole.trim(),
@@ -143,7 +187,9 @@ const sourceObserversFor = (request: FileContext & { readonly syntaxApi: SyntaxA
       const whole = sourceFile.text.slice(range.pos, range.end);
       const typeDirective = typeDirectiveOf({ range });
       if (typeDirective !== undefined) {
-        typeDirectiveHits.push(...commentHits({ text: typeDirective.tail, whole, position: range.pos }));
+        typeDirectiveHits.push(
+          ...commentHits({ text: typeDirective.tail, whole, position: range.pos }),
+        );
         return;
       }
       if (LINTER_DIRECTIVE_PATTERN.exec(whole)?.[1] === undefined) return;
@@ -169,7 +215,8 @@ export const check: WalkerPiece = {
             outcome: "ok",
             value: {
               kind: "syntax",
-              begin: ({ sourceFile, anchorAt }) => sourceObserversFor({ sourceFile, anchorAt, trackedClauses, syntaxApi }),
+              begin: ({ sourceFile, anchorAt }) =>
+                sourceObserversFor({ sourceFile, anchorAt, trackedClauses, syntaxApi }),
             },
           };
         },

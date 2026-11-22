@@ -19,4 +19,5 @@ export const isRepoPathText = (request: { readonly text: string }): RepoPathVerd
     ? "repo-path"
     : "not-repo-path";
 
-export const isRepoPath = (text: string): text is RepoPath => isRepoPathText({ text }) === "repo-path";
+export const isRepoPath = (text: string): text is RepoPath =>
+  isRepoPathText({ text }) === "repo-path";

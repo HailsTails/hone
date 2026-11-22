@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
+
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { projectCommandOf, pruneCommandOf } from "./tool-invocations.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
-const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/work/shop/packages/web" });
+const POSIX_PATH = createPathPort({
+  flavour: "posix",
+  workingDirectory: () => "/work/shop/packages/web",
+});
 
 const INSTALLED_ENTRY = "file:///work/shop/node_modules/@hailstails/hone/src/hone.js";
 
 describe("projectCommandOf", () => {
   it("runs the installed entry file with node by its absolute path, with the repository root the check measured", () => {
     expect(
-      projectCommandOf({ path: POSIX_PATH, moduleUrl: INSTALLED_ENTRY, repoRoot: absoluteRootOf("/work/shop") }),
+      projectCommandOf({
+        path: POSIX_PATH,
+        moduleUrl: INSTALLED_ENTRY,
+        repoRoot: absoluteRootOf("/work/shop"),
+      }),
     ).toEqual({
       outcome: "ok",
       value: "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop",
@@ -19,10 +27,15 @@ describe("projectCommandOf", () => {
 
   it("quotes a path holding a space", () => {
     expect(
-      projectCommandOf({ path: POSIX_PATH, moduleUrl: INSTALLED_ENTRY, repoRoot: absoluteRootOf("/work/my shop") }),
+      projectCommandOf({
+        path: POSIX_PATH,
+        moduleUrl: INSTALLED_ENTRY,
+        repoRoot: absoluteRootOf("/work/my shop"),
+      }),
     ).toEqual({
       outcome: "ok",
-      value: "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo \"/work/my shop\"",
+      value:
+        'node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo "/work/my shop"',
     });
   });
 
@@ -35,7 +48,8 @@ describe("projectCommandOf", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: "node C:/work/shop/node_modules/@hailstails/hone/src/hone.js project --repo C:/work/shop",
+      value:
+        "node C:/work/shop/node_modules/@hailstails/hone/src/hone.js project --repo C:/work/shop",
     });
   });
 
@@ -46,7 +60,10 @@ describe("projectCommandOf", () => {
         moduleUrl: "https://example.com/tool-command.js",
         repoRoot: absoluteRootOf("/work/shop"),
       }),
-    ).toMatchObject({ outcome: "failed", error: { kind: "install-root-unresolvable", url: "https://example.com/tool-command.js" } });
+    ).toMatchObject({
+      outcome: "failed",
+      error: { kind: "install-root-unresolvable", url: "https://example.com/tool-command.js" },
+    });
   });
 });
 
@@ -62,7 +79,8 @@ describe("pruneCommandOf", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop",
+      value:
+        "node /work/shop/node_modules/@hailstails/hone/src/hone.js prune-debt --repo /work/shop",
     });
   });
 
@@ -91,6 +109,9 @@ describe("pruneCommandOf", () => {
         baseRevision: undefined,
         forfeiture: undefined,
       }),
-    ).toMatchObject({ outcome: "failed", error: { kind: "install-root-unresolvable", url: "https://example.com/tool-command.js" } });
+    ).toMatchObject({
+      outcome: "failed",
+      error: { kind: "install-root-unresolvable", url: "https://example.com/tool-command.js" },
+    });
   });
 });

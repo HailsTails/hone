@@ -1,13 +1,20 @@
-import type { ChecksSliceProblem, MisnamedRuleId } from "../../../../../domain/runner/checks-run-report.ts";
-import type { Hit, MeasuredPair, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import type { AnsweredFile } from "../projection/checks-projection.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import type {
+  ChecksSliceProblem,
+  MisnamedRuleId,
+} from "../../../../../domain/runner/checks-run-report.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type {
+  Hit,
+  MeasuredPair,
+  NativeException,
+} from "../../../../../domain/runner/runner-result-types.ts";
+import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
+import type { AnsweredFile } from "../projection/checks-projection.ts";
 import type { ProjectedBinding } from "../projection/projected-checks.ts";
 
 export type ChecksRunRequest = {

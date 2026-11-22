@@ -1,54 +1,74 @@
 import { describe, expect, it } from "vitest";
+
 import type { Finding } from "../../finding/governance.ts";
-import type { NativeException } from "../../runner/runner-result-types.ts";
-import type { TouchedSet } from "../../repository/touched-set.ts";
-import type { ExceptionRecord } from "./exception-record.ts";
-import type { VersionOneWhyChain } from "./version-one-why-chain.ts";
-import { applyGovernance, type GovernanceRequest } from "./governance.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import type { TouchedSet } from "../../repository/touched-set.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
+import type { NativeException } from "../../runner/runner-result-types.ts";
+import type { ExceptionRecord } from "./exception-record.ts";
+import { applyGovernance, type GovernanceRequest } from "./governance.ts";
+import type { VersionOneWhyChain } from "./version-one-why-chain.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
 };
 
-const noClass = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
-const noForOf = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") };
-const probeNoClass = { ruleSet: { name: ruleSetNameOf("probe") }, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("no-class-syntax") };
+const noClass = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("no-class-syntax"),
+};
+const noForOf = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("no-for-of"),
+};
+const probeNoClass = {
+  ruleSet: { name: ruleSetNameOf("probe") },
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("no-class-syntax"),
+};
 const fileA = repoPathOf("src/a.ts");
 const fileB = repoPathOf("src/b.ts");
 const packageJson = repoPathOf("package.json");
@@ -74,7 +94,11 @@ const noClassInB: Finding = {
 
 const locatedNoClassInA: ExceptionRecord = {
   kind: "authorised-location",
-  provenance: { kind: "existing-authorisation", source: "fictional unit fixture core/governance/governance.test.ts#locatedNoClassInA; not historical authorisation" },
+  provenance: {
+    kind: "existing-authorisation",
+    source:
+      "fictional unit fixture core/governance/governance.test.ts#locatedNoClassInA; not historical authorisation",
+  },
   clause: noClass,
   mechanism: audit,
   file: fileA,
@@ -100,7 +124,11 @@ const carvedNoClassEverywhere: ExceptionRecord = {
 
 const locatedNoForOfInA: ExceptionRecord = {
   kind: "authorised-location",
-  provenance: { kind: "existing-authorisation", source: "fictional unit fixture core/governance/governance.test.ts#locatedNoForOfInA; not historical authorisation" },
+  provenance: {
+    kind: "existing-authorisation",
+    source:
+      "fictional unit fixture core/governance/governance.test.ts#locatedNoForOfInA; not historical authorisation",
+  },
   clause: noForOf,
   mechanism: audit,
   file: fileA,
@@ -194,11 +222,25 @@ describe("applyGovernance with provenance-only inherited debt", () => {
       },
     };
 
-    expect(applyGovernance({ findings: [noClassInA], records: [inheritedDebt], touched: nothingTouched, runs: [quietWalker] })).toEqual({
+    expect(
+      applyGovernance({
+        findings: [noClassInA],
+        records: [inheritedDebt],
+        touched: nothingTouched,
+        runs: [quietWalker],
+      }),
+    ).toEqual({
       ...nothingGoverned,
       exempted: [{ finding: noClassInA, by: [inheritedDebt] }],
     });
-    expect(applyGovernance({ findings: [noClassInA], records: [inheritedDebt], touched: fileATouched, runs: [quietWalker] })).toEqual({
+    expect(
+      applyGovernance({
+        findings: [noClassInA],
+        records: [inheritedDebt],
+        touched: fileATouched,
+        runs: [quietWalker],
+      }),
+    ).toEqual({
       ...nothingGoverned,
       findings: [noClassInA],
       forfeited: [inheritedDebt],
@@ -475,7 +517,13 @@ describe("applyGovernance rule 4, records credited by a native exception they ho
         findings: [],
         records: [{ ...locatedNoClassInA, mechanism: eslint }],
         touched: nothingTouched,
-        runs: [{ mechanism: eslint, nativeExceptions: [{ kind: "config-override", clause: noClass, file: fileA }], coverableKinds: ["config-override"] }],
+        runs: [
+          {
+            mechanism: eslint,
+            nativeExceptions: [{ kind: "config-override", clause: noClass, file: fileA }],
+            coverableKinds: ["config-override"],
+          },
+        ],
       }).stale,
     ).toEqual([]);
   });
@@ -735,7 +783,9 @@ describe("applyGovernance rule 5, inline disables a file record holds", () => {
         findings: [],
         records: [carvedNoClassInA, { ...carvedNoClassInA, clause: noForOf }],
         touched: nothingTouched,
-        runs: [inlineRun({ nativeExceptions: [bareDisableInA, { ...bareDisableInA, clause: noForOf }] })],
+        runs: [
+          inlineRun({ nativeExceptions: [bareDisableInA, { ...bareDisableInA, clause: noForOf }] }),
+        ],
       }).unrecorded,
     ).toEqual([]);
   });
@@ -746,7 +796,9 @@ describe("applyGovernance rule 5, inline disables a file record holds", () => {
         findings: [],
         records: [carvedNoClassInA],
         touched: nothingTouched,
-        runs: [inlineRun({ nativeExceptions: [bareDisableInA, { ...bareDisableInA, clause: noForOf }] })],
+        runs: [
+          inlineRun({ nativeExceptions: [bareDisableInA, { ...bareDisableInA, clause: noForOf }] }),
+        ],
       }).unrecorded,
     ).toEqual([{ ...bareDisableInA, clause: noForOf, mechanism: audit }]);
   });
@@ -800,7 +852,11 @@ describe("applyGovernance rule 5, an inline disable added after adoption", () =>
         touched: fileATouched,
         runs: [inlineRun({ nativeExceptions: [expectationInA] })],
       }),
-    ).toEqual({ ...nothingGoverned, findings: [noClassInA], unrecorded: [{ ...expectationInA, mechanism: audit }] });
+    ).toEqual({
+      ...nothingGoverned,
+      findings: [noClassInA],
+      unrecorded: [{ ...expectationInA, mechanism: audit }],
+    });
   });
 
   it("fails the run as forfeited when the file is carved out, and lists every directive the forfeited carve-out held", () => {
@@ -883,10 +939,7 @@ describe("applyGovernance order", () => {
     expect(
       applyGovernance({
         findings: [],
-        records: [
-          carvedProbeNoClassInA,
-          carvedNoClassInA,
-        ],
+        records: [carvedProbeNoClassInA, carvedNoClassInA],
         touched: fileATouched,
         runs: [quietWalker],
       }).forfeited,

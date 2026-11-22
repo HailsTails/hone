@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
+
+import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { LocatedPieceFile, RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
-import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { type ConformanceTestingPorts, createConformanceTesting } from "./conformance-testing.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
-import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const AUDIT = "walker" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
@@ -32,8 +33,22 @@ const DISCIPLINE: DisciplineFile = {
       anchor: { kind: "file" },
       exceptions: "allowed",
       cases: {
-        flag: [{ name: "scratch file", fileName: repoPathOf("src/draft.scratch.ts"), source: "", expectedLines: [1] }],
-        allow: [{ name: "ordinary file", fileName: repoPathOf("src/kept.ts"), source: "", expectedLines: [] }],
+        flag: [
+          {
+            name: "scratch file",
+            fileName: repoPathOf("src/draft.scratch.ts"),
+            source: "",
+            expectedLines: [1],
+          },
+        ],
+        allow: [
+          {
+            name: "ordinary file",
+            fileName: repoPathOf("src/kept.ts"),
+            source: "",
+            expectedLines: [],
+          },
+        ],
       },
     },
   ],
@@ -55,12 +70,17 @@ const PIECE: LocatedPieceFile = {
 };
 
 const ACME_FILES: RuleSetFiles = {
-  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "present", file: DISCIPLINE } }),
+  disciplineFile: vi
+    .fn<RuleSetFiles["disciplineFile"]>()
+    .mockReturnValue({ outcome: "ok", value: { held: "present", file: DISCIPLINE } }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>().mockReturnValue({ outcome: "ok", value: PIECE }),
 };
 
 const UNREADABLE_FILES: RuleSetFiles = {
-  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "failed", error: { kind: "file-unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" } }),
+  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({
+    outcome: "failed",
+    error: { kind: "file-unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" },
+  }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>(),
 };
 
@@ -77,7 +97,10 @@ const INSTALL_PATH: PathPort = {
 const NO_RUNNER: ModuleLoaderPort = { load: vi.fn<ModuleLoaderPort["load"]>() };
 
 const engineRefusingTheRunner = (): EnginePort => ({
-  load: vi.fn<EnginePort["load"]>().mockResolvedValue({ outcome: "failed", error: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" } }),
+  load: vi.fn<EnginePort["load"]>().mockResolvedValue({
+    outcome: "failed",
+    error: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" },
+  }),
   run: { checks: vi.fn(), withRecords: vi.fn() },
   project: { checks: vi.fn(), withRecords: vi.fn() },
   conform: vi.fn<EnginePort["conform"]>(),
@@ -85,7 +108,12 @@ const engineRefusingTheRunner = (): EnginePort => ({
 
 const NO_LOAD_FAILURE_DETAIL: LoadFailureDetail = vi.fn<LoadFailureDetail>().mockReturnValue("");
 
-const portsOver = (request: Pick<ConformanceTestingPorts, "installRoot" | "ruleSetFiles" | "engine" | "loadFailureDetail">): ConformanceTestingPorts => ({
+const portsOver = (
+  request: Pick<
+    ConformanceTestingPorts,
+    "installRoot" | "ruleSetFiles" | "engine" | "loadFailureDetail"
+  >,
+): ConformanceTestingPorts => ({
   mechanism: AUDIT,
   moduleUrl: BUILT_ENTRY_URL,
   path: INSTALL_PATH,
@@ -97,7 +125,12 @@ describe("createConformanceTesting", () => {
   it("loads the audit runner from the given install root with the built entry's module extension", async () => {
     const engine = engineRefusingTheRunner();
     const testing = createConformanceTesting(
-      portsOver({ installRoot: { outcome: "ok", value: INSTALL_ROOT }, ruleSetFiles: ACME_FILES, engine, loadFailureDetail: NO_LOAD_FAILURE_DETAIL }),
+      portsOver({
+        installRoot: { outcome: "ok", value: INSTALL_ROOT },
+        ruleSetFiles: ACME_FILES,
+        engine,
+        loadFailureDetail: NO_LOAD_FAILURE_DETAIL,
+      }),
     );
     await testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" });
     expect(engine.load).toHaveBeenCalledWith({
@@ -116,47 +149,81 @@ describe("createConformanceTesting", () => {
 
   it("refuses every conformance run when the entry's install root cannot be found", async () => {
     const engine = engineRefusingTheRunner();
-    const loadFailureDetail = vi.fn<LoadFailureDetail>().mockReturnValue("install-root-unresolvable https://example.invalid/api/testing.js the text is not a file: URL");
+    const loadFailureDetail = vi
+      .fn<LoadFailureDetail>()
+      .mockReturnValue(
+        "install-root-unresolvable https://example.invalid/api/testing.js the text is not a file: URL",
+      );
     const testing = createConformanceTesting(
       portsOver({
         installRoot: {
           outcome: "failed",
-          error: { kind: "install-root-unresolvable", url: "https://example.invalid/api/testing.js", detail: "the text is not a file: URL" },
+          error: {
+            kind: "install-root-unresolvable",
+            url: "https://example.invalid/api/testing.js",
+            detail: "the text is not a file: URL",
+          },
         },
         ruleSetFiles: UNREADABLE_FILES,
         engine,
         loadFailureDetail,
       }),
     );
-    await expect(testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" })).resolves.toEqual({
+    await expect(
+      testing.clauseConformanceOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" }),
+    ).resolves.toEqual({
       outcome: "failed",
       error: {
         kind: "runner-unloadable",
-        detail: "install-root-unresolvable https://example.invalid/api/testing.js the text is not a file: URL",
+        detail:
+          "install-root-unresolvable https://example.invalid/api/testing.js the text is not a file: URL",
       },
     });
     expect(loadFailureDetail).toHaveBeenCalledWith({
-      failure: { kind: "install-root-unresolvable", url: "https://example.invalid/api/testing.js", detail: "the text is not a file: URL" },
+      failure: {
+        kind: "install-root-unresolvable",
+        url: "https://example.invalid/api/testing.js",
+        detail: "the text is not a file: URL",
+      },
     });
     expect(engine.load).not.toHaveBeenCalled();
   });
 
   it("binds a clause through the given ports", () => {
-    const loadFailureDetail = vi.fn<LoadFailureDetail>().mockReturnValue(`file-unreadable ${DISCIPLINE_PATH} ENOENT`);
+    const loadFailureDetail = vi
+      .fn<LoadFailureDetail>()
+      .mockReturnValue(`file-unreadable ${DISCIPLINE_PATH} ENOENT`);
     const testing = createConformanceTesting(
-      portsOver({ installRoot: { outcome: "ok", value: INSTALL_ROOT }, ruleSetFiles: UNREADABLE_FILES, engine: engineRefusingTheRunner(), loadFailureDetail }),
+      portsOver({
+        installRoot: { outcome: "ok", value: INSTALL_ROOT },
+        ruleSetFiles: UNREADABLE_FILES,
+        engine: engineRefusingTheRunner(),
+        loadFailureDetail,
+      }),
     );
-    expect(testing.clauseUnderTestOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" })).toEqual({
+    expect(
+      testing.clauseUnderTestOf({ ruleSetRoot: "acme", clause: "acme/ACME-2#scratch-files" }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "rule-set-unloadable", detail: `file-unreadable ${DISCIPLINE_PATH} ENOENT` },
     });
-    expect(loadFailureDetail).toHaveBeenCalledWith({ failure: { kind: "file-unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" } });
+    expect(loadFailureDetail).toHaveBeenCalledWith({
+      failure: { kind: "file-unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" },
+    });
   });
 
   it("gives repository paths", () => {
     const testing = createConformanceTesting(
-      portsOver({ installRoot: { outcome: "ok", value: INSTALL_ROOT }, ruleSetFiles: UNREADABLE_FILES, engine: engineRefusingTheRunner(), loadFailureDetail: NO_LOAD_FAILURE_DETAIL }),
+      portsOver({
+        installRoot: { outcome: "ok", value: INSTALL_ROOT },
+        ruleSetFiles: UNREADABLE_FILES,
+        engine: engineRefusingTheRunner(),
+        loadFailureDetail: NO_LOAD_FAILURE_DETAIL,
+      }),
     );
-    expect(testing.repoPathOf({ file: "src/kept.ts" })).toEqual({ outcome: "ok", value: repoPathOf("src/kept.ts") });
+    expect(testing.repoPathOf({ file: "src/kept.ts" })).toEqual({
+      outcome: "ok",
+      value: repoPathOf("src/kept.ts"),
+    });
   });
 });

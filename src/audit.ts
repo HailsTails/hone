@@ -11,8 +11,22 @@ export type { ClauseAddress, ToolRuleSet } from "./domain/rule-set/clause-addres
 export type { ClauseId, DisciplineId, RuleSetName } from "./domain/rule-set/identifier-types.ts";
 export type { RepoPath } from "./domain/repository/repo-path-types.ts";
 export type { Result } from "./domain/result.ts";
-export type { CommentRange, SyntaxApi, SyntaxNode, SyntaxTree } from "./infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
-export type { PieceHit, PreparedFileCheck, PreparedWalkerCheck, SourceObservers, WalkerDisk, WalkerFile, WalkerPiece, WalkerRepository } from "./infrastructure/engines/walker/runner/pieces/walker-piece.ts";
+export type {
+  CommentRange,
+  SyntaxApi,
+  SyntaxNode,
+  SyntaxTree,
+} from "./infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
+export type {
+  PieceHit,
+  PreparedFileCheck,
+  PreparedWalkerCheck,
+  SourceObservers,
+  WalkerDisk,
+  WalkerFile,
+  WalkerPiece,
+  WalkerRepository,
+} from "./infrastructure/engines/walker/runner/pieces/walker-piece.ts";
 
 export const folderScope = sourceScope.folderScope;
 

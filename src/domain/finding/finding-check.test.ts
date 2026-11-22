@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
-import type { Finding } from "./governance.ts";
-import { checkOfFinding, type FindingCheck } from "./finding-check.ts";
-import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
+
+import type {
+  Case,
+  Check,
+  Engine,
+  Pointed,
+  Principle,
+  Recipe,
+  RecordKind,
+  Rule,
+  Symptom,
+  SymptomCatalogue,
+} from "../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../repository/repo-path-of.ts";
-import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { checkOfFinding, type FindingCheck } from "./finding-check.ts";
+import type { Finding } from "./governance.ts";
 
 const AUDIT = "walker" as const;
 
@@ -19,21 +31,49 @@ const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 
-const AT_A_BOUNDARY: Principle = { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" };
+const AT_A_BOUNDARY: Principle = {
+  name: "external-behaviour-sits-at-a-boundary",
+  title: "External behaviour sits at a boundary",
+};
 
 const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const PORTS_DECLARED_INSIDE: Rule = { name: "ports-declared-inside", title: "Ports declared inside", principle: AT_A_BOUNDARY, standing: "accepted" };
+const PORTS_DECLARED_INSIDE: Rule = {
+  name: "ports-declared-inside",
+  title: "Ports declared inside",
+  principle: AT_A_BOUNDARY,
+  standing: "accepted",
+};
 
-const WRITTEN_OUT_ANSWERS: Rule = { name: "written-out-answers", title: "Written-out answers", principle: TESTS_ARE_OURS, standing: "accepted" };
+const WRITTEN_OUT_ANSWERS: Rule = {
+  name: "written-out-answers",
+  title: "Written-out answers",
+  principle: TESTS_ARE_OURS,
+  standing: "accepted",
+};
 
-const DOER_OR_ORCHESTRATOR: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+const DOER_OR_ORCHESTRATOR: Rule = {
+  name: "doer-or-orchestrator",
+  title: "Doer or orchestrator",
+  principle: ONE_PLACE_DECIDES,
+  standing: "accepted",
+};
 
-const STRAIGHT_THROUGH_TESTS: Rule = { name: "straight-through-tests", title: "Straight-through tests", principle: TESTS_ARE_OURS, standing: "accepted" };
+const STRAIGHT_THROUGH_TESTS: Rule = {
+  name: "straight-through-tests",
+  title: "Straight-through tests",
+  principle: TESTS_ARE_OURS,
+  standing: "accepted",
+};
 
-const DECLARED_NOT_ASSERTED: Rule = { name: "declared-not-asserted", title: "Declared, not asserted", principle: ONE_PLACE_DECIDES, standing: "accepted" };
+const DECLARED_NOT_ASSERTED: Rule = {
+  name: "declared-not-asserted",
+  title: "Declared, not asserted",
+  principle: ONE_PLACE_DECIDES,
+  standing: "accepted",
+};
 
 const NEEDS_THE_CURRENT_TIME: Case = {
   name: "needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering",
@@ -42,7 +82,12 @@ const NEEDS_THE_CURRENT_TIME: Case = {
   owes: [{ kind: "principle", principle: AT_A_BOUNDARY }],
 };
 
-const DOES_ONE_JOB: Case = { name: "does-one-job", title: "Does one job", standing: "accepted", owes: [{ kind: "principle", principle: ONE_PLACE_DECIDES }] };
+const DOES_ONE_JOB: Case = {
+  name: "does-one-job",
+  title: "Does one job",
+  standing: "accepted",
+  owes: [{ kind: "principle", principle: ONE_PLACE_DECIDES }],
+};
 
 const CHECKS_A_VALUE: Case = {
   name: "checks-a-value-that-may-be-one-of-several-outcomes",
@@ -67,15 +112,40 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   reason: { text: "the world reaches a unit through a port", standing: "accepted" },
 };
 
-const ASSERT_TO_NARROW: Recipe = { name: "assert-to-narrow", title: "Assert to narrow", standing: "accepted", reason: { text: "it narrows the type", standing: "accepted" } };
+const ASSERT_TO_NARROW: Recipe = {
+  name: "assert-to-narrow",
+  title: "Assert to narrow",
+  standing: "accepted",
+  reason: { text: "it narrows the type", standing: "accepted" },
+};
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = { name: "iteach-over-typed-rows", title: "it.each over typed rows", standing: "accepted", reason: { text: "each row is a case", standing: "accepted" } };
+const ITEACH_OVER_TYPED_ROWS: Recipe = {
+  name: "iteach-over-typed-rows",
+  title: "it.each over typed rows",
+  standing: "accepted",
+  reason: { text: "each row is a case", standing: "accepted" },
+};
 
-const BOUNDARY_RECORD: RecordKind = { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "authorised-location" };
+const BOUNDARY_RECORD: RecordKind = {
+  name: "boundary-record",
+  title: "Boundary record",
+  phrase: "a boundary record",
+  todaysFormat: "authorised-location",
+};
 
-const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
-const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
+const AUTHORISED_LOCATION_KIND: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
 
 const DATE_USED_DIRECTLY: Symptom = {
   name: "date-used-directly",
@@ -109,7 +179,8 @@ const BRANCH_IN_A_TEST: Symptom = {
       ],
     },
   ],
-  breachUsuallySits: "in the unit's output type, where optional or loose shapes force the test to branch",
+  breachUsuallySits:
+    "in the unit's output type, where optional or loose shapes force the test to branch",
   recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
@@ -118,27 +189,69 @@ const CLAIMED_TYPE: Symptom = {
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
-  mayIndicate: [{ case: GIVES_A_VALUE_ITS_TYPE, situation: "or needs it narrower", points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }] }],
+  mayIndicate: [
+    {
+      case: GIVES_A_VALUE_ITS_TYPE,
+      situation: "or needs it narrower",
+      points: [{ kind: "rule", rule: DECLARED_NOT_ASSERTED }],
+    },
+  ],
   breachUsuallySits: "at the producer",
   recipes: [],
   correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
 };
 
-const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") };
+const CLOCK_SOURCES = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-17"),
+  clause: clauseIdOf("clock-sources"),
+};
 
-const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_LOGIC = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
+const CAST_EXPRESSIONS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-2"),
+  clause: clauseIdOf("cast-expressions"),
+};
 
-const CLOCK_CHECK: Check = { name: "clock-sources", symptom: DATE_USED_DIRECTLY, clause: CLOCK_SOURCES, engines: [WALKER], forms: [] };
+const CLOCK_CHECK: Check = {
+  name: "clock-sources",
+  symptom: DATE_USED_DIRECTLY,
+  clause: CLOCK_SOURCES,
+  engines: [WALKER],
+  forms: [],
+};
 
-const TEST_BODY_CHECK: Check = { name: "test-body", symptom: BRANCH_IN_A_TEST, clause: TEST_BODY_LOGIC, engines: [WALKER], forms: ["branching-with-if"] };
+const TEST_BODY_CHECK: Check = {
+  name: "test-body",
+  symptom: BRANCH_IN_A_TEST,
+  clause: TEST_BODY_LOGIC,
+  engines: [WALKER],
+  forms: ["branching-with-if"],
+};
 
-const CAST_CHECK: Check = { name: "cast-expressions", symptom: CLAIMED_TYPE, clause: CAST_EXPRESSIONS, engines: [ESLINT_ENGINE], forms: [] };
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  clause: CAST_EXPRESSIONS,
+  engines: [ESLINT_ENGINE],
+  forms: [],
+};
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
   principles: [TESTS_ARE_OURS, AT_A_BOUNDARY, ONE_PLACE_DECIDES, NO_HIDDEN_EFFECTS],
-  rules: [PORTS_DECLARED_INSIDE, WRITTEN_OUT_ANSWERS, DOER_OR_ORCHESTRATOR, STRAIGHT_THROUGH_TESTS, DECLARED_NOT_ASSERTED],
+  rules: [
+    PORTS_DECLARED_INSIDE,
+    WRITTEN_OUT_ANSWERS,
+    DOER_OR_ORCHESTRATOR,
+    STRAIGHT_THROUGH_TESTS,
+    DECLARED_NOT_ASSERTED,
+  ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD, DEBT_KIND],
@@ -147,7 +260,13 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
     { clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
-    { clause: TEST_BODY_LOGIC, sight: { kind: "symptom-by-form", forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }] } },
+    {
+      clause: TEST_BODY_LOGIC,
+      sight: {
+        kind: "symptom-by-form",
+        forms: [{ section: "branching-with-if", symptom: BRANCH_IN_A_TEST }],
+      },
+    },
     { clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } },
   ],
   checks: [CLOCK_CHECK, TEST_BODY_CHECK, CAST_CHECK],
@@ -156,44 +275,80 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const FILE = repoPathOf("src/orders/charge-order.ts");
 
-const findingOf = (request: Pick<Finding, "clause" | "mechanism"> & Partial<Pick<Finding, "check" | "remedy">>): Finding => ({
+const findingOf = (
+  request: Pick<Finding, "clause" | "mechanism"> & Partial<Pick<Finding, "check" | "remedy">>,
+): Finding => ({
   file: FILE,
   anchor: { line: 3, column: 4 },
   snippet: "snippet",
   ...request,
 });
 
-const ANGLE_BRACKETS_CHECK: Check = { name: "angle-brackets", symptom: CLAIMED_TYPE, clause: CAST_EXPRESSIONS, engines: [ESLINT_ENGINE], forms: [] };
+const ANGLE_BRACKETS_CHECK: Check = {
+  name: "angle-brackets",
+  symptom: CLAIMED_TYPE,
+  clause: CAST_EXPRESSIONS,
+  engines: [ESLINT_ENGINE],
+  forms: [],
+};
 
-const TWO_CAST_CHECKS: SymptomCatalogue = { ...REPORT_CATALOGUE, checks: [...REPORT_CATALOGUE.checks, ANGLE_BRACKETS_CHECK] };
+const TWO_CAST_CHECKS: SymptomCatalogue = {
+  ...REPORT_CATALOGUE,
+  checks: [...REPORT_CATALOGUE.checks, ANGLE_BRACKETS_CHECK],
+};
 
-const BRANCH_REMEDY: Finding["remedy"] = { fix: "write one test per case", page: CHECKS_PAGE, section: "branching-with-if" };
+const BRANCH_REMEDY: Finding["remedy"] = {
+  fix: "write one test per case",
+  page: CHECKS_PAGE,
+  section: "branching-with-if",
+};
 
-type Row = { readonly name: string; readonly catalogue: SymptomCatalogue; readonly finding: Finding; readonly resolved: FindingCheck };
+type Row = {
+  readonly name: string;
+  readonly catalogue: SymptomCatalogue;
+  readonly finding: Finding;
+  readonly resolved: FindingCheck;
+};
 
 const ROWS: readonly Row[] = [
   {
     name: "a finding naming a check its engine measures resolves to that check",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: CAST_EXPRESSIONS, mechanism: ESLINT, check: "claimed-type#cast-expressions" }),
+    finding: findingOf({
+      clause: CAST_EXPRESSIONS,
+      mechanism: ESLINT,
+      check: "claimed-type#cast-expressions",
+    }),
     resolved: { resolved: "check", check: CAST_CHECK, engine: ESLINT_ENGINE },
   },
   {
     name: "a finding naming one of two checks of a symptom resolves to the one it names",
     catalogue: TWO_CAST_CHECKS,
-    finding: findingOf({ clause: CAST_EXPRESSIONS, mechanism: ESLINT, check: "claimed-type#angle-brackets" }),
+    finding: findingOf({
+      clause: CAST_EXPRESSIONS,
+      mechanism: ESLINT,
+      check: "claimed-type#angle-brackets",
+    }),
     resolved: { resolved: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE },
   },
   {
     name: "a finding naming a check its engine does not measure resolves to nothing",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: CAST_EXPRESSIONS, mechanism: AUDIT, check: "claimed-type#cast-expressions" }),
+    finding: findingOf({
+      clause: CAST_EXPRESSIONS,
+      mechanism: AUDIT,
+      check: "claimed-type#cast-expressions",
+    }),
     resolved: { resolved: "none" },
   },
   {
     name: "a finding naming a check the clause lacks resolves to nothing",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: CAST_EXPRESSIONS, mechanism: ESLINT, check: "claimed-type#loops" }),
+    finding: findingOf({
+      clause: CAST_EXPRESSIONS,
+      mechanism: ESLINT,
+      check: "claimed-type#loops",
+    }),
     resolved: { resolved: "none" },
   },
   {

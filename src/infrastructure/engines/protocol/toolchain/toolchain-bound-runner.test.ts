@@ -1,32 +1,58 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ChecksRunner } from "../checks/checks-runner-types.ts";
-import type { ChecksRunRequest, ProjectionRequest, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
-import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
-import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
-import { toolchainBoundChecksRunner, toolchainBoundEmbeddedRunner, toolchainBoundStandaloneRunner } from "./toolchain-bound-runner.ts";
-import type { Result } from "../../../../domain/result.ts";
-import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+
+import type {
+  ChecksRunRequest,
+  ProjectionRequest,
+  RunRequest,
+} from "../../../../application/ports/engine/runner-module.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import type { Result } from "../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
+import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { ChecksRunner } from "../checks/checks-runner-types.ts";
+import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
+import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
+import {
+  toolchainBoundChecksRunner,
+  toolchainBoundEmbeddedRunner,
+  toolchainBoundStandaloneRunner,
+} from "./toolchain-bound-runner.ts";
 
 type Toolchain = { readonly name: "loaded-toolchain" };
 
-const LOADED: Result<Toolchain, RunnerFailure> = { outcome: "ok", value: { name: "loaded-toolchain" } };
+const LOADED: Result<Toolchain, RunnerFailure> = {
+  outcome: "ok",
+  value: { name: "loaded-toolchain" },
+};
 
 const UNAVAILABLE: Result<Toolchain, RunnerFailure> = {
   outcome: "failed",
-  error: { kind: "toolchain-unavailable", peers: [{ packageName: "eslint", peer: "optional", supported: "^9.39.5 || ^10.15.0", found: "not installed" }] },
+  error: {
+    kind: "toolchain-unavailable",
+    peers: [
+      {
+        packageName: "eslint",
+        peer: "optional",
+        supported: "^9.39.5 || ^10.15.0",
+        found: "not installed",
+      },
+    ],
+  },
 };
 
 const REPO = absoluteRootOf("/repo");
 
 const CLAUSE: RunnerClause = {
-  address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  address: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/eslint/CD-14",
   clauseSettings: {},
@@ -34,13 +60,28 @@ const CLAUSE: RunnerClause = {
   settings: {},
 };
 
-const RUN: RunRequest = { repoRoot: REPO, installRoot: REPO, files: [], trackedPaths: [], clauses: [CLAUSE] };
+const RUN: RunRequest = {
+  repoRoot: REPO,
+  installRoot: REPO,
+  files: [],
+  trackedPaths: [],
+  clauses: [CLAUSE],
+};
 
-const PROJECTION: ProjectionRequest = { repoRoot: REPO, installRoot: REPO, declaredConfigRoots: [], trackedPaths: [], clauses: [CLAUSE], records: [] };
+const PROJECTION: ProjectionRequest = {
+  repoRoot: REPO,
+  installRoot: REPO,
+  declaredConfigRoots: [],
+  trackedPaths: [],
+  clauses: [CLAUSE],
+  records: [],
+};
 
 const standaloneOver = (): StandaloneRunner => ({
   exceptionPath: "standalone",
-  run: vi.fn<StandaloneRunner["run"]>().mockResolvedValue({ outcome: "ok", value: { hits: [], nativeExceptions: [] } }),
+  run: vi
+    .fn<StandaloneRunner["run"]>()
+    .mockResolvedValue({ outcome: "ok", value: { hits: [], nativeExceptions: [] } }),
   conform: vi.fn<StandaloneRunner["conform"]>().mockResolvedValue({ outcome: "ok", value: [] }),
 });
 
@@ -81,7 +122,10 @@ describe("toolchainBoundStandaloneRunner", () => {
 
   it("answers run and conform with the toolchain failure and never builds the runner when the toolchain is unavailable", async () => {
     const runnerOf = vi.fn<(toolchain: Toolchain) => StandaloneRunner>();
-    const bound = toolchainBoundStandaloneRunner({ toolchain: Promise.resolve(UNAVAILABLE), runnerOf });
+    const bound = toolchainBoundStandaloneRunner({
+      toolchain: Promise.resolve(UNAVAILABLE),
+      runnerOf,
+    });
     expect({
       run: await bound.run(RUN),
       conform: await bound.conform({ clause: CLAUSE, cases: [] }),
@@ -109,7 +153,10 @@ describe("toolchainBoundEmbeddedRunner", () => {
     }).toEqual({
       exceptionPath: "embedded",
       projectedKinds: ["config-override"],
-      run: { outcome: "ok", value: { hits: [], nativeExceptions: [], projection: "current", slices: [] } },
+      run: {
+        outcome: "ok",
+        value: { hits: [], nativeExceptions: [], projection: "current", slices: [] },
+      },
       conform: { outcome: "ok", value: [] },
       project: { outcome: "ok", value: [{ path: "disciplines.eslint.mjs", effect: "written" }] },
       built: 1,
@@ -132,9 +179,26 @@ describe("toolchainBoundEmbeddedRunner", () => {
   });
 });
 
-const CHECKS_RUN: ChecksRunRequest = { repoRoot: REPO, installRoot: REPO, files: [], trackedPaths: [], checks: [], bindings: [], answered: [], declaredConfigRoots: [], declaredConfigLookup: undefined };
+const CHECKS_RUN: ChecksRunRequest = {
+  repoRoot: REPO,
+  installRoot: REPO,
+  files: [],
+  trackedPaths: [],
+  checks: [],
+  bindings: [],
+  answered: [],
+  declaredConfigRoots: [],
+  declaredConfigLookup: undefined,
+};
 
-const CHECKS_REPORT = { hits: [], nativeExceptions: [], measured: [], projection: "current", slices: [], misnamedRuleIds: [] } as const;
+const CHECKS_REPORT = {
+  hits: [],
+  nativeExceptions: [],
+  measured: [],
+  projection: "current",
+  slices: [],
+  misnamedRuleIds: [],
+} as const;
 
 const WRITTEN = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
@@ -148,7 +212,11 @@ describe("toolchainBoundChecksRunner", () => {
   it("declares the projected kinds it is given and delegates every run to the runner built once from the toolchain", async () => {
     const inner = checksOver();
     const runnerOf = vi.fn<(toolchain: Toolchain) => ChecksRunner>().mockReturnValue(inner);
-    const bound = toolchainBoundChecksRunner({ toolchain: Promise.resolve(LOADED), projectedKinds: ["config-override"], runnerOf });
+    const bound = toolchainBoundChecksRunner({
+      toolchain: Promise.resolve(LOADED),
+      projectedKinds: ["config-override"],
+      runnerOf,
+    });
     expect({
       projectedKinds: bound.projectedKinds,
       first: await bound.run(CHECKS_RUN),
@@ -166,37 +234,72 @@ describe("toolchainBoundChecksRunner", () => {
 
   it("answers run with the toolchain failure and never builds the runner when the toolchain is unavailable", async () => {
     const runnerOf = vi.fn<(toolchain: Toolchain) => ChecksRunner>();
-    const bound = toolchainBoundChecksRunner({ toolchain: Promise.resolve(UNAVAILABLE), projectedKinds: ["config-override"], runnerOf });
-    expect({ run: await bound.run(CHECKS_RUN), built: runnerOf.mock.calls.length }).toEqual({ run: UNAVAILABLE, built: 0 });
+    const bound = toolchainBoundChecksRunner({
+      toolchain: Promise.resolve(UNAVAILABLE),
+      projectedKinds: ["config-override"],
+      runnerOf,
+    });
+    expect({ run: await bound.run(CHECKS_RUN), built: runnerOf.mock.calls.length }).toEqual({
+      run: UNAVAILABLE,
+      built: 0,
+    });
   });
 
   it("delegates conform to the runner built once, and answers it with the toolchain failure, building nothing, when the toolchain is unavailable", async () => {
     const inner = checksOver();
     const runnerOf = vi.fn<(toolchain: Toolchain) => ChecksRunner>().mockReturnValue(inner);
-    const bound = toolchainBoundChecksRunner({ toolchain: Promise.resolve(LOADED), projectedKinds: ["config-override"], runnerOf });
+    const bound = toolchainBoundChecksRunner({
+      toolchain: Promise.resolve(LOADED),
+      projectedKinds: ["config-override"],
+      runnerOf,
+    });
     const unbuilt = vi.fn<(toolchain: Toolchain) => ChecksRunner>();
-    const unavailable = toolchainBoundChecksRunner({ toolchain: Promise.resolve(UNAVAILABLE), projectedKinds: ["config-override"], runnerOf: unbuilt });
+    const unavailable = toolchainBoundChecksRunner({
+      toolchain: Promise.resolve(UNAVAILABLE),
+      projectedKinds: ["config-override"],
+      runnerOf: unbuilt,
+    });
     expect({
       conformed: await bound.conform({ clause: CLAUSE, cases: [] }),
       built: runnerOf.mock.calls.length,
       delegated: vi.mocked(inner.conform).mock.calls,
       refused: await unavailable.conform({ clause: CLAUSE, cases: [] }),
       unbuilt: unbuilt.mock.calls.length,
-    }).toEqual({ conformed: { outcome: "ok", value: [] }, built: 1, delegated: [[{ clause: CLAUSE, cases: [] }]], refused: UNAVAILABLE, unbuilt: 0 });
+    }).toEqual({
+      conformed: { outcome: "ok", value: [] },
+      built: 1,
+      delegated: [[{ clause: CLAUSE, cases: [] }]],
+      refused: UNAVAILABLE,
+      unbuilt: 0,
+    });
   });
 
   it("delegates project to the runner built once, and answers it with the toolchain failure, building nothing, when the toolchain is unavailable", async () => {
     const inner = checksOver();
     const runnerOf = vi.fn<(toolchain: Toolchain) => ChecksRunner>().mockReturnValue(inner);
-    const bound = toolchainBoundChecksRunner({ toolchain: Promise.resolve(LOADED), projectedKinds: ["config-override"], runnerOf });
+    const bound = toolchainBoundChecksRunner({
+      toolchain: Promise.resolve(LOADED),
+      projectedKinds: ["config-override"],
+      runnerOf,
+    });
     const unbuilt = vi.fn<(toolchain: Toolchain) => ChecksRunner>();
-    const unavailable = toolchainBoundChecksRunner({ toolchain: Promise.resolve(UNAVAILABLE), projectedKinds: ["config-override"], runnerOf: unbuilt });
+    const unavailable = toolchainBoundChecksRunner({
+      toolchain: Promise.resolve(UNAVAILABLE),
+      projectedKinds: ["config-override"],
+      runnerOf: unbuilt,
+    });
     expect({
       projected: await bound.project(CHECKS_RUN),
       built: runnerOf.mock.calls.length,
       delegated: vi.mocked(inner.project).mock.calls,
       refused: await unavailable.project(CHECKS_RUN),
       unbuilt: unbuilt.mock.calls.length,
-    }).toEqual({ projected: { outcome: "ok", value: [WRITTEN] }, built: 1, delegated: [[CHECKS_RUN]], refused: UNAVAILABLE, unbuilt: 0 });
+    }).toEqual({
+      projected: { outcome: "ok", value: [WRITTEN] },
+      built: 1,
+      delegated: [[CHECKS_RUN]],
+      refused: UNAVAILABLE,
+      unbuilt: 0,
+    });
   });
 });

@@ -1,64 +1,84 @@
-import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
-import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
-import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../src/application/ports/git-port.ts";
 import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
-import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
-import type { Finding } from "../../src/domain/finding/governance.ts";
-import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import type { Check } from "../../src/domain/language-layer/symptom-catalogue.ts";
-import type { RuleSetCatalogue } from "../../src/domain/settings/check-choices.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
-import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
-import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
-import { runProject } from "../../src/application/projection/run-project.ts";
-import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createEslintPort, type EslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
-import { createAnsweringOracle } from "../../src/application/upgrade/record-answers/answering-oracle.ts";
-import type { FileCarveOutRecord } from "../../src/application/ports/upgrade/record-answer-oracle.ts";
-import { createVersionOneEnginePass } from "../../src/application/upgrade/record-answers/version-one-engine-pass.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
-import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
 import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
-import { loadFailureDetail } from "../../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
+import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
+import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
+import type { FileCarveOutRecord } from "../../src/application/ports/upgrade/record-answer-oracle.ts";
+import { runProject } from "../../src/application/projection/run-project.ts";
+import { createAnsweringOracle } from "../../src/application/upgrade/record-answers/answering-oracle.ts";
+import { createVersionOneEnginePass } from "../../src/application/upgrade/record-answers/version-one-engine-pass.ts";
+import type { Finding } from "../../src/domain/finding/governance.ts";
+import type { Check } from "../../src/domain/language-layer/symptom-catalogue.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import type { RuleSetCatalogue } from "../../src/domain/settings/check-choices.ts";
+import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
+import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import {
+  createEslintPort,
+  type EslintPort,
+} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
+import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { loadFailureDetail } from "../../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
+import {
+  createDefaultScratchFilesPort,
+  type ScratchFilesPort,
+} from "../install-proof/install-proof-ports.ts";
 
 const path = createDefaultPathPort({});
 
 const fileText = createDefaultFileTextPort({});
 
-const INSTALL_ROOT = absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", ".."] }));
+const INSTALL_ROOT = absolutePathSchema.parse(
+  path.join({ segments: [import.meta.dirname, "..", ".."] }),
+);
 
 const loadedEslintToolchain = await loadEslintToolchain({
   peers: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }),
 });
 
-assert(loadedEslintToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+assert(
+  loadedEslintToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
 
-assert(/^10\./.test(loadedEslintToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedEslintToolchain.value.eslintVersion}`);
+assert(
+  /^10\./.test(loadedEslintToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedEslintToolchain.value.eslintVersion}`,
+);
 
 const defaultEslintPort: EslintPort = createEslintPort({ toolchain: loadedEslintToolchain.value });
 
 type ScratchRepositories = {
-  readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
+  readonly repositoryWith: (request: {
+    readonly files: Readonly<Record<string, string>>;
+  }) => AbsolutePath;
   readonly removeAll: () => void;
 };
 
@@ -70,10 +90,14 @@ const scratchRepositoriesUnder = (request: {
   const made: AbsolutePath[] = [];
   return {
     repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
+      const folder = absolutePathSchema.parse(
+        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
+      );
       const directory = request.scratch.makeDirectory({ path: folder });
       if (directory.outcome !== "ok") {
-        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
+        throw new Error(
+          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
+        );
       }
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
@@ -106,18 +130,28 @@ const repositoryWithSubfolder = (request: {
   Object.entries(request.subfolderFiles).forEach(([name, text]) => {
     const written = request.fileText.write({ path: `${folder}/${name}`, text });
     if (written.outcome !== "ok") {
-      throw new Error(`a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`);
+      throw new Error(
+        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
+      );
     }
   });
   return repo;
 };
 
-const shippedCheckOf = (request: { readonly catalogues: readonly RuleSetCatalogue[]; readonly discipline: string; readonly name: string }): Check => {
+const shippedCheckOf = (request: {
+  readonly catalogues: readonly RuleSetCatalogue[];
+  readonly discipline: string;
+  readonly name: string;
+}): Check => {
   const [only, ...others] = request.catalogues.flatMap(({ catalogue }) =>
-    catalogue.checks.filter((check) => check.name === request.name && check.clause.discipline === request.discipline),
+    catalogue.checks.filter(
+      (check) => check.name === request.name && check.clause.discipline === request.discipline,
+    ),
   );
   if (only === undefined || others.length > 0) {
-    throw new Error(`the shipped catalogue does not hold exactly one ${request.name} check of ${request.discipline}`);
+    throw new Error(
+      `the shipped catalogue does not hold exactly one ${request.name} check of ${request.discipline}`,
+    );
   }
   return only;
 };
@@ -136,13 +170,33 @@ const singleFileRepositoryOver = (request: {
     ...request,
     fileText: {
       ...request.fileText,
-      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
+      exists: (query) =>
+        query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query),
     },
     directory: {
-      list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
-      create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
+      list: ({ path }) => ({
+        outcome: "failed",
+        error: {
+          kind: "directory-unreadable",
+          path,
+          detail: "the single-file fake holds no folders",
+        },
+      }),
+      create: ({ path }) => ({
+        outcome: "failed",
+        error: {
+          kind: "directory-uncreatable",
+          path,
+          detail: "the single-file fake holds no folders",
+        },
+      }),
     },
-    fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
+    fileRemoval: {
+      remove: ({ path }) => ({
+        outcome: "failed",
+        error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" },
+      }),
+    },
     gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE] }) },
   });
 
@@ -176,23 +230,32 @@ const withSingleFileRecords = <Request extends DiskRequest>(
 
 const SCRATCH = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({ parent: `${INSTALL_ROOT}/artefacts`, fileText, scratch: SCRATCH });
+const repositories = scratchRepositoriesUnder({
+  parent: `${INSTALL_ROOT}/artefacts`,
+  fileText,
+  scratch: SCRATCH,
+});
 
 afterAll(() => {
   repositories.removeAll();
 });
 
-const SELECTION = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
+const SELECTION =
+  '{ "version": 1, "ruleSets": {}, "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
 
-const EXCEPTIONS = '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "src/kept.ts", "reason": "legacy class" }] }\n';
+const EXCEPTIONS =
+  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "CD-14#class-syntax", "file": "src/kept.ts", "reason": "legacy class" }] }\n';
 
-const TEAM_CONFIG = 'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];\n';
+const TEAM_CONFIG =
+  'import projection from "./disciplines.eslint.mjs";\n\nexport default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...projection];\n';
 
 const UNPROJECTING_CONFIG = 'export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }];\n';
 
 const KEPT_SOURCE = "export class Kept {}\n";
 
-const resolvedRunner = path.resolve({ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/runner.ts` });
+const resolvedRunner = path.resolve({
+  path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/runner.ts`,
+});
 assert(resolvedRunner.outcome === "ok", "the ESLint runner path resolves");
 
 const ESLINT_RUNNER = resolvedRunner.value;
@@ -209,41 +272,101 @@ type CheckPorts = {
   };
 };
 
-const checkPortsOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked: readonly RepoPath[] }): CheckPorts => {
+const checkPortsOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly tracked: readonly RepoPath[];
+}): CheckPorts => {
   const pieceModules: ModuleLoaderPort = { load: createDefaultModuleLoaderPort({}).load };
   const runners: Readonly<Record<string, unknown>> = {
-    [ESLINT_RUNNER]: { runner: createEslintRunner({ fileText, fileRemoval: createDefaultFileRemovalPort({}), modules: pieceModules, path, eslint: defaultEslintPort, moduleExtension: ".ts" }) },
+    [ESLINT_RUNNER]: {
+      runner: createEslintRunner({
+        fileText,
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: pieceModules,
+        path,
+        eslint: defaultEslintPort,
+        moduleExtension: ".ts",
+      }),
+    },
   };
-  const modules: ModuleLoaderPort = { load: ({ path: loaded }) => Promise.resolve({ outcome: "ok", value: runners[loaded] }) };
-  return { modules, ports: { repoRoot: request.repoRoot, installRoot: INSTALL_ROOT, moduleExtension: ".ts" as const, fileText, path, git: trackedIn({ files: request.tracked }) } };
+  const modules: ModuleLoaderPort = {
+    load: ({ path: loaded }) => Promise.resolve({ outcome: "ok", value: runners[loaded] }),
+  };
+  return {
+    modules,
+    ports: {
+      repoRoot: request.repoRoot,
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts" as const,
+      fileText,
+      path,
+      git: trackedIn({ files: request.tracked }),
+    },
+  };
 };
 
-const repositoryOf = (request: { readonly files: Readonly<Record<string, string>> }): AbsolutePath =>
-  repositoryWithSubfolder({ repositories, scratch: SCRATCH, fileText, files: request.files, subfolder: "src", subfolderFiles: { "kept.ts": KEPT_SOURCE } });
+const repositoryOf = (request: {
+  readonly files: Readonly<Record<string, string>>;
+}): AbsolutePath =>
+  repositoryWithSubfolder({
+    repositories,
+    scratch: SCRATCH,
+    fileText,
+    files: request.files,
+    subfolder: "src",
+    subfolderFiles: { "kept.ts": KEPT_SOURCE },
+  });
 
 const carvedRepository = async (): Promise<AbsolutePath> => {
-  const repoRoot = repositoryOf({ files: { "disciplines.json": SELECTION, "discipline-exceptions.json": EXCEPTIONS, "eslint.config.mjs": TEAM_CONFIG } });
+  const repoRoot = repositoryOf({
+    files: {
+      "disciplines.json": SELECTION,
+      "discipline-exceptions.json": EXCEPTIONS,
+      "eslint.config.mjs": TEAM_CONFIG,
+    },
+  });
   const { modules, ports } = checkPortsOver({ repoRoot, tracked: [] });
-  const projected = await runProject({ ...withSingleFileRecords({ ...ports, modules }), modules, engine: createDefaultEnginePort({}) });
-  assert(projected.outcome === "ok", "the carved repository's projection is written by hone project");
+  const projected = await runProject({
+    ...withSingleFileRecords({ ...ports, modules }),
+    modules,
+    engine: createDefaultEnginePort({}),
+  });
+  assert(
+    projected.outcome === "ok",
+    "the carved repository's projection is written by hone project",
+  );
   return repoRoot;
 };
 
 const unprojectedRepository = (): AbsolutePath =>
-  repositoryOf({ files: { "disciplines.json": SELECTION, "discipline-exceptions.json": EXCEPTIONS, "eslint.config.mjs": UNPROJECTING_CONFIG } });
+  repositoryOf({
+    files: {
+      "disciplines.json": SELECTION,
+      "discipline-exceptions.json": EXCEPTIONS,
+      "eslint.config.mjs": UNPROJECTING_CONFIG,
+    },
+  });
 
 const KEPT = repoPathOf("src/kept.ts");
 
 const CARVE_OUT: FileCarveOutRecord = {
   kind: "file-carve-out",
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
   mechanism: "eslint",
   file: KEPT,
   reason: "legacy class",
 };
 
 const CLASS_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-14"),
+    clause: clauseIdOf("class-syntax"),
+  },
   file: KEPT,
   anchor: { line: 1, column: 7 },
   snippet: "export class Kept {}",
@@ -251,27 +374,46 @@ const CLASS_FINDING: Finding = {
 };
 
 const catalogues = () => {
-  const holding = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT });
+  const holding = readBoundCatalogue({
+    directory: createDefaultDirectoryPort({}),
+    fileText,
+    path,
+    ruleSetRoot: INSTALL_ROOT,
+    installRoot: INSTALL_ROOT,
+  });
   assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
   assert(holding.value.held === "catalogue", "the shipped symptom catalogue is present");
   return [{ ruleSet: TOOL_RULE_SET, catalogue: holding.value.catalogue }];
 };
 
-const classKeywordCheck = (): Check => shippedCheckOf({ catalogues: catalogues(), discipline: "CD-14", name: "class-keyword" });
+const classKeywordCheck = (): Check =>
+  shippedCheckOf({ catalogues: catalogues(), discipline: "CD-14", name: "class-keyword" });
 
-const trackedIn =(request: { readonly files: readonly RepoPath[] }): GitPort => ({
-  trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: request.files }),
+const trackedIn = (request: { readonly files: readonly RepoPath[] }): GitPort => ({
+  trackedPaths: vi
+    .fn<GitPort["trackedPaths"]>()
+    .mockReturnValue({ outcome: "ok", value: request.files }),
   changedSince: vi.fn<GitPort["changedSince"]>(),
   contentInBase: vi.fn<GitPort["contentInBase"]>(),
   textInBase: vi.fn<GitPort["textInBase"]>(),
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 });
 
-const enginePassOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked: readonly RepoPath[] }) => {
+const enginePassOver = (request: {
+  readonly repoRoot: AbsolutePath;
+  readonly tracked: readonly RepoPath[];
+}) => {
   const { modules, ports } = checkPortsOver(request);
   return createVersionOneEnginePass({
     loadFailureDetail,
-    check: { ...withSingleFileRecords({ ...ports, modules }), modules, engine: createDefaultEnginePort({}), baseRevision: undefined, assessment: DEFAULT_ASSESSMENT, selectionRepository: createSelectionRepository(ports) },
+    check: {
+      ...withSingleFileRecords({ ...ports, modules }),
+      modules,
+      engine: createDefaultEnginePort({}),
+      baseRevision: undefined,
+      assessment: DEFAULT_ASSESSMENT,
+      selectionRepository: createSelectionRepository(ports),
+    },
   });
 };
 
@@ -302,20 +444,39 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
     const pass = enginePassOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED });
     await expect(pass.findingsFor({ records: [] })).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "projection-not-current", file: "disciplines.eslint.mjs", state: "out-of-date" },
+      error: {
+        kind: "projection-not-current",
+        file: "disciplines.eslint.mjs",
+        state: "out-of-date",
+      },
     });
   });
 
   it("lets the oracle credit the carve-out with the findings it holds", async () => {
-    const oracle = createAnsweringOracle({ enginePass: enginePassOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED }), catalogues: catalogues() });
+    const oracle = createAnsweringOracle({
+      enginePass: enginePassOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED }),
+      catalogues: catalogues(),
+    });
     const answered = await oracle.answer({ records: [CARVE_OUT] });
-    expect(answered).toEqual({ outcome: "ok", value: [{ kind: "file-carve-out", record: CARVE_OUT, answer: { credit: "findings", checks: [classKeywordCheck()] } }] });
+    expect(answered).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          kind: "file-carve-out",
+          record: CARVE_OUT,
+          answer: { credit: "findings", checks: [classKeywordCheck()] },
+        },
+      ],
+    });
   });
 });
 
 describe("the version 1 engine pass over a real ESLint run of a repository whose config does not include the projection", () => {
   it("fails the pass, since the run was not made", async () => {
-    const pass = enginePassOver({ repoRoot: unprojectedRepository(), tracked: UNPROJECTED_TRACKED });
+    const pass = enginePassOver({
+      repoRoot: unprojectedRepository(),
+      tracked: UNPROJECTED_TRACKED,
+    });
     await expect(pass.findingsFor({ records: [CARVE_OUT] })).resolves.toEqual({
       outcome: "failed",
       error: { kind: "projection-not-current", file: "disciplines.eslint.mjs", state: "missing" },

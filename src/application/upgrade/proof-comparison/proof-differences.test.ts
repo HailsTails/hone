@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+
 import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
-import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
-import type { RunReport } from "../../../domain/report/run-report.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import type { CheckReport } from "../../../domain/report/check-report.ts";
+import type {
+  Check,
+  Engine,
+  Principle,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import { proofDifferencesOf } from "./proof-differences.ts";
+import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
+import type { CheckReport } from "../../../domain/report/check-report.ts";
+import type { RunReport } from "../../../domain/report/run-report.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { proofDifferencesOf } from "./proof-differences.ts";
 
 const AUDIT = "walker" as const;
 
@@ -18,7 +26,12 @@ const SRC_A = repoPathOf("src/a.ts");
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION_KIND: RecordKind = {
   name: "authorised-location",
@@ -51,17 +64,47 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
-const TEST_BODY_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
+const LAYERING_CLAUSE = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-13"),
+  clause: clauseIdOf("layering"),
+};
 
-const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: LOOPS_CLAUSE,
+  engines: [WALKER, ESLINT_ENGINE],
+  forms: [],
+};
 
-const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
 
-const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-let"],
+};
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS],
@@ -132,17 +175,41 @@ const EMPTY_AFTER: RunReport = {
   symptoms: [],
 };
 
-const LOOP_FINDING: Finding = { clause: LOOPS_CLAUSE, file: SRC_A, anchor: { line: 3, column: 1 }, snippet: "the loop line", mechanism: AUDIT };
+const LOOP_FINDING: Finding = {
+  clause: LOOPS_CLAUSE,
+  file: SRC_A,
+  anchor: { line: 3, column: 1 },
+  snippet: "the loop line",
+  mechanism: AUDIT,
+};
 
 const NAMED_LOOP_FINDING: Finding = { ...LOOP_FINDING, check: "loop-keyword#loops" };
 
-const CARVE_OUT: ExceptionRecord = { kind: "file-carve-out", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "legacy loop" };
+const CARVE_OUT: ExceptionRecord = {
+  kind: "file-carve-out",
+  clause: LOOPS_CLAUSE,
+  mechanism: AUDIT,
+  file: SRC_A,
+  reason: "legacy loop",
+};
 
-const AUTHORISED: ExceptionRecord = { kind: "authorised-location", clause: LOOPS_CLAUSE, mechanism: AUDIT, file: SRC_A, reason: "kept" };
+const AUTHORISED: ExceptionRecord = {
+  kind: "authorised-location",
+  clause: LOOPS_CLAUSE,
+  mechanism: AUDIT,
+  file: SRC_A,
+  reason: "kept",
+};
 
 const DEBT: PlacedRecord = {
   place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 },
-  record: { kind: "debt", symptom: LOOP_KEYWORD_LOOPS.symptom, reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS }, file: SRC_A, holding: { held: "stated" } },
+  record: {
+    kind: "debt",
+    symptom: LOOP_KEYWORD_LOOPS.symptom,
+    reach: { reaches: "one-check", check: LOOP_KEYWORD_LOOPS },
+    file: SRC_A,
+    holding: { held: "stated" },
+  },
 };
 
 const AUTHORISED_LOCATION: PlacedRecord = {
@@ -178,11 +245,21 @@ const differencesBetween = (request: {
 
 describe("proofDifferencesOf", () => {
   it("finds no difference when version 2 reports as not adopted what version 1 reported", () => {
-    expect(differencesBetween({ before: { notAdopted: [LOOPS_CLAUSE] }, after: { "not-adopted": [LOOP_KEYWORD_LOOPS] } })).toEqual([]);
+    expect(
+      differencesBetween({
+        before: { notAdopted: [LOOPS_CLAUSE] },
+        after: { "not-adopted": [LOOP_KEYWORD_LOOPS] },
+      }),
+    ).toEqual([]);
   });
 
   it("names a clause version 2 reports as not adopted that version 1 reported as not run", () => {
-    expect(differencesBetween({ before: { notRun: [LOOPS_CLAUSE] }, after: { "not-adopted": [LOOP_KEYWORD_LOOPS] } })).toEqual([
+    expect(
+      differencesBetween({
+        before: { notRun: [LOOPS_CLAUSE] },
+        after: { "not-adopted": [LOOP_KEYWORD_LOOPS] },
+      }),
+    ).toEqual([
       { section: "not-adopted", onlyBefore: [], onlyAfter: ["CD-15#loops"] },
       { section: "not-run", onlyBefore: ["CD-15#loops"], onlyAfter: [] },
     ]);
@@ -193,7 +270,12 @@ describe("proofDifferencesOf", () => {
   });
 
   it("finds no difference for a finding both sides report, version 2's named check read as its clause", () => {
-    expect(differencesBetween({ before: { findings: [LOOP_FINDING] }, after: { findings: [NAMED_LOOP_FINDING] } })).toEqual([]);
+    expect(
+      differencesBetween({
+        before: { findings: [LOOP_FINDING] },
+        after: { findings: [NAMED_LOOP_FINDING] },
+      }),
+    ).toEqual([]);
   });
 
   it("names a finding only version 2 reports, with the verdict that follows", () => {
@@ -205,29 +287,54 @@ describe("proofDifferencesOf", () => {
 
   it("reads version 2's finding at the clause of the check it names, so a wrong attribution is a difference", () => {
     const misattributed: Finding = { ...LOOP_FINDING, check: "rebinding#test-body" };
-    expect(differencesBetween({ before: { findings: [LOOP_FINDING] }, after: { findings: [misattributed] } })).toEqual([
-      { section: "findings", onlyBefore: ["CD-15#loops src/a.ts 3:1"], onlyAfter: ["CD-27#test-body-logic src/a.ts 3:1"] },
+    expect(
+      differencesBetween({
+        before: { findings: [LOOP_FINDING] },
+        after: { findings: [misattributed] },
+      }),
+    ).toEqual([
+      {
+        section: "findings",
+        onlyBefore: ["CD-15#loops src/a.ts 3:1"],
+        onlyAfter: ["CD-27#test-body-logic src/a.ts 3:1"],
+      },
     ]);
   });
 
   it("counts a finding as many times as a side reports it", () => {
-    expect(differencesBetween({ before: { findings: [LOOP_FINDING, LOOP_FINDING] }, after: { findings: [NAMED_LOOP_FINDING] } })).toEqual([
-      { section: "findings", onlyBefore: ["CD-15#loops src/a.ts 3:1"], onlyAfter: [] },
-    ]);
+    expect(
+      differencesBetween({
+        before: { findings: [LOOP_FINDING, LOOP_FINDING] },
+        after: { findings: [NAMED_LOOP_FINDING] },
+      }),
+    ).toEqual([{ section: "findings", onlyBefore: ["CD-15#loops src/a.ts 3:1"], onlyAfter: [] }]);
   });
 
   it("finds no difference when a file carve-out answered a finding and a debt answers it now", () => {
-    expect(differencesBetween({ before: { exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] }, after: { answered: [{ finding: NAMED_LOOP_FINDING, by: [DEBT] }] } })).toEqual([]);
+    expect(
+      differencesBetween({
+        before: { exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] },
+        after: { answered: [{ finding: NAMED_LOOP_FINDING, by: [DEBT] }] },
+      }),
+    ).toEqual([]);
   });
 
   it("finds no difference when an authorised location answered a finding and one answers it now", () => {
     expect(
-      differencesBetween({ before: { exempted: [{ finding: LOOP_FINDING, by: [AUTHORISED] }] }, after: { answered: [{ finding: NAMED_LOOP_FINDING, by: [AUTHORISED_LOCATION] }] } }),
+      differencesBetween({
+        before: { exempted: [{ finding: LOOP_FINDING, by: [AUTHORISED] }] },
+        after: { answered: [{ finding: NAMED_LOOP_FINDING, by: [AUTHORISED_LOCATION] }] },
+      }),
     ).toEqual([]);
   });
 
   it("names a finding answered by another kind of record than before", () => {
-    expect(differencesBetween({ before: { exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] }, after: { answered: [{ finding: NAMED_LOOP_FINDING, by: [AUTHORISED_LOCATION] }] } })).toEqual([
+    expect(
+      differencesBetween({
+        before: { exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] },
+        after: { answered: [{ finding: NAMED_LOOP_FINDING, by: [AUTHORISED_LOCATION] }] },
+      }),
+    ).toEqual([
       {
         section: "answered",
         onlyBefore: ["CD-15#loops src/a.ts 3:1 answered by debt"],
@@ -237,16 +344,29 @@ describe("proofDifferencesOf", () => {
   });
 
   it("names a finding answered before that version 2 leaves unanswered, in both sections and the verdict", () => {
-    expect(differencesBetween({ before: { exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] }, after: { findings: [NAMED_LOOP_FINDING] } })).toEqual([
+    expect(
+      differencesBetween({
+        before: { exempted: [{ finding: LOOP_FINDING, by: [CARVE_OUT] }] },
+        after: { findings: [NAMED_LOOP_FINDING] },
+      }),
+    ).toEqual([
       { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
-      { section: "answered", onlyBefore: ["CD-15#loops src/a.ts 3:1 answered by debt"], onlyAfter: [] },
+      {
+        section: "answered",
+        onlyBefore: ["CD-15#loops src/a.ts 3:1 answered by debt"],
+        onlyAfter: [],
+      },
       { section: "verdict", onlyBefore: ["pass"], onlyAfter: ["fail"] },
     ]);
   });
 
   it("names a native exception only one side reports as unrecorded", () => {
     expect(differencesBetween({ before: { unrecorded: [INLINE_DISABLE] } })).toEqual([
-      { section: "unrecorded", onlyBefore: ["walker inline-disable CD-15#loops src/a.ts:3"], onlyAfter: [] },
+      {
+        section: "unrecorded",
+        onlyBefore: ["walker inline-disable CD-15#loops src/a.ts:3"],
+        onlyAfter: [],
+      },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);
   });
@@ -259,38 +379,83 @@ describe("proofDifferencesOf", () => {
   });
 
   it("names a finding whose check version 2 does not name, never reading it at the finding's own clause", () => {
-    expect(differencesBetween({ before: { findings: [LOOP_FINDING] }, after: { findings: [LOOP_FINDING] } })).toEqual([
-      { section: "findings", onlyBefore: ["CD-15#loops src/a.ts 3:1"], onlyAfter: ["unknown-check none src/a.ts 3:1"] },
+    expect(
+      differencesBetween({
+        before: { findings: [LOOP_FINDING] },
+        after: { findings: [LOOP_FINDING] },
+      }),
+    ).toEqual([
+      {
+        section: "findings",
+        onlyBefore: ["CD-15#loops src/a.ts 3:1"],
+        onlyAfter: ["unknown-check none src/a.ts 3:1"],
+      },
     ]);
   });
 
   it("names a finding whose check the catalogue does not hold", () => {
-    expect(differencesBetween({ before: { findings: [LOOP_FINDING] }, after: { findings: [{ ...LOOP_FINDING, check: "loop-keyword#lops" }] } })).toEqual([
-      { section: "findings", onlyBefore: ["CD-15#loops src/a.ts 3:1"], onlyAfter: ["unknown-check loop-keyword#lops src/a.ts 3:1"] },
+    expect(
+      differencesBetween({
+        before: { findings: [LOOP_FINDING] },
+        after: { findings: [{ ...LOOP_FINDING, check: "loop-keyword#lops" }] },
+      }),
+    ).toEqual([
+      {
+        section: "findings",
+        onlyBefore: ["CD-15#loops src/a.ts 3:1"],
+        onlyAfter: ["unknown-check loop-keyword#lops src/a.ts 3:1"],
+      },
     ]);
   });
 
   it("names a rule id version 2 reads as naming no check, with the verdict that follows", () => {
-    expect(differencesBetween({ after: { misnamed: [{ kind: "names-no-check", ruleId: "hone/loop-keyword#none", file: SRC_A, line: 4, text: "eslint-disable" }] } })).toEqual([
-      { section: "misnamed", onlyBefore: [], onlyAfter: ["names-no-check hone/loop-keyword#none src/a.ts 4"] },
+    expect(
+      differencesBetween({
+        after: {
+          misnamed: [
+            {
+              kind: "names-no-check",
+              ruleId: "hone/loop-keyword#none",
+              file: SRC_A,
+              line: 4,
+              text: "eslint-disable",
+            },
+          ],
+        },
+      }),
+    ).toEqual([
+      {
+        section: "misnamed",
+        onlyBefore: [],
+        onlyAfter: ["names-no-check hone/loop-keyword#none src/a.ts 4"],
+      },
       { section: "verdict", onlyBefore: ["pass"], onlyAfter: ["fail"] },
     ]);
   });
 
   it("names a debt version 2 finds paid, which a wrong write would be", () => {
-    expect(differencesBetween({ after: { paid: [{ debt: DEBT, answeredBy: [AUTHORISED_LOCATION] }] } })).toEqual([
+    expect(
+      differencesBetween({ after: { paid: [{ debt: DEBT, answeredBy: [AUTHORISED_LOCATION] }] } }),
+    ).toEqual([
       { section: "paid", onlyBefore: [], onlyAfter: ["hone-records/debt/loop-keyword.json 0"] },
     ]);
   });
 
   it("names a file excluded on one side only", () => {
-    expect(differencesBetween({ before: { excluded: [SRC_A] }, after: { excluded: [repoPathOf("generated")] } })).toEqual([
-      { section: "excluded", onlyBefore: ["src/a.ts"], onlyAfter: ["generated"] },
-    ]);
+    expect(
+      differencesBetween({
+        before: { excluded: [SRC_A] },
+        after: { excluded: [repoPathOf("generated")] },
+      }),
+    ).toEqual([{ section: "excluded", onlyBefore: ["src/a.ts"], onlyAfter: ["generated"] }]);
   });
 
   it("names a pair version 1 holds doubly, which version 2 has no section for", () => {
-    expect(differencesBetween({ before: { doublyHeld: [{ clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT }] } })).toEqual([
+    expect(
+      differencesBetween({
+        before: { doublyHeld: [{ clause: LOOPS_CLAUSE, file: SRC_A, mechanism: AUDIT }] },
+      }),
+    ).toEqual([
       { section: "doubly-held", onlyBefore: ["CD-15#loops src/a.ts walker"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);
@@ -299,23 +464,67 @@ describe("proofDifferencesOf", () => {
   it("names a record version 1 held invalid against one version 2 refuses, by place", () => {
     expect(
       differencesBetween({
-        before: { invalidRecords: [{ place: { layout: "single-file", file: SRC_A, index: 1 }, problem: { kind: "clause-unparseable", detail: "x" } }] },
-        after: { refused: [{ place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 }, refusals: [{ kind: "unknown-symptom", symptom: "x" }] }] },
+        before: {
+          invalidRecords: [
+            {
+              place: { layout: "single-file", file: SRC_A, index: 1 },
+              problem: { kind: "clause-unparseable", detail: "x" },
+            },
+          ],
+        },
+        after: {
+          refused: [
+            {
+              place: { file: repoPathOf("hone-records/debt/loop-keyword.json"), index: 0 },
+              refusals: [{ kind: "unknown-symptom", symptom: "x" }],
+            },
+          ],
+        },
       }),
-    ).toEqual([{ section: "invalid-records", onlyBefore: ["src/a.ts 1"], onlyAfter: ["hone-records/debt/loop-keyword.json 0"] }]);
+    ).toEqual([
+      {
+        section: "invalid-records",
+        onlyBefore: ["src/a.ts 1"],
+        onlyAfter: ["hone-records/debt/loop-keyword.json 0"],
+      },
+    ]);
   });
 
   it("reads each side's editions at the clause its checks serve", () => {
     expect(
       differencesBetween({
-        before: { editions: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, edition: editionOf("1"), latest: editionOf("1") }] },
-        after: { editions: [{ check: LOOP_KEYWORD_LOOPS, engine: { name: "walker" }, edition: editionOf("1"), latest: editionOf("1") }] },
+        before: {
+          editions: [
+            {
+              address: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              edition: editionOf("1"),
+              latest: editionOf("1"),
+            },
+          ],
+        },
+        after: {
+          editions: [
+            {
+              check: LOOP_KEYWORD_LOOPS,
+              engine: { name: "walker" },
+              edition: editionOf("1"),
+              latest: editionOf("1"),
+            },
+          ],
+        },
       }),
     ).toEqual([]);
   });
 
   it("names an engine not run on one side", () => {
-    expect(differencesBetween({ before: { unmeasured: [{ kind: "mechanism-not-run", mechanism: AUDIT, projection: "missing" }] } })).toEqual([
+    expect(
+      differencesBetween({
+        before: {
+          unmeasured: [{ kind: "mechanism-not-run", mechanism: AUDIT, projection: "missing" }],
+        },
+      }),
+    ).toEqual([
       { section: "unmeasured", onlyBefore: ["walker not-run missing"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);

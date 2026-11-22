@@ -1,14 +1,15 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
+
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
+import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { packageJsonSchema } from "./eslint-file-schemas.ts";
 
 export type SelectedRule = {
@@ -36,7 +37,10 @@ type SettledInvocation = EslintInvocation & {
   readonly command: string;
 };
 
-export type ScriptOptionException = Omit<Extract<NativeException, { readonly kind: "command-line-option" }>, "cause">;
+export type ScriptOptionException = Omit<
+  Extract<NativeException, { readonly kind: "command-line-option" }>,
+  "cause"
+>;
 
 type Expansion = "literal" | "shell-expanded";
 
@@ -161,7 +165,12 @@ const WEAKENING_OPTIONS: readonly WeakeningSpec[] = [
   { name: "--rule", arity: "takes-value", reach: "named-rules", judgement: "weakens" },
   { name: "--suppress-rule", arity: "takes-value", reach: "named-rules", judgement: "weakens" },
   { name: "--suppress-all", arity: "flag", reach: "every-clause", judgement: "weakens" },
-  { name: "--ignore-pattern", arity: "takes-value", reach: "every-clause", judgement: "by-ignore-pattern" },
+  {
+    name: "--ignore-pattern",
+    arity: "takes-value",
+    reach: "every-clause",
+    judgement: "by-ignore-pattern",
+  },
   { name: "-c", arity: "takes-value", reach: "every-clause", judgement: "by-config" },
   { name: "--config", arity: "takes-value", reach: "every-clause", judgement: "by-config" },
   { name: "--no-config-lookup", arity: "flag", reach: "every-clause", judgement: "weakens" },
@@ -170,7 +179,10 @@ const WEAKENING_OPTIONS: readonly WeakeningSpec[] = [
   { name: "--plugin", arity: "takes-value", reach: "every-clause", judgement: "weakens" },
 ];
 
-const effectOf = (request: { readonly judgement: OptionJudgement; readonly optionValue: string }): OptionEffect => {
+const effectOf = (request: {
+  readonly judgement: OptionJudgement;
+  readonly optionValue: string;
+}): OptionEffect => {
   switch (request.judgement) {
     case "weakens":
       return { kind: "weakens" };
@@ -191,7 +203,10 @@ const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPie
   }
   if (groups.double !== undefined) {
     const text = groups.double.slice(1, -1);
-    return { kind: "quoted", token: { text, expansion: expansionOf({ text, expanding: SHELL_EXPANDED_DOUBLE_QUOTED }) } };
+    return {
+      kind: "quoted",
+      token: { text, expansion: expansionOf({ text, expanding: SHELL_EXPANDED_DOUBLE_QUOTED }) },
+    };
   }
   if (groups.operator !== undefined) {
     return { kind: "operator" };
@@ -200,7 +215,13 @@ const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPie
     return { kind: "space" };
   }
   if (groups.text !== undefined) {
-    return { kind: "text", token: { text: groups.text, expansion: expansionOf({ text: groups.text, expanding: SHELL_EXPANDED_UNQUOTED }) } };
+    return {
+      kind: "text",
+      token: {
+        text: groups.text,
+        expansion: expansionOf({ text: groups.text, expanding: SHELL_EXPANDED_UNQUOTED }),
+      },
+    };
   }
   return { kind: "stray-quote" };
 };
@@ -211,7 +232,10 @@ const tokensWithCurrent = (request: {
 }): readonly ShellToken[] =>
   request.token.presence === "started" ? [...request.tokens, request.token.token] : request.tokens;
 
-const joinedExpansion = (request: { readonly left: Expansion; readonly right: Expansion }): Expansion =>
+const joinedExpansion = (request: {
+  readonly left: Expansion;
+  readonly right: Expansion;
+}): Expansion =>
   request.left === "literal" && request.right === "literal" ? "literal" : "shell-expanded";
 
 const extendedToken = (request: {
@@ -223,7 +247,10 @@ const extendedToken = (request: {
     request.token.presence === "started"
       ? {
           text: `${request.token.token.text}${request.piece.text}`,
-          expansion: joinedExpansion({ left: request.token.token.expansion, right: request.piece.expansion }),
+          expansion: joinedExpansion({
+            left: request.token.token.expansion,
+            right: request.piece.expansion,
+          }),
         }
       : request.piece,
 });
@@ -251,7 +278,10 @@ const nextTokenizerState = (request: {
     case "operator":
       return {
         status: "reading",
-        commands: [...state.commands, tokensWithCurrent({ tokens: state.tokens, token: state.token })],
+        commands: [
+          ...state.commands,
+          tokensWithCurrent({ tokens: state.tokens, token: state.token }),
+        ],
         tokens: [],
         token: { presence: "none" },
       };
@@ -281,7 +311,8 @@ const shellCommandsOf = (request: {
   };
 };
 
-const textsOf = (request: { readonly command: ShellCommand }): ScriptCommand => request.command.map((token) => token.text);
+const textsOf = (request: { readonly command: ShellCommand }): ScriptCommand =>
+  request.command.map((token) => token.text);
 
 export const scriptCommandsOf = (request: {
   readonly script: string;
@@ -300,8 +331,12 @@ const eslintNamingOf = (request: { readonly token: string }): EslintNaming =>
     ? "names-eslint"
     : "names-other";
 
-const invocationOf = (request: { readonly command: ScriptCommand }): readonly EslintInvocation[] => {
-  const eslintIndex = request.command.findIndex((token) => eslintNamingOf({ token }) === "names-eslint");
+const invocationOf = (request: {
+  readonly command: ScriptCommand;
+}): readonly EslintInvocation[] => {
+  const eslintIndex = request.command.findIndex(
+    (token) => eslintNamingOf({ token }) === "names-eslint",
+  );
   if (eslintIndex === -1) {
     return [];
   }
@@ -324,15 +359,23 @@ const UNRESOLVED: Settlement = { kind: "unresolved" };
 
 type PrefixRole = "runner" | "setting" | "wrapper";
 
-const prefixRoleOf = (request: { readonly token: ShellToken; readonly following: readonly ShellToken[] }): PrefixRole => {
+const prefixRoleOf = (request: {
+  readonly token: ShellToken;
+  readonly following: readonly ShellToken[];
+}): PrefixRole => {
   if (PLAIN_RUNNER_TOKENS.includes(request.token.text)) return "runner";
-  if (request.token.expansion === "literal" && ENVIRONMENT_ASSIGNMENT.test(request.token.text)) return "setting";
-  const settingsOnlyFollow = request.following.every((token) => ENVIRONMENT_ASSIGNMENT.test(token.text));
+  if (request.token.expansion === "literal" && ENVIRONMENT_ASSIGNMENT.test(request.token.text))
+    return "setting";
+  const settingsOnlyFollow = request.following.every((token) =>
+    ENVIRONMENT_ASSIGNMENT.test(token.text),
+  );
   return request.token.text === ENVIRONMENT_SETTER && settingsOnlyFollow ? "setting" : "wrapper";
 };
 
 const reachSettlementOf = (request: { readonly token: ShellToken }): Settlement =>
-  request.token.expansion === "shell-expanded" || UNSETTLED_TEXT.test(request.token.text) ? UNRESOLVED : SETTLED;
+  request.token.expansion === "shell-expanded" || UNSETTLED_TEXT.test(request.token.text)
+    ? UNRESOLVED
+    : SETTLED;
 
 const SHELL_PLAIN_TOKEN = /^[\w./:=@+,-]+$/;
 
@@ -341,12 +384,18 @@ const shellWritten = (request: { readonly token: ShellToken }): string =>
 
 const prefixSettlementOf = (request: { readonly prefix: readonly ShellToken[] }): Settlement => {
   const wrapper = request.prefix.find(
-    (token, index) => prefixRoleOf({ token, following: request.prefix.slice(index + 1) }) === "wrapper",
+    (token, index) =>
+      prefixRoleOf({ token, following: request.prefix.slice(index + 1) }) === "wrapper",
   );
-  return wrapper === undefined ? SETTLED : { kind: "not-plain", reason: { kind: "wrapped", wrapper: wrapper.text } };
+  return wrapper === undefined
+    ? SETTLED
+    : { kind: "not-plain", reason: { kind: "wrapped", wrapper: wrapper.text } };
 };
 
-const orderSettlementOf = (request: { readonly index: number; readonly command: ShellCommand }): Settlement =>
+const orderSettlementOf = (request: {
+  readonly index: number;
+  readonly command: ShellCommand;
+}): Settlement =>
   request.index === 0
     ? SETTLED
     : {
@@ -374,7 +423,9 @@ const settledInvocationOf = (request: {
   readonly index: number;
   readonly command: ShellCommand;
 }): readonly SettledInvocation[] => {
-  const eslintIndex = request.command.findIndex((token) => eslintNamingOf({ token: token.text }) === "names-eslint");
+  const eslintIndex = request.command.findIndex(
+    (token) => eslintNamingOf({ token: token.text }) === "names-eslint",
+  );
   return invocationOf({ command: textsOf({ command: request.command }) }).map((invocation) => ({
     ...invocation,
     settlement: settlementOf({ index: request.index, command: request.command, eslintIndex }),
@@ -382,7 +433,9 @@ const settledInvocationOf = (request: {
   }));
 };
 
-const settledInvocationsOf = (request: { readonly commands: readonly ShellCommand[] }): readonly SettledInvocation[] =>
+const settledInvocationsOf = (request: {
+  readonly commands: readonly ShellCommand[];
+}): readonly SettledInvocation[] =>
   request.commands.flatMap((command, index) => settledInvocationOf({ index, command }));
 
 const occurrenceFormOf = (request: {
@@ -463,7 +516,8 @@ const tokenWeakenings = (request: {
   readonly token: string;
   readonly next: string;
   readonly selectedRuleIds: readonly string[];
-}): readonly WeakeningOption[] => WEAKENING_OPTIONS.flatMap((spec) => specWeakenings({ ...request, spec }));
+}): readonly WeakeningOption[] =>
+  WEAKENING_OPTIONS.flatMap((spec) => specWeakenings({ ...request, spec }));
 
 export const commandLineOptionsOf = (request: {
   readonly invocation: EslintInvocation;
@@ -479,7 +533,10 @@ export const commandLineOptionsOf = (request: {
     )
     .filter((weakening) => weakening.ruleIds.length > 0);
 
-const suppressionsLocationsAt = (request: { readonly token: string; readonly next: string }): readonly string[] =>
+const suppressionsLocationsAt = (request: {
+  readonly token: string;
+  readonly next: string;
+}): readonly string[] =>
   occurrenceAt({
     token: request.token,
     next: request.next,
@@ -494,7 +551,10 @@ export const suppressionsLocationValuesOf = (request: {
     suppressionsLocationsAt({ token, next: request.invocation.options[index + 1] ?? "" }),
   );
 
-const nextWalk = (request: { readonly walk: SegmentWalk; readonly segment: string }): SegmentWalk => {
+const nextWalk = (request: {
+  readonly walk: SegmentWalk;
+  readonly segment: string;
+}): SegmentWalk => {
   const walk = request.walk;
   if (walk.position === "outside" || request.segment === "" || request.segment === ".") {
     return walk;
@@ -552,15 +612,13 @@ const scriptOptionOf = (request: {
   command: request.invocation.command,
   exceptions: request.selectedRules
     .filter((rule) => request.weakening.ruleIds.includes(rule.ruleId))
-    .map(
-      (rule): ScriptOptionException => ({
-        kind: "command-line-option",
-        clause: rule.clause,
-        location: request.path,
-        script: request.script,
-        option: request.weakening.option,
-      }),
-    ),
+    .map((rule): ScriptOptionException => ({
+      kind: "command-line-option",
+      clause: rule.clause,
+      location: request.path,
+      script: request.script,
+      option: request.weakening.option,
+    })),
 });
 
 const scriptOptionsOf = (request: {
@@ -587,7 +645,10 @@ const locatedScan = (request: {
   if (request.scan.outcome === "failed") {
     return request.scan;
   }
-  const location = repoPathResolved({ baseSegments: request.baseSegments, path: request.locationText });
+  const location = repoPathResolved({
+    baseSegments: request.baseSegments,
+    path: request.locationText,
+  });
   if (location.outcome === "failed") {
     return {
       outcome: "failed",
@@ -609,7 +670,11 @@ const locatedScan = (request: {
   };
 };
 
-const EMPTY_SCAN: PackageJsonScan = { scriptOptions: [], suppressionsLocations: [], unreadableScripts: [] };
+const EMPTY_SCAN: PackageJsonScan = {
+  scriptOptions: [],
+  suppressionsLocations: [],
+  unreadableScripts: [],
+};
 
 type ScriptRequest = {
   readonly path: RepoPath;
@@ -630,15 +695,13 @@ const unreadableScan = (request: ScriptRequest): PackageJsonScan => {
     unreadableScripts: [
       {
         command,
-        exceptions: request.selectedRules.map(
-          (rule): ScriptOptionException => ({
-            kind: "command-line-option",
-            clause: rule.clause,
-            location: request.path,
-            script: request.script,
-            option: request.scriptText,
-          }),
-        ),
+        exceptions: request.selectedRules.map((rule): ScriptOptionException => ({
+          kind: "command-line-option",
+          clause: rule.clause,
+          location: request.path,
+          script: request.script,
+          option: request.scriptText,
+        })),
       },
     ],
   };
@@ -655,7 +718,13 @@ const scriptScan = (request: ScriptRequest): Result<PackageJsonScan, RunnerFailu
     .flatMap((invocation) => suppressionsLocationValuesOf({ invocation }))
     .reduce<Result<PackageJsonScan, RunnerFailure>>(
       (scan, locationText) =>
-        locatedScan({ scan, locationText, baseSegments, path: request.path, script: request.script }),
+        locatedScan({
+          scan,
+          locationText,
+          baseSegments,
+          path: request.path,
+          script: request.script,
+        }),
       {
         outcome: "ok",
         value: { ...EMPTY_SCAN, scriptOptions: scriptOptionsOf({ ...request, invocations }) },
@@ -690,7 +759,10 @@ const mergedScriptScan = (request: {
         ...request.scan.value.suppressionsLocations,
         ...scanned.value.suppressionsLocations,
       ],
-      unreadableScripts: [...request.scan.value.unreadableScripts, ...scanned.value.unreadableScripts],
+      unreadableScripts: [
+        ...request.scan.value.unreadableScripts,
+        ...scanned.value.unreadableScripts,
+      ],
     },
   };
 };
@@ -703,26 +775,43 @@ export const packageScriptsOf = (request: {
 }): Result<PackageScripts, RunnerFailure> => {
   const json = parsedJson({ text: request.text });
   if (json.outcome === "failed") {
-    return { outcome: "failed", error: { kind: "tool-failed", detail: `${request.path}: ${json.error}` } };
+    return {
+      outcome: "failed",
+      error: { kind: "tool-failed", detail: `${request.path}: ${json.error}` },
+    };
   }
   const packageJson = packageJsonSchema.safeParse(json.value);
   if (!packageJson.success) {
     return {
       outcome: "failed",
-      error: { kind: "tool-failed", detail: `${request.path}: ${z.prettifyError(packageJson.error)}` },
+      error: {
+        kind: "tool-failed",
+        detail: `${request.path}: ${z.prettifyError(packageJson.error)}`,
+      },
     };
   }
   return { outcome: "ok", value: packageJson.data.scripts ?? {} };
 };
 
-export type PackageScriptsReader = (request: { readonly packagePath: RepoPath }) => Result<PackageScripts, RunnerFailure>;
+export type PackageScriptsReader = (request: {
+  readonly packagePath: RepoPath;
+}) => Result<PackageScripts, RunnerFailure>;
 
 export const packageScriptsReaderOf =
-  (request: { readonly fileText: FileTextPort; readonly path: PathPort; readonly repoRoot: AbsolutePath }): PackageScriptsReader =>
+  (request: {
+    readonly fileText: FileTextPort;
+    readonly path: PathPort;
+    readonly repoRoot: AbsolutePath;
+  }): PackageScriptsReader =>
   ({ packagePath }) => {
-    const text = request.fileText.read({ path: request.path.join({ segments: [request.repoRoot, packagePath] }) });
+    const text = request.fileText.read({
+      path: request.path.join({ segments: [request.repoRoot, packagePath] }),
+    });
     if (text.outcome === "failed") {
-      return { outcome: "failed", error: { kind: "file-unreadable", file: packagePath, detail: text.error.detail } };
+      return {
+        outcome: "failed",
+        error: { kind: "file-unreadable", file: packagePath, detail: text.error.detail },
+      };
     }
     return packageScriptsOf({ path: packagePath, text: text.value });
   };
@@ -734,7 +823,13 @@ export const scannedPackageScripts = (request: {
 }): Result<PackageJsonScan, RunnerFailure> =>
   Object.entries(request.scripts).reduce<Result<PackageJsonScan, RunnerFailure>>(
     (scan, [script, scriptText]) =>
-      mergedScriptScan({ scan, script, scriptText, path: request.path, selectedRules: request.selectedRules }),
+      mergedScriptScan({
+        scan,
+        script,
+        scriptText,
+        path: request.path,
+        selectedRules: request.selectedRules,
+      }),
     { outcome: "ok", value: EMPTY_SCAN },
   );
 
@@ -746,5 +841,9 @@ export const scanPackageJson = (request: {
   const scripts = packageScriptsOf(request);
   return scripts.outcome === "failed"
     ? scripts
-    : scannedPackageScripts({ path: request.path, scripts: scripts.value, selectedRules: request.selectedRules });
+    : scannedPackageScripts({
+        path: request.path,
+        scripts: scripts.value,
+        selectedRules: request.selectedRules,
+      });
 };

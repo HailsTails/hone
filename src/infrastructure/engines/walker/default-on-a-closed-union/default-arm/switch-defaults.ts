@@ -1,5 +1,5 @@
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
   if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
@@ -26,18 +26,30 @@ export const check: WalkerPiece = {
         }
         const text = readText();
         if (text.outcome === "failed") return text;
-        const observed = [...text.value.split(/\r?\n/).entries()].reduce<SwitchState>((state, [index, line]) => {
-          const trimmed = line.trim();
-          if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) return state;
-          const opens = (line.match(SWITCH_OPEN) ?? []).length;
-          const closes = (line.match(CLOSING_BRACE) ?? []).length;
-          const collapsed = trimmed.replace(/\s+/g, " ");
-          const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
-          const hits = state.depth + opens > 0 && DEFAULT_ARM.test(line)
-            ? clauses.map((clause) => ({ clause: clause.address, anchor: { line: index + 1, column: 0 }, snippet }))
-            : [];
-          return { depth: Math.max(0, state.depth + opens - closes), hits: [...state.hits, ...hits] };
-        }, { depth: 0, hits: [] });
+        const observed = [...text.value.split(/\r?\n/).entries()].reduce<SwitchState>(
+          (state, [index, line]) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*"))
+              return state;
+            const opens = (line.match(SWITCH_OPEN) ?? []).length;
+            const closes = (line.match(CLOSING_BRACE) ?? []).length;
+            const collapsed = trimmed.replace(/\s+/g, " ");
+            const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
+            const hits =
+              state.depth + opens > 0 && DEFAULT_ARM.test(line)
+                ? clauses.map((clause) => ({
+                    clause: clause.address,
+                    anchor: { line: index + 1, column: 0 },
+                    snippet,
+                  }))
+                : [];
+            return {
+              depth: Math.max(0, state.depth + opens - closes),
+              hits: [...state.hits, ...hits],
+            };
+          },
+          { depth: 0, hits: [] },
+        );
         return { outcome: "ok", value: { kind: "complete", hits: observed.hits } };
       },
       finish: () => ({ outcome: "ok", value: [] }),

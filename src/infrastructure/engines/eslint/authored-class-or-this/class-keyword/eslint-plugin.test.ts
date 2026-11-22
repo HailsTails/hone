@@ -1,11 +1,15 @@
 import { assert, describe, expect, it, test } from "vitest";
+
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../runner/pieces/eslint-plugin-schema.ts";
+import { createEslintPort } from "../../runner/toolchain/eslint-instance.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../../runner/toolchain/eslint-toolchain.ts";
 import classAuthoringPlugin, { classDisposition, containerMode } from "./eslint-plugin.ts";
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/..`);
 
@@ -27,10 +31,19 @@ const keywordAfterNodeStartCases: readonly SourceCase[] = [
 const loadedPlugin = eslintPluginModuleSchema.parse({ default: classAuthoringPlugin }).default;
 
 const loadedToolchain = await loadEslintToolchain({
-  peers: defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultEslintToolchainPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
-assert(loadedToolchain.outcome === "ok", "the eslint-10 toolchain loads from the development install");
-assert(/^10\./.test(loadedToolchain.value.eslintVersion), `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`);
+assert(
+  loadedToolchain.outcome === "ok",
+  "the eslint-10 toolchain loads from the development install",
+);
+assert(
+  /^10\./.test(loadedToolchain.value.eslintVersion),
+  `the eslint-10 toolchain runs ESLint ${loadedToolchain.value.eslintVersion}`,
+);
 
 const eslint = createEslintPort({ toolchain: loadedToolchain.value });
 
@@ -113,19 +126,22 @@ test("an unrelated declared node does not provide an ambient exemption", () => {
 });
 
 describe("CD-14 no-class-authoring rule, on a class keyword after its node's start, through the ESLint runner's lintSourceCases", () => {
-  it.each(keywordAfterNodeStartCases)("flags exactly the expected lines of the case $name", async (sharedCase) => {
-    expect(
-      await eslint.lintSourceCases({
-        cwd: PIECE_ROOT,
-        plugin: loadedPlugin,
-        pluginNamespace: "hone",
-        rule: "no-class-authoring",
-        options: [],
-        cases: [sharedCase],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: [{ caseName: sharedCase.name, flaggedLines: sharedCase.expectedLines }],
-    });
-  });
+  it.each(keywordAfterNodeStartCases)(
+    "flags exactly the expected lines of the case $name",
+    async (sharedCase) => {
+      expect(
+        await eslint.lintSourceCases({
+          cwd: PIECE_ROOT,
+          plugin: loadedPlugin,
+          pluginNamespace: "hone",
+          rule: "no-class-authoring",
+          options: [],
+          cases: [sharedCase],
+        }),
+      ).toEqual({
+        outcome: "ok",
+        value: [{ caseName: sharedCase.name, flaggedLines: sharedCase.expectedLines }],
+      });
+    },
+  );
 });

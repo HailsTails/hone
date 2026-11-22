@@ -9,7 +9,11 @@ export const check: WalkerPiece = {
         value: {
           kind: "complete",
           hits: file.endsWith(".tmp.ts")
-            ? clauses.map((clause) => ({ clause: clause.address, anchor: { line: 1, column: 0 }, snippet: file }))
+            ? clauses.map((clause) => ({
+                clause: clause.address,
+                anchor: { line: 1, column: 0 },
+                snippet: file,
+              }))
             : [],
         },
       }),

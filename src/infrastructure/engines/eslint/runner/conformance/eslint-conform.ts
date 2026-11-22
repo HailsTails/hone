@@ -1,18 +1,29 @@
 import { z } from "zod";
+
+import type {
+  ModuleLoad,
+  ModuleLoaderPort,
+} from "../../../../../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import type { Result } from "../../../../../domain/result.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
+import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
-import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import type { ModuleLoad, ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import type { Result } from "../../../../../domain/result.ts";
-import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
-import { type EslintPort, reservedNamespace } from "../toolchain/eslint-instance.ts";
-import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
-import { eslintPluginModuleSchema, type LoadedEslintPlugin } from "../pieces/eslint-plugin-schema.ts";
+import {
+  type EslintPieceSettings,
+  eslintPieceSettingsSchema,
+  ruleOptionsOf,
+} from "../pieces/eslint-piece-settings-schema.ts";
+import {
+  eslintPluginModuleSchema,
+  type LoadedEslintPlugin,
+} from "../pieces/eslint-plugin-schema.ts";
 import { namespaceOwnershipRefusal } from "../pieces/namespace-ownership.ts";
+import { type EslintPort, reservedNamespace } from "../toolchain/eslint-instance.ts";
 
 export type Outcome<Value> = Result<Value, RunnerFailure>;
 
@@ -23,7 +34,9 @@ export type ConfiguredClause = {
   readonly modulePath: string;
 };
 
-export type LoadedClause<Clause extends ConfiguredClause> = Clause & { readonly plugin: LoadedEslintPlugin };
+export type LoadedClause<Clause extends ConfiguredClause> = Clause & {
+  readonly plugin: LoadedEslintPlugin;
+};
 
 export type ParsedPlugin = Result<LoadedEslintPlugin, { readonly detail: string }>;
 
@@ -41,7 +54,10 @@ export const configuredClause = (request: {
 }): Outcome<ConfiguredClause> => {
   const settings = eslintPieceSettingsSchema.safeParse(request.clause.settings);
   if (!settings.success) {
-    return pieceInvalid({ pieceRoot: request.clause.pieceRoot, detail: z.prettifyError(settings.error) });
+    return pieceInvalid({
+      pieceRoot: request.clause.pieceRoot,
+      detail: z.prettifyError(settings.error),
+    });
   }
   const refusal = namespaceOwnershipRefusal({
     address: request.clause.address,
@@ -101,9 +117,11 @@ export const loadedPieceClauseOf = (request: {
   readonly configured: ConfiguredClause;
   readonly modules: ModuleLoaderPort;
 }): Promise<Outcome<LoadedClause<ConfiguredClause>>> =>
-  request.modules.load({ path: request.configured.modulePath }).then((loaded) =>
-    pluginOf({ parsed: parsedPluginOf({ loaded }), configured: request.configured }),
-  );
+  request.modules
+    .load({ path: request.configured.modulePath })
+    .then((loaded) =>
+      pluginOf({ parsed: parsedPluginOf({ loaded }), configured: request.configured }),
+    );
 
 const lintedSourceCases = (request: {
   readonly selected: Outcome<LoadedClause<ConfiguredClause>>;
@@ -129,7 +147,9 @@ export const conformedCases = (request: {
   readonly cases: readonly SourceCase[];
   readonly path: PathPort;
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
-  readonly loadedPlugin: (request: { readonly configured: ConfiguredClause }) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
+  readonly loadedPlugin: (request: {
+    readonly configured: ConfiguredClause;
+  }) => Promise<Outcome<LoadedClause<ConfiguredClause>>>;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   const configured = configuredClause({ clause: request.clause, path: request.path });
   if (configured.outcome === "failed") {
@@ -137,9 +157,13 @@ export const conformedCases = (request: {
   }
   const cwd = absolutePathSchema.safeParse(request.clause.pieceRoot);
   if (!cwd.success) {
-    return Promise.resolve(pieceInvalid({ pieceRoot: request.clause.pieceRoot, detail: z.prettifyError(cwd.error) }));
+    return Promise.resolve(
+      pieceInvalid({ pieceRoot: request.clause.pieceRoot, detail: z.prettifyError(cwd.error) }),
+    );
   }
-  return request.loadedPlugin({ configured: configured.value }).then((selected) =>
-    lintedSourceCases({ selected, cwd: cwd.data, cases: request.cases, eslint: request.eslint }),
-  );
+  return request
+    .loadedPlugin({ configured: configured.value })
+    .then((selected) =>
+      lintedSourceCases({ selected, cwd: cwd.data, cases: request.cases, eslint: request.eslint }),
+    );
 };

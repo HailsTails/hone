@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { helpText, SYNOPSIS } from "./command-help.ts";
 
 const TOOL_HELP = `usage: hone <command> [options]
@@ -124,7 +125,9 @@ describe("helpText", () => {
   });
 
   it("describes the authorise command's --repo as the folder that holds hone.config.json", () => {
-    expect(helpText({ topic: "authorise" })).toContain("\n  --repo <dir>\n      the folder that holds hone.config.json, usually the repository root\n");
+    expect(helpText({ topic: "authorise" })).toContain(
+      "\n  --repo <dir>\n      the folder that holds hone.config.json, usually the repository root\n",
+    );
   });
 
   it("lists the commands and the tool's own options", () => {

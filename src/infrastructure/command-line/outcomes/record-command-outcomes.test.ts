@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { inheritedDebtLine, pruneDebtCommandOutcome, splitRecordsCommandOutcome } from "./record-command-outcomes.ts";
+
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import {
+  inheritedDebtLine,
+  pruneDebtCommandOutcome,
+  splitRecordsCommandOutcome,
+} from "./record-command-outcomes.ts";
 
 const WALKER = "walker" as const;
 
@@ -16,13 +21,19 @@ describe("splitRecordsCommandOutcome", () => {
           value: {
             effect: "split",
             writes: [
-              { path: repoPathOf("discipline-exceptions/file-carve-outs/cd-19.json"), effect: "written" },
+              {
+                path: repoPathOf("discipline-exceptions/file-carve-outs/cd-19.json"),
+                effect: "written",
+              },
               { path: repoPathOf("discipline-exceptions.json"), effect: "removed" },
             ],
           },
         },
       }),
-    ).toEqual({ code: 0, text: "discipline-exceptions/file-carve-outs/cd-19.json written\ndiscipline-exceptions.json removed\n" });
+    ).toEqual({
+      code: 0,
+      text: "discipline-exceptions/file-carve-outs/cd-19.json written\ndiscipline-exceptions.json removed\n",
+    });
   });
 
   it.each([
@@ -34,14 +45,32 @@ describe("splitRecordsCommandOutcome", () => {
       split: { effect: "no-records", path: repoPathOf("discipline-exceptions.json") },
       text: "discipline-exceptions.json holds no records: nothing to split\n",
     },
-  ] as const)("prints one line and exits 0 when there is nothing to split: $text", ({ split, text }) => {
-    expect(splitRecordsCommandOutcome({ result: { outcome: "ok", value: split } })).toEqual({ code: 0, text });
-  });
+  ] as const)(
+    "prints one line and exits 0 when there is nothing to split: $text",
+    ({ split, text }) => {
+      expect(splitRecordsCommandOutcome({ result: { outcome: "ok", value: split } })).toEqual({
+        code: 0,
+        text,
+      });
+    },
+  );
 
   it("prints the load failure and exits 2 when the records cannot be split", () => {
     expect(
-      splitRecordsCommandOutcome({ result: { outcome: "failed", error: { kind: "records-unsplittable", path: "discipline-exceptions.json", detail: "exceptions[1] names no discipline" } } }),
-    ).toEqual({ code: 2, text: "load failure: records-unsplittable discipline-exceptions.json exceptions[1] names no discipline\n" });
+      splitRecordsCommandOutcome({
+        result: {
+          outcome: "failed",
+          error: {
+            kind: "records-unsplittable",
+            path: "discipline-exceptions.json",
+            detail: "exceptions[1] names no discipline",
+          },
+        },
+      }),
+    ).toEqual({
+      code: 2,
+      text: "load failure: records-unsplittable discipline-exceptions.json exceptions[1] names no discipline\n",
+    });
   });
 });
 
@@ -50,7 +79,11 @@ describe("inheritedDebtLine", () => {
     expect(
       inheritedDebtLine({
         outcome: {
-          clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-15"),
+            clause: clauseIdOf("loops"),
+          },
           file: repoPathOf("src/basket.ts"),
           effect: "already-recorded",
           heldIn: repoPathOf("discipline-exceptions/authorised-locations/cd-15.json"),
@@ -65,7 +98,11 @@ describe("inheritedDebtLine", () => {
     expect(
       inheritedDebtLine({
         outcome: {
-          clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-15"),
+            clause: clauseIdOf("loops"),
+          },
           file: repoPathOf("nested/src/n.ts"),
           effect: "nested-configuration",
           under: repoPathOf("nested/src"),
@@ -81,7 +118,10 @@ describe("inheritedDebtLine", () => {
 
 describe("pruneDebtCommandOutcome", () => {
   it("exits 0 and prints nothing when no debt is paid", () => {
-    expect(pruneDebtCommandOutcome({ result: { outcome: "ok", value: [] } })).toEqual({ code: 0, text: "" });
+    expect(pruneDebtCommandOutcome({ result: { outcome: "ok", value: [] } })).toEqual({
+      code: 0,
+      text: "",
+    });
   });
 
   it("exits 0 and prints one <clause> removed <file> line per removed pair, in the order given", () => {
@@ -90,16 +130,37 @@ describe("pruneDebtCommandOutcome", () => {
         result: {
           outcome: "ok",
           value: [
-            { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, file: repoPathOf("src/a.ts") },
-            { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, file: repoPathOf("src/b.ts") },
+            {
+              clause: {
+                ruleSet: TOOL_RULE_SET,
+                discipline: disciplineIdOf("CD-14"),
+                clause: clauseIdOf("class-syntax"),
+              },
+              file: repoPathOf("src/a.ts"),
+            },
+            {
+              clause: {
+                ruleSet: TOOL_RULE_SET,
+                discipline: disciplineIdOf("CD-15"),
+                clause: clauseIdOf("loops"),
+              },
+              file: repoPathOf("src/b.ts"),
+            },
           ],
         },
       }),
-    ).toEqual({ code: 0, text: "CD-14#class-syntax removed src/a.ts\nCD-15#loops removed src/b.ts\n" });
+    ).toEqual({
+      code: 0,
+      text: "CD-14#class-syntax removed src/a.ts\nCD-15#loops removed src/b.ts\n",
+    });
   });
 
   it("exits 2 and prints the load failure line on a failure", () => {
-    expect(pruneDebtCommandOutcome({ result: { outcome: "failed", error: { kind: "runner-missing", mechanism: WALKER } } })).toEqual({
+    expect(
+      pruneDebtCommandOutcome({
+        result: { outcome: "failed", error: { kind: "runner-missing", mechanism: WALKER } },
+      }),
+    ).toEqual({
       code: 2,
       text: "load failure: runner-missing audit\n",
     });

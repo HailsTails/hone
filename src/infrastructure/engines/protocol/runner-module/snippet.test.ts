@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { SNIPPET_LIMIT, snippetSchema } from "./snippet.ts";
 
 const FORTY = "0123456789012345678901234567890123456789";

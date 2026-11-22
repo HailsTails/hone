@@ -1,38 +1,42 @@
 import { assert, describe, expect, it, vi } from "vitest";
+
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
+import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
 import type { FileCreationPort } from "../application/ports/file-system/file-creation-port.ts";
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
-import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
-import {
-  toolchainBoundEmbeddedRunner,
-  toolchainBoundStandaloneRunner,
-} from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
-import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
-import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
-import type { PackageLocationPort } from "../infrastructure/node/modules/package-location-port.ts";
-import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { installFormOf } from "../infrastructure/node/modules/install-layout.ts";
-import { createWalkerRunner } from "../infrastructure/engines/walker/runner/create-walker-runner.ts";
-import {
-  defaultTypeScriptPeers,
-  loadParsePort,
-} from "../infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import {
   createEslintRunner,
   ESLINT_PROJECTED_KINDS,
 } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { checkRunAt } from "./check-command.ts";
+import {
+  defaultEslintToolchainPeers,
+  loadEslintToolchain,
+} from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import {
+  toolchainBoundEmbeddedRunner,
+  toolchainBoundStandaloneRunner,
+} from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { createWalkerRunner } from "../infrastructure/engines/walker/runner/create-walker-runner.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
+import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import { installFormOf } from "../infrastructure/node/modules/install-layout.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import type { PackageLocationPort } from "../infrastructure/node/modules/package-location-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import { checkRunAt } from "./check-command.ts";
 import { installedPortsOver } from "./installed-ports.ts";
-import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -50,7 +54,8 @@ const overlaidFileText = (request: {
       const text = overlaid(reading.path);
       return text === undefined ? request.base.read(reading) : { outcome: "ok", value: text };
     },
-    exists: (probing) => (overlaid(probing.path) === undefined ? request.base.exists(probing) : "present"),
+    exists: (probing) =>
+      overlaid(probing.path) === undefined ? request.base.exists(probing) : "present",
   };
 };
 
@@ -69,10 +74,7 @@ const path = createDefaultPathPort({});
 
 const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   const resolved = path.resolve(request);
-  assert(
-    resolved.outcome === "ok",
-    `${request.path} resolves to an absolute path`,
-  );
+  assert(resolved.outcome === "ok", `${request.path} resolves to an absolute path`);
   return resolved.value;
 };
 
@@ -88,9 +90,7 @@ const NAMING_CONVENTION = {
   clause: "naming-convention",
 } as const;
 
-const repositoryFiles = (request: {
-  readonly clauses: Readonly<Record<string, string>>;
-}) =>
+const repositoryFiles = (request: { readonly clauses: Readonly<Record<string, string>> }) =>
   overlaidFileText({
     base: createDefaultFileTextPort({}),
     files: {
@@ -151,25 +151,19 @@ const git: GitPort = {
 const eslintNotInstalled: PackageLocationPort = {
   installRoot: INSTALL_ROOT,
   installForm: "package",
-  locate: vi
-    .fn<PackageLocationPort["locate"]>()
-    .mockThrow(
-      Object.assign(
-        new Error(
-          `Cannot find package 'eslint' imported from ${INSTALL_ROOT}/x.ts`,
-        ),
-        { code: "ERR_MODULE_NOT_FOUND" },
-      ),
-    ),
+  locate: vi.fn<PackageLocationPort["locate"]>().mockThrow(
+    Object.assign(new Error(`Cannot find package 'eslint' imported from ${INSTALL_ROOT}/x.ts`), {
+      code: "ERR_MODULE_NOT_FOUND",
+    }),
+  ),
 };
 
-const eslintRunnerWithoutPeersOver = (request: {
-  readonly fileText: FileTextPort;
-}) =>
+const eslintRunnerWithoutPeersOver = (request: { readonly fileText: FileTextPort }) =>
   toolchainBoundEmbeddedRunner({
     toolchain: loadEslintToolchain({
       peers: {
-        modules: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }).modules,
+        modules: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" })
+          .modules,
         location: eslintNotInstalled,
       },
     }),
@@ -217,17 +211,13 @@ const modulesServing = (request: {
     }),
   });
 
-const peerlessEslintOver = (request: {
-  readonly fileText: FileTextPort;
-}): ModuleLoaderPort =>
+const peerlessEslintOver = (request: { readonly fileText: FileTextPort }): ModuleLoaderPort =>
   modulesServing({
     eslintRunner: eslintRunnerWithoutPeersOver(request),
     fileText: request.fileText,
   });
 
-const unloadableEslintOver = (request: {
-  readonly fileText: FileTextPort;
-}): ModuleLoaderPort =>
+const unloadableEslintOver = (request: { readonly fileText: FileTextPort }): ModuleLoaderPort =>
   modulesServing({ eslintRunner: undefined, fileText: request.fileText });
 
 const checkOf = (request: {
@@ -241,7 +231,9 @@ const checkOf = (request: {
       modules: request.modules,
       engine: createDefaultEnginePort({}),
       git,
-      gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }) },
+      gitTree: {
+        pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }),
+      },
       directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
       fileCreation: { createNew: vi.fn<FileCreationPort["createNew"]>() },
       fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
@@ -250,7 +242,12 @@ const checkOf = (request: {
     }),
     moduleUrl: new URL("../hone.ts", import.meta.url).href,
     locations: {
-      arguments: { repo: REPO_ROOT, baseRevision: undefined, reportOutput: undefined, forfeiture: undefined },
+      arguments: {
+        repo: REPO_ROOT,
+        baseRevision: undefined,
+        reportOutput: undefined,
+        forfeiture: undefined,
+      },
       repoRoot: REPO_ROOT,
       installRoot: INSTALL_ROOT,
     },
@@ -278,7 +275,11 @@ describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLin
     ).toEqual({
       outcome: "ok",
       value: expect.objectContaining({
-        report: expect.objectContaining({ ...WHOLE_AUDIT_ONLY_REPORT, notAdopted: [], notRun: [NAMING_CONVENTION] }),
+        report: expect.objectContaining({
+          ...WHOLE_AUDIT_ONLY_REPORT,
+          notAdopted: [],
+          notRun: [NAMING_CONVENTION],
+        }),
       }),
     });
   });
@@ -294,7 +295,10 @@ describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLin
     ).toEqual({
       outcome: "ok",
       value: expect.objectContaining({
-        report: expect.objectContaining({ ...WHOLE_AUDIT_ONLY_REPORT, notRun: [NAMING_CONVENTION] }),
+        report: expect.objectContaining({
+          ...WHOLE_AUDIT_ONLY_REPORT,
+          notRun: [NAMING_CONVENTION],
+        }),
       }),
     });
   });
@@ -312,7 +316,11 @@ describe("adopting CD-6 with its ESLint clause not adopted, and no ESLint instal
     ).toEqual({
       outcome: "ok",
       value: expect.objectContaining({
-        report: expect.objectContaining({ ...WHOLE_AUDIT_ONLY_REPORT, notAdopted: [NAMING_CONVENTION], notRun: [] }),
+        report: expect.objectContaining({
+          ...WHOLE_AUDIT_ONLY_REPORT,
+          notAdopted: [NAMING_CONVENTION],
+          notRun: [],
+        }),
       }),
     });
   });

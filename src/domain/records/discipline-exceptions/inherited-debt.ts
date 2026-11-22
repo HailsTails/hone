@@ -1,13 +1,13 @@
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
+import { basePathOf } from "../../repository/renamed-path.ts";
+import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { RepoPath } from "../../repository/repo-path-types.ts";
-import { basePathOf } from "../../repository/renamed-path.ts";
 import type { UnprojectedFolder } from "../../runner/unprojected-folder.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs, entryPairKey } from "./debt-pair.ts";
-import type { FileCarveOutEntry } from "./exception-record.ts";
 import type { PlacedEntry } from "./exception-entry.ts";
+import type { FileCarveOutEntry } from "./exception-record.ts";
 
 export type InheritedDebtOutcome =
   | (DebtPair & { readonly effect: "recorded" | "new-file" | "refused" })
@@ -30,12 +30,16 @@ export type InheritedDebtRequest = {
   readonly refusing: readonly ClauseAddress[];
 };
 
-const inlinePairs = (request: { readonly unrecorded: readonly AttributedNativeException[] }): readonly DebtPair[] =>
+const inlinePairs = (request: {
+  readonly unrecorded: readonly AttributedNativeException[];
+}): readonly DebtPair[] =>
   request.unrecorded.flatMap((exception) =>
     exception.kind === "inline-disable" ? [{ clause: exception.clause, file: exception.file }] : [],
   );
 
-const recordedPairFiles = (request: { readonly existing: readonly PlacedEntry[] }): ReadonlyMap<string, RepoPath> =>
+const recordedPairFiles = (request: {
+  readonly existing: readonly PlacedEntry[];
+}): ReadonlyMap<string, RepoPath> =>
   new Map(
     request.existing
       .flatMap(({ entry, place }): readonly (readonly [string, RepoPath])[] => {
@@ -45,7 +49,10 @@ const recordedPairFiles = (request: { readonly existing: readonly PlacedEntry[] 
       .toReversed(),
   );
 
-const leavingPath = (request: { readonly file: RepoPath; readonly leave: readonly RepoPath[] }): RepoPath | undefined =>
+const leavingPath = (request: {
+  readonly file: RepoPath;
+  readonly leave: readonly RepoPath[];
+}): RepoPath | undefined =>
   request.leave.find((path) => request.file === path || request.file.startsWith(`${path}/`));
 
 const outcomeOf = (request: {
@@ -66,13 +73,23 @@ const outcomeOf = (request: {
   if (under !== undefined) {
     return { ...pair, effect: "left", under };
   }
-  return { ...pair, effect: debt.inBase.has(basePathOf({ file: pair.file, basePathOfRenamed: debt.basePathOfRenamed })) ? "recorded" : "new-file" };
+  return {
+    ...pair,
+    effect: debt.inBase.has(
+      basePathOf({ file: pair.file, basePathOfRenamed: debt.basePathOfRenamed }),
+    )
+      ? "recorded"
+      : "new-file",
+  };
 };
 
 export const inheritedDebtOf = (request: InheritedDebtRequest): readonly InheritedDebtOutcome[] => {
   const recorded = recordedPairFiles(request);
   const refusing = new Set(request.refusing.map((address) => clauseAddressText({ address })));
-  const findingPairs = request.findings.map((finding) => ({ clause: finding.clause, file: finding.file }));
+  const findingPairs = request.findings.map((finding) => ({
+    clause: finding.clause,
+    file: finding.file,
+  }));
   return distinctDebtPairs({ pairs: [...findingPairs, ...inlinePairs(request)] }).map((pair) =>
     outcomeOf({ pair, debt: request, recorded, refusing }),
   );
@@ -83,7 +100,13 @@ export const inheritedDebtEntriesOf = (request: {
 }): readonly FileCarveOutEntry[] =>
   request.outcomes.flatMap((outcome) =>
     outcome.effect === "recorded"
-      ? [{ kind: "file-carve-out", clause: clauseAddressText({ address: outcome.clause }), file: outcome.file }]
+      ? [
+          {
+            kind: "file-carve-out",
+            clause: clauseAddressText({ address: outcome.clause }),
+            file: outcome.file,
+          },
+        ]
       : [],
   );
 
@@ -98,7 +121,8 @@ const reachedOutcomeOf = (request: {
   }
   const mechanism = request.mechanisms.get(clauseAddressText({ address: outcome.clause }));
   const unprojected = request.unprojected.find(
-    (candidate) => candidate.mechanism === mechanism && outcome.file.startsWith(`${candidate.folder}/`),
+    (candidate) =>
+      candidate.mechanism === mechanism && outcome.file.startsWith(`${candidate.folder}/`),
   );
   return unprojected === undefined
     ? outcome
@@ -116,4 +140,5 @@ export const reachedDebtOf = (request: {
   readonly outcomes: readonly InheritedDebtOutcome[];
   readonly unprojected: readonly UnprojectedFolder[];
   readonly mechanisms: ReadonlyMap<string, EngineId>;
-}): readonly InheritedDebtOutcome[] => request.outcomes.map((outcome) => reachedOutcomeOf({ ...request, outcome }));
+}): readonly InheritedDebtOutcome[] =>
+  request.outcomes.map((outcome) => reachedOutcomeOf({ ...request, outcome }));

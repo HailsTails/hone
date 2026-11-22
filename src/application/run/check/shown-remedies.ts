@@ -1,8 +1,8 @@
-import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { PathPort } from "../../ports/host/path-port.ts";
-import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import { CHECK_ITEMS_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 
 type ShownRemedyRequest = {
@@ -12,12 +12,20 @@ type ShownRemedyRequest = {
 };
 
 const remedyFolderSegmentsOf = (root: ClauseRoot): readonly string[] =>
-  root.checks.length === 0 ? [root.ruleSetRoot, "rules", root.clause.discipline] : [root.ruleSetRoot, ...CHECK_ITEMS_SEGMENTS];
+  root.checks.length === 0
+    ? [root.ruleSetRoot, "rules", root.clause.discipline]
+    : [root.ruleSetRoot, ...CHECK_ITEMS_SEGMENTS];
 
-const remedyFolderOf = (request: ShownRemedyRequest & { readonly finding: Finding }): string | undefined => {
+const remedyFolderOf = (
+  request: ShownRemedyRequest & { readonly finding: Finding },
+): string | undefined => {
   const clause = clauseAddressText({ address: request.finding.clause });
-  const root = request.clauseRoots.find((candidate) => clauseAddressText({ address: candidate.clause }) === clause);
-  return root === undefined ? undefined : request.path.join({ segments: remedyFolderSegmentsOf(root) });
+  const root = request.clauseRoots.find(
+    (candidate) => clauseAddressText({ address: candidate.clause }) === clause,
+  );
+  return root === undefined
+    ? undefined
+    : request.path.join({ segments: remedyFolderSegmentsOf(root) });
 };
 
 const shownRemedyOf = (request: ShownRemedyRequest & { readonly finding: Finding }): Finding => {
@@ -29,9 +37,12 @@ const shownRemedyOf = (request: ShownRemedyRequest & { readonly finding: Finding
   if (remedyFolder === undefined) {
     return located;
   }
-  const page = request.shownPathOf({ target: request.path.join({ segments: [remedyFolder, remedy.page] }) });
+  const page = request.shownPathOf({
+    target: request.path.join({ segments: [remedyFolder, remedy.page] }),
+  });
   return { ...located, remedy: { ...remedy, page } };
 };
 
-export const shownRemediesOf = (request: ShownRemedyRequest & { readonly findings: readonly Finding[] }): readonly Finding[] =>
-  request.findings.map((finding) => shownRemedyOf({ ...request, finding }));
+export const shownRemediesOf = (
+  request: ShownRemedyRequest & { readonly findings: readonly Finding[] },
+): readonly Finding[] => request.findings.map((finding) => shownRemedyOf({ ...request, finding }));

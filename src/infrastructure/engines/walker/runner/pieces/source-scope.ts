@@ -1,4 +1,10 @@
-const GENERATED_FOLDER_NAMES: readonly string[] = ["node_modules", "dist", "build", "coverage", ".git"];
+const GENERATED_FOLDER_NAMES: readonly string[] = [
+  "node_modules",
+  "dist",
+  "build",
+  "coverage",
+  ".git",
+];
 const GENERATED_ROOT_FOLDER_NAMES: readonly string[] = ["vendor"];
 
 export const folderScope = (request: { readonly file: string }): "generated" | "authored" => {

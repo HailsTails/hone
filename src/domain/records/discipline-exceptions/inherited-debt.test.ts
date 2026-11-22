@@ -1,15 +1,34 @@
 import { describe, expect, it } from "vitest";
-import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
-import { type InheritedDebtOutcome, inheritedDebtEntriesOf, inheritedDebtOf, type InheritedDebtRequest, reachedDebtOf } from "./inherited-debt.ts";
-import { repoPathOf } from "../../repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
-import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 
-const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
-const CASTS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
-const TEAM_CLAUSE = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("no-tmp-files") };
+import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
+import {
+  type InheritedDebtOutcome,
+  inheritedDebtEntriesOf,
+  inheritedDebtOf,
+  type InheritedDebtRequest,
+  reachedDebtOf,
+} from "./inherited-debt.ts";
+
+const LOOPS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
+const CASTS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-2"),
+  clause: clauseIdOf("cast-expressions"),
+};
+const TEAM_CLAUSE = {
+  ruleSet: { name: ruleSetNameOf("team") },
+  discipline: disciplineIdOf("TM-1"),
+  clause: clauseIdOf("no-tmp-files"),
+};
 const AUDIT = "walker" as const;
 const ESLINT = "eslint" as const;
 const LEGACY_FOLDER = repoPathOf("src/legacy");
@@ -22,7 +41,11 @@ const SINGLE_FILE = repoPathOf("discipline-exceptions.json");
 const LOCATIONS_FILE = repoPathOf("discipline-exceptions/authorised-locations/cd-15.json");
 const CARVE_OUTS_FILE = repoPathOf("discipline-exceptions/file-carve-outs/cd-15.json");
 
-const findingAt = (request: { readonly clause: Finding["clause"]; readonly file: Finding["file"]; readonly line: number }): Finding => ({
+const findingAt = (request: {
+  readonly clause: Finding["clause"];
+  readonly file: Finding["file"];
+  readonly line: number;
+}): Finding => ({
   clause: request.clause,
   mechanism: AUDIT,
   file: request.file,
@@ -30,7 +53,10 @@ const findingAt = (request: { readonly clause: Finding["clause"]; readonly file:
   snippet: "const total = 0;",
 });
 
-const directiveAt = (request: { readonly file: Finding["file"]; readonly line: number }): AttributedNativeException => ({
+const directiveAt = (request: {
+  readonly file: Finding["file"];
+  readonly line: number;
+}): AttributedNativeException => ({
   kind: "inline-disable",
   clause: CASTS,
   mechanism: AUDIT,
@@ -74,7 +100,10 @@ describe("inheritedDebtOf choosing pairs", () => {
       inheritedDebtOf({
         ...NOTHING,
         findings: [findingAt({ clause: CASTS, file: BASKET, line: 2 })],
-        unrecorded: [directiveAt({ file: BASKET, line: 7 }), directiveAt({ file: LEGACY, line: 1 })],
+        unrecorded: [
+          directiveAt({ file: BASKET, line: 7 }),
+          directiveAt({ file: LEGACY, line: 1 }),
+        ],
       }),
     ).toEqual([
       { clause: CASTS, file: BASKET, effect: "recorded" },
@@ -101,7 +130,6 @@ describe("inheritedDebtOf choosing pairs", () => {
       }),
     ).toEqual([]);
   });
-
 });
 
 describe("inheritedDebtOf writing nothing for a pair", () => {
@@ -109,21 +137,44 @@ describe("inheritedDebtOf writing nothing for a pair", () => {
     expect(
       inheritedDebtOf({
         ...NOTHING,
-        findings: [findingAt({ clause: LOOPS, file: BASKET, line: 4 }), findingAt({ clause: LOOPS, file: LEGACY, line: 4 })],
+        findings: [
+          findingAt({ clause: LOOPS, file: BASKET, line: 4 }),
+          findingAt({ clause: LOOPS, file: LEGACY, line: 4 }),
+        ],
         existing: [
           {
             place: { layout: "single-file", file: SINGLE_FILE, index: 0 },
-            entry: { kind: "file-carve-out", clause: "hone/CD-15#loops", file: "src/basket.ts", reason: "forfeited since the base" },
+            entry: {
+              kind: "file-carve-out",
+              clause: "hone/CD-15#loops",
+              file: "src/basket.ts",
+              reason: "forfeited since the base",
+            },
           },
           {
             place: { layout: "split", file: LOCATIONS_FILE, index: 0 },
-            entry: { kind: "authorised-location", clause: "CD-15#loops", file: "src/legacy/report.ts", reason: "an invalid one" },
+            entry: {
+              kind: "authorised-location",
+              clause: "CD-15#loops",
+              file: "src/legacy/report.ts",
+              reason: "an invalid one",
+            },
           },
         ],
       }),
     ).toEqual([
-      { clause: LOOPS, file: BASKET, effect: "already-recorded", heldIn: "discipline-exceptions.json" },
-      { clause: LOOPS, file: LEGACY, effect: "already-recorded", heldIn: "discipline-exceptions/authorised-locations/cd-15.json" },
+      {
+        clause: LOOPS,
+        file: BASKET,
+        effect: "already-recorded",
+        heldIn: "discipline-exceptions.json",
+      },
+      {
+        clause: LOOPS,
+        file: LEGACY,
+        effect: "already-recorded",
+        heldIn: "discipline-exceptions/authorised-locations/cd-15.json",
+      },
     ]);
   });
 
@@ -135,15 +186,32 @@ describe("inheritedDebtOf writing nothing for a pair", () => {
         existing: [
           {
             place: { layout: "split", file: LOCATIONS_FILE, index: 0 },
-            entry: { kind: "authorised-location", clause: "CD-15#loops", file: "src/basket.ts", reason: "held" },
+            entry: {
+              kind: "authorised-location",
+              clause: "CD-15#loops",
+              file: "src/basket.ts",
+              reason: "held",
+            },
           },
           {
             place: { layout: "split", file: CARVE_OUTS_FILE, index: 0 },
-            entry: { kind: "file-carve-out", clause: "CD-15#loops", file: "src/basket.ts", reason: "held twice" },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/basket.ts",
+              reason: "held twice",
+            },
           },
         ],
       }),
-    ).toEqual([{ clause: LOOPS, file: BASKET, effect: "already-recorded", heldIn: "discipline-exceptions/authorised-locations/cd-15.json" }]);
+    ).toEqual([
+      {
+        clause: LOOPS,
+        file: BASKET,
+        effect: "already-recorded",
+        heldIn: "discipline-exceptions/authorised-locations/cd-15.json",
+      },
+    ]);
   });
 
   it("is not stopped by a clause-wide carve-out or by an entry whose clause cannot be read", () => {
@@ -154,17 +222,26 @@ describe("inheritedDebtOf writing nothing for a pair", () => {
         existing: [
           {
             place: { layout: "single-file", file: SINGLE_FILE, index: 0 },
-            entry: { kind: "clause-wide-carve-out", clause: "CD-15#loops", reason: "refused for its chain", whyChain: {} },
+            entry: {
+              kind: "clause-wide-carve-out",
+              clause: "CD-15#loops",
+              reason: "refused for its chain",
+              whyChain: {},
+            },
           },
           {
             place: { layout: "single-file", file: SINGLE_FILE, index: 1 },
-            entry: { kind: "file-carve-out", clause: "not an address", file: "src/basket.ts", reason: "unreadable" },
+            entry: {
+              kind: "file-carve-out",
+              clause: "not an address",
+              file: "src/basket.ts",
+              reason: "unreadable",
+            },
           },
         ],
       }),
     ).toEqual([{ clause: LOOPS, file: BASKET, effect: "recorded" }]);
   });
-
 });
 
 describe("inheritedDebtOf leaving a pair for a person", () => {
@@ -172,7 +249,10 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
     expect(
       inheritedDebtOf({
         ...NOTHING,
-        findings: [findingAt({ clause: LOOPS, file: LEGACY, line: 3 }), findingAt({ clause: LOOPS, file: BASKET, line: 3 })],
+        findings: [
+          findingAt({ clause: LOOPS, file: LEGACY, line: 3 }),
+          findingAt({ clause: LOOPS, file: BASKET, line: 3 }),
+        ],
         leave: [repoPathOf("src/legacy"), repoPathOf("src/basket.ts")],
       }),
     ).toEqual([
@@ -193,7 +273,10 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
 
   it("does not record a file the base revision does not hold, since nothing in it was inherited", () => {
     expect(
-      inheritedDebtOf({ ...NOTHING, findings: [findingAt({ clause: LOOPS, file: FRESH, line: 1 })] }),
+      inheritedDebtOf({
+        ...NOTHING,
+        findings: [findingAt({ clause: LOOPS, file: FRESH, line: 1 })],
+      }),
     ).toEqual([{ clause: LOOPS, file: FRESH, effect: "new-file" }]);
   });
 
@@ -214,7 +297,10 @@ describe("inheritedDebtOf leaving a pair for a person", () => {
         ...NOTHING,
         inBase: new Set([BASKET]),
         basePathOfRenamed: new Map([[MOVED_BASKET, BASKET]]),
-        findings: [findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 }), findingAt({ clause: LOOPS, file: FRESH, line: 1 })],
+        findings: [
+          findingAt({ clause: LOOPS, file: MOVED_BASKET, line: 3 }),
+          findingAt({ clause: LOOPS, file: FRESH, line: 1 }),
+        ],
       }),
     ).toEqual([
       { clause: LOOPS, file: MOVED_BASKET, effect: "recorded" },
@@ -254,7 +340,9 @@ describe("inheritedDebtEntriesOf", () => {
           { clause: LOOPS, file: FRESH, effect: "new-file" },
         ],
       }),
-    ).toEqual([{ kind: "file-carve-out", clause: "team/TM-1#no-tmp-files", file: "src/basket.ts" }]);
+    ).toEqual([
+      { kind: "file-carve-out", clause: "team/TM-1#no-tmp-files", file: "src/basket.ts" },
+    ]);
   });
 });
 
@@ -279,13 +367,26 @@ describe("reachedDebtOf", () => {
       }),
     ).toEqual([
       { clause: CASTS, file: LEGACY, effect: "recorded" },
-      { clause: LOOPS, file: LEGACY, effect: "nested-configuration", under: LEGACY_FOLDER, selectionFolder: SOURCE_FOLDER, mechanism: ESLINT },
+      {
+        clause: LOOPS,
+        file: LEGACY,
+        effect: "nested-configuration",
+        under: LEGACY_FOLDER,
+        selectionFolder: SOURCE_FOLDER,
+        mechanism: ESLINT,
+      },
       { clause: LOOPS, file: BASKET, effect: "recorded" },
       { clause: TEAM_CLAUSE, file: LEGACY, effect: "left", under: LEGACY_FOLDER },
     ]);
   });
 
   it("keeps every outcome when each mechanism projects into every folder", () => {
-    expect(reachedDebtOf({ outcomes: RECORDED_IN_LEGACY, unprojected: [], mechanisms: new Map([["CD-15#loops", ESLINT]]) })).toEqual(RECORDED_IN_LEGACY);
+    expect(
+      reachedDebtOf({
+        outcomes: RECORDED_IN_LEGACY,
+        unprojected: [],
+        mechanisms: new Map([["CD-15#loops", ESLINT]]),
+      }),
+    ).toEqual(RECORDED_IN_LEGACY);
   });
 });

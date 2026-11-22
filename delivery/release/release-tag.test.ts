@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { runReleaseTag } from "./release-tag.ts";
 
@@ -25,15 +26,25 @@ const runWith = (request: { readonly arguments: readonly string[] }) => {
 
 describe("runReleaseTag confirming the release's tag", () => {
   it("exits 0 when the remote's tag names this run's commit", () => {
-    expect(runWith({ arguments: ["v0.1.0-pre.7", COMMIT, `${COMMIT}\trefs/tags/v0.1.0-pre.7`] })).toEqual({
+    expect(
+      runWith({ arguments: ["v0.1.0-pre.7", COMMIT, `${COMMIT}\trefs/tags/v0.1.0-pre.7`] }),
+    ).toEqual({
       writes: [],
-      errors: [[{ text: "release-tag: the remote's tag v0.1.0-pre.7 names this run's commit, so the release is recorded where it was built.\n" }]],
+      errors: [
+        [
+          {
+            text: "release-tag: the remote's tag v0.1.0-pre.7 names this run's commit, so the release is recorded where it was built.\n",
+          },
+        ],
+      ],
       exits: [[{ code: 0 }]],
     });
   });
 
   it("exits 1 and says what to do when the remote's tag names another commit", () => {
-    expect(runWith({ arguments: ["v0.1.0-pre.7", COMMIT, `${OTHER_COMMIT}\trefs/tags/v0.1.0-pre.7`] })).toEqual({
+    expect(
+      runWith({ arguments: ["v0.1.0-pre.7", COMMIT, `${OTHER_COMMIT}\trefs/tags/v0.1.0-pre.7`] }),
+    ).toEqual({
       writes: [],
       errors: [
         [
@@ -47,9 +58,17 @@ describe("runReleaseTag confirming the release's tag", () => {
   });
 
   it("exits 1 when the remote has no such tag", () => {
-    expect(runWith({ arguments: ["v0.1.0-pre.7", COMMIT, `${COMMIT}\trefs/tags/v0.1.0-pre.6`] })).toEqual({
+    expect(
+      runWith({ arguments: ["v0.1.0-pre.7", COMMIT, `${COMMIT}\trefs/tags/v0.1.0-pre.6`] }),
+    ).toEqual({
       writes: [],
-      errors: [[{ text: "release-tag: the remote has no tag v0.1.0-pre.7 after the release was created, so nothing is staged on npm.\n" }]],
+      errors: [
+        [
+          {
+            text: "release-tag: the remote has no tag v0.1.0-pre.7 after the release was created, so nothing is staged on npm.\n",
+          },
+        ],
+      ],
       exits: [[{ code: 1 }]],
     });
   });
@@ -59,13 +78,21 @@ describe("runReleaseTag refusing its input", () => {
   it("exits 1 when it cannot read the remote's tags", () => {
     expect(runWith({ arguments: ["v0.1.0-pre.7", COMMIT, "v0.1.0-pre.7"] })).toEqual({
       writes: [],
-      errors: [[{ text: 'release-tag: cannot read the remote\'s tags: "v0.1.0-pre.7" is not a git ls-remote tag line\n' }]],
+      errors: [
+        [
+          {
+            text: 'release-tag: cannot read the remote\'s tags: "v0.1.0-pre.7" is not a git ls-remote tag line\n',
+          },
+        ],
+      ],
       exits: [[{ code: 1 }]],
     });
   });
 
   it("exits 2 with its usage when the commit is empty", () => {
-    expect(runWith({ arguments: ["v0.1.0-pre.7", "", `${COMMIT}\trefs/tags/v0.1.0-pre.7`] })).toEqual({
+    expect(
+      runWith({ arguments: ["v0.1.0-pre.7", "", `${COMMIT}\trefs/tags/v0.1.0-pre.7`] }),
+    ).toEqual({
       writes: [],
       errors: [[{ text: USAGE }]],
       exits: [[{ code: 2 }]],
@@ -73,6 +100,10 @@ describe("runReleaseTag refusing its input", () => {
   });
 
   it("exits 2 with its usage when an argument is missing", () => {
-    expect(runWith({ arguments: ["v0.1.0-pre.7", COMMIT] })).toEqual({ writes: [], errors: [[{ text: USAGE }]], exits: [[{ code: 2 }]] });
+    expect(runWith({ arguments: ["v0.1.0-pre.7", COMMIT] })).toEqual({
+      writes: [],
+      errors: [[{ text: USAGE }]],
+      exits: [[{ code: 2 }]],
+    });
   });
 });

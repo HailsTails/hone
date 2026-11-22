@@ -1,8 +1,9 @@
 import { z } from "zod";
+
+import type { Result } from "../../../../../domain/result.ts";
+import { clauseAddressText } from "../../../../../domain/rule-set/clause-address.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { clauseAddressText } from "../../../../../domain/rule-set/clause-address.ts";
-import type { Result } from "../../../../../domain/result.ts";
 
 export type StringListSettings<Key extends string> = Readonly<Record<Key, readonly string[]>>;
 

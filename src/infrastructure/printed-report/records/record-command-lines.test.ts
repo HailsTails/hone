@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
+
 import type { Authorising } from "../../../application/ports/authorising.ts";
-import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { Debt, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
-import { authorisingLines, debtOutcomeLine, projectNextLine, prunedDebtLine } from "./record-command-lines.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import {
+  authorisingLines,
+  debtOutcomeLine,
+  projectNextLine,
+  prunedDebtLine,
+} from "./record-command-lines.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -18,7 +24,15 @@ const DATE_USED_DIRECTLY: Symptom = {
         name: "needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering",
         title: "Needs the current time, a random value, a new id or an outside ordering",
         standing: "accepted",
-        owes: [{ kind: "principle", principle: { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" } }],
+        owes: [
+          {
+            kind: "principle",
+            principle: {
+              name: "external-behaviour-sits-at-a-boundary",
+              title: "External behaviour sits at a boundary",
+            },
+          },
+        ],
       },
       points: [
         {
@@ -26,7 +40,10 @@ const DATE_USED_DIRECTLY: Symptom = {
           rule: {
             name: "ports-declared-inside",
             title: "Ports declared inside",
-            principle: { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" },
+            principle: {
+              name: "external-behaviour-sits-at-a-boundary",
+              title: "External behaviour sits at a boundary",
+            },
             standing: "accepted",
           },
         },
@@ -46,7 +63,12 @@ const DATE_USED_DIRECTLY: Symptom = {
         name: "does-one-job",
         title: "Does one job",
         standing: "accepted",
-        owes: [{ kind: "principle", principle: { name: "one-place-decides", title: "One place decides" } }],
+        owes: [
+          {
+            kind: "principle",
+            principle: { name: "one-place-decides", title: "One place decides" },
+          },
+        ],
       },
       points: [
         {
@@ -73,7 +95,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   correctUses: [
     {
       situation: "correct use",
-      kind: { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "authorised-location" },
+      kind: {
+        name: "boundary-record",
+        title: "Boundary record",
+        phrase: "a boundary record",
+        todaysFormat: "authorised-location",
+      },
       at: "on the clock adapter",
     },
   ],
@@ -86,7 +113,10 @@ const RECORDS_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 const SITE = { address: "date-used-directly#clock-sources", file: FILE } as const;
 
 const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
-  [{ ...SITE, effect: "recorded" }, "date-used-directly#clock-sources recorded src/orders/charge-order.ts"],
+  [
+    { ...SITE, effect: "recorded" },
+    "date-used-directly#clock-sources recorded src/orders/charge-order.ts",
+  ],
   [
     { ...SITE, effect: "already-recorded", heldIn: RECORDS_FILE },
     "date-used-directly#clock-sources already-recorded src/orders/charge-order.ts: hone-records/debt/date-used-directly.json already holds debt on this symptom and file; the check says why it does not answer",
@@ -120,19 +150,45 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
     "date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: an entry in the suppressions file hides a finding from the team's lint run, which no record can hold; Hone's run still finds it and records it as debt, so remove the entry from the suppressions file",
   ],
   [
-    { ...SITE, effect: "unrecordable", because: { kind: "command-line-option", cause: { kind: "weakens-run" } } },
+    {
+      ...SITE,
+      effect: "unrecordable",
+      because: { kind: "command-line-option", cause: { kind: "weakens-run" } },
+    },
     "date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: a lint-script option weakens the script's whole run, so no record can cover it; remove it from the script",
   ],
   [
-    { ...SITE, effect: "unrecordable", because: { kind: "command-line-option", cause: { kind: "after-another-command", command: "eslint", invocation: "eslint --rule x:off ." } } },
-    "date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: eslint is not the first command of its script, so Hone cannot tell what the option does to the files under check; give eslint a script of its own, such as \"eslint --rule x:off .\"",
+    {
+      ...SITE,
+      effect: "unrecordable",
+      because: {
+        kind: "command-line-option",
+        cause: {
+          kind: "after-another-command",
+          command: "eslint",
+          invocation: "eslint --rule x:off .",
+        },
+      },
+    },
+    'date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: eslint is not the first command of its script, so Hone cannot tell what the option does to the files under check; give eslint a script of its own, such as "eslint --rule x:off ."',
   ],
   [
-    { ...SITE, effect: "unrecordable", because: { kind: "command-line-option", cause: { kind: "wrapped", command: "eslint", wrapper: "time" } } },
-    "date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: \"time\" comes before eslint and is neither a package runner nor a NAME=value setting, so Hone cannot tell what the option does to the files under check; put only package runners and NAME=value settings before eslint",
+    {
+      ...SITE,
+      effect: "unrecordable",
+      because: {
+        kind: "command-line-option",
+        cause: { kind: "wrapped", command: "eslint", wrapper: "time" },
+      },
+    },
+    'date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: "time" comes before eslint and is neither a package runner nor a NAME=value setting, so Hone cannot tell what the option does to the files under check; put only package runners and NAME=value settings before eslint',
   ],
   [
-    { ...SITE, effect: "unrecordable", because: { kind: "command-line-option", cause: { kind: "unreadable", command: "eslint" } } },
+    {
+      ...SITE,
+      effect: "unrecordable",
+      because: { kind: "command-line-option", cause: { kind: "unreadable", command: "eslint" } },
+    },
     "date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: a quote in the script has no partner, so Hone cannot read what the script passes to eslint or tell what that does to the files under check; pair every quote in the script",
   ],
   [
@@ -145,7 +201,13 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
   ],
 ];
 
-const DEBT: Debt = { kind: "debt", symptom: DATE_USED_DIRECTLY, reach: WHOLE_SYMPTOM, file: FILE, holding: { held: "stated" } };
+const DEBT: Debt = {
+  kind: "debt",
+  symptom: DATE_USED_DIRECTLY,
+  reach: WHOLE_SYMPTOM,
+  file: FILE,
+  holding: { held: "stated" },
+};
 
 const PLACE = { file: RECORDS_FILE, index: 0 };
 
@@ -157,17 +219,29 @@ describe("the lines hone record-debt prints", () => {
 
 describe("the line hone record-debt prints after the debt it recorded", () => {
   it("names the command that puts the recorded debt into effect", () => {
-    expect(projectNextLine({ projectCommand: "node hone.ts project --repo ." })).toBe("run node hone.ts project --repo . to put the recorded debt into effect");
+    expect(projectNextLine({ projectCommand: "node hone.ts project --repo ." })).toBe(
+      "run node hone.ts project --repo . to put the recorded debt into effect",
+    );
   });
 });
 
 describe("the lines hone prune-debt prints", () => {
   it("prints each debt it removed with the reason the report listed it for", () => {
-    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "paid" } })).toBe("date-used-directly removed src/orders/charge-order.ts: paid");
-    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "credited-nothing" } })).toBe("date-used-directly removed src/orders/charge-order.ts: stale");
-    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "file-gone" } })).toBe("date-used-directly removed src/orders/charge-order.ts: stale, its file is no longer in the repository");
-    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "file-excluded" } })).toBe("date-used-directly removed src/orders/charge-order.ts: stale, its file is excluded by the settings");
-    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "forfeited" } })).toBe("date-used-directly removed src/orders/charge-order.ts: forfeited");
+    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "paid" } })).toBe(
+      "date-used-directly removed src/orders/charge-order.ts: paid",
+    );
+    expect(
+      prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "credited-nothing" } }),
+    ).toBe("date-used-directly removed src/orders/charge-order.ts: stale");
+    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "file-gone" } })).toBe(
+      "date-used-directly removed src/orders/charge-order.ts: stale, its file is no longer in the repository",
+    );
+    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "file-excluded" } })).toBe(
+      "date-used-directly removed src/orders/charge-order.ts: stale, its file is excluded by the settings",
+    );
+    expect(prunedDebtLine({ pruned: { place: PLACE, debt: DEBT, reason: "forfeited" } })).toBe(
+      "date-used-directly removed src/orders/charge-order.ts: forfeited",
+    );
   });
 });
 
@@ -176,11 +250,18 @@ describe("the lines hone authorise prints", () => {
 
   it("prints one line for a record it wrote", () => {
     const accepted: Authorising = { judged: "accepted", edit: { write: [], remove: [] } };
-    expect(authorisingLines({ ...AUTHORISE, authorising: accepted })).toEqual(["claimed-type#cast-expressions authorised src/orders/charge-order.ts"]);
+    expect(authorisingLines({ ...AUTHORISE, authorising: accepted })).toEqual([
+      "claimed-type#cast-expressions authorised src/orders/charge-order.ts",
+    ]);
   });
 
   it("prints one line for a record already held, and where", () => {
-    expect(authorisingLines({ ...AUTHORISE, authorising: { judged: "already-held", heldIn: RECORDS_FILE } })).toEqual([
+    expect(
+      authorisingLines({
+        ...AUTHORISE,
+        authorising: { judged: "already-held", heldIn: RECORDS_FILE },
+      }),
+    ).toEqual([
       "claimed-type#cast-expressions already-authorised src/orders/charge-order.ts: hone-records/debt/date-used-directly.json already holds this record",
     ]);
   });
@@ -189,7 +270,13 @@ describe("the lines hone authorise prints", () => {
     expect(
       authorisingLines({
         ...AUTHORISE,
-        authorising: { judged: "refused", refusals: [{ kind: "unknown-symptom", symptom: "no-such-symptom" }, { kind: "not-a-records-name", name: "Not A Name" }] },
+        authorising: {
+          judged: "refused",
+          refusals: [
+            { kind: "unknown-symptom", symptom: "no-such-symptom" },
+            { kind: "not-a-records-name", name: "Not A Name" },
+          ],
+        },
       }),
     ).toEqual([
       'claimed-type#cast-expressions refused src/orders/charge-order.ts: unknown-symptom "no-such-symptom"',

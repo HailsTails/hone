@@ -23,18 +23,30 @@ export const jsonKindOf = (request: { readonly value: ReadonlyJsonValue }): Json
   return "object";
 };
 
-const isJsonObject = (candidate: ReadonlyJsonValue): candidate is JsonObject => jsonKindOf({ value: candidate }) === "object";
+const isJsonObject = (candidate: ReadonlyJsonValue): candidate is JsonObject =>
+  jsonKindOf({ value: candidate }) === "object";
 
-const sameItems = (request: { readonly left: readonly ReadonlyJsonValue[]; readonly right: readonly ReadonlyJsonValue[] }): JsonSameness =>
+const sameItems = (request: {
+  readonly left: readonly ReadonlyJsonValue[];
+  readonly right: readonly ReadonlyJsonValue[];
+}): JsonSameness =>
   request.left.length === request.right.length &&
-  request.left.every((leftItem, position) => sameJsonValue({ left: leftItem, right: request.right[position] }) === "same")
+  request.left.every(
+    (leftItem, position) =>
+      sameJsonValue({ left: leftItem, right: request.right[position] }) === "same",
+  )
     ? "same"
     : "different";
 
-const sameObjects = (request: { readonly left: JsonObject; readonly right: JsonObject }): JsonSameness =>
+const sameObjects = (request: {
+  readonly left: JsonObject;
+  readonly right: JsonObject;
+}): JsonSameness =>
   Object.keys(request.left).length === Object.keys(request.right).length &&
   Object.entries(request.left).every(
-    ([key, leftEntry]) => Object.hasOwn(request.right, key) && sameJsonValue({ left: leftEntry, right: request.right[key] }) === "same",
+    ([key, leftEntry]) =>
+      Object.hasOwn(request.right, key) &&
+      sameJsonValue({ left: leftEntry, right: request.right[key] }) === "same",
   )
     ? "same"
     : "different";
@@ -44,7 +56,8 @@ export const sameJsonValue = (request: {
   readonly right: ReadonlyJsonValue | undefined;
 }): JsonSameness => {
   const { left, right } = request;
-  if (right === undefined || jsonKindOf({ value: left }) !== jsonKindOf({ value: right })) return "different";
+  if (right === undefined || jsonKindOf({ value: left }) !== jsonKindOf({ value: right }))
+    return "different";
   if (Array.isArray(left) && Array.isArray(right)) return sameItems({ left, right });
   if (isJsonObject(left) && isJsonObject(right)) return sameObjects({ left, right });
   return left === right ? "same" : "different";

@@ -1,20 +1,38 @@
 import { z } from "zod";
-import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
+
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { clauseEditionsSchema, editionSchema } from "../edition.ts";
-import { clauseIdSchema, disciplineIdSchema, engineIdSchema, versionOneEngineIdSchema } from "../../hone-config-file/identifiers.ts";
-import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
-import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { parsedJson } from "../parsed-json.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { DeepReadonly, Equal } from "../../engines/protocol/runner-module/type-equality.ts";
-import type { AuthoredDisciplineFile, AuthoredPieceFile, AuthoredSourceCase } from "../../../domain/rule-set/authored-rule-set-types.ts";
-import type { DisciplineFile, PieceFile, SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
+import type {
+  AuthoredDisciplineFile,
+  AuthoredPieceFile,
+  AuthoredSourceCase,
+} from "../../../domain/rule-set/authored-rule-set-types.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
+import type {
+  DisciplineFile,
+  PieceFile,
+  SourceCase,
+} from "../../../domain/rule-set/rule-set-types.ts";
 import { RESERVED_EDITION_SETTING } from "../../../domain/settings/clause-settings/reserved-edition-setting.ts";
+import {
+  JSON_KIND_NAMES,
+  jsonKindOf,
+  sameJsonValue,
+} from "../../../domain/settings/json-values/json-kind.ts";
+import type { DeepReadonly, Equal } from "../../engines/protocol/runner-module/type-equality.ts";
+import {
+  clauseIdSchema,
+  disciplineIdSchema,
+  engineIdSchema,
+  versionOneEngineIdSchema,
+} from "../../hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
+import { clauseEditionsSchema, editionSchema } from "../edition.ts";
+import { parsedJson } from "../parsed-json.ts";
 
 const SUPPORTED_VERSION = 1;
 
@@ -87,17 +105,20 @@ const ruleSetMechanismSchema = z.string().transform((text, context): EngineId =>
   if (parsed.success) {
     return parsed.data;
   }
-  context.addIssue({ code: "custom", message: `not a mechanism: expected one of ${engineIdSchema.options.join(", ")}` });
+  context.addIssue({
+    code: "custom",
+    message: `not a mechanism: expected one of ${engineIdSchema.options.join(", ")}`,
+  });
   return z.NEVER;
 });
 
 export const clauseCasesSchema = z.object({
-  flag: z
-    .array(flagCaseSchema)
-    .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause has no flag case" }),
-  allow: z
-    .array(allowCaseSchema)
-    .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause has no allow case" }),
+  flag: z.array(flagCaseSchema).refine((entries) => entryCount(entries) === "some", {
+    error: "a mechanical clause has no flag case",
+  }),
+  allow: z.array(allowCaseSchema).refine((entries) => entryCount(entries) === "some", {
+    error: "a mechanical clause has no allow case",
+  }),
 });
 
 const clauseDefinitionSchema = z.discriminatedUnion("kind", [
@@ -108,7 +129,9 @@ const clauseDefinitionSchema = z.discriminatedUnion("kind", [
       summary: z.string(),
       mechanisms: z
         .array(ruleSetMechanismSchema)
-        .refine((entries) => entryCount(entries) === "some", { error: "a mechanical clause names no mechanism" }),
+        .refine((entries) => entryCount(entries) === "some", {
+          error: "a mechanical clause names no mechanism",
+        }),
       anchor: anchorKindSchema,
       exceptions: z.enum(["allowed", "refused"]).default("allowed"),
       cases: clauseCasesSchema,
@@ -150,10 +173,22 @@ const clauseSettingDeclarationSchema = z
     if (declaration.choices === undefined) return;
     const defaultKind = jsonKindOf({ value: declaration.default });
     if (declaration.choices.some((choice) => jsonKindOf({ value: choice }) !== defaultKind)) {
-      context.addIssue({ code: "custom", path: ["choices"], message: `every choice must be ${JSON_KIND_NAMES[defaultKind]}, as the default is` });
+      context.addIssue({
+        code: "custom",
+        path: ["choices"],
+        message: `every choice must be ${JSON_KIND_NAMES[defaultKind]}, as the default is`,
+      });
     }
-    if (!declaration.choices.some((choice) => sameJsonValue({ left: choice, right: declaration.default }) === "same")) {
-      context.addIssue({ code: "custom", path: ["default"], message: "the default must be one of the choices" });
+    if (
+      !declaration.choices.some(
+        (choice) => sameJsonValue({ left: choice, right: declaration.default }) === "same",
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["default"],
+        message: "the default must be one of the choices",
+      });
     }
   });
 
@@ -180,21 +215,38 @@ export const pieceFileSchema = z.object({
     }),
 });
 
-export const isSourceCaseSchemaEqual: Equal<DeepReadonly<z.output<typeof sourceCaseSchema>>, SourceCase> = true;
+export const isSourceCaseSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof sourceCaseSchema>>,
+  SourceCase
+> = true;
 
-export const isDisciplineFileSchemaEqual: Equal<DeepReadonly<z.output<typeof disciplineFileSchema>>, DisciplineFile> = true;
+export const isDisciplineFileSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof disciplineFileSchema>>,
+  DisciplineFile
+> = true;
 
-export const isPieceFileSchemaEqual: Equal<DeepReadonly<z.output<typeof pieceFileSchema>>, PieceFile> = true;
+export const isPieceFileSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof pieceFileSchema>>,
+  PieceFile
+> = true;
 
-export const isAuthoredSourceCaseSchemaEqual: Equal<DeepReadonly<z.input<typeof sourceCaseSchema>>, AuthoredSourceCase> = true;
+export const isAuthoredSourceCaseSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof sourceCaseSchema>>,
+  AuthoredSourceCase
+> = true;
 
-export const isAuthoredDisciplineFileSchemaEqual: Equal<DeepReadonly<z.input<typeof disciplineFileSchema>>, AuthoredDisciplineFile> = true;
+export const isAuthoredDisciplineFileSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof disciplineFileSchema>>,
+  AuthoredDisciplineFile
+> = true;
 
-export const isAuthoredPieceFileSchemaEqual: Equal<DeepReadonly<z.input<typeof pieceFileSchema>>, AuthoredPieceFile> = true;
+export const isAuthoredPieceFileSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof pieceFileSchema>>,
+  AuthoredPieceFile
+> = true;
 
-const isContentRefusal = (
-  issue: z.core.$ZodIssue,
-): issue is z.core.$ZodIssueCustom => issue.code === "custom";
+const isContentRefusal = (issue: z.core.$ZodIssue): issue is z.core.$ZodIssueCustom =>
+  issue.code === "custom";
 
 const schemaRefusal = (request: {
   readonly path: string;
@@ -229,8 +281,7 @@ export const pieceFilePath = (request: {
   readonly installRoot: AbsolutePath;
   readonly mechanism: EngineId;
   readonly discipline: DisciplineId;
-}): string =>
-  request.path.join({ segments: [...pieceFolderSegmentsOf(request), "piece.json"] });
+}): string => request.path.join({ segments: [...pieceFolderSegmentsOf(request), "piece.json"] });
 
 export const readDisciplineFile = (request: {
   readonly fileText: FileTextPort;
@@ -255,7 +306,10 @@ export const readDisciplineFile = (request: {
   return { outcome: "ok", value: parsed.data };
 };
 
-type MechanicalDefinition = Extract<DisciplineFile["clauses"][number], { readonly kind: "mechanical" }>;
+type MechanicalDefinition = Extract<
+  DisciplineFile["clauses"][number],
+  { readonly kind: "mechanical" }
+>;
 
 const undeclaredCaseEditionOf = (request: {
   readonly piece: PieceFile;
@@ -264,9 +318,11 @@ const undeclaredCaseEditionOf = (request: {
   request.piece.clauses
     .flatMap((entry) => {
       const definition = request.discipline.clauses.find(
-        (clause): clause is MechanicalDefinition => clause.id === entry.clause && clause.kind === "mechanical",
+        (clause): clause is MechanicalDefinition =>
+          clause.id === entry.clause && clause.kind === "mechanical",
       );
-      const cases = definition === undefined ? [] : [...definition.cases.flag, ...definition.cases.allow];
+      const cases =
+        definition === undefined ? [] : [...definition.cases.flag, ...definition.cases.allow];
       return cases.flatMap((sourceCase) =>
         sourceCase.edition === undefined || entry.editions.declared.includes(sourceCase.edition)
           ? []

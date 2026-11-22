@@ -6,10 +6,7 @@
   "settings": {
     "module": "compiler-overrides.ts"
   },
-  "editions": [
-    "1",
-    "2"
-  ],
+  "editions": ["1", "2"],
   "implementation": {
     "symptom": "strictness-weakened",
     "check": "strict"

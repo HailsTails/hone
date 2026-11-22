@@ -8,6 +8,8 @@ export const NOT_RUN = "not-run";
 
 export const NOT_ADOPTED = "not-adopted";
 
-export const isRuleSetName = (text: string): text is RuleSetName => RULE_SET_NAME_PATTERN.test(text);
-export const isDisciplineId = (text: string): text is DisciplineId => DISCIPLINE_ID_PATTERN.test(text);
+export const isRuleSetName = (text: string): text is RuleSetName =>
+  RULE_SET_NAME_PATTERN.test(text);
+export const isDisciplineId = (text: string): text is DisciplineId =>
+  DISCIPLINE_ID_PATTERN.test(text);
 export const isClauseId = (text: string): text is ClauseId => CLAUSE_ID_PATTERN.test(text);

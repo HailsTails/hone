@@ -1,18 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+
+import type {
+  Check,
+  Engine,
+  Principle,
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { Result } from "../../../domain/result.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import { type SettingsReading, readSettings } from "./read-settings.ts";
+import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
 import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
-import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import type { Result } from "../../../domain/result.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { editionOf } from "../../../domain/rule-set/edition-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { type SettingsReading, readSettings } from "./read-settings.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
@@ -22,7 +30,12 @@ const AUDIT = "walker" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -47,17 +60,47 @@ const LOOP_KEYWORD: Symptom = {
 
 const REBINDING: Symptom = { ...LOOP_KEYWORD, name: "rebinding", title: "Rebinding" };
 
-const LOOPS_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
+const LOOPS_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
 
-const TEST_BODY_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
+const TEST_BODY_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
 
-const LAYERING_CLAUSE: ClauseAddress = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
+const LAYERING_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-13"),
+  clause: clauseIdOf("layering"),
+};
 
-const LOOP_KEYWORD_LOOPS: Check = { name: "loops", symptom: LOOP_KEYWORD, clause: LOOPS_CLAUSE, engines: [WALKER, ESLINT_ENGINE], forms: [] };
+const LOOP_KEYWORD_LOOPS: Check = {
+  name: "loops",
+  symptom: LOOP_KEYWORD,
+  clause: LOOPS_CLAUSE,
+  engines: [WALKER, ESLINT_ENGINE],
+  forms: [],
+};
 
-const LOOP_KEYWORD_TEST_BODY: Check = { name: "test-body", symptom: LOOP_KEYWORD, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-for-loop"] };
+const LOOP_KEYWORD_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: LOOP_KEYWORD,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-for-loop"],
+};
 
-const REBINDING_TEST_BODY: Check = { name: "test-body", symptom: REBINDING, clause: TEST_BODY_CLAUSE, engines: [WALKER], forms: ["a-let"] };
+const REBINDING_TEST_BODY: Check = {
+  name: "test-body",
+  symptom: REBINDING,
+  clause: TEST_BODY_CLAUSE,
+  engines: [WALKER],
+  forms: ["a-let"],
+};
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS],
@@ -108,8 +151,14 @@ const SETTINGS_FILE: SettingsFile = {
   ruleSets: [],
   checks: [
     { address: LOOPS_ADDRESS, state: { state: "run", engine: "walker" } },
-    { address: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#test-body" }, state: { state: "not-adopted" } },
-    { address: { ruleSet: TOOL_RULE_SET, check: "rebinding#test-body" }, state: { state: "not-adopted" } },
+    {
+      address: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#test-body" },
+      state: { state: "not-adopted" },
+    },
+    {
+      address: { ruleSet: TOOL_RULE_SET, check: "rebinding#test-body" },
+      state: { state: "not-adopted" },
+    },
   ],
   checkSettings: [{ address: LOOPS_ADDRESS, values: { edition: "2" } }],
   forfeiture: "elsewhere",
@@ -120,22 +169,42 @@ const SETTINGS_FILE: SettingsFile = {
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
 };
 
-const formatGiving = (file: Result<SettingsFile, SettingsFileFault>): Pick<SettingsFileFormat, "fileOf"> => ({
+const formatGiving = (
+  file: Result<SettingsFile, SettingsFileFault>,
+): Pick<SettingsFileFormat, "fileOf"> => ({
   fileOf: vi.fn<SettingsFileFormat["fileOf"]>().mockReturnValue(file),
 });
 
 const SETTINGS_FORMAT = formatGiving({ outcome: "ok", value: SETTINGS_FILE });
 
-const sourcesHolding = (request: { readonly document: unknown; readonly piece: ReturnType<SettingsSources["pieceClause"]> }): SettingsSources => ({
-  settingsFile: vi.fn<SettingsSources["settingsFile"]>().mockReturnValue({ outcome: "ok", value: { path: SETTINGS_PATH, document: request.document } }),
-  ruleSetRoot: vi.fn<SettingsSources["ruleSetRoot"]>().mockReturnValue({ outcome: "ok", value: INSTALL_ROOT }),
-  catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({ outcome: "ok", value: { held: "catalogue", catalogue: SETTINGS_CATALOGUE } }),
+const sourcesHolding = (request: {
+  readonly document: unknown;
+  readonly piece: ReturnType<SettingsSources["pieceClause"]>;
+}): SettingsSources => ({
+  settingsFile: vi
+    .fn<SettingsSources["settingsFile"]>()
+    .mockReturnValue({ outcome: "ok", value: { path: SETTINGS_PATH, document: request.document } }),
+  ruleSetRoot: vi
+    .fn<SettingsSources["ruleSetRoot"]>()
+    .mockReturnValue({ outcome: "ok", value: INSTALL_ROOT }),
+  catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
+    outcome: "ok",
+    value: { held: "catalogue", catalogue: SETTINGS_CATALOGUE },
+  }),
   pieceClause: vi.fn<SettingsSources["pieceClause"]>().mockReturnValue(request.piece),
 });
 
 describe("readSettings", () => {
   it("gives the reading version 1 gives for the same choices, with every record's why-chain required", () => {
-    expect(readSettings({ settingsFormat: SETTINGS_FORMAT, sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }) })).toEqual<{
+    expect(
+      readSettings({
+        settingsFormat: SETTINGS_FORMAT,
+        sources: sourcesHolding({
+          document: DOCUMENT,
+          piece: { outcome: "ok", value: LOOPS_PIECE },
+        }),
+      }),
+    ).toEqual<{
       readonly outcome: "ok";
       readonly value: SettingsReading;
     }>({
@@ -147,7 +216,9 @@ describe("readSettings", () => {
             selected: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, exceptions: "allowed" }],
             notAdopted: [TEST_BODY_CLAUSE],
             notRun: [],
-            editions: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, edition: SECOND, latest: SECOND }],
+            editions: [
+              { address: LOOPS_CLAUSE, mechanism: AUDIT, edition: SECOND, latest: SECOND },
+            ],
           },
           bindings: [
             {
@@ -162,7 +233,13 @@ describe("readSettings", () => {
               },
             },
           ],
-          clauseRoots: [{ clause: LOOPS_CLAUSE, ruleSetRoot: INSTALL_ROOT, checks: [{ name: "loops", symptom: { name: "loop-keyword" } }] }],
+          clauseRoots: [
+            {
+              clause: LOOPS_CLAUSE,
+              ruleSetRoot: INSTALL_ROOT,
+              checks: [{ name: "loops", symptom: { name: "loop-keyword" } }],
+            },
+          ],
           excluded: [],
           eslintConfigRoots: [],
           fileExceptionWhyChains: "required",
@@ -177,14 +254,24 @@ describe("readSettings", () => {
 
   it("reads the settings file's document through the settings format", () => {
     const settingsFormat = formatGiving({ outcome: "ok", value: SETTINGS_FILE });
-    readSettings({ settingsFormat, sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }) });
+    readSettings({
+      settingsFormat,
+      sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+    });
     expect(vi.mocked(settingsFormat.fileOf).mock.calls).toEqual([[{ document: DOCUMENT }]]);
   });
 
   it("asks for the piece of each run clause from the root of its rule set", () => {
-    const sources = sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } });
+    const sources = sourcesHolding({
+      document: DOCUMENT,
+      piece: { outcome: "ok", value: LOOPS_PIECE },
+    });
     readSettings({ settingsFormat: SETTINGS_FORMAT, sources });
-    expect(sources.pieceClause).toHaveBeenCalledWith({ ruleSetRoot: INSTALL_ROOT, clause: LOOPS_CLAUSE, mechanism: AUDIT });
+    expect(sources.pieceClause).toHaveBeenCalledWith({
+      ruleSetRoot: INSTALL_ROOT,
+      clause: LOOPS_CLAUSE,
+      mechanism: AUDIT,
+    });
   });
 
   it("notes each declared convention no check reads yet", () => {
@@ -203,7 +290,10 @@ describe("readSettings", () => {
             },
           },
         }),
-        sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+        sources: sourcesHolding({
+          document: DOCUMENT,
+          piece: { outcome: "ok", value: LOOPS_PIECE },
+        }),
       }),
     ).toMatchObject({
       outcome: "ok",
@@ -221,16 +311,24 @@ describe("readSettings", () => {
       readSettings({
         settingsFormat: formatGiving({
           outcome: "failed",
-          error: { kind: "malformed", detail: "✖ removed: \"fileExceptionWhyChains\"; every record shows its why-chain in version 2\n  → at fileExceptionWhyChains" },
+          error: {
+            kind: "malformed",
+            detail:
+              '✖ removed: "fileExceptionWhyChains"; every record shows its why-chain in version 2\n  → at fileExceptionWhyChains',
+          },
         }),
-        sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+        sources: sourcesHolding({
+          document: DOCUMENT,
+          piece: { outcome: "ok", value: LOOPS_PIECE },
+        }),
       }),
     ).toEqual({
       outcome: "failed",
       error: {
         kind: "file-malformed",
         path: SETTINGS_PATH,
-        detail: "✖ removed: \"fileExceptionWhyChains\"; every record shows its why-chain in version 2\n  → at fileExceptionWhyChains",
+        detail:
+          '✖ removed: "fileExceptionWhyChains"; every record shows its why-chain in version 2\n  → at fileExceptionWhyChains',
       },
     });
   });
@@ -240,22 +338,50 @@ describe("readSettings", () => {
       readSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
-          value: { ...SETTINGS_FILE, checks: [{ address: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#nowhere" }, state: { state: "run", engine: "walker" } }], checkSettings: [] },
+          value: {
+            ...SETTINGS_FILE,
+            checks: [
+              {
+                address: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#nowhere" },
+                state: { state: "run", engine: "walker" },
+              },
+            ],
+            checkSettings: [],
+          },
         }),
-        sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+        sources: sourcesHolding({
+          document: DOCUMENT,
+          piece: { outcome: "ok", value: LOOPS_PIECE },
+        }),
       }),
-    ).toEqual({ outcome: "failed", error: { kind: "unknown-check", address: "loop-keyword#nowhere" } });
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "unknown-check", address: "loop-keyword#nowhere" },
+    });
   });
 
   it("refuses an edition the piece does not declare, naming the check it was given on", () => {
     expect(
       readSettings({
-        settingsFormat: formatGiving({ outcome: "ok", value: { ...SETTINGS_FILE, checkSettings: [{ address: LOOPS_ADDRESS, values: { edition: "3" } }] } }),
-        sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+        settingsFormat: formatGiving({
+          outcome: "ok",
+          value: {
+            ...SETTINGS_FILE,
+            checkSettings: [{ address: LOOPS_ADDRESS, values: { edition: "3" } }],
+          },
+        }),
+        sources: sourcesHolding({
+          document: DOCUMENT,
+          piece: { outcome: "ok", value: LOOPS_PIECE },
+        }),
       }),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "file-malformed", path: SETTINGS_PATH, detail: "checkSettings for loop-keyword#loops: edition must be one of \"1\", \"2\"" },
+      error: {
+        kind: "file-malformed",
+        path: SETTINGS_PATH,
+        detail: 'checkSettings for loop-keyword#loops: edition must be one of "1", "2"',
+      },
     });
   });
 
@@ -263,8 +389,17 @@ describe("readSettings", () => {
     expect(
       readSettings({
         settingsFormat: SETTINGS_FORMAT,
-        sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } } }),
+        sources: sourcesHolding({
+          document: DOCUMENT,
+          piece: {
+            outcome: "failed",
+            error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT },
+          },
+        }),
       }),
-    ).toEqual({ outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } });
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT },
+    });
   });
 });

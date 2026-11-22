@@ -5,11 +5,16 @@ export type ScriptOptionAdvice = { readonly problem: string; readonly fix: strin
 
 const UNJUDGED_OPTION = "so Hone cannot tell what the option does to the files under check";
 
-export const scriptOptionAdviceOf = (request: { readonly cause: ScriptOptionCause }): ScriptOptionAdvice => {
+export const scriptOptionAdviceOf = (request: {
+  readonly cause: ScriptOptionCause;
+}): ScriptOptionAdvice => {
   const { cause } = request;
   switch (cause.kind) {
     case "weakens-run":
-      return { problem: "weakens the script's whole run, so no record can cover it", fix: "remove it from the script" };
+      return {
+        problem: "weakens the script's whole run, so no record can cover it",
+        fix: "remove it from the script",
+      };
     case "after-another-command":
       return {
         problem: `${cause.command} is not the first command of its script, ${UNJUDGED_OPTION}`,

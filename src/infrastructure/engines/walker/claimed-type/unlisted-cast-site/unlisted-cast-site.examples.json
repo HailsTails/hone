@@ -4,49 +4,37 @@
       "name": "assertion to a domain type",
       "fileName": "bad-cast.ts",
       "source": "type Category = \"inbox\" | \"today\";\nexport const forceCategory = (rawText: string): Category => {\n  return rawText as Category;\n};\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     },
     {
       "name": "assertion on a parsed json body",
       "fileName": "bad-json-cast.ts",
       "source": "export const parseResponseUnsafely = async <T>(response: Response): Promise<T> => {\n  const parsed = await response.json();\n  return parsed as T;\n};\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     },
     {
       "name": "angle-bracket assertion",
       "fileName": "angle.ts",
       "source": "interface User { readonly id: string }\ndeclare const raw: unknown;\nexport const user = <User>raw;\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     },
     {
       "name": "as unknown",
       "fileName": "unknown.ts",
       "source": "export const parsed = JSON.parse(text) as unknown;\n",
-      "expectedLines": [
-        1
-      ]
+      "expectedLines": [1]
     },
     {
       "name": "double cast through unknown",
       "fileName": "double-cast.ts",
       "source": "interface User { readonly id: string }\ndeclare const raw: string;\nexport const user = raw as unknown as User;\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     },
     {
       "name": "as a name imported from a package",
       "fileName": "package-type-cast.ts",
       "source": "import { z } from \"zod\";\ndeclare const raw: unknown;\nexport const schema = raw as z;\n",
-      "expectedLines": [
-        3
-      ]
+      "expectedLines": [3]
     }
   ],
   "allow": [

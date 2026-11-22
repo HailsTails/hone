@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
+
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 import { checksRunnerModuleSchema } from "../../protocol/checks/checks-runner-module-schema.ts";
 import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
 import { checksRunner, runner } from "./runner.ts";
-import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 describe("runner", () => {
   it("is an embedded runner module core accepts, projecting config overrides and inline disables", () => {
@@ -27,7 +28,11 @@ describe("runner", () => {
     expect(
       await runner.conform({
         clause: {
-          address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("first-check") },
+          address: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("XX-1"),
+            clause: clauseIdOf("first-check"),
+          },
           anchor: { kind: "file" },
           pieceRoot: "/install/mechanisms/eslint/XX-1",
           clauseSettings: {},

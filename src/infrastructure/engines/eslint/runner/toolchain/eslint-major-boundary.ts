@@ -10,6 +10,8 @@ export type NearestLookupOptions = { readonly flags: readonly string[] };
 
 export type EslintMajorBoundary = {
   readonly nearestLookup: NearestLookupOptions;
-  readonly reportDataOf: (request: { readonly descriptor: Rule.ReportDescriptor }) => ReportData | undefined;
+  readonly reportDataOf: (request: {
+    readonly descriptor: Rule.ReportDescriptor;
+  }) => ReportData | undefined;
   readonly declarationText: string;
 };

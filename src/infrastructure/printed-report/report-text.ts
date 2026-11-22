@@ -1,17 +1,15 @@
-import { versionOneEngineNameOf } from "../../domain/rule-set/engine-id.ts";
-import { recordImportOf } from "../../domain/records/discipline-exceptions/exception-entry.ts";
-import type { ExceptionRecord, InvalidRecord, RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { AttributedNativeException } from "../../domain/finding/governance.ts";
+import { recordImportOf } from "../../domain/records/discipline-exceptions/exception-entry.ts";
+import type {
+  ExceptionRecord,
+  InvalidRecord,
+  RecordPlace,
+} from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { ExemptedFinding } from "../../domain/records/discipline-exceptions/governance.ts";
-import type { InlineReach, ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
-import { PRUNE_DEBT_SUBCOMMAND } from "../command-line/arguments/subcommand-names.ts";
-import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
-import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
-import type { ReportOutput } from "../../domain/settings/report-output.ts";
-import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../../domain/report/assessment-file.ts";
-import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
+import {
+  ASSESSMENT_FILE_NAME,
+  assessmentSectionHeading,
+} from "../../domain/report/assessment-file.ts";
 import type {
   AssessmentFileNote,
   CheckReport,
@@ -24,10 +22,28 @@ import type {
   Unmeasured,
 } from "../../domain/report/check-report.ts";
 import { SECTION_NAMES, type SectionName } from "../../domain/report/section-roles.ts";
-import { printedSectionLines, type ReportSection } from "./section-selection.ts";
 import { verdictOf } from "../../domain/report/verdict.ts";
-import { escapedLineBreaks, locatedFindingLine, symptomFindingLine } from "./findings/finding-line.ts";
-import { NO_SYMPTOM_GUIDE, type SymptomGuide, symptomNoteLinesOf, symptomReadingIn } from "./symptoms/symptom-notes.ts";
+import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
+import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
+import { versionOneEngineNameOf } from "../../domain/rule-set/engine-id.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
+import type { InlineReach, ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
+import type { ReportOutput } from "../../domain/settings/report-output.ts";
+import { PRUNE_DEBT_SUBCOMMAND } from "../command-line/arguments/subcommand-names.ts";
+import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
+import {
+  escapedLineBreaks,
+  locatedFindingLine,
+  symptomFindingLine,
+} from "./findings/finding-line.ts";
+import { printedSectionLines, type ReportSection } from "./section-selection.ts";
+import {
+  NO_SYMPTOM_GUIDE,
+  type SymptomGuide,
+  symptomNoteLinesOf,
+  symptomReadingIn,
+} from "./symptoms/symptom-notes.ts";
 
 const importNote = (request: { readonly record: ExceptionRecord }): string => {
   const recordImport = recordImportOf(request);
@@ -54,7 +70,8 @@ const recordLine = (request: { readonly record: ExceptionRecord }): string =>
 
 const INLINE_REACH_NOTE: Readonly<Record<InlineReach, string>> = {
   "one-clause": "",
-  "every-selected-clause": " names no rule and escapes every selected clause: naming the rule is the cheap fix",
+  "every-selected-clause":
+    " names no rule and escapes every selected clause: naming the rule is the cheap fix",
 };
 
 const UNJUDGED_OPTION = "so Hone cannot tell what the option does to the files under check";
@@ -74,7 +91,8 @@ const scriptOptionNote = (request: { readonly cause: ScriptOptionCause }): strin
 
 const inlineDetail = (request: {
   readonly exception: { readonly file: string; readonly line: number; readonly text: string };
-}): string => `${request.exception.file}:${request.exception.line} ${escapedLineBreaks({ text: request.exception.text })}`;
+}): string =>
+  `${request.exception.file}:${request.exception.line} ${escapedLineBreaks({ text: request.exception.text })}`;
 
 const unrecordedDetail = (request: { readonly exception: AttributedNativeException }): string => {
   switch (request.exception.kind) {
@@ -95,7 +113,10 @@ const unrecordedDetail = (request: { readonly exception: AttributedNativeExcepti
 const unrecordedLine = (request: { readonly exception: AttributedNativeException }): string =>
   `${clauseAddressText({ address: request.exception.clause })} ${versionOneEngineNameOf(request.exception.mechanism)} ${request.exception.kind} ${unrecordedDetail(request)}`;
 
-const placeText = (request: { readonly place: RecordPlace; readonly form: "entry" | "index" }): string => {
+const placeText = (request: {
+  readonly place: RecordPlace;
+  readonly form: "entry" | "index";
+}): string => {
   const { place } = request;
   if (place.layout === "split") {
     return `${place.file} exceptions[${place.index}]`;
@@ -176,17 +197,21 @@ const baseDependentLine = (request: { readonly unmeasured: BaseDependentUnmeasur
 
 type NextCommands = { readonly projectCommand: string; readonly pruneCommand: string };
 
-const projectionFileOf = (request: { readonly mechanism: EngineId }): string => `disciplines.${request.mechanism}.mjs`;
+const projectionFileOf = (request: { readonly mechanism: EngineId }): string =>
+  `disciplines.${request.mechanism}.mjs`;
 
 const refreshStep = (request: NextCommands & { readonly mechanism: EngineId }): string =>
   `run ${request.projectCommand} and commit every ${projectionFileOf(request)} it writes`;
 
-const GENERATED_CONFIGURATION = "or, where a tool such as sku generates the configuration, last in the configuration the tool takes";
+const GENERATED_CONFIGURATION =
+  "or, where a tool such as sku generates the configuration, last in the configuration the tool takes";
 
 type ReportRequest = NextCommands & { readonly report: CheckReport };
 
 const sliceNote = (request: ReportRequest & { readonly mechanism: EngineId }): string =>
-  request.report.projectionProblems.some((problem) => problem.scope === "slice" && problem.mechanism === request.mechanism)
+  request.report.projectionProblems.some(
+    (problem) => problem.scope === "slice" && problem.mechanism === request.mechanism,
+  )
     ? `; the ${request.mechanism} lines under projectionProblems name the package slices involved`
     : "";
 
@@ -196,14 +221,18 @@ const nestedNote = (request: NextCommands & { readonly folders: readonly RepoPat
     : `; ${request.folders.join(", ")} hold their own disciplines.json, and nested Hone configurations are not supported yet (${NESTED_CONFIGURATION_ISSUE}): to govern such a folder from this repository, remove its disciplines.json and keep its records here, then run ${request.projectCommand}, which writes its slice`;
 
 const notIncludedLine = (
-  request: ReportRequest & { readonly unmeasured: Extract<MechanismNotRun, { readonly projection: "not-included" }> },
+  request: ReportRequest & {
+    readonly unmeasured: Extract<MechanismNotRun, { readonly projection: "not-included" }>;
+  },
 ): string => {
   const { mechanism, nestedConfigurations } = request.unmeasured;
   const file = projectionFileOf({ mechanism });
   return `mechanism-not-run ${mechanism} not-included: the ${mechanism} configuration leaves the projection out of effect for a file under check; spread the default export of ${file}, or of a package's own ${file} in that package, last in the configuration that file loads, after every other block (an import placed last without the spread applies nothing), ${GENERATED_CONFIGURATION}${sliceNote({ ...request, mechanism })}${nestedNote({ ...request, folders: nestedConfigurations })}`;
 };
 
-const mechanismNotRunLine = (request: ReportRequest & { readonly unmeasured: MechanismNotRun }): string => {
+const mechanismNotRunLine = (
+  request: ReportRequest & { readonly unmeasured: MechanismNotRun },
+): string => {
   switch (request.unmeasured.projection) {
     case "missing":
       return `mechanism-not-run ${versionOneEngineNameOf(request.unmeasured.mechanism)} missing: ${projectionFileOf(request.unmeasured)} is not written; ${refreshStep({ ...request, mechanism: request.unmeasured.mechanism })}`;
@@ -214,7 +243,8 @@ const mechanismNotRunLine = (request: ReportRequest & { readonly unmeasured: Mec
 
 type SliceProblem = Extract<ProjectionProblem, { readonly scope: "slice" }>;
 
-const folderOf = (request: { readonly slice: RepoPath }): string => request.slice.split("/").slice(0, -1).join("/");
+const folderOf = (request: { readonly slice: RepoPath }): string =>
+  request.slice.split("/").slice(0, -1).join("/");
 
 const sliceProblemReason = (request: NextCommands & { readonly problem: SliceProblem }): string => {
   const { mechanism, slice } = request.problem;
@@ -231,7 +261,9 @@ const sliceProblemReason = (request: NextCommands & { readonly problem: SlicePro
   }
 };
 
-const projectionProblemLine = (request: NextCommands & { readonly problem: ProjectionProblem }): string => {
+const projectionProblemLine = (
+  request: NextCommands & { readonly problem: ProjectionProblem },
+): string => {
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
@@ -265,13 +297,24 @@ const assessmentLine = (request: { readonly partial: PartialAssessment }): strin
 const sectionRead = (request: { readonly reading: ClauseReading }): string =>
   `read the ${JSON.stringify(assessmentSectionHeading(request.reading))} section of ${ASSESSMENT_FILE_NAME}`;
 
-const PAGE_ANCHORS: Readonly<Record<ClausePage["section"], string>> = { spirit: "#spirit", fix: "#fix", "whole-page": "" };
+const PAGE_ANCHORS: Readonly<Record<ClausePage["section"], string>> = {
+  spirit: "#spirit",
+  fix: "#fix",
+  "whole-page": "",
+};
 
-const PAGE_KINDS: Readonly<Record<ClausePage["section"], string>> = { spirit: "rule page", fix: "check page", "whole-page": "check page" };
+const PAGE_KINDS: Readonly<Record<ClausePage["section"], string>> = {
+  spirit: "rule page",
+  fix: "check page",
+  "whole-page": "check page",
+};
 
 const NO_PAGE = "its rule set names no page for it";
 
-const readTargets = (request: { readonly reading: ClauseReading; readonly targets: readonly string[] }): readonly string[] => {
+const readTargets = (request: {
+  readonly reading: ClauseReading;
+  readonly targets: readonly string[];
+}): readonly string[] => {
   const sectioned = request.reading.assessmentSection === "present";
   if (request.targets.length === 0) {
     return sectioned ? [sectionRead(request)] : [];
@@ -281,7 +324,9 @@ const readTargets = (request: { readonly reading: ClauseReading; readonly target
 };
 
 const pointedReading = (request: { readonly reading: ClauseReading }): string => {
-  const targets = request.reading.pages.filter((page) => page.presence === "present").map((page) => `${page.path}${PAGE_ANCHORS[page.section]}`);
+  const targets = request.reading.pages
+    .filter((page) => page.presence === "present")
+    .map((page) => `${page.path}${PAGE_ANCHORS[page.section]}`);
   const missing = request.reading.pages
     .filter((page) => page.presence === "absent")
     .map((page) => `its rule set has no ${PAGE_KINDS[page.section]} at ${page.path}`);
@@ -290,7 +335,9 @@ const pointedReading = (request: { readonly reading: ClauseReading }): string =>
 };
 
 const assessmentContext = (request: { readonly reading: ClauseReading }): string =>
-  request.reading.assessmentSection === "not-assessed" ? `; ${ASSESSMENT_FILE_NAME} does not assess this clause` : "";
+  request.reading.assessmentSection === "not-assessed"
+    ? `; ${ASSESSMENT_FILE_NAME} does not assess this clause`
+    : "";
 
 type SpiritBelow = "rule-pages" | "symptom-rules" | "none";
 
@@ -300,8 +347,12 @@ const SPIRIT_LEADS: Readonly<Record<SpiritBelow, string>> = {
   none: "",
 };
 
-const presentPagesIn = (request: { readonly entries: readonly ReadFirstEntry[] }): readonly ClausePage[] =>
-  request.entries.flatMap((entry) => (entry.kind === "clause" ? entry.pages.filter((page) => page.presence === "present") : []));
+const presentPagesIn = (request: {
+  readonly entries: readonly ReadFirstEntry[];
+}): readonly ClausePage[] =>
+  request.entries.flatMap((entry) =>
+    entry.kind === "clause" ? entry.pages.filter((page) => page.presence === "present") : [],
+  );
 
 const spiritBelowIn = (request: { readonly entries: readonly ReadFirstEntry[] }): SpiritBelow => {
   const pages = presentPagesIn(request);
@@ -320,10 +371,14 @@ const assessmentFileState = (request: { readonly note: AssessmentFileNote }): st
   }
 };
 
-const assessmentFileLine = (request: { readonly note: AssessmentFileNote; readonly spiritBelow: SpiritBelow }): string =>
-  `${SPIRIT_LEADS[request.spiritBelow]}${assessmentFileState(request)}`;
+const assessmentFileLine = (request: {
+  readonly note: AssessmentFileNote;
+  readonly spiritBelow: SpiritBelow;
+}): string => `${SPIRIT_LEADS[request.spiritBelow]}${assessmentFileState(request)}`;
 
-const reprojectionStep = (request: NextCommands & { readonly projections: readonly EngineId[] }): string =>
+const reprojectionStep = (
+  request: NextCommands & { readonly projections: readonly EngineId[] },
+): string =>
   request.projections.length === 0
     ? ", and commit the exception records it changes"
     : `, then run ${request.projectCommand} and commit the exception records with every ${request.projections
@@ -333,7 +388,9 @@ const reprojectionStep = (request: NextCommands & { readonly projections: readon
 const paidDebtLine = (request: NextCommands & { readonly note: PaidDebtNote }): string =>
   `${PRUNE_DEBT_SUBCOMMAND}: ${counted({ count: request.note.fileCarveOuts, noun: "file carve-out" })} under stale or forfeited still ${request.note.fileCarveOuts === 1 ? "records" : "record"} debt that is paid; run ${request.pruneCommand} to remove what is paid${reprojectionStep({ ...request, projections: request.note.projections })}`;
 
-const readFirstLine = (request: NextCommands & { readonly entry: ReadFirstEntry; readonly spiritBelow: SpiritBelow }): string => {
+const readFirstLine = (
+  request: NextCommands & { readonly entry: ReadFirstEntry; readonly spiritBelow: SpiritBelow },
+): string => {
   switch (request.entry.kind) {
     case "assessment-file":
       return assessmentFileLine({ note: request.entry, spiritBelow: request.spiritBelow });
@@ -350,12 +407,17 @@ type ReportLines = (request: GuidedReport) => readonly string[];
 
 const SECTION_LINES: Readonly<Record<SectionName, ReportLines>> = {
   excluded: (request) => request.report.excluded,
-  notAdopted: (request) => request.report.notAdopted.map((address) => clauseAddressText({ address })),
+  notAdopted: (request) =>
+    request.report.notAdopted.map((address) => clauseAddressText({ address })),
   notRun: (request) =>
-    request.report.notRun.map((address) => `${clauseAddressText({ address })} adopted, mechanism not run: enforced by review`),
+    request.report.notRun.map(
+      (address) =>
+        `${clauseAddressText({ address })} adopted, mechanism not run: enforced by review`,
+    ),
   editions: (request) =>
     request.report.editions.map(
-      (reading) => `${clauseAddressText({ address: reading.address })} ${versionOneEngineNameOf(reading.mechanism)} edition ${reading.edition} of ${reading.latest}`,
+      (reading) =>
+        `${clauseAddressText({ address: reading.address })} ${versionOneEngineNameOf(reading.mechanism)} edition ${reading.edition} of ${reading.latest}`,
     ),
   findings: (request) =>
     request.report.findings.map((finding) =>
@@ -365,18 +427,24 @@ const SECTION_LINES: Readonly<Record<SectionName, ReportLines>> = {
   uncovered: (request) => request.report.uncovered.map((address) => clauseAddressText({ address })),
   stale: (request) => request.report.stale.map((record) => recordLine({ record })),
   forfeited: (request) => request.report.forfeited.map((record) => recordLine({ record })),
-  unrecorded: (request) => request.report.unrecorded.map((exception) => unrecordedLine({ exception })),
+  unrecorded: (request) =>
+    request.report.unrecorded.map((exception) => unrecordedLine({ exception })),
   doublyHeld: (request) =>
     request.report.doublyHeld.map(
-      (held) => `${clauseAddressText({ address: held.clause })} ${versionOneEngineNameOf(held.mechanism)} doubly-held ${held.file}`,
+      (held) =>
+        `${clauseAddressText({ address: held.clause })} ${versionOneEngineNameOf(held.mechanism)} doubly-held ${held.file}`,
     ),
   invalidRecords: (request) =>
     request.report.invalidRecords.map(
-      (invalid) => `${placeText({ place: invalid.place, form: "entry" })} ${invalid.problem.kind} ${invalidDetail(invalid)}`,
+      (invalid) =>
+        `${placeText({ place: invalid.place, form: "entry" })} ${invalid.problem.kind} ${invalidDetail(invalid)}`,
     ),
-  unmeasured: (request) => request.report.unmeasured.map((unmeasured) => unmeasuredLine({ ...request, unmeasured })),
+  unmeasured: (request) =>
+    request.report.unmeasured.map((unmeasured) => unmeasuredLine({ ...request, unmeasured })),
   projectionProblems: (request) =>
-    request.report.projectionProblems.map((problem) => projectionProblemLine({ ...request, problem })),
+    request.report.projectionProblems.map((problem) =>
+      projectionProblemLine({ ...request, problem }),
+    ),
   assessment: (request) => request.report.assessment.map((partial) => assessmentLine({ partial })),
   readFirst: (request) => {
     const spiritBelow = spiritBelowIn({ entries: request.report.readFirst });
@@ -395,7 +463,9 @@ const verdictLine = (request: { readonly report: CheckReport }): string =>
     ? `verdict: ${verdictOf(request)}`
     : `verdict: ${verdictOf(request)} (partial assessment)`;
 
-export const renderGuidedReportText = (request: GuidedReport & { readonly output: ReportOutput }): string => {
+export const renderGuidedReportText = (
+  request: GuidedReport & { readonly output: ReportOutput },
+): string => {
   const sectionLines = reportSections(request)
     .filter((section) => section.lines.length > 0)
     .flatMap((section) => printedSectionLines({ output: request.output, section }));

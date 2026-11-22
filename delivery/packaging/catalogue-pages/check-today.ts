@@ -21,16 +21,26 @@ const symptomsSeenBy = (request: { readonly sight: Sight }): readonly string[] =
   }
 };
 
-const reviewedBy = (request: { readonly file: CatalogueFile; readonly symptom: Symptom }): "a review clause" | "no review clause" => {
-  const checkedClauses = new Set(request.file.checks.map((check) => clauseAddressText({ address: check.clause })));
+const reviewedBy = (request: {
+  readonly file: CatalogueFile;
+  readonly symptom: Symptom;
+}): "a review clause" | "no review clause" => {
+  const checkedClauses = new Set(
+    request.file.checks.map((check) => clauseAddressText({ address: check.clause })),
+  );
   return request.file.clauses.some(
-    (entry) => !checkedClauses.has(clauseAddressText({ address: entry.clause })) && symptomsSeenBy({ sight: entry.sight }).includes(request.symptom.name),
+    (entry) =>
+      !checkedClauses.has(clauseAddressText({ address: entry.clause })) &&
+      symptomsSeenBy({ sight: entry.sight }).includes(request.symptom.name),
   )
     ? "a review clause"
     : "no review clause";
 };
 
-export const checkTodayOf = (request: { readonly file: CatalogueFile; readonly symptom: Symptom }): CheckToday => {
+export const checkTodayOf = (request: {
+  readonly file: CatalogueFile;
+  readonly symptom: Symptom;
+}): CheckToday => {
   const checks = request.file.checks.filter((check) => check.symptom === request.symptom.name);
   if (checks.length > 0) {
     return checks.every((check) => check.misses !== undefined) ? "partial" : "reuse";

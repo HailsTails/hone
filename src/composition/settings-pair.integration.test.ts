@@ -1,19 +1,23 @@
-import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository, readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import { versionTwoStagesOver } from "./version-two-stages.ts";
+import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
+import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
+import {
+  createSelectionRepository,
+  readRunSettings,
+} from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import { versionTwoStagesOver } from "./version-two-stages.ts";
 
 const path = createDefaultPathPort({});
 
@@ -25,7 +29,9 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", ".."] }) });
+const INSTALL_ROOT = resolvedPath({
+  path: path.join({ segments: [import.meta.dirname, "..", ".."] }),
+});
 
 const PAIR_ROOT = path.join({ segments: [import.meta.dirname, "settings-pair"] });
 
@@ -34,14 +40,26 @@ const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "befo
 const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "after"] }) });
 
 const toolCatalogue = (): SymptomCatalogue => {
-  const reading = readBoundCatalogue({ directory: createDefaultDirectoryPort({}), fileText, path, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT });
+  const reading = readBoundCatalogue({
+    directory: createDefaultDirectoryPort({}),
+    fileText,
+    path,
+    ruleSetRoot: INSTALL_ROOT,
+    installRoot: INSTALL_ROOT,
+  });
   assert(reading.outcome === "ok", "this repository's catalogue reads");
   assert(reading.value.held === "catalogue", "this repository holds a catalogue");
   return reading.value.catalogue;
 };
 
 const readBefore = () => {
-  const reading = createSelectionRepository({ repoRoot: BEFORE_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
+  const reading = createSelectionRepository({
+    repoRoot: BEFORE_ROOT,
+    installRoot: INSTALL_ROOT,
+    moduleExtension: ".ts",
+    fileText,
+    path,
+  }).read({});
   assert(reading.outcome === "ok", "the plan's version 1 file loads");
   return reading.value;
 };
@@ -70,7 +88,12 @@ const readAfter = () => {
       directory: createDefaultDirectoryPort({}),
       recordsSourceOf: vi.fn<RecordsSourceOf>(),
     },
-    locations: { repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", baseRevision: undefined },
+    locations: {
+      repoRoot: AFTER_ROOT,
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts",
+      baseRevision: undefined,
+    },
   });
   const reading = stages.settings({ catalogue: toolCatalogue() });
   assert(reading.outcome === "ok", "the plan's version 2 file loads");
@@ -111,16 +134,47 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
     expect(after.selection.selection).not.toHaveProperty("uncovered");
     expect({ available: after.available }).toMatchObject({
       available: [
-        { name: "cast-to-any", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") } },
-        { name: "stub-implementation", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-25"), clause: clauseIdOf("dependency-isolation") } },
-        { name: "parameter-reassignment", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") } },
-        { name: "throw-statement", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-10"), clause: clauseIdOf("throws-in-tests") } },
+        {
+          name: "cast-to-any",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-1"),
+            clause: clauseIdOf("any-cast"),
+          },
+        },
+        {
+          name: "stub-implementation",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-25"),
+            clause: clauseIdOf("dependency-isolation"),
+          },
+        },
+        {
+          name: "parameter-reassignment",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-44"),
+            clause: clauseIdOf("parameter-reassignment"),
+          },
+        },
+        {
+          name: "throw-statement",
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-10"),
+            clause: clauseIdOf("throws-in-tests"),
+          },
+        },
       ],
     });
   });
 
   it("requires every record's why-chain in version 2, where version 1 left it optional", () => {
-    expect({ before: readBefore().fileExceptionWhyChains, after: readAfter().selection.fileExceptionWhyChains }).toEqual({
+    expect({
+      before: readBefore().fileExceptionWhyChains,
+      after: readAfter().selection.fileExceptionWhyChains,
+    }).toEqual({
       before: "optional",
       after: "required",
     });

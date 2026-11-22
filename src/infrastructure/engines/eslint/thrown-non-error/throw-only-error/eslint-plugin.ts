@@ -21,7 +21,9 @@ const eitherNonError = (request: {
     ? "non-error"
     : "possibly-error";
 
-const compositeDisposition = (request: { readonly expression: ThrownExpression }): ThrownDisposition => {
+const compositeDisposition = (request: {
+  readonly expression: ThrownExpression;
+}): ThrownDisposition => {
   const expression = request.expression;
   if (expression.type === "LogicalExpression") {
     return eitherNonError({ first: expression.left, second: expression.right });
@@ -37,7 +39,9 @@ const compositeDisposition = (request: { readonly expression: ThrownExpression }
     : "possibly-error";
 };
 
-const thrownDisposition = (request: { readonly expression: ThrownExpression | undefined }): ThrownDisposition => {
+const thrownDisposition = (request: {
+  readonly expression: ThrownExpression | undefined;
+}): ThrownDisposition => {
   if (request.expression === undefined) {
     return "possibly-error";
   }

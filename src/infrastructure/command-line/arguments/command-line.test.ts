@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { COMMANDS, subcommandOf } from "./command-line.ts";
 
 describe("subcommandOf", () => {
@@ -17,7 +18,11 @@ describe("COMMANDS", () => {
     expect(COMMANDS.check.options).toMatchObject([
       { name: "--repo", value: "<dir>", need: "required" },
       { name: "--base-revision", value: "<revision>", need: "optional" },
-      { name: "--report-output", value: "<full|failures-only|counts|verdict-only>", need: "optional" },
+      {
+        name: "--report-output",
+        value: "<full|failures-only|counts|verdict-only>",
+        need: "optional",
+      },
       { name: "--forfeiture", value: "<this-run|elsewhere>", need: "optional" },
     ]);
   });

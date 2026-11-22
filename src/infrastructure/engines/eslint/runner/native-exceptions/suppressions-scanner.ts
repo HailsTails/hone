@@ -1,12 +1,13 @@
 import { z } from "zod";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
+
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
+import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import { suppressionsFileSchema } from "./eslint-file-schemas.ts";
 import { repoPathResolved, type SelectedRule } from "./package-script-scanner.ts";
 
@@ -21,14 +22,12 @@ const ruleExceptions = (request: {
   request.ruleIds.flatMap((ruleId) =>
     request.selectedRules
       .filter((rule) => rule.ruleId === ruleId)
-      .map(
-        (rule): NativeException => ({
-          kind: "suppression-entry",
-          clause: rule.clause,
-          file: request.file,
-          location: request.location,
-        }),
-      ),
+      .map((rule): NativeException => ({
+        kind: "suppression-entry",
+        clause: rule.clause,
+        file: request.file,
+        location: request.location,
+      })),
   );
 
 const appendedEntry = (request: {
@@ -66,12 +65,16 @@ const appendedEntry = (request: {
   };
 };
 
-const baseSegmentsOf = (request: { readonly keysRelativeTo: RepoPath | "repo-root" }): readonly string[] =>
+const baseSegmentsOf = (request: {
+  readonly keysRelativeTo: RepoPath | "repo-root";
+}): readonly string[] =>
   request.keysRelativeTo === REPO_ROOT ? [] : request.keysRelativeTo.split("/");
 
 export type SuppressionsFile = z.infer<typeof suppressionsFileSchema>;
 
-export type SuppressionsReader = (request: { readonly location: RepoPath }) => Result<SuppressionsFile, RunnerFailure>;
+export type SuppressionsReader = (request: {
+  readonly location: RepoPath;
+}) => Result<SuppressionsFile, RunnerFailure>;
 
 export const suppressionsFileOf = (request: {
   readonly location: RepoPath;
@@ -88,7 +91,10 @@ export const suppressionsFileOf = (request: {
   if (!suppressions.success) {
     return {
       outcome: "failed",
-      error: { kind: "tool-failed", detail: `${request.location}: ${z.prettifyError(suppressions.error)}` },
+      error: {
+        kind: "tool-failed",
+        detail: `${request.location}: ${z.prettifyError(suppressions.error)}`,
+      },
     };
   }
   return { outcome: "ok", value: suppressions.data };
@@ -101,7 +107,9 @@ export const suppressionEntriesIn = (request: {
   readonly selectedRules: readonly SelectedRule[];
 }): Result<readonly NativeException[], RunnerFailure> => {
   const baseSegments = baseSegmentsOf({ keysRelativeTo: request.keysRelativeTo });
-  return Object.entries(request.suppressions).reduce<Result<readonly NativeException[], RunnerFailure>>(
+  return Object.entries(request.suppressions).reduce<
+    Result<readonly NativeException[], RunnerFailure>
+  >(
     (entries, [key, rules]) =>
       appendedEntry({
         entries,
@@ -128,11 +136,20 @@ export const suppressionEntriesOf = (request: {
 };
 
 export const suppressionsReaderOf =
-  (request: { readonly fileText: FileTextPort; readonly path: PathPort; readonly repoRoot: AbsolutePath }): SuppressionsReader =>
+  (request: {
+    readonly fileText: FileTextPort;
+    readonly path: PathPort;
+    readonly repoRoot: AbsolutePath;
+  }): SuppressionsReader =>
   ({ location }) => {
-    const text = request.fileText.read({ path: request.path.join({ segments: [request.repoRoot, location] }) });
+    const text = request.fileText.read({
+      path: request.path.join({ segments: [request.repoRoot, location] }),
+    });
     if (text.outcome === "failed") {
-      return { outcome: "failed", error: { kind: "file-unreadable", file: location, detail: text.error.detail } };
+      return {
+        outcome: "failed",
+        error: { kind: "file-unreadable", file: location, detail: text.error.detail },
+      };
     }
     return suppressionsFileOf({ location, text: text.value });
   };

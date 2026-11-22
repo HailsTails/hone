@@ -1,11 +1,19 @@
 import type { z } from "zod";
-import { sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
+
+import type {
+  CarriedStanding,
+  RecordRefusal,
+  RecordsAtBase,
+} from "../../../domain/records/hone-records/hone-record.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { CarriedStanding, RecordRefusal, RecordsAtBase } from "../../../domain/records/hone-records/hone-record.ts";
+import { sameJsonValue } from "../../../domain/settings/json-values/json-kind.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
 
-const entriesAtBaseOf = (request: { readonly base: Extract<RecordsAtBase, { readonly measured: "yes" }>; readonly file: RepoPath }): readonly z.core.util.JSONType[] =>
+const entriesAtBaseOf = (request: {
+  readonly base: Extract<RecordsAtBase, { readonly measured: "yes" }>;
+  readonly file: RepoPath;
+}): readonly z.core.util.JSONType[] =>
   request.base.documents
     .filter((document) => document.file === request.file)
     .flatMap((document) => {
@@ -21,7 +29,9 @@ export const carriedStandingOf = (request: {
   if (request.base.measured === "no") {
     return { outcome: "ok", value: "unjudged" };
   }
-  return entriesAtBaseOf({ base: request.base, file: request.file }).some((atBase) => sameJsonValue({ left: request.entry, right: atBase }) === "same")
+  return entriesAtBaseOf({ base: request.base, file: request.file }).some(
+    (atBase) => sameJsonValue({ left: request.entry, right: atBase }) === "same",
+  )
     ? { outcome: "ok", value: "established" }
     : { outcome: "failed", error: [{ kind: "carried-changed-since-base" }] };
 };

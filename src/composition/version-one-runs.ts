@@ -6,7 +6,11 @@ import type { LoadFailure } from "../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import { installRootOf } from "../infrastructure/command-line/installation/install-root.ts";
-import { type PackageLink, packageLinkOf, UNLINKED } from "../infrastructure/command-line/installation/package-link.ts";
+import {
+  type PackageLink,
+  packageLinkOf,
+  UNLINKED,
+} from "../infrastructure/command-line/installation/package-link.ts";
 import { shownFailureOf } from "../infrastructure/command-line/installation/shown-path.ts";
 import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { repoRootOf } from "../infrastructure/printed-report/check-locations.ts";
@@ -20,11 +24,23 @@ type ShownPathsRequest = {
 };
 
 const installLinkOf = (request: ShownPathsRequest): PackageLink =>
-  request.installRoot.outcome === "failed" ? UNLINKED : packageLinkOf({ ...request, installRoot: request.installRoot.value });
+  request.installRoot.outcome === "failed"
+    ? UNLINKED
+    : packageLinkOf({ ...request, installRoot: request.installRoot.value });
 
-export const withShownPaths = <Value>(request: ShownPathsRequest & { readonly run: Result<Value, LoadFailure> }): Result<Value, LoadFailure> =>
+export const withShownPaths = <Value>(
+  request: ShownPathsRequest & { readonly run: Result<Value, LoadFailure> },
+): Result<Value, LoadFailure> =>
   request.run.outcome === "failed"
-    ? { outcome: "failed", error: shownFailureOf({ failure: request.run.error, path: request.path, repoRoot: request.repoRoot, link: installLinkOf(request) }) }
+    ? {
+        outcome: "failed",
+        error: shownFailureOf({
+          failure: request.run.error,
+          path: request.path,
+          repoRoot: request.repoRoot,
+          link: installLinkOf(request),
+        }),
+      }
     : request.run;
 
 export const runSettingsOver =
@@ -44,6 +60,11 @@ export const versionOneRunAt = async <Value>(request: {
     return loadFailed({ failure: repoRoot.error });
   }
   const installRoot = installRootOf({ path, moduleUrl: request.moduleUrl });
-  const run = installRoot.outcome === "failed" ? installRoot : await request.run({ repoRoot: repoRoot.value, installRoot: installRoot.value });
-  return loadResultOf({ result: withShownPaths({ path, fileText, repoRoot: repoRoot.value, installRoot, run }) });
+  const run =
+    installRoot.outcome === "failed"
+      ? installRoot
+      : await request.run({ repoRoot: repoRoot.value, installRoot: installRoot.value });
+  return loadResultOf({
+    result: withShownPaths({ path, fileText, repoRoot: repoRoot.value, installRoot, run }),
+  });
 };

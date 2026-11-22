@@ -1,19 +1,31 @@
 import { describe, expect, it } from "vitest";
+
 import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { type ScriptOptionAdvice, scriptOptionAdviceOf } from "./script-option-advice.ts";
 
 const UNJUDGED = "so Hone cannot tell what the option does to the files under check";
 
 describe("scriptOptionAdviceOf", () => {
-  it.each<{ readonly name: string; readonly cause: ScriptOptionCause; readonly advice: ScriptOptionAdvice }>([
+  it.each<{
+    readonly name: string;
+    readonly cause: ScriptOptionCause;
+    readonly advice: ScriptOptionAdvice;
+  }>([
     {
       name: "an option that weakens the whole run",
       cause: { kind: "weakens-run" },
-      advice: { problem: "weakens the script's whole run, so no record can cover it", fix: "remove it from the script" },
+      advice: {
+        problem: "weakens the script's whole run, so no record can cover it",
+        fix: "remove it from the script",
+      },
     },
     {
       name: "a command that is not the first of its script",
-      cause: { kind: "after-another-command", command: "eslint", invocation: "eslint --rule x:off ." },
+      cause: {
+        kind: "after-another-command",
+        command: "eslint",
+        invocation: "eslint --rule x:off .",
+      },
       advice: {
         problem: `eslint is not the first command of its script, ${UNJUDGED}`,
         fix: 'give eslint a script of its own, such as "eslint --rule x:off ."',

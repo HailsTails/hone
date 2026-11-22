@@ -1,37 +1,48 @@
 import { describe, expect, it } from "vitest";
+
+import {
+  type VersionOneWhyChain,
+  whyChainFormOf,
+} from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import { legacyWhyChainSchema, versionOneWhyChainSchema } from "./version-one-why-chain.ts";
-import { type VersionOneWhyChain, whyChainFormOf } from "../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
@@ -79,9 +90,7 @@ describe("legacyWhyChainSchema accepts a complete chain", () => {
   });
 
   it("accepts an owner of exactly two characters", () => {
-    expect(legacyWhyChainSchema.safeParse({ ...CHAIN, owner: "HG" }).success).toBe(
-      true,
-    );
+    expect(legacyWhyChainSchema.safeParse({ ...CHAIN, owner: "HG" }).success).toBe(true);
   });
 
   it.each([
@@ -119,14 +128,19 @@ describe("legacyWhyChainSchema refuses an answer that is not substantive", () =>
     ["an evidence of one repeated character", { ...WHY, evidence: "xxxxxxxxxxxxxxxx" }],
     ["an empty evidence", { ...WHY, evidence: "" }],
     ["a because of eleven characters padded with spaces", { ...WHY, because: "   eleven char   " }],
-    ["a because of one repeated character padded with spaces", { ...WHY, because: "  aaaaaaaaaaaaaaaa  " }],
-    ["an evidence of eleven characters padded with spaces", { ...WHY, evidence: "   eleven char   " }],
+    [
+      "a because of one repeated character padded with spaces",
+      { ...WHY, because: "  aaaaaaaaaaaaaaaa  " },
+    ],
+    [
+      "an evidence of eleven characters padded with spaces",
+      { ...WHY, evidence: "   eleven char   " },
+    ],
     ["an empty why", { ...WHY, why: "" }],
     ["a why of only spaces", { ...WHY, why: "   " }],
   ])("refuses %s", (_label, why) => {
     expect(
-      legacyWhyChainSchema.safeParse({ ...CHAIN, whys: [WHY, WHY, why, WHY, WHY] })
-        .success,
+      legacyWhyChainSchema.safeParse({ ...CHAIN, whys: [WHY, WHY, why, WHY, WHY] }).success,
     ).toBe(false);
   });
 
@@ -154,9 +168,18 @@ describe("legacyWhyChainSchema refuses a chain missing a part", () => {
     ["no root cause", { whys: CHAIN.whys, owner: CHAIN.owner }],
     ["no owner", { whys: CHAIN.whys, rootCause: CHAIN.rootCause }],
     ["no whys", { rootCause: CHAIN.rootCause, owner: CHAIN.owner }],
-    ["a why with no because", { ...CHAIN, whys: [WHY, WHY, { why: WHY.why, evidence: WHY.evidence }, WHY, WHY] }],
-    ["a why with no why question", { ...CHAIN, whys: [WHY, WHY, { because: WHY.because, evidence: WHY.evidence }, WHY, WHY] }],
-    ["a why with no evidence", { ...CHAIN, whys: [WHY, WHY, { why: WHY.why, because: WHY.because }, WHY, WHY] }],
+    [
+      "a why with no because",
+      { ...CHAIN, whys: [WHY, WHY, { why: WHY.why, evidence: WHY.evidence }, WHY, WHY] },
+    ],
+    [
+      "a why with no why question",
+      { ...CHAIN, whys: [WHY, WHY, { because: WHY.because, evidence: WHY.evidence }, WHY, WHY] },
+    ],
+    [
+      "a why with no evidence",
+      { ...CHAIN, whys: [WHY, WHY, { why: WHY.why, because: WHY.because }, WHY, WHY] },
+    ],
     ["a value that is not an object", "five whys"],
     ["undefined", undefined],
     ["null", null],
@@ -264,11 +287,16 @@ describe("legacyWhyChainSchema refuses a root cause that restates the exception"
   });
 });
 
-const at = (...path: readonly (string | number)[]): { readonly path: readonly (string | number)[] } => ({ path });
+const at = (
+  ...path: readonly (string | number)[]
+): { readonly path: readonly (string | number)[] } => ({ path });
 
 const refusedAt = (
   ...issues: readonly { readonly path: readonly (string | number)[]; readonly message?: string }[]
-): { readonly success: false; readonly error: { readonly issues: readonly { readonly path: readonly (string | number)[] }[] } } => ({
+): {
+  readonly success: false;
+  readonly error: { readonly issues: readonly { readonly path: readonly (string | number)[] }[] };
+} => ({
   success: false,
   error: { issues },
 });
@@ -291,7 +319,10 @@ const withoutReadback: Omit<VersionOneWhyChain, "readback"> = {
 
 describe("versionOneWhyChainSchema accepts a chain that runs cause to cause", () => {
   it("accepts five linked whys, a root, its rootCheck and a readback", () => {
-    expect(versionOneWhyChainSchema.safeParse(VERSION_ONE_CAUSAL_WHY_CHAIN)).toEqual({ success: true, data: VERSION_ONE_CAUSAL_WHY_CHAIN });
+    expect(versionOneWhyChainSchema.safeParse(VERSION_ONE_CAUSAL_WHY_CHAIN)).toEqual({
+      success: true,
+      data: VERSION_ONE_CAUSAL_WHY_CHAIN,
+    });
   });
 });
 
@@ -300,14 +331,23 @@ describe("versionOneWhyChainSchema refuses a chain that lists objections instead
     expect(
       versionOneWhyChainSchema.safeParse({
         ...VERSION_ONE_CAUSAL_WHY_CHAIN,
-        whys: [FIRST_WHY, SECOND_WHY, { ...THIRD_WHY, why: "Why is that enough?" }, FOURTH_WHY, FIFTH_WHY],
+        whys: [
+          FIRST_WHY,
+          SECOND_WHY,
+          { ...THIRD_WHY, why: "Why is that enough?" },
+          FOURTH_WHY,
+          FIFTH_WHY,
+        ],
       }),
     ).toMatchObject(refusedAt(at("whys", 2, "why")));
   });
 
   it("refuses a root cause that names nothing the fifth answer introduced", () => {
     expect(
-      versionOneWhyChainSchema.safeParse({ ...VERSION_ONE_CAUSAL_WHY_CHAIN, rootCause: "The audit refuses tracker ids in carve-out names by design." }),
+      versionOneWhyChainSchema.safeParse({
+        ...VERSION_ONE_CAUSAL_WHY_CHAIN,
+        rootCause: "The audit refuses tracker ids in carve-out names by design.",
+      }),
     ).toMatchObject(refusedAt(at("rootCause")));
   });
 
@@ -315,7 +355,8 @@ describe("versionOneWhyChainSchema refuses a chain that lists objections instead
     expect(
       versionOneWhyChainSchema.safeParse({
         ...VERSION_ONE_CAUSAL_WHY_CHAIN,
-        readback: "Older tools carry pre-monorepo patterns, so the audit refuses tracker ids in carve-out names.",
+        readback:
+          "Older tools carry pre-monorepo patterns, so the audit refuses tracker ids in carve-out names.",
       }),
     ).toMatchObject(refusedAt(at("readback")));
   });
@@ -333,10 +374,16 @@ describe("versionOneWhyChainSchema keeps its version 1 wording for a rootCheck a
   });
 
   it("asks for something checkable when the rootCheck cites nothing", () => {
-    expect(versionOneWhyChainSchema.safeParse({ ...VERSION_ONE_CAUSAL_WHY_CHAIN, rootCheck: "the monorepo move is still incomplete today" })).toMatchObject(
+    expect(
+      versionOneWhyChainSchema.safeParse({
+        ...VERSION_ONE_CAUSAL_WHY_CHAIN,
+        rootCheck: "the monorepo move is still incomplete today",
+      }),
+    ).toMatchObject(
       refusedAt({
         path: ["rootCheck"],
-        message: "`whyChain.rootCheck` cites nothing checkable: name the path, record, measurement or link you checked today",
+        message:
+          "`whyChain.rootCheck` cites nothing checkable: name the path, record, measurement or link you checked today",
       }),
     );
   });
@@ -345,7 +392,8 @@ describe("versionOneWhyChainSchema keeps its version 1 wording for a rootCheck a
     expect(versionOneWhyChainSchema.safeParse(withoutReadback)).toMatchObject(
       refusedAt({
         path: ["readback"],
-        message: "`whyChain.readback` is required beside `rootCheck` in a causal chain: read from the root back to the symptom with \"therefore\"",
+        message:
+          '`whyChain.readback` is required beside `rootCheck` in a causal chain: read from the root back to the symptom with "therefore"',
       }),
     );
   });
@@ -365,13 +413,21 @@ describe("versionOneWhyChainSchema keeps its version 1 wording for a rootCheck a
 
 describe("whyChainFormOf tells a causal chain from one written to the legacy contract", () => {
   it.each([
-    { label: "a chain with a readback and a rootCheck", form: "causal", chain: VERSION_ONE_CAUSAL_WHY_CHAIN },
+    {
+      label: "a chain with a readback and a rootCheck",
+      form: "causal",
+      chain: VERSION_ONE_CAUSAL_WHY_CHAIN,
+    },
     { label: "a chain with only a rootCheck", form: "causal", chain: withoutReadback },
     { label: "a chain with only a readback", form: "causal", chain: withoutRootCheck },
     {
       label: "a chain with neither",
       form: "legacy",
-      chain: { whys: VERSION_ONE_CAUSAL_WHY_CHAIN.whys, rootCause: VERSION_ONE_CAUSAL_WHY_CHAIN.rootCause, owner: VERSION_ONE_CAUSAL_WHY_CHAIN.owner },
+      chain: {
+        whys: VERSION_ONE_CAUSAL_WHY_CHAIN.whys,
+        rootCause: VERSION_ONE_CAUSAL_WHY_CHAIN.rootCause,
+        owner: VERSION_ONE_CAUSAL_WHY_CHAIN.owner,
+      },
     },
     { label: "a value that is not a chain", form: "causal", chain: "five whys" },
   ])("reads $label as $form", ({ form, chain }) => {

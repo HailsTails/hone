@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { folderScope } from "./audit.ts";
 
 describe("the audit entry's folderScope", () => {

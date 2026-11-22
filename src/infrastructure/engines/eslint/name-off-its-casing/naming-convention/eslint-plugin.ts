@@ -1,4 +1,8 @@
-import { defaultNativeRuleSources, type NativeRuleSources, typescriptEslintRules } from "../../runner/pieces/native-rules.ts";
+import {
+  defaultNativeRuleSources,
+  type NativeRuleSources,
+  typescriptEslintRules,
+} from "../../runner/pieces/native-rules.ts";
 
 export const createPlugin = (sources: NativeRuleSources) => ({
   meta: { name: "hone-cd6", version: "0.0.0-local" },

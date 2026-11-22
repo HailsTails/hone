@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
+
 import { repoArgumentOf } from "./repo-argument.ts";
 
 describe("repoArgumentOf", () => {
   it("gives the word after --repo, whatever else the command line holds", () => {
-    expect(repoArgumentOf({ arguments: ["--base-revision", "origin/main", "--repo", "/work/shop", "--report-output", "counts"] })).toBe("/work/shop");
+    expect(
+      repoArgumentOf({
+        arguments: [
+          "--base-revision",
+          "origin/main",
+          "--repo",
+          "/work/shop",
+          "--report-output",
+          "counts",
+        ],
+      }),
+    ).toBe("/work/shop");
   });
 
   it("gives nothing when the command line holds no --repo", () => {

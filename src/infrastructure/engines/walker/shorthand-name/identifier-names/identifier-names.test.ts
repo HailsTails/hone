@@ -1,28 +1,42 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../runner/toolchain/typescript-toolchain.ts";
-import type { PreparedWalkerCheck, SourceObservers } from "../../runner/pieces/walker-piece.ts";
-import { check } from "./identifier-names.ts";
-import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
+import { textsDisk } from "../../runner/pieces/walker-disk.ts";
+import type { PreparedWalkerCheck, SourceObservers } from "../../runner/pieces/walker-piece.ts";
+import type { SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../runner/toolchain/typescript-toolchain.ts";
+import { check } from "./identifier-names.ts";
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/naming.ts");
-const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-6"), clause: clauseIdOf("identifier-names") };
+const ADDRESS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-6"),
+  clause: clauseIdOf("identifier-names"),
+};
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: RunnerClause = {
   address: ADDRESS,
@@ -33,25 +47,50 @@ const CLAUSE: RunnerClause = {
   settings: { module: "identifier-names.ts" },
 };
 
-const sourceObservations = (request: { readonly source: string }): {
+const sourceObservations = (request: {
+  readonly source: string;
+}): {
   readonly tree: SyntaxTree;
   readonly observers: SourceObservers;
   readonly anchorAt: Mock<(request: { readonly position: number }) => Anchor>;
   readonly finish: PreparedWalkerCheck["finish"];
 } => {
-  const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
+  const prepared = check.prepare({
+    clauses: [CLAUSE],
+    repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+    syntaxApi: SYNTAX_API,
+  });
   assert(prepared.outcome === "ok");
-  const selected = prepared.value.prepareFile({ file: FILE, readText: vi.fn().mockReturnValue({ outcome: "ok", value: request.source }) });
+  const selected = prepared.value.prepareFile({
+    file: FILE,
+    readText: vi.fn().mockReturnValue({ outcome: "ok", value: request.source }),
+  });
   assert(selected.outcome === "ok");
   assert(selected.value.kind === "syntax");
-  const tree = SYNTAX_API.createSourceFile(FILE, request.source, SYNTAX_API.ScriptTarget.Latest, true);
-  const anchorAt = vi.fn<(request: { readonly position: number }) => Anchor>().mockReturnValue({ line: 7, column: 2 });
-  return { tree, observers: selected.value.begin({ sourceFile: tree, anchorAt }), anchorAt, finish: prepared.value.finish };
+  const tree = SYNTAX_API.createSourceFile(
+    FILE,
+    request.source,
+    SYNTAX_API.ScriptTarget.Latest,
+    true,
+  );
+  const anchorAt = vi
+    .fn<(request: { readonly position: number }) => Anchor>()
+    .mockReturnValue({ line: 7, column: 2 });
+  return {
+    tree,
+    observers: selected.value.begin({ sourceFile: tree, anchorAt }),
+    anchorAt,
+    finish: prepared.value.finish,
+  };
 };
 
 describe("CD-6 existing binding-name capability", () => {
   it.each([
-    { name: "all-depth excluded directory", fileName: "src/node_modules/example.ts", kind: "skipped" },
+    {
+      name: "all-depth excluded directory",
+      fileName: "src/node_modules/example.ts",
+      kind: "skipped",
+    },
     { name: "root-only excluded directory", fileName: "vendor/example.ts", kind: "skipped" },
     { name: "nested root-only directory", fileName: "src/vendor/example.ts", kind: "syntax" },
     { name: "TSX source", fileName: "src/example.tsx", kind: "syntax" },
@@ -61,16 +100,28 @@ describe("CD-6 existing binding-name capability", () => {
     { name: "non-TypeScript candidate", fileName: "src/example.js", kind: "skipped" },
   ])("preserves source eligibility without a read for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
-    const prepared = check.prepare({ clauses: [CLAUSE], repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK }, syntaxApi: SYNTAX_API });
+    const prepared = check.prepare({
+      clauses: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
     assert(prepared.outcome === "ok");
-    const readText = vi.fn().mockReturnValue({ outcome: "failed", error: { kind: "file-unreadable", file, detail: "unexpected read" } });
+    const readText = vi.fn().mockReturnValue({
+      outcome: "failed",
+      error: { kind: "file-unreadable", file, detail: "unexpected read" },
+    });
 
-    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({ outcome: "ok", value: { kind } });
+    expect(prepared.value.prepareFile({ file, readText })).toMatchObject({
+      outcome: "ok",
+      value: { kind },
+    });
     expect(readText).not.toHaveBeenCalled();
   });
 
   it("returns all variable, named-function and parameter observations in order", () => {
-    const observed = sourceObservations({ source: "const data = 1;\nfunction cb(value: number) {}\n" });
+    const observed = sourceObservations({
+      source: "const data = 1;\nfunction cb(value: number) {}\n",
+    });
     const variableStatement = observed.tree.statements[0];
     const functionDeclaration = observed.tree.statements[1];
     assert(SYNTAX_API.isVariableStatement(variableStatement));
@@ -86,16 +137,27 @@ describe("CD-6 existing binding-name capability", () => {
     observed.observers.leave?.({ node: functionDeclaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "data = 1; function cb(value: number) {} " },
+      {
+        clause: ADDRESS,
+        anchor: { line: 7, column: 2 },
+        snippet: "data = 1; function cb(value: number) {} ",
+      },
       { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "cb(value: number) {} " },
       { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "value: number) {} " },
     ]);
-    expect(observed.anchorAt.mock.calls).toEqual([[{ position: 6 }], [{ position: 25 }], [{ position: 28 }]]);
+    expect(observed.anchorAt.mock.calls).toEqual([
+      [{ position: 6 }],
+      [{ position: 25 }],
+      [{ position: 28 }],
+    ]);
     expect(observed.finish()).toEqual({ outcome: "ok", value: [] });
   });
 
   it("retains case-sensitive domain and unused names while excluding nonbinding identifiers", () => {
-    const observed = sourceObservations({ source: "const Data = 1;\nconst _data = 2;\nfunction render(accountData: number) {}\nconst profile = { data: 1 };\nprofile.data;\n" });
+    const observed = sourceObservations({
+      source:
+        "const Data = 1;\nconst _data = 2;\nfunction render(accountData: number) {}\nconst profile = { data: 1 };\nprofile.data;\n",
+    });
     const caseStatement = observed.tree.statements[0];
     const unusedStatement = observed.tree.statements[1];
     const functionDeclaration = observed.tree.statements[2];
@@ -134,7 +196,10 @@ describe("CD-6 existing binding-name capability", () => {
   });
 
   it("observes nested and rest binding names without treating property keys or omitted entries as bindings", () => {
-    const observed = sourceObservations({ source: "const { data: accountData, profile: { body }, ...payload } = response;\nconst [, info, ...details] = records;\n" });
+    const observed = sourceObservations({
+      source:
+        "const { data: accountData, profile: { body }, ...payload } = response;\nconst [, info, ...details] = records;\n",
+    });
     const objectStatement = observed.tree.statements[0];
     const arrayStatement = observed.tree.statements[1];
     assert(SYNTAX_API.isVariableStatement(objectStatement));
@@ -169,15 +234,25 @@ describe("CD-6 existing binding-name capability", () => {
     observed.observers.leave?.({ node: arrayDeclaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "body }, ...payload } = response; const [, info, ...details] = records; " },
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "payload } = response; const [, info, ...details] = records; " },
+      {
+        clause: ADDRESS,
+        anchor: { line: 7, column: 2 },
+        snippet: "body }, ...payload } = response; const [, info, ...details] = records; ",
+      },
+      {
+        clause: ADDRESS,
+        anchor: { line: 7, column: 2 },
+        snippet: "payload } = response; const [, info, ...details] = records; ",
+      },
       { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "info, ...details] = records; " },
       { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "details] = records; " },
     ]);
   });
 
   it("preserves declaration grouping when a default initializer contains a nested declaration", () => {
-    const observed = sourceObservations({ source: "const { data = (() => { const result = 1; return result; })(), body } = report;\n" });
+    const observed = sourceObservations({
+      source: "const { data = (() => { const result = 1; return result; })(), body } = report;\n",
+    });
     const outerStatement = observed.tree.statements[0];
     assert(SYNTAX_API.isVariableStatement(outerStatement));
     const outerDeclaration = outerStatement.declarationList.declarations[0];
@@ -205,9 +280,17 @@ describe("CD-6 existing binding-name capability", () => {
     observed.observers.leave?.({ node: outerDeclaration });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "data = (() => { const result = 1; return result; })(), body } = report; " },
+      {
+        clause: ADDRESS,
+        anchor: { line: 7, column: 2 },
+        snippet: "data = (() => { const result = 1; return result; })(), body } = report; ",
+      },
       { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "body } = report; " },
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "result = 1; return result; })(), body } = report; " },
+      {
+        clause: ADDRESS,
+        anchor: { line: 7, column: 2 },
+        snippet: "result = 1; return result; })(), body } = report; ",
+      },
     ]);
     expect(observed.anchorAt).toHaveBeenCalledTimes(3);
     expect(observed.anchorAt).toHaveBeenCalledWith({ position: 8 });
@@ -216,7 +299,10 @@ describe("CD-6 existing binding-name capability", () => {
   });
 
   it("retains the existing eighty-character naming snippet and ellipsis", () => {
-    const observed = sourceObservations({ source: "const data = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';\n" });
+    const observed = sourceObservations({
+      source:
+        "const data = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';\n",
+    });
     const statement = observed.tree.statements[0];
     assert(SYNTAX_API.isVariableStatement(statement));
 
@@ -224,7 +310,12 @@ describe("CD-6 existing binding-name capability", () => {
     observed.observers.leave?.({ node: statement.declarationList.declarations[0] });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: "data = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst…" },
+      {
+        clause: ADDRESS,
+        anchor: { line: 7, column: 2 },
+        snippet:
+          "data = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst…",
+      },
     ]);
   });
 });

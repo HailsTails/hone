@@ -1,12 +1,18 @@
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
-import type { Result } from "../../domain/result.ts";
-import type { RecordsAtBase, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
-import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
+import type {
+  RecordsAtBase,
+  RecordsReading,
+} from "../../domain/records/hone-records/hone-record.ts";
+import type { Result } from "../../domain/result.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
+import type { RecordsSource } from "../ports/records/records-source.ts";
+import { baseRevisionAvailabilityOf } from "../run/touched-set/touched-set.ts";
 
-const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly baseRevision: string | undefined }): Result<RecordsAtBase, HoneRecordsFailure> => {
+const recordsAtBaseOf = (request: {
+  readonly source: RecordsSource;
+  readonly baseRevision: string | undefined;
+}): Result<RecordsAtBase, HoneRecordsFailure> => {
   if (request.baseRevision === undefined) {
     return { outcome: "ok", value: { measured: "no", base: { state: "not-given" } } };
   }
@@ -15,7 +21,16 @@ const recordsAtBaseOf = (request: { readonly source: RecordsSource; readonly bas
     return { outcome: "ok", value: { measured: "yes", documents: atBase.value } };
   }
   return atBase.error.kind === "git-failed"
-    ? { outcome: "ok", value: { measured: "no", base: baseRevisionAvailabilityOf({ revision: request.baseRevision, failure: atBase.error }) } }
+    ? {
+        outcome: "ok",
+        value: {
+          measured: "no",
+          base: baseRevisionAvailabilityOf({
+            revision: request.baseRevision,
+            failure: atBase.error,
+          }),
+        },
+      }
     : { outcome: "failed", error: { kind: "records-folder", failure: atBase.error } };
 };
 
@@ -33,6 +48,12 @@ export const readHoneRecords = (request: {
   if (base.outcome === "failed") {
     return base;
   }
-  const reading = request.recordsReader.recordsReadingOf({ documents: working.value, catalogue: request.catalogue, base: base.value });
-  return reading.outcome === "failed" ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } } : reading;
+  const reading = request.recordsReader.recordsReadingOf({
+    documents: working.value,
+    catalogue: request.catalogue,
+    base: base.value,
+  });
+  return reading.outcome === "failed"
+    ? { outcome: "failed", error: { kind: "records-documents", refusals: reading.error } }
+    : reading;
 };

@@ -1,11 +1,26 @@
 import { describe, expect, it } from "vitest";
+
 import type { Finding } from "../../../domain/finding/governance.ts";
-import type { Case, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type CatalogueGuide, NO_SYMPTOM_GUIDE, type SymptomGuide, symptomNoteLinesOf, symptomReadingIn } from "./symptom-notes.ts";
+import type {
+  Case,
+  Principle,
+  Recipe,
+  RecordKind,
+  Rule,
+  Symptom,
+  SymptomCatalogue,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import {
+  type CatalogueGuide,
+  NO_SYMPTOM_GUIDE,
+  type SymptomGuide,
+  symptomNoteLinesOf,
+  symptomReadingIn,
+} from "./symptom-notes.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -14,11 +29,19 @@ const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ou
 const PORTS_DECLARED_INSIDE: Rule = {
   name: "ports-declared-inside",
   title: "Ports declared inside",
-  principle: { name: "external-behaviour-sits-at-a-boundary", title: "External behaviour sits at a boundary" },
+  principle: {
+    name: "external-behaviour-sits-at-a-boundary",
+    title: "External behaviour sits at a boundary",
+  },
   standing: "accepted",
 };
 
-const WRITTEN_OUT_ANSWERS: Rule = { name: "written-out-answers", title: "Written-out answers", principle: TESTS_ARE_OURS, standing: "accepted" };
+const WRITTEN_OUT_ANSWERS: Rule = {
+  name: "written-out-answers",
+  title: "Written-out answers",
+  principle: TESTS_ARE_OURS,
+  standing: "accepted",
+};
 
 const DOER_OR_ORCHESTRATOR: Rule = {
   name: "doer-or-orchestrator",
@@ -27,9 +50,19 @@ const DOER_OR_ORCHESTRATOR: Rule = {
   standing: "accepted",
 };
 
-const STRAIGHT_THROUGH_TESTS: Rule = { name: "straight-through-tests", title: "Straight-through tests", principle: TESTS_ARE_OURS, standing: "accepted" };
+const STRAIGHT_THROUGH_TESTS: Rule = {
+  name: "straight-through-tests",
+  title: "Straight-through tests",
+  principle: TESTS_ARE_OURS,
+  standing: "accepted",
+};
 
-const HANDED_WHAT_IT_USES: Rule = { name: "handed-what-it-uses", title: "Handed what it uses", principle: TESTS_ARE_OURS, standing: "accepted" };
+const HANDED_WHAT_IT_USES: Rule = {
+  name: "handed-what-it-uses",
+  title: "Handed what it uses",
+  principle: TESTS_ARE_OURS,
+  standing: "accepted",
+};
 
 const NEEDS_THE_CURRENT_TIME: Case = {
   name: "needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering",
@@ -38,7 +71,12 @@ const NEEDS_THE_CURRENT_TIME: Case = {
   owes: [{ kind: "rule", rule: PORTS_DECLARED_INSIDE }],
 };
 
-const DOES_ONE_JOB: Case = { name: "does-one-job", title: "Does one job", standing: "accepted", owes: [{ kind: "rule", rule: DOER_OR_ORCHESTRATOR }] };
+const DOES_ONE_JOB: Case = {
+  name: "does-one-job",
+  title: "Does one job",
+  standing: "accepted",
+  owes: [{ kind: "rule", rule: DOER_OR_ORCHESTRATOR }],
+};
 
 const CHECKS_A_VALUE: Case = {
   name: "checks-a-value-that-may-be-one-of-several-outcomes",
@@ -58,20 +96,50 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
-  reason: { text: "\"the world reaches a unit through a port\"", standing: "accepted" },
+  reason: { text: '"the world reaches a unit through a port"', standing: "accepted" },
 };
 
-const ASSERT_TO_NARROW: Recipe = { name: "assert-to-narrow", title: "Assert to narrow", standing: "accepted", reason: { text: "\"it narrows the type\"", standing: "accepted" } };
+const ASSERT_TO_NARROW: Recipe = {
+  name: "assert-to-narrow",
+  title: "Assert to narrow",
+  standing: "accepted",
+  reason: { text: '"it narrows the type"', standing: "accepted" },
+};
 
-const ITEACH_OVER_TYPED_ROWS: Recipe = { name: "iteach-over-typed-rows", title: "it.each over typed rows", standing: "accepted", reason: { text: "\"each row is a case\"", standing: "accepted" } };
+const ITEACH_OVER_TYPED_ROWS: Recipe = {
+  name: "iteach-over-typed-rows",
+  title: "it.each over typed rows",
+  standing: "accepted",
+  reason: { text: '"each row is a case"', standing: "accepted" },
+};
 
-const RESULT_UNION: Recipe = { name: "result-union", title: "Result union", standing: "accepted", reason: { text: "\"it makes the output clear\"", standing: "accepted" } };
+const RESULT_UNION: Recipe = {
+  name: "result-union",
+  title: "Result union",
+  standing: "accepted",
+  reason: { text: '"it makes the output clear"', standing: "accepted" },
+};
 
-const BOUNDARY_RECORD: RecordKind = { name: "boundary-record", title: "Boundary record", phrase: "a boundary record", todaysFormat: "authorised-location" };
+const BOUNDARY_RECORD: RecordKind = {
+  name: "boundary-record",
+  title: "Boundary record",
+  phrase: "a boundary record",
+  todaysFormat: "authorised-location",
+};
 
-const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
+const DEBT: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
 
-const DEVIATION: RecordKind = { name: "deviation", title: "Deviation", phrase: "a deviation", todaysFormat: "none-yet" };
+const DEVIATION: RecordKind = {
+  name: "deviation",
+  title: "Deviation",
+  phrase: "a deviation",
+  todaysFormat: "none-yet",
+};
 
 const AUTHORISED_LOCATION: RecordKind = {
   name: "authorised-location",
@@ -112,7 +180,8 @@ const BRANCH_IN_A_TEST: Symptom = {
       ],
     },
   ],
-  breachUsuallySits: "in the unit's output type, where optional or loose shapes force the test to branch",
+  breachUsuallySits:
+    "in the unit's output type, where optional or loose shapes force the test to branch",
   recipes: [ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   correctUses: [],
 };
@@ -122,30 +191,63 @@ const DOUBLE_WITH_A_BODY: Symptom = {
   title: "Double with a body",
   seen: "A double that has a function body.",
   mayIndicate: [
-    { case: USES_WHAT_A_COLLABORATOR_GIVES_BACK, points: [{ kind: "rule", rule: HANDED_WHAT_IT_USES }] },
-    { case: DOES_ONE_JOB, situation: "in a test, a stub that works out its answer", points: [{ kind: "rule", rule: DOER_OR_ORCHESTRATOR }] },
+    {
+      case: USES_WHAT_A_COLLABORATOR_GIVES_BACK,
+      points: [{ kind: "rule", rule: HANDED_WHAT_IT_USES }],
+    },
+    {
+      case: DOES_ONE_JOB,
+      situation: "in a test, a stub that works out its answer",
+      points: [{ kind: "rule", rule: DOER_OR_ORCHESTRATOR }],
+    },
   ],
   breachUsuallySits: "in a port too wide",
   recipes: [],
   correctUses: [
-    { situation: "a fake, where a stub cannot do the test", kind: DEVIATION, at: "from Stub with vi.fn" },
+    {
+      situation: "a fake, where a stub cannot do the test",
+      kind: DEVIATION,
+      at: "from Stub with vi.fn",
+    },
     { situation: "a spy on a port the unit owns", kind: BOUNDARY_RECORD },
   ],
 };
 
 const CATALOGUE: SymptomCatalogue = {
   principles: [NO_HIDDEN_EFFECTS, TESTS_ARE_OURS],
-  rules: [PORTS_DECLARED_INSIDE, WRITTEN_OUT_ANSWERS, DOER_OR_ORCHESTRATOR, STRAIGHT_THROUGH_TESTS, HANDED_WHAT_IT_USES],
-  cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, USES_WHAT_A_COLLABORATOR_GIVES_BACK],
+  rules: [
+    PORTS_DECLARED_INSIDE,
+    WRITTEN_OUT_ANSWERS,
+    DOER_OR_ORCHESTRATOR,
+    STRAIGHT_THROUGH_TESTS,
+    HANDED_WHAT_IT_USES,
+  ],
+  cases: [
+    NEEDS_THE_CURRENT_TIME,
+    DOES_ONE_JOB,
+    CHECKS_A_VALUE,
+    USES_WHAT_A_COLLABORATOR_GIVES_BACK,
+  ],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS, RESULT_UNION],
   recordKinds: [AUTHORISED_LOCATION, BOUNDARY_RECORD, DEBT, DEVIATION],
   alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
   engines: [],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, DOUBLE_WITH_A_BODY],
   clauses: [
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY } },
     {
-      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-17"),
+        clause: clauseIdOf("clock-sources"),
+      },
+      sight: { kind: "one-symptom", symptom: DATE_USED_DIRECTLY },
+    },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-27"),
+        clause: clauseIdOf("test-body-logic"),
+      },
       sight: {
         kind: "symptom-by-form",
         forms: [
@@ -154,21 +256,37 @@ const CATALOGUE: SymptomCatalogue = {
         ],
       },
     },
-    { clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") }, sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [DATE_USED_DIRECTLY] } },
+    {
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-9"),
+        clause: clauseIdOf("result-failures"),
+      },
+      sight: { kind: "method", recipe: RESULT_UNION, outcomeSeenBy: [DATE_USED_DIRECTLY] },
+    },
   ],
   checks: [],
   namedBans: [],
 };
 
-const GUIDE: CatalogueGuide = { guide: "catalogue", catalogue: CATALOGUE, page: "node_modules/@hailstails/hone/rules/typescript/symptoms.md" };
+const GUIDE: CatalogueGuide = {
+  guide: "catalogue",
+  catalogue: CATALOGUE,
+  page: "node_modules/@hailstails/hone/rules/typescript/symptoms.md",
+};
 
 const UNREADABLE_GUIDE: SymptomGuide = {
   guide: "unreadable",
-  failure: "file-malformed node_modules/@hailstails/hone/rules/typescript/symptoms.json Unexpected end",
+  failure:
+    "file-malformed node_modules/@hailstails/hone/rules/typescript/symptoms.json Unexpected end",
 };
 
 const CLOCK_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-17"),
+    clause: clauseIdOf("clock-sources"),
+  },
   mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.ts"),
   anchor: { line: 14, column: 0 },
@@ -176,7 +294,11 @@ const CLOCK_FINDING: Finding = {
 };
 
 const SECOND_CLOCK_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-17"),
+    clause: clauseIdOf("clock-sources"),
+  },
   mechanism: "walker",
   file: repoPathOf("src/orders/refund-order.ts"),
   anchor: { line: 3, column: 0 },
@@ -184,25 +306,45 @@ const SECOND_CLOCK_FINDING: Finding = {
 };
 
 const BRANCH_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-27"),
+    clause: clauseIdOf("test-body-logic"),
+  },
   mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 22, column: 2 },
   snippet: "if (result.ok) {",
-  remedy: { fix: "write one test per case", page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md", section: "branching-with-if" },
+  remedy: {
+    fix: "write one test per case",
+    page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md",
+    section: "branching-with-if",
+  },
 };
 
 const DOUBLE_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-27"),
+    clause: clauseIdOf("test-body-logic"),
+  },
   mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 30, column: 4 },
-  snippet: "kindOf: (path) => (installed.includes(path) ? \"file\" : \"missing\")",
-  remedy: { fix: "make it a vi.fn spy", page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md", section: "logic-inside-a-function-the-test-passes-on" },
+  snippet: 'kindOf: (path) => (installed.includes(path) ? "file" : "missing")',
+  remedy: {
+    fix: "make it a vi.fn spy",
+    page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md",
+    section: "logic-inside-a-function-the-test-passes-on",
+  },
 };
 
 const UNCATALOGUED_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-15"),
+    clause: clauseIdOf("loops"),
+  },
   mechanism: "walker",
   file: repoPathOf("src/orders/totals.ts"),
   anchor: { line: 5, column: 2 },
@@ -210,11 +352,15 @@ const UNCATALOGUED_FINDING: Finding = {
 };
 
 const METHOD_FINDING: Finding = {
-  clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") },
+  clause: {
+    ruleSet: TOOL_RULE_SET,
+    discipline: disciplineIdOf("CD-9"),
+    clause: clauseIdOf("result-failures"),
+  },
   mechanism: "walker",
   file: repoPathOf("src/orders/totals.ts"),
   anchor: { line: 9, column: 2 },
-  snippet: "throw new Error(\"no total\");",
+  snippet: 'throw new Error("no total");',
 };
 
 const CLOCK_NOTE =
@@ -232,10 +378,12 @@ describe("symptomNoteLinesOf", () => {
   });
 
   it("writes each symptom's note once, however many findings show it, in the order the findings first show it", () => {
-    expect(symptomNoteLinesOf({ guide: GUIDE, findings: [BRANCH_FINDING, CLOCK_FINDING, SECOND_CLOCK_FINDING, BRANCH_FINDING] })).toEqual([
-      BRANCH_NOTE,
-      CLOCK_NOTE,
-    ]);
+    expect(
+      symptomNoteLinesOf({
+        guide: GUIDE,
+        findings: [BRANCH_FINDING, CLOCK_FINDING, SECOND_CLOCK_FINDING, BRANCH_FINDING],
+      }),
+    ).toEqual([BRANCH_NOTE, CLOCK_NOTE]);
   });
 
   it("names no recipe when the symptom has none, writes the situation an indication is about after its case, lists each correct use in order, and says when a record kind has no format yet", () => {
@@ -243,7 +391,9 @@ describe("symptomNoteLinesOf", () => {
   });
 
   it("writes no note for a finding whose clause the catalogue does not hold, or whose clause sees no symptom", () => {
-    expect(symptomNoteLinesOf({ guide: GUIDE, findings: [UNCATALOGUED_FINDING, METHOD_FINDING] })).toEqual([]);
+    expect(
+      symptomNoteLinesOf({ guide: GUIDE, findings: [UNCATALOGUED_FINDING, METHOD_FINDING] }),
+    ).toEqual([]);
   });
 
   it("writes no note when there is no catalogue", () => {
@@ -265,14 +415,21 @@ describe("symptomNoteLinesOf", () => {
 
 describe("symptomReadingIn", () => {
   it("reads a finding's symptom from the guide's catalogue", () => {
-    expect(symptomReadingIn({ guide: GUIDE, finding: CLOCK_FINDING })).toEqual({ reading: "named", symptom: DATE_USED_DIRECTLY });
+    expect(symptomReadingIn({ guide: GUIDE, finding: CLOCK_FINDING })).toEqual({
+      reading: "named",
+      symptom: DATE_USED_DIRECTLY,
+    });
   });
 
   it("finds no finding in the catalogue when there is no catalogue", () => {
-    expect(symptomReadingIn({ guide: NO_SYMPTOM_GUIDE, finding: CLOCK_FINDING })).toEqual({ reading: "not-in-catalogue" });
+    expect(symptomReadingIn({ guide: NO_SYMPTOM_GUIDE, finding: CLOCK_FINDING })).toEqual({
+      reading: "not-in-catalogue",
+    });
   });
 
   it("finds no finding in the catalogue when the catalogue was not read", () => {
-    expect(symptomReadingIn({ guide: UNREADABLE_GUIDE, finding: CLOCK_FINDING })).toEqual({ reading: "not-in-catalogue" });
+    expect(symptomReadingIn({ guide: UNREADABLE_GUIDE, finding: CLOCK_FINDING })).toEqual({
+      reading: "not-in-catalogue",
+    });
   });
 });

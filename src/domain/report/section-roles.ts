@@ -25,7 +25,8 @@ const SECTION_ROLES: Readonly<Record<SectionName, SectionRole>> = {
 
 const isSectionName = (key: string): key is SectionName => Object.hasOwn(SECTION_ROLES, key);
 
-export const SECTION_NAMES: readonly SectionName[] = Object.keys(SECTION_ROLES).filter(isSectionName);
+export const SECTION_NAMES: readonly SectionName[] =
+  Object.keys(SECTION_ROLES).filter(isSectionName);
 
 export const sectionRoleOf = (request: { readonly section: SectionName }): SectionRole =>
   SECTION_ROLES[request.section];

@@ -1,33 +1,44 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LegacyWhyChain, VersionOneWhyChain } from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
-import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
-import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
-import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
-import type { PlacedEntry, StructuralExceptionEntry } from "../../../domain/records/discipline-exceptions/exception-entry.ts";
-import type { ExceptionReading, ExceptionRecord, InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { LoadedRunner, RunnerCall } from "../../ports/engine/runner-module.ts";
-import type { EnginePort } from "../../ports/engine/engine-port.ts";
+
+import type {
+  PlacedEntry,
+  StructuralExceptionEntry,
+} from "../../../domain/records/discipline-exceptions/exception-entry.ts";
+import type {
+  ExceptionReading,
+  ExceptionRecord,
+  InvalidRecord,
+} from "../../../domain/records/discipline-exceptions/exception-record.ts";
+import type {
+  LegacyWhyChain,
+  VersionOneWhyChain,
+} from "../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { Result } from "../../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import type { RunnerFailure } from "../../../domain/runner/runner-failure.ts";
 import type { Hit, MeasuredPair } from "../../../domain/runner/runner-result-types.ts";
+import type { Assessment } from "../../../domain/settings/assessment.ts";
+import type { SelectionReading } from "../../../domain/settings/selection/selection.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
+import type { LoadedRunner, RunnerCall } from "../../ports/engine/runner-module.ts";
 import type { GitPort } from "../../ports/git-port.ts";
-import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
-import type { Assessment } from "../../../domain/settings/assessment.ts";
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { Result } from "../../../domain/result.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
+import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
 import { type CheckRequest, runCheck, runReachedCheck } from "./run-check.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { editionOf } from "../../../domain/rule-set/edition-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -47,32 +58,39 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   whys: [
     {
       why: "Why does the audit refuse tracker ids in carve-out names?",
-      because: "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
+      because:
+        "The audit's name matcher accepts only lowercase slugs, and tracker ids carry uppercase letters.",
       evidence: "tools/audit/name-matcher.ts:14",
     },
     {
       why: "Why does the name matcher accept only lowercase slugs?",
-      because: "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
+      because:
+        "It was copied from the branch-name validator, which lowercases because git refs fold case on Windows.",
       evidence: "tools/git/branch-name.ts:8",
     },
     {
       why: "Why was the matcher copied from the branch-name validator?",
-      because: "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
+      because:
+        "No shared slug type existed when the audit landed, so each tool wrote its own pattern.",
       evidence: "PR #212, merged 2026-07-02",
     },
     {
       why: "Why did no shared slug type exist when the audit landed?",
-      because: "The values package that now holds RepoPath was split out two months after the audit.",
+      because:
+        "The values package that now holds RepoPath was split out two months after the audit.",
       evidence: "packages/values/package.json:3",
     },
     {
       why: "Why was the values package split out after the audit?",
-      because: "The split waited on the monorepo move, which left older tools on their own patterns.",
+      because:
+        "The split waited on the monorepo move, which left older tools on their own patterns.",
       evidence: "docs/decisions/0007-monorepo.md:21",
     },
   ],
-  rootCause: "Older tools still carry patterns written before the monorepo move gave them shared value types.",
-  rootCheck: "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
+  rootCause:
+    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  rootCheck:
+    "`git grep -n slugPattern tools/` today still returns tools/audit/name-matcher.ts:14 and no import from packages/values.",
   readback:
     "Older tools still carry pre-monorepo patterns, therefore the audit never adopted the shared slug type, therefore its matcher copied the branch-name validator's lowercase rule, therefore the audit refuses tracker ids in carve-out names.",
   owner: "capture 01a0b421",
@@ -84,11 +102,27 @@ const RULE_PAGE_PATH = "/install/rules/CD-14/README.md";
 
 const AUDIT = "walker" as const;
 const LINT = "eslint" as const;
-const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
-const ABSTRACT_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
-const NO_FOR_OF = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("no-for-of") };
+const CLASS_SYNTAX = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
+const ABSTRACT_SYNTAX = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("abstract-syntax"),
+};
+const NO_FOR_OF = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("no-for-of"),
+};
 const SECOND_EDITION = editionOf("2");
-const TEAM_CLASS_SYNTAX = { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
+const TEAM_CLASS_SYNTAX = {
+  ruleSet: { name: ruleSetNameOf("team") },
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("class-syntax"),
+};
 
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
 const ABSTRACT_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "abstract-syntax" };
@@ -96,7 +130,10 @@ const ABSTRACT_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "
 const DEFAULT_ASSESSMENT: Assessment = { forfeiture: "this-run" };
 
 type FakeFile = {
-  readonly read: Result<string, { readonly kind: "unreadable"; readonly path: string; readonly detail: string }>;
+  readonly read: Result<
+    string,
+    { readonly kind: "unreadable"; readonly path: string; readonly detail: string }
+  >;
   readonly presence: "present" | "absent";
 };
 
@@ -166,34 +203,54 @@ const SHOWN_PATHS: Readonly<Record<string, string>> = {
 
 const shownPathOf: ShownPathOf = ({ target }) => SHOWN_PATHS[target];
 
-const classSyntaxBinding = { mechanism: AUDIT, clause: {
+const classSyntaxBinding = {
+  mechanism: AUDIT,
+  clause: {
+    address: CLASS_SYNTAX,
+    anchor: { kind: "keyword", keyword: "class" },
+    pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+    settings: { module: "class-syntax.ts" },
+    clauseSettings: {},
+    edition: editionOf("1"),
+  },
+} as const;
+
+const abstractSyntaxBinding = {
+  mechanism: AUDIT,
+  clause: {
+    address: ABSTRACT_SYNTAX,
+    anchor: { kind: "keyword", keyword: "abstract" },
+    pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
+    settings: { module: "abstract-syntax.ts" },
+    clauseSettings: {},
+    edition: editionOf("1"),
+  },
+} as const;
+
+const SELECTED_CLASS_SYNTAX = {
   address: CLASS_SYNTAX,
-  anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
-  settings: { module: "class-syntax.ts" },
-  clauseSettings: {},
-  edition: editionOf("1"),
-} } as const;
+  mechanism: AUDIT,
+  exceptions: "allowed",
+} as const;
 
-const abstractSyntaxBinding = { mechanism: AUDIT, clause: {
+const SELECTED_ABSTRACT_SYNTAX = {
   address: ABSTRACT_SYNTAX,
-  anchor: { kind: "keyword", keyword: "abstract" },
-  pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
-  settings: { module: "abstract-syntax.ts" },
-  clauseSettings: {},
-  edition: editionOf("1"),
-} } as const;
-
-const SELECTED_CLASS_SYNTAX = { address: CLASS_SYNTAX, mechanism: AUDIT, exceptions: "allowed" } as const;
-
-const SELECTED_ABSTRACT_SYNTAX = { address: ABSTRACT_SYNTAX, mechanism: AUDIT, exceptions: "allowed" } as const;
+  mechanism: AUDIT,
+  exceptions: "allowed",
+} as const;
 
 const CLASS_SYNTAX_ROOT = { clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] };
 
 const ABSTRACT_SYNTAX_ROOT = { clause: ABSTRACT_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] };
 
 const SELECTION_READING: SelectionReading = {
-  selection: { selected: [SELECTED_CLASS_SYNTAX], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+  selection: {
+    selected: [SELECTED_CLASS_SYNTAX],
+    uncovered: [],
+    notAdopted: [],
+    notRun: [],
+    editions: [],
+  },
   bindings: [classSyntaxBinding],
   clauseRoots: [CLASS_SYNTAX_ROOT],
   excluded: [],
@@ -203,7 +260,10 @@ const SELECTION_READING: SelectionReading = {
 
 const TWO_CLAUSE_READING: SelectionReading = {
   ...SELECTION_READING,
-  selection: { ...SELECTION_READING.selection, selected: [SELECTED_CLASS_SYNTAX, SELECTED_ABSTRACT_SYNTAX] },
+  selection: {
+    ...SELECTION_READING.selection,
+    selected: [SELECTED_CLASS_SYNTAX, SELECTED_ABSTRACT_SYNTAX],
+  },
   bindings: [classSyntaxBinding, abstractSyntaxBinding],
   clauseRoots: [CLASS_SYNTAX_ROOT, ABSTRACT_SYNTAX_ROOT],
 };
@@ -227,7 +287,8 @@ const CARVE_OUT_ON_GONE: StructuralExceptionEntry = {
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const FIXTURE_SOURCE = "fictional unit fixture core/check/run-check.test.ts; not historical authorisation";
+const FIXTURE_SOURCE =
+  "fictional unit fixture core/check/run-check.test.ts; not historical authorisation";
 
 const AUTHORISED_FACTORY: StructuralExceptionEntry = {
   kind: "authorised-location",
@@ -247,8 +308,12 @@ const secondInSingleFile = (entry: StructuralExceptionEntry): PlacedEntry => ({
   entry,
 });
 
-const exceptionRepositoryHolding = (request: { readonly working: readonly PlacedEntry[] }): Pick<ExceptionRepository, "read" | "readAt"> => ({
-  read: vi.fn<ExceptionRepository["read"]>().mockReturnValue({ outcome: "ok", value: request.working }),
+const exceptionRepositoryHolding = (request: {
+  readonly working: readonly PlacedEntry[];
+}): Pick<ExceptionRepository, "read" | "readAt"> => ({
+  read: vi
+    .fn<ExceptionRepository["read"]>()
+    .mockReturnValue({ outcome: "ok", value: request.working }),
   readAt: vi.fn<ExceptionRepository["readAt"]>(),
 });
 
@@ -256,7 +321,9 @@ const exceptionRepositoryAtBase = (request: {
   readonly working: readonly PlacedEntry[];
   readonly base: ReturnType<ExceptionRepository["readAt"]>;
 }): Pick<ExceptionRepository, "read" | "readAt"> => ({
-  read: vi.fn<ExceptionRepository["read"]>().mockReturnValue({ outcome: "ok", value: request.working }),
+  read: vi
+    .fn<ExceptionRepository["read"]>()
+    .mockReturnValue({ outcome: "ok", value: request.working }),
   readAt: vi.fn<ExceptionRepository["readAt"]>().mockReturnValue(request.base),
 });
 
@@ -265,9 +332,16 @@ const NO_RECORDS: Pick<ExceptionRepository, "read" | "readAt"> = {
   readAt: vi.fn<ExceptionRepository["readAt"]>(),
 };
 
-const parserReading = (request: { readonly reading: ExceptionReading; readonly imported: "present" | "absent" }): ExceptionEntryParser => ({
-  parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>().mockReturnValue(request.reading),
-  importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>().mockReturnValue(request.imported),
+const parserReading = (request: {
+  readonly reading: ExceptionReading;
+  readonly imported: "present" | "absent";
+}): ExceptionEntryParser => ({
+  parseExceptionEntries: vi
+    .fn<ExceptionEntryParser["parseExceptionEntries"]>()
+    .mockReturnValue(request.reading),
+  importedEntriesIn: vi
+    .fn<ExceptionEntryParser["importedEntriesIn"]>()
+    .mockReturnValue(request.imported),
   importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>().mockReturnValue([]),
 });
 
@@ -295,7 +369,11 @@ const CLASS_SYNTAX_READING_FIRST = {
   pages: [{ path: "../install/rules/CD-14/README.md", presence: "present", section: "spirit" }],
 };
 
-const ASSESSMENT_NOT_WRITTEN = { kind: "assessment-file", state: "not-written", guide: "../install/ADOPTING.md" };
+const ASSESSMENT_NOT_WRITTEN = {
+  kind: "assessment-file",
+  state: "not-written",
+  guide: "../install/ADOPTING.md",
+};
 
 const HIT_IN_A: Hit = {
   clause: CLASS_SYNTAX,
@@ -304,7 +382,11 @@ const HIT_IN_A: Hit = {
   snippet: "class A {}",
 };
 
-const HIT_FROM_AN_IMPORT: Hit = { ...HIT_IN_A, snippet: "import fp from \"lodash/fp\";", importSpecifier: "lodash/fp" };
+const HIT_FROM_AN_IMPORT: Hit = {
+  ...HIT_IN_A,
+  snippet: 'import fp from "lodash/fp";',
+  importSpecifier: "lodash/fp",
+};
 
 const EMPTY_REPORT = {
   excluded: [],
@@ -341,8 +423,14 @@ const EMBEDDED_RUNNER: LoadedRunner = {
 
 const UNUSED_MODULES: ModuleLoaderPort = { load: vi.fn<ModuleLoaderPort["load"]>() };
 
-const engineAnswering = (request: { readonly runner: LoadedRunner; readonly run: Result<MechanismRun, RunnerFailure> }): EnginePort => ({
-  load: vi.fn<EnginePort["load"]>().mockResolvedValue({ outcome: "ok", value: { mechanism: AUDIT, runner: request.runner, checksRunner: undefined } }),
+const engineAnswering = (request: {
+  readonly runner: LoadedRunner;
+  readonly run: Result<MechanismRun, RunnerFailure>;
+}): EnginePort => ({
+  load: vi.fn<EnginePort["load"]>().mockResolvedValue({
+    outcome: "ok",
+    value: { mechanism: AUDIT, runner: request.runner, checksRunner: undefined },
+  }),
   run: {
     checks: vi.fn<EnginePort["run"]["checks"]>(),
     withRecords: vi.fn<EnginePort["run"]["withRecords"]>().mockResolvedValue(request.run),
@@ -361,31 +449,51 @@ const standaloneEngine = (report: StandaloneReport): EnginePort =>
     runner: STANDALONE_RUNNER,
     run: {
       outcome: "ok",
-      value: { mechanism: AUDIT, coverableKinds: ["inline-disable"], projection: "none", slices: [], unprojectedFolders: [], ...report },
+      value: {
+        mechanism: AUDIT,
+        coverableKinds: ["inline-disable"],
+        projection: "none",
+        slices: [],
+        unprojectedFolders: [],
+        ...report,
+      },
     },
   });
 
-type EmbeddedReport = Pick<MechanismRun, "hits" | "nativeExceptions" | "projection"> & Partial<Pick<MechanismRun, "slices" | "measured">>;
+type EmbeddedReport = Pick<MechanismRun, "hits" | "nativeExceptions" | "projection"> &
+  Partial<Pick<MechanismRun, "slices" | "measured">>;
 
 const embeddedEngine = (report: EmbeddedReport): EnginePort =>
   engineAnswering({
     runner: EMBEDDED_RUNNER,
     run: {
       outcome: "ok",
-      value: { mechanism: AUDIT, coverableKinds: ["config-override"], slices: [], unprojectedFolders: [], measured: [], ...report },
+      value: {
+        mechanism: AUDIT,
+        coverableKinds: ["config-override"],
+        slices: [],
+        unprojectedFolders: [],
+        measured: [],
+        ...report,
+      },
     },
   });
 
-const engineFailing = (failure: RunnerFailure): EnginePort => engineAnswering({ runner: STANDALONE_RUNNER, run: { outcome: "failed", error: failure } });
+const engineFailing = (failure: RunnerFailure): EnginePort =>
+  engineAnswering({ runner: STANDALONE_RUNNER, run: { outcome: "failed", error: failure } });
 
 const CLEAN_ENGINE_REPORT: StandaloneReport = { hits: [], nativeExceptions: [], measured: [] };
 
-const gitReporting = (request: { readonly trackedPaths: Result<readonly RepoPath[], GitFailure> }): GitPort => ({
+const gitReporting = (request: {
+  readonly trackedPaths: Result<readonly RepoPath[], GitFailure>;
+}): GitPort => ({
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue(request.trackedPaths),
   changedSince: vi.fn<GitPort["changedSince"]>(),
   contentInBase: vi.fn<GitPort["contentInBase"]>(),
   textInBase: vi.fn<GitPort["textInBase"]>(),
-  renamedSince: vi.fn<GitPort["renamedSince"]>().mockReturnValue({ outcome: "ok", value: new Map() }),
+  renamedSince: vi
+    .fn<GitPort["renamedSince"]>()
+    .mockReturnValue({ outcome: "ok", value: new Map() }),
 });
 
 const gitMeasuring = (request: {
@@ -398,7 +506,9 @@ const gitMeasuring = (request: {
 
 const TRACKED_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS } });
 
-const FACTORY_ONLY_GIT = gitReporting({ trackedPaths: { outcome: "ok", value: [repoPathOf("src/factory.ts")] } });
+const FACTORY_ONLY_GIT = gitReporting({
+  trackedPaths: { outcome: "ok", value: [repoPathOf("src/factory.ts")] },
+});
 
 const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
   repoRoot: REPO_ROOT,
@@ -438,30 +548,63 @@ const carveOutRecordOn = (file: RepoPath): ExceptionRecord => ({
 
 const CARVE_OUT_RECORD_ON_GONE = carveOutRecordOn(repoPathOf("src/gone.ts"));
 
-const FIRST_PLACE = { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 0 } as const;
+const FIRST_PLACE = {
+  layout: "single-file",
+  file: repoPathOf("discipline-exceptions.json"),
+  index: 0,
+} as const;
 
-const SECOND_PLACE = { layout: "single-file", file: repoPathOf("discipline-exceptions.json"), index: 1 } as const;
+const SECOND_PLACE = {
+  layout: "single-file",
+  file: repoPathOf("discipline-exceptions.json"),
+  index: 1,
+} as const;
 
 describe("runCheck reports", () => {
   it("is a pass report when the runner flags nothing", async () => {
-    await expect(runCheck(checkRequest({}))).resolves.toEqual({ outcome: "ok", value: EMPTY_REPORT });
+    await expect(runCheck(checkRequest({}))).resolves.toEqual({
+      outcome: "ok",
+      value: EMPTY_REPORT,
+    });
   });
 
   it("reports the runner's hit as a finding attributed to its mechanism", async () => {
     await expect(
-      runCheck(checkRequest({ path: pathJoining(joiningReadFirstPaths()), engine: standaloneEngine({ hits: [HIT_IN_A], nativeExceptions: [], measured: [] }) })),
+      runCheck(
+        checkRequest({
+          path: pathJoining(joiningReadFirstPaths()),
+          engine: standaloneEngine({ hits: [HIT_IN_A], nativeExceptions: [], measured: [] }),
+        }),
+      ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, findings: [{ ...HIT_IN_A, mechanism: "walker" }], readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST] },
+      value: {
+        ...EMPTY_REPORT,
+        findings: [{ ...HIT_IN_A, mechanism: "walker" }],
+        readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST],
+      },
     });
   });
 
   it("keeps on a finding the import specifier its runner's hit names, as data and nothing more", async () => {
     await expect(
-      runCheck(checkRequest({ path: pathJoining(joiningReadFirstPaths()), engine: standaloneEngine({ hits: [HIT_FROM_AN_IMPORT], nativeExceptions: [], measured: [] }) })),
+      runCheck(
+        checkRequest({
+          path: pathJoining(joiningReadFirstPaths()),
+          engine: standaloneEngine({
+            hits: [HIT_FROM_AN_IMPORT],
+            nativeExceptions: [],
+            measured: [],
+          }),
+        }),
+      ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, findings: [{ ...HIT_FROM_AN_IMPORT, mechanism: "walker" }], readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST] },
+      value: {
+        ...EMPTY_REPORT,
+        findings: [{ ...HIT_FROM_AN_IMPORT, mechanism: "walker" }],
+        readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST],
+      },
     });
   });
 
@@ -469,13 +612,20 @@ describe("runCheck reports", () => {
     await expect(
       runCheck(
         checkRequest({
-          path: pathJoining(
-            vi.fn<PathPort["join"]>()
-              .mockReturnValueOnce("/repo/src/factory.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryAtBase({ working: [firstInSingleFile(AUTHORISED_FACTORY)], base: { outcome: "ok", value: [AUTHORISED_FACTORY] } }),
-          exceptionEntryParser: parserReading({ reading: { records: [AUTHORISED_FACTORY_RECORD], invalid: [] }, imported: "present" }),
-          engine: standaloneEngine({ hits: [{ ...HIT_IN_A, file: repoPathOf("src/factory.ts") }], nativeExceptions: [], measured: [] }),
+          path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/src/factory.ts")),
+          exceptionRepository: exceptionRepositoryAtBase({
+            working: [firstInSingleFile(AUTHORISED_FACTORY)],
+            base: { outcome: "ok", value: [AUTHORISED_FACTORY] },
+          }),
+          exceptionEntryParser: parserReading({
+            reading: { records: [AUTHORISED_FACTORY_RECORD], invalid: [] },
+            imported: "present",
+          }),
+          engine: standaloneEngine({
+            hits: [{ ...HIT_IN_A, file: repoPathOf("src/factory.ts") }],
+            nativeExceptions: [],
+            measured: [],
+          }),
           git: FACTORY_ONLY_GIT,
         }),
       ),
@@ -483,7 +633,12 @@ describe("runCheck reports", () => {
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        exempted: [{ finding: { ...HIT_IN_A, file: "src/factory.ts", mechanism: "walker" }, by: [AUTHORISED_FACTORY_RECORD] }],
+        exempted: [
+          {
+            finding: { ...HIT_IN_A, file: "src/factory.ts", mechanism: "walker" },
+            by: [AUTHORISED_FACTORY_RECORD],
+          },
+        ],
       },
     });
   });
@@ -493,14 +648,30 @@ describe("runCheck reports", () => {
       runCheck(
         checkRequest({
           exceptionRepository: exceptionRepositoryHolding({
-            working: [firstInSingleFile({ kind: "authorised-location", clause: "CD-15#no-for-of", file: "src/a.ts", reason: "loop" })],
+            working: [
+              firstInSingleFile({
+                kind: "authorised-location",
+                clause: "CD-15#no-for-of",
+                file: "src/a.ts",
+                reason: "loop",
+              }),
+            ],
           }),
-          exceptionEntryParser: parserRefusing([{ place: FIRST_PLACE, problem: { kind: "clause-not-selected", clause: NO_FOR_OF } }]),
+          exceptionEntryParser: parserRefusing([
+            { place: FIRST_PLACE, problem: { kind: "clause-not-selected", clause: NO_FOR_OF } },
+          ]),
         }),
       ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { invalidRecords: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "clause-not-selected" } }] },
+      value: {
+        invalidRecords: [
+          {
+            place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
+            problem: { kind: "clause-not-selected" },
+          },
+        ],
+      },
     });
   });
 
@@ -510,13 +681,28 @@ describe("runCheck reports", () => {
         checkRequest({
           selectionRepository: selectionRepositoryReading({
             ...SELECTION_READING,
-            selection: { ...SELECTION_READING.selection, editions: [{ address: CLASS_SYNTAX, mechanism: AUDIT, edition: editionOf("1"), latest: SECOND_EDITION }] },
+            selection: {
+              ...SELECTION_READING.selection,
+              editions: [
+                {
+                  address: CLASS_SYNTAX,
+                  mechanism: AUDIT,
+                  edition: editionOf("1"),
+                  latest: SECOND_EDITION,
+                },
+              ],
+            },
           }),
         }),
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, editions: [{ address: CLASS_SYNTAX_OBJECT, mechanism: "walker", edition: "1", latest: "2" }] },
+      value: {
+        ...EMPTY_REPORT,
+        editions: [
+          { address: CLASS_SYNTAX_OBJECT, mechanism: "walker", edition: "1", latest: "2" },
+        ],
+      },
     });
   });
 
@@ -530,7 +716,10 @@ describe("runCheck reports", () => {
           }),
         }),
       ),
-    ).resolves.toEqual({ outcome: "ok", value: { ...EMPTY_REPORT, uncovered: [ABSTRACT_SYNTAX_OBJECT] } });
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: { ...EMPTY_REPORT, uncovered: [ABSTRACT_SYNTAX_OBJECT] },
+    });
   });
 });
 
@@ -538,16 +727,30 @@ describe("runCheck runner dispatch", () => {
   it("loads the engine once for the mechanism, from the install root", async () => {
     const engine = standaloneEngine(CLEAN_ENGINE_REPORT);
     const path = pathJoining(joiningTrackedPaths());
-    const report = await runCheck(checkRequest({ engine, path, selectionRepository: selectionRepositoryReading(TWO_CLAUSE_READING) }));
+    const report = await runCheck(
+      checkRequest({
+        engine,
+        path,
+        selectionRepository: selectionRepositoryReading(TWO_CLAUSE_READING),
+      }),
+    );
     expect(report).toEqual({ outcome: "ok", value: EMPTY_REPORT });
     expect(engine.load).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ installRoot: "/install", moduleExtension: ".ts", modules: UNUSED_MODULES, path, mechanism: "walker" }),
+      expect.objectContaining({
+        installRoot: "/install",
+        moduleExtension: ".ts",
+        modules: UNUSED_MODULES,
+        path,
+        mechanism: "walker",
+      }),
     );
   });
 
   it("runs the mechanism once with every selected clause, the TypeScript files and the tracked paths", async () => {
     const engine = standaloneEngine(CLEAN_ENGINE_REPORT);
-    await runCheck(checkRequest({ engine, selectionRepository: selectionRepositoryReading(TWO_CLAUSE_READING) }));
+    await runCheck(
+      checkRequest({ engine, selectionRepository: selectionRepositoryReading(TWO_CLAUSE_READING) }),
+    );
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith({
       runner: STANDALONE_RUNNER,
       mechanism: "walker",
@@ -593,19 +796,28 @@ describe("runCheck runner dispatch", () => {
     await runCheck(
       checkRequest({
         path: pathJoining(
-          vi.fn<PathPort["join"]>()
+          vi
+            .fn<PathPort["join"]>()
             .mockReturnValueOnce("/repo/README.md")
             .mockReturnValueOnce("/repo/src/a.ts")
             .mockReturnValueOnce("/repo/src/gone.ts"),
         ),
         engine,
         git: gitReporting({
-          trackedPaths: { outcome: "ok", value: [repoPathOf("README.md"), repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")] },
+          trackedPaths: {
+            outcome: "ok",
+            value: [repoPathOf("README.md"), repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")],
+          },
         }),
       }),
     );
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ run: expect.objectContaining({ files: ["src/a.ts"], trackedPaths: ["README.md", "src/a.ts"] }) }),
+      expect.objectContaining({
+        run: expect.objectContaining({
+          files: ["src/a.ts"],
+          trackedPaths: ["README.md", "src/a.ts"],
+        }),
+      }),
     );
   });
 
@@ -614,7 +826,8 @@ describe("runCheck runner dispatch", () => {
     await runCheck(
       checkRequest({
         path: pathJoining(
-          vi.fn<PathPort["join"]>()
+          vi
+            .fn<PathPort["join"]>()
             .mockReturnValueOnce("/repo/src/a.ts")
             .mockReturnValueOnce("/repo/vendored/kept.ts"),
         ),
@@ -637,7 +850,12 @@ describe("runCheck runner dispatch", () => {
       }),
     );
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ run: expect.objectContaining({ files: ["src/a.ts", "vendored/kept.ts"], trackedPaths: ["src/a.ts", "vendored/kept.ts"] }) }),
+      expect.objectContaining({
+        run: expect.objectContaining({
+          files: ["src/a.ts", "vendored/kept.ts"],
+          trackedPaths: ["src/a.ts", "vendored/kept.ts"],
+        }),
+      }),
     );
   });
 
@@ -645,16 +863,21 @@ describe("runCheck runner dispatch", () => {
     await expect(
       runCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/gone.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(CARVE_OUT_ON_GONE)] }),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/gone.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(CARVE_OUT_ON_GONE)],
+          }),
           exceptionEntryParser: parserHolding([CARVE_OUT_RECORD_ON_GONE]),
-          git: gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [] } }),
+          git: gitMeasuring({
+            trackedPaths: { outcome: "ok", value: TRACKED_PATHS },
+            changedSince: { outcome: "ok", value: [] },
+          }),
         }),
       ),
-    ).resolves.toMatchObject({ outcome: "ok", value: { readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }] } });
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }] },
+    });
   });
 
   it("still forfeits a carve-out on a tracked path absent from the working tree that the change set touched", async () => {
@@ -662,23 +885,34 @@ describe("runCheck runner dispatch", () => {
     const checked = await runCheck(
       checkRequest({
         path: pathJoining(
-          vi.fn<PathPort["join"]>()
+          vi
+            .fn<PathPort["join"]>()
             .mockReturnValueOnce("/repo/src/a.ts")
             .mockReturnValueOnce("/repo/src/gone.ts")
             .mockReturnValueOnce("/repo/src/gone.ts"),
         ),
-        exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(CARVE_OUT_ON_GONE)] }),
+        exceptionRepository: exceptionRepositoryHolding({
+          working: [firstInSingleFile(CARVE_OUT_ON_GONE)],
+        }),
         exceptionEntryParser: parserHolding([CARVE_OUT_RECORD_ON_GONE]),
         engine,
         git: gitMeasuring({
-          trackedPaths: { outcome: "ok", value: [repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")] },
+          trackedPaths: {
+            outcome: "ok",
+            value: [repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")],
+          },
           changedSince: { outcome: "ok", value: [repoPathOf("src/gone.ts")] },
         }),
       }),
     );
-    expect(checked).toMatchObject({ outcome: "ok", value: { forfeited: [{ kind: "file-carve-out", file: "src/gone.ts" }] } });
+    expect(checked).toMatchObject({
+      outcome: "ok",
+      value: { forfeited: [{ kind: "file-carve-out", file: "src/gone.ts" }] },
+    });
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ run: expect.objectContaining({ files: ["src/a.ts"], trackedPaths: ["src/a.ts"] }) }),
+      expect.objectContaining({
+        run: expect.objectContaining({ files: ["src/a.ts"], trackedPaths: ["src/a.ts"] }),
+      }),
     );
   });
 
@@ -686,7 +920,9 @@ describe("runCheck runner dispatch", () => {
     const fileText = fileTextOver(INSTALL);
     const reads = vi.spyOn(fileText, "read");
     const probes = vi.spyOn(fileText, "exists");
-    await runCheck(checkRequest({ path: pathJoining(joiningReadFirstPaths()), fileText, engine: hitEngine() }));
+    await runCheck(
+      checkRequest({ path: pathJoining(joiningReadFirstPaths()), fileText, engine: hitEngine() }),
+    );
     expect(probes.mock.calls).toEqual([
       [{ path: "/repo/README.md" }],
       [{ path: "/repo/package.json" }],
@@ -704,13 +940,20 @@ describe("runCheck runner dispatch", () => {
 
   it("roots a named rule set's piece under the consumer's rule-set directory and still loads the install's engine", async () => {
     const engine = standaloneEngine(CLEAN_ENGINE_REPORT);
-    const teamClause = { ...classSyntaxBinding.clause, address: TEAM_CLASS_SYNTAX, pieceRoot: "/repo/rules/team/mechanisms/audit/CD-14" };
+    const teamClause = {
+      ...classSyntaxBinding.clause,
+      address: TEAM_CLASS_SYNTAX,
+      pieceRoot: "/repo/rules/team/mechanisms/audit/CD-14",
+    };
     const report = await runCheck(
       checkRequest({
         engine,
         selectionRepository: selectionRepositoryReading({
           ...SELECTION_READING,
-          selection: { ...SELECTION_READING.selection, selected: [{ ...SELECTED_CLASS_SYNTAX, address: TEAM_CLASS_SYNTAX }] },
+          selection: {
+            ...SELECTION_READING.selection,
+            selected: [{ ...SELECTED_CLASS_SYNTAX, address: TEAM_CLASS_SYNTAX }],
+          },
           bindings: [{ mechanism: AUDIT, clause: teamClause }],
           clauseRoots: [{ clause: TEAM_CLASS_SYNTAX, ruleSetRoot: TEAM_ROOT, checks: [] }],
         }),
@@ -733,7 +976,9 @@ describe("runCheck runner dispatch", () => {
         }),
       }),
     );
-    expect(engine.load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ installRoot: "/install", mechanism: "walker" }));
+    expect(engine.load).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ installRoot: "/install", mechanism: "walker" }),
+    );
   });
 });
 
@@ -744,19 +989,32 @@ describe("runCheck load failures", () => {
       error: { kind: "file-unreadable", path: "/repo/disciplines.json", detail: "EACCES" },
     };
     await expect(
-      runCheck(checkRequest({ selectionRepository: { read: vi.fn<SelectionRepository["read"]>().mockReturnValue(failure) } })),
+      runCheck(
+        checkRequest({
+          selectionRepository: {
+            read: vi.fn<SelectionRepository["read"]>().mockReturnValue(failure),
+          },
+        }),
+      ),
     ).resolves.toEqual(failure);
   });
 
   it("passes on the exception records' load failure", async () => {
     const failure: Result<never, LoadFailure> = {
       outcome: "failed",
-      error: { kind: "file-malformed", path: "/repo/discipline-exceptions.json", detail: "unknown exception kind" },
+      error: {
+        kind: "file-malformed",
+        path: "/repo/discipline-exceptions.json",
+        detail: "unknown exception kind",
+      },
     };
     await expect(
       runCheck(
         checkRequest({
-          exceptionRepository: { read: vi.fn<ExceptionRepository["read"]>().mockReturnValue(failure), readAt: vi.fn<ExceptionRepository["readAt"]>() },
+          exceptionRepository: {
+            read: vi.fn<ExceptionRepository["read"]>().mockReturnValue(failure),
+            readAt: vi.fn<ExceptionRepository["readAt"]>(),
+          },
         }),
       ),
     ).resolves.toEqual(failure);
@@ -770,14 +1028,22 @@ describe("runCheck load failures", () => {
             ...standaloneEngine(CLEAN_ENGINE_REPORT),
             load: vi.fn<EnginePort["load"]>().mockResolvedValue({
               outcome: "failed",
-              error: { kind: "runner-invalid", mechanism: AUDIT, detail: "Cannot find package 'typescript'" },
+              error: {
+                kind: "runner-invalid",
+                mechanism: AUDIT,
+                detail: "Cannot find package 'typescript'",
+              },
             }),
           },
         }),
       ),
     ).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "runner-invalid", mechanism: "walker", detail: "Cannot find package 'typescript'" },
+      error: {
+        kind: "runner-invalid",
+        mechanism: "walker",
+        detail: "Cannot find package 'typescript'",
+      },
     });
   });
 
@@ -786,7 +1052,14 @@ describe("runCheck load failures", () => {
       runCheck(
         checkRequest({
           git: gitReporting({
-            trackedPaths: { outcome: "failed", error: { kind: "git-failed", command: "git ls-files", detail: "not a git repository" } },
+            trackedPaths: {
+              outcome: "failed",
+              error: {
+                kind: "git-failed",
+                command: "git ls-files",
+                detail: "not a git repository",
+              },
+            },
           }),
         }),
       ),
@@ -795,7 +1068,15 @@ describe("runCheck load failures", () => {
 
   it("is runner-failed carrying the runner's own failure", async () => {
     await expect(
-      runCheck(checkRequest({ engine: engineFailing({ kind: "file-unparseable", file: repoPathOf("src/a.ts"), detail: "unexpected token" }) })),
+      runCheck(
+        checkRequest({
+          engine: engineFailing({
+            kind: "file-unparseable",
+            file: repoPathOf("src/a.ts"),
+            detail: "unexpected token",
+          }),
+        }),
+      ),
     ).resolves.toEqual({
       outcome: "failed",
       error: {
@@ -808,10 +1089,18 @@ describe("runCheck load failures", () => {
 
   it("is runner-failed with runner-invalid-output when the engine finds the runner's value is not a result", async () => {
     await expect(
-      runCheck(checkRequest({ engine: engineFailing({ kind: "runner-invalid-output", detail: "✖ Invalid input" }) })),
+      runCheck(
+        checkRequest({
+          engine: engineFailing({ kind: "runner-invalid-output", detail: "✖ Invalid input" }),
+        }),
+      ),
     ).resolves.toMatchObject({
       outcome: "failed",
-      error: { kind: "runner-failed", mechanism: "walker", failure: { kind: "runner-invalid-output" } },
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "runner-invalid-output" },
+      },
     });
   });
 });
@@ -834,10 +1123,19 @@ const LINT_LOCATION: StructuralExceptionEntry = {
 
 const TWO_MECHANISM_READING: SelectionReading = {
   ...SELECTION_READING,
-  selection: { ...SELECTION_READING.selection, selected: [SELECTED_CLASS_SYNTAX, { ...SELECTED_ABSTRACT_SYNTAX, mechanism: LINT }] },
+  selection: {
+    ...SELECTION_READING.selection,
+    selected: [SELECTED_CLASS_SYNTAX, { ...SELECTED_ABSTRACT_SYNTAX, mechanism: LINT }],
+  },
   bindings: [
     classSyntaxBinding,
-    { mechanism: LINT, clause: { ...abstractSyntaxBinding.clause, pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14" } },
+    {
+      mechanism: LINT,
+      clause: {
+        ...abstractSyntaxBinding.clause,
+        pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14",
+      },
+    },
   ],
   clauseRoots: [CLASS_SYNTAX_ROOT, ABSTRACT_SYNTAX_ROOT],
 };
@@ -864,22 +1162,45 @@ const embeddedCheck = (report: EmbeddedReport) => checkRequest({ engine: embedde
 
 describe("runCheck with an embedded runner", () => {
   it("lists mechanism-not-run for a not-included projection", async () => {
-    await expect(runCheck(embeddedCheck({ hits: [], nativeExceptions: [], projection: "not-included" }))).resolves.toEqual({
+    await expect(
+      runCheck(embeddedCheck({ hits: [], nativeExceptions: [], projection: "not-included" })),
+    ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "not-included", nestedConfigurations: [] }] },
+      value: {
+        ...EMPTY_REPORT,
+        unmeasured: [
+          {
+            kind: "mechanism-not-run",
+            mechanism: "walker",
+            projection: "not-included",
+            nestedConfigurations: [],
+          },
+        ],
+      },
     });
   });
 
   it("lists mechanism-not-run for a missing projection", async () => {
-    await expect(runCheck(embeddedCheck({ hits: [], nativeExceptions: [], projection: "missing" }))).resolves.toEqual({
+    await expect(
+      runCheck(embeddedCheck({ hits: [], nativeExceptions: [], projection: "missing" })),
+    ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "missing" }] },
+      value: {
+        ...EMPTY_REPORT,
+        unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "missing" }],
+      },
     });
   });
 
   it("lists an out-of-date projection as a projection problem beside the run's findings", async () => {
-    const engine = embeddedEngine({ hits: [HIT_IN_A], nativeExceptions: [], projection: "out-of-date" });
-    await expect(runCheck(checkRequest({ engine, path: pathJoining(joiningReadFirstPaths()) }))).resolves.toEqual({
+    const engine = embeddedEngine({
+      hits: [HIT_IN_A],
+      nativeExceptions: [],
+      projection: "out-of-date",
+    });
+    await expect(
+      runCheck(checkRequest({ engine, path: pathJoining(joiningReadFirstPaths()) })),
+    ).resolves.toEqual({
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
@@ -908,8 +1229,18 @@ describe("runCheck with an embedded runner", () => {
       value: {
         ...EMPTY_REPORT,
         projectionProblems: [
-          { scope: "slice", mechanism: "walker", state: "out-of-date", slice: "packages/a/disciplines.eslint.mjs" },
-          { scope: "slice", mechanism: "walker", state: "missing", slice: "packages/b/disciplines.eslint.mjs" },
+          {
+            scope: "slice",
+            mechanism: "walker",
+            state: "out-of-date",
+            slice: "packages/a/disciplines.eslint.mjs",
+          },
+          {
+            scope: "slice",
+            mechanism: "walker",
+            state: "missing",
+            slice: "packages/b/disciplines.eslint.mjs",
+          },
         ],
       },
     });
@@ -922,15 +1253,31 @@ describe("runCheck with an embedded runner", () => {
           hits: [],
           nativeExceptions: [],
           projection: "not-included",
-          slices: [{ slice: repoPathOf("packages/a/disciplines.eslint.mjs"), state: "not-applied" }],
+          slices: [
+            { slice: repoPathOf("packages/a/disciplines.eslint.mjs"), state: "not-applied" },
+          ],
         }),
       ),
     ).resolves.toEqual({
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "not-included", nestedConfigurations: [] }],
-        projectionProblems: [{ scope: "slice", mechanism: "walker", state: "not-applied", slice: "packages/a/disciplines.eslint.mjs" }],
+        unmeasured: [
+          {
+            kind: "mechanism-not-run",
+            mechanism: "walker",
+            projection: "not-included",
+            nestedConfigurations: [],
+          },
+        ],
+        projectionProblems: [
+          {
+            scope: "slice",
+            mechanism: "walker",
+            state: "not-applied",
+            slice: "packages/a/disciplines.eslint.mjs",
+          },
+        ],
       },
     });
   });
@@ -942,14 +1289,26 @@ describe("runCheck with an embedded runner", () => {
           hits: [],
           nativeExceptions: [],
           projection: "not-included",
-          slices: [{ slice: repoPathOf("packages/b/disciplines.eslint.mjs"), state: "nested-configuration" }],
+          slices: [
+            {
+              slice: repoPathOf("packages/b/disciplines.eslint.mjs"),
+              state: "nested-configuration",
+            },
+          ],
         }),
       ),
     ).resolves.toEqual({
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "not-included", nestedConfigurations: ["packages/b"] }],
+        unmeasured: [
+          {
+            kind: "mechanism-not-run",
+            mechanism: "walker",
+            projection: "not-included",
+            nestedConfigurations: ["packages/b"],
+          },
+        ],
       },
     });
   });
@@ -959,13 +1318,20 @@ describe("runCheck with an embedded runner", () => {
       runCheck(
         embeddedCheck({
           hits: [],
-          nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
+          nativeExceptions: [
+            { kind: "ignore", clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") },
+          ],
           projection: "current",
         }),
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, unrecorded: [{ kind: "ignore", clause: CLASS_SYNTAX_OBJECT, file: "src/a.ts", mechanism: "walker" }] },
+      value: {
+        ...EMPTY_REPORT,
+        unrecorded: [
+          { kind: "ignore", clause: CLASS_SYNTAX_OBJECT, file: "src/a.ts", mechanism: "walker" },
+        ],
+      },
     });
   });
 
@@ -973,15 +1339,20 @@ describe("runCheck with an embedded runner", () => {
     await expect(
       runCheck(
         checkRequest({
-          path: pathJoining(
-            vi.fn<PathPort["join"]>()
-              .mockReturnValueOnce("/repo/src/factory.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryAtBase({ working: [firstInSingleFile(AUTHORISED_FACTORY)], base: { outcome: "ok", value: [AUTHORISED_FACTORY] } }),
-          exceptionEntryParser: parserReading({ reading: { records: [AUTHORISED_FACTORY_RECORD], invalid: [] }, imported: "present" }),
+          path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/src/factory.ts")),
+          exceptionRepository: exceptionRepositoryAtBase({
+            working: [firstInSingleFile(AUTHORISED_FACTORY)],
+            base: { outcome: "ok", value: [AUTHORISED_FACTORY] },
+          }),
+          exceptionEntryParser: parserReading({
+            reading: { records: [AUTHORISED_FACTORY_RECORD], invalid: [] },
+            imported: "present",
+          }),
           engine: embeddedEngine({
             hits: [],
-            nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: repoPathOf("src/factory.ts") }],
+            nativeExceptions: [
+              { kind: "config-override", clause: CLASS_SYNTAX, file: repoPathOf("src/factory.ts") },
+            ],
             projection: "current",
           }),
           git: FACTORY_ONLY_GIT,
@@ -999,13 +1370,20 @@ describe("runCheck with an embedded runner", () => {
           working: [firstInSingleFile(WALKER_LOCATION), secondInSingleFile(LINT_LOCATION)],
           base: { outcome: "ok", value: [WALKER_LOCATION, LINT_LOCATION] },
         }),
-        exceptionEntryParser: parserReading({ reading: { records: [WALKER_RECORD, LINT_RECORD], invalid: [] }, imported: "present" }),
+        exceptionEntryParser: parserReading({
+          reading: { records: [WALKER_RECORD, LINT_RECORD], invalid: [] },
+          imported: "present",
+        }),
         engine,
       }),
     );
     expect(engine.run.withRecords).toHaveBeenCalledTimes(2);
-    expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "walker", records: [WALKER_RECORD] }));
-    expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "eslint", records: [LINT_RECORD] }));
+    expect(engine.run.withRecords).toHaveBeenCalledWith(
+      expect.objectContaining({ mechanism: "walker", records: [WALKER_RECORD] }),
+    );
+    expect(engine.run.withRecords).toHaveBeenCalledWith(
+      expect.objectContaining({ mechanism: "eslint", records: [LINT_RECORD] }),
+    );
   });
 });
 
@@ -1017,13 +1395,20 @@ describe("runCheck clauses not adopted", () => {
         engine,
         selectionRepository: selectionRepositoryReading({
           ...SELECTION_READING,
-          selection: { ...SELECTION_READING.selection, selected: [], notAdopted: [CLASS_SYNTAX, ABSTRACT_SYNTAX] },
+          selection: {
+            ...SELECTION_READING.selection,
+            selected: [],
+            notAdopted: [CLASS_SYNTAX, ABSTRACT_SYNTAX],
+          },
           bindings: [],
           clauseRoots: [],
         }),
       }),
     );
-    expect(report).toEqual({ outcome: "ok", value: { ...EMPTY_REPORT, notAdopted: [CLASS_SYNTAX_OBJECT, ABSTRACT_SYNTAX_OBJECT] } });
+    expect(report).toEqual({
+      outcome: "ok",
+      value: { ...EMPTY_REPORT, notAdopted: [CLASS_SYNTAX_OBJECT, ABSTRACT_SYNTAX_OBJECT] },
+    });
     expect(engine.load).not.toHaveBeenCalled();
   });
 
@@ -1038,16 +1423,31 @@ describe("runCheck clauses not adopted", () => {
         }),
       }),
     );
-    expect(report).toEqual({ outcome: "ok", value: { ...EMPTY_REPORT, notAdopted: [CLASS_SYNTAX_OBJECT] } });
+    expect(report).toEqual({
+      outcome: "ok",
+      value: { ...EMPTY_REPORT, notAdopted: [CLASS_SYNTAX_OBJECT] },
+    });
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ run: expect.objectContaining({ clauses: [expect.objectContaining({ address: ABSTRACT_SYNTAX_OBJECT })] }) }),
+      expect.objectContaining({
+        run: expect.objectContaining({
+          clauses: [expect.objectContaining({ address: ABSTRACT_SYNTAX_OBJECT })],
+        }),
+      }),
     );
   });
 });
 
-const declaringCheck = (request: { readonly roots: readonly RepoPath[]; readonly excluded: readonly RepoPath[]; readonly engine: EnginePort }) =>
+const declaringCheck = (request: {
+  readonly roots: readonly RepoPath[];
+  readonly excluded: readonly RepoPath[];
+  readonly engine: EnginePort;
+}) =>
   checkRequest({
-    selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: request.excluded, eslintConfigRoots: request.roots }),
+    selectionRepository: selectionRepositoryReading({
+      ...SELECTION_READING,
+      excluded: request.excluded,
+      eslintConfigRoots: request.roots,
+    }),
     engine: request.engine,
   });
 
@@ -1057,7 +1457,9 @@ describe("runCheck with ESLint config roots declared in disciplines.json", () =>
   it("hands an embedded runner each declared folder git tracks, spelled as git spells it", async () => {
     const engine = embeddedEngine(CURRENT_REPORT);
     await runCheck(declaringCheck({ roots: [repoPathOf("src")], excluded: [], engine }));
-    expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ declaredConfigRoots: ["src"] }));
+    expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ declaredConfigRoots: ["src"] }),
+    );
   });
 
   it.each([
@@ -1066,7 +1468,9 @@ describe("runCheck with ESLint config roots declared in disciplines.json", () =>
     { name: "a tracked folder spelled in another case", root: repoPathOf("SRC") },
   ])("is the load failure config-root-untracked for $name, running nothing", async ({ root }) => {
     const engine = embeddedEngine(CURRENT_REPORT);
-    await expect(runCheck(declaringCheck({ roots: [root], excluded: [], engine }))).resolves.toEqual({
+    await expect(
+      runCheck(declaringCheck({ roots: [root], excluded: [], engine })),
+    ).resolves.toEqual({
       outcome: "failed",
       error: { kind: "config-root-untracked", root },
     });
@@ -1076,7 +1480,9 @@ describe("runCheck with ESLint config roots declared in disciplines.json", () =>
   it("is the load failure config-root-untracked for a tracked folder the selection excludes", async () => {
     const engine = embeddedEngine(CURRENT_REPORT);
     const src = repoPathOf("src");
-    await expect(runCheck(declaringCheck({ roots: [src], excluded: [src], engine }))).resolves.toEqual({
+    await expect(
+      runCheck(declaringCheck({ roots: [src], excluded: [src], engine })),
+    ).resolves.toEqual({
       outcome: "failed",
       error: { kind: "config-root-untracked", root: "src" },
     });
@@ -1095,15 +1501,26 @@ describe("runCheck clauses adopted but not run", () => {
         }),
       }),
     );
-    expect(report).toEqual({ outcome: "ok", value: { ...EMPTY_REPORT, notRun: [CLASS_SYNTAX_OBJECT] } });
+    expect(report).toEqual({
+      outcome: "ok",
+      value: { ...EMPTY_REPORT, notRun: [CLASS_SYNTAX_OBJECT] },
+    });
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ run: expect.objectContaining({ clauses: [expect.objectContaining({ address: ABSTRACT_SYNTAX_OBJECT })] }) }),
+      expect.objectContaining({
+        run: expect.objectContaining({
+          clauses: [expect.objectContaining({ address: ABSTRACT_SYNTAX_OBJECT })],
+        }),
+      }),
     );
   });
 });
 
 const hitEngine = (): EnginePort =>
-  standaloneEngine({ hits: [HIT_IN_A, { ...HIT_IN_A, anchor: { line: 9, column: 0 } }], nativeExceptions: [], measured: [] });
+  standaloneEngine({
+    hits: [HIT_IN_A, { ...HIT_IN_A, anchor: { line: 9, column: 0 } }],
+    nativeExceptions: [],
+    measured: [],
+  });
 
 describe("runCheck pointing a failing clause at where to read first", () => {
   it("points once at the clause's assessment section and its rule page, however many findings it has", async () => {
@@ -1115,10 +1532,18 @@ describe("runCheck pointing a failing clause at where to read first", () => {
             .mockReturnValueOnce("/install/rules/CD-14/README.md"),
         ),
         engine: hitEngine(),
-        fileText: fileTextOver({ ...INSTALL, [ASSESSMENT_PATH]: presentFile({ text: "# Disciplines assessment\n\n## CD-14#class-syntax\n" }) }),
+        fileText: fileTextOver({
+          ...INSTALL,
+          [ASSESSMENT_PATH]: presentFile({
+            text: "# Disciplines assessment\n\n## CD-14#class-syntax\n",
+          }),
+        }),
       }),
     );
-    expect(report).toMatchObject({ outcome: "ok", value: { readFirst: [{ ...CLASS_SYNTAX_READING_FIRST, assessmentSection: "present" }] } });
+    expect(report).toMatchObject({
+      outcome: "ok",
+      value: { readFirst: [{ ...CLASS_SYNTAX_READING_FIRST, assessmentSection: "present" }] },
+    });
   });
 
   it("reads neither the assessment file nor the rule page when there are no findings", async () => {
@@ -1170,15 +1595,25 @@ const LEGACY_CHAIN_REFUSED: InvalidRecord = {
   problem: {
     kind: "why-chain-refused",
     detail:
-      "a new or edited entry's whyChain follows the causal contract (docs/why-chain-contract.md in the @hailstails/hone package); a chain without rootCheck and readback is accepted only while --base-revision holds its entry unchanged\n✖ `whyChain.rootCheck` is required beside `readback` in a causal chain: name what was run or read today that shows the root still holds, with a path, record, measurement or link\n  → at rootCheck\n✖ `whyChain.readback` is required beside `rootCheck` in a causal chain: read from the root back to the symptom with \"therefore\"\n  → at readback",
+      'a new or edited entry\'s whyChain follows the causal contract (docs/why-chain-contract.md in the @hailstails/hone package); a chain without rootCheck and readback is accepted only while --base-revision holds its entry unchanged\n✖ `whyChain.rootCheck` is required beside `readback` in a causal chain: name what was run or read today that shows the root still holds, with a path, record, measurement or link\n  → at rootCheck\n✖ `whyChain.readback` is required beside `rootCheck` in a causal chain: read from the root back to the symptom with "therefore"\n  → at readback',
   },
 };
 
-const BASE_UNREADABLE: GitFailure = { kind: "git-failed", command: "git show", detail: "fatal: not a tree object" };
+const BASE_UNREADABLE: GitFailure = {
+  kind: "git-failed",
+  command: "git show",
+  detail: "fatal: not a tree object",
+};
 
-const legacyChainCheck = (request: { readonly base: ReturnType<ExceptionRepository["readAt"]>; readonly parser: ExceptionEntryParser }) =>
+const legacyChainCheck = (request: {
+  readonly base: ReturnType<ExceptionRepository["readAt"]>;
+  readonly parser: ExceptionEntryParser;
+}) =>
   checkRequest({
-    exceptionRepository: exceptionRepositoryAtBase({ working: [firstInSingleFile(LEGACY_CHAIN_FACTORY)], base: request.base }),
+    exceptionRepository: exceptionRepositoryAtBase({
+      working: [firstInSingleFile(LEGACY_CHAIN_FACTORY)],
+      base: request.base,
+    }),
     exceptionEntryParser: request.parser,
     git: FACTORY_ONLY_GIT,
     path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/src/factory.ts")),
@@ -1187,29 +1622,58 @@ const legacyChainCheck = (request: { readonly base: ReturnType<ExceptionReposito
 describe("runCheck handing each unit its input and reporting its answer", () => {
   it("reports what the measurement leaves unmeasured: a legacy chain, when the records cannot be read at the base revision", async () => {
     await expect(
-      runCheck(legacyChainCheck({ base: { outcome: "failed", error: BASE_UNREADABLE }, parser: parserHolding([LEGACY_CHAIN_FACTORY_RECORD]) })),
+      runCheck(
+        legacyChainCheck({
+          base: { outcome: "failed", error: BASE_UNREADABLE },
+          parser: parserHolding([LEGACY_CHAIN_FACTORY_RECORD]),
+        }),
+      ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { unmeasured: [{ kind: "legacy-chain-unmeasured", base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" } }] },
+      value: {
+        unmeasured: [
+          {
+            kind: "legacy-chain-unmeasured",
+            base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" },
+          },
+        ],
+      },
     });
   });
 
   it("asks for the records at the base revision it was given", async () => {
-    const check = legacyChainCheck({ base: { outcome: "ok", value: [] }, parser: parserRefusing([LEGACY_CHAIN_REFUSED]) });
+    const check = legacyChainCheck({
+      base: { outcome: "ok", value: [] },
+      parser: parserRefusing([LEGACY_CHAIN_REFUSED]),
+    });
     await runCheck(check);
     expect(check.exceptionRepository.readAt).toHaveBeenCalledExactlyOnceWith({ revision: "main" });
   });
 
   it("judges the records against the baseline it measured, refusing a legacy chain the base revision does not hold", async () => {
     const parser = parserRefusing([LEGACY_CHAIN_REFUSED]);
-    await expect(runCheck(legacyChainCheck({ base: { outcome: "ok", value: [] }, parser }))).resolves.toMatchObject({
+    await expect(
+      runCheck(legacyChainCheck({ base: { outcome: "ok", value: [] }, parser })),
+    ).resolves.toMatchObject({
       outcome: "ok",
-      value: { invalidRecords: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "why-chain-refused" } }] },
+      value: {
+        invalidRecords: [
+          {
+            place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
+            problem: { kind: "why-chain-refused" },
+          },
+        ],
+      },
     });
     expect(parser.parseExceptionEntries).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         entries: [firstInSingleFile(LEGACY_CHAIN_FACTORY)],
-        baseline: { measured: "yes", entriesAtBase: [], sourceTextsAtBase: new Map(), basePathOfRenamed: new Map() },
+        baseline: {
+          measured: "yes",
+          entriesAtBase: [],
+          sourceTextsAtBase: new Map(),
+          basePathOfRenamed: new Map(),
+        },
       }),
     );
   });
@@ -1224,12 +1688,24 @@ describe("runCheck handing each unit its input and reporting its answer", () => 
         checkRequest({
           selectionRepository: selectionRepositoryReading({
             ...SELECTION_READING,
-            selection: { ...SELECTION_READING.selection, notAdopted: [ABSTRACT_SYNTAX], notRun: [NO_FOR_OF] },
+            selection: {
+              ...SELECTION_READING.selection,
+              notAdopted: [ABSTRACT_SYNTAX],
+              notRun: [NO_FOR_OF],
+            },
           }),
           exceptionRepository: exceptionRepositoryHolding({
             working: [
-              firstInSingleFile({ ...REASON_ONLY_FACTORY, clause: "CD-14#abstract-syntax", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN }),
-              secondInSingleFile({ ...REASON_ONLY_FACTORY, clause: "CD-15#no-for-of", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN }),
+              firstInSingleFile({
+                ...REASON_ONLY_FACTORY,
+                clause: "CD-14#abstract-syntax",
+                whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
+              }),
+              secondInSingleFile({
+                ...REASON_ONLY_FACTORY,
+                clause: "CD-15#no-for-of",
+                whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
+              }),
             ],
           }),
           exceptionEntryParser: parser,
@@ -1237,25 +1713,37 @@ describe("runCheck handing each unit its input and reporting its answer", () => 
       ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { invalidRecords: [{ problem: { kind: "clause-not-adopted" } }, { problem: { kind: "clause-not-run" } }] },
+      value: {
+        invalidRecords: [
+          { problem: { kind: "clause-not-adopted" } },
+          { problem: { kind: "clause-not-run" } },
+        ],
+      },
     });
     expect(parser.parseExceptionEntries).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
-        selection: { selected: [SELECTED_CLASS_SYNTAX], uncovered: [], notAdopted: [ABSTRACT_SYNTAX], notRun: [NO_FOR_OF], editions: [] },
+        selection: {
+          selected: [SELECTED_CLASS_SYNTAX],
+          uncovered: [],
+          notAdopted: [ABSTRACT_SYNTAX],
+          notRun: [NO_FOR_OF],
+          editions: [],
+        },
       }),
     );
   });
 
   it("judges an authorised location by the why-chain rule the selection reads: refused for a reason alone when chains are required", async () => {
-    const parser = parserRefusing([{ place: FIRST_PLACE, problem: { kind: "evidence-refused", detail: "✖ Invalid input" } }]);
+    const parser = parserRefusing([
+      { place: FIRST_PLACE, problem: { kind: "evidence-refused", detail: "✖ Invalid input" } },
+    ]);
     await expect(
       runCheck(
         checkRequest({
-          path: pathJoining(
-            vi.fn<PathPort["join"]>()
-              .mockReturnValueOnce("/repo/src/factory.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(REASON_ONLY_FACTORY)] }),
+          path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/src/factory.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(REASON_ONLY_FACTORY)],
+          }),
           exceptionEntryParser: parser,
           git: FACTORY_ONLY_GIT,
         }),
@@ -1263,10 +1751,17 @@ describe("runCheck handing each unit its input and reporting its answer", () => 
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        invalidRecords: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "evidence-refused" } }],
+        invalidRecords: [
+          {
+            place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
+            problem: { kind: "evidence-refused" },
+          },
+        ],
       },
     });
-    expect(parser.parseExceptionEntries).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ fileExceptionWhyChains: "required" }));
+    expect(parser.parseExceptionEntries).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ fileExceptionWhyChains: "required" }),
+    );
   });
 
   it("judges an authorised location by the why-chain rule the selection reads: held for a reason alone when chains are optional", async () => {
@@ -1274,29 +1769,40 @@ describe("runCheck handing each unit its input and reporting its answer", () => 
     await expect(
       runCheck(
         checkRequest({
-          path: pathJoining(
-            vi.fn<PathPort["join"]>()
-              .mockReturnValueOnce("/repo/src/factory.ts"),
-          ),
-          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, fileExceptionWhyChains: "optional" }),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(REASON_ONLY_FACTORY)] }),
+          path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/src/factory.ts")),
+          selectionRepository: selectionRepositoryReading({
+            ...SELECTION_READING,
+            fileExceptionWhyChains: "optional",
+          }),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(REASON_ONLY_FACTORY)],
+          }),
           exceptionEntryParser: parser,
           git: FACTORY_ONLY_GIT,
         }),
       ),
-    ).resolves.toMatchObject({ outcome: "ok", value: { invalidRecords: [], stale: [{ file: "src/factory.ts" }] } });
-    expect(parser.parseExceptionEntries).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ fileExceptionWhyChains: "optional" }));
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { invalidRecords: [], stale: [{ file: "src/factory.ts" }] },
+    });
+    expect(parser.parseExceptionEntries).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ fileExceptionWhyChains: "optional" }),
+    );
   });
 });
 
 const carveOutOn = (file: string): StructuralExceptionEntry => ({ ...CARVE_OUT_ON_GONE, file });
 
 const unchangedGitTracking = (tracked: readonly RepoPath[]): GitPort =>
-  gitMeasuring({ trackedPaths: { outcome: "ok", value: tracked }, changedSince: { outcome: "ok", value: [] } });
+  gitMeasuring({
+    trackedPaths: { outcome: "ok", value: tracked },
+    changedSince: { outcome: "ok", value: [] },
+  });
 
 const CARVE_OUT_ON_A = firstInSingleFile(carveOutOn("src/a.ts"));
 
-const runnerMeasuring = (measured: readonly MeasuredPair[]): EnginePort => standaloneEngine({ hits: [], nativeExceptions: [], measured });
+const runnerMeasuring = (measured: readonly MeasuredPair[]): EnginePort =>
+  standaloneEngine({ hits: [], nativeExceptions: [], measured });
 
 const CLAUSE_WIDE_CLASS_SYNTAX: StructuralExceptionEntry = {
   kind: "clause-wide-carve-out",
@@ -1320,10 +1826,7 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
           exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A] }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A]),
           engine: runnerMeasuring([{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }]),
@@ -1334,7 +1837,11 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       outcome: "ok",
       value: {
         paidDebt: [{ clause: CLASS_SYNTAX, file: "src/a.ts" }],
-        report: { ...EMPTY_REPORT, stale: [STALE_CARVE_OUT_ON_A], readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }] },
+        report: {
+          ...EMPTY_REPORT,
+          stale: [STALE_CARVE_OUT_ON_A],
+          readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }],
+        },
         unprojected: [],
       },
     });
@@ -1344,10 +1851,7 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
           engine: embeddedEngine({ hits: [], nativeExceptions: [], projection: "missing" }),
           exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A] }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A]),
@@ -1358,7 +1862,11 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       outcome: "ok",
       value: {
         paidDebt: [],
-        report: { ...EMPTY_REPORT, stale: [STALE_CARVE_OUT_ON_A], unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "missing" }] },
+        report: {
+          ...EMPTY_REPORT,
+          stale: [STALE_CARVE_OUT_ON_A],
+          unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "missing" }],
+        },
         unprojected: [],
       },
     });
@@ -1367,17 +1875,22 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
   it("hands the run no file the selection excludes, and refuses it, handing on nothing, when the engine finds its runner claimed one", async () => {
     const engine = engineFailing({
       kind: "runner-invalid-output",
-      detail: "a measured pair names CD-14#class-syntax in src/a.ts, which the request did not hold",
+      detail:
+        "a measured pair names CD-14#class-syntax in src/a.ts, which the request did not hold",
     });
     await expect(
       runReachedCheck(
         checkRequest({
           path: pathJoining(
-            vi.fn<PathPort["join"]>()
+            vi
+              .fn<PathPort["join"]>()
               .mockReturnValueOnce("/repo/README.md")
               .mockReturnValueOnce("/repo/package.json"),
           ),
-          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathOf("src")] }),
+          selectionRepository: selectionRepositoryReading({
+            ...SELECTION_READING,
+            excluded: [repoPathOf("src")],
+          }),
           exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A] }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A]),
           engine,
@@ -1389,11 +1902,17 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       error: {
         kind: "runner-failed",
         mechanism: "walker",
-        failure: { kind: "runner-invalid-output", detail: "a measured pair names CD-14#class-syntax in src/a.ts, which the request did not hold" },
+        failure: {
+          kind: "runner-invalid-output",
+          detail:
+            "a measured pair names CD-14#class-syntax in src/a.ts, which the request did not hold",
+        },
       },
     });
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ run: expect.objectContaining({ files: [], trackedPaths: ["README.md", "package.json"] }) }),
+      expect.objectContaining({
+        run: expect.objectContaining({ files: [], trackedPaths: ["README.md", "package.json"] }),
+      }),
     );
   });
 
@@ -1401,24 +1920,35 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A, secondInSingleFile(CLAUSE_WIDE_CLASS_SYNTAX)] }),
-          exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A, CLAUSE_WIDE_CLASS_SYNTAX_RECORD]),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [CARVE_OUT_ON_A, secondInSingleFile(CLAUSE_WIDE_CLASS_SYNTAX)],
+          }),
+          exceptionEntryParser: parserHolding([
+            STALE_CARVE_OUT_ON_A,
+            CLAUSE_WIDE_CLASS_SYNTAX_RECORD,
+          ]),
           engine: embeddedEngine({
             hits: [],
-            nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
+            nativeExceptions: [
+              { kind: "config-override", clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") },
+            ],
             projection: "current",
             measured: [{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
           }),
-          git: gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [repoPathOf("src/a.ts")] } }),
+          git: gitMeasuring({
+            trackedPaths: { outcome: "ok", value: TRACKED_PATHS },
+            changedSince: { outcome: "ok", value: [repoPathOf("src/a.ts")] },
+          }),
         }),
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { paidDebt: [], report: { ...EMPTY_REPORT, forfeited: [STALE_CARVE_OUT_ON_A] }, unprojected: [] },
+      value: {
+        paidDebt: [],
+        report: { ...EMPTY_REPORT, forfeited: [STALE_CARVE_OUT_ON_A] },
+        unprojected: [],
+      },
     });
   });
 
@@ -1426,11 +1956,10 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/e.js"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("src/e.js"))] }),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/e.js")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(carveOutOn("src/e.js"))],
+          }),
           exceptionEntryParser: parserHolding([carveOutRecordOn(repoPathOf("src/e.js"))]),
           engine: runnerMeasuring([{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }]),
           git: unchangedGitTracking(TRACKED_PATHS),
@@ -1438,7 +1967,11 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { paidDebt: [], report: { ...EMPTY_REPORT, stale: [{ ...STALE_CARVE_OUT_ON_A, file: "src/e.js" }] }, unprojected: [] },
+      value: {
+        paidDebt: [],
+        report: { ...EMPTY_REPORT, stale: [{ ...STALE_CARVE_OUT_ON_A, file: "src/e.js" }] },
+        unprojected: [],
+      },
     });
   });
 
@@ -1447,12 +1980,18 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       runReachedCheck(
         checkRequest({
           path: pathJoining(
-            vi.fn<PathPort["join"]>()
+            vi
+              .fn<PathPort["join"]>()
               .mockReturnValueOnce("/repo/src/a.ts")
               .mockReturnValueOnce("/repo/vendored/kept.ts"),
           ),
-          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathOf("vendored")] }),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("vendored/kept.ts"))] }),
+          selectionRepository: selectionRepositoryReading({
+            ...SELECTION_READING,
+            excluded: [repoPathOf("vendored")],
+          }),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(carveOutOn("vendored/kept.ts"))],
+          }),
           exceptionEntryParser: parserHolding([carveOutRecordOn(repoPathOf("vendored/kept.ts"))]),
           git: unchangedGitTracking([repoPathOf("src/a.ts"), repoPathOf("vendored/kept.ts")]),
         }),
@@ -1505,18 +2044,20 @@ const runnerHittingAndMeasuringA = standaloneEngine({
   measured: [{ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }],
 });
 
-const gitChangingA = gitMeasuring({ trackedPaths: { outcome: "ok", value: TRACKED_PATHS }, changedSince: { outcome: "ok", value: [repoPathOf("src/a.ts")] } });
+const gitChangingA = gitMeasuring({
+  trackedPaths: { outcome: "ok", value: TRACKED_PATHS },
+  changedSince: { outcome: "ok", value: [repoPathOf("src/a.ts")] },
+});
 
 describe("runReachedCheck handing on debt whose every finding an authorised location answers", () => {
   it("hands on a forfeited file carve-out on a measured pair whose finding an authorised location in force exempts", async () => {
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A, secondInSingleFile(AUTHORISED_ON_A)] }),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [CARVE_OUT_ON_A, secondInSingleFile(AUTHORISED_ON_A)],
+          }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A, AUTHORISED_ON_A_RECORD]),
           engine: runnerHittingAndMeasuringA,
           git: gitChangingA,
@@ -1528,7 +2069,9 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [{ clause: CLASS_SYNTAX, file: "src/a.ts" }],
         report: {
           ...EMPTY_REPORT,
-          exempted: [{ finding: { ...HIT_IN_A, mechanism: "walker" }, by: [AUTHORISED_ON_A_RECORD] }],
+          exempted: [
+            { finding: { ...HIT_IN_A, mechanism: "walker" }, by: [AUTHORISED_ON_A_RECORD] },
+          ],
           forfeited: [STALE_CARVE_OUT_ON_A],
           readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }],
         },
@@ -1541,15 +2084,18 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
           exceptionRepository: exceptionRepositoryAtBase({
-            working: [CARVE_OUT_ON_A, secondInSingleFile({ ...AUTHORISED_ON_A, whyChain: LEGACY_WHY_CHAIN })],
+            working: [
+              CARVE_OUT_ON_A,
+              secondInSingleFile({ ...AUTHORISED_ON_A, whyChain: LEGACY_WHY_CHAIN }),
+            ],
             base: { outcome: "failed", error: BASE_UNREADABLE },
           }),
-          exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A, LEGACY_AUTHORISED_ON_A_RECORD]),
+          exceptionEntryParser: parserHolding([
+            STALE_CARVE_OUT_ON_A,
+            LEGACY_AUTHORISED_ON_A_RECORD,
+          ]),
           engine: runnerHittingAndMeasuringA,
           git: gitChangingA,
         }),
@@ -1560,9 +2106,20 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [],
         report: {
           ...EMPTY_REPORT,
-          exempted: [{ finding: { ...HIT_IN_A, mechanism: "walker" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] }],
+          exempted: [
+            { finding: { ...HIT_IN_A, mechanism: "walker" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] },
+          ],
           forfeited: [STALE_CARVE_OUT_ON_A],
-          unmeasured: [{ kind: "legacy-chain-unmeasured", base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" } }],
+          unmeasured: [
+            {
+              kind: "legacy-chain-unmeasured",
+              base: {
+                state: "git-failed",
+                revision: "main",
+                gitMessage: "fatal: not a tree object",
+              },
+            },
+          ],
         },
         unprojected: [],
       },
@@ -1573,15 +2130,18 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
           exceptionRepository: exceptionRepositoryAtBase({
-            working: [CARVE_OUT_ON_A, secondInSingleFile({ ...AUTHORISED_ON_A, whyChain: LEGACY_WHY_CHAIN })],
+            working: [
+              CARVE_OUT_ON_A,
+              secondInSingleFile({ ...AUTHORISED_ON_A, whyChain: LEGACY_WHY_CHAIN }),
+            ],
             base: { outcome: "ok", value: [{ ...AUTHORISED_ON_A, whyChain: LEGACY_WHY_CHAIN }] },
           }),
-          exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A, LEGACY_AUTHORISED_ON_A_RECORD]),
+          exceptionEntryParser: parserHolding([
+            STALE_CARVE_OUT_ON_A,
+            LEGACY_AUTHORISED_ON_A_RECORD,
+          ]),
           engine: runnerHittingAndMeasuringA,
           git: gitChangingA,
         }),
@@ -1592,7 +2152,9 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [{ clause: CLASS_SYNTAX, file: "src/a.ts" }],
         report: {
           ...EMPTY_REPORT,
-          exempted: [{ finding: { ...HIT_IN_A, mechanism: "walker" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] }],
+          exempted: [
+            { finding: { ...HIT_IN_A, mechanism: "walker" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] },
+          ],
           forfeited: [STALE_CARVE_OUT_ON_A],
           readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }],
         },
@@ -1606,7 +2168,9 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
       runReachedCheck(
         checkRequest({
           path: pathJoining(joiningReadFirstPaths()),
-          exceptionRepository: exceptionRepositoryHolding({ working: [CARVE_OUT_ON_A, secondInSingleFile(AUTHORISED_ON_A)] }),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [CARVE_OUT_ON_A, secondInSingleFile(AUTHORISED_ON_A)],
+          }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A, AUTHORISED_ON_A_RECORD]),
           engine: runnerHittingAndMeasuringA,
           git: unchangedGitTracking(TRACKED_PATHS),
@@ -1639,12 +2203,25 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
               .mockReturnValueOnce("/install/rules/CD-14/README.md"),
           ),
           exceptionRepository: exceptionRepositoryHolding({
-            working: [CARVE_OUT_ON_A, secondInSingleFile({ kind: "authorised-location", clause: "CD-14#class-syntax", file: "src/a.ts", reason: "no chain" })],
+            working: [
+              CARVE_OUT_ON_A,
+              secondInSingleFile({
+                kind: "authorised-location",
+                clause: "CD-14#class-syntax",
+                file: "src/a.ts",
+                reason: "no chain",
+              }),
+            ],
           }),
           exceptionEntryParser: parserReading({
             reading: {
               records: [STALE_CARVE_OUT_ON_A],
-              invalid: [{ place: SECOND_PLACE, problem: { kind: "evidence-refused", detail: "✖ Invalid input" } }],
+              invalid: [
+                {
+                  place: SECOND_PLACE,
+                  problem: { kind: "evidence-refused", detail: "✖ Invalid input" },
+                },
+              ],
             },
             imported: "absent",
           }),
@@ -1661,7 +2238,10 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
           findings: [{ ...HIT_IN_A, mechanism: "walker" }],
           forfeited: [STALE_CARVE_OUT_ON_A],
           invalidRecords: [
-            { place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 }, problem: { kind: "evidence-refused", detail: "✖ Invalid input" } },
+            {
+              place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 },
+              problem: { kind: "evidence-refused", detail: "✖ Invalid input" },
+            },
           ],
           readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST],
         },
@@ -1676,18 +2256,20 @@ describe("runReachedCheck handing on debt on a file no longer on disk", () => {
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/gone.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(CARVE_OUT_ON_GONE)] }),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/gone.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(CARVE_OUT_ON_GONE)],
+          }),
           exceptionEntryParser: parserHolding([CARVE_OUT_RECORD_ON_GONE]),
           git: unchangedGitTracking(TRACKED_PATHS),
         }),
       ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { paidDebt: [{ clause: CLASS_SYNTAX, file: "src/gone.ts" }], report: { readFirst: [{ kind: "paid-debt", fileCarveOuts: 1 }] } },
+      value: {
+        paidDebt: [{ clause: CLASS_SYNTAX, file: "src/gone.ts" }],
+        report: { readFirst: [{ kind: "paid-debt", fileCarveOuts: 1 }] },
+      },
     });
   });
 
@@ -1696,22 +2278,31 @@ describe("runReachedCheck handing on debt on a file no longer on disk", () => {
       runReachedCheck(
         checkRequest({
           path: pathJoining(
-            vi.fn<PathPort["join"]>()
+            vi
+              .fn<PathPort["join"]>()
               .mockReturnValueOnce("/repo/src/a.ts")
               .mockReturnValueOnce("/repo/src/gone.ts")
               .mockReturnValueOnce("/repo/src/gone.ts"),
           ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(CARVE_OUT_ON_GONE)] }),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(CARVE_OUT_ON_GONE)],
+          }),
           exceptionEntryParser: parserHolding([CARVE_OUT_RECORD_ON_GONE]),
           git: gitMeasuring({
-            trackedPaths: { outcome: "ok", value: [repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")] },
+            trackedPaths: {
+              outcome: "ok",
+              value: [repoPathOf("src/a.ts"), repoPathOf("src/gone.ts")],
+            },
             changedSince: { outcome: "ok", value: [repoPathOf("src/gone.ts")] },
           }),
         }),
       ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { paidDebt: [{ clause: CLASS_SYNTAX, file: "src/gone.ts" }], report: { stale: [], forfeited: [{ kind: "file-carve-out", file: "src/gone.ts" }] } },
+      value: {
+        paidDebt: [{ clause: CLASS_SYNTAX, file: "src/gone.ts" }],
+        report: { stale: [], forfeited: [{ kind: "file-carve-out", file: "src/gone.ts" }] },
+      },
     });
   });
 
@@ -1719,18 +2310,20 @@ describe("runReachedCheck handing on debt on a file no longer on disk", () => {
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/a.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("src/a.ts"))] }),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/a.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(carveOutOn("src/a.ts"))],
+          }),
           exceptionEntryParser: parserHolding([STALE_CARVE_OUT_ON_A]),
           git: unchangedGitTracking(TRACKED_PATHS),
         }),
       ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { paidDebt: [], report: { stale: [{ kind: "file-carve-out", file: "src/a.ts" }], readFirst: [] } },
+      value: {
+        paidDebt: [],
+        report: { stale: [{ kind: "file-carve-out", file: "src/a.ts" }], readFirst: [] },
+      },
     });
   });
 
@@ -1738,18 +2331,20 @@ describe("runReachedCheck handing on debt on a file no longer on disk", () => {
     await expect(
       runReachedCheck(
         checkRequest({
-          path: pathJoining(
-            joiningTrackedPaths()
-              .mockReturnValueOnce("/repo/src/factory.ts"),
-          ),
-          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("src/factory.ts"))] }),
+          path: pathJoining(joiningTrackedPaths().mockReturnValueOnce("/repo/src/factory.ts")),
+          exceptionRepository: exceptionRepositoryHolding({
+            working: [firstInSingleFile(carveOutOn("src/factory.ts"))],
+          }),
           exceptionEntryParser: parserHolding([carveOutRecordOn(repoPathOf("src/factory.ts"))]),
           git: unchangedGitTracking(TRACKED_PATHS),
         }),
       ),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { paidDebt: [], report: { stale: [{ kind: "file-carve-out", file: "src/factory.ts" }], readFirst: [] } },
+      value: {
+        paidDebt: [],
+        report: { stale: [{ kind: "file-carve-out", file: "src/factory.ts" }], readFirst: [] },
+      },
     });
   });
 });

@@ -1,7 +1,10 @@
-import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
 import type { Finding } from "../../../domain/finding/governance.ts";
-import { indicatedNamesOf, type SymptomReading } from "../../../domain/language-layer/symptom-catalogue.ts";
+import {
+  indicatedNamesOf,
+  type SymptomReading,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { versionOneEngineNameOf } from "../../../domain/rule-set/engine-id.ts";
 
 export const escapedLineBreaks = (request: { readonly text: string }): string =>
   request.text.replaceAll("\n", "\\n").replaceAll("\r", "\\r");
@@ -19,5 +22,7 @@ const symptomNote = (request: { readonly reading: SymptomReading }): string =>
     ? ` symptom: ${request.reading.symptom.name}, may indicate: ${indicatedNamesOf({ symptom: request.reading.symptom }).join(", ")}`
     : "";
 
-export const symptomFindingLine = (request: { readonly finding: Finding; readonly reading: SymptomReading }): string =>
-  `${locatedFindingLine(request)}${symptomNote(request)}${remedyNote(request)}`;
+export const symptomFindingLine = (request: {
+  readonly finding: Finding;
+  readonly reading: SymptomReading;
+}): string => `${locatedFindingLine(request)}${symptomNote(request)}${remedyNote(request)}`;

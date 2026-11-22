@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
-import type { ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
-import { clauseSettingsSchema, settledClauseSettings } from "./clause-settings.ts";
-import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 
-const ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-6"), clause: clauseIdOf("naming-convention") };
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import type { ClauseSettingDeclarations } from "../../domain/rule-set/rule-set-types.ts";
+import type { ClauseSettingValues } from "../../domain/runner/runner-module-types.ts";
+import { clauseSettingsSchema, settledClauseSettings } from "./clause-settings.ts";
+
+const ADDRESS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-6"),
+  clause: clauseIdOf("naming-convention"),
+};
 
 const DECLARATIONS: ClauseSettingDeclarations = {
   confinedPackages: { default: [] },
@@ -15,8 +20,13 @@ const DECLARATIONS: ClauseSettingDeclarations = {
 
 describe("clauseSettingsSchema", () => {
   it("reads each clause address with its settings object", () => {
-    expect(clauseSettingsSchema.parse({ "CD-19#import-boundaries": { confinedPackages: ["eslint"] } })).toEqual([
-      [{ ruleSet: "hone", discipline: "CD-19", clause: "import-boundaries" }, { confinedPackages: ["eslint"] }],
+    expect(
+      clauseSettingsSchema.parse({ "CD-19#import-boundaries": { confinedPackages: ["eslint"] } }),
+    ).toEqual([
+      [
+        { ruleSet: "hone", discipline: "CD-19", clause: "import-boundaries" },
+        { confinedPackages: ["eslint"] },
+      ],
     ]);
   });
 
@@ -30,14 +40,22 @@ describe("clauseSettingsSchema", () => {
 
 describe("settledClauseSettings", () => {
   it("is the declared defaults when the repository gives none", () => {
-    expect(settledClauseSettings({ address: ADDRESS, declarations: DECLARATIONS, given: undefined })).toEqual({
+    expect(
+      settledClauseSettings({ address: ADDRESS, declarations: DECLARATIONS, given: undefined }),
+    ).toEqual({
       outcome: "ok",
       value: { confinedPackages: [], convention: "camelCase" },
     });
   });
 
   it("replaces only the keys the repository gives", () => {
-    expect(settledClauseSettings({ address: ADDRESS, declarations: DECLARATIONS, given: { convention: "snake_case" } })).toEqual({
+    expect(
+      settledClauseSettings({
+        address: ADDRESS,
+        declarations: DECLARATIONS,
+        given: { convention: "snake_case" },
+      }),
+    ).toEqual({
       outcome: "ok",
       value: { confinedPackages: [], convention: "snake_case" },
     });
@@ -49,7 +67,12 @@ describe("settledClauseSettings", () => {
     readonly given: ClauseSettingValues;
     readonly detail: string;
   }>([
-    { name: "a piece that declares no keys", declarations: {}, given: { convention: "camelCase" }, detail: "its piece takes no settings" },
+    {
+      name: "a piece that declares no keys",
+      declarations: {},
+      given: { convention: "camelCase" },
+      detail: "its piece takes no settings",
+    },
     {
       name: "an undeclared key",
       declarations: DECLARATIONS,
@@ -68,10 +91,13 @@ describe("settledClauseSettings", () => {
       given: { convention: "kebab-case" },
       detail: 'convention must be one of "camelCase", "snake_case"',
     },
-  ])("refuses $name, naming the clause, the key and what is accepted", ({ declarations, given, detail }) => {
-    expect(settledClauseSettings({ address: ADDRESS, declarations, given })).toEqual({
-      outcome: "failed",
-      error: `clauseSettings for CD-6#naming-convention: ${detail}`,
-    });
-  });
+  ])(
+    "refuses $name, naming the clause, the key and what is accepted",
+    ({ declarations, given, detail }) => {
+      expect(settledClauseSettings({ address: ADDRESS, declarations, given })).toEqual({
+        outcome: "failed",
+        error: `clauseSettings for CD-6#naming-convention: ${detail}`,
+      });
+    },
+  );
 });

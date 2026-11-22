@@ -1,10 +1,17 @@
 import { assert, describe, expect, it } from "vitest";
-import { createPathPort } from "../../../node/path-port.ts";
+
 import type { PathPort } from "../../../../application/ports/host/path-port.ts";
-import type { SyntaxNode, SyntaxTree } from "../../walker/runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../walker/runner/toolchain/typescript-toolchain.ts";
+import {
+  projectionOutputNamesOf,
+  projectionOutputsOf,
+} from "../../../../domain/repository/projection-outputs.ts";
+import { createPathPort } from "../../../node/path-port.ts";
 import { installedEslintBoundary } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
-import { projectionOutputNamesOf, projectionOutputsOf } from "../../../../domain/repository/projection-outputs.ts";
+import type { SyntaxNode, SyntaxTree } from "../../walker/runner/toolchain/typescript-parse.ts";
+import {
+  defaultTypeScriptPeers,
+  loadParsePort,
+} from "../../walker/runner/toolchain/typescript-toolchain.ts";
 
 const installedBoundary = await installedEslintBoundary();
 
@@ -18,25 +25,44 @@ const ESLINT_ENGINE_NAME = "eslint";
 
 const REPOSITORY_ROOT = ".";
 
-const keyIn = (request: { readonly folder: string; readonly name: string }): string => `${request.folder}/${request.name}`;
+const keyIn = (request: { readonly folder: string; readonly name: string }): string =>
+  `${request.folder}/${request.name}`;
 
-const ROOT_PROJECTION_DECLARATION_KEY: string = keyIn({ folder: REPOSITORY_ROOT, name: projectionOutputsOf({ engineName: ESLINT_ENGINE_NAME }).declaration });
+const ROOT_PROJECTION_DECLARATION_KEY: string = keyIn({
+  folder: REPOSITORY_ROOT,
+  name: projectionOutputsOf({ engineName: ESLINT_ENGINE_NAME }).declaration,
+});
 
 const projectionDeclarationKeyIn = (request: { readonly folder: string }): string =>
-  keyIn({ folder: `${REPOSITORY_ROOT}/${request.folder}`, name: projectionOutputsOf({ engineName: ESLINT_ENGINE_NAME }).declaration });
+  keyIn({
+    folder: `${REPOSITORY_ROOT}/${request.folder}`,
+    name: projectionOutputsOf({ engineName: ESLINT_ENGINE_NAME }).declaration,
+  });
 
-const WRITTEN_AT_THE_ROOT: readonly string[] = projectionOutputNamesOf({ engineNames: [ESLINT_ENGINE_NAME] }).map((name) =>
-  keyIn({ folder: REPOSITORY_ROOT, name }),
-);
+const WRITTEN_AT_THE_ROOT: readonly string[] = projectionOutputNamesOf({
+  engineNames: [ESLINT_ENGINE_NAME],
+}).map((name) => keyIn({ folder: REPOSITORY_ROOT, name }));
 
-const withoutProjectionOutputs = (request: { readonly sources: Readonly<Record<string, string>> }): Readonly<Record<string, string>> =>
-  Object.fromEntries(Object.entries(request.sources).filter(([file]) => !WRITTEN_AT_THE_ROOT.includes(file)));
+const withoutProjectionOutputs = (request: {
+  readonly sources: Readonly<Record<string, string>>;
+}): Readonly<Record<string, string>> =>
+  Object.fromEntries(
+    Object.entries(request.sources).filter(([file]) => !WRITTEN_AT_THE_ROOT.includes(file)),
+  );
 
-const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }) });
+const loadedParsePort = await loadParsePort({
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../..`,
+    installForm: "source",
+  }),
+});
 
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
 
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 
 const syntaxApi = loadedParsePort.value.syntaxApi;
 
@@ -51,7 +77,10 @@ type NodeIn = { readonly node: SyntaxNode; readonly sourceFile: SyntaxTree };
 const sourceFileOf = (request: SourceText): SyntaxTree =>
   syntaxApi.createSourceFile(request.file, request.text, syntaxApi.ScriptTarget.Latest, true);
 
-const specifierOf = (request: { readonly expression: SyntaxNode; readonly sourceFile: SyntaxTree }): string =>
+const specifierOf = (request: {
+  readonly expression: SyntaxNode;
+  readonly sourceFile: SyntaxTree;
+}): string =>
   syntaxApi.isStringLiteralLike(request.expression)
     ? request.expression.text
     : request.expression.getText(request.sourceFile);
@@ -59,18 +88,28 @@ const specifierOf = (request: { readonly expression: SyntaxNode; readonly source
 const declarationImportOf = (request: NodeIn): ModuleImport | undefined => {
   const { node, sourceFile } = request;
   if (syntaxApi.isImportDeclaration(node)) {
-    return { specifier: specifierOf({ expression: node.moduleSpecifier, sourceFile }), form: node.importClause?.isTypeOnly === true ? "type-only" : "value" };
+    return {
+      specifier: specifierOf({ expression: node.moduleSpecifier, sourceFile }),
+      form: node.importClause?.isTypeOnly === true ? "type-only" : "value",
+    };
   }
   if (syntaxApi.isExportDeclaration(node) && node.moduleSpecifier !== undefined) {
-    return { specifier: specifierOf({ expression: node.moduleSpecifier, sourceFile }), form: node.isTypeOnly ? "type-only" : "value" };
+    return {
+      specifier: specifierOf({ expression: node.moduleSpecifier, sourceFile }),
+      form: node.isTypeOnly ? "type-only" : "value",
+    };
   }
   return undefined;
 };
 
 const importEqualsOf = (request: NodeIn): ModuleImport | undefined => {
   const { node, sourceFile } = request;
-  return syntaxApi.isImportEqualsDeclaration(node) && syntaxApi.isExternalModuleReference(node.moduleReference)
-    ? { specifier: specifierOf({ expression: node.moduleReference.expression, sourceFile }), form: node.isTypeOnly ? "type-only" : "value" }
+  return syntaxApi.isImportEqualsDeclaration(node) &&
+    syntaxApi.isExternalModuleReference(node.moduleReference)
+    ? {
+        specifier: specifierOf({ expression: node.moduleReference.expression, sourceFile }),
+        form: node.isTypeOnly ? "type-only" : "value",
+      }
     : undefined;
 };
 
@@ -89,16 +128,27 @@ const loadedArgumentOf = (request: NodeIn): SyntaxNode | undefined => {
     return undefined;
   }
   const callee = node.expression;
-  return callee.kind === syntaxApi.SyntaxKind.ImportKeyword || (syntaxApi.isIdentifier(callee) && callee.text === "require") ? node.arguments[0] : undefined;
+  return callee.kind === syntaxApi.SyntaxKind.ImportKeyword ||
+    (syntaxApi.isIdentifier(callee) && callee.text === "require")
+    ? node.arguments[0]
+    : undefined;
 };
 
 const loadCallOf = (request: NodeIn): ModuleImport | undefined => {
   const loaded = loadedArgumentOf(request);
-  return loaded === undefined ? undefined : { specifier: specifierOf({ expression: loaded, sourceFile: request.sourceFile }), form: "dynamic" };
+  return loaded === undefined
+    ? undefined
+    : {
+        specifier: specifierOf({ expression: loaded, sourceFile: request.sourceFile }),
+        form: "dynamic",
+      };
 };
 
 const ownImportOf = (request: NodeIn): ModuleImport | undefined =>
-  declarationImportOf(request) ?? importEqualsOf(request) ?? importTypeOf(request) ?? loadCallOf(request);
+  declarationImportOf(request) ??
+  importEqualsOf(request) ??
+  importTypeOf(request) ??
+  loadCallOf(request);
 
 const childrenOf = (request: { readonly node: SyntaxNode }): readonly SyntaxNode[] => {
   const children: SyntaxNode[] = [];
@@ -110,7 +160,12 @@ const childrenOf = (request: { readonly node: SyntaxNode }): readonly SyntaxNode
 
 const importsBelow = (request: NodeIn): readonly ModuleImport[] => {
   const own = ownImportOf(request);
-  return [...(own === undefined ? [] : [own]), ...childrenOf(request).flatMap((child) => importsBelow({ node: child, sourceFile: request.sourceFile }))];
+  return [
+    ...(own === undefined ? [] : [own]),
+    ...childrenOf(request).flatMap((child) =>
+      importsBelow({ node: child, sourceFile: request.sourceFile }),
+    ),
+  ];
 };
 
 const importsIn = (request: SourceText): readonly ModuleImport[] => {
@@ -137,7 +192,9 @@ const STATIC_FORMS: readonly ModuleImport["form"][] = ["value", "type-only"];
 const INSTALL_ROOT = "/install";
 
 const relativeImport: ImportAllowance = ({ moduleImport }) =>
-  RELATIVE_SPECIFIER.test(moduleImport.specifier) && STATIC_FORMS.includes(moduleImport.form) ? "allowed" : "outside";
+  RELATIVE_SPECIFIER.test(moduleImport.specifier) && STATIC_FORMS.includes(moduleImport.form)
+    ? "allowed"
+    : "outside";
 
 const relativeImportOfAnyForm: ImportAllowance = ({ moduleImport }) =>
   RELATIVE_SPECIFIER.test(moduleImport.specifier) ? "allowed" : "outside";
@@ -148,7 +205,9 @@ const nodeBuiltinImport: ImportAllowance = ({ moduleImport }) =>
     : "outside";
 
 const computedModuleLoad: ImportAllowance = ({ moduleImport }) =>
-  COMPUTED_SPECIFIER.test(moduleImport.specifier) && moduleImport.form === "dynamic" ? "allowed" : "outside";
+  COMPUTED_SPECIFIER.test(moduleImport.specifier) && moduleImport.form === "dynamic"
+    ? "allowed"
+    : "outside";
 
 const packageOrComputedImport: ImportAllowance = ({ moduleImport }) =>
   PACKAGE_OR_COMPUTED_SPECIFIER.test(moduleImport.specifier) ? "allowed" : "outside";
@@ -156,22 +215,30 @@ const packageOrComputedImport: ImportAllowance = ({ moduleImport }) =>
 const packageImport =
   (request: { readonly packageName: string }): ImportAllowance =>
   ({ moduleImport }) =>
-    moduleImport.specifier === request.packageName && STATIC_FORMS.includes(moduleImport.form) ? "allowed" : "outside";
+    moduleImport.specifier === request.packageName && STATIC_FORMS.includes(moduleImport.form)
+      ? "allowed"
+      : "outside";
 
 const packageTypeImport =
   (request: { readonly packageName: string }): ImportAllowance =>
   ({ moduleImport }) =>
-    moduleImport.specifier === request.packageName && moduleImport.form === "type-only" ? "allowed" : "outside";
+    moduleImport.specifier === request.packageName && moduleImport.form === "type-only"
+      ? "allowed"
+      : "outside";
 
 const packageDynamicImport =
   (request: { readonly packageName: string }): ImportAllowance =>
   ({ moduleImport }) =>
-    moduleImport.specifier === request.packageName && moduleImport.form === "dynamic" ? "allowed" : "outside";
+    moduleImport.specifier === request.packageName && moduleImport.form === "dynamic"
+      ? "allowed"
+      : "outside";
 
 const dynamicLoadMatching =
   (request: { readonly specifier: RegExp }): ImportAllowance =>
   ({ moduleImport }) =>
-    request.specifier.test(moduleImport.specifier) && moduleImport.form === "dynamic" ? "allowed" : "outside";
+    request.specifier.test(moduleImport.specifier) && moduleImport.form === "dynamic"
+      ? "allowed"
+      : "outside";
 
 const reachOf = (request: {
   readonly importingPath: PathPort;
@@ -179,7 +246,9 @@ const reachOf = (request: {
   readonly specifier: string;
 }): ConfinementVerdict => {
   const location = request.importingPath.relative({ from: INSTALL_ROOT, to: request.specifier });
-  return location.relation === "within-root" && request.reach.test(location.path) ? "allowed" : "outside";
+  return location.relation === "within-root" && request.reach.test(location.path)
+    ? "allowed"
+    : "outside";
 };
 
 const relativeImportReaching = (request: {
@@ -200,7 +269,9 @@ const allowanceOf = (request: {
   readonly allowed: readonly ImportAllowance[];
   readonly moduleImport: ModuleImport;
 }): ConfinementVerdict =>
-  request.allowed.some((allows) => allows({ moduleImport: request.moduleImport }) === "allowed") ? "allowed" : "outside";
+  request.allowed.some((allows) => allows({ moduleImport: request.moduleImport }) === "allowed")
+    ? "allowed"
+    : "outside";
 
 const importsOutside = (request: {
   readonly sources: Readonly<Record<string, string>>;
@@ -208,7 +279,9 @@ const importsOutside = (request: {
 }): readonly ImportOutside[] =>
   Object.entries(request.sources).flatMap(([file, text]) =>
     importsIn({ file, text })
-      .filter((moduleImport) => allowanceOf({ allowed: request.allowed, moduleImport }) === "outside")
+      .filter(
+        (moduleImport) => allowanceOf({ allowed: request.allowed, moduleImport }) === "outside",
+      )
       .map((moduleImport) => ({ file, ...moduleImport })),
   );
 
@@ -217,7 +290,9 @@ const folderOfSource = (request: { readonly source: string }): string =>
 
 const importsOutsideFromOwnFolder = (request: {
   readonly sources: Readonly<Record<string, string>>;
-  readonly allowedFrom: (request: { readonly importingFolder: string }) => readonly ImportAllowance[];
+  readonly allowedFrom: (request: {
+    readonly importingFolder: string;
+  }) => readonly ImportAllowance[];
 }): readonly ImportOutside[] =>
   Object.entries(request.sources).flatMap(([file, text]) =>
     importsOutside({
@@ -230,7 +305,12 @@ declare global {
   interface ImportMeta {
     readonly glob: (
       patterns: readonly string[],
-      options: { readonly base: string; readonly query: "?raw"; readonly import: "default"; readonly eager: true },
+      options: {
+        readonly base: string;
+        readonly query: "?raw";
+        readonly import: "default";
+        readonly eager: true;
+      },
     ) => Readonly<Record<string, string>>;
   }
 }
@@ -269,7 +349,9 @@ const loadedOutsideMechanisms = import.meta.glob(
 
 const sourcesOutsideMechanisms = withoutProjectionOutputs({ sources: loadedOutsideMechanisms });
 
-const NESTED_DECLARATION_KEY = projectionDeclarationKeyIn({ folder: "src/infrastructure/engines/eslint/runner" });
+const NESTED_DECLARATION_KEY = projectionDeclarationKeyIn({
+  folder: "src/infrastructure/engines/eslint/runner",
+});
 
 const UPGRADED_TREE: Readonly<Record<string, string>> = {
   [ROOT_PROJECTION_DECLARATION_KEY]: INSTALLED_DECLARATION_TEXT,
@@ -319,26 +401,35 @@ const platformPortSources = import.meta.glob(
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
 );
 
-const moduleLoaderPortSources = import.meta.glob(["./src/infrastructure/node/modules/module-loader-port.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const moduleLoaderPortSources = import.meta.glob(
+  ["./src/infrastructure/node/modules/module-loader-port.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const installProofPortSources = import.meta.glob(["./delivery/install-proof/install-proof-ports.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const installProofPortSources = import.meta.glob(
+  ["./delivery/install-proof/install-proof-ports.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const bundlerPortSources = import.meta.glob(["./delivery/packaging/building/esbuild-bundler-port.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const bundlerPortSources = import.meta.glob(
+  ["./delivery/packaging/building/esbuild-bundler-port.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
 const coreSources = import.meta.glob(
   [
@@ -358,47 +449,65 @@ const coreSources = import.meta.glob(
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
 );
 
-const typescriptWrapperSources = import.meta.glob(["./src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const typescriptWrapperSources = import.meta.glob(
+  ["./src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const jsoncWrapperSources = import.meta.glob(["./src/infrastructure/engines/walker/runner/pieces/jsonc-parse.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const jsoncWrapperSources = import.meta.glob(
+  ["./src/infrastructure/engines/walker/runner/pieces/jsonc-parse.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const eslintInstanceSources = import.meta.glob(["./src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const eslintInstanceSources = import.meta.glob(
+  ["./src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const eslintToolchainSources = import.meta.glob(["./src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const eslintToolchainSources = import.meta.glob(
+  ["./src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const pluginKitWrapperSources = import.meta.glob(["./src/infrastructure/engines/eslint/runner/native-exceptions/inline-config-parser.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const pluginKitWrapperSources = import.meta.glob(
+  ["./src/infrastructure/engines/eslint/runner/native-exceptions/inline-config-parser.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
-const nativeRulesWrapperSources = import.meta.glob(["./src/infrastructure/engines/eslint/runner/pieces/native-rules.ts"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const nativeRulesWrapperSources = import.meta.glob(
+  ["./src/infrastructure/engines/eslint/runner/pieces/native-rules.ts"],
+  {
+    base: "../../../../../",
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
 const walkerPieceSources = import.meta.glob(
   [
@@ -443,7 +552,8 @@ const vitestImport = packageImport({ packageName: "vitest" });
 const relativeImportUnderCoreFrom = ({ importingFolder }: { readonly importingFolder: string }) => [
   relativeImportReaching({
     importingFolder,
-    reach: /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:walker|eslint\/[^/]+)\/)/,
+    reach:
+      /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:walker|eslint\/[^/]+)\/)/,
   }),
   packageOrComputedImport,
 ];
@@ -453,7 +563,8 @@ describe("the confinement reading over written-out sources, so each guard can fa
     expect(
       importsOutside({
         sources: {
-          "./a.ts": 'import { z } from "zod";\nimport { b } from "./b.ts";\nimport ts from "typescript";\n',
+          "./a.ts":
+            'import { z } from "zod";\nimport { b } from "./b.ts";\nimport ts from "typescript";\n',
           "./b.ts": 'export type { Padding } from "left-pad";\n',
         },
         allowed: [relativeImport, zodImport],
@@ -468,14 +579,20 @@ describe("the confinement reading over written-out sources, so each guard can fa
     expect(
       importsOutsideFromOwnFolder({
         sources: {
-          "./src/run/a.ts": 'import { x } from "../values/x.ts";\nimport { y } from "../infrastructure/engines/walker/y.ts";\n',
-          "./src/run/deeper/b.ts": 'import { x } from "../../values/x.ts";\nimport { y } from "../../infrastructure/engines/walker/y.ts";\nimport { z } from "../values/z.ts";\n',
+          "./src/run/a.ts":
+            'import { x } from "../values/x.ts";\nimport { y } from "../infrastructure/engines/walker/y.ts";\n',
+          "./src/run/deeper/b.ts":
+            'import { x } from "../../values/x.ts";\nimport { y } from "../../infrastructure/engines/walker/y.ts";\nimport { z } from "../values/z.ts";\n',
         },
         allowedFrom: relativeImportUnderCoreFrom,
       }),
     ).toEqual([
       { file: "./src/run/a.ts", specifier: "../infrastructure/engines/walker/y.ts", form: "value" },
-      { file: "./src/run/deeper/b.ts", specifier: "../../infrastructure/engines/walker/y.ts", form: "value" },
+      {
+        file: "./src/run/deeper/b.ts",
+        specifier: "../../infrastructure/engines/walker/y.ts",
+        form: "value",
+      },
     ]);
   });
 
@@ -487,10 +604,26 @@ describe("the confinement reading over written-out sources, so each guard can fa
       computedModuleLoad({ moduleImport: { specifier: "./runner.ts", form: "dynamic" } }),
       zodImport({ moduleImport: { specifier: "zod", form: "dynamic" } }),
       vitestImport({ moduleImport: { specifier: "vitest-extra", form: "value" } }),
-      packageTypeImport({ packageName: "typescript" })({ moduleImport: { specifier: "typescript", form: "value" } }),
-      packageDynamicImport({ packageName: "eslint" })({ moduleImport: { specifier: "eslint", form: "value" } }),
-      dynamicLoadMatching({ specifier: /^load-\w+$/ })({ moduleImport: { specifier: "load-one", form: "value" } }),
-    ]).toEqual(["outside", "outside", "outside", "outside", "outside", "outside", "outside", "outside", "outside"]);
+      packageTypeImport({ packageName: "typescript" })({
+        moduleImport: { specifier: "typescript", form: "value" },
+      }),
+      packageDynamicImport({ packageName: "eslint" })({
+        moduleImport: { specifier: "eslint", form: "value" },
+      }),
+      dynamicLoadMatching({ specifier: /^load-\w+$/ })({
+        moduleImport: { specifier: "load-one", form: "value" },
+      }),
+    ]).toEqual([
+      "outside",
+      "outside",
+      "outside",
+      "outside",
+      "outside",
+      "outside",
+      "outside",
+      "outside",
+      "outside",
+    ]);
   });
 });
 
@@ -512,25 +645,40 @@ describe("Vendor confinement over what this repository's own Hone source imports
         "./delivery/install-proof/install-proof.ts": expect.any(String),
         "./delivery/install-proof/run-install-proof.ts": expect.any(String),
       }),
-      runnerSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts": expect.any(String) }),
+      runnerSources: expect.objectContaining({
+        "./src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts":
+          expect.any(String),
+      }),
       platformPortSources: expect.objectContaining({
         "./src/infrastructure/node/file-system/file-text-port.ts": expect.any(String),
         "./src/infrastructure/node/file-system/file-system-port.ts": expect.any(String),
         "./src/infrastructure/node/process/execution-port.ts": expect.any(String),
       }),
-      coreSources: expect.objectContaining({ "./src/application/run/check/run-check.ts": expect.any(String) }),
-      installProofPortSources: { "./delivery/install-proof/install-proof-ports.ts": expect.any(String) },
-      bundlerPortSources: { "./delivery/packaging/building/esbuild-bundler-port.ts": expect.any(String) },
-      walkerPieceSources: expect.objectContaining({
-        "./src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.ts": expect.any(String),
-        "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts": expect.any(String),
+      coreSources: expect.objectContaining({
+        "./src/application/run/check/run-check.ts": expect.any(String),
       }),
-      eslintPieceSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts": expect.any(String) }),
+      installProofPortSources: {
+        "./delivery/install-proof/install-proof-ports.ts": expect.any(String),
+      },
+      bundlerPortSources: {
+        "./delivery/packaging/building/esbuild-bundler-port.ts": expect.any(String),
+      },
+      walkerPieceSources: expect.objectContaining({
+        "./src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.ts":
+          expect.any(String),
+        "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts":
+          expect.any(String),
+      }),
+      eslintPieceSources: expect.objectContaining({
+        "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts":
+          expect.any(String),
+      }),
       testSources: expect.objectContaining({
         "./src/application/run/check/run-check.test.ts": expect.any(String),
         "./src/infrastructure/node/file-system/file-system-port.test.ts": expect.any(String),
         "./src/infrastructure/node/process/execution-port.test.ts": expect.any(String),
-        "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.test.ts": expect.any(String),
+        "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.test.ts":
+          expect.any(String),
       }),
     });
   });
@@ -541,34 +689,49 @@ describe("Vendor confinement over what this repository's own Hone source imports
 
   it("finds every relative import in a core file resolving under core/", () => {
     expect(
-      importsOutsideFromOwnFolder({ sources: coreSources, allowedFrom: relativeImportUnderCoreFrom }),
+      importsOutsideFromOwnFolder({
+        sources: coreSources,
+        allowedFrom: relativeImportUnderCoreFrom,
+      }),
     ).toEqual([]);
   });
 
   it("finds every file outside the mechanisms, platform ports, probe pieces and tests importing only relative paths and zod", () => {
-    expect(importsOutside({ sources: sourcesOutsideMechanisms, allowed: [relativeImport, zodImport] })).toEqual([]);
+    expect(
+      importsOutside({ sources: sourcesOutsideMechanisms, allowed: [relativeImport, zodImport] }),
+    ).toEqual([]);
   });
 
   it("finds the root declaration hone project writes importing a vendor package when nothing is left out, and a declaration of that name in a folder too", () => {
-    expect(importsOutside({ sources: UPGRADED_TREE, allowed: [relativeImport, zodImport] })).toEqual([
+    expect(
+      importsOutside({ sources: UPGRADED_TREE, allowed: [relativeImport, zodImport] }),
+    ).toEqual([
       { file: ROOT_PROJECTION_DECLARATION_KEY, specifier: "eslint", form: "type-only" },
       { file: NESTED_DECLARATION_KEY, specifier: "eslint", form: "type-only" },
     ]);
   });
 
   it("finds only the declaration of that name in a folder, once the root declaration hone project writes is left out", () => {
-    expect(importsOutside({ sources: withoutProjectionOutputs({ sources: UPGRADED_TREE }), allowed: [relativeImport, zodImport] })).toEqual([
-      { file: NESTED_DECLARATION_KEY, specifier: "eslint", form: "type-only" },
-    ]);
+    expect(
+      importsOutside({
+        sources: withoutProjectionOutputs({ sources: UPGRADED_TREE }),
+        allowed: [relativeImport, zodImport],
+      }),
+    ).toEqual([{ file: NESTED_DECLARATION_KEY, specifier: "eslint", form: "type-only" }]);
   });
 
   it("finds every runner file outside the wrapping files importing only relative paths and zod", () => {
-    expect(importsOutside({ sources: runnerSources, allowed: [relativeImport, zodImport] })).toEqual([]);
+    expect(
+      importsOutside({ sources: runnerSources, allowed: [relativeImport, zodImport] }),
+    ).toEqual([]);
   });
 
   it("finds the platform ports other than the module loader importing only relative paths, zod and node builtins", () => {
     expect(
-      importsOutside({ sources: platformPortSources, allowed: [relativeImport, zodImport, nodeBuiltinImport] }),
+      importsOutside({
+        sources: platformPortSources,
+        allowed: [relativeImport, zodImport, nodeBuiltinImport],
+      }),
     ).toEqual([]);
   });
 
@@ -582,12 +745,20 @@ describe("Vendor confinement over what this repository's own Hone source imports
   });
 
   it("finds delivery/install-proof/install-proof-ports.ts, the install proof's wrapping ports, importing only relative paths and node builtins", () => {
-    expect(importsOutside({ sources: installProofPortSources, allowed: [relativeImport, nodeBuiltinImport] })).toEqual([]);
+    expect(
+      importsOutside({
+        sources: installProofPortSources,
+        allowed: [relativeImport, nodeBuiltinImport],
+      }),
+    ).toEqual([]);
   });
 
   it("finds delivery/packaging/building/esbuild-bundler-port.ts, the package build's wrapping port, the only file importing esbuild, beside relative paths and node builtins", () => {
     expect(
-      importsOutside({ sources: bundlerPortSources, allowed: [relativeImport, nodeBuiltinImport, packageImport({ packageName: "esbuild" })] }),
+      importsOutside({
+        sources: bundlerPortSources,
+        allowed: [relativeImport, nodeBuiltinImport, packageImport({ packageName: "esbuild" })],
+      }),
     ).toEqual([]);
   });
 
@@ -621,7 +792,9 @@ describe("Vendor confinement over what this repository's own Hone source imports
         allowed: [
           relativeImport,
           zodImport,
-          dynamicLoadMatching({ specifier: /^`\.\/\$\{folder\}\/eslint-\$\{major\}-boundary\.ts`$/ }),
+          dynamicLoadMatching({
+            specifier: /^`\.\/\$\{folder\}\/eslint-\$\{major\}-boundary\.ts`$/,
+          }),
           packageTypeImport({ packageName: "@typescript-eslint/eslint-plugin" }),
           packageDynamicImport({ packageName: "eslint" }),
           packageDynamicImport({ packageName: "@typescript-eslint/parser" }),
@@ -685,6 +858,8 @@ describe("Vendor confinement over what this repository's own Hone source imports
   });
 
   it("finds every test file and the test-support modules importing only relative paths and vitest, type-only imports included, so zod, eslint and typescript reach a test only through their owners", () => {
-    expect(importsOutside({ sources: testSources, allowed: [relativeImportOfAnyForm, vitestImport] })).toEqual([]);
+    expect(
+      importsOutside({ sources: testSources, allowed: [relativeImportOfAnyForm, vitestImport] }),
+    ).toEqual([]);
   });
 });

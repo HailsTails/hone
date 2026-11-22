@@ -1,35 +1,53 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+
 import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import type { EntryKindPort } from "../../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
+import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
+import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
+import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { createPathPort } from "../../../node/path-port.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import { CASE_ROOT } from "./pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerPiece } from "./pieces/walker-piece.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
-import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const loadedParsePort = await loadParsePort({
-  peers: defaultTypeScriptPeers({ installRoot: `${import.meta.dirname}/../../../../..`, installForm: "source" }),
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../..`,
+    installForm: "source",
+  }),
 });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
-assert(/^6\./.test(loadedParsePort.value.syntaxApi.version), `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`);
+assert(
+  /^6\./.test(loadedParsePort.value.syntaxApi.version),
+  `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
+);
 const defaultParsePort = loadedParsePort.value;
 
 const PIECE_ROOT = "/install/mechanisms/audit/XX-1";
 const ALPHA = repoPathOf("src/alpha.ts");
 const CONFIG = repoPathOf("tsconfig.json");
-const FIRST = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("first-check") };
-const SECOND = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("second-check") };
+const FIRST = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("XX-1"),
+  clause: clauseIdOf("first-check"),
+};
+const SECOND = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("XX-1"),
+  clause: clauseIdOf("second-check"),
+};
 
-const clauseFor = (request: { readonly address: typeof FIRST; readonly module: string }): RunnerClause => ({
+const clauseFor = (request: {
+  readonly address: typeof FIRST;
+  readonly module: string;
+}): RunnerClause => ({
   address: request.address,
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
@@ -58,7 +76,9 @@ const fileTextOf = (request: { readonly read: FileTextPort["read"] }): FileTextP
 });
 
 const modulesOf = (request: { readonly check: unknown }): ModuleLoaderPort => ({
-  load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: { check: request.check } }),
+  load: vi
+    .fn<ModuleLoaderPort["load"]>()
+    .mockResolvedValue({ outcome: "ok", value: { check: request.check } }),
 });
 
 const LET_POSITION = 13;
@@ -75,9 +95,17 @@ const letKeywordPiece: WalkerPiece = {
             kind: "syntax",
             begin: ({ anchorAt }) => ({
               finish: () => [
-                { clause: FIRST, anchor: anchorAt({ position: LET_POSITION }), snippet: "let b = 2;" },
+                {
+                  clause: FIRST,
+                  anchor: anchorAt({ position: LET_POSITION }),
+                  snippet: "let b = 2;",
+                },
                 { clause: FIRST, anchor: anchorAt({ position: 0 }), snippet: "const a = 1;" },
-                { clause: SECOND, anchor: anchorAt({ position: LET_POSITION }), snippet: "let b = 2;" },
+                {
+                  clause: SECOND,
+                  anchor: anchorAt({ position: LET_POSITION }),
+                  snippet: "let b = 2;",
+                },
                 { clause: SECOND, anchor: anchorAt({ position: 0 }), snippet: "const a = 1;" },
               ],
             }),
@@ -85,12 +113,22 @@ const letKeywordPiece: WalkerPiece = {
         })
         .mockReturnValueOnce({
           outcome: "ok",
-          value: { kind: "complete", hits: [{ clause: FIRST, anchor: { line: 1, column: 0 }, snippet: CONFIG }] },
+          value: {
+            kind: "complete",
+            hits: [{ clause: FIRST, anchor: { line: 1, column: 0 }, snippet: CONFIG }],
+          },
         })
         .mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
       finish: () => ({
         outcome: "ok",
-        value: [{ clause: SECOND, file: CONFIG, anchor: { line: 1, column: 0 }, snippet: "repository-wide" }],
+        value: [
+          {
+            clause: SECOND,
+            file: CONFIG,
+            anchor: { line: 1, column: 0 },
+            snippet: "repository-wide",
+          },
+        ],
       }),
     },
   }),
@@ -108,7 +146,11 @@ const firstClauseLetKeywordPiece: WalkerPiece = {
             kind: "syntax",
             begin: ({ anchorAt }) => ({
               finish: () => [
-                { clause: FIRST, anchor: anchorAt({ position: LET_POSITION }), snippet: "let b = 2;" },
+                {
+                  clause: FIRST,
+                  anchor: anchorAt({ position: LET_POSITION }),
+                  snippet: "let b = 2;",
+                },
                 { clause: FIRST, anchor: anchorAt({ position: 0 }), snippet: "const a = 1;" },
               ],
             }),
@@ -116,18 +158,31 @@ const firstClauseLetKeywordPiece: WalkerPiece = {
         })
         .mockReturnValueOnce({
           outcome: "ok",
-          value: { kind: "complete", hits: [{ clause: FIRST, anchor: { line: 1, column: 0 }, snippet: CONFIG }] },
+          value: {
+            kind: "complete",
+            hits: [{ clause: FIRST, anchor: { line: 1, column: 0 }, snippet: CONFIG }],
+          },
         })
         .mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
       finish: () => ({
         outcome: "ok",
-        value: [{ clause: SECOND, file: CONFIG, anchor: { line: 1, column: 0 }, snippet: "repository-wide" }],
+        value: [
+          {
+            clause: SECOND,
+            file: CONFIG,
+            anchor: { line: 1, column: 0 },
+            snippet: "repository-wide",
+          },
+        ],
       }),
     },
   }),
 };
 
-const runnerWith = (request: { readonly fileText: FileTextPort; readonly modules: ModuleLoaderPort }) =>
+const runnerWith = (request: {
+  readonly fileText: FileTextPort;
+  readonly modules: ModuleLoaderPort;
+}) =>
   createWalkerRunner({
     fileText: request.fileText,
     modules: request.modules,
@@ -140,7 +195,9 @@ const skippingPrepare = () =>
   vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
     outcome: "ok",
     value: {
-      prepareFile: vi.fn<PreparedWalkerCheck["prepareFile"]>().mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
+      prepareFile: vi
+        .fn<PreparedWalkerCheck["prepareFile"]>()
+        .mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
       finish: vi.fn<PreparedWalkerCheck["finish"]>().mockReturnValue({ outcome: "ok", value: [] }),
     },
   });
@@ -148,7 +205,9 @@ const skippingPrepare = () =>
 describe("createWalkerRunner run", () => {
   it("walks every tracked path and reports each file's hits in source then clause order, then each piece's finishing hits", async () => {
     const runner = runnerWith({
-      fileText: fileTextOf({ read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: SOURCE }) }),
+      fileText: fileTextOf({
+        read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: SOURCE }),
+      }),
       modules: modulesOf({ check: letKeywordPiece }),
     });
 
@@ -161,7 +220,12 @@ describe("createWalkerRunner run", () => {
           { clause: FIRST, file: ALPHA, anchor: { line: 2, column: 0 }, snippet: "let b = 2;" },
           { clause: SECOND, file: ALPHA, anchor: { line: 2, column: 0 }, snippet: "let b = 2;" },
           { clause: FIRST, file: CONFIG, anchor: { line: 1, column: 0 }, snippet: CONFIG },
-          { clause: SECOND, file: CONFIG, anchor: { line: 1, column: 0 }, snippet: "repository-wide" },
+          {
+            clause: SECOND,
+            file: CONFIG,
+            anchor: { line: 1, column: 0 },
+            snippet: "repository-wide",
+          },
         ],
         nativeExceptions: [],
         measured: [
@@ -176,14 +240,20 @@ describe("createWalkerRunner run", () => {
 
   it("names no clause measured on a file every piece skipped, such as a file that is not TypeScript", async () => {
     expect(
-      await runnerWith({ fileText: fileTextOf({ read: vi.fn() }), modules: modulesOf({ check: { prepare: skippingPrepare() } }) }).run(RUN),
+      await runnerWith({
+        fileText: fileTextOf({ read: vi.fn() }),
+        modules: modulesOf({ check: { prepare: skippingPrepare() } }),
+      }).run(RUN),
     ).toEqual({ outcome: "ok", value: { hits: [], nativeExceptions: [], measured: [] } });
   });
 
   it("reads a file under the repository root", async () => {
     const read = vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: SOURCE });
 
-    await runnerWith({ fileText: fileTextOf({ read }), modules: modulesOf({ check: letKeywordPiece }) }).run(RUN);
+    await runnerWith({
+      fileText: fileTextOf({ read }),
+      modules: modulesOf({ check: letKeywordPiece }),
+    }).run(RUN);
 
     expect(read.mock.calls).toEqual([[{ path: "/repo/src/alpha.ts" }]]);
   });
@@ -192,8 +262,12 @@ describe("createWalkerRunner run", () => {
     const prepare = vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
       outcome: "ok",
       value: {
-        prepareFile: vi.fn<PreparedWalkerCheck["prepareFile"]>().mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
-        finish: vi.fn<PreparedWalkerCheck["finish"]>().mockReturnValue({ outcome: "ok", value: [] }),
+        prepareFile: vi
+          .fn<PreparedWalkerCheck["prepareFile"]>()
+          .mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
+        finish: vi
+          .fn<PreparedWalkerCheck["finish"]>()
+          .mockReturnValue({ outcome: "ok", value: [] }),
       },
     });
     const modules = modulesOf({ check: { prepare } });
@@ -212,10 +286,15 @@ describe("createWalkerRunner run", () => {
   it("prepares each piece over the disk around the repository root", async () => {
     const prepare = skippingPrepare();
 
-    await runnerWith({ fileText: fileTextOf({ read: vi.fn() }), modules: modulesOf({ check: { prepare } }) }).run(RUN);
+    await runnerWith({
+      fileText: fileTextOf({ read: vi.fn() }),
+      modules: modulesOf({ check: { prepare } }),
+    }).run(RUN);
 
     expect(prepare).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ repository: expect.objectContaining({ disk: expect.objectContaining({ root: "/repo" }) }) }),
+      expect.objectContaining({
+        repository: expect.objectContaining({ disk: expect.objectContaining({ root: "/repo" }) }),
+      }),
     );
   });
 
@@ -235,11 +314,20 @@ describe("createWalkerRunner run", () => {
   });
 
   it("is file-unreadable with the port's detail when a file a piece reads cannot be read", async () => {
-    const read = vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/src/alpha.ts", detail: "denied" } });
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "failed",
+      error: { kind: "unreadable", path: "/repo/src/alpha.ts", detail: "denied" },
+    });
 
     expect(
-      await runnerWith({ fileText: fileTextOf({ read }), modules: modulesOf({ check: letKeywordPiece }) }).run(RUN),
-    ).toEqual({ outcome: "failed", error: { kind: "file-unreadable", file: ALPHA, detail: "denied" } });
+      await runnerWith({
+        fileText: fileTextOf({ read }),
+        modules: modulesOf({ check: letKeywordPiece }),
+      }).run(RUN),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", file: ALPHA, detail: "denied" },
+    });
   });
 
   it("is piece-invalid when a piece's finish throws", async () => {
@@ -254,8 +342,14 @@ describe("createWalkerRunner run", () => {
     };
 
     expect(
-      await runnerWith({ fileText: fileTextOf({ read: vi.fn() }), modules: modulesOf({ check: throwingPiece }) }).run(RUN),
-    ).toEqual({ outcome: "failed", error: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "finish broke" } });
+      await runnerWith({
+        fileText: fileTextOf({ read: vi.fn() }),
+        modules: modulesOf({ check: throwingPiece }),
+      }).run(RUN),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "finish broke" },
+    });
   });
 });
 
@@ -269,7 +363,10 @@ const DIRECTIVE_SOURCE = `// ${NOCHECK}\n// ${EXPECTATION} legacy\nexport const 
 
 type PreparedFile = ReturnType<PreparedWalkerCheck["prepareFile"]>;
 
-const SYNTAX_FILE: PreparedFile = { outcome: "ok", value: { kind: "syntax", begin: () => ({ finish: () => [] }) } };
+const SYNTAX_FILE: PreparedFile = {
+  outcome: "ok",
+  value: { kind: "syntax", begin: () => ({ finish: () => [] }) },
+};
 
 const SKIPPED_FILE: PreparedFile = { outcome: "ok", value: { kind: "skipped" } };
 
@@ -287,18 +384,35 @@ const pieceReadingAlphaThenBeta = (): WalkerPiece => ({
   }),
 });
 
-const escapingClause = (request: { readonly address: typeof FIRST; readonly escapingDirectives: readonly string[] }): RunnerClause => ({
+const escapingClause = (request: {
+  readonly address: typeof FIRST;
+  readonly escapingDirectives: readonly string[];
+}): RunnerClause => ({
   ...clauseFor({ address: request.address, module: "shared.ts" }),
   settings: { module: "shared.ts", escapingDirectives: request.escapingDirectives },
 });
 
 const directiveRun = (request: { readonly clauses: readonly RunnerClause[] }) =>
   runnerWith({
-    fileText: fileTextOf({ read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: DIRECTIVE_SOURCE }) }),
+    fileText: fileTextOf({
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValue({ outcome: "ok", value: DIRECTIVE_SOURCE }),
+    }),
     modules: modulesOf({ check: pieceReadingAlphaThenBeta() }),
-  }).run({ ...RUN, files: [ALPHA, BETA, SKIPPED], trackedPaths: [ALPHA, BETA, SKIPPED, CONFIG], clauses: request.clauses });
+  }).run({
+    ...RUN,
+    files: [ALPHA, BETA, SKIPPED],
+    trackedPaths: [ALPHA, BETA, SKIPPED, CONFIG],
+    clauses: request.clauses,
+  });
 
-const inlineDisable = (request: { readonly clause: typeof FIRST; readonly file: typeof ALPHA; readonly line: number; readonly text: string }) => ({
+const inlineDisable = (request: {
+  readonly clause: typeof FIRST;
+  readonly file: typeof ALPHA;
+  readonly line: number;
+  readonly text: string;
+}) => ({
   kind: "inline-disable",
   ...request,
   reach: "one-clause",
@@ -313,7 +427,13 @@ const BOTH_CLAUSES_ON_ALPHA_AND_BETA = [
 
 describe("createWalkerRunner run, type directives a clause declares as its escapes", () => {
   it("reports each declared directive, tracked reference or not, as an inline disable of that clause in every file its piece reads", async () => {
-    expect(await directiveRun({ clauses: [escapingClause({ address: FIRST, escapingDirectives: [EXPECTATION, IGNORE, NOCHECK] })] })).toEqual({
+    expect(
+      await directiveRun({
+        clauses: [
+          escapingClause({ address: FIRST, escapingDirectives: [EXPECTATION, IGNORE, NOCHECK] }),
+        ],
+      }),
+    ).toEqual({
       outcome: "ok",
       value: {
         hits: [],
@@ -336,7 +456,10 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
   it("reports only the directives each clause declares, and none for a clause that declares none", async () => {
     expect(
       await directiveRun({
-        clauses: [escapingClause({ address: FIRST, escapingDirectives: [IGNORE] }), clauseFor({ address: SECOND, module: "shared.ts" })],
+        clauses: [
+          escapingClause({ address: FIRST, escapingDirectives: [IGNORE] }),
+          clauseFor({ address: SECOND, module: "shared.ts" }),
+        ],
       }),
     ).toEqual({
       outcome: "ok",
@@ -350,7 +473,6 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
       },
     });
   });
-
 });
 
 describe("createWalkerRunner run, type directives several clauses or conform meet", () => {
@@ -386,13 +508,19 @@ describe("createWalkerRunner run, type directives several clauses or conform mee
     expect(
       await runner.conform({
         clause: escapingClause({ address: FIRST, escapingDirectives: [IGNORE] }),
-        cases: [{ name: "a directive", fileName: ALPHA, source: DIRECTIVE_SOURCE, expectedLines: [] }],
+        cases: [
+          { name: "a directive", fileName: ALPHA, source: DIRECTIVE_SOURCE, expectedLines: [] },
+        ],
       }),
     ).toEqual({ outcome: "ok", value: [{ caseName: "a directive", flaggedLines: [] }] });
   });
 
   it("is piece-invalid when a clause declares an escape the compiler does not honour", async () => {
-    expect(await directiveRun({ clauses: [escapingClause({ address: FIRST, escapingDirectives: ["@ts-check"] })] })).toEqual({
+    expect(
+      await directiveRun({
+        clauses: [escapingClause({ address: FIRST, escapingDirectives: ["@ts-check"] })],
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: expect.any(String) },
     });
@@ -402,7 +530,10 @@ describe("createWalkerRunner run, type directives several clauses or conform mee
 describe("createWalkerRunner conform", () => {
   it("returns each case's flagged lines in case order from its own source, reading no file", async () => {
     const read = vi.fn<FileTextPort["read"]>();
-    const runner = runnerWith({ fileText: fileTextOf({ read }), modules: modulesOf({ check: firstClauseLetKeywordPiece }) });
+    const runner = runnerWith({
+      fileText: fileTextOf({ read }),
+      modules: modulesOf({ check: firstClauseLetKeywordPiece }),
+    });
 
     expect(
       await runner.conform({
@@ -425,13 +556,18 @@ describe("createWalkerRunner conform", () => {
   it("prepares each case over a disk holding only that case's file under the case root", async () => {
     const prepare = skippingPrepare();
 
-    await runnerWith({ fileText: fileTextOf({ read: vi.fn() }), modules: modulesOf({ check: { prepare } }) }).conform({
+    await runnerWith({
+      fileText: fileTextOf({ read: vi.fn() }),
+      modules: modulesOf({ check: { prepare } }),
+    }).conform({
       clause: FIRST_CLAUSE,
       cases: [{ name: "config", fileName: CONFIG, source: "{}", expectedLines: [] }],
     });
 
     expect(prepare).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ repository: expect.objectContaining({ disk: expect.objectContaining({ root: CASE_ROOT }) }) }),
+      expect.objectContaining({
+        repository: expect.objectContaining({ disk: expect.objectContaining({ root: CASE_ROOT }) }),
+      }),
     );
   });
 
@@ -439,18 +575,28 @@ describe("createWalkerRunner conform", () => {
     const prepare = vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
       outcome: "ok",
       value: {
-        prepareFile: vi.fn<PreparedWalkerCheck["prepareFile"]>().mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
-        finish: vi.fn<PreparedWalkerCheck["finish"]>().mockReturnValue({ outcome: "ok", value: [] }),
+        prepareFile: vi
+          .fn<PreparedWalkerCheck["prepareFile"]>()
+          .mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
+        finish: vi
+          .fn<PreparedWalkerCheck["finish"]>()
+          .mockReturnValue({ outcome: "ok", value: [] }),
       },
     });
 
-    await runnerWith({ fileText: fileTextOf({ read: vi.fn() }), modules: modulesOf({ check: { prepare } }) }).conform({
+    await runnerWith({
+      fileText: fileTextOf({ read: vi.fn() }),
+      modules: modulesOf({ check: { prepare } }),
+    }).conform({
       clause: FIRST_CLAUSE,
       cases: [{ name: "config", fileName: CONFIG, source: "{}", expectedLines: [] }],
     });
 
     expect(prepare).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ clauses: [FIRST_CLAUSE], repository: expect.objectContaining({ files: [CONFIG] }) }),
+      expect.objectContaining({
+        clauses: [FIRST_CLAUSE],
+        repository: expect.objectContaining({ files: [CONFIG] }),
+      }),
     );
   });
 });

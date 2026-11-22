@@ -14,4 +14,6 @@ export const gatheredOutcomes = <Value, Failure>(request: {
 export const listedOutcome = <Value, Failure>(request: {
   readonly outcome: Result<Value, Failure>;
 }): Result<readonly Value[], Failure> =>
-  request.outcome.outcome === "failed" ? request.outcome : { outcome: "ok", value: [request.outcome.value] };
+  request.outcome.outcome === "failed"
+    ? request.outcome
+    : { outcome: "ok", value: [request.outcome.value] };

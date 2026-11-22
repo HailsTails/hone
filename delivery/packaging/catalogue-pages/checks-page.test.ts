@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { checksPageOf } from "./checks-page.ts";
+
+import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
-import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
+import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+import { checksPageOf } from "./checks-page.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
@@ -42,8 +43,24 @@ const FILE: CatalogueFile = {
   ],
   clauses: [],
   checks: [
-    { symptom: "claimed-type", name: "cast-to-any", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") } },
-    { symptom: "claimed-type", name: "non-null-assertions", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("non-null") } },
+    {
+      symptom: "claimed-type",
+      name: "cast-to-any",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-1"),
+        clause: clauseIdOf("any-cast"),
+      },
+    },
+    {
+      symptom: "claimed-type",
+      name: "non-null-assertions",
+      clause: {
+        ruleSet: TOOL_RULE_SET,
+        discipline: disciplineIdOf("CD-1"),
+        clause: clauseIdOf("non-null"),
+      },
+    },
   ],
   namedBans: [],
 };
@@ -54,7 +71,12 @@ describe("checksPageOf", () => {
       checksPageOf({
         file: FILE,
         path: PATH,
-        prose: new Map([["typescript/symptoms/claimed-type/cast-to-any.md", "- **Misses:** casts in [tests](../../../rules/tests-stub-ports.md)."]]),
+        prose: new Map([
+          [
+            "typescript/symptoms/claimed-type/cast-to-any.md",
+            "- **Misses:** casts in [tests](../../../rules/tests-stub-ports.md).",
+          ],
+        ]),
       }),
     ).toEqual({
       path: "rules/typescript/checks.md",
@@ -69,14 +91,26 @@ describe("checksPageOf", () => {
         {
           symptom: "claimed-type",
           name: "cast-to-any",
-          clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") },
+          clause: {
+            ruleSet: TOOL_RULE_SET,
+            discipline: disciplineIdOf("CD-1"),
+            clause: clauseIdOf("any-cast"),
+          },
           settingsTracedTo: "none.",
           misses: "casts in strings.",
           flagsBeyondTheSymptom: "`as const`.",
         },
       ],
     };
-    expect(checksPageOf({ file, path: PATH, prose: new Map([["typescript/symptoms/claimed-type/cast-to-any.md", "## Fix\n\nDeclare it."]]) })).toEqual({
+    expect(
+      checksPageOf({
+        file,
+        path: PATH,
+        prose: new Map([
+          ["typescript/symptoms/claimed-type/cast-to-any.md", "## Fix\n\nDeclare it."],
+        ]),
+      }),
+    ).toEqual({
       path: "rules/typescript/checks.md",
       text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Flags beyond the symptom:** `as const`.\n- **Misses:** casts in strings.\n- **Settings traced to:** none.\n\n## Fix\n\nDeclare it.\n",
     });

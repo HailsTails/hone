@@ -1,10 +1,15 @@
-import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import type { Hit } from "../../../../../domain/runner/runner-result-types.ts";
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import type { CommentRange, SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
+import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
+import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { Hit } from "../../../../../domain/runner/runner-result-types.ts";
+import type {
+  CommentRange,
+  SyntaxApi,
+  SyntaxNode,
+  SyntaxTree,
+} from "../toolchain/typescript-parse.ts";
 
 export type PieceHit = Omit<Hit, "file">;
 
@@ -39,7 +44,9 @@ export type PreparedWalkerCheck = {
 export type WalkerDisk = {
   readonly root: string;
   readonly kindAt: (request: { readonly path: string }) => "file" | "directory" | "absent";
-  readonly textAt: (request: { readonly path: string }) => Result<string, { readonly detail: string }>;
+  readonly textAt: (request: {
+    readonly path: string;
+  }) => Result<string, { readonly detail: string }>;
 };
 
 export type WalkerRepository = {
