@@ -1,35 +1,35 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
-import type { Result } from "../../../../../domain/result.ts";
-import { checkConformance } from "../../../protocol/conformance.ts";
-import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import { runnerModuleSchema } from "../../../protocol/runner-module/runner-module-schema.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { editionRunsOf } from "../../../../../domain/runner/edition-runs.ts";
-import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
-import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import type { MechanismId } from "../../../../../domain/rule-set/identifier-types.ts";
-import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
-import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
-import { createEslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
+import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
+import { defaultClauseSettings } from "../../src/domain/settings/clause-settings/default-clause-settings.ts";
+import type { Result } from "../../src/domain/result.ts";
+import { checkConformance } from "../../src/infrastructure/engines/protocol/conformance.ts";
+import type { EmbeddedRunner } from "../../src/infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
+import { runnerModuleSchema } from "../../src/infrastructure/engines/protocol/runner-module/runner-module-schema.ts";
+import type { RunnerClause } from "../../src/domain/runner/runner-module-types.ts";
+import { editionRunsOf } from "../../src/domain/runner/edition-runs.ts";
+import { toolchainBoundEmbeddedRunner } from "../../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort, createPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { readDisciplineFile, readPieceFile } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import type { DisciplineFile, SourceCase } from "../../src/domain/rule-set/rule-set-types.ts";
+import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { disciplineIdSchema, mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
+import type { MechanismId } from "../../src/domain/rule-set/identifier-types.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort, type EslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
   type EslintToolchainPeers,
   loadEslintToolchain,
-} from "../toolchain/eslint-toolchain.ts";
-import * as eslintRunnerModule from "../runner.ts";
+} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import * as eslintRunnerModule from "../../src/infrastructure/engines/eslint/runner/runner.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -41,7 +41,7 @@ type LineDefinition = {
   readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
 };
 
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../..`, installForm: "source" });
 
 const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
   "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules, pieceModules: (request) => request.base },
@@ -181,7 +181,7 @@ declare global {
 }
 
 const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infrastructure/engines/eslint/*/piece.json"], {
-  base: "../../../../../../",
+  base: "../../",
   query: "?raw",
   import: "default",
   eager: true,
@@ -193,7 +193,7 @@ const CONFORMANCE_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: eslintDisciplines,
   mechanism: mechanismIdSchema.parse("eslint"),
-  mechanismRoot: `${import.meta.dirname}/../..`,
+  mechanismRoot: `${import.meta.dirname}/../../src/infrastructure/engines/eslint`,
 });
 
 const eslintRunner = runnerModuleSchema.parse(eslintRunnerModule.runner);
