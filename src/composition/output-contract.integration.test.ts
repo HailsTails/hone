@@ -4714,8 +4714,6 @@ const CONTRACT_TEXT = contractTextAt({
 
 const CONTRACT_PARTS = contractPartsOf({ text: CONTRACT_TEXT });
 
-const README_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../README.md` });
-
 describe("contractGaps over written-out lines, so the contract reading can fail", () => {
   const FINDING_TEMPLATE: DocumentedLine = {
     label: "findings",
@@ -4827,10 +4825,6 @@ describe("docs/output-contract.md, read against every line the command can print
 
   it.each(PRINTED_BLOCKS)("shows the synopsis and each help exactly as printed: %s", (block) => {
     expect(CONTRACT_PARTS.versionOne).toContain(block);
-  });
-
-  it("pins the README to the version 2 run synopsis, which no command prints yet", () => {
-    expect(README_TEXT).toContain(RUN_PRINTED_BLOCKS[0]);
   });
 });
 

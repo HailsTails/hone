@@ -115,10 +115,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/walkthrough.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
