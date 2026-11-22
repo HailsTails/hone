@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../../../application/ports/file-system/directory-removal-port.ts";
+import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
 import { createDefaultDirectoryTreePort, createDirectoryTreePort } from "./directory-tree-port.ts";
@@ -10,27 +11,23 @@ const FOLDER = absolutePathSchema.parse("/repo/scratch");
 
 const NESTED = absolutePathSchema.parse("/repo/scratch/nested");
 
+const IS_DIRECTORY = { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("directory") };
+
 const OK_REMOVAL = { outcome: "ok", value: undefined } as const;
 
-const directoryHolding = (request: { readonly listings: readonly ReturnType<DirectoryPort["list"]>[] }): DirectoryPort => {
-  const list = vi.fn<DirectoryPort["list"]>();
-  request.listings.forEach((listing) => {
-    list.mockReturnValueOnce(listing);
-  });
-  return { list, create: vi.fn<DirectoryPort["create"]>() };
-};
+const directoryOver = (list: DirectoryPort["list"]): DirectoryPort => ({ list, create: vi.fn<DirectoryPort["create"]>() });
 
-const TOP_AND_NESTED = [
-  { outcome: "ok", value: [{ name: "top.txt", kind: "file" }, { name: "nested", kind: "directory" }] },
-  { outcome: "ok", value: [{ name: "leaf.txt", kind: "file" }] },
-] as const;
+const TOP_AND_NESTED = { outcome: "ok", value: [{ name: "top.txt", kind: "file" }, { name: "nested", kind: "directory" }] } as const;
+
+const LEAF = { outcome: "ok", value: [{ name: "leaf.txt", kind: "file" }] } as const;
 
 describe("createDirectoryTreePort", () => {
   it("lists every entry under the folder by slash-separated path in path order", () => {
     const tree = createDirectoryTreePort({
-      directory: directoryHolding({ listings: TOP_AND_NESTED }),
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>().mockReturnValueOnce(TOP_AND_NESTED).mockReturnValueOnce(LEAF)),
       fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
       directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      entryKind: IS_DIRECTORY,
     });
 
     expect(tree.list({ path: FOLDER })).toEqual({
@@ -45,9 +42,10 @@ describe("createDirectoryTreePort", () => {
 
   it("reports a folder the directory port cannot read as unreadable with its detail", () => {
     const tree = createDirectoryTreePort({
-      directory: directoryHolding({ listings: [{ outcome: "failed", error: { kind: "directory-unreadable", path: FOLDER, detail: "ENOENT" } }] }),
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "failed", error: { kind: "directory-unreadable", path: FOLDER, detail: "ENOENT" } })),
       fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
       directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      entryKind: IS_DIRECTORY,
     });
 
     expect(tree.list({ path: FOLDER })).toEqual({ outcome: "failed", error: { kind: "directory-tree-unreadable", path: FOLDER, detail: "ENOENT" } });
@@ -57,9 +55,10 @@ describe("createDirectoryTreePort", () => {
     const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue(OK_REMOVAL);
     const removeEmpty = vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(OK_REMOVAL);
     const tree = createDirectoryTreePort({
-      directory: directoryHolding({ listings: TOP_AND_NESTED }),
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>().mockReturnValueOnce(TOP_AND_NESTED).mockReturnValueOnce(LEAF)),
       fileRemoval: { remove },
       directoryRemoval: { removeEmpty },
+      entryKind: IS_DIRECTORY,
     });
 
     expect(tree.remove({ path: FOLDER })).toEqual(OK_REMOVAL);
@@ -73,9 +72,10 @@ describe("createDirectoryTreePort", () => {
       .mockReturnValue({ outcome: "failed", error: { kind: "unremovable", path: "/repo/scratch/top.txt", detail: "EPERM" } });
     const removeEmpty = vi.fn<DirectoryRemovalPort["removeEmpty"]>();
     const tree = createDirectoryTreePort({
-      directory: directoryHolding({ listings: [{ outcome: "ok", value: [{ name: "top.txt", kind: "file" }] }] }),
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [{ name: "top.txt", kind: "file" }] })),
       fileRemoval: { remove },
       directoryRemoval: { removeEmpty },
+      entryKind: IS_DIRECTORY,
     });
 
     expect(tree.remove({ path: FOLDER })).toEqual({
@@ -90,15 +90,56 @@ describe("createDirectoryTreePort", () => {
       .fn<DirectoryRemovalPort["removeEmpty"]>()
       .mockReturnValue({ outcome: "failed", error: { kind: "directory-unremovable", path: FOLDER, detail: "ENOTEMPTY" } });
     const tree = createDirectoryTreePort({
-      directory: directoryHolding({ listings: [{ outcome: "ok", value: [] }] }),
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] })),
       fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
       directoryRemoval: { removeEmpty },
+      entryKind: IS_DIRECTORY,
     });
 
     expect(tree.remove({ path: FOLDER })).toEqual({
       outcome: "failed",
       error: { kind: "directory-tree-unremovable", path: FOLDER, detail: "ENOTEMPTY" },
     });
+  });
+});
+
+describe("createDirectoryTreePort removing something that is not a folder", () => {
+  it("removes a file at the path through the file removal port", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue(OK_REMOVAL);
+    const tree = createDirectoryTreePort({
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>()),
+      fileRemoval: { remove },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("file") },
+    });
+
+    expect(tree.remove({ path: FOLDER })).toEqual(OK_REMOVAL);
+    expect(remove).toHaveBeenCalledExactlyOnceWith({ path: FOLDER });
+  });
+
+  it("reports a file it cannot remove as unremovable with its detail", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>().mockReturnValue({ outcome: "failed", error: { kind: "unremovable", path: FOLDER, detail: "EPERM" } });
+    const tree = createDirectoryTreePort({
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>()),
+      fileRemoval: { remove },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("file") },
+    });
+
+    expect(tree.remove({ path: FOLDER })).toEqual({ outcome: "failed", error: { kind: "directory-tree-unremovable", path: FOLDER, detail: "EPERM" } });
+  });
+
+  it("removes nothing, and succeeds, where nothing is at the path", () => {
+    const remove = vi.fn<FileRemovalPort["remove"]>();
+    const tree = createDirectoryTreePort({
+      directory: directoryOver(vi.fn<DirectoryPort["list"]>()),
+      fileRemoval: { remove },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      entryKind: { kindOf: vi.fn<EntryKindPort["kindOf"]>().mockReturnValue("absent") },
+    });
+
+    expect(tree.remove({ path: FOLDER })).toEqual(OK_REMOVAL);
+    expect(remove).not.toHaveBeenCalled();
   });
 });
 

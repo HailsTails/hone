@@ -9,14 +9,16 @@ import type {
   DirectoryTreeRemovalFailure,
   TreeEntry,
 } from "../../../application/ports/file-system/directory-tree-port.ts";
+import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
 import { createDefaultDirectoryRemovalPort } from "./directory-removal-port.ts";
-import { createDefaultDirectoryPort, createDefaultFileRemovalPort } from "./file-system-port.ts";
+import { createDefaultDirectoryPort, createDefaultEntryKindPort, createDefaultFileRemovalPort } from "./file-system-port.ts";
 
 type TreePorts = {
   readonly directory: DirectoryPort;
   readonly fileRemoval: FileRemovalPort;
   readonly directoryRemoval: DirectoryRemovalPort;
+  readonly entryKind: EntryKindPort;
 };
 
 type Listing = Result<readonly TreeEntry[], DirectoryTreeListFailure>;
@@ -82,7 +84,20 @@ export const createDirectoryTreePort = (options: TreePorts): DirectoryTreePort =
       ? { outcome: "ok", value: listed.value.toSorted((left, right) => textOrder({ left: left.path, right: right.path })) }
       : listed;
   },
-  remove: (request) => removedWithin({ ...options, folder: request.path }),
+  remove: (request) => {
+    switch (options.entryKind.kindOf({ path: request.path })) {
+      case "absent":
+        return { outcome: "ok", value: undefined };
+      case "file": {
+        const removed = options.fileRemoval.remove({ path: request.path });
+        return removed.outcome === "ok"
+          ? removed
+          : { outcome: "failed", error: { kind: "directory-tree-unremovable", path: request.path, detail: removed.error.detail } };
+      }
+      case "directory":
+        return removedWithin({ ...options, folder: request.path });
+    }
+  },
 });
 
 export const createDefaultDirectoryTreePort = (_options: Record<string, never>): DirectoryTreePort =>
@@ -90,4 +105,5 @@ export const createDefaultDirectoryTreePort = (_options: Record<string, never>):
     directory: createDefaultDirectoryPort({}),
     fileRemoval: createDefaultFileRemovalPort({}),
     directoryRemoval: createDefaultDirectoryRemovalPort({}),
+    entryKind: createDefaultEntryKindPort({}),
   });
