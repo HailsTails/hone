@@ -236,7 +236,75 @@ const requestOver = (overrides: Partial<UpgradePlanRequest>): UpgradePlanRequest
   ...overrides,
 });
 
+const CLAUSE_WIDE_WHY = {
+  why: "a loop was written",
+  because: "it was quicker",
+  evidence: "the commit",
+} as const;
+
+const CLAUSE_WIDE_HEAD = {
+  kind: "clause-wide-carve-out",
+  record: {
+    kind: "clause-wide-carve-out",
+    clause: LOOPS_CLAUSE,
+    mechanism: AUDIT,
+    reason: "generated code",
+    whyChain: {
+      whys: [CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY, CLAUSE_WIDE_WHY],
+      rootCause: "no rule at the time",
+      owner: "the team",
+    },
+  },
+} as const;
+
 describe("upgradePlanOf", () => {
+  it("plans a clause-wide carve-out as its check not adopted, with no record file", async () => {
+    const settingsFormat = settingsFormatWriting();
+    expect({
+      planned: await upgradePlanOf(
+        requestOver({
+          settingsFormat,
+          answered: [],
+          reading: { selection: SELECTION, heads: [CLAUSE_WIDE_HEAD] },
+        }),
+      ),
+      written: vi.mocked(settingsFormat.textOf).mock.calls,
+    }).toEqual({
+      planned: {
+        outcome: "ok",
+        value: {
+          inputs: [CLAUSE_WIDE_HEAD],
+          lines: [
+            { recordKind: "clause-wide-carve-out", clause: LOOPS_CLAUSE, reason: "generated code" },
+            {
+              recordKind: "clause-wide-carve-out",
+              clause: LOOPS_CLAUSE,
+              newKind: "not-adopted",
+              check: LOOP_KEYWORD_LOOPS,
+            },
+          ],
+          files: [PLANNED_SETTINGS, PLANNED_PROJECTION],
+          projected: [PLANNED_PROJECTION],
+        },
+      },
+      written: [
+        [
+          {
+            settings: {
+              ...LOOPS_SETTINGS,
+              checks: [
+                {
+                  address: { ruleSet: "hone", check: "loop-keyword#loops" },
+                  state: { state: "not-adopted" },
+                },
+              ],
+            },
+          },
+        ],
+      ],
+    });
+  });
+
   it("plans the settings, the debt records and the projection for a repository that carries over, naming the projection it planned", async () => {
     const settingsFormat = settingsFormatWriting();
     expect({

@@ -20,15 +20,26 @@ const shownOf = (request: {
   return location.relation === "within-root" ? location.path : request.target;
 };
 
+const SEPARATE_WORDS = /\s+/;
+
 const recordLineOf = (request: { readonly record: RecordLine }): string => {
-  const { recordKind, clause, file, newKind, check } = request.record;
-  return `${recordKind} ${clauseAddressText({ address: clause })} ${file} -> ${newKind} ${checkAddressOf({ check })}`;
+  const { record } = request;
+  const clause = clauseAddressText({ address: record.clause });
+  if ("reason" in record) {
+    return `reason ${clause}: ${record.reason.trim().split(SEPARATE_WORDS).join(" ")}`;
+  }
+  if ("file" in record) {
+    return `${record.recordKind} ${clause} ${record.file} -> ${record.newKind} ${checkAddressOf({ check: record.check })}`;
+  }
+  return `${record.recordKind} ${clause} -> ${record.newKind} ${checkAddressOf({ check: record.check })}`;
 };
 
 const carriedLinesOf = (request: { readonly records: readonly RecordLine[] }): readonly string[] =>
-  request.records
-    .filter(({ holding }) => holding === "carried")
-    .map(({ check, file }) => `carried ${checkAddressOf({ check })} ${file}`);
+  request.records.flatMap((record) =>
+    "holding" in record && record.holding === "carried"
+      ? [`carried ${checkAddressOf({ check: record.check })} ${record.file}`]
+      : [],
+  );
 
 export const upgradeSuccessOutcomeOf = (request: {
   readonly carried: UpgradeCarriedOver;

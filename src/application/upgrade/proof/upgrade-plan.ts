@@ -1,5 +1,6 @@
 import { recordsTextOf } from "../../../domain/records/hone-records/records-edit.ts";
 import {
+  clausesCarriedAsNotAdopted,
   mappedRecords,
   type RecordLine,
   type MappedRecordsDocument,
@@ -64,6 +65,7 @@ export const upgradePlanOf = async (
   const settings = mappedSettings({
     selection: request.reading.selection,
     catalogues: request.catalogues,
+    notAdoptedClauses: clausesCarriedAsNotAdopted({ inputs: inputs.value }),
   });
   const records = mappedRecords({ inputs: inputs.value, catalogues: request.catalogues });
   if (settings.outcome === "failed" || records.outcome === "failed") {

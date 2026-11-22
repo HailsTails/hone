@@ -176,6 +176,7 @@ const OWN_SYMPTOM_LOOPS_CHECK: Check = {
 
 const BASE_REQUEST: SettingsMappingRequest = {
   selection: BASE_SELECTION,
+  notAdoptedClauses: [],
   catalogues: [
     {
       ruleSet: "hone",
@@ -289,6 +290,7 @@ describe("mappedSettings writing only the checks version 1 chose", () => {
         mappedSettings({
           catalogues: CROSS_DISCIPLINE_CATALOGUES,
           selection: { ...BASE_SELECTION, clauses: [[LOOPS_CLAUSE, choice]] },
+          notAdoptedClauses: [],
         }),
       ).toEqual({
         outcome: "ok",
@@ -541,5 +543,188 @@ describe("mappedSettings dropping what version 2 has no setting for", () => {
 
   it("drops nothing for the required why-chains, which lose nothing", () => {
     expect(mappedSettings(BASE_REQUEST)).toEqual(okWith({ settings: {} }));
+  });
+});
+
+const SIX_TEST_BODY_CHECKS: readonly Check[] = [
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "rebinding" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "loop-keyword" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "branch-in-a-test" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "text-past-its-reader" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "computed-value-in-a-test" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+  {
+    name: "test-body",
+    symptom: { ...LOOP_KEYWORD, name: "claimed-type" },
+    clause: TEST_BODY_CLAUSE,
+    engines: [WALKER],
+    forms: [],
+  },
+];
+
+const SIX_CHECK_CATALOGUES: readonly RuleSetCatalogue[] = [
+  { ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: SIX_TEST_BODY_CHECKS } },
+];
+
+describe("mappedSettings carrying a clause-wide carve-out as each of its checks not adopted", () => {
+  it("lists the one check of a clause as not adopted, whatever the clause ran on", () => {
+    expect(
+      mappedSettings({
+        ...BASE_REQUEST,
+        selection: {
+          ...BASE_SELECTION,
+          clauses: [[LOOPS_CLAUSE, { state: "run", mechanism: AUDIT }]],
+        },
+        notAdoptedClauses: [LOOPS_CLAUSE],
+      }),
+    ).toEqual(
+      okWith({
+        settings: {
+          checks: [{ address: LOOPS_CHECK, state: { state: "not-adopted" } }],
+        },
+      }),
+    );
+  });
+
+  it("lists each of the several checks of a clause as not adopted", () => {
+    expect(
+      mappedSettings({
+        ...BASE_REQUEST,
+        selection: {
+          ...BASE_SELECTION,
+          clauses: [[TEST_BODY_CLAUSE, { state: "run", mechanism: AUDIT }]],
+        },
+        notAdoptedClauses: [TEST_BODY_CLAUSE],
+      }),
+    ).toEqual(
+      okWith({
+        settings: {
+          checks: [
+            { address: LOOP_KEYWORD_TEST_BODY, state: { state: "not-adopted" } },
+            { address: REBINDING_TEST_BODY, state: { state: "not-adopted" } },
+          ],
+        },
+      }),
+    );
+  });
+
+  it("lists all six checks of CD-27 as not adopted", () => {
+    expect(
+      mappedSettings({
+        ...BASE_REQUEST,
+        catalogues: SIX_CHECK_CATALOGUES,
+        selection: {
+          ...BASE_SELECTION,
+          clauses: [[TEST_BODY_CLAUSE, { state: "run", mechanism: AUDIT }]],
+        },
+        notAdoptedClauses: [TEST_BODY_CLAUSE],
+      }),
+    ).toEqual(
+      okWith({
+        settings: {
+          checks: [
+            {
+              address: { ruleSet: "hone", check: "rebinding#test-body" },
+              state: { state: "not-adopted" },
+            },
+            {
+              address: { ruleSet: "hone", check: "loop-keyword#test-body" },
+              state: { state: "not-adopted" },
+            },
+            {
+              address: { ruleSet: "hone", check: "branch-in-a-test#test-body" },
+              state: { state: "not-adopted" },
+            },
+            {
+              address: { ruleSet: "hone", check: "text-past-its-reader#test-body" },
+              state: { state: "not-adopted" },
+            },
+            {
+              address: { ruleSet: "hone", check: "computed-value-in-a-test#test-body" },
+              state: { state: "not-adopted" },
+            },
+            {
+              address: { ruleSet: "hone", check: "claimed-type#test-body" },
+              state: { state: "not-adopted" },
+            },
+          ],
+        },
+      }),
+    );
+  });
+
+  it("does not ask which engine runs a check the clause no longer runs", () => {
+    expect(
+      mappedSettings({
+        ...BASE_REQUEST,
+        catalogues: TWO_ENGINE_CATALOGUES,
+        selection: {
+          ...BASE_SELECTION,
+          clauses: [[LOOPS_CLAUSE, { state: "run", mechanism: AUDIT }]],
+        },
+        notAdoptedClauses: [LOOPS_CLAUSE],
+      }),
+    ).toEqual(
+      okWith({
+        settings: {
+          checks: [{ address: SHARED_SYMPTOM_LOOPS_CHECK, state: { state: "not-adopted" } }],
+        },
+      }),
+    );
+  });
+
+  it("leaves the clauses no carve-out names as version 1 chose them", () => {
+    expect(
+      mappedSettings({
+        ...BASE_REQUEST,
+        selection: {
+          ...BASE_SELECTION,
+          clauses: [
+            [LOOPS_CLAUSE, { state: "run", mechanism: AUDIT }],
+            [TEST_BODY_CLAUSE, { state: "run", mechanism: AUDIT }],
+          ],
+        },
+        notAdoptedClauses: [TEST_BODY_CLAUSE],
+      }),
+    ).toEqual(
+      okWith({
+        settings: {
+          checks: [
+            { address: LOOPS_CHECK, state: { state: "run", engine: "walker" } },
+            { address: LOOP_KEYWORD_TEST_BODY, state: { state: "not-adopted" } },
+            { address: REBINDING_TEST_BODY, state: { state: "not-adopted" } },
+          ],
+        },
+      }),
+    );
   });
 });
