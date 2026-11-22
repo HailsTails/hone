@@ -2,6 +2,17 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.0.0-pre.2
+
+### Fixes
+
+- hone upgrade carries a carve-out that only held up a native suppression as debt (#352)
+- hone upgrade points a 1.x projection's plugin imports at the 2.0 modules before its version 1 run (#353)
+
+### Other changes
+
+- pages stop restating the code, and prose-pinning tests go (#347)
+
 ## 2.0.0-pre.1
 
 ### Breaking changes
