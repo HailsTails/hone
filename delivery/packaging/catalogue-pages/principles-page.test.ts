@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { principlesPageOf } from "./principles-page.ts";
+import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+
+const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -29,6 +32,7 @@ describe("principlesPageOf", () => {
     expect(
       principlesPageOf({
         file: FILE,
+        path: PATH,
         prose: new Map([["principles/one-place-decides.md", "- **Must hold:** One decision, one unit. See [the rule](../rules/doer-or-orchestrator.md)."]]),
       }),
     ).toEqual({

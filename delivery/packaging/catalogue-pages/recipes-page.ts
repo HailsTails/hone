@@ -16,7 +16,7 @@ const reasonOf = (request: { readonly recipe: Recipe }): string =>
 
 const recipeBlockOf = (request: PageSource & { readonly recipe: Recipe; readonly level: string }): string =>
   blocksOf({
-    blocks: [`${request.level} ${request.recipe.title}`, reasonOf(request), proseAt({ prose: request.prose, path: itemPaths.recipe(request.recipe), pagePath: PAGE })],
+    blocks: [`${request.level} ${request.recipe.title}`, reasonOf(request), proseAt({ path: request.path, prose: request.prose, itemPath: itemPaths.recipe(request.recipe), pagePath: PAGE })],
   });
 
 const ruleBlockOf = (request: PageSource & { readonly rule: Rule }): string => {

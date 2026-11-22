@@ -1,4 +1,3 @@
-import type { Result } from "../../../src/domain/result.ts";
 import { catalogueFileOf, type PlacedItem } from "../../../src/infrastructure/content-files/item-folders/item-document.ts";
 import { itemFactsOf } from "../../../src/infrastructure/content-files/item-folders/item-facts.ts";
 import { fileRoleOf, identityOf } from "../../../src/infrastructure/content-files/item-folders/item-identity.ts";
@@ -6,7 +5,7 @@ import { itemTextOf } from "../../../src/infrastructure/content-files/item-folde
 import { parsedJson } from "../../../src/infrastructure/content-files/parsed-json.ts";
 import { VERSION_ONE_NAMES_SEGMENTS, type VersionOneNames, versionOneNamesOf } from "../../../src/infrastructure/disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../../src/infrastructure/engines/engine-registry.ts";
-import type { CataloguePage } from "./catalogue-page.ts";
+import type { CataloguePage, ItemPathPort, Rendered } from "./catalogue-page.ts";
 import { casesPageOf } from "./cases-page.ts";
 import { checksPageOf } from "./checks-page.ts";
 import { principlesPageOf } from "./principles-page.ts";
@@ -18,7 +17,6 @@ type SourceFile = { readonly path: string; readonly text: string };
 
 type ProsedItem = { readonly placed: PlacedItem; readonly path: string; readonly prose: string };
 
-type Rendered<Value> = Result<Value, string>;
 
 const RULES_FOLDER = "rules/";
 
@@ -66,7 +64,7 @@ const namesIn = (request: { readonly files: readonly SourceFile[] }): Rendered<V
   return document.outcome === "failed" ? document : versionOneNamesOf({ document: document.value });
 };
 
-export const cataloguePagesOf = (request: { readonly files: readonly SourceFile[] }): Rendered<readonly CataloguePage[]> => {
+export const cataloguePagesOf = (request: { readonly files: readonly SourceFile[]; readonly path: ItemPathPort }): Rendered<readonly CataloguePage[]> => {
   const names = namesIn(request);
   if (names.outcome === "failed") {
     return names;
@@ -82,9 +80,13 @@ export const cataloguePagesOf = (request: { readonly files: readonly SourceFile[
   if (file.outcome === "failed") {
     return file;
   }
-  const source = { file: file.value, prose: new Map(items.value.map((each): readonly [string, string] => [each.path, each.prose])) };
-  return {
-    outcome: "ok",
-    value: [principlesPageOf(source), rulesPageOf(source), casesPageOf(source), recipesPageOf(source), symptomsPageOf(source), checksPageOf(source)],
-  };
+  const source = { file: file.value, prose: new Map(items.value.map((each): readonly [string, string] => [each.path, each.prose])), path: request.path };
+  const cases = casesPageOf(source);
+  if (cases.outcome === "failed") {
+    return cases;
+  }
+  const symptoms = symptomsPageOf(source);
+  return symptoms.outcome === "failed"
+    ? symptoms
+    : { outcome: "ok", value: [principlesPageOf(source), rulesPageOf(source), cases.value, recipesPageOf(source), symptoms.value, checksPageOf(source)] };
 };

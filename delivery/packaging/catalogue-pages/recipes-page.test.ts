@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { recipesPageOf } from "./recipes-page.ts";
+import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+
+const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -36,6 +39,7 @@ describe("recipesPageOf", () => {
     expect(
       recipesPageOf({
         file: FILE,
+        path: PATH,
         prose: new Map([["typescript/recipes/composition-root.md", "- **Method:** One entry builds; see [the port](port-in-the-domain.md)."]]),
       }),
     ).toEqual({

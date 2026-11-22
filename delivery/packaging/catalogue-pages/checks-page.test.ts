@@ -4,6 +4,9 @@ import { checksPageOf } from "./checks-page.ts";
 import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
 import { TOOL_RULE_SET } from "../../../src/domain/rule-set/clause-address.ts";
+import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+
+const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -50,6 +53,7 @@ describe("checksPageOf", () => {
     expect(
       checksPageOf({
         file: FILE,
+        path: PATH,
         prose: new Map([["typescript/symptoms/claimed-type/cast-to-any.md", "- **Misses:** casts in [tests](../../../rules/tests-stub-ports.md)."]]),
       }),
     ).toEqual({

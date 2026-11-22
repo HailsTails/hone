@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { rulesPageOf } from "./rules-page.ts";
+import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
+
+const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
 const FILE: CatalogueFile = {
   version: 1,
@@ -44,7 +47,7 @@ const FILE: CatalogueFile = {
 describe("rulesPageOf", () => {
   it("renders each rule under its principle with its prose, the cases it serves and its recipes, leaving out a principle with no rules", () => {
     expect(
-      rulesPageOf({ file: FILE, prose: new Map([["rules/doer-or-orchestrator.md", "- **What must hold:** A doer does. See [the case](../cases/does-one-job.md)."]]) }),
+      rulesPageOf({ file: FILE, path: PATH, prose: new Map([["rules/doer-or-orchestrator.md", "- **What must hold:** A doer does. See [the case](../cases/does-one-job.md)."]]) }),
     ).toEqual({
       path: "rules/rules.md",
       text: "# Rules\n\n## One place decides\n\n### Doer or orchestrator\n\n- **What must hold:** A doer does. See [the case](cases/does-one-job.md).\n\n- **Cases served:** Does one job; Takes a dependency (proposed).\n- **Recipes:** [Composition root](typescript/recipes.md#composition-root).\n\n### One job\n\nProposed, not accepted.\n",

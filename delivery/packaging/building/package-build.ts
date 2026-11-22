@@ -313,7 +313,7 @@ const contentFilesOf = (request: {
   if (copied.outcome === "failed") {
     return copied;
   }
-  const pages = cataloguePagesOf({ files: copied.value });
+  const pages = cataloguePagesOf({ files: copied.value, path: request.context.path });
   if (pages.outcome === "failed") {
     return failedWith({ label: "render the catalogue pages", detail: pages.error });
   }
