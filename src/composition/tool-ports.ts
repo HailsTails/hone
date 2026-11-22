@@ -11,7 +11,7 @@ import type { RecordsReader } from "../application/ports/records/records-reader.
 import type { LoadFailureDetail } from "../application/ports/report/load-failure-detail.ts";
 import type { SettingsFileFormat } from "../application/ports/settings/settings-file-format.ts";
 import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
-import type { SymptomCatalogueOf } from "../application/ports/symptom-catalogue-repository.ts";
+import type { BoundCatalogueOf } from "../application/ports/symptom-catalogue-repository.ts";
 import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 
@@ -35,7 +35,7 @@ export type ToolPorts = VersionOneToolPorts & {
   readonly directoryRemoval: DirectoryRemovalPort;
   readonly entryKind: EntryKindPort;
   readonly loadFailureDetail: LoadFailureDetail;
-  readonly symptomCatalogueOf: SymptomCatalogueOf;
+  readonly boundCatalogueOf: BoundCatalogueOf;
   readonly settingsFormat: SettingsFileFormat;
   readonly settingsSourcesOf: SettingsSourcesOf;
 };

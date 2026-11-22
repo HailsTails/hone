@@ -170,7 +170,9 @@ const INSTALL = absoluteRootOf("/install");
 
 const NOTHING_PRESENT: Pick<FileTextPort, "exists" | "read"> = {
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-  read: vi.fn<FileTextPort["read"]>(),
+  read: vi
+    .fn<FileTextPort["read"]>()
+    .mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/install/src/infrastructure/disciplines-file/version-one-names.json", detail: "ENOENT" } }),
 };
 
 const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): GitPort => ({
@@ -198,6 +200,7 @@ const stagesOver = (request: { readonly git: GitPort; readonly baseRevision: str
   versionTwoStagesOver({ ports: portsOver(request), locations: { repoRoot: REPO, installRoot: INSTALL, moduleExtension: ".ts", baseRevision: request.baseRevision } });
 
 const SETTINGS: SettingsReading = {
+  available: [],
   selection: {
     selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],
@@ -213,10 +216,10 @@ const SETTINGS: SettingsReading = {
 };
 
 describe("versionTwoStagesOver", () => {
-  it("fails as a catalogue not read, absent, when the install holds no symptom catalogue", () => {
+  it("fails as a catalogue not read, unreadable, when the install holds nothing, not even its version 1 names", () => {
     expect(stagesOver({ git: GIT_LISTING_NOTHING, baseRevision: undefined }).catalogue()).toEqual({
       outcome: "failed",
-      error: { kind: "catalogue-not-read", path: "/install/rules/typescript/symptoms.json", reason: { reason: "absent" } },
+      error: { kind: "catalogue-not-read", path: "/install/rules", reason: { reason: "unreadable", detail: "ENOENT" } },
     });
   });
 

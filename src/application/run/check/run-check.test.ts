@@ -188,9 +188,9 @@ const SELECTED_CLASS_SYNTAX = { address: CLASS_SYNTAX, mechanism: AUDIT, excepti
 
 const SELECTED_ABSTRACT_SYNTAX = { address: ABSTRACT_SYNTAX, mechanism: AUDIT, exceptions: "allowed" } as const;
 
-const CLASS_SYNTAX_ROOT = { clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT };
+const CLASS_SYNTAX_ROOT = { clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] };
 
-const ABSTRACT_SYNTAX_ROOT = { clause: ABSTRACT_SYNTAX, ruleSetRoot: INSTALL_ROOT };
+const ABSTRACT_SYNTAX_ROOT = { clause: ABSTRACT_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] };
 
 const SELECTION_READING: SelectionReading = {
   selection: { selected: [SELECTED_CLASS_SYNTAX], uncovered: [], notAdopted: [], notRun: [], editions: [] },
@@ -292,7 +292,7 @@ const CLASS_SYNTAX_READING_FIRST = {
   kind: "clause",
   clause: CLASS_SYNTAX_OBJECT,
   assessmentSection: "unread",
-  rulePage: { path: "../install/rules/CD-14/README.md", presence: "present" },
+  pages: [{ path: "../install/rules/CD-14/README.md", presence: "present", section: "spirit" }],
 };
 
 const ASSESSMENT_NOT_WRITTEN = { kind: "assessment-file", state: "not-written", guide: "../install/ADOPTING.md" };
@@ -712,7 +712,7 @@ describe("runCheck runner dispatch", () => {
           ...SELECTION_READING,
           selection: { ...SELECTION_READING.selection, selected: [{ ...SELECTED_CLASS_SYNTAX, address: TEAM_CLASS_SYNTAX }] },
           bindings: [{ mechanism: AUDIT, clause: teamClause }],
-          clauseRoots: [{ clause: TEAM_CLASS_SYNTAX, ruleSetRoot: TEAM_ROOT }],
+          clauseRoots: [{ clause: TEAM_CLASS_SYNTAX, ruleSetRoot: TEAM_ROOT, checks: [] }],
         }),
       }),
     );

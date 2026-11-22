@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
 import { runnerModuleSchema, type StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
@@ -8,9 +8,10 @@ import { createDefaultEntryKindPort } from "../../../node/file-system/file-syste
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort, createPathPort } from "../../../node/path-port.ts";
+import { createDefaultPathPort } from "../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
@@ -19,10 +20,9 @@ import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "../runner/runner.ts";
-import { TEST_BODY_SECTIONS } from "./test-body-logic.ts";
+import { TEST_BODY_REMEDIES, TEST_BODY_SECTIONS } from "./test-body-logic.ts";
 import * as eslintRunnerModule from "../../eslint/runner/runner.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 declare global {
   interface ImportMeta {
@@ -98,9 +98,6 @@ const cd3CompilerOptionsOf = (request: { readonly syntaxApi: SyntaxApi }): Compi
 });
 
 type AllowedBlock = { readonly name: string; readonly source: string };
-
-const sectionNamesOf = (request: { readonly sections: readonly AllowedFormSection[] }): readonly string[] =>
-  request.sections.map((section) => section.section);
 
 const allowedBlocksOf = (request: { readonly sections: readonly AllowedFormSection[] }): readonly AllowedBlock[] =>
   request.sections.flatMap((section) =>
@@ -231,7 +228,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -244,26 +241,19 @@ const foldersUnder = (request: { readonly table: RawTable; readonly prefix: stri
     ),
   ].sort();
 
-const tableFileText = (request: { readonly table: RawTable }): FileTextPort => ({
-  read: ({ path }) => {
-    const key = path.replace("/install/", "./");
-    const text = request.table[key];
-    assert(text !== undefined, `the fake table holds no entry for ${key}`);
-    return { outcome: "ok", value: text };
-  },
-  exists: () => "present",
-  write: vi.fn<FileTextPort["write"]>(),
-});
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
-  const discipline = readDisciplineFile({
+  const held = readHeldDiscipline({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
   });
-  assert(discipline.outcome === "ok", `${request.discipline} discipline.json reads through the rule-set reader`);
-  return discipline.value;
+  assert(held.outcome === "ok", `${request.discipline} reads through the install's discipline reader`);
+  const discipline = held.value;
+  assert(discipline.held === "present", `the install holds ${request.discipline}`);
+  return discipline.file;
 };
 
 const rowsOf = (request: {
@@ -275,7 +265,7 @@ const rowsOf = (request: {
   const discipline = disciplineOf(request);
   const piece = readPieceFile({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     mechanism: request.mechanism,
@@ -303,12 +293,11 @@ const rowsOf = (request: {
 };
 
 const conformanceRows = (request: {
-  readonly table: RawTable;
   readonly disciplines: readonly string[];
   readonly mechanism: MechanismId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
-  const fileText = tableFileText({ table: request.table });
+  const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
     rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
   );
@@ -316,26 +305,25 @@ const conformanceRows = (request: {
 
 const REPO_ROOT = createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", "..", "..", "..", ".."] });
 
-const CHECKS_PAGE_READ = createDefaultFileTextPort({}).read({
-  path: createDefaultPathPort({}).join({ segments: [REPO_ROOT, "rules", "CD-27", "CHECKS.md"] }),
-});
+const checkItemTextOf = (request: { readonly page: string }): string => {
+  const read = createDefaultFileTextPort({}).read({ path: createDefaultPathPort({}).join({ segments: [REPO_ROOT, "rules", "typescript", "symptoms", request.page] }) });
+  return read.outcome === "ok" ? read.value : "";
+};
 
-const CHECKS_PAGE = CHECKS_PAGE_READ.outcome === "ok" ? CHECKS_PAGE_READ.value : "";
+const CHECK_ITEM_PAGES: readonly string[] = [...new Set(TEST_BODY_REMEDIES.map((remedy) => remedy.page))];
 
 const ruleSetTexts = import.meta.glob(
-  ["./rules/*/discipline.json", "./src/infrastructure/engines/audit/*/piece.json", "./src/infrastructure/engines/eslint/*/piece.json"],
+  ["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"],
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
 );
 
 const AUDIT_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" }),
   mechanism: "audit",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/audit`,
 });
 
 const ESLINT_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
   mechanism: "eslint",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/eslint`,
@@ -349,7 +337,7 @@ const CLAUSES_THAT_REACH_TEST_FILES = {
   eslint: ["CD-1#explicit-any", "CD-2#non-null-assertions", "CD-10#throw-only-error", "CD-14#class-syntax", "CD-40#parameter-count", "CD-41#function-length"],
 };
 
-const SECTIONS = allowedFormSectionsOf({ page: CHECKS_PAGE });
+const SECTIONS = CHECK_ITEM_PAGES.flatMap((page) => allowedFormSectionsOf({ page: checkItemTextOf({ page }) }).map((section) => ({ ...section, page })));
 
 const BLOCKS = allowedBlocksOf({ sections: SECTIONS });
 
@@ -391,9 +379,13 @@ describe("the allowed-form compilation over written-out forms, so it can fail", 
   });
 });
 
-describe("rules/CD-27/CHECKS.md, Allowed forms in a test", () => {
-  it("has one section for each fix a CD-27#test-body-logic finding names, in the same order", () => {
-    expect(sectionNamesOf({ sections: SECTIONS })).toEqual(TEST_BODY_SECTIONS);
+describe("the check items' Allowed forms in a test", () => {
+  it("has as many sections as there are fixes a CD-27#test-body-logic finding names, each shown below on its check item", () => {
+    expect(SECTIONS).toHaveLength(TEST_BODY_SECTIONS.length);
+  });
+
+  it.each(TEST_BODY_REMEDIES)("shows $section on $page, the check item its fix names", ({ page, section }) => {
+    expect(SECTIONS).toContainEqual(expect.objectContaining({ page, section }));
   });
 
   it("holds the forms to every audit and ESLint clause, among them those that reach a test file", () => {

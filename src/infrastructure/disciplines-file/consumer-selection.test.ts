@@ -14,13 +14,14 @@ import {
   ruleSetRootOf,
   selectionFrom,
 } from "./consumer-selection.ts";
-import type { Held, RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
+import type { RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
+import type { Held } from "../../application/ports/rule-set/rule-set-files.ts";
 import { selectionFileOf } from "./selection-file.ts";
 import type { ConsumerSelectionFile, RuleSetLocation } from "../../domain/settings/selection/selection-file.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
-import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 const INSTALL_ROOT = absoluteRootOf("/install");
@@ -28,8 +29,8 @@ const SELECTION_PATH = "/repo/disciplines.json";
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
-const AUDIT = "audit" as const;
-const ESLINT = "eslint" as const;
+const AUDIT = "audit";
+const ESLINT = "eslint";
 
 const ONE_EDITION = clauseEditionsSchema.parse(undefined);
 const EDITIONS_ONE_AND_TWO = clauseEditionsSchema.parse(["1", "2"]);
@@ -42,7 +43,6 @@ const mechanical = (request: {
 }): ClauseDefinition => ({
   kind: "mechanical",
   id: clauseIdSchema.parse(request.id),
-  summary: "a mechanical clause",
   mechanisms: request.mechanisms,
   anchor: { kind: "keyword", keyword: request.keyword },
   exceptions: "allowed",
@@ -54,7 +54,6 @@ const auditClause = (id: string): ClauseDefinition => mechanical({ id, mechanism
 const LIBRARY_CONSTRUCTION: ClauseDefinition = {
   kind: "judgement",
   id: clauseIdOf("library-construction"),
-  summary: "wrap libraries",
   enforcedBy: "review",
 };
 
@@ -202,6 +201,8 @@ const present = <File>(file: File): FileRead<File> => ({ outcome: "ok", value: {
 
 const ABSENT: FileRead<never> = { outcome: "ok", value: { held: "absent" } };
 
+const NO_CHECKS: ReturnType<RuleSetFiles["checks"]> = { outcome: "ok", value: [] };
+
 const disciplineReads = (first: FileRead<DisciplineFile>, second: FileRead<DisciplineFile> = first) =>
   vi.fn<RuleSetFiles["discipline"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
 
@@ -218,6 +219,7 @@ const rulesReturning = (request: {
   return {
     discipline: disciplineReads(firstDiscipline, secondDiscipline),
     piece: pieceReads(firstPiece, secondPiece),
+    checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValue(NO_CHECKS),
     runner: vi.fn<RuleSetFiles["runner"]>().mockReturnValue(request.runner),
   };
 };
@@ -231,6 +233,7 @@ const editionedRules = () => rulesReturning({ disciplines: [present(CD_14)], pie
 const listingRules = (first: FileRead<DisciplineFile>, second: FileRead<DisciplineFile> = first) => ({
   discipline: disciplineReads(first, second),
   piece: vi.fn<RuleSetFiles["piece"]>(),
+  checks: vi.fn<RuleSetFiles["checks"]>(),
   runner: vi.fn<RuleSetFiles["runner"]>().mockReturnValue("absent"),
 });
 
@@ -314,16 +317,16 @@ describe("selectionFrom selecting clauses", () => {
         ],
         eslintConfigRoots: [],
         clauseRoots: [
-          { clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install" },
-          { clause: TEAM_NO_TMP_FILES, ruleSetRoot: "/repo/team-rules" },
+          { clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [] },
+          { clause: TEAM_NO_TMP_FILES, ruleSetRoot: "/repo/team-rules", checks: [] },
         ],
         excluded: [],
         fileExceptionWhyChains: "required",
       },
     });
     expect(rules.discipline.mock.calls).toEqual([
-      [{ ruleSetRoot: "/install", discipline: "CD-14" }],
-      [{ ruleSetRoot: "/repo/team-rules", discipline: "TM-1" }],
+      [{ ruleSetRoot: "/install", installRoot: "/install", discipline: "CD-14" }],
+      [{ ruleSetRoot: "/repo/team-rules", installRoot: "/install", discipline: "TM-1" }],
     ]);
   });
 
@@ -357,8 +360,8 @@ describe("selectionFrom selecting clauses", () => {
         ],
         eslintConfigRoots: [],
         clauseRoots: [
-          { clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install" },
-          { clause: HONE_ABSTRACT_SYNTAX, ruleSetRoot: "/install" },
+          { clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [] },
+          { clause: HONE_ABSTRACT_SYNTAX, ruleSetRoot: "/install", checks: [] },
         ],
         excluded: [],
         fileExceptionWhyChains: "required",
@@ -396,7 +399,7 @@ describe("selectionFrom selecting clauses", () => {
       value: {
         selection: { selected: [{ address: TEAM_NO_TMP_FILES, mechanism: "audit", exceptions: "allowed" }], uncovered: [] },
         bindings: [{ clause: { pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1", settings: { module: "no-tmp-files.ts" } } }],
-        clauseRoots: [{ clause: TEAM_NO_TMP_FILES, ruleSetRoot: "/repo/team-rules" }],
+        clauseRoots: [{ clause: TEAM_NO_TMP_FILES, ruleSetRoot: "/repo/team-rules", checks: [] }],
       },
     });
   });
@@ -409,7 +412,30 @@ describe("selectionFrom selecting clauses", () => {
       outcome: "ok",
       value: { bindings: [{ clause: { pieceRoot: "/repo/mechanisms/audit/TM-1" } }] },
     });
-    expect(rules.discipline.mock.calls).toEqual([[{ ruleSetRoot: "/repo", discipline: "TM-1" }]]);
+    expect(rules.discipline.mock.calls).toEqual([[{ ruleSetRoot: "/repo", installRoot: "/install", discipline: "TM-1" }]]);
+  });
+
+  it("roots each clause with the checks its rule set gives it", () => {
+    const rules = {
+      ...installRules(),
+      checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValueOnce({ outcome: "ok", value: [{ name: "class-keyword", symptom: { name: "authored-class-or-this" } }] }),
+    };
+    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit" }))).toMatchObject({
+      outcome: "ok",
+      value: { clauseRoots: [{ clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [{ name: "class-keyword", symptom: { name: "authored-class-or-this" } }] }] },
+    });
+    expect(rules.checks).toHaveBeenCalledExactlyOnceWith({ installRoot: "/install", clause: HONE_CLASS_SYNTAX });
+  });
+
+  it("fails as the rule set fails when a clause's checks cannot be read", () => {
+    const rules = {
+      ...installRules(),
+      checks: vi.fn<RuleSetFiles["checks"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "file-unreadable", path: "/install/names.json", detail: "EACCES" } }),
+    };
+    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit" }))).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: "/install/names.json", detail: "EACCES" },
+    });
   });
 
   it("lists the unlisted mechanical clauses of an adopted discipline as uncovered, never its judgement clauses", () => {
@@ -425,7 +451,7 @@ describe("selectionFrom selecting clauses", () => {
         },
         bindings: [expect.objectContaining({ mechanism: "audit" })],
         eslintConfigRoots: [],
-        clauseRoots: [{ clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install" }],
+        clauseRoots: [{ clause: HONE_CLASS_SYNTAX, ruleSetRoot: "/install", checks: [] }],
         excluded: [],
         fileExceptionWhyChains: "required",
       },
@@ -532,8 +558,8 @@ describe("selectionFrom reading each rule-set file", () => {
       },
     });
     expect(rules.discipline.mock.calls).toEqual([
-      [{ ruleSetRoot: "/install", discipline: "CD-14" }],
-      [{ ruleSetRoot: "/repo/team-rules", discipline: "CD-14" }],
+      [{ ruleSetRoot: "/install", installRoot: "/install", discipline: "CD-14" }],
+      [{ ruleSetRoot: "/repo/team-rules", installRoot: "/install", discipline: "CD-14" }],
     ]);
   });
 });

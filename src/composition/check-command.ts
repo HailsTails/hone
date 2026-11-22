@@ -102,7 +102,7 @@ export const guidedCheckRunFor = async (request: GuidedCheckRequest): Promise<Re
   return { outcome: "ok", value: { ...run.value, guide } };
 };
 
-export const GUIDED_CHECK: ToolCommand<CheckArguments<ReportOutput>, GuidedCheckRun, VersionOneToolPorts & Pick<ToolPorts, "symptomCatalogueOf">> = {
+export const GUIDED_CHECK: ToolCommand<CheckArguments<ReportOutput>, GuidedCheckRun, VersionOneToolPorts & Pick<ToolPorts, "boundCatalogueOf">> = {
   parse: parseVersionOneCheck,
   run: async ({ command, ports, parsed }) =>
     loadResultOf({
@@ -110,7 +110,7 @@ export const GUIDED_CHECK: ToolCommand<CheckArguments<ReportOutput>, GuidedCheck
         ports: { ...ports, moduleUrl: command.moduleUrl },
         arguments: parsed,
         checkRunAt,
-        symptomGuideIn: (locations) => symptomGuideIn({ ...locations, symptomCatalogueOf: ports.symptomCatalogueOf }),
+        symptomGuideIn: (locations) => symptomGuideIn({ ...locations, boundCatalogueOf: ports.boundCatalogueOf }),
       }),
     }),
   print: ({ produced }) => guidedCheckCommandOutcome({ result: { outcome: "ok", value: produced } }),

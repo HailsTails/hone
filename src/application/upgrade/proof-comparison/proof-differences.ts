@@ -1,12 +1,11 @@
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
-import { type MarkedNotAdopted, PROOF_SECTIONS, type ProofDifference, type ProofSection } from "../../ports/upgrade/proof-outcome.ts";
+import { PROOF_SECTIONS, type ProofDifference, type ProofSection } from "../../ports/upgrade/proof-outcome.ts";
 import { afterSectionsOf } from "./after-sections.ts";
 import { beforeSectionsOf } from "./before-sections.ts";
 import { multisetRemainderOf } from "./multiset-difference.ts";
-import { type SectionKeys, uniqueKeys } from "./section-keys.ts";
+import type { SectionKeys } from "./section-keys.ts";
 
 const differenceIn = (request: { readonly section: ProofSection; readonly before: SectionKeys; readonly after: SectionKeys }): readonly ProofDifference[] => {
   const onlyBefore = multisetRemainderOf({ from: request.before[request.section], taking: request.after[request.section] });
@@ -17,14 +16,9 @@ const differenceIn = (request: { readonly section: ProofSection; readonly before
 export const proofDifferencesOf = (request: {
   readonly before: CheckReport;
   readonly after: RunReport;
-  readonly marked: readonly MarkedNotAdopted[];
   readonly catalogues: readonly RuleSetCatalogue[];
 }): readonly ProofDifference[] => {
-  const reported = beforeSectionsOf({ report: request.before });
-  const before: SectionKeys = {
-    ...reported,
-    "not-adopted": uniqueKeys({ keys: [...reported["not-adopted"], ...request.marked.map(({ clause }) => clauseAddressText({ address: clause }))] }),
-  };
+  const before = beforeSectionsOf({ report: request.before });
   const after = afterSectionsOf({ report: request.after, catalogues: request.catalogues });
   return PROOF_SECTIONS.flatMap((section) => differenceIn({ section, before, after }));
 };

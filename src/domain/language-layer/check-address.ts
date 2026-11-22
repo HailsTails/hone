@@ -1,7 +1,7 @@
 import { checkAddressTextOf } from "./check-address-text.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
-import type { Check, SymptomCatalogue } from "./symptom-catalogue.ts";
+import type { Check, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
 
 export type FoundCheck = { readonly found: "check"; readonly check: Check } | { readonly found: "none" };
 
@@ -17,7 +17,7 @@ export const checkAddressOf = (request: { readonly check: Check }): string => ch
 export const checkAt = (request: { readonly catalogue: SymptomCatalogue; readonly address: string }): FoundCheck =>
   foundAmong({ checks: request.catalogue.checks.filter((candidate) => checkAddressOf({ check: candidate }) === request.address) });
 
-export const checksOf = (request: { readonly catalogue: Pick<SymptomCatalogue, "checks">; readonly clause: ClauseAddress }): readonly Check[] =>
+export const checksOf = <Each extends CheckContent>(request: { readonly catalogue: { readonly checks: readonly Each[] }; readonly clause: ClauseAddress }): readonly Each[] =>
   request.catalogue.checks.filter((check) => sameClauseAddress({ left: check.clause, right: request.clause }) === "same");
 
 export type NamedCheck =

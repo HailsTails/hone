@@ -1,0 +1,58 @@
+{
+  "flag": [
+    {
+      "name": "as any assertion",
+      "fileName": "parse.ts",
+      "source": "export const parsed = JSON.parse(text) as any;\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "angle-bracket any assertion",
+      "fileName": "angle.ts",
+      "source": "declare const candidate: unknown;\nexport const narrowed = <any>candidate;\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "as any on a later line",
+      "fileName": "later.ts",
+      "source": "declare const candidate: unknown;\nconst first = 1;\nexport const narrowed = candidate as any;\n",
+      "expectedLines": [
+        3
+      ]
+    },
+    {
+      "name": "array of any over a property value",
+      "fileName": "array-of-any.ts",
+      "source": "declare const result: { readonly value: unknown };\nexport const rows = result.value as Array<any>;\n",
+      "expectedLines": [
+        2
+      ]
+    },
+    {
+      "name": "record of any",
+      "fileName": "record-of-any.ts",
+      "source": "declare const candidate: unknown;\nexport const fields = candidate as Record<string, any>;\n",
+      "expectedLines": [
+        2
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "const assertion",
+      "fileName": "const-assertion.ts",
+      "source": "export const PERMITTED_LITERAL = \"permitted\" as const;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "bare any annotation is left to review",
+      "fileName": "annotation.ts",
+      "source": "declare const candidate: unknown;\nexport const direct: any = candidate;\n",
+      "expectedLines": []
+    }
+  ]
+}

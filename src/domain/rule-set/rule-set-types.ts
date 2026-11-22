@@ -18,7 +18,6 @@ export type ClauseDefinition =
   | {
       readonly kind: "mechanical";
       readonly id: ClauseId;
-      readonly summary: string;
       readonly mechanisms: readonly MechanismId[];
       readonly anchor: AnchorKind;
       readonly exceptions: ClauseExceptions;
@@ -30,7 +29,6 @@ export type ClauseDefinition =
   | {
       readonly kind: "judgement";
       readonly id: ClauseId;
-      readonly summary: string;
       readonly enforcedBy: "review";
     };
 

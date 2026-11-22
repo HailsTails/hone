@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
+import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
@@ -24,7 +24,7 @@ const notUsed = (): never => {
 };
 
 const PATH: PathPort = {
-  join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules/typescript/symptoms.json"),
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules"),
   joinRepository: notUsed,
   relative: notUsed,
   directoryOf: notUsed,
@@ -56,7 +56,7 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
   moduleUrl: "file:///install/src/hone.ts",
 };
 
-const NO_CATALOGUE: SymptomCatalogueOf = () => ({ read: () => ({ outcome: "ok", value: { held: "none" } }) });
+const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
 
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
@@ -65,8 +65,9 @@ describe("plannedProjectionOf", () => {
       command,
       repoRoot: absoluteRootOf("/repo"),
       installRoot: absoluteRootOf("/install"),
+      directory: { list: notUsed, create: notUsed },
       recordsReader: { recordsReadingOf: notUsed },
-      symptomCatalogueOf: NO_CATALOGUE,
+      boundCatalogueOf: NO_CATALOGUE,
       settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
       settingsSourcesOf: notUsed,
     })({
@@ -75,9 +76,9 @@ describe("plannedProjectionOf", () => {
     });
     expect(projected).toEqual({ outcome: "failed", error: {
         kind: "projection-failed",
-        failure: { kind: "catalogue-not-read", path: "/install/rules/typescript/symptoms.json", reason: { reason: "absent" } },
+        failure: { kind: "catalogue-not-read", path: "/install/rules", reason: { reason: "absent" } },
       },
     });
-    expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules", "typescript", "symptoms.json"] });
+    expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules"] });
   });
 });

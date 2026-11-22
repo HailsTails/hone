@@ -144,7 +144,6 @@ const comparedAfterWriting = async (request: UpgradeProofRequest & Written): Pro
   const differences = proofDifferencesOf({
     before: request.before,
     after: after.value,
-    marked: request.plan.markedNotAdopted,
     catalogues: request.catalogues,
   });
   return differences.length > 0
@@ -170,7 +169,7 @@ const removedAfterComparing = (request: UpgradeProofRequest & Written): Result<P
     ? { outcome: "failed", error: { kind: "removal-failed", failure: removed.error, remaining: filesStillPresentOf({ removal: request.placed.removal, failure: removed.error }), ...carried } }
     : {
         outcome: "ok",
-        value: { ...carried, markedNotAdopted: request.plan.markedNotAdopted, removed: { ...removed.value, files: [...request.removed, ...removed.value.files] } },
+        value: { ...carried, removed: { ...removed.value, files: [...request.removed, ...removed.value.files] } },
       };
 };
 

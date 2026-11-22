@@ -1,0 +1,54 @@
+{
+  "flag": [
+    {
+      "name": "let without a type or initialiser",
+      "fileName": "src/total.ts",
+      "source": "let total;\nexport { total };\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "var without a type or initialiser",
+      "fileName": "src/count.ts",
+      "source": "var count;\nexport { count };\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "one report for two untyped bindings",
+      "fileName": "src/pair.ts",
+      "source": "let first, second;\nexport { first, second };\n",
+      "expectedLines": [
+        1
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "let with an initialiser",
+      "fileName": "src/total.ts",
+      "source": "let total = 0;\nexport { total };\n",
+      "expectedLines": []
+    },
+    {
+      "name": "let with a type annotation",
+      "fileName": "src/total.ts",
+      "source": "let total: number;\nexport { total };\n",
+      "expectedLines": []
+    },
+    {
+      "name": "for-of head",
+      "fileName": "src/each.ts",
+      "source": "export const each = (items: readonly number[]): void => {\n  for (let item of items) {\n    void item;\n  }\n};\n",
+      "expectedLines": []
+    },
+    {
+      "name": "declaration file",
+      "fileName": "src/env.d.ts",
+      "source": "declare let flag;\n",
+      "expectedLines": []
+    }
+  ]
+}

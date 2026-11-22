@@ -107,7 +107,7 @@ const EMPTY_RUN_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
-  uncovered: [],
+  available: [],
   stale: [],
   forfeited: [],
   unrecorded: [],
@@ -127,7 +127,7 @@ const IGNORED_IN_A = { kind: "ignore", clause: { ruleSet: TOOL_RULE_SET, discipl
 
 describe("VERSION_TWO_GATED_SECTIONS", () => {
   it("names every failing section of a version 2 run except the findings and the unrecorded native exceptions, which are reported and not gated", () => {
-    expect(VERSION_TWO_GATED_SECTIONS).toEqual(["uncovered", "stale", "forfeited", "misnamed", "refused", "unmeasured", "projection-problems"]);
+    expect(VERSION_TWO_GATED_SECTIONS).toEqual(["stale", "forfeited", "misnamed", "refused", "unmeasured", "projection-problems"]);
   });
 });
 

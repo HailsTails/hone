@@ -20,6 +20,7 @@ import type { ClauseEditions } from "../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import type { Result } from "../../domain/result.ts";
+import type { AddressedCheck } from "../../domain/language-layer/check-address-text.ts";
 import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-sets/rule-set-files.ts";
 import { runSettingsOf } from "./selection-file.ts";
 import type { ConsumerSelectionFile, RuleSetLocation, UnrunState } from "../../domain/settings/selection/selection-file.ts";
@@ -54,6 +55,7 @@ type ResolvedClause = {
   readonly exceptions: ClauseExceptions;
   readonly declarations: ClauseSettingDeclarations;
   readonly editions: ClauseEditions;
+  readonly checks: readonly AddressedCheck[];
 };
 
 const failed = (error: LoadFailure): { readonly outcome: "failed"; readonly error: LoadFailure } => ({
@@ -118,7 +120,7 @@ const disciplineOf = (request: Omit<ClauseRequest, "mechanism">): Result<Discipl
   if (loaded !== undefined) {
     return { outcome: "ok", value: loaded.discipline };
   }
-  const held = request.ruleSetFiles.discipline({ ruleSetRoot: request.ruleSetRoot, discipline: request.address.discipline });
+  const held = request.ruleSetFiles.discipline({ ruleSetRoot: request.ruleSetRoot, installRoot: request.installRoot, discipline: request.address.discipline });
   if (held.outcome === "failed") {
     return held;
   }
@@ -214,10 +216,12 @@ const resolvedClauseOf = (request: {
   readonly clauseRequest: ClauseRequest;
   readonly defined: DefinedClause;
   readonly entry: PieceEntry;
+  readonly checks: readonly AddressedCheck[];
 }): ResolvedClause => {
   const { clauseRequest, defined, entry } = request;
   return {
     ruleSetRoot: clauseRequest.ruleSetRoot,
+    checks: request.checks,
     discipline: defined.discipline,
     piece: entry.piece,
     exceptions: defined.definition.exceptions,
@@ -268,7 +272,11 @@ const resolveClause = (request: {
   if (entry.outcome === "failed") {
     return entry;
   }
-  return { outcome: "ok", value: resolvedClauseOf({ clauseRequest, defined: defined.value, entry: entry.value }) };
+  const checks = request.ruleSetFiles.checks({ installRoot: request.installRoot, clause: request.address });
+  if (checks.outcome === "failed") {
+    return checks;
+  }
+  return { outcome: "ok", value: resolvedClauseOf({ clauseRequest, defined: defined.value, entry: entry.value, checks: checks.value }) };
 };
 
 const addressOf = (request: { readonly resolved: ResolvedClause }): ClauseAddress =>
@@ -425,7 +433,7 @@ const selectionReadingOf = (request: {
     editions: editionReadingsOf({ resolved: request.resolved }),
   },
   bindings: request.resolved.map(({ binding }) => binding),
-  clauseRoots: request.resolved.map((resolved) => ({ clause: addressOf({ resolved }), ruleSetRoot: resolved.ruleSetRoot })),
+  clauseRoots: request.resolved.map((resolved) => ({ clause: addressOf({ resolved }), ruleSetRoot: resolved.ruleSetRoot, checks: resolved.checks })),
   excluded: request.file.exclude,
   eslintConfigRoots: request.file.eslintConfigRoots,
   fileExceptionWhyChains: request.file.fileExceptionWhyChains,

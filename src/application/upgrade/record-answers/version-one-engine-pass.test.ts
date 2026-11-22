@@ -53,7 +53,7 @@ const CLASS_SYNTAX_CLAUSE = {
 const SELECTION_READING: SelectionReading = {
   selection: { selected: [{ address: CLASS_SYNTAX, mechanism: AUDIT, exceptions: "allowed" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
   bindings: [{ mechanism: AUDIT, clause: CLASS_SYNTAX_CLAUSE }],
-  clauseRoots: [{ clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT }],
+  clauseRoots: [{ clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] }],
   excluded: [],
   eslintConfigRoots: [],
   fileExceptionWhyChains: "required",

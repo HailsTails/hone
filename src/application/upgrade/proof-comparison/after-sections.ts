@@ -47,7 +47,6 @@ export const afterSectionsOf = (request: { readonly report: RunReport; readonly 
     forfeited: report.forfeited.map((placed) => recordFileKeyOf({ placed })),
     "doubly-held": [],
     "invalid-records": report.refused.map(({ place }) => joinedKey({ parts: [place.file, place.index] })),
-    uncovered: uniqueKeys({ keys: report.uncovered.map((check) => clauseTextOfCheck({ check })) }),
     "not-adopted": uniqueKeys({ keys: report["not-adopted"].map((check) => clauseTextOfCheck({ check })) }),
     "not-run": uniqueKeys({ keys: report["not-run"].map((check) => clauseTextOfCheck({ check })) }),
     editions: uniqueKeys({

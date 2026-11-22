@@ -237,7 +237,7 @@ const SECOND_CAST_FINDING = cast({ file: "src/added.ts", column: 21, source: "JS
 const GENERATED_CAST_FINDING = cast({ file: "src/generated/gen.ts", column: 22, source: "JSON.parse(text) as any;", ending: MAY_INDICATE });
 
 const CLASS_SYMPTOM =
-  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
+  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
 
 const CAST_SYMPTOM =
   "claimed-type: Claimed type. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; checks a value that may be one of several outcomes → Straight-through tests; gives a value its type (declares it, or needs it narrower): in a test, a cast to build an input → Handed what it uses. The breach usually sits in the declaration: an input too wide, a generic not bounded, a missing parse. Recipes: Fix the declaration, not the value; Assert to narrow; One argument object. Correct use: an authorised location in the adapter whose outside contract forces it. Known debt: debt. Read ../../rules/typescript/symptoms.md#claimed-type\n";
@@ -448,14 +448,14 @@ describe("the settings a version 2 adopter edits, run as the real tool command",
   );
 
   it(
-    "fails on a check of a selected symptom that is neither listed nor marked not-adopted, with nothing else wrong",
+    "passes with a check of a selected symptom that is neither listed nor marked, offering it as available",
     () => {
       const repo = adopterRepository({ sources: { "clean.ts": CLEAN_SOURCE } });
       runCommandIn({ repo, subcommand: "project", options: [] });
       writeIn({ repo, file: "hone.config.json", text: CONFIG_LEAVING_A_CHECK_UNLISTED });
       expect(runCommandIn({ repo, subcommand: "check", options: [] })).toEqual({
-        text: `${NOT_ADOPTED_WITHOUT_THE_UNLISTED_CAST_SITE}uncovered (1)\nclaimed-type#unlisted-cast-site\nverdict: fail\n`,
-        code: 1,
+        text: `${NOT_ADOPTED_WITHOUT_THE_UNLISTED_CAST_SITE}available (1)\nclaimed-type#unlisted-cast-site\nverdict: pass\n`,
+        code: 0,
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,

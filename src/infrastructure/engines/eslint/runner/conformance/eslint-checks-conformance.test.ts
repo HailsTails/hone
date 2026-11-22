@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { Result } from "../../../../../domain/result.ts";
@@ -13,10 +13,11 @@ import { createDefaultFileTextPort } from "../../../../node/file-system/file-tex
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort, createPathPort } from "../../../../node/path-port.ts";
+import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
@@ -31,7 +32,6 @@ import {
   type EslintToolchainPeers,
   loadEslintToolchain,
 } from "../toolchain/eslint-toolchain.ts";
-import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -86,7 +86,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -99,30 +99,20 @@ const foldersUnder = (request: { readonly table: RawTable; readonly prefix: stri
     ),
   ].sort();
 
-const requiredEntry = (request: { readonly table: RawTable; readonly key: string }): string => {
-  const entry = request.table[request.key];
-  assert(entry !== undefined, `the fake table holds no entry for ${request.key}`);
-  return entry;
-};
 
-const tableFileText = (request: { readonly table: RawTable }): FileTextPort => ({
-  read: ({ path }) => ({
-    outcome: "ok",
-    value: requiredEntry({ table: request.table, key: path.replace("/install/", "./") }),
-  }),
-  exists: () => "present",
-  write: vi.fn<FileTextPort["write"]>(),
-});
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
-  const discipline = readDisciplineFile({
+  const held = readHeldDiscipline({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
   });
-  assert(discipline.outcome === "ok", `${request.discipline} discipline.json reads through the rule-set reader`);
-  return discipline.value;
+  assert(held.outcome === "ok", `${request.discipline} reads through the install's discipline reader`);
+  const discipline = held.value;
+  assert(discipline.held === "present", `the install holds ${request.discipline}`);
+  return discipline.file;
 };
 
 const rowsOf = (request: {
@@ -134,7 +124,7 @@ const rowsOf = (request: {
   const discipline = disciplineOf(request);
   const piece = readPieceFile({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     mechanism: request.mechanism,
@@ -162,12 +152,11 @@ const rowsOf = (request: {
 };
 
 const conformanceRows = (request: {
-  readonly table: RawTable;
   readonly disciplines: readonly string[];
   readonly mechanism: MechanismId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
-  const fileText = tableFileText({ table: request.table });
+  const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
     rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
   );
@@ -182,7 +171,7 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infrastructure/engines/eslint/*/piece.json"], {
+const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
   base: "../../../../../../",
   query: "?raw",
   import: "default",
@@ -190,7 +179,6 @@ const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infra
 });
 
 const CONFORMANCE_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
   mechanism: "eslint",
   mechanismRoot: `${import.meta.dirname}/../..`,

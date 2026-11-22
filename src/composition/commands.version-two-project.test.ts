@@ -177,6 +177,7 @@ type Command = CommandRequest;
 const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
 const SETTINGS: SettingsReading = {
+  available: [],
   selection: {
     selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],

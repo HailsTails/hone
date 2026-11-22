@@ -1,25 +1,41 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../node/path-port.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import { mechanismIdSchema } from "./identifiers.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import { createSettingsSources } from "./settings-sources.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
-const AUDIT = "audit" as const;
+const AUDIT = "audit";
 
 const SETTINGS_TEXT = `{ "version": 2, "ruleSets": {}, "checks": {} }`;
 
-const CD_15_DISCIPLINE = `{
+const NAMES = `{
   "version": 1,
-  "id": "CD-15",
+  "clauses": [
+    { "clause": "CD-15#loops", "sight": { "kind": "one-symptom", "symptom": "loop-keyword" }, "checks": ["loop-keyword#loop-statement"], "anchor": { "kind": "file" } },
+    { "clause": "CD-15#loop-intent", "sight": { "kind": "outside-the-cases" }, "checks": [] }
+  ],
+  "recordKinds": {}
+}`;
+
+const LOOPS_CASES = `{
+  "flag": [{ "name": "flagged", "fileName": "src/a.ts", "source": "let a = 1;\\n", "expectedLines": [1] }],
+  "allow": [{ "name": "allowed", "fileName": "src/b.ts", "source": "const b = 1;\\n", "expectedLines": [] }]
+}`;
+
+const TM_1_DISCIPLINE = `{
+  "version": 1,
+  "id": "TM-1",
   "clauses": [
     {
       "kind": "mechanical",
@@ -39,12 +55,18 @@ const CD_15_DISCIPLINE = `{
       "mechanisms": ["audit"],
       "anchor": { "kind": "file" },
       "cases": {
-        "flag": [{ "name": "flagged", "fileName": "src/a.ts", "source": "let a = 2;\\n", "expectedLines": [1] }],
+        "flag": [{ "name": "flagged", "fileName": "src/a.ts", "source": "let a = 1;\\n", "expectedLines": [1] }],
         "allow": [{ "name": "allowed", "fileName": "src/b.ts", "source": "const b = 1;\\n", "expectedLines": [] }]
       }
-    },
-    { "kind": "judgement", "id": "loop-intent", "summary": "a loop says what it is for", "enforcedBy": "review" }
+    }
   ]
+}`;
+
+const TM_1_PIECE = `{
+  "version": 1,
+  "discipline": "TM-1",
+  "mechanism": "audit",
+  "clauses": [{ "clause": "loops", "settings": { "module": "loops.ts" } }]
 }`;
 
 const CD_15_PIECE = `{
@@ -58,8 +80,14 @@ const RUNNER_TEXT = "export const runner = {};\n";
 
 const INSTALL_FILES: Readonly<Record<string, string>> = {
   "/repo/hone.config.json": SETTINGS_TEXT,
-  "/install/rules/CD-15/discipline.json": CD_15_DISCIPLINE,
+  "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
   "/install/src/infrastructure/engines/audit/CD-15/piece.json": CD_15_PIECE,
+  "/install/src/infrastructure/engines/audit/CD-15/loops.cases.json": LOOPS_CASES,
+  "/install/src/infrastructure/engines/audit/runner/runner.ts": RUNNER_TEXT,
+};
+
+const TEAM_FILES: Readonly<Record<string, string>> = {
+  "/repo/tools/hone-rules/rules/TM-1/discipline.json": TM_1_DISCIPLINE,
   "/install/src/infrastructure/engines/audit/runner/runner.ts": RUNNER_TEXT,
 };
 
@@ -82,6 +110,7 @@ const inMemoryFileText = (request: { readonly files: Readonly<Record<string, str
 
 const sourcesOver = (request: { readonly files: Readonly<Record<string, string>> }) =>
   createSettingsSources({
+    directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
@@ -89,11 +118,13 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   });
 
-const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly clause: string; readonly mechanism: MechanismId }) =>
+const TEAM_ROOT = absoluteRootOf("/repo/tools/hone-rules");
+
+const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly ruleSetRoot: AbsolutePath; readonly clause: string; readonly mechanism: string }) =>
   sourcesOver({ files: request.files }).pieceClause({
-    ruleSetRoot: INSTALL_ROOT,
+    ruleSetRoot: request.ruleSetRoot,
     clause: clauseAddressSchema.parse(request.clause),
-    mechanism: request.mechanism,
+    mechanism: mechanismIdSchema.parse(request.mechanism),
   });
 
 describe("createSettingsSources", () => {
@@ -131,8 +162,32 @@ describe("createSettingsSources", () => {
     expect(sourcesOver({ files: INSTALL_FILES }).catalogue({ ruleSetRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
   });
 
+  it("reads a declared rule set's pieces from its mechanisms folder when it gives its catalogue", () => {
+    const sources = createSettingsSources({
+      directory: {
+        list: vi
+          .fn<DirectoryPort["list"]>()
+          .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/tools/hone-rules/mechanisms/audit"), detail: "EACCES" } }),
+        create: vi.fn<DirectoryPort["create"]>(),
+      },
+      repoRoot: REPO_ROOT,
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts",
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>(),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+        write: vi.fn<FileTextPort["write"]>(),
+      },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    });
+    expect(sources.catalogue({ ruleSetRoot: absoluteRootOf("/repo/tools/hone-rules") })).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: "/repo/tools/hone-rules/mechanisms/audit", detail: "EACCES" },
+    });
+  });
+
   it("reads the piece of a mechanical clause with its definition's anchor and exceptions", () => {
-    expect(pieceOf({ files: INSTALL_FILES, clause: "CD-15#loops", mechanism: "audit" })).toMatchObject({
+    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#loops", mechanism: "audit" })).toMatchObject({
       outcome: "ok",
       value: {
         anchor: { kind: "file" },
@@ -144,28 +199,28 @@ describe("createSettingsSources", () => {
   });
 
   it("refuses a discipline the rule set lacks", () => {
-    expect(pieceOf({ files: INSTALL_FILES, clause: "CD-99#loops", mechanism: "audit" })).toEqual({
+    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-99#loops", mechanism: "audit" })).toEqual({
       outcome: "failed",
       error: { kind: "unknown-discipline", address: "CD-99#loops" },
     });
   });
 
   it("refuses a clause its discipline lacks", () => {
-    expect(pieceOf({ files: INSTALL_FILES, clause: "CD-15#nothing", mechanism: "audit" })).toEqual({
+    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#nothing", mechanism: "audit" })).toEqual({
       outcome: "failed",
       error: { kind: "unknown-clause", address: "CD-15#nothing" },
     });
   });
 
   it("refuses a judgement clause", () => {
-    expect(pieceOf({ files: INSTALL_FILES, clause: "CD-15#loop-intent", mechanism: "audit" })).toEqual({
+    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#loop-intent", mechanism: "audit" })).toEqual({
       outcome: "failed",
       error: { kind: "judgement-clause-selected", address: "CD-15#loop-intent" },
     });
   });
 
   it("refuses a mechanism the clause does not allow", () => {
-    expect(pieceOf({ files: INSTALL_FILES, clause: "CD-15#loops", mechanism: "eslint" })).toEqual({
+    expect(pieceOf({ files: INSTALL_FILES, ruleSetRoot: INSTALL_ROOT, clause: "CD-15#loops", mechanism: "eslint" })).toEqual({
       outcome: "failed",
       error: { kind: "mechanism-not-allowed", address: "CD-15#loops", mechanism: "eslint" },
     });
@@ -175,32 +230,49 @@ describe("createSettingsSources", () => {
     expect(
       pieceOf({
         files: {
-          "/install/rules/CD-15/discipline.json": CD_15_DISCIPLINE,
+          "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
           "/install/src/infrastructure/engines/audit/CD-15/piece.json": CD_15_PIECE,
+          "/install/src/infrastructure/engines/audit/CD-15/loops.cases.json": LOOPS_CASES,
         },
+        ruleSetRoot: INSTALL_ROOT,
         clause: "CD-15#loops",
         mechanism: "audit",
       }),
     ).toEqual({ outcome: "failed", error: { kind: "runner-missing", mechanism: AUDIT } });
   });
 
-  it("refuses a clause whose discipline has no piece for the mechanism", () => {
+  it("refuses a team clause whose discipline has no piece for the mechanism", () => {
+    expect(pieceOf({ files: TEAM_FILES, ruleSetRoot: TEAM_ROOT, clause: "TM-1#loops", mechanism: "audit" })).toEqual({
+      outcome: "failed",
+      error: { kind: "piece-missing", address: "TM-1#loops", mechanism: AUDIT },
+    });
+  });
+
+  it("refuses a team clause its discipline's piece has no entry for", () => {
+    expect(
+      pieceOf({
+        files: { ...TEAM_FILES, "/repo/tools/hone-rules/mechanisms/audit/TM-1/piece.json": TM_1_PIECE },
+        ruleSetRoot: TEAM_ROOT,
+        clause: "TM-1#labels",
+        mechanism: "audit",
+      }),
+    ).toEqual({ outcome: "failed", error: { kind: "piece-missing", address: "TM-1#labels", mechanism: AUDIT } });
+  });
+
+  it("refuses an install clause that no piece runs", () => {
     expect(
       pieceOf({
         files: {
-          "/install/rules/CD-15/discipline.json": CD_15_DISCIPLINE,
+          "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
           "/install/src/infrastructure/engines/audit/runner/runner.ts": RUNNER_TEXT,
         },
+        ruleSetRoot: INSTALL_ROOT,
         clause: "CD-15#loops",
         mechanism: "audit",
       }),
-    ).toEqual({ outcome: "failed", error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT } });
-  });
-
-  it("refuses a clause its discipline's piece has no entry for", () => {
-    expect(pieceOf({ files: INSTALL_FILES, clause: "CD-15#labels", mechanism: "audit" })).toEqual({
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "piece-missing", address: "CD-15#labels", mechanism: AUDIT },
+      error: { kind: "rule-set-invalid", path: "/install/src/infrastructure/disciplines-file/version-one-names.json", detail: "no piece runs CD-15#loops" },
     });
   });
 });

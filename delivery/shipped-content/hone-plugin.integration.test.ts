@@ -1,6 +1,6 @@
+import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { assert, describe, expect, it } from "vitest";
-import { symptomCatalogueOf } from "../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import SYMPTOMS from "../../rules/typescript/symptoms.json" with { type: "json" };
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { checkOfRuleId, eslintRuleIdsOf } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
@@ -15,14 +15,26 @@ const SILENT_BOUNDARY: EslintMajorBoundary = {
   declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
 };
 
-const CATALOGUE = symptomCatalogueOf({ document: SYMPTOMS });
+const REPOSITORY_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }));
 
-assert(CATALOGUE.outcome === "ok");
+const CATALOGUE_HOLDING = readBoundCatalogue({
+  directory: createDefaultDirectoryPort({}),
+  fileText: createDefaultFileTextPort({}),
+  path: createDefaultPathPort({}),
+  ruleSetRoot: REPOSITORY_ROOT,
+  installRoot: REPOSITORY_ROOT,
+});
+
+assert(CATALOGUE_HOLDING.outcome === "ok", "this repository's catalogue reads");
+
+assert(CATALOGUE_HOLDING.value.held === "catalogue", "this repository holds a catalogue");
+
+const CATALOGUE = CATALOGUE_HOLDING.value.catalogue;
 
 const path = createDefaultPathPort({});
 
 const honePlugin = await honePluginAt({
-  checks: CATALOGUE.value.checks,
+  checks: CATALOGUE.checks,
   installRoot: absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", ".."] })),
   fileText: createDefaultFileTextPort({}),
   path,
@@ -54,22 +66,22 @@ describe("honePluginAt, over this repository's catalogue and pieces", () => {
   });
 
   it("gives every check the catalogue runs on ESLint exactly one rule id", () => {
-    expect(eslintRuleIdsOf({ checks: CATALOGUE.value.checks })).toEqual([
-      "hone/untyped-value#explicit-any",
-      "hone/untyped-value#implicit-any-let",
-      "hone/claimed-type#non-null-assertions",
-      "hone/name-off-its-casing#naming-convention",
-      "hone/name-off-its-casing#filename-case",
-      "hone/thrown-non-error#throw-only-error",
+    expect(eslintRuleIdsOf({ checks: CATALOGUE.checks })).toEqual([
       "hone/authored-class-or-this#class-keyword",
       "hone/authored-class-or-this#static-members-only",
+      "hone/claimed-type#non-null-assertions",
+      "hone/long-function#function-length",
+      "hone/name-off-its-casing#filename-case",
+      "hone/name-off-its-casing#naming-convention",
+      "hone/positional-parameters#parameter-count",
+      "hone/rebinding#parameter-reassignment",
+      "hone/tangled-function#cognitive-complexity",
       "hone/test-switched-off#focused-tests",
       "hone/test-switched-off#skipped-tests",
-      "hone/positional-parameters#parameter-count",
-      "hone/tangled-function#cognitive-complexity",
-      "hone/long-function#function-length",
+      "hone/thrown-non-error#throw-only-error",
+      "hone/untyped-value#explicit-any",
+      "hone/untyped-value#implicit-any-let",
       "hone/work-inside-a-condition#else-after-an-exit",
-      "hone/rebinding#parameter-reassignment",
     ]);
   });
 
@@ -100,6 +112,6 @@ describe("honePluginAt, over this repository's catalogue and pieces", () => {
   });
 
   it.each(ESLINT_CHECKS)("resolves $ruleId back to its check", ({ ruleId, symptom, check }) => {
-    expect(checkOfRuleId({ checks: CATALOGUE.value.checks, ruleId })).toMatchObject({ found: "check", check: { name: check, symptom: { name: symptom } } });
+    expect(checkOfRuleId({ checks: CATALOGUE.checks, ruleId })).toMatchObject({ found: "check", check: { name: check, symptom: { name: symptom } } });
   });
 });

@@ -10,7 +10,7 @@ import type { AssessmentLeftElsewhere, RunReport } from "../../domain/report/run
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
 import { checkOfFinding } from "../../domain/finding/finding-check.ts";
-import type { Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { Check, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { EngineRun } from "../ports/engine/engine-run.ts";
@@ -26,6 +26,7 @@ export type RunReportRequest = {
   readonly touched: TouchedSet;
   readonly runs: readonly EngineRun[];
   readonly tracked: readonly RepoPath[];
+  readonly available: readonly Check[];
 };
 
 const namingItsCheck = (request: { readonly catalogue: SymptomCatalogue; readonly finding: Finding }): Finding => {
@@ -77,7 +78,7 @@ export const runReportOf = (request: RunReportRequest): RunReport => {
     editions: editionsOf({ catalogue, readings: selection.editions }),
     findings: answering.findings,
     answered: answering.answered,
-    uncovered: checksOfClauses({ catalogue, clauses: selection.uncovered }),
+    available: request.available,
     stale: answering.stale,
     forfeited: answering.forfeited,
     unrecorded: answering.unrecorded,

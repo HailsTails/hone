@@ -1,0 +1,81 @@
+{
+  "flag": [
+    {
+      "name": "noPropertyAccessFromIndexSignature set to false",
+      "fileName": "packages/a/tsconfig.json",
+      "source": "{\n  \"compilerOptions\": {\n    \"noPropertyAccessFromIndexSignature\": false\n  }\n}\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "noPropertyAccessFromIndexSignature restated as true",
+      "fileName": "tsconfig.json",
+      "source": "{ \"compilerOptions\": { \"target\": \"ESNext\", \"noPropertyAccessFromIndexSignature\": true } }\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "noPropertyAccessFromIndexSignature set to false under the second edition",
+      "fileName": "packages/a/tsconfig.json",
+      "source": "{\n  \"compilerOptions\": {\n    \"noPropertyAccessFromIndexSignature\": false\n  }\n}\n",
+      "expectedLines": [
+        1
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "a base that cannot be read",
+      "fileName": "packages/a/tsconfig.json",
+      "source": "{ \"extends\": \"../../tsconfig.base.json\", \"compilerOptions\": { \"target\": \"ESNext\" } }\n",
+      "expectedLines": [
+        1
+      ],
+      "edition": "2"
+    },
+    {
+      "name": "noPropertyAccessFromIndexSignature unset with no base",
+      "fileName": "packages/b/tsconfig.json",
+      "source": "{ \"compilerOptions\": { \"outDir\": \"dist\", \"target\": \"ESNext\" } }\n",
+      "expectedLines": [
+        1
+      ],
+      "edition": "2"
+    }
+  ],
+  "allow": [
+    {
+      "name": "inherits the shared base",
+      "fileName": "packages/a/tsconfig.json",
+      "source": "{ \"extends\": \"../../tsconfig.base.json\", \"compilerOptions\": { \"target\": \"ESNext\" } }\n",
+      "expectedLines": []
+    },
+    {
+      "name": "only other options set",
+      "fileName": "packages/b/tsconfig.json",
+      "source": "{ \"compilerOptions\": { \"outDir\": \"dist\", \"target\": \"ESNext\" } }\n",
+      "expectedLines": []
+    },
+    {
+      "name": "tsconfig.base.json is not read",
+      "fileName": "tsconfig.base.json",
+      "source": "{ \"compilerOptions\": { \"noPropertyAccessFromIndexSignature\": true } }\n",
+      "expectedLines": []
+    },
+    {
+      "name": "tsconfig.base.json is not read under the second edition",
+      "fileName": "tsconfig.base.json",
+      "source": "{ \"compilerOptions\": { \"noPropertyAccessFromIndexSignature\": false } }\n",
+      "expectedLines": [],
+      "edition": "2"
+    },
+    {
+      "name": "a solution-style config that compiles no files",
+      "fileName": "tsconfig.json",
+      "source": "{ \"files\": [], \"references\": [{ \"path\": \"./tsconfig.app.json\" }, { \"path\": \"./tsconfig.node.json\" }] }\n",
+      "expectedLines": [],
+      "edition": "2"
+    }
+  ]
+}

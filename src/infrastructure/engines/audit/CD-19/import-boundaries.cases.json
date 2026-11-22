@@ -1,0 +1,46 @@
+{
+  "flag": [
+    {
+      "name": "node: import",
+      "fileName": "reads-file.ts",
+      "source": "import { readFileSync } from \"node:fs\";\n\nexport const read = readFileSync;\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "require of a node: module",
+      "fileName": "requires.ts",
+      "source": "export const loaded = require(\"node:path\");\n",
+      "expectedLines": [
+        1
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "library import while no specifier is confined",
+      "fileName": "imports-winston.ts",
+      "source": "import winston from \"winston\";\n\nexport const useWinston = (): unknown => winston;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "project-owned import",
+      "fileName": "own.ts",
+      "source": "import { logger } from \"./logger-port.ts\";\n\nexport const log = logger;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "unlisted library import",
+      "fileName": "other.ts",
+      "source": "import { z } from \"zod\";\n\nexport const schema = z;\n",
+      "expectedLines": []
+    },
+    {
+      "name": "unprefixed fs is not detected",
+      "fileName": "bare-fs.ts",
+      "source": "import { readFileSync } from \"fs\";\n\nexport const read = readFileSync;\n",
+      "expectedLines": []
+    }
+  ]
+}

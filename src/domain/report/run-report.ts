@@ -34,7 +34,7 @@ export type RunReport = {
   readonly editions: readonly CheckEdition[];
   readonly findings: readonly Finding[];
   readonly answered: readonly AnsweredFinding[];
-  readonly uncovered: readonly Check[];
+  readonly available: readonly Check[];
   readonly stale: readonly StaleRecord[];
   readonly forfeited: readonly PlacedRecord[];
   readonly unrecorded: readonly AttributedNativeException[];

@@ -1,53 +1,41 @@
 import { describe, expect, it, vi } from "vitest";
+import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { FilePresence } from "../../../domain/repository/file-presence.ts";
-import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import type { Case, Engine, Principle, RecordKind, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { createPathPort } from "../../node/path-port.ts";
+import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
 
-const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
+const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
 
-const CATALOGUE_TEXT = `{
-  "version": 1,
-  "principles": [{ "name": "no-hidden-effects", "title": "No hidden effects" }],
-  "rules": [],
-  "cases": [{ "name": "makes-a-new-value-from-what-it-has", "title": "Makes a new value from what it has", "standing": "accepted", "owes": [{ "principle": "no-hidden-effects" }] }],
-  "recipes": [],
-  "recordKinds": [
-    { "name": "authorised-location", "title": "Authorised location", "phrase": "an authorised location", "todaysFormat": "authorised-location" },
-    { "name": "debt", "title": "Debt", "phrase": "debt", "todaysFormat": "file-carve-out" }
-  ],
-  "engines": [{ "name": "eslint", "mechanism": "eslint" }],
-  "symptoms": [
-    {
-      "name": "rebinding",
-      "title": "Rebinding",
-      "seen": "A \`let\` assigned again.",
-      "mayIndicate": [{ "case": "makes-a-new-value-from-what-it-has", "points": [{ "principle": "no-hidden-effects" }] }],
-      "breachUsuallySits": "in the unit",
-      "recipes": [],
-      "correctUses": []
-    }
-  ],
-  "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" } }],
-  "checks": [{ "symptom": "rebinding", "name": "parameter-reassignment", "clause": "CD-44#parameter-reassignment", "engines": ["eslint"] }],
-  "namedBans": []
-}`;
+const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
+
+const NAMES_PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
+
+const NAMES_TEXT =
+  '{ "version": 1, "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#parameter-reassignment"], "anchor": { "kind": "file" } }], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }';
+
+const MAKES_A_NEW_VALUE_TEXT = '# Makes a new value from what it has\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "no-hidden-effects" }] }\n```\n';
+
+const NO_HIDDEN_EFFECTS_TEXT = "# No hidden effects\n\n```json\n{}\n```\n";
+
+const AUTHORISED_LOCATION_TEXT = '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n';
+
+const DEBT_TEXT = '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n';
+
+const REBINDING_TEXT =
+  '# Rebinding\n\n```json\n{ "group": "Effects and state", "seen": "A `let` assigned again.", "mayIndicate": [{ "case": "makes-a-new-value-from-what-it-has", "points": [{ "principle": "no-hidden-effects" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }\n```\n';
+
+const PARAMETER_REASSIGNMENT_TEXT = '# parameter-reassignment\n\n```json\n{}\n```\n';
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const AUTHORISED_LOCATION: RecordKind = {
-  name: "authorised-location",
-  title: "Authorised location",
-  phrase: "an authorised location",
-  todaysFormat: "authorised-location",
-};
+const AUTHORISED_LOCATION: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
@@ -57,6 +45,8 @@ const MAKES_A_NEW_VALUE: Case = {
   standing: "accepted",
   owes: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
 };
+
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
 const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
@@ -72,91 +62,115 @@ const REBINDING: Symptom = {
   correctUses: [],
 };
 
-const fileTextHolding = (request: { readonly presence: FilePresence; readonly read: ReturnType<FileTextPort["read"]> }): FileTextPort => ({
-  read: vi.fn<FileTextPort["read"]>().mockReturnValue(request.read),
-  exists: vi.fn<FileTextPort["exists"]>().mockReturnValue(request.presence),
-  write: vi.fn<FileTextPort["write"]>(),
-});
+const UNLISTED: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
 
-const pathJoiningTo = (joined: string): Pick<PathPort, "join"> => ({
-  join: vi.fn<PathPort["join"]>().mockReturnValue(joined),
-});
+const ITEM_FOLDER_FILE_TEXT: FileTextPort = {
+    exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+    read: vi
+      .fn<FileTextPort["read"]>()
+      .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: MAKES_A_NEW_VALUE_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: NO_HIDDEN_EFFECTS_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: AUTHORISED_LOCATION_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: REBINDING_TEXT })
+      .mockReturnValueOnce({ outcome: "ok", value: PARAMETER_REASSIGNMENT_TEXT }),
+    write: vi.fn<FileTextPort["write"]>(),
+  };
+const ITEM_FOLDER_DIRECTORY: DirectoryPort = {
+    list: vi
+      .fn<DirectoryPort["list"]>()
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value: [
+          { name: "cases", kind: "directory" },
+          { name: "principles", kind: "directory" },
+          { name: "record-kinds", kind: "directory" },
+          { name: "typescript", kind: "directory" },
+        ],
+      })
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "makes-a-new-value-from-what-it-has.md", kind: "file" }] })
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "no-hidden-effects.md", kind: "file" }] })
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value: [
+          { name: "authorised-location.md", kind: "file" },
+          { name: "debt.md", kind: "file" },
+        ],
+      })
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "symptoms", kind: "directory" }] })
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value: [
+          { name: "rebinding", kind: "directory" },
+          { name: "rebinding.md", kind: "file" },
+        ],
+      })
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "parameter-reassignment.md", kind: "file" }] }),
+    create: vi.fn<DirectoryPort["create"]>(),
+  };
 
 describe("createSymptomCatalogueRepository", () => {
-  it("reads the catalogue under the rule set's root into its typed form", () => {
-    const fileText = fileTextHolding({ presence: "present", read: { outcome: "ok", value: CATALOGUE_TEXT } });
-    const path = pathJoiningTo(CATALOGUE_PATH);
-    expect(createSymptomCatalogueRepository({ fileText, path, ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+  it("reads the items under the rule set's rules folder, with the clauses and formats of today the version 1 names give and the engines the registry names", () => {
+    expect(createSymptomCatalogueRepository({ fileText: ITEM_FOLDER_FILE_TEXT, directory: ITEM_FOLDER_DIRECTORY, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "ok",
       value: {
         held: "catalogue",
-        catalogue: {
+        content: {
           principles: [NO_HIDDEN_EFFECTS],
           rules: [],
           cases: [MAKES_A_NEW_VALUE],
           recipes: [],
           recordKinds: [AUTHORISED_LOCATION, DEBT],
           alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
-          engines: [ESLINT],
+          engines: [WALKER, ESLINT],
           symptoms: [REBINDING],
           clauses: [{ clause: PARAMETER_REASSIGNMENT, sight: { kind: "one-symptom", symptom: REBINDING } }],
-          checks: [{ name: "parameter-reassignment", symptom: REBINDING, clause: PARAMETER_REASSIGNMENT, engines: [ESLINT], forms: [] }],
+          checks: [{ name: "parameter-reassignment", symptom: REBINDING, clause: PARAMETER_REASSIGNMENT, forms: [] }],
           namedBans: [],
         },
       },
     });
-    expect(path.join).toHaveBeenCalledExactlyOnceWith({ segments: ["/install", "rules", "typescript", "symptoms.json"] });
-    expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: CATALOGUE_PATH });
-    expect(fileText.read).toHaveBeenCalledExactlyOnceWith({ path: CATALOGUE_PATH });
-    expect(fileText.write).not.toHaveBeenCalled();
+    expect(ITEM_FOLDER_FILE_TEXT.read).toHaveBeenNthCalledWith(1, { path: NAMES_PATH });
+    expect(ITEM_FOLDER_DIRECTORY.list).toHaveBeenNthCalledWith(1, { path: "/install/rules" });
+    expect(ITEM_FOLDER_FILE_TEXT.write).not.toHaveBeenCalled();
   });
 
-  it("holds no catalogue, reading nothing, when the rule set holds none", () => {
-    const fileText = fileTextHolding({ presence: "absent", read: { outcome: "ok", value: CATALOGUE_TEXT } });
-    expect(createSymptomCatalogueRepository({ fileText, path: pathJoiningTo(CATALOGUE_PATH), ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+  it("holds no catalogue, reading nothing, when a team's rule set holds no rules folder, since version 1 names are Hone's own", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>(),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "ok",
       value: { held: "none" },
     });
     expect(fileText.read).not.toHaveBeenCalled();
-    expect(fileText.write).not.toHaveBeenCalled();
   });
 
-  it("fails file-unreadable when the catalogue cannot be read", () => {
-    const fileText = fileTextHolding({ presence: "present", read: { outcome: "failed", error: { kind: "unreadable", path: CATALOGUE_PATH, detail: "EACCES" } } });
-    expect(createSymptomCatalogueRepository({ fileText, path: pathJoiningTo(CATALOGUE_PATH), ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+  it("fails file-unreadable naming the version 1 names when Hone's own install is missing them", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "unreadable", path: NAMES_PATH, detail: "ENOENT" } }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: CATALOGUE_PATH, detail: "EACCES" },
-    });
-  });
-
-  it("fails file-malformed when the catalogue is not JSON", () => {
-    const fileText = fileTextHolding({ presence: "present", read: { outcome: "ok", value: "{ not json" } });
-    expect(createSymptomCatalogueRepository({ fileText, path: pathJoiningTo(CATALOGUE_PATH), ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
-      outcome: "failed",
-      error: { kind: "file-malformed", path: CATALOGUE_PATH, detail: "Expected property name or '}' in JSON at position 2 (line 1 column 3)" },
+      error: { kind: "file-unreadable", path: NAMES_PATH, detail: "ENOENT" },
     });
   });
 
-  it("fails unsupported-version when the catalogue is of a later version", () => {
-    const fileText = fileTextHolding({ presence: "present", read: { outcome: "ok", value: '{ "version": 2 }' } });
-    expect(createSymptomCatalogueRepository({ fileText, path: pathJoiningTo(CATALOGUE_PATH), ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+  it("fails file-unreadable naming the version 1 names when they cannot be read", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: NAMES_PATH, detail: "EACCES" } }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "failed",
-      error: { kind: "unsupported-version", path: CATALOGUE_PATH, found: 2 },
+      error: { kind: "file-unreadable", path: NAMES_PATH, detail: "EACCES" },
     });
-  });
-
-  it("fails file-malformed, saying why, when the catalogue names a symptom it does not hold", () => {
-    const fileText = fileTextHolding({
-      presence: "present",
-      read: {
-        outcome: "ok",
-        value:
-          '{ "version": 1, "principles": [], "rules": [], "cases": [], "recipes": [], "recordKinds": [{ "name": "authorised-location", "title": "Authorised location", "phrase": "an authorised location", "todaysFormat": "authorised-location" }, { "name": "debt", "title": "Debt", "phrase": "debt", "todaysFormat": "file-carve-out" }], "engines": [], "symptoms": [], "clauses": [{ "clause": "CD-15#loops", "sight": { "kind": "one-symptom", "symptom": "loop-keyword" } }], "checks": [], "namedBans": [] }',
-      },
-    });
-    expect(createSymptomCatalogueRepository({ fileText, path: pathJoiningTo(CATALOGUE_PATH), ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
-      outcome: "failed",
-      error: { kind: "file-malformed", path: CATALOGUE_PATH, detail: "✖ clauses names loop-keyword, which the catalogue does not hold" },
-    });
+    expect(UNLISTED.list).not.toHaveBeenCalled();
   });
 });

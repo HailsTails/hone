@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { Result } from "../../../../domain/result.ts";
@@ -7,7 +7,8 @@ import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-s
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
-import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
@@ -16,12 +17,12 @@ import { createDefaultEntryKindPort } from "../../../node/file-system/file-syste
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort, createPathPort } from "../../../node/path-port.ts";
+import { createDefaultPathPort } from "../../../node/path-port.ts";
+import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
 import { loadParsePort, typeScriptPeersNamed } from "./toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "./runner.ts";
-import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 
 type RawTable = Readonly<Record<string, string>>;
 
@@ -31,7 +32,7 @@ type ConformanceRow = {
   readonly cases: readonly SourceCase[];
 };
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
 const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
 
@@ -44,26 +45,19 @@ const foldersUnder = (request: { readonly table: RawTable; readonly prefix: stri
     ),
   ].sort();
 
-const tableFileText = (request: { readonly table: RawTable }): FileTextPort => ({
-  read: ({ path }) => {
-    const key = path.replace("/install/", "./");
-    const text = request.table[key];
-    assert(text !== undefined, `the fake table holds no entry for ${key}`);
-    return { outcome: "ok", value: text };
-  },
-  exists: () => "present",
-  write: vi.fn<FileTextPort["write"]>(),
-});
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
-  const discipline = readDisciplineFile({
+  const held = readHeldDiscipline({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
+    installRoot: RULE_SET_ROOT,
     discipline: disciplineIdSchema.parse(request.discipline),
   });
-  assert(discipline.outcome === "ok", `${request.discipline} discipline.json reads through the rule-set reader`);
-  return discipline.value;
+  assert(held.outcome === "ok", `${request.discipline} reads through the install's discipline reader`);
+  const discipline = held.value;
+  assert(discipline.held === "present", `the install holds ${request.discipline}`);
+  return discipline.file;
 };
 
 const rowsOf = (request: {
@@ -75,7 +69,7 @@ const rowsOf = (request: {
   const discipline = disciplineOf(request);
   const piece = readPieceFile({
     fileText: request.fileText,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
+    path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
     installRoot: RULE_SET_ROOT,
     mechanism: request.mechanism,
@@ -103,12 +97,11 @@ const rowsOf = (request: {
 };
 
 const conformanceRows = (request: {
-  readonly table: RawTable;
   readonly disciplines: readonly string[];
   readonly mechanism: MechanismId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
-  const fileText = tableFileText({ table: request.table });
+  const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
     rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
   );
@@ -132,7 +125,7 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infrastructure/engines/audit/*/piece.json"], {
+const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
   base: "../../../../../",
   query: "?raw",
   import: "default",
@@ -149,7 +142,6 @@ const walkerModules = import.meta.glob(["./src/infrastructure/engines/audit/*/*.
 const walkerDisciplines = foldersUnder({ table: walkerModules, prefix: "./src/infrastructure/engines/audit/" });
 
 const CONFORMANCE_ROWS = conformanceRows({
-  table: ruleSetTexts,
   disciplines: walkerDisciplines,
   mechanism: "audit",
   mechanismRoot: `${import.meta.dirname}/..`,
@@ -157,17 +149,13 @@ const CONFORMANCE_ROWS = conformanceRows({
 
 const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
 
-describe("every audit piece on disk is registered with a piece.json and a discipline.json", () => {
+describe("every audit piece on disk is registered with a piece.json", () => {
   it("has a piece.json for each audit piece folder", () => {
     expect(foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" })).toEqual(walkerDisciplines);
   });
-
-  it("has a discipline.json for each audit piece folder", () => {
-    expect(foldersUnder({ table: ruleSetTexts, prefix: "./rules/" })).toEqual(expect.arrayContaining([...walkerDisciplines]));
-  });
 });
 
-describe("the audit runner, loaded as core loads it, conforms to every registered clause's shared cases read as build-time raw modules (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
+describe("the audit runner, loaded as core loads it, conforms to every registered clause's shared cases read from the shipped files (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
   it.each(CONFORMANCE_ROWS)("$name has no conformance failure over its flag and allow cases", async (row) => {
     expect(await checkConformance({ clause: row.clause, cases: row.cases, runner: walkerRunner })).toEqual({
       outcome: "ok",

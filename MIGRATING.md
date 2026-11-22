@@ -34,7 +34,7 @@ Do [ADOPTING.md](ADOPTING.md) steps 1, 2 and 4 (and 4a for any `eslint` clause).
 
 Map each chosen discipline to its clauses with this table. A discipline is adopted whole: select every mechanical clause it lists, or the check reports the rest as `uncovered`. Where the rule binds but a clause's mechanism cannot work in this repository, such as an ESLint-only clause with no ESLint installed, list that clause as `"not-run"`; where the rule does not apply at all, list it as `"not-adopted"`. [ADOPTING.md](ADOPTING.md#4-write-honeconfigjson) step 4 sets out the clause values and the three declared states.
 
-Find each old rule's number in [Every numbered discipline](rules/numbers.md#every-numbered-discipline), the one page that maps old numbers to names, and select every mechanical clause its row lists, each with a mechanism its CHECKS.md lists. Four kinds of row need more:
+Find each old rule's number in [Every numbered discipline](rules/numbers.md#every-numbered-discipline), the one page that maps old numbers to names, and select every mechanical clause its row lists, each with a mechanism its check page lists. Four kinds of row need more:
 
 - The compiler strictness discipline ([Strictness weakened](rules/typescript/symptoms.md#strictness-weakened)): select all seven of its clauses through `audit`, then move the flags out of `tsconfig.json` (step 4).
 - The debt decay discipline (touching a carved-out file revokes its carve-out): nothing to select. [Forfeiture](rules/records.md#debt) applies to every file carve-out once the check runs with `--base-revision`.
@@ -51,7 +51,7 @@ Do this before step 3, and before you delete any record Hone lists as `stale`. T
 
 | Old route | Where to look | In Hone |
 | --- | --- | --- |
-| Packages confined to wrapping files | a list in the tool's code or its config. Rin's walker holds it as `BANNED_THIRD_PARTY_IMPORTS`: search its tools folder for that name, since an installed copy keeps it in `constitution-audit/audit-constitution.runtime.js`, and its `audit-constitution.ts` only re-exports that file | `confinedPackages` for `CD-19#import-boundaries` under `clauseSettings` in `disciplines.json`. Hone confines no package by default, so until you list them `outside-import-past-a-boundary#import-or-require` flags only `node:` imports. `outside-import-past-a-boundary#import-or-require` is the check's name, given for reading: today's tool neither accepts nor prints a check's name, so write and expect the clause address; check names become typeable in 2.0. A package covers its subpaths, as the clause's checks page, `rules/CD-19/CHECKS.md`, says under "What the check flags", where the old walker matched each listed name exactly, so Hone can flag a subpath import the old list did not name. |
+| Packages confined to wrapping files | a list in the tool's code or its config. Rin's walker holds it as `BANNED_THIRD_PARTY_IMPORTS`: search its tools folder for that name, since an installed copy keeps it in `constitution-audit/audit-constitution.runtime.js`, and its `audit-constitution.ts` only re-exports that file | `confinedPackages` for `CD-19#import-boundaries` under `clauseSettings` in `disciplines.json`. Hone confines no package by default, so until you list them `outside-import-past-a-boundary#import-or-require` flags only `node:` imports. `outside-import-past-a-boundary#import-or-require` is the check's name, given for reading: today's tool neither accepts nor prints a check's name, so write and expect the clause address; check names become typeable in 2.0. A package covers its subpaths, as its check page, `rules/typescript/symptoms/outside-import-past-a-boundary/import-or-require.md`, says under Flags, where the old walker matched each listed name exactly, so Hone can flag a subpath import the old list did not name. |
 | Scope | `constitution.include` and `constitution.exclude` in `harness.config.json` | `exclude` in `disciplines.json`, as [ADOPTING.md](ADOPTING.md#4-write-honeconfigjson) step 4 says. Hone has no include list and no globs: list each folder or file outside the old scope as an exact path. |
 | Rules relaxed by folder | `scriptGlobs`, `uiGlobs` or similar in `harness.config.json` | nothing. Hone has one selection for the whole repository. What those folders fail under the full rules is existing debt: fix it or record it in step 3. There is no old record to import it from, so once the human approves recording it, `hone record-debt` writes the records (step 3). Do not exclude the folders to hide it. |
 | Files the tool skipped in its own code | a list such as `SELF_AUDIT_EXCLUDED_FILENAMES` | an `exclude` entry or an exception record for each file. Stop and ask the human which, and why. |
@@ -199,7 +199,7 @@ Stop and ask the human if anything outside the old trial uses the copied tools o
 | Path matching | old tools matched records by path suffix | exact repository paths |
 | Linter | Biome, ESLint or oxlint for explicit `any` only | ESLint through the generated projection; Biome and oxlint are not Hone mechanisms |
 | Exhaustive switch ([Default on a closed union](rules/typescript/symptoms.md#default-on-a-closed-union)) | typed ESLint `switch-exhaustiveness-check` suggested | the audit's `switch-defaults` clause only; type-aware linting is not supported |
-| Judgement rules | read by an agent on request | each rule page names a review lens in `methods/lenses/`; ADOPTING step 9 is the procedure |
+| Judgement rules | read by an agent on request | each rule item names its review lenses, methods in `methods/lenses/`; ADOPTING step 9 is the procedure |
 
 ## 8. Moving to causal why-chains
 
@@ -321,7 +321,7 @@ Earlier releases reported an `eslint-disable` comment naming a selected rule as 
 
 ## 15. Adopting `CD-2#non-null-assertions`
 
-The cast discipline gained a clause, `CD-2#non-null-assertions` (`claimed-type#non-null-assertions`), checked through `eslint` only. It flags non-null assertions, `x!`, and definite assignment assertions, `let x!: T` and `field!: T`; see `rules/CD-2/CHECKS.md`. A repository that selects any of its clauses has adopted that discipline, so after refreshing Hone its check fails with this line under `uncovered` until `disciplines.json` lists the new clause:
+The cast discipline gained a clause, `CD-2#non-null-assertions` (`claimed-type#non-null-assertions`), checked through `eslint` only. It flags non-null assertions, `x!`, and definite assignment assertions, `let x!: T` and `field!: T`; see `rules/typescript/symptoms/claimed-type/non-null-assertions.md`. A repository that selects any of its clauses has adopted that discipline, so after refreshing Hone its check fails with this line under `uncovered` until `disciplines.json` lists the new clause:
 
 ```text
 CD-2#non-null-assertions
@@ -379,7 +379,7 @@ Earlier releases never listed an `eslint` file record as `stale`. The off-switch
 
 Rules, principles, cases, recipes and symptoms are now referred to by name, not by number. [rules/README.md](rules/README.md) explains how the named pages read.
 
-Nothing must be migrated. Selections, exception records and findings still use the numbered clause addresses, such as `CD-14#class-syntax` (`authored-class-or-this#class-keyword`), and load and print as before. Each numbered `rules/<ID>/README.md` now gives its verdict and the named pages to read; its `CHECKS.md` still holds the check mechanics.
+Nothing must be migrated. Selections, exception records and findings still use the numbered clause addresses, such as `CD-14#class-syntax` (`authored-class-or-this#class-keyword`), and load and print as before. [Every CD](rules/numbers.md) gives each number's verdict and the named items it became; each check's mechanics are on its own page under its symptom.
 
 [Every CD](rules/numbers.md) maps each number to its new names.
 
@@ -414,7 +414,6 @@ Version 2 keeps its settings in `hone.config.json`, its records in the `hone-rec
 On success it exits `0` and prints these lines, in this order:
 
 - `upgraded to version 2`.
-- `marked <check> not-adopted: its discipline was not selected in version 1`, once for each check the upgrade wrote as `not-adopted` in `hone.config.json`. Version 2 lists every check of a symptom that one of your checks sees; a check of a discipline you never selected in version 1 would otherwise be reported `uncovered`. It is not run, as in version 1.
 - `wrote <file>`: `hone.config.json`, each records file under `hone-records/`, each `hone.eslint.mjs` and each `hone.eslint.d.mts`, one for each projection folder, which types the projection beside it. Commit them all.
 - `rewrote <file>`: each ESLint config of yours that imported a version 1 projection, now importing the version 2 one.
 - `removed <path>`: each version 1 file and folder, which are `disciplines.json`, the `disciplines.eslint.mjs` files, and every file and folder of `discipline-exceptions.json` or `discipline-exceptions/`.

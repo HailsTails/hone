@@ -34,7 +34,6 @@ const DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: SCRATCH_FILES_ID,
-      summary: "no scratch file is committed",
       mechanisms: [MECHANISM],
       anchor: { kind: "file" },
       exceptions: "allowed",
@@ -69,7 +68,7 @@ const BOUND_CLAUSE = {
 const BOUND_CASES = [FLAG_CASE, ALLOW_CASE];
 
 const acmeFiles = (): RuleSetFiles => ({
-  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: DISCIPLINE }),
+  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "present", file: DISCIPLINE } }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>().mockReturnValue({ outcome: "ok", value: PIECE }),
 });
 

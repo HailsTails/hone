@@ -1,0 +1,64 @@
+{
+  "flag": [
+    {
+      "name": "test.skip",
+      "fileName": "src/sum.test.ts",
+      "source": "test.skip(\"adds\", () => {});\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "describe.skip",
+      "fileName": "src/sum.test.ts",
+      "source": "describe.skip(\"sum\", () => {});\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "xit",
+      "fileName": "src/sum.test.ts",
+      "source": "xit(\"adds\", () => {});\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "test.fixme",
+      "fileName": "src/sum.test.ts",
+      "source": "test.fixme(\"adds\", () => {});\n",
+      "expectedLines": [
+        1
+      ]
+    },
+    {
+      "name": "qualified describe.skip",
+      "fileName": "src/sum.test.ts",
+      "source": "ns.describe.skip(\"sum\", () => {});\n",
+      "expectedLines": [
+        1
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "plain test",
+      "fileName": "src/sum.test.ts",
+      "source": "test(\"adds\", () => {});\n",
+      "expectedLines": []
+    },
+    {
+      "name": "test.todo",
+      "fileName": "src/sum.test.ts",
+      "source": "test.todo(\"later\");\n",
+      "expectedLines": []
+    },
+    {
+      "name": "test.concurrent",
+      "fileName": "src/sum.test.ts",
+      "source": "test.concurrent(\"adds\", () => {});\n",
+      "expectedLines": []
+    }
+  ]
+}

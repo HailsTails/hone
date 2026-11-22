@@ -1,7 +1,7 @@
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { SymptomCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
+import type { BoundCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "./symptom-notes.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
@@ -33,9 +33,9 @@ const unreadableGuideOf = (request: ShownGuideRequest & { readonly failure: Load
   failure: loadFailureDetail({ failure: shownFailureOf(request) }),
 });
 
-export const symptomGuideIn = (request: GuideLocations & { readonly symptomCatalogueOf: SymptomCatalogueOf }): SymptomGuide => {
+export const symptomGuideIn = (request: GuideLocations & { readonly boundCatalogueOf: BoundCatalogueOf }): SymptomGuide => {
   const { path, fileText, repoRoot, installRoot } = request;
   const shown: ShownGuideRequest = { path, fileText, repoRoot, installRoot, link: packageLinkOf({ path, fileText, repoRoot, installRoot }) };
-  const holding = request.symptomCatalogueOf({ fileText, path, ruleSetRoot: installRoot }).read({});
+  const holding = request.boundCatalogueOf({ fileText, path, ruleSetRoot: installRoot, installRoot });
   return holding.outcome === "failed" ? unreadableGuideOf({ ...shown, failure: holding.error }) : heldGuideOf({ ...shown, holding: holding.value });
 };

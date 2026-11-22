@@ -1,7 +1,7 @@
 # Type-soundness lens
 
 A reusable audit method, not a ruleset. The rules it enforces are **data**: load
-every rule page whose `Review lens` line names `type-soundness`
+every rule whose `lenses` fact or `Review lens` line names `type-soundness`
 from the codebase under review and treat their text as authoritative. This file
 describes only *how* the lens reads code — the concept, the inspection
 procedure, and the output shape. It names no specific rule numbers, file paths,
@@ -43,10 +43,10 @@ return-type carve-out. Read them first; they override any default intuition.
 
 ## Loading the ruleset
 
-1. Resolve the rule pages: `rules/*/README.md` in the Hone install (the folder holding `core/` and `rules/`), and in each rule set the repository's `disciplines.json` names under `ruleSets`.
-2. Keep the pages whose `Review lens` line names `type-soundness`. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
-3. Read each kept page in full together with its sibling `CHECKS.md`, including the `## Exceptions` section in `CHECKS.md` and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names exact permitted sites (file paths, cast shapes, predicate forms, flag names), those are the only permitted sites, and a site matching the *kind* but not the exact named location is still a finding.
-4. If zero rule pages name this lens in their `Review lens` line, report that the codebase declares no type-soundness discipline and produce an empty finding set — do not invent rules.
+1. Resolve the rules: the rule and principle items, `rules/rules/*.md` and `rules/principles/*.md`, in the Hone install (the folder holding `core/` and `rules/`), and the rule pages, `rules/*/README.md`, in each rule set the repository's `disciplines.json` names under `ruleSets`.
+2. Keep the items whose `lenses` fact names `type-soundness`, and the rule-set pages whose `Review lens` line names it. **If no rule pages can be read at all, STOP and return CANNOT-REVIEW naming the rule-page paths you resolved** — an unloadable ruleset is never a codebase without discipline, and reviewing zero rules would emit a PASS that means nothing.
+3. Read each kept page in full together with its check pages (for a Hone item, `rules/typescript/symptoms/<symptom>/<check>.md` of each symptom that may indicate it; for a rule set's page, its sibling `CHECKS.md` with its `## Exceptions` section) and the repository's `discipline-exceptions.json` entries for that discipline: those recorded exceptions (authorised locations and carve-outs) are the closed exception list — anything outside them is a finding. Where a rule names exact permitted sites (file paths, cast shapes, predicate forms, flag names), those are the only permitted sites, and a site matching the *kind* but not the exact named location is still a finding.
+4. If no item or rule page names this lens, report that the codebase declares no type-soundness discipline and produce an empty finding set — do not invent rules.
 
 ## Inspection procedure
 
@@ -130,6 +130,6 @@ return-type-of-own-symbol sites, closed-union `default:` arms, declarative-boole
 sites by carve-out invoked). Record the compiler version / config you read where
 the rules call for it. Every finding is
 `file:line | quoted code | <rule-id> | defect-named`, citing the loaded rule by
-the discipline id and clause address in its CHECKS.md Clauses table (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules.md#failures-are-values)); where a carve-out was invoked, state which one
+its name and the clause address [Every numbered discipline](../../rules/numbers.md#every-numbered-discipline) gives it (for example `CD-9#result-failures`, a review clause of [Failures are values](../../rules/rules/failures-are-values.md)); where a carve-out was invoked, state which one
 and why it does not apply. State the rule-page paths you resolved and which
 rule ids you loaded under this lens.

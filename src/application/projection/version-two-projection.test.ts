@@ -36,6 +36,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 };
 
 const SETTINGS: SettingsReading = {
+  available: [],
   selection: {
     selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],

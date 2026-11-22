@@ -22,13 +22,11 @@ const CD14: DisciplineFile = {
     {
       kind: "judgement",
       id: clauseIdOf("class-syntax"),
-      summary: "no authored class syntax",
       enforcedBy: "review",
     },
     {
       kind: "judgement",
       id: clauseIdOf("static-only-class"),
-      summary: "no class holding only static members",
       enforcedBy: "review",
     },
   ],

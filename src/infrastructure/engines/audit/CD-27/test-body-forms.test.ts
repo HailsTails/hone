@@ -115,7 +115,7 @@ describe("testBodyFormOf", () => {
       introducedIn: "2",
       remedy: {
         fix: "compare the whole element with toMatchObject, or destructure it and assert.isDefined it before reading it",
-        page: "CHECKS.md",
+        page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-after-an-index",
       },
     });
@@ -123,7 +123,7 @@ describe("testBodyFormOf", () => {
 });
 
 describe("TEST_BODY_SECTIONS", () => {
-  it("lists each CHECKS.md section a finding can name, once, in page order", () => {
+  it("lists each check item section a finding can name, once, in the order the forms are written", () => {
     expect(TEST_BODY_SECTIONS).toEqual([
       "branching-with-if",
       "a-try-block",
@@ -150,66 +150,66 @@ describe("TEST_BODY_SECTIONS", () => {
 });
 
 describe("TEST_BODY_REMEDIES", () => {
-  it("gives each section's fix, word for word, on CHECKS.md, in page order", () => {
+  it("gives each section's fix, word for word, on the check item that shows it", () => {
     expect(TEST_BODY_REMEDIES).toEqual([
       {
         fix: "write one test per case, or one it.each table; to narrow a value that may be missing, assert.isDefined it",
-        page: "CHECKS.md",
+        page: "branch-in-a-test/test-body.md",
         section: "branching-with-if",
       },
       {
         fix: "assert the throw with expect(() => act()).toThrow or await expect(act()).rejects, or assert the failure the unit returns",
-        page: "CHECKS.md",
+        page: "throw-or-catch-in-a-test/try-block.md",
         section: "a-try-block",
       },
-      { fix: "write the value out, or give each case its own it.each row", page: "CHECKS.md", section: "a-ternary" },
-      { fix: "use const; record calls with vi.fn and assert them with toHaveBeenCalledWith", page: "CHECKS.md", section: "a-let" },
+      { fix: "write the value out, or give each case its own it.each row", page: "branch-in-a-test/test-body.md", section: "a-ternary" },
+      { fix: "use const; record calls with vi.fn and assert them with toHaveBeenCalledWith", page: "rebinding/test-body.md", section: "a-let" },
       {
         fix: "assert on the whole array with toEqual, toContain, toContainEqual or expect.arrayContaining",
-        page: "CHECKS.md",
+        page: "computed-value-in-a-test/test-body.md",
         section: "a-method-that-picks-or-tests-an-element",
       },
       {
         fix: "write the expected value out, or match part of it with toMatchObject, toHaveLength or expect.stringContaining",
-        page: "CHECKS.md",
+        page: "computed-value-in-a-test/test-body.md",
         section: "a-method-that-computes-a-value",
       },
-      { fix: "write the finished array out as a literal", page: "CHECKS.md", section: "a-method-that-mutates" },
-      { fix: "write the value it gives; to narrow a value that may be missing, assert.isDefined it", page: "CHECKS.md", section: "a-short-circuit" },
+      { fix: "write the finished array out as a literal", page: "computed-value-in-a-test/test-body.md", section: "a-method-that-mutates" },
+      { fix: "write the value it gives; to narrow a value that may be missing, assert.isDefined it", page: "branch-in-a-test/test-body.md", section: "a-short-circuit" },
       {
         fix: "compare the whole element with toMatchObject, or destructure it and assert.isDefined it before reading it",
-        page: "CHECKS.md",
+        page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-after-an-index",
       },
       {
         fix: "assert the call with toHaveBeenNthCalledWith or toHaveBeenLastCalledWith",
-        page: "CHECKS.md",
+        page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-on-a-mock-call",
       },
       {
         fix: "assert what it returned with toHaveNthReturnedWith or toHaveLastReturnedWith",
-        page: "CHECKS.md",
+        page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-on-a-mock-result",
       },
       {
         fix: "compare the whole value with toMatchObject, or destructure it and assert.isDefined it before reading it",
-        page: "CHECKS.md",
+        page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-on-a-property",
       },
-      { fix: "assert.isDefined the function, then call it", page: "CHECKS.md", section: "an-optional-call" },
-      { fix: "write one test per case, or one it.each table", page: "CHECKS.md", section: "a-switch" },
+      { fix: "assert.isDefined the function, then call it", page: "branch-in-a-test/test-body.md", section: "an-optional-call" },
+      { fix: "write one test per case, or one it.each table", page: "branch-in-a-test/test-body.md", section: "a-switch" },
       {
         fix: "assert the object the unit gives back, written out; a unit that gives back only text should hand over an object, leaving the text to the adapter at its edge",
-        page: "CHECKS.md",
+        page: "text-past-its-reader/test-body.md",
         section: "serialising-or-parsing-json",
       },
-      { fix: "write the object out, spreading what it copies; to give an Error a property, assign it", page: "CHECKS.md", section: "merging-objects" },
-      { fix: "write the object out as a literal", page: "CHECKS.md", section: "building-an-object-from-entries" },
-      { fix: "write a short array out as a literal; the page shows no form for a long one", page: "CHECKS.md", section: "building-an-array-from-a-length" },
-      { fix: "write the number out", page: "CHECKS.md", section: "a-math-call" },
+      { fix: "write the object out, spreading what it copies; to give an Error a property, assign it", page: "computed-value-in-a-test/test-body.md", section: "merging-objects" },
+      { fix: "write the object out as a literal", page: "computed-value-in-a-test/test-body.md", section: "building-an-object-from-entries" },
+      { fix: "write a short array out as a literal; the page shows no form for a long one", page: "computed-value-in-a-test/test-body.md", section: "building-an-array-from-a-length" },
+      { fix: "write the number out", page: "computed-value-in-a-test/test-body.md", section: "a-math-call" },
       {
         fix: "make it a vi.fn spy with a written-out mockReturnValue, and assert what it was asked with toHaveBeenCalledExactlyOnceWith; the recipe is Stub with vi.fn",
-        page: "CHECKS.md",
+        page: "double-with-a-body/logic-in-a-passed-function.md",
         section: "logic-inside-a-function-the-test-passes-on",
       },
     ]);

@@ -150,16 +150,15 @@ const recordsDisk = (request: { readonly working: Readonly<Record<string, string
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
 
 
-const CLASS_SYNTAX_DEFINITION = {
-  kind: "mechanical",
-  id: "class-syntax",
-  summary: "no class syntax",
-  mechanisms: ["audit"],
-  anchor: { kind: "keyword", keyword: "class" },
-  cases: {
-    flag: [{ name: "flagged", fileName: "src/a.ts", source: "class A {}\n", expectedLines: [1] }],
-    allow: [{ name: "allowed", fileName: "src/b.ts", source: "const b = 1;\n", expectedLines: [] }],
-  },
+const CLASS_SYNTAX_NAMES = {
+  version: 1,
+  clauses: [{ clause: "CD-14#class-syntax", sight: { kind: "one-symptom", symptom: "authored-class-or-this" }, checks: ["authored-class-or-this#class-keyword"], anchor: { kind: "keyword", keyword: "class" } }],
+  recordKinds: {},
+};
+
+const CLASS_SYNTAX_CASES = {
+  flag: [{ name: "flagged", fileName: "src/a.ts", source: "class A {}\n", expectedLines: [1] }],
+  allow: [{ name: "allowed", fileName: "src/b.ts", source: "const b = 1;\n", expectedLines: [] }],
 };
 
 const repositoryFiles = (request: {
@@ -171,14 +170,16 @@ const repositoryFiles = (request: {
   }),
   [EXCEPTIONS_PATH]: request.exceptions,
   "/install/package.json": ABSENT_FILE,
-  "/install/rules/CD-14/discipline.json": presentJsonFile({ document: { version: 1, id: "CD-14", clauses: [CLASS_SYNTAX_DEFINITION] } }),
+  "/install/src/infrastructure/disciplines-file/version-one-names.json": presentJsonFile({ document: CLASS_SYNTAX_NAMES }),
+  "/install/src/infrastructure/engines/audit/CD-14/class-syntax.cases.json": presentJsonFile({ document: CLASS_SYNTAX_CASES }),
+  "/install/src/infrastructure/engines/eslint/CD-14/piece.json": ABSENT_FILE,
   "/install/src/infrastructure/engines/audit/CD-14/piece.json": presentJsonFile({
     document: { version: 1, discipline: "CD-14", mechanism: "audit", clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" } }] },
   }),
   "/install/src/infrastructure/engines/audit/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
   "/repo/src/a.ts": presentFile({ text: "class A {}\n" }),
   "/repo/disciplines.assessment.md": ABSENT_FILE,
-  "/install/rules/CD-14/README.md": presentFile({ text: "# CD-14\n" }),
+  "/install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md": presentFile({ text: "# Class keyword\n\n## Fix\n" }),
 });
 
 const REASON_ONLY_NO_RECORDS = repositoryFiles({ fileExceptionWhyChains: "optional", exceptions: ABSENT_FILE });
@@ -206,7 +207,7 @@ const RELATIVE_TO_REPO: Readonly<Record<string, RelativeLocation>> = {
   [EXCEPTIONS_PATH]: { relation: "within-root", path: "discipline-exceptions.json" },
   "/install": { relation: "different-root" },
   "/install/ADOPTING.md": { relation: "different-root" },
-  "/install/rules/CD-14/README.md": { relation: "different-root" },
+  "/install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md": { relation: "different-root" },
 };
 
 const TABLE_PATH: PathPort = {

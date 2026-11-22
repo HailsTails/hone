@@ -28,7 +28,6 @@ const DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: SCRATCH_FILES_ID,
-      summary: "no scratch file is committed",
       mechanisms: [AUDIT],
       anchor: { kind: "file" },
       exceptions: "allowed",
@@ -55,7 +54,7 @@ const PIECE: PieceFile = {
 };
 
 const ACME_FILES: RuleSetFiles = {
-  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: DISCIPLINE }),
+  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "present", file: DISCIPLINE } }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>().mockReturnValue({ outcome: "ok", value: PIECE }),
 };
 

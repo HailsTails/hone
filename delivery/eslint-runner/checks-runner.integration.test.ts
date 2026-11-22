@@ -1,3 +1,4 @@
+import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { afterAll, assert, describe, expect, it } from "vitest";
 import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
 import type { Result } from "../../src/domain/result.ts";
@@ -10,7 +11,7 @@ import type { FileTextPort } from "../../src/application/ports/file-system/file-
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
-import { symptomCatalogueOf } from "../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
@@ -24,7 +25,6 @@ import {
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
-import SYMPTOMS from "../../rules/typescript/symptoms.json" with { type: "json" };
 import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/CD-14/piece.json" with { type: "json" };
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
@@ -151,9 +151,21 @@ const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner 
       }),
   });
 
-const CATALOGUE = symptomCatalogueOf({ document: SYMPTOMS });
+const REPOSITORY_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", ".."] }));
 
-assert(CATALOGUE.outcome === "ok");
+const CATALOGUE_HOLDING = readBoundCatalogue({
+  directory: createDefaultDirectoryPort({}),
+  fileText: createDefaultFileTextPort({}),
+  path: createDefaultPathPort({}),
+  ruleSetRoot: REPOSITORY_ROOT,
+  installRoot: REPOSITORY_ROOT,
+});
+
+assert(CATALOGUE_HOLDING.outcome === "ok", "this repository's catalogue reads");
+
+assert(CATALOGUE_HOLDING.value.held === "catalogue", "this repository holds a catalogue");
+
+const CATALOGUE = CATALOGUE_HOLDING.value.catalogue;
 
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
@@ -230,7 +242,7 @@ const runOver = async (request: {
     installRoot: INSTALL_ROOT,
     files: request.queried,
     trackedPaths: request.tracked,
-    checks: CATALOGUE.value.checks,
+    checks: CATALOGUE.checks,
     bindings: BINDINGS,
     answered: request.answered,
     declaredConfigRoots: request.declaredConfigRoots,
@@ -520,7 +532,7 @@ describe.each(ESLINT_LINES)("the version 2 ESLint runner on %s, over a repositor
       installRoot: INSTALL_ROOT,
       files: PACKAGE_RUN.queried,
       trackedPaths: PACKAGE_RUN.tracked,
-      checks: CATALOGUE.value.checks,
+      checks: CATALOGUE.checks,
       bindings: BINDINGS,
       answered: [],
       declaredConfigRoots: [],
@@ -531,7 +543,7 @@ describe.each(ESLINT_LINES)("the version 2 ESLint runner on %s, over a repositor
       installRoot: INSTALL_ROOT,
       files: PACKAGE_RUN.queried,
       trackedPaths: PACKAGE_RUN.tracked,
-      checks: CATALOGUE.value.checks,
+      checks: CATALOGUE.checks,
       bindings: BINDINGS,
       answered: [],
       declaredConfigRoots: [],
@@ -630,7 +642,7 @@ describe.each(ESLINT_LINES)("the version 2 ESLint runner on %s, over a repositor
       installRoot: INSTALL_ROOT,
       files: DECLARED_RUN.queried,
       trackedPaths: DECLARED_RUN.tracked,
-      checks: CATALOGUE.value.checks,
+      checks: CATALOGUE.checks,
       bindings: BINDINGS,
       answered: ANSWERED_IN_SUB,
       declaredConfigRoots: DECLARED_RUN.declaredConfigRoots,

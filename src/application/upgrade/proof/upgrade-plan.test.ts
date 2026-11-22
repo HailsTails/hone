@@ -168,23 +168,19 @@ describe("upgradePlanOf", () => {
     expect({ planned: await upgradePlanOf(requestOver({ settingsFormat })), written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
       planned: {
         outcome: "ok",
-        value: { markedNotAdopted: [], inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
+        value: { inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
       },
       written: [[{ settings: LOOPS_SETTINGS }]],
     });
   });
 
-  it("plans the checks of an unselected discipline that share a symptom with a selected one as not-adopted, and names them", async () => {
+  it("plans only the checks version 1 selected, leaving out the checks of an unselected discipline that share a symptom with a selected one", async () => {
     const settingsFormat = settingsFormatWriting();
     const planned = await upgradePlanOf(requestOver({ settingsFormat, catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }] }));
     expect({ planned, written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
       planned: {
         outcome: "ok",
         value: {
-          markedNotAdopted: [
-            { check: { ruleSet: "hone", check: "loop-keyword#test-body" }, clause: TEST_BODY_CLAUSE, reason: "discipline-not-selected" },
-            { check: { ruleSet: "hone", check: "rebinding#test-body" }, clause: TEST_BODY_CLAUSE, reason: "discipline-not-selected" },
-          ],
           inputs: [CARVE_OUT_INPUT],
           files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
           projected: [PLANNED_PROJECTION],
@@ -197,8 +193,6 @@ describe("upgradePlanOf", () => {
               ...LOOPS_SETTINGS,
               checks: [
                 { address: { ruleSet: "hone", check: "loop-keyword#loops" }, state: { state: "run", engine: "walker" } },
-                { address: { ruleSet: "hone", check: "loop-keyword#test-body" }, state: { state: "not-adopted" } },
-                { address: { ruleSet: "hone", check: "rebinding#test-body" }, state: { state: "not-adopted" } },
               ],
             },
           },
@@ -216,7 +210,7 @@ describe("upgradePlanOf", () => {
     expect({ planned, written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
       planned: {
         outcome: "ok",
-        value: { markedNotAdopted: [], inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
+        value: { inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
       },
       written: [[{ settings: { ...LOOPS_SETTINGS, eslintConfigRoots: ["packages/a"] } }]],
     });
@@ -235,7 +229,7 @@ describe("upgradePlanOf", () => {
   it("plans no projection file when the engines project none", async () => {
     await expect(upgradePlanOf(requestOver({ projectionFilesOf: projecting({ files: [] }) }))).resolves.toEqual({
       outcome: "ok",
-      value: { markedNotAdopted: [], inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT], projected: [] },
+      value: { inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT], projected: [] },
     });
   });
 

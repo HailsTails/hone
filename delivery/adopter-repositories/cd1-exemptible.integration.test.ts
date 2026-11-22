@@ -280,7 +280,7 @@ const git: GitPort = {
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 };
 
-describe("the shipped CD-1 rule, read from rules/CD-1/discipline.json through a full check (CD-47: the shipped rule file is the assertion's subject; nothing is spawned or written)", () => {
+describe("the shipped CD-1 rule, read through the install's discipline reader in a full check (CD-47: the shipped rule file is the assertion's subject; nothing is spawned or written)", () => {
   it("accepts an authorised location for CD-1 and still flags an unrecorded any cast", async () => {
     const report = await runCheck(withSingleFileRecords({
       repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),

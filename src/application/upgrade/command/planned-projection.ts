@@ -1,3 +1,4 @@
+import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { CommandRequest } from "../../ports/command-request.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { RecordsAtBase, RecordsReading } from "../../../domain/records/hone-records/hone-record.ts";
@@ -9,7 +10,7 @@ import { toolCatalogueOf } from "../../run/tool-catalogue.ts";
 import { type SettingsReading, readSettings } from "../../run/settings/read-settings.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { SettingsSourcesOf } from "../../ports/settings-sources.ts";
-import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
+import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts";
@@ -25,8 +26,9 @@ import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 const BASE_NOT_GIVEN: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
 export type PlannedProjectionPorts = {
+  readonly directory: DirectoryPort;
   readonly recordsReader: RecordsReader;
-  readonly symptomCatalogueOf: SymptomCatalogueOf;
+  readonly boundCatalogueOf: BoundCatalogueOf;
   readonly settingsFormat: SettingsFileFormat;
   readonly settingsSourcesOf: SettingsSourcesOf;
 };
@@ -44,7 +46,7 @@ const refusedBy = (request: { readonly failure: RunLoadFailure }): Result<never,
 
 const settingsReadingOf = (request: Context & { readonly settings: SettingsFile; readonly catalogue: SymptomCatalogue }): Result<SettingsReading, ProjectionFailure> => {
   const { command, repoRoot, installRoot, settings, catalogue, settingsFormat } = request;
-  const real = request.settingsSourcesOf({ fileText: command.fileText, path: command.path, repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }) });
+  const real = request.settingsSourcesOf({ fileText: command.fileText, directory: request.directory, path: command.path, repoRoot, installRoot, moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }) });
   const read = readSettings({
     sources: { ...real, settingsFile: () => ({ outcome: "ok", value: { path: SETTINGS_FILE_NAME, document: settingsFormat.documentOf({ settings }) } }) },
     settingsFormat,
@@ -91,7 +93,7 @@ export const plannedProjectionOf =
   (context: Context): ProjectionFilesOf =>
   async ({ settings, documents }) => {
     const { command, repoRoot, installRoot } = context;
-    const catalogue = toolCatalogueOf({ fileText: command.fileText, path: command.path, installRoot, symptomCatalogueOf: context.symptomCatalogueOf });
+    const catalogue = toolCatalogueOf({ fileText: command.fileText, path: command.path, installRoot, boundCatalogueOf: context.boundCatalogueOf });
     if (catalogue.outcome === "failed") {
       return refusedBy({ failure: catalogue.error });
     }

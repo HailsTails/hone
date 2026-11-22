@@ -8,8 +8,9 @@ import type { Result } from "../../../domain/result.ts";
 import type {
   AlwaysRecordable,
   Case,
+  CatalogueContent,
   CataloguedClause,
-  Check,
+  CheckContent,
   ClauseSight,
   CorrectUse,
   Engine,
@@ -22,10 +23,9 @@ import type {
   RecordKind,
   Rule,
   Symptom,
-  SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 
-const SUPPORTED_VERSION = 1;
+export const SUPPORTED_VERSION = 1;
 
 const NOT_A_CATALOGUE_NAME = "is not a lower-case hyphenated name";
 
@@ -35,25 +35,37 @@ const textSchema = z.string().min(1);
 
 const standingSchema = z.enum(["accepted", "proposed"]);
 
-const recordKindNameSchema = z.enum(["authorised-location", "deviation", "debt", "boundary-record", "dependency-record"]);
+export const recordKindNameSchema = z.enum(["authorised-location", "deviation", "debt", "boundary-record", "dependency-record"]);
 
-const pointedWireSchema = z.union([z.strictObject({ rule: catalogueNameSchema }), z.strictObject({ principle: catalogueNameSchema })]);
+export const pointedWireSchema = z.union([z.strictObject({ rule: catalogueNameSchema }), z.strictObject({ principle: catalogueNameSchema })]);
 
-const caseWireSchema = z.strictObject({ name: catalogueNameSchema, title: textSchema, standing: standingSchema, owes: z.array(pointedWireSchema).min(1) });
+export const caseWireSchema = z.strictObject({ name: catalogueNameSchema, title: textSchema, standing: standingSchema, owes: z.array(pointedWireSchema).min(1) });
 
 const correctUseWireSchema = z.strictObject({ situation: textSchema, kind: recordKindNameSchema, at: textSchema.optional() });
 
-const symptomWireSchema = z.strictObject({
+export const seenBySchema = z.enum(["syntax", "types", "graph", "app", "files", "history", "person"]);
+
+export const reportsSchema = z.enum(["seen", "seen-to-breach"]);
+
+export const symptomWireSchema = z.strictObject({
   name: catalogueNameSchema,
   title: textSchema,
+  group: textSchema,
   seen: textSchema,
-  mayIndicate: z.array(z.strictObject({ case: catalogueNameSchema, situation: textSchema.optional(), points: z.array(pointedWireSchema).min(1) })).min(1),
+  mayIndicate: z
+    .array(z.strictObject({ case: catalogueNameSchema, situation: textSchema.optional(), quote: textSchema.optional(), points: z.array(pointedWireSchema).min(1) }))
+    .min(1),
   breachUsuallySits: textSchema,
+  seenBy: z.array(seenBySchema).min(1),
+  reports: reportsSchema.optional(),
   recipes: z.array(catalogueNameSchema),
   correctUses: z.array(correctUseWireSchema),
+  howItIsSeen: textSchema.optional(),
+  breachACheckCouldName: textSchema.optional(),
+  toNameTheBreach: textSchema.optional(),
 });
 
-const sightWireSchema = z.discriminatedUnion("kind", [
+export const sightWireSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("one-symptom"), symptom: catalogueNameSchema }),
   z.strictObject({
     kind: z.literal("symptom-by-form"),
@@ -63,21 +75,23 @@ const sightWireSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("outside-the-cases") }),
 ]);
 
-const recordKindWireSchema = z.strictObject({
+export const recordKindWireSchema = z.strictObject({
   name: recordKindNameSchema,
   title: textSchema,
   phrase: textSchema,
   todaysFormat: z.enum(["authorised-location", "file-carve-out", "none-yet"]),
 });
 
-const checkWireSchema = z.strictObject({
+export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
   clause: clauseAddressSchema,
-  engines: z.array(catalogueNameSchema).min(1),
+  flagsBeyondTheSymptom: textSchema.optional(),
+  misses: textSchema.optional(),
+  settingsTracedTo: textSchema.optional(),
 });
 
-const catalogueFileSchema = z.strictObject({
+export const catalogueFileSchema = z.strictObject({
   version: z.literal(SUPPORTED_VERSION),
   principles: z.array(z.strictObject({ name: catalogueNameSchema, title: textSchema })),
   rules: z.array(z.strictObject({ name: catalogueNameSchema, title: textSchema, principle: catalogueNameSchema, standing: standingSchema })),
@@ -86,6 +100,7 @@ const catalogueFileSchema = z.strictObject({
     z.strictObject({
       name: catalogueNameSchema,
       title: textSchema,
+      serves: pointedWireSchema,
       standing: standingSchema,
       reason: z.strictObject({ text: textSchema, standing: standingSchema }),
     }),
@@ -98,7 +113,7 @@ const catalogueFileSchema = z.strictObject({
   namedBans: z.array(z.strictObject({ outsideDependency: textSchema })),
 });
 
-type CatalogueFile = z.infer<typeof catalogueFileSchema>;
+export type CatalogueFile = z.infer<typeof catalogueFileSchema>;
 
 type PrincipleWire = CatalogueFile["principles"][number];
 
@@ -238,8 +253,9 @@ const definitionsOf = (request: { readonly file: CatalogueFile }): Resolution<De
   const recordKinds = request.file.recordKinds.map(recordKindOf);
   const cases = allResolved(request.file.cases.map((wire) => caseOf({ wire, pointable: pointable.value })));
   const alwaysRecordable = alwaysRecordableOf({ recordKinds });
-  return cases.outcome === "failed" || alwaysRecordable.outcome === "failed"
-    ? { outcome: "failed", error: [...faultsOf(cases), ...faultsOf(alwaysRecordable)] }
+  const served = allResolved(request.file.recipes.map((wire) => pointedOf({ listing: "recipes", point: wire.serves, pointable: pointable.value })));
+  return cases.outcome === "failed" || alwaysRecordable.outcome === "failed" || served.outcome === "failed"
+    ? { outcome: "failed", error: [...faultsOf(cases), ...faultsOf(alwaysRecordable), ...faultsOf(served)] }
     : resolved({
         ...pointable.value,
         cases: cases.value,
@@ -346,7 +362,7 @@ const formsOf = (request: { readonly clause: CataloguedClause; readonly symptom:
     ? request.clause.sight.forms.filter((form) => form.symptom.name === request.symptom.name).map((form) => form.section)
     : [];
 
-type Checking = { readonly symptoms: readonly Symptom[]; readonly clauses: readonly CataloguedClause[]; readonly engines: readonly Engine[] };
+type Checking = { readonly symptoms: readonly Symptom[]; readonly clauses: readonly CataloguedClause[] };
 
 const checkedClauseOf = (request: Checking & { readonly wire: CheckWire }): Resolution<CataloguedClause> => {
   const clause = request.clauses.find((candidate) => sameClauseAddress({ left: candidate.clause, right: request.wire.clause }) === "same");
@@ -359,14 +375,12 @@ const sightedCheckOf = (request: {
   readonly wire: CheckWire;
   readonly symptom: Symptom;
   readonly clause: CataloguedClause;
-  readonly engines: readonly Engine[];
-}): Resolution<Check> =>
+}): Resolution<CheckContent> =>
   sightedNamesOf({ clause: request.clause }).includes(request.symptom.name)
     ? resolved({
         name: request.wire.name,
         symptom: request.symptom,
         clause: request.clause.clause,
-        engines: request.engines,
         forms: formsOf({ clause: request.clause, symptom: request.symptom }),
       })
     : {
@@ -376,17 +390,16 @@ const sightedCheckOf = (request: {
         ],
       };
 
-const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<Check> => {
+const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<CheckContent> => {
   const { wire } = request;
   const symptom = heldEntryNamed({ listing: "checks", entries: request.symptoms, name: wire.symptom });
   const clause = checkedClauseOf(request);
-  const engines = allResolved(wire.engines.map((name) => heldEntryNamed({ listing: "checks", entries: request.engines, name })));
-  return symptom.outcome === "failed" || clause.outcome === "failed" || engines.outcome === "failed"
-    ? { outcome: "failed", error: [...faultsOf(symptom), ...faultsOf(clause), ...faultsOf(engines)] }
-    : sightedCheckOf({ wire, symptom: symptom.value, clause: clause.value, engines: engines.value });
+  return symptom.outcome === "failed" || clause.outcome === "failed"
+    ? { outcome: "failed", error: [...faultsOf(symptom), ...faultsOf(clause)] }
+    : sightedCheckOf({ wire, symptom: symptom.value, clause: clause.value });
 };
 
-const uncheckedSightingsOf = (request: { readonly clause: CataloguedClause; readonly checks: readonly Check[] }): readonly string[] => {
+const uncheckedSightingsOf = (request: { readonly clause: CataloguedClause; readonly checks: readonly CheckContent[] }): readonly string[] => {
   const checked = checksOf({ catalogue: request, clause: request.clause.clause });
   return checked.length === 0
     ? []
@@ -395,7 +408,7 @@ const uncheckedSightingsOf = (request: { readonly clause: CataloguedClause; read
         .map((name) => `${clauseAddressText({ address: request.clause.clause })} sees ${name}, which no check names`);
 };
 
-const resolvedChecksOf = (request: Checking & { readonly wires: readonly CheckWire[] }): Resolution<readonly Check[]> => {
+const resolvedChecksOf = (request: Checking & { readonly wires: readonly CheckWire[] }): Resolution<readonly CheckContent[]> => {
   const checks = allResolved(request.wires.map((wire) => checkOf({ ...request, wire })));
   if (checks.outcome === "failed") {
     return checks;
@@ -404,7 +417,7 @@ const resolvedChecksOf = (request: Checking & { readonly wires: readonly CheckWi
   return unchecked.length > 0 ? { outcome: "failed", error: unchecked } : checks;
 };
 
-const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<SymptomCatalogue> => {
+const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<CatalogueContent> => {
   const definitions = definitionsOf(request);
   if (definitions.outcome === "failed") {
     return definitions;
@@ -419,7 +432,7 @@ const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<Symp
     return clauses;
   }
   return mapped({
-    resolution: resolvedChecksOf({ symptoms: symptoms.value, clauses: clauses.value, engines: definitions.value.engines, wires: request.file.checks }),
+    resolution: resolvedChecksOf({ symptoms: symptoms.value, clauses: clauses.value, wires: request.file.checks }),
     to: (checks) => ({
       ...definitions.value,
       symptoms: symptoms.value,
@@ -482,7 +495,16 @@ const checkedCatalogueFileSchema = catalogueFileSchema.superRefine((file, contex
 
 const refusalText = (request: { readonly faults: readonly string[] }): string => request.faults.map((fault) => `✖ ${fault}`).join("\n");
 
-export const symptomCatalogueOf = (request: { readonly document: unknown }): Result<SymptomCatalogue, string> => {
+export const catalogueContentFromFile = (request: { readonly file: CatalogueFile }): Result<CatalogueContent, string> => {
+  const repeats = repeatedNamesOf({ file: request.file });
+  if (repeats.length > 0) {
+    return { outcome: "failed", error: refusalText({ faults: repeats }) };
+  }
+  const catalogue = catalogueOf({ file: request.file });
+  return catalogue.outcome === "failed" ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) } : catalogue;
+};
+
+export const catalogueContentOf = (request: { readonly document: unknown }): Result<CatalogueContent, string> => {
   const parsed = checkedCatalogueFileSchema.safeParse(request.document);
   if (!parsed.success) {
     return { outcome: "failed", error: z.prettifyError(parsed.error) };

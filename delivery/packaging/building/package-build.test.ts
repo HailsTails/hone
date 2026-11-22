@@ -189,6 +189,7 @@ const SOURCE: Readonly<Record<string, string>> = {
   "/package/src/infrastructure/engines/typescript-compiler/runner/runner.ts": "export const runner = {};\n",
   "/package/src/infrastructure/engines/typescript-compiler/CD-15/piece.json": '{ "version": 1, "clauses": [ { "clause": "loops", "settings": { "module": "loops.ts" } } ] }',
   "/package/src/infrastructure/engines/typescript-compiler/CD-15/loops.ts": "export const check = {};\n",
+  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [], "recordKinds": {} }',
   "/package/rules/CD-15/discipline.json": '{ "version": 1 }\n',
   "/package/rules/CD-15/README.md": "# CD-15\n",
   "/package/docs/why-chain-contract.md": "# Why-chain contract\n",
@@ -265,12 +266,19 @@ const SHIPPED_FILES = [
   "package.json",
   "rules/CD-15/README.md",
   "rules/CD-15/discipline.json",
+  "rules/cases.md",
+  "rules/principles.md",
+  "rules/rules.md",
+  "rules/typescript/checks.md",
+  "rules/typescript/recipes.md",
+  "rules/typescript/symptoms.md",
   "src/audit.d.ts",
   "src/audit.js",
   "src/domain/result.d.ts",
   "src/eslint-plugin.d.ts",
   "src/eslint-plugin.js",
   "src/hone.js",
+  "src/infrastructure/disciplines-file/version-one-names.json",
   "src/infrastructure/engines/typescript-compiler/CD-15/loops.js",
   "src/infrastructure/engines/typescript-compiler/CD-15/piece.json",
   "src/infrastructure/engines/typescript-compiler/runner/runner.js",
@@ -327,6 +335,7 @@ describe("buildPackage", () => {
         "src/audit.ts",
         "src/eslint-plugin.ts",
         "src/hone.ts",
+        "src/infrastructure/disciplines-file/version-one-names.json",
         "src/infrastructure/engines/typescript-compiler/CD-15/loops.ts",
         "src/infrastructure/engines/typescript-compiler/CD-15/piece.json",
         "src/infrastructure/engines/typescript-compiler/runner/runner.ts",
@@ -508,6 +517,31 @@ describe("buildPackage", () => {
         outcome: "failed",
         error: "FAIL: a shipped page links to a file the package does not ship: README.md links to tests/test-fixtures/walkthrough",
       },
+      written: NOTHING_WRITTEN,
+    });
+  });
+
+  it("ships the catalogue pages rendered from the item files beside the items", async () => {
+    const { files, built } = builtWith({
+      source: { ...SOURCE, "/package/rules/principles/one-place-decides.md": "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n" },
+      bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+    });
+
+    await built;
+
+    expect(files.textsUnder({ folder: "/out/rules" })).toMatchObject({
+      "/out/rules/principles.md": "# Principles\n\n## One place decides\n\n- **Must hold:** One decision, one unit.\n\n- **Rules under it:** none. The principle decides.\n",
+    });
+  });
+
+  it("fails naming an item the catalogue pages cannot be rendered from, writing nothing", async () => {
+    const { files, built } = builtWith({
+      source: { ...SOURCE, "/package/rules/principles/one-place-decides.md": "# One place decides\n\nNo facts.\n" },
+      bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+    });
+
+    expect({ result: await built, written: files.textsUnder({ folder: "/out" }) }).toEqual({
+      result: { outcome: "failed", error: "FAIL: render the catalogue pages: rules/principles/one-place-decides.md holds no fenced json block of facts" },
       written: NOTHING_WRITTEN,
     });
   });

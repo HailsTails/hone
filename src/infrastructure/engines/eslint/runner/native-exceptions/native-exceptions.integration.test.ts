@@ -21,7 +21,7 @@ import type { PathPort } from "../../../../../application/ports/host/path-port.t
 import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
 import { exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile } from "../../../../discipline-exceptions-folder/exception-records.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../../domain/records/discipline-exceptions/exception-baseline.ts";
-import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
@@ -31,11 +31,11 @@ import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/c
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort, type EslintClass, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules, type EslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
+import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -370,7 +370,7 @@ const ESLINT_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/CD-14`,
   clauseSettings: {},
-  edition: editionOf("1"),
+  edition: FIRST_EDITION,
   settings: { pluginNamespace: "hone", pluginModule: "cd14/cd14.eslint-plugin.ts", rule: "no-class-authoring" },
 };
 
@@ -379,7 +379,7 @@ const WALKER_CLAUSE: RunnerClause = {
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/audit/CD-14`,
   clauseSettings: {},
-  edition: editionOf("1"),
+  edition: FIRST_EDITION,
   settings: { module: "class-syntax.ts" },
 };
 
@@ -828,15 +828,15 @@ describe.each(ESLINT_LINES)("FR-3 over real files: the ESLint runner on real %s 
 type MechanicalCases = Extract<ClauseDefinition, { readonly kind: "mechanical" }>["cases"];
 
 const classSyntaxCases = (): MechanicalCases => {
-  const loaded = readDisciplineFile({ fileText, path, ruleSetRoot: INSTALL_ROOT, discipline: disciplineIdOf("CD-14") });
-  assert(loaded.outcome === "ok", "CD-14 discipline.json reads through the rule-set reader");
-  const [classSyntax, libraryConstruction, staticOnlyClass, ...surplus] = loaded.value.clauses;
+  const loaded = readHeldDiscipline({ fileText, path, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, discipline: disciplineIdOf("CD-14") });
+  assert(loaded.outcome === "ok" && loaded.value.held === "present", "CD-14 reads through the install's discipline reader");
+  const [classSyntax, staticOnlyClass, libraryConstruction, ...surplus] = loaded.value.file.clauses;
   assert.isDefined(classSyntax, "CD-14 declares a first clause");
-  assert.isDefined(libraryConstruction, "CD-14 declares a second clause");
-  assert.isDefined(staticOnlyClass, "CD-14 declares a third clause");
+  assert.isDefined(staticOnlyClass, "CD-14 declares a second clause");
+  assert.isDefined(libraryConstruction, "CD-14 declares a third clause");
   assert.strictEqual(classSyntax.id, "class-syntax", "CD-14 declares class-syntax as its first clause");
-  assert.strictEqual(libraryConstruction.id, "library-construction", "CD-14 declares the library-construction judgement clause second");
-  assert.strictEqual(staticOnlyClass.id, "static-only-class", "CD-14 declares the static-only-class clause third");
+  assert.strictEqual(staticOnlyClass.id, "static-only-class", "CD-14 declares the static-only-class clause second");
+  assert.strictEqual(libraryConstruction.id, "library-construction", "CD-14 declares the library-construction judgement clause third");
   assert.isEmpty(surplus, "CD-14 declares exactly three clauses");
   assert(classSyntax.kind === "mechanical", "CD-14 declares class-syntax as a mechanical clause");
   return classSyntax.cases;

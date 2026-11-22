@@ -176,6 +176,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 const FILE_A = repoPathOf("src/a.ts");
 
 const SETTINGS: SettingsReading = {
+  available: [],
   selection: {
     selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],

@@ -141,6 +141,7 @@ describe("readSettings", () => {
     }>({
       outcome: "ok",
       value: {
+        available: [],
         selection: {
           selection: {
             selected: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, exceptions: "allowed" }],
@@ -162,7 +163,7 @@ describe("readSettings", () => {
               },
             },
           ],
-          clauseRoots: [{ clause: LOOPS_CLAUSE, ruleSetRoot: INSTALL_ROOT }],
+          clauseRoots: [{ clause: LOOPS_CLAUSE, ruleSetRoot: INSTALL_ROOT, checks: [{ name: "loops", symptom: { name: "loop-keyword" } }] }],
           excluded: [],
           eslintConfigRoots: [],
           fileExceptionWhyChains: "required",

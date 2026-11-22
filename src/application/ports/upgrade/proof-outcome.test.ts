@@ -14,7 +14,6 @@ describe("PROOF_SECTIONS", () => {
       "forfeited",
       "doubly-held",
       "invalid-records",
-      "uncovered",
       "not-adopted",
       "not-run",
       "editions",

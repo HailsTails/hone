@@ -12,7 +12,7 @@ import { createSettingsRepository, type SettingsReading } from "../application/r
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { createBoundCatalogueOf } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { ModuleExtension } from "../application/ports/host/module-extension.ts";
@@ -49,7 +49,7 @@ export type StagesOver = (request: StagesRequest) => VersionTwoStages;
 const settingsStage = (request: StagesRequest & { readonly catalogue: SymptomCatalogue }): Result<SettingsReading, RunLoadFailure> => {
   const { fileText, path } = request.ports;
   const { repoRoot, installRoot, moduleExtension } = request.locations;
-  const read = createSettingsRepository({ sources: createSettingsSources({ fileText, path, repoRoot, installRoot, moduleExtension }), settingsFormat: SETTINGS_FILE_FORMAT }).read({});
+  const read = createSettingsRepository({ sources: createSettingsSources({ fileText, directory: request.ports.directory, path, repoRoot, installRoot, moduleExtension }), settingsFormat: SETTINGS_FILE_FORMAT }).read({});
   return read.outcome === "failed" ? { outcome: "failed", error: runFailureOf({ engines: request.catalogue.engines, source: read.error }) } : read;
 };
 
@@ -93,7 +93,7 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       fileText: request.ports.fileText,
       path: request.ports.path,
       installRoot: request.locations.installRoot,
-      symptomCatalogueOf: createSymptomCatalogueRepository,
+      boundCatalogueOf: createBoundCatalogueOf({ directory: request.ports.directory }),
     }),
   settings: (stage) => settingsStage({ ...request, ...stage }),
   records: (stage) => recordsStage({ ...request, ...stage }),

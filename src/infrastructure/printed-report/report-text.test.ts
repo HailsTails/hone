@@ -4,7 +4,7 @@ import type { ExceptionRecord } from "../../domain/records/discipline-exceptions
 import type { Finding } from "../../domain/finding/governance.ts";
 import type { ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
-import type { CheckReport, ClauseReading, PartialAssessment, ProjectionProblem, Unmeasured } from "../../domain/report/check-report.ts";
+import type { CheckReport, ClausePage, ClauseReading, PartialAssessment, ProjectionProblem, Unmeasured } from "../../domain/report/check-report.ts";
 import type { Case, Principle, Recipe, RecordKind, Rule, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
 import { renderGuidedReportText, renderReportText } from "./report-text.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "./symptoms/symptom-notes.ts";
@@ -1011,12 +1011,12 @@ const loopsFinding: Finding = { ...finding, clause: loops, snippet: "const total
 const readingOf = (request: {
   readonly clause: ClauseReading["clause"];
   readonly assessmentSection: ClauseReading["assessmentSection"];
-  readonly presence: ClauseReading["rulePage"]["presence"];
+  readonly presence: ClausePage["presence"];
 }): ClauseReading => ({
   kind: "clause",
   clause: request.clause,
   assessmentSection: request.assessmentSection,
-  rulePage: { path: `rules/${request.clause.discipline}/README.md`, presence: request.presence },
+  pages: [{ path: `rules/${request.clause.discipline}/README.md`, presence: request.presence, section: "spirit" }],
 });
 
 const pointedReport: CheckReport = {
@@ -1120,6 +1120,77 @@ describe("renderReportText readFirst without a rule page", () => {
   });
 });
 
+describe("renderReportText readFirst at check items", () => {
+  const checkedReading = (request: { readonly pages: ClauseReading["pages"]; readonly assessmentSection: ClauseReading["assessmentSection"] }): ClauseReading => ({
+    kind: "clause",
+    clause: loops,
+    assessmentSection: request.assessmentSection,
+    pages: request.pages,
+  });
+
+  it("reads each check item a clause points at, at its fix where it has one, after the note that the Spirit is in the rules its symptom may indicate", () => {
+    expect(
+      renderReportText({
+        projectCommand: PROJECT_COMMAND,
+        pruneCommand: PRUNE_COMMAND,
+        output: "full",
+        report: {
+          ...emptyReport,
+          findings: [loopsFinding],
+          readFirst: [
+            { kind: "assessment-file", state: "unreadable", guide: "ADOPTING.md" },
+            checkedReading({
+              assessmentSection: "unread",
+              pages: [
+                { path: "rules/typescript/symptoms/loop-keyword/loop-statement.md", presence: "present", section: "fix" },
+                { path: "rules/typescript/symptoms/loop-keyword/for-each-call.md", presence: "present", section: "whole-page" },
+              ],
+            }),
+          ],
+        },
+      }),
+    ).toContain(
+      "\nreadFirst (2)\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md could not be read.\nCD-15#loops: read rules/typescript/symptoms/loop-keyword/loop-statement.md#fix and rules/typescript/symptoms/loop-keyword/for-each-call.md\nverdict: fail\n",
+    );
+  });
+
+  it("says the rule set has no check page where an item is absent", () => {
+    expect(
+      renderReportText({
+        projectCommand: PROJECT_COMMAND,
+        pruneCommand: PRUNE_COMMAND,
+        output: "full",
+        report: {
+          ...emptyReport,
+          findings: [loopsFinding],
+          readFirst: [
+            checkedReading({
+              assessmentSection: "present",
+              pages: [
+                { path: "rules/typescript/symptoms/loop-keyword/loop-statement.md", presence: "present", section: "fix" },
+                { path: "rules/typescript/symptoms/loop-keyword/for-each-call.md", presence: "absent", section: "whole-page" },
+              ],
+            }),
+          ],
+        },
+      }),
+    ).toContain(
+      '\nCD-15#loops: read the "## CD-15#loops" section of disciplines.assessment.md, then rules/typescript/symptoms/loop-keyword/loop-statement.md#fix; its rule set has no check page at rules/typescript/symptoms/loop-keyword/for-each-call.md\n',
+    );
+  });
+
+  it("says the rule set names no page for a clause that points at none", () => {
+    expect(
+      renderReportText({
+        projectCommand: PROJECT_COMMAND,
+        pruneCommand: PRUNE_COMMAND,
+        output: "full",
+        report: { ...emptyReport, findings: [loopsFinding], readFirst: [checkedReading({ assessmentSection: "unread", pages: [] })] },
+      }),
+    ).toContain("\nreadFirst (1)\nCD-15#loops: its rule set names no page for it\nverdict: fail\n");
+  });
+});
+
 describe("renderReportText readFirst by output", () => {
   it("keeps readFirst in the failures-only output, after the findings", () => {
     expect(renderReportText({ projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND, output: "failures-only", report: pointedReport })).toMatch(/^findings \(2\)\n(?:.*\n){2}readFirst \(2\)\n(?:.*\n){2}verdict: fail\n$/);
@@ -1181,7 +1252,7 @@ const clockReading: ClauseReading = {
   kind: "clause",
   clause: CLOCK_SOURCES,
   assessmentSection: "unread",
-  rulePage: { path: "node_modules/@hailstails/hone/rules/CD-17/README.md", presence: "present" },
+  pages: [{ path: "node_modules/@hailstails/hone/rules/CD-17/README.md", presence: "present", section: "spirit" }],
 };
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };

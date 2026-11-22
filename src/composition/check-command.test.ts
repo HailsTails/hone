@@ -73,16 +73,15 @@ const singleFileRepositoriesOver = (request: {
       gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathOf("discipline-exceptions.json")] }) },
     });
 
-const CLASS_SYNTAX_DEFINITION = {
-  kind: "mechanical",
-  id: "class-syntax",
-  summary: "no class syntax",
-  mechanisms: ["audit"],
-  anchor: { kind: "keyword", keyword: "class" },
-  cases: {
-    flag: [{ name: "flagged", fileName: "src/a.ts", source: "class A {}\n", expectedLines: [1] }],
-    allow: [{ name: "allowed", fileName: "src/b.ts", source: "const b = 1;\n", expectedLines: [] }],
-  },
+const CLASS_SYNTAX_NAMES = {
+  version: 1,
+  clauses: [{ clause: "CD-14#class-syntax", sight: { kind: "one-symptom", symptom: "authored-class-or-this" }, checks: ["authored-class-or-this#class-keyword"], anchor: { kind: "keyword", keyword: "class" } }],
+  recordKinds: {},
+};
+
+const CLASS_SYNTAX_CASES = {
+  flag: [{ name: "flagged", fileName: "src/a.ts", source: "class A {}\n", expectedLines: [1] }],
+  allow: [{ name: "allowed", fileName: "src/b.ts", source: "const b = 1;\n", expectedLines: [] }],
 };
 
 const CLASS_SYNTAX_CLAUSES = { "CD-14#class-syntax": "audit" };
@@ -122,14 +121,16 @@ const classSyntaxSelectedWith = (request: { readonly settings: JsonValue }): Rea
   "/repo/disciplines.json": presentJsonFile({ document: request.settings }),
   "/repo/discipline-exceptions.json": ABSENT_FILE,
   "/install/package.json": ABSENT_FILE,
-  "/install/rules/CD-14/discipline.json": presentJsonFile({ document: { version: 1, id: "CD-14", clauses: [CLASS_SYNTAX_DEFINITION] } }),
+  "/install/src/infrastructure/disciplines-file/version-one-names.json": presentJsonFile({ document: CLASS_SYNTAX_NAMES }),
+  "/install/src/infrastructure/engines/audit/CD-14/class-syntax.cases.json": presentJsonFile({ document: CLASS_SYNTAX_CASES }),
+  "/install/src/infrastructure/engines/eslint/CD-14/piece.json": ABSENT_FILE,
   "/install/src/infrastructure/engines/audit/CD-14/piece.json": presentJsonFile({
     document: { version: 1, discipline: "CD-14", mechanism: "audit", clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" } }] },
   }),
   "/install/src/infrastructure/engines/audit/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
   "/repo/src/a.ts": presentFile({ text: "class A {}\n" }),
   "/repo/disciplines.assessment.md": ABSENT_FILE,
-  "/install/rules/CD-14/README.md": presentFile({ text: "# CD-14\n" }),
+  "/install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md": presentFile({ text: "# Class keyword\n\n## Fix\n" }),
 });
 
 const CLASS_SYNTAX_SELECTED = classSyntaxSelectedWith({ settings: PLAIN_SETTINGS });
@@ -256,7 +257,7 @@ describe("runCheckCommand", () => {
     );
 
     expect(outputOf({ process: processPort })).toEqual({
-      writes: [[{ text: `findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nreadFirst (2)\nStart from each rule's Spirit below. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; /install/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read /install/rules/CD-14/README.md#spirit\nverdict: fail\n` }]],
+      writes: [[{ text: `findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nreadFirst (2)\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; /install/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read /install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md#fix\nverdict: fail\n` }]],
       exits: [[{ code: 1 }]],
     });
   });
@@ -307,7 +308,7 @@ const checkedWith = async (request: {
   return outputOf({ process: processPort });
 };
 
-const FAILING_FULL_REPORT = "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nreadFirst (2)\nStart from each rule's Spirit below. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; /install/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read /install/rules/CD-14/README.md#spirit\nverdict: fail\n";
+const FAILING_FULL_REPORT = "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nreadFirst (2)\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; /install/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read /install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md#fix\nverdict: fail\n";
 
 describe("runCheckCommand report output", () => {
   it("prints the full report when neither --report-output nor disciplines.json sets an output", async () => {
@@ -460,7 +461,7 @@ const carvedRunWith = async (request: {
 };
 
 const FORFEITED_FULL_REPORT =
-  "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nforfeited (1)\nCD-14#class-syntax audit file-carve-out src/a.ts\nreadFirst (2)\nStart from each rule's Spirit below. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; /install/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read /install/rules/CD-14/README.md#spirit\nverdict: fail\n";
+  "findings (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {}\nforfeited (1)\nCD-14#class-syntax audit file-carve-out src/a.ts\nreadFirst (2)\nStart from what must hold for each rule its symptom may indicate. disciplines.assessment.md, where this repository records its own causes, forward goal and steps for a clause, is not written yet; /install/ADOPTING.md#5a-write-the-assessment says how to write it.\nCD-14#class-syntax: read /install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md#fix\nverdict: fail\n";
 
 const ELSEWHERE_FULL_REPORT =
   "exempted (1)\nCD-14#class-syntax audit src/a.ts:3:0 class A {} exempted by file-carve-out\nassessment (1)\nforfeiture elsewhere: 1 file carve-out not checked for decay in this run\nverdict: pass (partial assessment)\n";

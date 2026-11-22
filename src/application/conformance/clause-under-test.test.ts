@@ -25,7 +25,7 @@ const PIECE_ROOT = "/repo/tools/disciplines/acme/mechanisms/audit/ACME-2";
 const FLAG_CASE = { name: "scratch file", fileName: staticRepoPathOf("src/draft.scratch.ts"), source: "export const draft = 1;\n", expectedLines: [1] };
 const ALLOW_CASE = { name: "ordinary file", fileName: staticRepoPathOf("src/kept.ts"), source: "export const kept = 1;\n", expectedLines: [] };
 
-const NAMED_INTENT = { kind: "judgement", id: clauseIdOf("named-intent"), summary: "Names say what they hold.", enforcedBy: "review" } as const;
+const NAMED_INTENT = { kind: "judgement", id: clauseIdOf("named-intent"), enforcedBy: "review" } as const;
 
 const DISCIPLINE: DisciplineFile = {
   version: 1,
@@ -34,7 +34,6 @@ const DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: SCRATCH_FILES_ID,
-      summary: "no scratch file is committed",
       mechanisms: [AUDIT],
       anchor: { kind: "file" },
       exceptions: "allowed",
@@ -51,7 +50,6 @@ const EDITIONED_DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: SCRATCH_FILES_ID,
-      summary: "no scratch file is committed",
       mechanisms: [AUDIT],
       anchor: { kind: "file" },
       exceptions: "allowed",
@@ -67,7 +65,6 @@ const ESLINT_ONLY_DISCIPLINE: DisciplineFile = {
     {
       kind: "mechanical",
       id: SCRATCH_FILES_ID,
-      summary: "no scratch file is committed",
       mechanisms: [ESLINT],
       anchor: { kind: "file" },
       exceptions: "allowed",
@@ -107,11 +104,16 @@ const EDITIONED_PIECE: PieceFile = {
 const EMPTY_PIECE: PieceFile = { version: 1, discipline: ACME_2, mechanism: AUDIT, clauses: [] };
 
 const ruleSetFilesReading = (request: { readonly discipline: DisciplineFile; readonly piece: PieceFile }): RuleSetFiles => ({
-  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: request.discipline }),
+  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "present", file: request.discipline } }),
   pieceFile: vi.fn<RuleSetFiles["pieceFile"]>().mockReturnValue({ outcome: "ok", value: request.piece }),
 });
 
 const ACME_FILES = ruleSetFilesReading({ discipline: DISCIPLINE, piece: PIECE });
+
+const ABSENT_DISCIPLINE: RuleSetFiles = {
+  disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "ok", value: { held: "absent" } }),
+  pieceFile: vi.fn<RuleSetFiles["pieceFile"]>(),
+};
 
 const UNREADABLE_DISCIPLINE: RuleSetFiles = {
   disciplineFile: vi.fn<RuleSetFiles["disciplineFile"]>().mockReturnValue({ outcome: "failed", error: { kind: "file-unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" } }),
@@ -169,7 +171,7 @@ describe("boundClauseOf", () => {
       mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
       clause: "acme/ACME-2#scratch-files",
     });
-    expect(ruleSetFiles.disciplineFile).toHaveBeenCalledWith({ ruleSetRoot: RULE_SET_ROOT, discipline: ACME_2 });
+    expect(ruleSetFiles.disciplineFile).toHaveBeenCalledWith({ ruleSetRoot: RULE_SET_ROOT, installRoot: INSTALL_ROOT, discipline: ACME_2 });
     expect(ruleSetFiles.pieceFile).toHaveBeenCalledWith({ ruleSetRoot: RULE_SET_ROOT, installRoot: INSTALL_ROOT, mechanism: AUDIT, discipline: DISCIPLINE });
   });
 
@@ -210,6 +212,18 @@ describe("boundClauseOf", () => {
       }),
     ).toEqual({ outcome: "failed", error: { kind: "rule-set-unloadable", detail: `file-unreadable ${DISCIPLINE_PATH} ENOENT` } });
     expect(loadFailureDetail).toHaveBeenCalledWith({ failure: { kind: "file-unreadable", path: DISCIPLINE_PATH, detail: "ENOENT" } });
+  });
+
+  it("refuses a discipline the rule set does not hold as an unknown discipline", () => {
+    const loadFailureDetail = loadFailureDetailGiving("unknown-discipline acme/ACME-2#scratch-files");
+    expect(
+      boundClauseOf({
+        ruleSetFiles: ABSENT_DISCIPLINE, loadFailureDetail, path: ACME_PATH,
+        mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
+        clause: "acme/ACME-2#scratch-files",
+      }),
+    ).toEqual({ outcome: "failed", error: { kind: "rule-set-unloadable", detail: "unknown-discipline acme/ACME-2#scratch-files" } });
+    expect(loadFailureDetail).toHaveBeenCalledWith({ failure: { kind: "unknown-discipline", address: "acme/ACME-2#scratch-files" } });
   });
 
   it("refuses a clause the audit mechanism may not check, as hone check does", () => {
