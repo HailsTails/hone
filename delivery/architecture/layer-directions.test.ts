@@ -74,15 +74,19 @@ const reachOf = (request: { readonly file: string; readonly specifier: string })
   return request.specifier.startsWith(".") ? placementOf({ segments: resolvedSegmentsOf(request) }) : "package";
 };
 
-const mayReach = (request: { readonly file: string; readonly from: Placement; readonly to: Reach }): boolean =>
-  request.to === "test-framework" ? TEST_FILE.test(request.file) : MAY_REACH[request.from].includes(request.to);
+type Verdict = "allowed" | "forbidden";
+
+const verdictOf = (request: { readonly file: string; readonly from: Placement; readonly to: Reach }): Verdict => {
+  const reachable = request.to === "test-framework" ? TEST_FILE.test(request.file) : MAY_REACH[request.from].includes(request.to);
+  return reachable ? "allowed" : "forbidden";
+};
 
 const violationsIn = (request: { readonly sources: Readonly<Record<string, string>> }): readonly Violation[] =>
   Object.entries(request.sources).flatMap(([file, text]) => {
     const from = placementOf({ segments: segmentsOf({ path: file }) });
     return specifiersIn({ text })
       .map((specifier) => ({ file, specifier, from, to: reachOf({ file, specifier }) }))
-      .filter((violation) => !mayReach(violation));
+      .filter((violation) => verdictOf(violation) === "forbidden");
   });
 
 const unplacedFilesIn = (request: { readonly sources: Readonly<Record<string, string>> }): readonly string[] =>
