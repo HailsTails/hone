@@ -1212,6 +1212,30 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       value: { paidDebt: [], report: { ...EMPTY_REPORT, stale: [{ ...STALE_CARVE_OUT_ON_A, file: "src/e.js" }] }, unprojected: [] },
     });
   });
+
+  it("hands on a stale file carve-out on a file still on disk inside a folder the selection excludes", async () => {
+    await expect(
+      runReachedCheck(
+        checkRequest({
+          selectionRepository: selectionRepositoryReading({ ...SELECTION_READING, excluded: [repoPathSchema.parse("vendored")] }),
+          exceptionRepository: exceptionRepositoryHolding({ working: [firstInSingleFile(carveOutOn("vendored/kept.ts"))] }),
+          git: unchangedGitTracking([repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("vendored/kept.ts")]),
+        }),
+      ),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: {
+        paidDebt: [{ clause: CLASS_SYNTAX, file: "vendored/kept.ts" }],
+        report: {
+          ...EMPTY_REPORT,
+          excluded: ["vendored"],
+          stale: [{ ...STALE_CARVE_OUT_ON_A, file: "vendored/kept.ts" }],
+          readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }],
+        },
+        unprojected: [],
+      },
+    });
+  });
 });
 
 const AUTHORISED_ON_A: StructuralExceptionEntry = {

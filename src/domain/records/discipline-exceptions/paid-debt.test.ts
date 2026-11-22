@@ -87,7 +87,17 @@ const directiveAt = (request: { readonly clause: Finding["clause"]; readonly fil
   reach: "one-clause",
 });
 
-const NOTHING: PaidDebtRequest = { findings: [], exempted: [], stale: [], forfeited: [], nativeExceptions: [], absent: [], measured: [], baseline: UNMEASURED_EXCEPTION_BASELINE };
+const NOTHING: PaidDebtRequest = {
+  findings: [],
+  exempted: [],
+  stale: [],
+  forfeited: [],
+  nativeExceptions: [],
+  absent: [],
+  excluded: [],
+  measured: [],
+  baseline: UNMEASURED_EXCEPTION_BASELINE,
+};
 
 const CHECKOUT = repoPathSchema.parse("src/checkout.ts");
 const PRICES = repoPathSchema.parse("src/prices.ts");
@@ -408,6 +418,51 @@ describe("paidDebtOf keeping a forfeited record each native exception on its fil
           { kind: "suppression-entry", clause: LOOPS, mechanism: ESLINT, file: PRICES, location: repoPathSchema.parse("eslint-suppressions.json") },
           { kind: "inline-rule-config", clause: LOOPS, mechanism: ESLINT, file: TOTALS, line: 1, text: "/* eslint hone/no-for-of: off */" },
         ],
+      }),
+    ).toEqual([]);
+  });
+});
+
+const VENDORED = repoPathSchema.parse("src/vendored");
+const VENDORED_BASKET = repoPathSchema.parse("src/vendored/basket.ts");
+const VENDORED_PRICES = repoPathSchema.parse("src/vendored/prices.ts");
+const EXCLUDING_VENDORED: PaidDebtRequest = { ...NOTHING, excluded: [VENDORED] };
+
+describe("paidDebtOf naming debt on a file the selection excludes", () => {
+  it("names a stale and a forfeited file carve-out on files still on disk inside an excluded folder", () => {
+    expect(
+      paidDebtOf({
+        ...EXCLUDING_VENDORED,
+        stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })],
+        forfeited: [carveOut({ clause: CASTS, file: VENDORED_PRICES })],
+      }),
+    ).toEqual([
+      { clause: LOOPS, file: VENDORED_BASKET },
+      { clause: CASTS, file: VENDORED_PRICES },
+    ]);
+  });
+
+  it("leaves a stale file carve-out on a file outside the excluded folder that its mechanism did not measure", () => {
+    expect(paidDebtOf({ ...EXCLUDING_VENDORED, stale: [carveOut({ clause: LOOPS, file: BASKET })] })).toEqual([]);
+  });
+});
+
+describe("paidDebtOf keeping debt on an excluded file whose pair is still held", () => {
+  it.each<{ readonly name: string; readonly nativeException: AttributedNativeException }>([
+    { name: "an ignore", nativeException: { kind: "ignore", clause: LOOPS, mechanism: ESLINT, file: VENDORED_BASKET } },
+    { name: "an inline disable", nativeException: directiveAt({ clause: LOOPS, file: VENDORED_BASKET }) },
+  ])("keeps a forfeited file carve-out on an excluded file whose clause and file hold $name", ({ nativeException }) => {
+    expect(
+      paidDebtOf({ ...EXCLUDING_VENDORED, forfeited: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })], nativeExceptions: [nativeException] }),
+    ).toEqual([]);
+  });
+
+  it("keeps a stale file carve-out on an excluded file whose clause and file hold an ignore", () => {
+    expect(
+      paidDebtOf({
+        ...EXCLUDING_VENDORED,
+        stale: [carveOut({ clause: LOOPS, file: VENDORED_BASKET })],
+        nativeExceptions: [{ kind: "ignore", clause: LOOPS, mechanism: ESLINT, file: VENDORED_BASKET }],
       }),
     ).toEqual([]);
   });

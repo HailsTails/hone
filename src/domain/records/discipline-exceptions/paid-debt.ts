@@ -4,6 +4,7 @@ import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { type DebtPair, debtPairKey, distinctDebtPairs } from "./debt-pair.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 import { authorisationStandingOf, type ExceptionBaseline } from "./exception-baseline.ts";
+import { exclusionOf } from "../../repository/exclusion.ts";
 
 export type PaidDebtRequest = {
   readonly findings: readonly Finding[];
@@ -12,9 +13,14 @@ export type PaidDebtRequest = {
   readonly forfeited: readonly ExceptionRecord[];
   readonly nativeExceptions: readonly AttributedNativeException[];
   readonly absent: readonly RepoPath[];
+  readonly excluded: readonly RepoPath[];
   readonly measured: readonly DebtPair[];
   readonly baseline: ExceptionBaseline;
 };
+
+type FileCarveOut = Extract<ExceptionRecord, { readonly kind: "file-carve-out" }>;
+
+type SettlingEvidence = Pick<PaidDebtRequest, "absent" | "excluded" | "measured">;
 
 const answeredByAuthorisedLocation = (request: {
   readonly exempted: ExemptedFinding;
@@ -52,10 +58,19 @@ const heldPairKeys = (request: PaidDebtRequest): ReadonlySet<string> =>
     }),
   ]);
 
-const settledCarveOutPairs = (request: Pick<PaidDebtRequest, "stale" | "forfeited" | "absent" | "measured">): readonly DebtPair[] => {
-  const measured = new Set(request.measured.map((pair) => debtPairKey(pair)));
+const settlementOf = (
+  request: SettlingEvidence & { readonly record: FileCarveOut; readonly measuredKeys: ReadonlySet<string> },
+): "settled" | "unsettled" =>
+  request.absent.includes(request.record.file) ||
+  request.measuredKeys.has(debtPairKey(request.record)) ||
+  exclusionOf({ path: request.record.file, excluded: request.excluded }) === "excluded"
+    ? "settled"
+    : "unsettled";
+
+const settledCarveOutPairs = (request: SettlingEvidence & Pick<PaidDebtRequest, "stale" | "forfeited">): readonly DebtPair[] => {
+  const measuredKeys = new Set(request.measured.map((pair) => debtPairKey(pair)));
   return [...request.stale, ...request.forfeited].flatMap((record) =>
-    record.kind === "file-carve-out" && (request.absent.includes(record.file) || measured.has(debtPairKey(record)))
+    record.kind === "file-carve-out" && settlementOf({ ...request, record, measuredKeys }) === "settled"
       ? [{ clause: record.clause, file: record.file }]
       : [],
   );

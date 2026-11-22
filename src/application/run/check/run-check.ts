@@ -335,6 +335,7 @@ const checkReportOf = (request: {
   const paidDebt = paidDebtOf({
     ...governed,
     absent: absentFilesOf({ check: request.check, governed }),
+    excluded: request.inputs.excluded,
     nativeExceptions: request.runs.flatMap((run) => run.nativeExceptions.map((exception) => ({ ...exception, mechanism: run.mechanism }))),
     measured: request.runs.flatMap((run) => run.measured),
     baseline: request.inputs.exceptionBaseline,
