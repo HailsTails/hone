@@ -1,6 +1,6 @@
 import type { AnchorKind } from "../finding/anchor.ts";
 import type { ClauseExceptions, ClauseSettingDeclarations } from "./authored-rule-set-types.ts";
-import type { ClauseId, DisciplineId, MechanismId } from "./identifier-types.ts";
+import type { ClauseId, DisciplineId, EngineId } from "./identifier-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { ClauseEditions, Edition } from "./edition-types.ts";
 
@@ -18,7 +18,7 @@ export type ClauseDefinition =
   | {
       readonly kind: "mechanical";
       readonly id: ClauseId;
-      readonly mechanisms: readonly MechanismId[];
+      readonly mechanisms: readonly EngineId[];
       readonly anchor: AnchorKind;
       readonly exceptions: ClauseExceptions;
       readonly cases: {
@@ -41,7 +41,7 @@ export type DisciplineFile = {
 export type PieceFile = {
   readonly version: 1;
   readonly discipline: DisciplineId;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly clauses: readonly {
     readonly clause: ClauseId;
     readonly settings: unknown;

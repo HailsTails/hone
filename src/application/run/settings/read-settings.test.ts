@@ -18,7 +18,7 @@ const INSTALL_ROOT = absoluteRootOf("/install");
 
 const SETTINGS_PATH = "/repo/hone.config.json";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -31,9 +31,9 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

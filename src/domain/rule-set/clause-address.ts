@@ -1,4 +1,4 @@
-import type { ClauseAddress, LegacyClauseAddress, NamedCheckAddress } from "./clause-address-types.ts";
+import type { ClauseAddress } from "./clause-address-types.ts";
 import { isClauseId, isDisciplineId, isRuleSetName } from "./identifiers.ts";
 import { TOOL_IDENTITY } from "./tool-identity.ts";
 
@@ -33,7 +33,7 @@ const ruleSetOf = (request: { readonly ruleSet: ClauseAddressParts["ruleSet"] })
   return isRuleSetName(request.ruleSet.name) && request.ruleSet.name !== TOOL_RULE_SET ? { name: request.ruleSet.name } : undefined;
 };
 
-export const clauseAddressOf = (request: { readonly text: string }): LegacyClauseAddress | "not-a-clause-address" => {
+export const clauseAddressOf = (request: { readonly text: string }): ClauseAddress | "not-a-clause-address" => {
   const parts = clauseAddressPartsOf(request);
   if (parts === "not-a-clause-address") {
     return parts;
@@ -44,12 +44,12 @@ export const clauseAddressOf = (request: { readonly text: string }): LegacyClaus
     : "not-a-clause-address";
 };
 
-export const isNamedCheckAddress = (address: ClauseAddress): address is NamedCheckAddress => "symptom" in address;
-
-export const clauseAddressText = ({ address }: { readonly address: ClauseAddress }): string => {
-  const subject = isNamedCheckAddress(address) ? `${address.symptom}#${address.check}` : `${address.discipline}#${address.clause}`;
-  return address.ruleSet === TOOL_RULE_SET ? subject : `${address.ruleSet.name}/${subject}`;
-};
+export const clauseAddressText = (request: {
+  readonly address: ClauseAddress;
+}): string =>
+  request.address.ruleSet === TOOL_RULE_SET
+    ? `${request.address.discipline}#${request.address.clause}`
+    : `${request.address.ruleSet.name}/${request.address.discipline}#${request.address.clause}`;
 
 export const sameClauseAddress = (request: {
   readonly left: ClauseAddress;

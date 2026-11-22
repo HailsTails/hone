@@ -6,9 +6,9 @@ import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 

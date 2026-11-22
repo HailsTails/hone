@@ -16,8 +16,8 @@ describe("enginesFolderSegmentsOf", () => {
 describe("pieceFolderSegmentsOf", () => {
   it("names the piece folder of a discipline under a mechanism in the install's own rule set", () => {
     expect(
-      pieceFolderSegmentsOf({ ruleSetRoot: "/install", installRoot: "/install", mechanism: "audit", discipline: disciplineIdOf("CD-14") }),
-    ).toEqual(["/install", "src", "infrastructure", "engines", "audit", "CD-14"]);
+      pieceFolderSegmentsOf({ ruleSetRoot: "/install", installRoot: "/install", mechanism: "walker", discipline: disciplineIdOf("CD-14") }),
+    ).toEqual(["/install", "src", "infrastructure", "engines", "walker", "CD-14"]);
   });
 
   it("names the piece folder of a discipline under a mechanism in another rule set", () => {
@@ -30,8 +30,8 @@ describe("pieceFolderSegmentsOf", () => {
 describe("namedPieceFolderSegmentsOf", () => {
   it("locates a shipped check by its symptom and name", () => {
     expect(namedPieceFolderSegmentsOf({
-      ruleSetRoot: "/install", installRoot: "/install", mechanism: "audit",
+      ruleSetRoot: "/install", installRoot: "/install", mechanism: "walker",
       symptom: catalogueNameOf("ambient-randomness"), check: catalogueNameOf("direct-call"),
-    })).toEqual(["/install", "src", "infrastructure", "engines", "audit", "ambient-randomness", "direct-call"]);
+    })).toEqual(["/install", "src", "infrastructure", "engines", "walker", "ambient-randomness", "direct-call"]);
   });
 });

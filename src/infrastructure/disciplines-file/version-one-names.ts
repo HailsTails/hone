@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { CATALOGUE_NAME } from "../../domain/language-layer/catalogue-name.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
-import type { LegacyClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../domain/result.ts";
 import { anchorKindSchema, readVersionOneJson } from "../content-files/rule-sets/rule-set-reader.ts";
@@ -17,13 +17,13 @@ const formatOfTodaySchema = recordKindWireSchema.shape.todaysFormat.exclude(["no
 export type FormatsOfToday = Readonly<Partial<Record<z.output<typeof recordKindNameSchema>, z.output<typeof formatOfTodaySchema>>>>;
 
 export type NamedClause =
-  | { readonly clause: LegacyClauseAddress; readonly kind: "mechanical"; readonly anchor: AnchorKind }
-  | { readonly clause: LegacyClauseAddress; readonly kind: "judgement" };
+  | { readonly clause: ClauseAddress; readonly kind: "mechanical"; readonly anchor: AnchorKind }
+  | { readonly clause: ClauseAddress; readonly kind: "judgement" };
 
 export type VersionOneNames = {
   readonly clauses: CatalogueFile["clauses"];
   readonly namedClauses: readonly NamedClause[];
-  readonly clauseOfCheck: ReadonlyMap<string, LegacyClauseAddress>;
+  readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
   readonly formatsOfToday: FormatsOfToday;
 };
 
@@ -57,7 +57,7 @@ const namedClauseOf = (entry: NamesEntry): NamedClause =>
 const namesOf = (file: z.output<typeof versionOneNamesSchema>): VersionOneNames => ({
   clauses: file.clauses.map(({ clause, sight }) => ({ clause, sight })),
   namedClauses: file.clauses.map(namedClauseOf),
-  clauseOfCheck: new Map(file.clauses.flatMap(({ clause, checks }) => checks.map((check): readonly [string, LegacyClauseAddress] => [check, clause]))),
+  clauseOfCheck: new Map(file.clauses.flatMap(({ clause, checks }) => checks.map((check): readonly [string, ClauseAddress] => [check, clause]))),
   formatsOfToday: file.recordKinds,
 });
 

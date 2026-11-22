@@ -82,7 +82,7 @@ const CATCH = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-3"), clau
 const secondEditionClause = (request: { readonly address: typeof STRICT }): RunnerClause => ({
   address: request.address,
   anchor: { kind: "file" },
-  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/audit/CD-3`,
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/CD-3`,
   clauseSettings: {},
   edition: editionOf("2"),
   settings: { module: "compiler-overrides.ts" },

@@ -9,9 +9,9 @@ import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 

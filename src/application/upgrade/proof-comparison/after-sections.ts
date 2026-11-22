@@ -50,13 +50,13 @@ export const afterSectionsOf = (request: { readonly report: RunReport; readonly 
     "not-adopted": uniqueKeys({ keys: report["not-adopted"].map((check) => clauseTextOfCheck({ check })) }),
     "not-run": uniqueKeys({ keys: report["not-run"].map((check) => clauseTextOfCheck({ check })) }),
     editions: uniqueKeys({
-      keys: report.editions.map(({ check, engine, edition, latest }) => joinedKey({ parts: [clauseTextOfCheck({ check }), engine.mechanism, edition, latest] })),
+      keys: report.editions.map(({ check, engine, edition, latest }) => joinedKey({ parts: [clauseTextOfCheck({ check }), engine.name, edition, latest] })),
     }),
     unmeasured: report.unmeasured.map((unmeasured) =>
-      unmeasured.kind === "engine-not-run" ? joinedKey({ parts: [unmeasured.engine.mechanism, "not-run", unmeasured.projection] }) : unmeasured.kind,
+      unmeasured.kind === "engine-not-run" ? joinedKey({ parts: [unmeasured.engine.name, "not-run", unmeasured.projection] }) : unmeasured.kind,
     ),
     "projection-problems": report["projection-problems"].map((problem) =>
-      joinedKey({ parts: [problem.scope, problem.engine.mechanism, problem.state, problem.scope === "slice" ? problem.slice : ""] }),
+      joinedKey({ parts: [problem.scope, problem.engine.name, problem.state, problem.scope === "slice" ? problem.slice : ""] }),
     ),
     assessment: report.assessment.map(({ concern, assessedBy }) => joinedKey({ parts: [concern, assessedBy] })),
     verdict: [runVerdictOf({ report })],

@@ -3,7 +3,7 @@ import { runFailureOf } from "./run-failure.ts";
 
 const ESLINT = "eslint" as const;
 
-const ESLINT_ENGINE = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE = { name: ESLINT };
 
 describe("runFailureOf", () => {
   it("passes a not-ready-yet failure through", () => {

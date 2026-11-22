@@ -25,7 +25,7 @@ const REPO_ROOT = absoluteRootOf("/repo");
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
@@ -135,10 +135,10 @@ describe("createVersionOneEnginePass", () => {
     await expect(createVersionOneEnginePass({ loadFailureDetail: vi.fn<LoadFailureDetail>(), check: checkRequest({ engine }) }).findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "ok",
       value: {
-        findings: [{ ...HIT_IN_A_OBJECT, mechanism: "audit" }],
+        findings: [{ ...HIT_IN_A_OBJECT, mechanism: "walker" }],
         runs: [
           {
-            mechanism: "audit",
+            mechanism: "walker",
             hits: [HIT_IN_A_OBJECT],
             nativeExceptions: [],
             coverableKinds: ["inline-disable"],
@@ -152,7 +152,7 @@ describe("createVersionOneEnginePass", () => {
     });
     expect(engine.run.withRecords).toHaveBeenCalledWith({
       runner: RUNNER,
-      mechanism: "audit",
+      mechanism: "walker",
       run: { repoRoot: "/repo", installRoot: "/install", files: ["src/a.ts"], trackedPaths: ["src/a.ts"], clauses: [CLASS_SYNTAX_CLAUSE] },
       declaredConfigRoots: [],
       records: [CARVE_OUT_ON_A],
@@ -164,10 +164,10 @@ describe("createVersionOneEnginePass", () => {
     await expect(pass.findingsFor({ records: [CARVE_OUT_ON_A] })).resolves.toEqual({
       outcome: "ok",
       value: {
-        findings: [{ ...HIT_IN_A_OBJECT, mechanism: "audit" }],
+        findings: [{ ...HIT_IN_A_OBJECT, mechanism: "walker" }],
         runs: [
           {
-            mechanism: "audit",
+            mechanism: "walker",
             hits: [HIT_IN_A_OBJECT],
             nativeExceptions: [],
             coverableKinds: ["config-override"],

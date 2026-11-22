@@ -5,12 +5,12 @@ import { catalogueNameOf } from "../../domain/language-layer/catalogue-name.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { readNamedPiece } from "./named-piece.ts";
 
-const PIECE_ROOT = "/install/src/infrastructure/engines/audit/ambient-randomness/direct-call";
-const PIECE_PATH = "/install/src/infrastructure/engines/audit/ambient-randomness/direct-call/piece.json";
+const PIECE_ROOT = "/install/src/infrastructure/engines/walker/ambient-randomness/direct-call";
+const PIECE_PATH = "/install/src/infrastructure/engines/walker/ambient-randomness/direct-call/piece.json";
 const SUBJECT = {
   installRoot: "/install",
   ruleSetRoot: "/install",
-  mechanism: "audit" as const,
+  mechanism: "walker" as const,
   symptom: catalogueNameOf("ambient-randomness"),
   check: catalogueNameOf("direct-call"),
 };
@@ -33,24 +33,11 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
-  it("resolves a shared implementation from its check name", () => {
-    const implementationRoot = "/install/src/infrastructure/engines/audit/strictness-weakened/strict";
-    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(PIECE_PATH).mockReturnValueOnce(implementationRoot);
-    const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
-      outcome: "ok",
-      value: '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"compiler-overrides.ts"},"implementation":{"symptom":"strictness-weakened","check":"strict"}}',
-    });
-    expect(readNamedPiece({ ...SUBJECT, path: { join }, fileText: { exists: () => "present", read } })).toMatchObject({
-      outcome: "ok", value: { pieceRoot: implementationRoot },
-    });
-    expect(join).toHaveBeenLastCalledWith({ segments: ["/install", "src", "infrastructure", "engines", "audit", "strictness-weakened", "strict"] });
-  });
-
   it("names the requested check when its declaration is absent", () => {
     const join = vi.fn<PathPort["join"]>().mockReturnValue(PIECE_PATH);
     const read = vi.fn<FileTextPort["read"]>();
     expect(readNamedPiece({ ...SUBJECT, path: { join }, fileText: { exists: () => "absent", read } })).toEqual({
-      outcome: "failed", error: { kind: "piece-missing", address: "ambient-randomness#direct-call", mechanism: "audit" },
+      outcome: "failed", error: { kind: "piece-missing", address: "ambient-randomness#direct-call", mechanism: "walker" },
     });
     expect(read).not.toHaveBeenCalled();
   });

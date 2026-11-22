@@ -7,7 +7,7 @@ import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
 const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ESLINT = "eslint" as const;
 const BASKET = repoPathOf("src/basket.ts");
 const LEGACY = repoPathOf("src/legacy/report.ts");

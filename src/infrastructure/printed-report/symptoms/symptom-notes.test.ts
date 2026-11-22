@@ -169,7 +169,7 @@ const UNREADABLE_GUIDE: SymptomGuide = {
 
 const CLOCK_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.ts"),
   anchor: { line: 14, column: 0 },
   snippet: "const chargedAt = clock.now();",
@@ -177,7 +177,7 @@ const CLOCK_FINDING: Finding = {
 
 const SECOND_CLOCK_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/refund-order.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "const refundedAt = clock.now();",
@@ -185,7 +185,7 @@ const SECOND_CLOCK_FINDING: Finding = {
 
 const BRANCH_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 22, column: 2 },
   snippet: "if (result.ok) {",
@@ -194,7 +194,7 @@ const BRANCH_FINDING: Finding = {
 
 const DOUBLE_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 30, column: 4 },
   snippet: "kindOf: (path) => (installed.includes(path) ? \"file\" : \"missing\")",
@@ -203,7 +203,7 @@ const DOUBLE_FINDING: Finding = {
 
 const UNCATALOGUED_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/totals.ts"),
   anchor: { line: 5, column: 2 },
   snippet: "const total = sumOf(lines);",
@@ -211,7 +211,7 @@ const UNCATALOGUED_FINDING: Finding = {
 
 const METHOD_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-9"), clause: clauseIdOf("result-failures") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/totals.ts"),
   anchor: { line: 9, column: 2 },
   snippet: "throw new Error(\"no total\");",

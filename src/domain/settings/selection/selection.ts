@@ -3,13 +3,13 @@ import type { RunnerClause } from "../../runner/runner-module-types.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import type { ClauseEditionReading } from "../../rule-set/edition-types.ts";
 import type { FileExceptionWhyChains } from "./file-exception-why-chains.ts";
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseExceptions } from "../../rule-set/rule-set-types.ts";
 
 export type SelectedClause = {
   readonly address: ClauseAddress;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly exceptions: ClauseExceptions;
 };
 
@@ -29,7 +29,7 @@ export type ClauseRoot = {
 };
 
 export type ClauseBinding = {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly clause: RunnerClause;
 };
 

@@ -16,7 +16,7 @@ import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
 const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 

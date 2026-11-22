@@ -1,6 +1,6 @@
 import { type DebtPair, debtPairKey } from "../records/discipline-exceptions/debt-pair.ts";
 import type { GovernanceResult } from "../records/discipline-exceptions/governance.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { PaidDebtNote } from "./check-report.ts";
 import type { MechanismRun } from "../runner/mechanism-run.ts";
 
@@ -9,7 +9,7 @@ type GovernedRecords = Pick<GovernanceResult, "stale" | "forfeited">;
 const paidMechanismsOf = (request: {
   readonly governed: GovernedRecords;
   readonly paidKeys: ReadonlySet<string>;
-}): ReadonlySet<MechanismId> =>
+}): ReadonlySet<EngineId> =>
   new Set(
     [...request.governed.stale, ...request.governed.forfeited].flatMap((record) =>
       record.kind === "file-carve-out" && request.paidKeys.has(debtPairKey(record)) ? [record.mechanism] : [],

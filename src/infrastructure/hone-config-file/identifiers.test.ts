@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clauseIdSchema,
   disciplineIdSchema,
-  mechanismIdSchema,
+  engineIdSchema,
   ruleSetNameSchema,
 } from "./identifiers.ts";
 
@@ -58,15 +58,15 @@ describe("clauseIdSchema", () => {
   );
 });
 
-describe("mechanismIdSchema", () => {
-  it.each(["audit", "eslint"])("accepts %j", (text) => {
-    expect(mechanismIdSchema.safeParse(text).success).toBe(true);
+describe("engineIdSchema", () => {
+  it.each(["walker", "eslint"])("accepts %j", (text) => {
+    expect(engineIdSchema.safeParse(text).success).toBe(true);
   });
 
   it.each(["", "ESLint", "oxlint", "not-run", "not-adopted", "audit/ts"])(
     "refuses %j",
     (text) => {
-      expect(mechanismIdSchema.safeParse(text).success).toBe(false);
+      expect(engineIdSchema.safeParse(text).success).toBe(false);
     },
   );
 });

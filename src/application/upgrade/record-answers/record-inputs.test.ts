@@ -10,7 +10,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const LOOPS_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
@@ -27,8 +27,8 @@ const LOOP_KEYWORD_LOOPS: Check = {
   },
   clause: LOOPS_CLAUSE,
   engines: [
-    { name: "walker", mechanism: AUDIT },
-    { name: "eslint", mechanism: "eslint" },
+    { name: "walker" },
+    { name: "eslint" },
   ],
   forms: [],
 };

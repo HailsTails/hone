@@ -58,7 +58,7 @@ const LEGACY_WHY_CHAIN: LegacyWhyChain = {
 
 const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 const CASTS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ESLINT = "eslint" as const;
 const BASKET = repoPathOf("src/basket.ts");
 const LEGACY = repoPathOf("src/legacy/report.ts");

@@ -23,7 +23,7 @@ import type { PathPort } from "../../ports/host/path-port.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Assessment } from "../../../domain/settings/assessment.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { UnprojectedFolder } from "../../../domain/runner/unprojected-folder.ts";
 import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import { isRepoPath } from "../../../domain/repository/repo-path.ts";
@@ -68,7 +68,7 @@ export type LoadRequest = Omit<CheckRequest, "baseRevision" | "assessment" | "gi
 };
 
 export type LoadedMechanism = {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly runner: LoadedRunner;
   readonly clauses: readonly RunnerClause[];
 };
@@ -105,26 +105,26 @@ export const allOk = <Value>(request: {
 };
 
 export const runnerFailed = <Value>(request: {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly runnerResult: Result<Value, RunnerFailure>;
 }): Result<Value, LoadFailure> =>
   request.runnerResult.outcome === "failed"
     ? failed({ kind: "runner-failed", mechanism: request.mechanism, failure: request.runnerResult.error })
     : request.runnerResult;
 
-const distinctMechanisms = (request: { readonly bindings: readonly ClauseBinding[] }): readonly MechanismId[] => [
+const distinctMechanisms = (request: { readonly bindings: readonly ClauseBinding[] }): readonly EngineId[] => [
   ...new Set(request.bindings.map((binding) => binding.mechanism)),
 ];
 
 const clausesOf = (request: {
   readonly bindings: readonly ClauseBinding[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
 }): readonly RunnerClause[] =>
   request.bindings.filter((binding) => binding.mechanism === request.mechanism).map((binding) => binding.clause);
 
 const loadedMechanism = (request: {
   readonly bindings: readonly ClauseBinding[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly engine: Result<LoadedEngine, LoadFailure>;
 }): Result<LoadedMechanism, LoadFailure> => {
   if (request.engine.outcome === "failed") {
@@ -186,7 +186,7 @@ export const loadInputs = async (request: LoadRequest): Promise<Result<LoadedInp
 
 export const recordsOf = (request: {
   readonly records: readonly ExceptionRecord[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
 }): readonly ExceptionRecord[] =>
   request.records.filter((record) => record.mechanism === request.mechanism);
 

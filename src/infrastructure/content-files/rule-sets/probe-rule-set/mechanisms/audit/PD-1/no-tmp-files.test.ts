@@ -1,8 +1,8 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { RunnerClause } from "../../../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../../../hone-records-folder/repo-path.ts";
-import { textsDisk } from "../../../../../../engines/audit/runner/pieces/walker-disk.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../../../../engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { textsDisk } from "../../../../../../engines/walker/runner/pieces/walker-disk.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../../../../engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { check } from "./no-tmp-files.ts";
 import { disciplineIdOf } from "../../../../../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../../../../../domain/rule-set/clause-id-of.ts";

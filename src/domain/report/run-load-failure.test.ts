@@ -6,13 +6,13 @@ import { repoPathOf } from "../repository/repo-path-of.ts";
 
 type MappedRow = { readonly name: string; readonly source: RunLoadFailureSource; readonly failure: RunLoadFailure };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const ENGINES: readonly Engine[] = [WALKER, ESLINT_ENGINE];
 

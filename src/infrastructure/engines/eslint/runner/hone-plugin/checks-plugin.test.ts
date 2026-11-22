@@ -26,9 +26,9 @@ const NON_NULL_REPORTING_BOUNDARY: EslintMajorBoundary = {
   declarationText: DECLARATION_TEXT,
 };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const TEST_SWITCHED_OFF: Symptom = {
   name: "test-switched-off",

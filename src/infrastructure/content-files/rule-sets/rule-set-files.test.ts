@@ -3,7 +3,7 @@ import { createDefaultFileTextPort } from "../../node/file-system/file-text-port
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 
@@ -11,7 +11,7 @@ const PATH = createDefaultPathPort({});
 
 const RULE_SET_FILES = createRuleSetFiles({ fileText: createDefaultFileTextPort({}), path: PATH });
 
-const AUDIT = "audit";
+const AUDIT = "walker";
 
 const ESLINT = "eslint" as const;
 
@@ -25,7 +25,7 @@ const TEAM_ROOT = rootOf("repo/team-rules");
 
 const INSTALL_ROOT = rootOf("install");
 
-const mechanicalDiscipline = (request: { readonly id: string; readonly clause: string; readonly mechanism: MechanismId }): DisciplineFile => ({
+const mechanicalDiscipline = (request: { readonly id: string; readonly clause: string; readonly mechanism: EngineId }): DisciplineFile => ({
   version: 1,
   id: disciplineIdSchema.parse(request.id),
   clauses: [
@@ -62,7 +62,7 @@ describe("createRuleSetFiles piece", () => {
   it("reads a piece file present on disk", () => {
     expect(RULE_SET_FILES.piece({ ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT, discipline: TM_1, mechanism: AUDIT })).toMatchObject({
       outcome: "ok",
-      value: { held: "present", file: { discipline: "TM-1", mechanism: "audit", clauses: [{ clause: "no-tmp-files" }] } },
+      value: { held: "present", file: { discipline: "TM-1", mechanism: "walker", clauses: [{ clause: "no-tmp-files" }] } },
     });
   });
 

@@ -2,7 +2,7 @@ import type { Finding } from "../finding/governance.ts";
 import type { Remedy } from "../runner/runner-result-types.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 
 export type Standing = "accepted" | "proposed";
 
@@ -55,7 +55,7 @@ export type CataloguedClause = { readonly clause: ClauseAddress; readonly sight:
 
 export type AlwaysRecordable = { readonly debt: RecordKind; readonly authorisedLocation: RecordKind };
 
-export type Engine = { readonly name: string; readonly mechanism: MechanismId };
+export type Engine = { readonly name: EngineId };
 
 export type CheckContent = {
   readonly name: string;

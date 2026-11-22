@@ -9,7 +9,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/a.ts"),
   anchor: { line: 3, column: 5 },
   snippet: "class A {}",
@@ -136,7 +136,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 
 const CLOCK_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.ts"),
   anchor: { line: 14, column: 0 },
   snippet: "const chargedAt = clock.now();",
@@ -144,7 +144,7 @@ const CLOCK_FINDING: Finding = {
 
 const TEST_LOGIC_FINDING: Finding = {
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") },
-  mechanism: "audit",
+  mechanism: "walker",
   file: repoPathOf("src/orders/charge-order.test.ts"),
   anchor: { line: 22, column: 2 },
   snippet: "if (result.ok) {",

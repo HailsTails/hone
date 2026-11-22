@@ -5,9 +5,9 @@ import type { ModuleLoaderPort } from "../../../../application/ports/host/module
 import { createPathPort } from "../../../node/path-port.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { check } from "../../audit/CD-14/class-syntax.ts";
-import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
+import { check } from "../../walker/CD-14/class-syntax.ts";
+import { createWalkerRunner } from "../../walker/runner/create-walker-runner.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../walker/runner/toolchain/typescript-toolchain.ts";
 import { createEslintPort } from "../runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../runner/pieces/eslint-plugin-schema.ts";

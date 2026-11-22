@@ -2,15 +2,15 @@ import type { RunMeasurement, RunMeasurements } from "../../../domain/records/me
 import type { EngineNotRun, RunProjectionProblem } from "../../../domain/report/run-report.ts";
 import type { Engine, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { SelectedClause } from "../../../domain/settings/selection/selection.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { typescriptFilesOf } from "../checked-tree-of.ts";
 import type { EngineRun } from "../../ports/engine/engine-run.ts";
 
 type CatalogueEngines = Pick<SymptomCatalogue, "engines">;
 
-const engineOf = (request: { readonly catalogue: CatalogueEngines; readonly mechanism: MechanismId }): Engine =>
-  request.catalogue.engines.find((engine) => engine.mechanism === request.mechanism) ?? { name: request.mechanism, mechanism: request.mechanism };
+const engineOf = (request: { readonly catalogue: CatalogueEngines; readonly mechanism: EngineId }): Engine =>
+  request.catalogue.engines.find((engine) => engine.name === request.mechanism) ?? { name: request.mechanism };
 
 export type EngineMeasurement = "measured-something" | "measured-nothing" | "nothing-selected" | "nothing-to-measure";
 

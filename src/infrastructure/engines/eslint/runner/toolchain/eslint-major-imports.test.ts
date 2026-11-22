@@ -1,6 +1,6 @@
 import { assert, describe, expect, it } from "vitest";
-import type { ExportDeclaration, ImportDeclaration, SyntaxNode, SyntaxTree } from "../../../audit/runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../audit/runner/toolchain/typescript-toolchain.ts";
+import type { ExportDeclaration, ImportDeclaration, SyntaxNode, SyntaxTree } from "../../../walker/runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../walker/runner/toolchain/typescript-toolchain.ts";
 import { projectionOutputNamesOf, projectionOutputsOf } from "../../../../../domain/repository/projection-outputs.ts";
 import { installedEslintBoundary } from "./eslint-toolchain.ts";
 

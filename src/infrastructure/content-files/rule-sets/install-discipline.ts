@@ -5,7 +5,7 @@ import type { Held } from "../../../application/ports/rule-set/rule-set-files.ts
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ClauseId, DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { ClauseId, DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { ClauseDefinition, DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
@@ -20,20 +20,20 @@ type InstallSource = {
   readonly discipline: DisciplineId;
 };
 
-type PieceHolding = { readonly mechanism: MechanismId; readonly folder: string; readonly clauses: readonly ClauseId[] };
+type PieceHolding = { readonly mechanism: EngineId; readonly folder: string; readonly clauses: readonly ClauseId[] };
 
 type MechanicalClause = Extract<ClauseDefinition, { readonly kind: "mechanical" }>;
 
 const CASES_FILE_SUFFIX = ".cases.json";
 
-const MECHANISMS: readonly MechanismId[] = [...new Set(ENGINE_REGISTRY.map((engine) => engine.mechanism))];
+const MECHANISMS: readonly EngineId[] = ENGINE_REGISTRY.map((engine) => engine.name);
 
 const ruleSetInvalid = (request: { readonly path: string; readonly detail: string }): { readonly outcome: "failed"; readonly error: VersionTwoLoadFailure } => ({
   outcome: "failed",
   error: { kind: "rule-set-invalid", path: request.path, detail: request.detail },
 });
 
-const pieceOf = (request: InstallSource & { readonly mechanism: MechanismId }): Result<readonly PieceHolding[], VersionTwoLoadFailure> => {
+const pieceOf = (request: InstallSource & { readonly mechanism: EngineId }): Result<readonly PieceHolding[], VersionTwoLoadFailure> => {
   const location = { path: request.path, ruleSetRoot: request.installRoot, installRoot: request.installRoot, mechanism: request.mechanism, discipline: request.discipline };
   const path = pieceFilePath(location);
   if (request.fileText.exists({ path }) === "absent") {

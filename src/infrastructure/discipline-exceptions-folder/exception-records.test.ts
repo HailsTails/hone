@@ -63,7 +63,7 @@ const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
 const SELECTION: Selection = {
   selected: [
-    { address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, mechanism: "audit", exceptions: "allowed" },
+    { address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") }, mechanism: "walker", exceptions: "allowed" },
     { address: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("no-tmp-files") }, mechanism: "eslint", exceptions: "allowed" },
   ],
   uncovered: [],
@@ -165,7 +165,7 @@ describe("parseExceptionEntries records", () => {
   it("parses an authorised location with the mechanism copied from the selection", () => {
     expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: LOCATION }], selection: SELECTION, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({
       records: [
-        { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/factory.ts", reason: LOCATION.reason, provenance: LOCATION.provenance },
+        { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/factory.ts", reason: LOCATION.reason, provenance: LOCATION.provenance },
       ],
       invalid: [],
     });
@@ -177,7 +177,7 @@ describe("parseExceptionEntries records", () => {
         {
           kind: "file-carve-out",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/legacy.ts",
           reason: FILE_CARVE_OUT.reason,
           whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
@@ -366,18 +366,18 @@ describe("canonical exception evidence", () => {
     const exceptionReading = parseExceptionEntries({ entries: [{ place: AT_0, entry: { ...FICTIONAL_LOCATION_INPUT, file: "src/authorisation-chain.ts", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN } }, { place: AT_1, entry: { ...FICTIONAL_LOCATION_INPUT, file: "src/authorisation-provenance.ts", provenance: { kind: "existing-authorisation", source: FICTIONAL_AUTHORISATION_PROVENANCE.source } } }, { place: AT_2, entry: { ...FICTIONAL_LOCATION_INPUT, file: "src/authorisation-both.ts", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN, provenance: FICTIONAL_AUTHORISATION_PROVENANCE } }, { place: AT_3, entry: FILE_CARVE_OUT }, { place: AT_4, entry: { kind: "file-carve-out", clause: "CD-14#class-syntax", file: "src/debt-provenance.ts", reason: FILE_CARVE_OUT.reason, provenance: FICTIONAL_DEBT_PROVENANCE } }, { place: AT_5, entry: { ...FILE_CARVE_OUT, file: "src/debt-both.ts", provenance: FICTIONAL_DEBT_PROVENANCE } }], selection: SELECTION, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE });
 
     expect(exceptionReading).toEqual({ records: [
-      { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/authorisation-chain.ts", reason: FICTIONAL_LOCATION_INPUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
-      { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/authorisation-provenance.ts", reason: FICTIONAL_LOCATION_INPUT.reason, provenance: { kind: "existing-authorisation", source: FICTIONAL_AUTHORISATION_PROVENANCE.source } },
-      { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/authorisation-both.ts", reason: FICTIONAL_LOCATION_INPUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN, provenance: FICTIONAL_AUTHORISATION_PROVENANCE },
-      { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
-      { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/debt-provenance.ts", reason: FILE_CARVE_OUT.reason, provenance: FICTIONAL_DEBT_PROVENANCE },
-      { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/debt-both.ts", reason: FILE_CARVE_OUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN, provenance: FICTIONAL_DEBT_PROVENANCE },
+      { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/authorisation-chain.ts", reason: FICTIONAL_LOCATION_INPUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
+      { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/authorisation-provenance.ts", reason: FICTIONAL_LOCATION_INPUT.reason, provenance: { kind: "existing-authorisation", source: FICTIONAL_AUTHORISATION_PROVENANCE.source } },
+      { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/authorisation-both.ts", reason: FICTIONAL_LOCATION_INPUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN, provenance: FICTIONAL_AUTHORISATION_PROVENANCE },
+      { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
+      { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/debt-provenance.ts", reason: FILE_CARVE_OUT.reason, provenance: FICTIONAL_DEBT_PROVENANCE },
+      { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/debt-both.ts", reason: FILE_CARVE_OUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN, provenance: FICTIONAL_DEBT_PROVENANCE },
     ], invalid: [] });
   });
 
   it("refuses authorisation with neither evidence form at its original index, and holds file debt with neither as debt", () => {
     expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: FICTIONAL_LOCATION_INPUT }, { place: AT_1, entry: { kind: "file-carve-out", clause: "CD-14#class-syntax", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason } }], selection: SELECTION, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({
-      records: [{ kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason }],
+      records: [{ kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "walker", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason }],
       invalid: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "evidence-refused", detail: expect.any(String) } }],
     });
   });
@@ -402,8 +402,8 @@ describe("canonical exception evidence", () => {
   it("keeps first valid identity original indexes and authorisation versus debt distinction across evidence forms", () => {
     expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: FICTIONAL_LOCATION_INPUT }, { place: AT_1, entry: { ...FICTIONAL_LOCATION_INPUT, provenance: FICTIONAL_AUTHORISATION_PROVENANCE } }, { place: AT_2, entry: { ...FICTIONAL_LOCATION_INPUT, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN, provenance: FICTIONAL_AUTHORISATION_PROVENANCE } }, { place: AT_3, entry: { kind: "file-carve-out", clause: "CD-14#class-syntax", file: FICTIONAL_LOCATION_INPUT.file, reason: FILE_CARVE_OUT.reason, provenance: FICTIONAL_DEBT_PROVENANCE } }, { place: AT_4, entry: { ...FILE_CARVE_OUT, file: FICTIONAL_LOCATION_INPUT.file, provenance: FICTIONAL_DEBT_PROVENANCE } }], selection: SELECTION, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({
       records: [
-        { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: FICTIONAL_LOCATION_INPUT.file, reason: FICTIONAL_LOCATION_INPUT.reason, provenance: FICTIONAL_AUTHORISATION_PROVENANCE },
-        { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: FICTIONAL_LOCATION_INPUT.file, reason: FILE_CARVE_OUT.reason, provenance: FICTIONAL_DEBT_PROVENANCE },
+        { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "walker", file: FICTIONAL_LOCATION_INPUT.file, reason: FICTIONAL_LOCATION_INPUT.reason, provenance: FICTIONAL_AUTHORISATION_PROVENANCE },
+        { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "walker", file: FICTIONAL_LOCATION_INPUT.file, reason: FILE_CARVE_OUT.reason, provenance: FICTIONAL_DEBT_PROVENANCE },
       ],
       invalid: [
         { place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "evidence-refused", detail: expect.any(String) } },
@@ -420,7 +420,7 @@ describe("non-exemptibility at the canonical boundary, for a clause whose discip
     { kind: "file-carve-out", clause: "CD-1#any-cast", file: "src/unsafe.ts", reason: "fictional non-exemptibility input", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
     { kind: "clause-wide-carve-out", clause: "CD-1#any-cast", reason: "fictional non-exemptibility input", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
   ] as const)("refuses an adopted any clause for $kind", (entry) => {
-    expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: entry }], selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "audit", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] }, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({ records: [], invalid: [
+    expect(parseExceptionEntries({ entries: [{ place: AT_0, entry: entry }], selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "walker", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] }, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE })).toEqual({ records: [], invalid: [
       { place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "non-exemptible-clause", clause: { ruleSet: "hone", discipline: "CD-1", clause: "any-cast" } } },
     ] });
   });
@@ -439,7 +439,7 @@ const IMPORTED_CARVE_OUT = {
 const IMPORTED_RECORD = {
   kind: "file-carve-out",
   clause: CLASS_SYNTAX,
-  mechanism: "audit",
+  mechanism: "walker",
   file: "src/legacy.ts",
   reason: IMPORTED_CARVE_OUT.reason,
   provenance: IMPORTED_CARVE_OUT.provenance,
@@ -595,7 +595,7 @@ describe("parseExceptionEntries imported records against the base revision", () 
     expect(
       parseExceptionEntries({
         entries: [{ place: AT_0, entry: { ...IMPORTED_CARVE_OUT, clause: "CD-1#any-cast" } }],
-        selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "audit", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+        selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "walker", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
         fileExceptionWhyChains: "required",
         baseline: baselineHolding({ entriesAtBase: [IMPORTED_CARVE_OUT], sourceTextsAtBase: new Map() }),
       }),
@@ -627,7 +627,7 @@ const MOVED_IMPORTED_CARVE_OUT = {
 const MOVED_IMPORTED_RECORD = {
   kind: "file-carve-out",
   clause: CLASS_SYNTAX,
-  mechanism: "audit",
+  mechanism: "walker",
   file: "src/moved/legacy.ts",
   reason: "legacy class awaiting paydown",
   provenance: { kind: "inherited-debt", source: ".constitution-carve-outs/cd-14.json#0", decision: "fictional migration fixture; not a live debt decision" },
@@ -705,7 +705,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         {
           kind: "authorised-location",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/moved/legacy.ts",
           reason: "the wrapping factory for the library",
           provenance: { kind: "existing-authorisation", source: ".constitution-authorised-locations/cd-14.json#0" },
@@ -728,7 +728,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         {
           kind: "file-carve-out",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/moved/legacy.ts",
           reason: "legacy class awaiting paydown",
           whyChain: LEGACY_WHY_CHAIN,
@@ -847,7 +847,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         {
           kind: "file-carve-out",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/moved/legacy.ts",
           reason: "paid down once tools/install-proof.ts stops importing it",
           provenance: { kind: "inherited-debt", source: ".constitution-carve-outs/cd-14.json#0", decision: "fictional migration fixture; not a live debt decision" },
@@ -954,7 +954,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         {
           kind: "file-carve-out",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/legacy.ts",
           reason: "legacy class awaiting paydown",
           provenance: { kind: "inherited-debt", source: ".constitution-carve-outs/cd-14.json#0", decision: "fictional migration fixture; not a live debt decision" },
@@ -1001,7 +1001,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         {
           kind: "file-carve-out",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/other.ts",
           reason: "held until src/legacy.ts is paid down",
           whyChain: LEGACY_WHY_CHAIN,
@@ -1144,7 +1144,7 @@ describe("parseExceptionEntries follows a file renamed since the base revision",
         {
           kind: "file-carve-out",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/legacy.ts",
           reason: "held until it stops importing y/a.ts.",
           provenance: { kind: "inherited-debt", source: ".constitution-carve-outs/cd-14.json#0", decision: "fictional migration fixture; not a live debt decision" },
@@ -1230,8 +1230,8 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
       parsedWithOptionalWhyChains({ entries: [{ place: AT_0, entry: REASONED_LOCATION }, { place: AT_1, entry: REASONED_CARVE_OUT }], baseline: UNMEASURED_EXCEPTION_BASELINE }),
     ).toEqual({
       records: [
-        { ...REASONED_LOCATION, clause: CLASS_SYNTAX, mechanism: "audit" },
-        { ...REASONED_CARVE_OUT, clause: CLASS_SYNTAX, mechanism: "audit" },
+        { ...REASONED_LOCATION, clause: CLASS_SYNTAX, mechanism: "walker" },
+        { ...REASONED_CARVE_OUT, clause: CLASS_SYNTAX, mechanism: "walker" },
       ],
       invalid: [],
     });
@@ -1260,7 +1260,7 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
     expect(
       parsedWithOptionalWhyChains({ entries: [{ place: AT_0, entry: { ...entry, whyChain: SHORT_CHAIN } }, { place: AT_1, entry: { ...entry, file: "src/chained.ts", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN } }], baseline: UNMEASURED_EXCEPTION_BASELINE }),
     ).toEqual({
-      records: [{ ...entry, file: "src/chained.ts", clause: CLASS_SYNTAX, mechanism: "audit", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN }],
+      records: [{ ...entry, file: "src/chained.ts", clause: CLASS_SYNTAX, mechanism: "walker", whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN }],
       invalid: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, problem: { kind: "why-chain-refused", detail: expect.any(String) } }],
     });
   });
@@ -1302,7 +1302,7 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
     expect(
       parseExceptionEntries({
         entries: [{ place: AT_0, entry: { ...REASONED_CARVE_OUT, clause: "CD-1#any-cast" } }],
-        selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "audit", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+        selection: { selected: [{ address: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") }, mechanism: "walker", exceptions: "refused" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
         fileExceptionWhyChains: "optional",
         baseline: UNMEASURED_EXCEPTION_BASELINE,
       }).invalid,
@@ -1328,7 +1328,7 @@ describe("parseExceptionEntries holds a file carve-out as debt, which needs no w
   it.each(["required", "optional"] as const)("accepts a reason-only file carve-out while file exception why-chains are %s", (fileExceptionWhyChains) => {
     expect(
       parseExceptionEntries({ entries: [{ place: AT_0, entry: REASONED_CARVE_OUT }], selection: SELECTION, fileExceptionWhyChains, baseline: NOTHING_AT_BASE }),
-    ).toEqual({ records: [{ ...REASONED_CARVE_OUT, clause: CLASS_SYNTAX, mechanism: "audit" }], invalid: [] });
+    ).toEqual({ records: [{ ...REASONED_CARVE_OUT, clause: CLASS_SYNTAX, mechanism: "walker" }], invalid: [] });
   });
 
   it.each(["required", "optional"] as const)("accepts a file carve-out that gives no reason, or a blank one, while file exception why-chains are %s", (fileExceptionWhyChains) => {
@@ -1346,8 +1346,8 @@ describe("parseExceptionEntries holds a file carve-out as debt, which needs no w
       }),
     ).toEqual({
       records: [
-        { ...bare, clause: CLASS_SYNTAX, mechanism: "audit" },
-        { ...bare, file: "src/blank.ts", reason: " ", clause: CLASS_SYNTAX, mechanism: "audit" },
+        { ...bare, clause: CLASS_SYNTAX, mechanism: "walker" },
+        { ...bare, file: "src/blank.ts", reason: " ", clause: CLASS_SYNTAX, mechanism: "walker" },
       ],
       invalid: [],
     });
@@ -1405,7 +1405,7 @@ const LEGACY_CLAUSE_WIDE = { ...CLAUSE_WIDE, whyChain: LEGACY_WHY_CHAIN };
 const LEGACY_RECORD = {
   kind: "file-carve-out",
   clause: CLASS_SYNTAX,
-  mechanism: "audit",
+  mechanism: "walker",
   file: "src/legacy.ts",
   reason: FILE_CARVE_OUT.reason,
   whyChain: LEGACY_WHY_CHAIN,
@@ -1543,7 +1543,7 @@ describe("legacyChainsIn reports whether any entry holds a chain without rootChe
 
 const CLASS_SYNTAX_ADDRESS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const IMPORTED_EXCEPTION_RECORD: ExceptionRecord = {
   kind: "file-carve-out",
@@ -1610,7 +1610,7 @@ describe("parseExceptionEntries over the entries of a discipline-exceptions.json
         {
           kind: "authorised-location",
           clause: CLASS_SYNTAX,
-          mechanism: "audit",
+          mechanism: "walker",
           file: "src/factory.ts",
           reason: LOCATION.reason,
           provenance: { kind: "existing-authorisation", source: "fictional unit fixture exception-records.test.ts#SINGLE_FILE_TEXT; not historical authorisation" },

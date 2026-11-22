@@ -28,7 +28,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const LINT = "eslint" as const;
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 const ABSTRACT_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
@@ -43,7 +43,7 @@ const FIXTURE_SOURCE = "fictional unit fixture core/check/run-project.test.ts; n
 const CLASS_SYNTAX_CLAUSE = {
   address: CLASS_SYNTAX,
   anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
+  pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
   settings: { module: "class-syntax.ts" },
   clauseSettings: {},
   edition: editionOf("1"),
@@ -239,7 +239,7 @@ describe("runProject", () => {
     const writes = await runProject(projectRequest({ engine, modules }));
     expect({ writes, loads: vi.mocked(engine.load).mock.calls }).toEqual({
       writes: { outcome: "ok", value: [] },
-      loads: [[expect.objectContaining({ installRoot: "/install", moduleExtension: ".ts", modules, path: POSIX_JOIN, mechanism: "audit" })]],
+      loads: [[expect.objectContaining({ installRoot: "/install", moduleExtension: ".ts", modules, path: POSIX_JOIN, mechanism: "walker" })]],
     });
   });
 
@@ -277,7 +277,7 @@ describe("runProject", () => {
     };
     await expect(runProject(projectRequest({ engine }))).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "runner-invalid", mechanism: "audit", detail: "exceptionPath is unknown-path" },
+      error: { kind: "runner-invalid", mechanism: "walker", detail: "exceptionPath is unknown-path" },
     });
   });
 });
@@ -352,7 +352,7 @@ describe("runProject with an embedded runner", () => {
                 {
                   kind: "authorised-location",
                   clause: { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" },
-                  mechanism: "audit",
+                  mechanism: "walker",
                   file: "src/walker.ts",
                   reason: "audit location",
                   whyChain: LEGACY_WHY_CHAIN,
@@ -372,7 +372,7 @@ describe("runProject for a repository that does not adopt a clause", () => {
     const writes = await runProject(projectRequest({ engine, selectionRepositoryOf: selectionReading({ outcome: "ok", value: ABSTRACT_NOT_ADOPTED_READING }) }));
     expect({ writes, loads: vi.mocked(engine.load).mock.calls, projectCalls: vi.mocked(engine.project.withRecords).mock.calls }).toEqual({
       writes: { outcome: "ok", value: [{ path: "disciplines.eslint.mjs", effect: "written" }] },
-      loads: [[expect.objectContaining({ mechanism: "audit" })]],
+      loads: [[expect.objectContaining({ mechanism: "walker" })]],
       projectCalls: [
         [{ runner: AUDIT_RUNNER, request: expect.objectContaining({ clauses: [expect.objectContaining({ address: { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" } })], records: [] }) }],
       ],

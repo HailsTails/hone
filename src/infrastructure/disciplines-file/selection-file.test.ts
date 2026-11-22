@@ -3,7 +3,7 @@ import { runSettingsOf, selectionFileOf } from "./selection-file.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 
-const CLASS_SYNTAX_RUN = { "CD-14#class-syntax": "audit" };
+const CLASS_SYNTAX_RUN = { "CD-14#class-syntax": "walker" };
 
 const documentWith = (request: Readonly<Record<string, unknown>>): Record<string, unknown> => ({
   version: 1,
@@ -28,24 +28,24 @@ describe("selectionFileOf reading the selection", () => {
       parsed({
         version: 1,
         ruleSets: { team: "team-rules" },
-        clauses: { "CD-14#class-syntax": "audit", "team/TM-1#no-tmp-files": "audit" },
+        clauses: { "CD-14#class-syntax": "walker", "team/TM-1#no-tmp-files": "walker" },
       }),
     ).toMatchObject({
       outcome: "ok",
       value: {
         ruleSets: [["team", { location: "folder", path: "team-rules" }]],
         clauses: [
-          [{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { state: "run", mechanism: "audit" }],
-          [{ ruleSet: { name: "team" }, discipline: "TM-1", clause: "no-tmp-files" }, { state: "run", mechanism: "audit" }],
+          [{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { state: "run", mechanism: "walker" }],
+          [{ ruleSet: { name: "team" }, discipline: "TM-1", clause: "no-tmp-files" }, { state: "run", mechanism: "walker" }],
         ],
       },
     });
   });
 
   it("reads a hone-prefixed clause as the same bare-addressed hone clause", () => {
-    expect(parsed(documentWith({ clauses: { "hone/CD-14#class-syntax": "audit" } }))).toMatchObject({
+    expect(parsed(documentWith({ clauses: { "hone/CD-14#class-syntax": "walker" } }))).toMatchObject({
       outcome: "ok",
-      value: { clauses: [[{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { state: "run", mechanism: "audit" }]] },
+      value: { clauses: [[{ ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" }, { state: "run", mechanism: "walker" }]] },
     });
   });
 
@@ -100,7 +100,7 @@ describe("selectionFileOf reading the selection", () => {
 describe("selectionFileOf refusing a malformed selection", () => {
   it.each([
     ["an extra top-level key", { mechanisms: {} }],
-    ["a clauses key that is not a clause address", { clauses: { "CD-14 class-syntax": "audit" } }],
+    ["a clauses key that is not a clause address", { clauses: { "CD-14 class-syntax": "walker" } }],
     ["a ruleSets key the rule-set name schema refuses", { ruleSets: { "team rules": "team-rules" }, clauses: {} }],
     ["a ruleSets value that is not a string", { ruleSets: { team: 7 }, clauses: {} }],
     ["a ruleSets value written with a backslash", { ruleSets: { team: "tools\\disciplines" }, clauses: {} }],
@@ -171,14 +171,14 @@ describe("selectionFileOf refusing a rule-set name or clause", () => {
   });
 
   it("refuses a clause selected twice, once bare and once with the hone prefix", () => {
-    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "audit", "hone/CD-14#class-syntax": "eslint" } }))).toEqual({
+    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "walker", "hone/CD-14#class-syntax": "eslint" } }))).toEqual({
       outcome: "failed",
       error: { kind: "duplicate-clause", address: "CD-14#class-syntax", prefixedAddress: "hone/CD-14#class-syntax" },
     });
   });
 
   it("refuses a clause both adopted and not adopted, bare and hone-prefixed, as duplicate-clause", () => {
-    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "audit", "hone/CD-14#class-syntax": "not-adopted" } }))).toEqual({
+    expect(parsed(documentWith({ clauses: { "CD-14#class-syntax": "walker", "hone/CD-14#class-syntax": "not-adopted" } }))).toEqual({
       outcome: "failed",
       error: { kind: "duplicate-clause", address: "CD-14#class-syntax", prefixedAddress: "hone/CD-14#class-syntax" },
     });
@@ -242,7 +242,7 @@ describe("selectionFileOf with clauseSettings", () => {
     expect(
       parsed(
         documentWith({
-          clauses: { "CD-14#class-syntax": "not-adopted", "CD-14#abstract-syntax": "audit" },
+          clauses: { "CD-14#class-syntax": "not-adopted", "CD-14#abstract-syntax": "walker" },
           clauseSettings: { "CD-14#class-syntax": { style: "strict" } },
         }),
       ),
@@ -260,7 +260,7 @@ describe("selectionFileOf with clauseSettings", () => {
     expect(
       parsed(
         documentWith({
-          clauses: { "CD-14#class-syntax": "not-run", "CD-14#abstract-syntax": "audit" },
+          clauses: { "CD-14#class-syntax": "not-run", "CD-14#abstract-syntax": "walker" },
           clauseSettings: { "CD-14#class-syntax": { style: "strict" } },
         }),
       ),
@@ -330,7 +330,7 @@ describe("runSettingsOf", () => {
       settingsOf({
         version: 1,
         ruleSets: {},
-        clauses: { "CD-99#missing": "audit" },
+        clauses: { "CD-99#missing": "walker" },
         reportOutput: "counts",
         assessment: { forfeiture: "elsewhere" },
       }),

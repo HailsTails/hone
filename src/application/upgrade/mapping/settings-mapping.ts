@@ -34,7 +34,7 @@ const stateOf = (request: { readonly check: Check; readonly choice: ClauseChoice
   if (choice.state !== "run") {
     return { outcome: "ok", value: { state: choice.state } };
   }
-  const engines = check.engines.filter((engine) => engine.mechanism === choice.mechanism);
+  const engines = check.engines.filter((engine) => engine.name === choice.mechanism);
   const [engine, ...others] = engines;
   if (engine === undefined) {
     return { outcome: "failed", error: { kind: "no-engine-on-mechanism", check: checkAddressOf({ check }), mechanism: choice.mechanism } };

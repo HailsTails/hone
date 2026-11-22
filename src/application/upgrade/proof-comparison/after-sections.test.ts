@@ -10,7 +10,7 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
@@ -25,9 +25,9 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -170,8 +170,8 @@ describe("afterSectionsOf", () => {
           forfeited: [DEBT],
           available: [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_LOOPS],
           "not-run": [LOOP_KEYWORD_LOOPS],
-          "projection-problems": [{ scope: "slice", engine: { name: "walker", mechanism: AUDIT }, state: "missing", slice: repoPathOf("packages/web") }],
-          unmeasured: [{ kind: "engine-not-run", engine: { name: "walker", mechanism: AUDIT }, projection: "missing" }],
+          "projection-problems": [{ scope: "slice", engine: { name: "walker" }, state: "missing", slice: repoPathOf("packages/web") }],
+          unmeasured: [{ kind: "engine-not-run", engine: { name: "walker" }, projection: "missing" }],
           assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 1 }],
         },
       }),

@@ -44,7 +44,7 @@ const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, Recor
     .toSorted((left, right) => left.order - right.order)
     .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
@@ -59,9 +59,9 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

@@ -26,7 +26,7 @@ import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-t
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import { runner as walkerRunner } from "../../../audit/runner/runner.ts";
+import { runner as walkerRunner } from "../../../walker/runner/runner.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort, type EslintClass, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
@@ -377,7 +377,7 @@ const ESLINT_CLAUSE: RunnerClause = {
 const WALKER_CLAUSE: RunnerClause = {
   address: CLAUSE,
   anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/audit/CD-14`,
+  pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/CD-14`,
   clauseSettings: {},
   edition: FIRST_EDITION,
   settings: { module: "class-syntax.ts" },

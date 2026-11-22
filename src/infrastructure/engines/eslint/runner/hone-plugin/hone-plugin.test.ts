@@ -29,7 +29,7 @@ const SKIPPED_TESTS_CHECK: Check = {
     correctUses: [],
   },
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("skipped-tests") },
-  engines: [{ name: "eslint", mechanism: "eslint" }],
+  engines: [{ name: "eslint" }],
   forms: [],
 };
 

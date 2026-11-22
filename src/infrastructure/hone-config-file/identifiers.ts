@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { brandedTextSchema } from "../content-files/branded-schema.ts";
-import type { ClauseId, DisciplineId, MechanismId, RuleSetName } from "../../domain/rule-set/identifier-types.ts";
+import type { ClauseId, DisciplineId, EngineId, RuleSetName } from "../../domain/rule-set/identifier-types.ts";
 import { isClauseId, isDisciplineId, isRuleSetName } from "../../domain/rule-set/identifiers.ts";
 import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
@@ -21,9 +21,11 @@ export const clauseIdSchema = brandedTextSchema({
   isBranded: isClauseId,
   refusal: NOT_AN_IDENTIFIER,
 });
-export const mechanismIdSchema = z.enum(["audit", "eslint"]);
+export const engineIdSchema = z.enum(["walker", "eslint"]);
+
+export const versionOneEngineIdSchema = z.union([engineIdSchema, z.literal("audit").transform((): EngineId => "walker")]);
 
 export const isRuleSetNameSchemaEqual: Equal<z.output<typeof ruleSetNameSchema>, RuleSetName> = true;
 export const isDisciplineIdSchemaEqual: Equal<z.output<typeof disciplineIdSchema>, DisciplineId> = true;
 export const isClauseIdSchemaEqual: Equal<z.output<typeof clauseIdSchema>, ClauseId> = true;
-export const isMechanismIdSchemaEqual: Equal<z.output<typeof mechanismIdSchema>, MechanismId> = true;
+export const isEngineIdSchemaEqual: Equal<z.output<typeof engineIdSchema>, EngineId> = true;

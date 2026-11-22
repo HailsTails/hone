@@ -69,7 +69,7 @@ const CLAUSE_ROOTS = [
 
 const findingOn = (request: { readonly clause: Finding["clause"]; readonly file: RepoPath }): Finding => ({
   clause: request.clause,
-  mechanism: "audit",
+  mechanism: "walker",
   file: request.file,
   anchor: { line: 1, column: 0 },
   snippet: "const total = 0;",

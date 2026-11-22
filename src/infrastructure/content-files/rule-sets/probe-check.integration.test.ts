@@ -4,14 +4,14 @@ import type { EntryKindPort } from "../../../application/ports/file-system/entry
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { selectionFrom } from "../../disciplines-file/consumer-selection.ts";
 import { selectionFileOf } from "../../disciplines-file/selection-file.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
-import * as exportTestSibling from "../../engines/audit/CD-23/export-test-sibling.ts";
-import { createWalkerRunner } from "../../engines/audit/runner/create-walker-runner.ts";
+import * as exportTestSibling from "../../engines/walker/CD-23/export-test-sibling.ts";
+import { createWalkerRunner } from "../../engines/walker/runner/create-walker-runner.ts";
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
@@ -67,7 +67,7 @@ const SELECTION_FILE = selectionFileOf({
   document: {
     version: 1,
     ruleSets: { probe: "probe-rule-set" },
-    clauses: { "probe/PD-1#no-tmp-files": "audit", "CD-23#export-test-sibling": "audit" },
+    clauses: { "probe/PD-1#no-tmp-files": "walker", "CD-23#export-test-sibling": "walker" },
   },
 });
 assert(SELECTION_FILE.outcome === "ok", "the selection names the probe rule set's PD-1 beside CD-23");
@@ -88,8 +88,8 @@ assert.isDefined(PROBE_BINDING, "the selection binds the probe clause");
 assert.isDefined(EXPORT_TEST_SIBLING_BINDING, "the selection binds the CD-23 clause");
 
 const PIECE_MODULES: Readonly<Record<string, unknown>> = {
-  [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "audit", "CD-23", "export-test-sibling.ts"] })]: exportTestSibling,
-  [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "audit", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
+  [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "walker", "CD-23", "export-test-sibling.ts"] })]: exportTestSibling,
+  [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "walker", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
 };
 
 const pieceModules: ModuleLoaderPort = {

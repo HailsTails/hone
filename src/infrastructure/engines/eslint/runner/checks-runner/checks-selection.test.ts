@@ -11,7 +11,7 @@ const EXPLICIT_ANY: RuledCheck = {
   name: "explicit-any",
   symptom: { name: "untyped-value", title: "Untyped value" },
   clause: CLAUSE,
-  engines: [{ mechanism: "eslint" }],
+  engines: [{ name: "eslint" }],
 };
 
 describe("selectedChecksOf", () => {

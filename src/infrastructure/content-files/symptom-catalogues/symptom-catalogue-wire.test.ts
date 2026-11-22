@@ -34,8 +34,8 @@ const DOCUMENT = {
   ],
   recordKinds: RECORD_KINDS_DOCUMENT,
   engines: [
-    { name: "walker", mechanism: "audit" },
-    { name: "eslint", mechanism: "eslint" },
+    { name: "walker" },
+    { name: "eslint" },
   ],
   symptoms: [
     {
@@ -107,9 +107,9 @@ const AUTHORISED_LOCATION: RecordKind = {
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -169,7 +169,7 @@ const SYMPTOM_HOLDING_DOCUMENT = {
   ...EMPTY_DOCUMENT,
   principles: PRINCIPLES_DOCUMENT,
   cases: [CASE_DOCUMENT],
-  engines: [{ name: "eslint", mechanism: "eslint" }],
+  engines: [{ name: "eslint" }],
   symptoms: [SYMPTOM_DOCUMENT],
   clauses: [{ clause: "CD-42#useless-else", sight: { kind: "one-symptom", symptom: "work-inside-a-condition" } }],
 };
@@ -316,8 +316,8 @@ describe("catalogueContentOf", () => {
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         engines: [
-          { name: "eslint", mechanism: "eslint" },
-          { name: "eslint", mechanism: "audit" },
+          { name: "eslint" },
+          { name: "eslint", mechanism: "walker" },
         ],
       },
       refusal: "✖ engines holds eslint more than once",
@@ -369,7 +369,7 @@ describe("catalogueContentOf", () => {
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         engines: [
-          { name: "eslint", mechanism: "eslint" },
+          { name: "eslint" },
           { name: "linter", mechanism: "eslint" },
         ],
       },

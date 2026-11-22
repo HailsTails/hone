@@ -1,5 +1,5 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
 import type { RunnerCall } from "../../ports/engine/runner-module.ts";
@@ -29,15 +29,15 @@ const A = repoPathOf("src/a.ts");
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
 const CAST_EXPRESSIONS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") };
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const DECLARED_NOT_ASSERTED: Rule = {
   name: "declared-not-asserted",
@@ -92,7 +92,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const README = repoPathOf("README.md");
 
-const bindingOn = (request: { readonly mechanism: MechanismId }): ClauseBinding => ({
+const bindingOn = (request: { readonly mechanism: EngineId }): ClauseBinding => ({
   mechanism: request.mechanism,
   clause: { address: CAST_EXPRESSIONS, anchor: { kind: "file" }, pieceRoot: "/install/pieces", clauseSettings: {}, edition: editionOf("1"), settings: {} },
 });

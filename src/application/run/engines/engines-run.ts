@@ -8,7 +8,7 @@ import type { SymptomCatalogue } from "../../../domain/language-layer/symptom-ca
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../domain/gathered-outcomes.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { ModuleExtension } from "../../ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
 import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
@@ -30,7 +30,7 @@ export type EnginesRunRequest = {
   readonly engine: EnginePort;
 };
 
-const mechanismsOf = (request: { readonly settings: SettingsReading }): readonly MechanismId[] => [
+const mechanismsOf = (request: { readonly settings: SettingsReading }): readonly EngineId[] => [
   ...new Set(request.settings.selection.bindings.map((binding) => binding.mechanism)),
 ];
 
@@ -51,12 +51,12 @@ const runRequestOf = (request: EnginesRunRequest): EngineRunRequest => ({
   declaredConfigLookup: declaredLookupOf({ settings: request.settings }),
 });
 
-const runOf = async (request: EnginesRunRequest & { readonly mechanism: MechanismId }): Promise<Result<EngineRun, RunFailureSource>> => {
+const runOf = async (request: EnginesRunRequest & { readonly mechanism: EngineId }): Promise<Result<EngineRun, RunFailureSource>> => {
   const engine = await request.engine.load(request);
   return engine.outcome === "failed" ? engine : request.engine.run.checks({ engine: engine.value, request: runRequestOf(request) });
 };
 
-const projectionOf = async (request: EnginesRunRequest & { readonly mechanism: MechanismId }): Promise<Result<readonly ProjectedFile[], RunFailureSource>> => {
+const projectionOf = async (request: EnginesRunRequest & { readonly mechanism: EngineId }): Promise<Result<readonly ProjectedFile[], RunFailureSource>> => {
   const engine = await request.engine.load(request);
   return engine.outcome === "failed" ? engine : request.engine.project.checks({ engine: engine.value, request: runRequestOf(request) });
 };

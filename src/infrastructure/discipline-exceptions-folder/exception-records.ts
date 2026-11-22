@@ -2,10 +2,10 @@ import { z } from "zod";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
 import { parsedJson } from "../content-files/rule-sets/rule-set-reader.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
-import type { ClauseAddress, LegacyClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
+import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../../domain/rule-set/clause-address.ts";
 import type { FileExceptionWhyChains } from "../../domain/settings/selection/file-exception-why-chains.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { basePathOf } from "../../domain/repository/renamed-path.ts";
@@ -371,7 +371,7 @@ const judgedWhyChain = (request: {
         : causalChainOf({ whyChain: request.whyChain, preface: [LEGACY_CHAIN_NEW_OR_EDITED] }),
   });
 
-type ClauseSelection = { readonly clause: LegacyClauseAddress; readonly mechanism: MechanismId };
+type ClauseSelection = { readonly clause: ClauseAddress; readonly mechanism: EngineId };
 
 const unselectedKindOf = (request: {
   readonly selection: Selection;
@@ -413,8 +413,8 @@ const selectedClauseOf = (request: {
 const fileRecordOf = (request: {
   readonly evidence: Unjudged<AuthorisedLocationEntry> | Unjudged<FileCarveOutEntry>;
   readonly entry: StructuralExceptionEntry;
-  readonly clause: LegacyClauseAddress;
-  readonly mechanism: MechanismId;
+  readonly clause: ClauseAddress;
+  readonly mechanism: EngineId;
   readonly file: RepoPath;
   readonly baseline: ExceptionBaseline;
 }): Result<ExceptionRecord, EntryProblem> => {

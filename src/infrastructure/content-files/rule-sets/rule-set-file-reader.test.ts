@@ -13,7 +13,7 @@ const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
 
 const TM_1_TEXT = '{ "version": 1, "id": "TM-1", "clauses": [{ "kind": "judgement", "id": "naming", "summary": "names say what they hold", "enforcedBy": "review" }] }';
 
-const PIECE_TEXT = '{ "version": 1, "discipline": "TM-1", "mechanism": "audit", "clauses": [] }';
+const PIECE_TEXT = '{ "version": 1, "discipline": "TM-1", "mechanism": "walker", "clauses": [] }';
 
 describe("createRuleSetFileReader", () => {
   it("reads a held discipline through the rule set's discipline reader", () => {
@@ -38,10 +38,10 @@ describe("createRuleSetFileReader", () => {
       reader.pieceFile({
         ruleSetRoot: TEAM_ROOT,
         installRoot: INSTALL_ROOT,
-        mechanism: "audit",
+        mechanism: "walker",
         discipline: { version: 1, id: disciplineIdOf("TM-1"), clauses: [] },
       }),
-    ).toMatchObject({ outcome: "ok", value: { discipline: "TM-1", mechanism: "audit", clauses: [] } });
+    ).toMatchObject({ outcome: "ok", value: { discipline: "TM-1", mechanism: "walker", clauses: [] } });
     expect(read.mock.calls).toEqual([[{ path: "/repo/team-rules/mechanisms/audit/TM-1/piece.json" }]]);
   });
 });

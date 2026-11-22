@@ -19,7 +19,7 @@ import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-dis
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import type { MechanismId } from "../../../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { createEslintPort, type EslintToolchain } from "./eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainPeers, loadEslintToolchain } from "./eslint-toolchain.ts";
@@ -91,7 +91,7 @@ const disciplineOf = (request: { readonly fileText: FileTextPort; readonly disci
 const rowsOf = (request: {
   readonly fileText: FileTextPort;
   readonly discipline: string;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const discipline = disciplineOf(request);
@@ -126,7 +126,7 @@ const rowsOf = (request: {
 
 const conformanceRows = (request: {
   readonly disciplines: readonly string[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const fileText = createDefaultFileTextPort({});

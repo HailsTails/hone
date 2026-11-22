@@ -32,7 +32,7 @@ const CHECK: PlacedItem = {
 };
 
 const BESIDE: HeldBesideItems = {
-  engines: [{ name: "walker", mechanism: "audit" }],
+  engines: [{ name: "walker" }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
   formatsOfToday: { debt: "file-carve-out" },
@@ -51,7 +51,7 @@ describe("catalogueFileOf", () => {
         cases: [],
         recipes: [],
         recordKinds: [{ name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" }],
-        engines: [{ name: "walker", mechanism: "audit" }],
+        engines: [{ name: "walker" }],
         symptoms: [],
         clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
         checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: CLOCK_SOURCES }],
@@ -89,13 +89,10 @@ describe("catalogueFileOf", () => {
     expect(catalogueFileOf({ items: [{ ...DEBT, name: "lien" }], beside: NOTHING_BESIDE })).toEqual({ outcome: "failed", error: "lien is not the name of a record kind" });
   });
 
-  it("registers a check from its item without a version 1 entry", () => {
-    expect(catalogueFileOf({ items: [CHECK], beside: NOTHING_BESIDE })).toMatchObject({
-      outcome: "ok",
-      value: {
-        clauses: [{ clause: { ruleSet: "hone", symptom: "date-used-directly", check: "clock-sources" }, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-        checks: [{ symptom: "date-used-directly", name: "clock-sources", clause: { ruleSet: "hone", symptom: "date-used-directly", check: "clock-sources" } }],
-      },
+  it("refuses a check that no clause of the version 1 names gives", () => {
+    expect(catalogueFileOf({ items: [CHECK], beside: NOTHING_BESIDE })).toEqual({
+      outcome: "failed",
+      error: "date-used-directly#clock-sources is named by no clause in the version 1 names",
     });
   });
 

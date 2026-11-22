@@ -1,5 +1,5 @@
 import * as editionReach from "./domain/rule-set/edition-reach.ts";
-import * as sourceScope from "./infrastructure/engines/audit/runner/pieces/source-scope.ts";
+import * as sourceScope from "./infrastructure/engines/walker/runner/pieces/source-scope.ts";
 
 export type { PieceFailure } from "./domain/runner/piece-failure-types.ts";
 export type { ClauseSettingValues, RunnerClause } from "./domain/runner/runner-module-types.ts";
@@ -11,8 +11,8 @@ export type { ClauseAddress, ToolRuleSet } from "./domain/rule-set/clause-addres
 export type { ClauseId, DisciplineId, RuleSetName } from "./domain/rule-set/identifier-types.ts";
 export type { RepoPath } from "./domain/repository/repo-path-types.ts";
 export type { Result } from "./domain/result.ts";
-export type { CommentRange, SyntaxApi, SyntaxNode, SyntaxTree } from "./infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
-export type { PieceHit, PreparedFileCheck, PreparedWalkerCheck, SourceObservers, WalkerDisk, WalkerFile, WalkerPiece, WalkerRepository } from "./infrastructure/engines/audit/runner/pieces/walker-piece.ts";
+export type { CommentRange, SyntaxApi, SyntaxNode, SyntaxTree } from "./infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
+export type { PieceHit, PreparedFileCheck, PreparedWalkerCheck, SourceObservers, WalkerDisk, WalkerFile, WalkerPiece, WalkerRepository } from "./infrastructure/engines/walker/runner/pieces/walker-piece.ts";
 
 export const folderScope = sourceScope.folderScope;
 

@@ -1,5 +1,5 @@
 import { type CheckRequest, findingsOf, loadInputs, mechanismRuns, projectionOutcome, sliceProblemsOf, treeOf } from "../../run/check/run-check.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
@@ -14,7 +14,7 @@ const failureOf = (request: { readonly failure: LoadFailure; readonly loadFailur
   error: { kind: "version-one-run-failed", detail: request.loadFailureDetail({ failure: request.failure }) },
 });
 
-const projectionFileOf = (request: { readonly mechanism: MechanismId }): RepoPath => repoPathOf(`disciplines.${request.mechanism}.mjs`);
+const projectionFileOf = (request: { readonly mechanism: EngineId }): RepoPath => repoPathOf(`disciplines.${request.mechanism}.mjs`);
 
 const projectionFailureOf = (request: { readonly runs: readonly MechanismRun[] }): EnginePassFailure | undefined => {
   const outcomes = request.runs.map((run) => projectionOutcome({ run }));

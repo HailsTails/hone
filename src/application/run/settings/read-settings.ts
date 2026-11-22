@@ -4,7 +4,7 @@ import type { RunSettings } from "../../../domain/settings/run-settings.ts";
 import type { ClauseBinding, ClauseEditionReading, ClauseRoot, SelectedClause, SelectionReading } from "../../../domain/settings/selection/selection.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSetCatalogue, sameRuleSet } from "../../../domain/settings/check-choices.ts";
@@ -78,7 +78,7 @@ const cataloguesHeld = (request: SourcesRequest): Result<readonly RuleSetCatalog
 };
 
 const boundClauseOf = (
-  request: SourcesRequest & { readonly chosen: ChosenClause; readonly mechanism: MechanismId; readonly settingsPath: string },
+  request: SourcesRequest & { readonly chosen: ChosenClause; readonly mechanism: EngineId; readonly settingsPath: string },
 ): Result<BoundClause, VersionTwoLoadFailure> => {
   const { chosen, mechanism } = request;
   const ruleSetRoot = request.sources.ruleSetRoot({ ruleSet: chosen.clause.ruleSet, ruleSets: request.file.ruleSets });
@@ -119,8 +119,8 @@ const boundClauseOf = (
   };
 };
 
-const runClauses = (request: { readonly clauses: readonly ChosenClause[] }): readonly (readonly [ChosenClause, MechanismId])[] =>
-  request.clauses.flatMap((chosen): readonly (readonly [ChosenClause, MechanismId])[] =>
+const runClauses = (request: { readonly clauses: readonly ChosenClause[] }): readonly (readonly [ChosenClause, EngineId])[] =>
+  request.clauses.flatMap((chosen): readonly (readonly [ChosenClause, EngineId])[] =>
     chosen.choice.state === "run" ? [[chosen, chosen.choice.mechanism]] : [],
   );
 

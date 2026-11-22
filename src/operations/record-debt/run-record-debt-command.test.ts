@@ -59,7 +59,7 @@ const NOTHING_SELECTED: SelectionReading = {
 
 const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const BASKET = repoPathOf("src/basket.ts");
 
@@ -71,7 +71,7 @@ const LOOPS_SELECTED: SelectionReading = {
   bindings: [
     {
       mechanism: AUDIT,
-      clause: { address: LOOPS, anchor: { kind: "keyword", keyword: "for" }, pieceRoot: "/install/src/infrastructure/engines/audit/CD-15", settings: {}, clauseSettings: {}, edition: editionOf("1") },
+      clause: { address: LOOPS, anchor: { kind: "keyword", keyword: "for" }, pieceRoot: "/install/src/infrastructure/engines/walker/CD-15", settings: {}, clauseSettings: {}, edition: editionOf("1") },
     },
   ],
 };

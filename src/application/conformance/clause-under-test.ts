@@ -7,7 +7,7 @@ import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { ClauseDefinition, SourceCase } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressOf } from "../../domain/rule-set/clause-address.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { isRepoPath } from "../../domain/repository/repo-path.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
@@ -18,7 +18,7 @@ export type RuleSetReading = {
   readonly ruleSetFiles: RuleSetFiles;
   readonly loadFailureDetail: LoadFailureDetail;
   readonly path: PathPort;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly installRoot: AbsolutePath;
 };
 

@@ -9,7 +9,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const SRC_A = repoPathOf("src/a.ts");
 

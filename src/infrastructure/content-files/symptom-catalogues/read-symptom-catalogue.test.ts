@@ -44,9 +44,9 @@ const MAKES_A_NEW_VALUE: Case = {
   owes: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
 };
 
-const WALKER: Engine = { name: "walker", mechanism: "audit" };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT: Engine = { name: "eslint" };
 
 const PARAMETER_REASSIGNMENT = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-reassignment") };
 

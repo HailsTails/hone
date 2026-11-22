@@ -4,7 +4,7 @@ import { createDefaultFileTextPort } from "../../node/file-system/file-text-port
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { readBoundCatalogue } from "./bound-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
-import { TEST_BODY_SECTIONS } from "../../engines/audit/CD-27/test-body-logic.ts";
+import { TEST_BODY_SECTIONS } from "../../engines/walker/CD-27/test-body-logic.ts";
 import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
 import type {
   Case,
@@ -211,7 +211,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 
   const REBINDING: Symptom = { name: "rebinding", title: "rebinding", seen: "rebinding", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 
-  const WALKER: Engine = { name: "walker", mechanism: "audit" };
+  const WALKER: Engine = { name: "walker" };
 
   const MUTATION_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-44"), clause: clauseIdOf("parameter-mutation") };
 

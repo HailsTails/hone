@@ -193,14 +193,14 @@ describe("createPathPort with the win32 flavour, paths on different roots", () =
 
 describe("createPathPort joinRepository", () => {
   it("joins repository segments with forward slashes under the POSIX flavour", () => {
-    expect(pathPortIn({ directory: "/work" }).joinRepository({ segments: ["mechanisms", "audit", "runner"] })).toBe(
+    expect(pathPortIn({ directory: "/work" }).joinRepository({ segments: ["mechanisms", "walker", "runner"] })).toBe(
       "mechanisms/audit/runner",
     );
   });
 
   it("joins repository segments with forward slashes under the win32 flavour", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: ["mechanisms", "audit", "runner"] }),
+      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: ["mechanisms", "walker", "runner"] }),
     ).toBe("mechanisms/audit/runner");
   });
 
@@ -212,7 +212,7 @@ describe("createPathPort joinRepository", () => {
 
   it("drops a leading . root of a repository join under the win32 flavour", () => {
     expect(
-      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: [".", "mechanisms", "audit"] }),
+      windowsPathPortIn({ directory: "C:\\work" }).joinRepository({ segments: [".", "mechanisms", "walker"] }),
     ).toBe("mechanisms/audit");
   });
 });

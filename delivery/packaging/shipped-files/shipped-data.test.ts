@@ -12,7 +12,6 @@ describe("dataShippingOf", () => {
     { path: "rules/CD-14/CHECKS.md", shipping: "shipped" },
     { path: "methods/lenses/naming.md", shipping: "shipped" },
     { path: "src/infrastructure/engines/eslint/CD-14/README.md", shipping: "shipped" },
-    { path: "src/infrastructure/engines/audit/loop-keyword/loop-statement/cases.json", shipping: "shipped" },
     { path: "rules/CD-14/nested/discipline.json", shipping: "not-shipped" },
     { path: "rules/typescript/symptoms.json", shipping: "not-shipped" },
     { path: "src/infrastructure/disciplines-file/selection-file.json", shipping: "not-shipped" },

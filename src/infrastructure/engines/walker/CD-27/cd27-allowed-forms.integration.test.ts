@@ -15,7 +15,7 @@ import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discip
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
-import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
@@ -262,7 +262,7 @@ const disciplineOf = (request: { readonly fileText: FileTextPort; readonly disci
 const rowsOf = (request: {
   readonly fileText: FileTextPort;
   readonly discipline: string;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const discipline = disciplineOf(request);
@@ -297,7 +297,7 @@ const rowsOf = (request: {
 
 const conformanceRows = (request: {
   readonly disciplines: readonly string[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const fileText = createDefaultFileTextPort({});
@@ -320,9 +320,9 @@ const ruleSetTexts = import.meta.glob(
 );
 
 const AUDIT_ROWS = conformanceRows({
-  disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" }),
-  mechanism: "audit",
-  mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/audit`,
+  disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/walker/" }),
+  mechanism: "walker",
+  mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/walker`,
 });
 
 const ESLINT_ROWS = conformanceRows({

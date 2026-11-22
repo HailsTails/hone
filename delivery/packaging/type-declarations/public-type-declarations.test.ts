@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from "vitest";
 import type { Result } from "../../../src/domain/result.ts";
-import type { ExportDeclaration, ImportDeclaration, Statement, SyntaxApi } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-parse.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import type { ExportDeclaration, ImportDeclaration, Statement, SyntaxApi } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-parse.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import {
   type DeclarationEmit,
   type DeclarationFailure,
@@ -163,7 +163,7 @@ describe("publicTypeReachOf over a written-out emit, so the reach can fail", () 
         syntaxApi,
         emitted: { outcome: "ok", value: EMIT },
         entries: [
-          { subpath: "audit", source: "api/audit.ts" },
+          { subpath: "walker", source: "api/audit.ts" },
           { subpath: "rule-set", source: "api/rule-set.ts" },
         ],
         requiredPeers: ["typescript"],
@@ -188,7 +188,7 @@ describe("publicTypeReachOf over a written-out emit, so the reach can fail", () 
           outcome: "ok",
           value: { diagnostics: [], declarations: [{ path: "api/audit.d.ts", text: "export type Schema = 'zod';\n", specifiers: [], refusals: [] }] },
         },
-        entries: [{ subpath: "audit", source: "api/audit.ts" }],
+        entries: [{ subpath: "walker", source: "api/audit.ts" }],
         requiredPeers: [],
       }).zodMentioning,
     ).toEqual(["api/audit.d.ts"]);
@@ -200,7 +200,7 @@ describe("publicTypeReachOf over a written-out emit, so the reach can fail", () 
         syntaxApi,
         emitted: { outcome: "ok", value: EMIT },
         entries: [
-          { subpath: "audit", source: "api/audit.ts" },
+          { subpath: "walker", source: "api/audit.ts" },
           { subpath: "rule-set", source: "api/rule-set.ts" },
         ],
         requiredPeers: [],

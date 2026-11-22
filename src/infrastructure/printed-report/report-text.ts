@@ -1,3 +1,4 @@
+import { versionOneEngineNameOf } from "../../domain/rule-set/engine-id.ts";
 import { recordImportOf } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord, InvalidRecord, RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { AttributedNativeException } from "../../domain/finding/governance.ts";
@@ -5,7 +6,7 @@ import type { ExemptedFinding } from "../../domain/records/discipline-exceptions
 import type { InlineReach, ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { PRUNE_DEBT_SUBCOMMAND } from "../command-line/arguments/subcommand-names.ts";
 import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
-import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import type { ReportOutput } from "../../domain/settings/report-output.ts";
@@ -48,7 +49,7 @@ const recordFile = (request: { readonly record: ExceptionRecord }): string => {
 };
 
 const recordLine = (request: { readonly record: ExceptionRecord }): string =>
-  `${clauseAddressText({ address: request.record.clause })} ${request.record.mechanism} ${request.record.kind} ${recordFile(request)}`;
+  `${clauseAddressText({ address: request.record.clause })} ${versionOneEngineNameOf(request.record.mechanism)} ${request.record.kind} ${recordFile(request)}`;
 
 const INLINE_REACH_NOTE: Readonly<Record<InlineReach, string>> = {
   "one-clause": "",
@@ -91,7 +92,7 @@ const unrecordedDetail = (request: { readonly exception: AttributedNativeExcepti
 };
 
 const unrecordedLine = (request: { readonly exception: AttributedNativeException }): string =>
-  `${clauseAddressText({ address: request.exception.clause })} ${request.exception.mechanism} ${request.exception.kind} ${unrecordedDetail(request)}`;
+  `${clauseAddressText({ address: request.exception.clause })} ${versionOneEngineNameOf(request.exception.mechanism)} ${request.exception.kind} ${unrecordedDetail(request)}`;
 
 const placeText = (request: { readonly place: RecordPlace; readonly form: "entry" | "index" }): string => {
   const { place } = request;
@@ -174,16 +175,16 @@ const baseDependentLine = (request: { readonly unmeasured: BaseDependentUnmeasur
 
 type NextCommands = { readonly projectCommand: string; readonly pruneCommand: string };
 
-const projectionFileOf = (request: { readonly mechanism: MechanismId }): string => `disciplines.${request.mechanism}.mjs`;
+const projectionFileOf = (request: { readonly mechanism: EngineId }): string => `disciplines.${request.mechanism}.mjs`;
 
-const refreshStep = (request: NextCommands & { readonly mechanism: MechanismId }): string =>
+const refreshStep = (request: NextCommands & { readonly mechanism: EngineId }): string =>
   `run ${request.projectCommand} and commit every ${projectionFileOf(request)} it writes`;
 
 const GENERATED_CONFIGURATION = "or, where a tool such as sku generates the configuration, last in the configuration the tool takes";
 
 type ReportRequest = NextCommands & { readonly report: CheckReport };
 
-const sliceNote = (request: ReportRequest & { readonly mechanism: MechanismId }): string =>
+const sliceNote = (request: ReportRequest & { readonly mechanism: EngineId }): string =>
   request.report.projectionProblems.some((problem) => problem.scope === "slice" && problem.mechanism === request.mechanism)
     ? `; the ${request.mechanism} lines under projectionProblems name the package slices involved`
     : "";
@@ -204,7 +205,7 @@ const notIncludedLine = (
 const mechanismNotRunLine = (request: ReportRequest & { readonly unmeasured: MechanismNotRun }): string => {
   switch (request.unmeasured.projection) {
     case "missing":
-      return `mechanism-not-run ${request.unmeasured.mechanism} missing: ${projectionFileOf(request.unmeasured)} is not written; ${refreshStep({ ...request, mechanism: request.unmeasured.mechanism })}`;
+      return `mechanism-not-run ${versionOneEngineNameOf(request.unmeasured.mechanism)} missing: ${projectionFileOf(request.unmeasured)} is not written; ${refreshStep({ ...request, mechanism: request.unmeasured.mechanism })}`;
     case "not-included":
       return notIncludedLine({ ...request, unmeasured: request.unmeasured });
   }
@@ -233,9 +234,9 @@ const projectionProblemLine = (request: NextCommands & { readonly problem: Proje
   const { problem } = request;
   switch (problem.scope) {
     case "projection":
-      return `${problem.mechanism} ${problem.state}: ${projectionFileOf(problem)} differs from what hone project writes now; ${refreshStep({ ...request, mechanism: problem.mechanism })}`;
+      return `${versionOneEngineNameOf(problem.mechanism)} ${problem.state}: ${projectionFileOf(problem)} differs from what hone project writes now; ${refreshStep({ ...request, mechanism: problem.mechanism })}`;
     case "slice":
-      return `${problem.mechanism} ${problem.state} ${problem.slice}: ${sliceProblemReason({ ...request, problem })}`;
+      return `${versionOneEngineNameOf(problem.mechanism)} ${problem.state} ${problem.slice}: ${sliceProblemReason({ ...request, problem })}`;
   }
 };
 
@@ -295,7 +296,7 @@ const assessmentFileState = (request: { readonly note: AssessmentFileNote }): st
 const assessmentFileLine = (request: { readonly note: AssessmentFileNote; readonly spiritBelow: SpiritBelow }): string =>
   `${request.spiritBelow === "named" ? SPIRIT_LEAD : ""}${assessmentFileState(request)}`;
 
-const reprojectionStep = (request: NextCommands & { readonly projections: readonly MechanismId[] }): string =>
+const reprojectionStep = (request: NextCommands & { readonly projections: readonly EngineId[] }): string =>
   request.projections.length === 0
     ? ", and commit the exception records it changes"
     : `, then run ${request.projectCommand} and commit the exception records with every ${request.projections
@@ -327,7 +328,7 @@ const SECTION_LINES: Readonly<Record<SectionName, ReportLines>> = {
     request.report.notRun.map((address) => `${clauseAddressText({ address })} adopted, mechanism not run: enforced by review`),
   editions: (request) =>
     request.report.editions.map(
-      (reading) => `${clauseAddressText({ address: reading.address })} ${reading.mechanism} edition ${reading.edition} of ${reading.latest}`,
+      (reading) => `${clauseAddressText({ address: reading.address })} ${versionOneEngineNameOf(reading.mechanism)} edition ${reading.edition} of ${reading.latest}`,
     ),
   findings: (request) =>
     request.report.findings.map((finding) =>
@@ -340,7 +341,7 @@ const SECTION_LINES: Readonly<Record<SectionName, ReportLines>> = {
   unrecorded: (request) => request.report.unrecorded.map((exception) => unrecordedLine({ exception })),
   doublyHeld: (request) =>
     request.report.doublyHeld.map(
-      (held) => `${clauseAddressText({ address: held.clause })} ${held.mechanism} doubly-held ${held.file}`,
+      (held) => `${clauseAddressText({ address: held.clause })} ${versionOneEngineNameOf(held.mechanism)} doubly-held ${held.file}`,
     ),
   invalidRecords: (request) =>
     request.report.invalidRecords.map(

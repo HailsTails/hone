@@ -11,7 +11,7 @@ import type { SelectionRepository } from "../../src/application/ports/selection/
 import type { EntryKindPort } from "../../src/application/ports/file-system/entry-kind-port.ts";
 import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
 import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { runProject } from "../../src/application/projection/run-project.ts";
@@ -27,7 +27,7 @@ import type { AbsolutePath } from "../../src/domain/repository/absolute-path-typ
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createWalkerRunner } from "../../src/infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { createWalkerRunner } from "../../src/infrastructure/engines/walker/runner/create-walker-runner.ts";
 import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
@@ -139,7 +139,7 @@ const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-23\/(?:pie
 
 const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-14\/(?:piece\.json|[^/]+\.cases\.json)`;
 
-const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-23|src\/infrastructure\/engines\/audit\/runner|src\/infrastructure\/engines\/audit\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA})`;
+const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-23|src\/infrastructure\/engines\/walker\/runner|src\/infrastructure\/engines\/walker\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA})`;
 
 const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-14|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA})`;
 
@@ -188,7 +188,7 @@ const observedPorts = (): ObservedPorts => {
   };
   const pieceModules: ModuleLoaderPort = { load: createDefaultModuleLoaderPort({}).load };
   const runners: Readonly<Record<string, unknown>> = {
-    [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/audit/runner/runner.ts` })]: {
+    [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/walker/runner/runner.ts` })]: {
       runner: createWalkerRunner({ fileText, modules: pieceModules, path, parse: defaultParsePort, entryKind: ABSENT_ENTRY_KIND }),
     },
     [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/runner.ts` })]: {
@@ -279,7 +279,7 @@ const UNSIBLINGED_FINDING = {
   file: "src/kept.ts",
   anchor: { line: 1, column: 0 },
   snippet: "missing co-located *.test.ts(x) sibling",
-  mechanism: "audit",
+  mechanism: "walker",
 };
 
 const readingOf = (request: { readonly clause: { readonly discipline: string } }) => ({

@@ -12,7 +12,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
 const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
 

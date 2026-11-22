@@ -1,6 +1,4 @@
-import { isCatalogueName } from "../../../domain/language-layer/catalogue-name.ts";
-import { isNamedCheckAddress, TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import type { LegacyClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import { type CatalogueFile, recordKindNameSchema, SUPPORTED_VERSION } from "../symptom-catalogues/symptom-catalogue-wire.ts";
 import type { FormatsOfToday } from "../../disciplines-file/version-one-names.ts";
@@ -16,7 +14,7 @@ export type PlacedItem = {
 export type HeldBesideItems = {
   readonly engines: CatalogueFile["engines"];
   readonly clauses: CatalogueFile["clauses"];
-  readonly clauseOfCheck: ReadonlyMap<string, LegacyClauseAddress>;
+  readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
   readonly formatsOfToday: FormatsOfToday;
 };
 
@@ -49,18 +47,16 @@ const ruleOf = (placed: OfKind<"rule">): CatalogueFile["rules"][number] => ({
   standing: placed.item.facts.standing,
 });
 
-const checkOf = (request: { readonly placed: OfKind<"check">; readonly clauseOfCheck: ReadonlyMap<string, LegacyClauseAddress> }): Assembled<CatalogueFile["checks"][number]> => {
+const checkOf = (request: { readonly placed: OfKind<"check">; readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress> }): Assembled<CatalogueFile["checks"][number]> => {
   const symptom = request.placed.within ?? "";
-  const { name } = request.placed;
-  const address = `${symptom}#${name}`;
-  if (!isCatalogueName(symptom) || !isCatalogueName(name)) {
-    return { outcome: "failed", error: `${address} is not a check address` };
-  }
-  const clause = request.clauseOfCheck.get(address) ?? { ruleSet: TOOL_RULE_SET, symptom, check: name };
-  return { outcome: "ok", value: { symptom, name, clause, ...request.placed.item.facts } };
+  const address = `${symptom}#${request.placed.name}`;
+  const clause = request.clauseOfCheck.get(address);
+  return clause === undefined
+    ? { outcome: "failed", error: `${address} is named by no clause in the version 1 names` }
+    : { outcome: "ok", value: { symptom, name: request.placed.name, clause, ...request.placed.item.facts } };
 };
 
-const unheldChecksOf = (request: { readonly checks: readonly CatalogueFile["checks"][number][]; readonly clauseOfCheck: ReadonlyMap<string, LegacyClauseAddress> }): readonly string[] => {
+const unheldChecksOf = (request: { readonly checks: readonly CatalogueFile["checks"][number][]; readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress> }): readonly string[] => {
   const held = new Set(request.checks.map((check) => `${check.symptom}#${check.name}`));
   return [...request.clauseOfCheck.keys()].filter((address) => !held.has(address));
 };
@@ -91,9 +87,7 @@ export const catalogueFileOf = (request: { readonly items: readonly PlacedItem[]
       recordKinds: recordKinds.value,
       engines: beside.engines,
       symptoms: items.filter(ofKind("symptom")).map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
-      clauses: [...beside.clauses, ...checks.value.flatMap(({ clause }) => isNamedCheckAddress(clause)
-        ? [{ clause, sight: { kind: "one-symptom" as const, symptom: clause.symptom } }]
-        : [])],
+      clauses: beside.clauses,
       checks: checks.value,
       namedBans: rules.flatMap((placed) => placed.item.facts.namedBans ?? []).map((outsideDependency) => ({ outsideDependency })),
     },

@@ -12,7 +12,7 @@ export type FindingCheck =
 const UNRESOLVED: FindingCheck = { resolved: "none" };
 
 const atMeasuringEngine = (request: { readonly check: Check; readonly finding: Pick<Finding, "mechanism"> }): readonly CheckAtEngine[] =>
-  request.check.engines.filter((engine) => engine.mechanism === request.finding.mechanism).map((engine) => ({ check: request.check, engine }));
+  request.check.engines.filter((engine) => engine.name === request.finding.mechanism).map((engine) => ({ check: request.check, engine }));
 
 const ofSymptom = (request: { readonly catalogue: SymptomCatalogue; readonly finding: Finding; readonly symptom: Symptom }): FindingCheck => {
   const candidates = checksOf({ catalogue: request.catalogue, clause: request.finding.clause })

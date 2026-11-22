@@ -10,7 +10,7 @@ import {
   typedExportOf,
 } from "./package-declarations.ts";
 
-const ENTRY = { subpath: "audit", source: "api/audit.ts" };
+const ENTRY = { subpath: "walker", source: "api/audit.ts" };
 
 const declaration = (request: { readonly path: string; readonly specifiers: readonly string[] }) => ({
   path: request.path,
@@ -34,7 +34,7 @@ const EMITTED: DeclarationEmit = {
 describe("PUBLIC_TYPE_ENTRIES", () => {
   it("names the audit, eslint-plugin, rule-set and testing entries and their hand-written sources", () => {
     expect(PUBLIC_TYPE_ENTRIES).toEqual([
-      { subpath: "audit", source: "src/audit.ts" },
+      { subpath: "walker", source: "src/audit.ts" },
       { subpath: "eslint-plugin", source: "src/eslint-plugin.ts" },
       { subpath: "rule-set", source: "src/rule-set.ts" },
       { subpath: "testing", source: "src/testing.ts" },
@@ -44,7 +44,7 @@ describe("PUBLIC_TYPE_ENTRIES", () => {
 
 describe("typedExportOf", () => {
   it("pairs an entry's subpath with the declaration and the module built from its source", () => {
-    expect(typedExportOf({ entry: ENTRY })).toEqual({ subpath: "audit", declaration: "api/audit.d.ts", module: "api/audit.js" });
+    expect(typedExportOf({ entry: ENTRY })).toEqual({ subpath: "walker", declaration: "api/audit.d.ts", module: "api/audit.js" });
   });
 });
 

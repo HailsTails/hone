@@ -17,7 +17,7 @@ import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
 
 const ESLINT = "eslint" as const;
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const REPO = absoluteRootOf("/repo");
 
@@ -39,7 +39,7 @@ const CLASS_KEYWORD: Check = {
     correctUses: [],
   },
   clause: CLASS_CLAUSE,
-  engines: [{ name: "eslint", mechanism: ESLINT }],
+  engines: [{ name: "eslint" }],
   forms: [],
 };
 
@@ -282,7 +282,7 @@ describe("loadedEngineOf", () => {
   it("loads the module at the install's runner path for the mechanism", async () => {
     const modules = loaderGiving({ loaded: { outcome: "ok", value: { runner: STANDALONE } } });
     await loadedEngineOf({ mechanism: AUDIT, installRoot: INSTALL, moduleExtension: ".ts", path: POSIX_PATH, modules });
-    expect(modules.load).toHaveBeenCalledExactlyOnceWith({ path: "/install/src/infrastructure/engines/audit/runner/runner.ts" });
+    expect(modules.load).toHaveBeenCalledExactlyOnceWith({ path: "/install/src/infrastructure/engines/walker/runner/runner.ts" });
   });
 
   it("fails as an invalid runner when the runner's exception path is outside every path", async () => {

@@ -53,7 +53,7 @@ const fileA = repoPathOf("src/a.ts");
 const fileB = repoPathOf("src/b.ts");
 const packageJson = repoPathOf("package.json");
 const suppressions = repoPathOf("eslint-suppressions.json");
-const audit = "audit" as const;
+const audit = "walker" as const;
 const eslint = "eslint" as const;
 
 const noClassInA: Finding = {

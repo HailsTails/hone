@@ -12,7 +12,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
@@ -29,9 +29,9 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -311,7 +311,7 @@ describe("proofDifferencesOf", () => {
     expect(
       differencesBetween({
         before: { editions: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, edition: editionOf("1"), latest: editionOf("1") }] },
-        after: { editions: [{ check: LOOP_KEYWORD_LOOPS, engine: { name: "walker", mechanism: AUDIT }, edition: editionOf("1"), latest: editionOf("1") }] },
+        after: { editions: [{ check: LOOP_KEYWORD_LOOPS, engine: { name: "walker" }, edition: editionOf("1"), latest: editionOf("1") }] },
       }),
     ).toEqual([]);
   });

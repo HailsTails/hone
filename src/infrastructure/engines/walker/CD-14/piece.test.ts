@@ -16,8 +16,8 @@ const fileText: FileTextPort = {
 };
 
 const JOINED_PATHS: Readonly<Record<string, string>> = {
-  '["/install","src","infrastructure","engines","audit","CD-14","piece.json"]':
-    "/install/src/infrastructure/engines/audit/CD-14/piece.json",
+  '["/install","src","infrastructure","engines","walker","CD-14","piece.json"]':
+    "/install/src/infrastructure/engines/walker/CD-14/piece.json",
 };
 
 const TABLE_PATH: PathPort = {
@@ -54,7 +54,7 @@ describe("CD-14 audit piece.json", () => {
         path: TABLE_PATH,
         ruleSetRoot: absoluteRootOf("/install"),
         installRoot: absoluteRootOf("/install"),
-        mechanism: "audit",
+        mechanism: "walker",
         discipline: CD14,
       }),
     ).toEqual({
@@ -62,7 +62,7 @@ describe("CD-14 audit piece.json", () => {
       value: {
         version: 1,
         discipline: "CD-14",
-        mechanism: "audit",
+        mechanism: "walker",
         clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" }, clauseSettings: {}, editions: { declared: ["1"], default: "1", latest: "1" } }],
       },
     });

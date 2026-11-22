@@ -8,7 +8,6 @@ import type { CatalogueHolding } from "../../../domain/language-layer/symptom-ca
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import { isNamedCheckAddress } from "../../../domain/rule-set/clause-address.ts";
 import { createEngineBindingsRepository } from "../../engines/piece-engines.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 
@@ -25,10 +24,7 @@ export const readBoundCatalogue = (source: BoundCatalogueSource): Result<Catalog
   if (holding.outcome === "failed") {
     return holding;
   }
-  const namedChecks = holding.value.held === "catalogue"
-    ? holding.value.content.checks.map(({ clause }) => clause).filter(isNamedCheckAddress)
-    : [];
-  const bindings = createEngineBindingsRepository(source).read({ namedChecks });
+  const bindings = createEngineBindingsRepository(source).read({});
   if (bindings.outcome === "failed") {
     return bindings;
   }

@@ -10,9 +10,9 @@ import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts"
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 
-const WALKER_ENGINE: Engine = { name: "walker", mechanism: "audit" };
+const WALKER_ENGINE: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const TEST_SWITCHED_OFF: Symptom = {
   name: "test-switched-off",
@@ -90,7 +90,7 @@ const PLUGIN_CHECKS: readonly Check[] = [SKIPPED_TESTS_CHECK, NON_NULL_ASSERTION
 
 const ESLINT = "eslint" as const;
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const PARAMETER_COUNT_BINDING: ClauseBinding = {
   mechanism: ESLINT,

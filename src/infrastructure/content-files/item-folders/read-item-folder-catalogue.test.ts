@@ -16,7 +16,7 @@ const PATH = createPathPort({ flavour: "posix", workingDirectory: () => ROOT });
 const CLOCK_SOURCES = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("XX-1"), clause: clauseIdOf("clock-sources") };
 
 const BESIDE: HeldBesideItems = {
-  engines: [{ name: "walker", mechanism: "audit" }],
+  engines: [{ name: "walker" }],
   clauses: [{ clause: CLOCK_SOURCES, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
   clauseOfCheck: new Map([["date-used-directly#clock-sources", CLOCK_SOURCES]]),
   formatsOfToday: { "authorised-location": "authorised-location" },
@@ -113,7 +113,7 @@ describe("createItemFolderCatalogueRepository", () => {
           cases: [{ name: "does-one-job", title: "Does one job" }],
           recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
           recordKinds: [{ name: "authorised-location", todaysFormat: "authorised-location" }, { name: "debt", todaysFormat: "none-yet" }],
-          engines: [{ name: "walker", mechanism: "audit" }],
+          engines: [{ name: "walker" }],
           symptoms: [{ name: "date-used-directly", title: "Date used directly", recipes: [{ name: "world-values-through-a-port" }] }],
           checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" }, clause: CLOCK_SOURCES }],
         },

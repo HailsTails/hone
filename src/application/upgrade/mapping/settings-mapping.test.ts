@@ -10,7 +10,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const LAYERING_CLAUSE = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-13"), clause: clauseIdOf("layering") };
 
@@ -65,9 +65,9 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -139,9 +139,7 @@ const BASE_REQUEST: SettingsMappingRequest = {
   ],
 };
 
-const OTHER_WALKER: Engine = { name: "second-walker", mechanism: AUDIT };
-
-const TWO_ENGINE_CHECK: Check = { ...SETTINGS_CATALOGUE.checks[0], engines: [WALKER, OTHER_WALKER] };
+const TWO_ENGINE_CHECK: Check = { ...SETTINGS_CATALOGUE.checks[0], engines: [WALKER, WALKER] };
 
 const TWO_ENGINE_CATALOGUES: readonly RuleSetCatalogue[] = [
   { ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: [TWO_ENGINE_CHECK] } },
@@ -288,7 +286,7 @@ describe("mappedSettings turning clauses into checks", () => {
       }),
     ).toEqual({
       outcome: "failed",
-      error: [{ kind: "two-engines-on-mechanism", check: "loop-keyword#loops", mechanism: AUDIT, engines: ["walker", "second-walker"] }],
+      error: [{ kind: "two-engines-on-mechanism", check: "loop-keyword#loops", mechanism: AUDIT, engines: ["walker", "walker"] }],
     });
   });
 });

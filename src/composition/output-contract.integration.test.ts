@@ -236,13 +236,13 @@ const contractTextAt = (request: { readonly path: string }): string => {
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const WALKER: Engine = { name: "walker", mechanism: AUDIT };
+const WALKER: Engine = { name: "walker" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
+const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
@@ -1062,7 +1062,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
 
   const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
-  const AUDIT = "audit" as const;
+  const AUDIT = "walker" as const;
 
   const TEST_BODY_LOGIC = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") };
 
@@ -1221,7 +1221,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       },
       fills: {
         clause: "CD-17#clock-sources",
-        mechanism: "audit",
+        mechanism: "walker",
         file: "src/orders/charge-order.ts",
         line: "14",
         column: "0",
@@ -1241,7 +1241,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       },
       fills: {
         clause: "CD-27#test-body-logic",
-        mechanism: "audit",
+        mechanism: "walker",
         file: "src/orders/charge-order.test.ts",
         line: "22",
         column: "2",
@@ -1264,7 +1264,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       },
       fills: {
         clause: "CD-27#test-body-logic",
-        mechanism: "audit",
+        mechanism: "walker",
         file: "src/orders/charge-order.test.ts",
         line: "30",
         column: "4",
@@ -2470,7 +2470,7 @@ const README_TEXT = contractTextAt({ path: `${import.meta.dirname}/../../README.
 describe("contractGaps over written-out lines, so the contract reading can fail", () => {
   const FINDING_TEMPLATE: DocumentedLine = { label: "findings", template: "<clause> <mechanism> <file>:<line>:<column> <snippet>" };
 
-  const FINDING_FILLS: Fills = { clause: "CD-15#loops", mechanism: "audit", file: "src/a.ts", line: "2", column: "0", snippet: "const total = 0;" };
+  const FINDING_FILLS: Fills = { clause: "CD-15#loops", mechanism: "walker", file: "src/a.ts", line: "2", column: "0", snippet: "const total = 0;" };
 
   it("refuses a printed line whose fields come in another order than the template's", () => {
     expect(

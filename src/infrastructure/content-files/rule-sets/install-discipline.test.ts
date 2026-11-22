@@ -13,11 +13,11 @@ const CD_14 = disciplineIdOf("CD-14");
 
 const NAMES_PATH = "/install/src/infrastructure/disciplines-file/version-one-names.json";
 
-const AUDIT_PIECE_PATH = "/install/src/infrastructure/engines/audit/CD-14/piece.json";
+const AUDIT_PIECE_PATH = "/install/src/infrastructure/engines/walker/CD-14/piece.json";
 
 const ESLINT_PIECE_PATH = "/install/src/infrastructure/engines/eslint/CD-14/piece.json";
 
-const AUDIT_CASES_PATH = "/install/src/infrastructure/engines/audit/CD-14/class-syntax.cases.json";
+const AUDIT_CASES_PATH = "/install/src/infrastructure/engines/walker/CD-14/class-syntax.cases.json";
 
 const ESLINT_CASES_PATH = "/install/src/infrastructure/engines/eslint/CD-14/class-syntax.cases.json";
 
@@ -37,11 +37,11 @@ const NAMES_WITHOUT_CD_14_TEXT = `{
   "recordKinds": {}
 }`;
 
-const AUDIT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "audit", "clauses": [{ "clause": "class-syntax", "settings": { "module": "class-syntax.ts" } }] }';
+const AUDIT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "walker", "clauses": [{ "clause": "class-syntax", "settings": { "module": "class-syntax.ts" } }] }';
 
 const ESLINT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "eslint", "clauses": [{ "clause": "class-syntax", "settings": { "rule": "no-class" } }] }';
 
-const MALFORMED_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "audit" }';
+const MALFORMED_PIECE_TEXT = '{ "version": 1, "discipline": "CD-14", "mechanism": "walker" }';
 
 const CASES_TEXT = `{
   "flag": [{ "name": "a class", "fileName": "src/a.ts", "source": "class A {}\\n", "expectedLines": [1] }],
@@ -92,7 +92,7 @@ describe("readInstallDiscipline", () => {
             {
               kind: "mechanical",
               id: "class-syntax",
-              mechanisms: ["audit", "eslint"],
+              mechanisms: ["walker", "eslint"],
               anchor: { kind: "keyword", keyword: "class" },
               exceptions: "allowed",
               cases: {

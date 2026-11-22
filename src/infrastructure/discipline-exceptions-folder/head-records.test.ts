@@ -48,7 +48,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 
 const RECORDS_FILE = repoPathOf("discipline-exceptions.json");
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const LOOPS = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") };
 

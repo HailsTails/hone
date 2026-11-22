@@ -24,7 +24,7 @@ export type DeclarationPort = {
 export type PublishedFile = { readonly path: string; readonly text: string };
 
 export const PUBLIC_TYPE_ENTRIES: readonly PublicTypeEntry[] = [
-  { subpath: "audit", source: "src/audit.ts" },
+  { subpath: "walker", source: "src/audit.ts" },
   { subpath: "eslint-plugin", source: "src/eslint-plugin.ts" },
   { subpath: "rule-set", source: "src/rule-set.ts" },
   { subpath: "testing", source: "src/testing.ts" },

@@ -156,7 +156,7 @@ describe("runVerdictOf", () => {
       name: "cast-expressions",
       symptom: CLAIMED_TYPE,
       clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") },
-      engines: [{ name: "eslint", mechanism: "eslint" }],
+      engines: [{ name: "eslint" }],
       forms: [],
     };
     expect(runVerdictOf({ report: { ...EMPTY_REPORT, available: [castExpressions] } })).toBe("pass");

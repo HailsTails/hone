@@ -99,7 +99,7 @@ describe("shownFailureOf", () => {
       shownFailureOf({
         failure: {
           kind: "runner-failed",
-          mechanism: "audit",
+          mechanism: "walker",
           failure: { kind: "piece-invalid", pieceRoot: `${STORE_ROOT}\\mechanisms\\audit\\CD-15`, detail: "x" },
         },
         path: WINDOWS,
@@ -112,7 +112,7 @@ describe("shownFailureOf", () => {
   it("leaves a runner failure's repository path as it is", () => {
     const failure = {
       kind: "runner-failed",
-      mechanism: "audit",
+      mechanism: "walker",
       failure: { kind: "file-unreadable", file: repoPathOf("src/a.ts"), detail: "EACCES" },
     } as const;
 

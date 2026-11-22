@@ -3,7 +3,7 @@ const SHIPPED_DATA: readonly RegExp[] = [
   /^src\/infrastructure\/disciplines-file\/version-one-names\.json$/,
   /^rules\/.+\.md$/,
   /^methods\/.+\.md$/,
-  /^src\/infrastructure\/engines\/[^/]+\/[^/]+\/[^/]+\/cases\.json$/,
+  /^src\/infrastructure\/engines\/(?:walker|eslint)\/[^/]+\/[^/]+\.cases\.json$/,
   /^src\/infrastructure\/engines\/.+\.md$/,
 ];
 

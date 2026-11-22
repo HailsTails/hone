@@ -22,7 +22,7 @@ const path = createDefaultPathPort({});
 const moduleUrl = import.meta.url;
 
 const testing = createConformanceTesting({
-  mechanism: "audit",
+  mechanism: "walker",
   moduleUrl,
   installRoot: installRootOfApiEntry({ path, moduleUrl }),
   ruleSetFiles: createRuleSetFileReader({ fileText: createDefaultFileTextPort({}), path }),

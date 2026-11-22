@@ -1,7 +1,7 @@
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import type { NativeException } from "../../../domain/runner/runner-result-types.ts";
-import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
 import type { ChecksRunRequest, LoadedRunner, RunnerCall } from "./runner-module.ts";
 
@@ -13,7 +13,7 @@ export type ParsedChecksRunner = {
 };
 
 export type LoadedEngine = {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly runner: LoadedRunner;
   readonly checksRunner: ParsedChecksRunner | undefined;
 };

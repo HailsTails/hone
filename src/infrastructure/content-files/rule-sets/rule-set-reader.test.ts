@@ -12,7 +12,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 const ROOT = absoluteRootOf("/install");
 const INSTALL_ROOT = absoluteRootOf("/running-install");
 const CD_14 = disciplineIdOf("CD-14");
-const WALKER = "audit";
+const WALKER = "walker";
 const DISCIPLINE_PATH = "/install/rules/CD-14/discipline.json";
 const PIECE_PATH = "/install/mechanisms/audit/CD-14/piece.json";
 
@@ -58,7 +58,7 @@ const CLASS_SYNTAX = {
   kind: "mechanical",
   id: "class-syntax",
   summary: "no class syntax",
-  mechanisms: ["audit", "eslint"],
+  mechanisms: ["walker", "eslint"],
   anchor: { kind: "keyword", keyword: "class" },
   exceptions: "allowed",
   cases: { flag: [FLAG_CASE], allow: [ALLOW_CASE] },
@@ -80,7 +80,7 @@ const DISCIPLINE = {
 const READ_CLASS_SYNTAX = {
   kind: "mechanical",
   id: "class-syntax",
-  mechanisms: ["audit", "eslint"],
+  mechanisms: ["walker", "eslint"],
   anchor: { kind: "keyword", keyword: "class" },
   exceptions: "allowed",
   cases: { flag: [FLAG_CASE], allow: [ALLOW_CASE] },
@@ -93,7 +93,7 @@ const READ_DISCIPLINE = { version: 1, id: "CD-14", clauses: [READ_CLASS_SYNTAX, 
 const PIECE = {
   version: 1,
   discipline: "CD-14",
-  mechanism: "audit",
+  mechanism: "walker",
   clauses: [{ clause: "class-syntax", settings: { module: "class-syntax.ts" } }],
 };
 
@@ -255,7 +255,7 @@ describe("readDisciplineFile", () => {
 
   it("refuses a mechanical clause listing a mechanism other than audit or eslint", () => {
     expect(
-      readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, mechanisms: ["audit", "not-adopted"] }] }),
+      readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, mechanisms: ["walker", "not-adopted"] }] }),
     ).toMatchObject({
       outcome: "failed",
       error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH, detail: expect.stringContaining("expected one of") },

@@ -82,7 +82,7 @@ const TEAM_ROOT = absoluteRootOf("/repo/rules/team");
 const ASSESSMENT_PATH = "/repo/disciplines.assessment.md";
 const RULE_PAGE_PATH = "/install/rules/CD-14/README.md";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const LINT = "eslint" as const;
 const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") };
 const ABSTRACT_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("abstract-syntax") };
@@ -169,7 +169,7 @@ const shownPathOf: ShownPathOf = ({ target }) => SHOWN_PATHS[target];
 const classSyntaxBinding = { mechanism: AUDIT, clause: {
   address: CLASS_SYNTAX,
   anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
+  pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
   settings: { module: "class-syntax.ts" },
   clauseSettings: {},
   edition: editionOf("1"),
@@ -178,7 +178,7 @@ const classSyntaxBinding = { mechanism: AUDIT, clause: {
 const abstractSyntaxBinding = { mechanism: AUDIT, clause: {
   address: ABSTRACT_SYNTAX,
   anchor: { kind: "keyword", keyword: "abstract" },
-  pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
+  pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
   settings: { module: "abstract-syntax.ts" },
   clauseSettings: {},
   edition: editionOf("1"),
@@ -452,7 +452,7 @@ describe("runCheck reports", () => {
       runCheck(checkRequest({ path: pathJoining(joiningReadFirstPaths()), engine: standaloneEngine({ hits: [HIT_IN_A], nativeExceptions: [], measured: [] }) })),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, findings: [{ ...HIT_IN_A, mechanism: "audit" }], readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST] },
+      value: { ...EMPTY_REPORT, findings: [{ ...HIT_IN_A, mechanism: "walker" }], readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST] },
     });
   });
 
@@ -461,7 +461,7 @@ describe("runCheck reports", () => {
       runCheck(checkRequest({ path: pathJoining(joiningReadFirstPaths()), engine: standaloneEngine({ hits: [HIT_FROM_AN_IMPORT], nativeExceptions: [], measured: [] }) })),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, findings: [{ ...HIT_FROM_AN_IMPORT, mechanism: "audit" }], readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST] },
+      value: { ...EMPTY_REPORT, findings: [{ ...HIT_FROM_AN_IMPORT, mechanism: "walker" }], readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST] },
     });
   });
 
@@ -483,7 +483,7 @@ describe("runCheck reports", () => {
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        exempted: [{ finding: { ...HIT_IN_A, file: "src/factory.ts", mechanism: "audit" }, by: [AUTHORISED_FACTORY_RECORD] }],
+        exempted: [{ finding: { ...HIT_IN_A, file: "src/factory.ts", mechanism: "walker" }, by: [AUTHORISED_FACTORY_RECORD] }],
       },
     });
   });
@@ -516,7 +516,7 @@ describe("runCheck reports", () => {
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, editions: [{ address: CLASS_SYNTAX_OBJECT, mechanism: "audit", edition: "1", latest: "2" }] },
+      value: { ...EMPTY_REPORT, editions: [{ address: CLASS_SYNTAX_OBJECT, mechanism: "walker", edition: "1", latest: "2" }] },
     });
   });
 
@@ -541,7 +541,7 @@ describe("runCheck runner dispatch", () => {
     const report = await runCheck(checkRequest({ engine, path, selectionRepository: selectionRepositoryReading(TWO_CLAUSE_READING) }));
     expect(report).toEqual({ outcome: "ok", value: EMPTY_REPORT });
     expect(engine.load).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ installRoot: "/install", moduleExtension: ".ts", modules: UNUSED_MODULES, path, mechanism: "audit" }),
+      expect.objectContaining({ installRoot: "/install", moduleExtension: ".ts", modules: UNUSED_MODULES, path, mechanism: "walker" }),
     );
   });
 
@@ -550,7 +550,7 @@ describe("runCheck runner dispatch", () => {
     await runCheck(checkRequest({ engine, selectionRepository: selectionRepositoryReading(TWO_CLAUSE_READING) }));
     expect(engine.run.withRecords).toHaveBeenCalledExactlyOnceWith({
       runner: STANDALONE_RUNNER,
-      mechanism: "audit",
+      mechanism: "walker",
       run: {
         repoRoot: "/repo",
         installRoot: "/install",
@@ -560,7 +560,7 @@ describe("runCheck runner dispatch", () => {
           {
             address: CLASS_SYNTAX_OBJECT,
             anchor: { kind: "keyword", keyword: "class" },
-            pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
+            pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
             settings: { module: "class-syntax.ts" },
             clauseSettings: {},
             edition: "1",
@@ -568,7 +568,7 @@ describe("runCheck runner dispatch", () => {
           {
             address: ABSTRACT_SYNTAX_OBJECT,
             anchor: { kind: "keyword", keyword: "abstract" },
-            pieceRoot: "/install/src/infrastructure/engines/audit/CD-14",
+            pieceRoot: "/install/src/infrastructure/engines/walker/CD-14",
             settings: { module: "abstract-syntax.ts" },
             clauseSettings: {},
             edition: "1",
@@ -733,7 +733,7 @@ describe("runCheck runner dispatch", () => {
         }),
       }),
     );
-    expect(engine.load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ installRoot: "/install", mechanism: "audit" }));
+    expect(engine.load).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ installRoot: "/install", mechanism: "walker" }));
   });
 });
 
@@ -777,7 +777,7 @@ describe("runCheck load failures", () => {
       ),
     ).resolves.toEqual({
       outcome: "failed",
-      error: { kind: "runner-invalid", mechanism: "audit", detail: "Cannot find package 'typescript'" },
+      error: { kind: "runner-invalid", mechanism: "walker", detail: "Cannot find package 'typescript'" },
     });
   });
 
@@ -800,7 +800,7 @@ describe("runCheck load failures", () => {
       outcome: "failed",
       error: {
         kind: "runner-failed",
-        mechanism: "audit",
+        mechanism: "walker",
         failure: { kind: "file-unparseable", file: "src/a.ts", detail: "unexpected token" },
       },
     });
@@ -811,7 +811,7 @@ describe("runCheck load failures", () => {
       runCheck(checkRequest({ engine: engineFailing({ kind: "runner-invalid-output", detail: "✖ Invalid input" }) })),
     ).resolves.toMatchObject({
       outcome: "failed",
-      error: { kind: "runner-failed", mechanism: "audit", failure: { kind: "runner-invalid-output" } },
+      error: { kind: "runner-failed", mechanism: "walker", failure: { kind: "runner-invalid-output" } },
     });
   });
 });
@@ -866,14 +866,14 @@ describe("runCheck with an embedded runner", () => {
   it("lists mechanism-not-run for a not-included projection", async () => {
     await expect(runCheck(embeddedCheck({ hits: [], nativeExceptions: [], projection: "not-included" }))).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, unmeasured: [{ kind: "mechanism-not-run", mechanism: "audit", projection: "not-included", nestedConfigurations: [] }] },
+      value: { ...EMPTY_REPORT, unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "not-included", nestedConfigurations: [] }] },
     });
   });
 
   it("lists mechanism-not-run for a missing projection", async () => {
     await expect(runCheck(embeddedCheck({ hits: [], nativeExceptions: [], projection: "missing" }))).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, unmeasured: [{ kind: "mechanism-not-run", mechanism: "audit", projection: "missing" }] },
+      value: { ...EMPTY_REPORT, unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "missing" }] },
     });
   });
 
@@ -883,9 +883,9 @@ describe("runCheck with an embedded runner", () => {
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        findings: [{ ...HIT_IN_A, mechanism: "audit" }],
+        findings: [{ ...HIT_IN_A, mechanism: "walker" }],
         readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST],
-        projectionProblems: [{ scope: "projection", mechanism: "audit", state: "out-of-date" }],
+        projectionProblems: [{ scope: "projection", mechanism: "walker", state: "out-of-date" }],
       },
     });
   });
@@ -908,8 +908,8 @@ describe("runCheck with an embedded runner", () => {
       value: {
         ...EMPTY_REPORT,
         projectionProblems: [
-          { scope: "slice", mechanism: "audit", state: "out-of-date", slice: "packages/a/disciplines.eslint.mjs" },
-          { scope: "slice", mechanism: "audit", state: "missing", slice: "packages/b/disciplines.eslint.mjs" },
+          { scope: "slice", mechanism: "walker", state: "out-of-date", slice: "packages/a/disciplines.eslint.mjs" },
+          { scope: "slice", mechanism: "walker", state: "missing", slice: "packages/b/disciplines.eslint.mjs" },
         ],
       },
     });
@@ -929,8 +929,8 @@ describe("runCheck with an embedded runner", () => {
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        unmeasured: [{ kind: "mechanism-not-run", mechanism: "audit", projection: "not-included", nestedConfigurations: [] }],
-        projectionProblems: [{ scope: "slice", mechanism: "audit", state: "not-applied", slice: "packages/a/disciplines.eslint.mjs" }],
+        unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "not-included", nestedConfigurations: [] }],
+        projectionProblems: [{ scope: "slice", mechanism: "walker", state: "not-applied", slice: "packages/a/disciplines.eslint.mjs" }],
       },
     });
   });
@@ -949,7 +949,7 @@ describe("runCheck with an embedded runner", () => {
       outcome: "ok",
       value: {
         ...EMPTY_REPORT,
-        unmeasured: [{ kind: "mechanism-not-run", mechanism: "audit", projection: "not-included", nestedConfigurations: ["packages/b"] }],
+        unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "not-included", nestedConfigurations: ["packages/b"] }],
       },
     });
   });
@@ -965,7 +965,7 @@ describe("runCheck with an embedded runner", () => {
       ),
     ).resolves.toEqual({
       outcome: "ok",
-      value: { ...EMPTY_REPORT, unrecorded: [{ kind: "ignore", clause: CLASS_SYNTAX_OBJECT, file: "src/a.ts", mechanism: "audit" }] },
+      value: { ...EMPTY_REPORT, unrecorded: [{ kind: "ignore", clause: CLASS_SYNTAX_OBJECT, file: "src/a.ts", mechanism: "walker" }] },
     });
   });
 
@@ -1004,7 +1004,7 @@ describe("runCheck with an embedded runner", () => {
       }),
     );
     expect(engine.run.withRecords).toHaveBeenCalledTimes(2);
-    expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "audit", records: [WALKER_RECORD] }));
+    expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "walker", records: [WALKER_RECORD] }));
     expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "eslint", records: [LINT_RECORD] }));
   });
 });
@@ -1358,7 +1358,7 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       outcome: "ok",
       value: {
         paidDebt: [],
-        report: { ...EMPTY_REPORT, stale: [STALE_CARVE_OUT_ON_A], unmeasured: [{ kind: "mechanism-not-run", mechanism: "audit", projection: "missing" }] },
+        report: { ...EMPTY_REPORT, stale: [STALE_CARVE_OUT_ON_A], unmeasured: [{ kind: "mechanism-not-run", mechanism: "walker", projection: "missing" }] },
         unprojected: [],
       },
     });
@@ -1388,7 +1388,7 @@ describe("runReachedCheck handing on debt on a file still on disk from what its 
       outcome: "failed",
       error: {
         kind: "runner-failed",
-        mechanism: "audit",
+        mechanism: "walker",
         failure: { kind: "runner-invalid-output", detail: "a measured pair names CD-14#class-syntax in src/a.ts, which the request did not hold" },
       },
     });
@@ -1528,7 +1528,7 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [{ clause: CLASS_SYNTAX, file: "src/a.ts" }],
         report: {
           ...EMPTY_REPORT,
-          exempted: [{ finding: { ...HIT_IN_A, mechanism: "audit" }, by: [AUTHORISED_ON_A_RECORD] }],
+          exempted: [{ finding: { ...HIT_IN_A, mechanism: "walker" }, by: [AUTHORISED_ON_A_RECORD] }],
           forfeited: [STALE_CARVE_OUT_ON_A],
           readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }],
         },
@@ -1560,7 +1560,7 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [],
         report: {
           ...EMPTY_REPORT,
-          exempted: [{ finding: { ...HIT_IN_A, mechanism: "audit" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] }],
+          exempted: [{ finding: { ...HIT_IN_A, mechanism: "walker" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] }],
           forfeited: [STALE_CARVE_OUT_ON_A],
           unmeasured: [{ kind: "legacy-chain-unmeasured", base: { state: "git-failed", revision: "main", gitMessage: "fatal: not a tree object" } }],
         },
@@ -1592,7 +1592,7 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [{ clause: CLASS_SYNTAX, file: "src/a.ts" }],
         report: {
           ...EMPTY_REPORT,
-          exempted: [{ finding: { ...HIT_IN_A, mechanism: "audit" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] }],
+          exempted: [{ finding: { ...HIT_IN_A, mechanism: "walker" }, by: [LEGACY_AUTHORISED_ON_A_RECORD] }],
           forfeited: [STALE_CARVE_OUT_ON_A],
           readFirst: [{ kind: "paid-debt", fileCarveOuts: 1, projections: [] }],
         },
@@ -1618,8 +1618,8 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [],
         report: {
           ...EMPTY_REPORT,
-          findings: [{ ...HIT_IN_A, mechanism: "audit" }],
-          doublyHeld: [{ clause: CLASS_SYNTAX_OBJECT, file: "src/a.ts", mechanism: "audit" }],
+          findings: [{ ...HIT_IN_A, mechanism: "walker" }],
+          doublyHeld: [{ clause: CLASS_SYNTAX_OBJECT, file: "src/a.ts", mechanism: "walker" }],
           readFirst: [ASSESSMENT_NOT_WRITTEN, CLASS_SYNTAX_READING_FIRST],
         },
         unprojected: [],
@@ -1658,7 +1658,7 @@ describe("runReachedCheck handing on debt whose every finding an authorised loca
         paidDebt: [],
         report: {
           ...EMPTY_REPORT,
-          findings: [{ ...HIT_IN_A, mechanism: "audit" }],
+          findings: [{ ...HIT_IN_A, mechanism: "walker" }],
           forfeited: [STALE_CARVE_OUT_ON_A],
           invalidRecords: [
             { place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 }, problem: { kind: "evidence-refused", detail: "✖ Invalid input" } },

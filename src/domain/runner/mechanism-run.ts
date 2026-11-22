@@ -1,4 +1,4 @@
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { Hit, MeasuredPair, NativeException, ProjectionState } from "./runner-result-types.ts";
 
@@ -13,7 +13,7 @@ export type UnprojectedFolderReport = {
 };
 
 export type MechanismRun = {
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly hits: readonly Hit[];
   readonly nativeExceptions: readonly NativeException[];
   readonly coverableKinds: readonly NativeException["kind"][];

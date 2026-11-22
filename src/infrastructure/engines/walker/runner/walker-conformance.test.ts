@@ -12,7 +12,7 @@ import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discip
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
-import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
+import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
@@ -63,7 +63,7 @@ const disciplineOf = (request: { readonly fileText: FileTextPort; readonly disci
 const rowsOf = (request: {
   readonly fileText: FileTextPort;
   readonly discipline: string;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const discipline = disciplineOf(request);
@@ -98,7 +98,7 @@ const rowsOf = (request: {
 
 const conformanceRows = (request: {
   readonly disciplines: readonly string[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const fileText = createDefaultFileTextPort({});
@@ -132,18 +132,18 @@ const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/ve
   eager: true,
 });
 
-const walkerModules = import.meta.glob(["./src/infrastructure/engines/audit/*/*.ts", "!./src/infrastructure/engines/audit/*/*.test.ts", "!./src/infrastructure/engines/audit/runner/*"], {
+const walkerModules = import.meta.glob(["./src/infrastructure/engines/walker/*/*.ts", "!./src/infrastructure/engines/walker/*/*.test.ts", "!./src/infrastructure/engines/walker/runner/*"], {
   base: "../../../../../",
   query: "?raw",
   import: "default",
   eager: true,
 });
 
-const walkerDisciplines = foldersUnder({ table: walkerModules, prefix: "./src/infrastructure/engines/audit/" });
+const walkerDisciplines = foldersUnder({ table: walkerModules, prefix: "./src/infrastructure/engines/walker/" });
 
 const CONFORMANCE_ROWS = conformanceRows({
   disciplines: walkerDisciplines,
-  mechanism: "audit",
+  mechanism: "walker",
   mechanismRoot: `${import.meta.dirname}/..`,
 });
 
@@ -151,7 +151,7 @@ const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
 
 describe("every audit piece on disk is registered with a piece.json", () => {
   it("has a piece.json for each audit piece folder", () => {
-    expect(foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" })).toEqual(walkerDisciplines);
+    expect(foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/walker/" })).toEqual(walkerDisciplines);
   });
 });
 

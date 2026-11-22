@@ -3,7 +3,7 @@ import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../rule-set/clause-address.ts";
-import type { MechanismId } from "../../rule-set/identifier-types.ts";
+import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 
@@ -15,7 +15,7 @@ export type ExemptedFinding = {
 export type DoublyHeld = {
   readonly clause: ClauseAddress;
   readonly file: RepoPath;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
 };
 
 export type GovernanceRequest = {
@@ -105,7 +105,7 @@ const doublyHeldPairs = (request: {
 
 const recordKeysOf = (request: {
   readonly records: readonly ExceptionRecord[];
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
 }): ReadonlySet<string> =>
   new Set(
     request.records.flatMap((record) =>

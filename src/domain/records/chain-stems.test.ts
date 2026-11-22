@@ -16,7 +16,7 @@ describe("stemsOf reads the content words of a sentence", () => {
       "built",
       "targets",
       "tools",
-      "audit",
+      "walker",
       "name",
       "matcher",
     ]);

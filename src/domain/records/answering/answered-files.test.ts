@@ -13,7 +13,7 @@ const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("explicit-any") },
-  engines: [{ name: "eslint", mechanism: "eslint" }],
+  engines: [{ name: "eslint" }],
   forms: [],
 };
 

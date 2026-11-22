@@ -116,7 +116,7 @@ describe("readBoundCatalogue", () => {
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
 
     expect(readBoundCatalogue({ fileText, directory, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/install/src/infrastructure/engines/audit" });
+    expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/install/src/infrastructure/engines/walker" });
   });
 });
 
@@ -130,6 +130,6 @@ describe("createBoundCatalogueOf", () => {
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>() };
 
     expect(createBoundCatalogueOf({ directory })({ fileText, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(directory.list).toHaveBeenCalledExactlyOnceWith({ path: "/install/src/infrastructure/engines/audit" });
+    expect(directory.list).toHaveBeenCalledExactlyOnceWith({ path: "/install/src/infrastructure/engines/walker" });
   });
 });

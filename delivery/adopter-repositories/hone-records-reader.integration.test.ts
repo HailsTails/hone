@@ -239,7 +239,7 @@ const source = createRecordsFolder({
   repoRoot: absolutePathSchema.parse(made.value),
 });
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 
 const findingAt = (request: { readonly clause: string; readonly file: string }): Finding => ({
   clause: clauseAddressSchema.parse(request.clause),

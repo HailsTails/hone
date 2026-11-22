@@ -11,7 +11,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 
-const AUDIT = "audit" as const;
+const AUDIT = "walker" as const;
 const ESLINT = "eslint" as const;
 const ACME_2 = disciplineIdOf("ACME-2");
 const SCRATCH_FILES_ID = clauseIdOf("scratch-files");
@@ -182,7 +182,7 @@ describe("boundClauseOf", () => {
       mechanism: AUDIT, ruleSetRoot: "tools/disciplines/acme", installRoot: INSTALL_ROOT,
       clause: "acme/ACME-2#scratch-files",
     });
-    expect(path.join).toHaveBeenCalledWith({ segments: ["/repo/tools/disciplines/acme", "mechanisms", "audit", "ACME-2"] });
+    expect(path.join).toHaveBeenCalledWith({ segments: ["/repo/tools/disciplines/acme", "mechanisms", "walker", "ACME-2"] });
   });
 
   it("refuses text that is not a clause address", () => {

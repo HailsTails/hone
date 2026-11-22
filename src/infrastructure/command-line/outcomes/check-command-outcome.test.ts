@@ -14,7 +14,7 @@ const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
 const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 
 const EMPTY_REPORT: CheckReport = {
   excluded: [],

@@ -126,7 +126,7 @@ const CLASS_KEYWORD_CHECK: RuledCheck = {
   name: "class-keyword",
   symptom: { name: "authored-class-or-this", title: "Authored class or this" },
   clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
-  engines: [{ mechanism: "audit" }, { mechanism: "eslint" }],
+  engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
 const CLASS_PROJECTED = { symptom: "authored-class-or-this", check: "class-keyword", ruleId: "hone/authored-class-or-this#class-keyword", options: [] };

@@ -6,7 +6,7 @@ import type { HoneRecordsFailure } from "../records/hone-records-failure.ts";
 import type { RecordsFolderFailure } from "../records/records-folder-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
-import type { MechanismId } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 
 type KeptKind =
@@ -34,7 +34,7 @@ export type UpgradeNeeded = { readonly kind: "upgrade-needed"; readonly path: st
 
 export type RunLoadFailureSource = VersionTwoLoadFailure | CheckChoiceRefusal | HoneRecordsFailure | CatalogueNotRead | UpgradeNeeded;
 
-export type EngineNaming = { readonly named: "engine"; readonly engine: Engine } | { readonly named: "mechanism"; readonly mechanism: MechanismId };
+export type EngineNaming = { readonly named: "engine"; readonly engine: Engine } | { readonly named: "mechanism"; readonly mechanism: EngineId };
 
 export type AllowedEngines = { readonly stated: "by-catalogue"; readonly engines: readonly string[] } | { readonly stated: "by-rule-set" };
 
@@ -65,12 +65,12 @@ export type RunLoadFailure =
 
 type EnginesRequest = { readonly engines: readonly Engine[] };
 
-const engineNamingOf = (request: EnginesRequest & { readonly mechanism: MechanismId }): EngineNaming => {
-  const engine = request.engines.find((candidate) => candidate.mechanism === request.mechanism);
+const engineNamingOf = (request: EnginesRequest & { readonly mechanism: EngineId }): EngineNaming => {
+  const engine = request.engines.find((candidate) => candidate.name === request.mechanism);
   return engine === undefined ? { named: "mechanism", mechanism: request.mechanism } : { named: "engine", engine };
 };
 
-const engineNameOf = (request: EnginesRequest & { readonly mechanism: MechanismId }): string => {
+const engineNameOf = (request: EnginesRequest & { readonly mechanism: EngineId }): string => {
   const naming = engineNamingOf(request);
   return naming.named === "engine" ? naming.engine.name : naming.mechanism;
 };

@@ -4,7 +4,7 @@ import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { ASSESSMENT_FILE_NAME, assessmentSectionHeading } from "../../../domain/report/assessment-file.ts";
-import type { ClauseAddress, LegacyClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { AssessmentFileNote, AssessmentSection, ClauseReading, ReadFirstEntry } from "../../../domain/report/check-report.ts";
@@ -87,7 +87,7 @@ const clauseReadingOf = (
   rulePage: { path: shownPageOf(request), presence: request.fileText.exists({ path: request.page }) },
 });
 
-const rulePageOf = (request: { readonly root: ClauseRoot & { readonly clause: LegacyClauseAddress }; readonly path: PathPort }): string =>
+const rulePageOf = (request: { readonly root: ClauseRoot; readonly path: PathPort }): string =>
   request.path.join({ segments: [request.root.ruleSetRoot, "rules", request.root.clause.discipline, "README.md"] });
 
 const assessmentFileNotes = (
@@ -120,9 +120,7 @@ export const clauseReadingsOf = (
     ...clauses.flatMap((clause) =>
       request.clauseRoots
         .filter((root) => clauseAddressText({ address: root.clause }) === clauseAddressText({ address: clause }))
-        .flatMap((root) => "discipline" in root.clause
-          ? [clauseReadingOf({ ...request, headings, clause, page: rulePageOf({ root: { ...root, clause: root.clause }, path: request.path }) })]
-          : []),
+        .map((root) => clauseReadingOf({ ...request, headings, clause, page: rulePageOf({ root, path: request.path }) })),
     ),
   ];
 };

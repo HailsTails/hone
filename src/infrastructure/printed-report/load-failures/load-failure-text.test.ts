@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadFailureDetail, loadFailureText } from "./load-failure-text.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
-const WALKER = "audit" as const;
+const WALKER = "walker" as const;
 
 const ESLINT = "eslint" as const;
 

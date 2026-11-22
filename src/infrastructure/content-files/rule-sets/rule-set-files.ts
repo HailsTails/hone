@@ -6,7 +6,7 @@ import { readHeldDiscipline } from "./held-discipline.ts";
 import type { Held } from "../../../application/ports/rule-set/rule-set-files.ts";
 import type { DisciplineFile, PieceFile } from "../../../domain/rule-set/rule-set-types.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { runnerModuleSegmentsOf } from "../../node/modules/install-layout.ts";
 import type { ModuleExtension } from "../../../application/ports/host/module-extension.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -21,11 +21,11 @@ export type RuleSetFiles = {
     readonly ruleSetRoot: AbsolutePath;
     readonly installRoot: AbsolutePath;
     readonly discipline: DisciplineFile;
-    readonly mechanism: MechanismId;
+    readonly mechanism: EngineId;
   }) => Result<Held<PieceFile>, LoadFailure>;
   readonly runner: (request: {
     readonly installRoot: AbsolutePath;
-    readonly mechanism: MechanismId;
+    readonly mechanism: EngineId;
     readonly moduleExtension: ModuleExtension;
   }) => "present" | "absent";
 };

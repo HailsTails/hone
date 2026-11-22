@@ -33,12 +33,12 @@ describe("shippedCataloguesOf", () => {
     const directory: DirectoryPort = {
       list: vi
         .fn<DirectoryPort["list"]>()
-        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/audit"), detail: "EACCES" } }),
+        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/walker"), detail: "EACCES" } }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     expect(shippedCataloguesOf({ fileText, directory, path: PATH, installRoot: INSTALL_ROOT })).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/audit", detail: "EACCES" },
+      error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/walker", detail: "EACCES" },
     });
   });
 

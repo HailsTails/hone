@@ -2,15 +2,15 @@ import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { parsedJson } from "../rule-sets/rule-set-reader.ts";
 import { enginesFolderSegmentsOf, pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
-import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { isDisciplineId } from "../../../domain/rule-set/identifiers.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { engineIdSchema, versionOneEngineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type PieceLocation = {
   readonly file: string;
   readonly ruleSetRoot: string;
-  readonly mechanism: MechanismId;
+  readonly mechanism: EngineId;
   readonly discipline: DisciplineId;
 };
 
@@ -92,7 +92,8 @@ const pieceLocationOf = (request: {
   if (mechanismText === undefined || discipline === undefined || rest.length === 0 || discipline === RUNNER_FOLDER) {
     return { outcome: "ok", value: [] };
   }
-  const mechanism = mechanismIdSchema.safeParse(mechanismText);
+  const engineSchema = request.ruleSetRoot === request.installRoot ? engineIdSchema : versionOneEngineIdSchema;
+  const mechanism = engineSchema.safeParse(mechanismText);
   if (!isDisciplineId(discipline)) {
     return mechanism.success
       ? { outcome: "failed", error: { kind: "not-a-discipline", file: request.file, folder: discipline } }
