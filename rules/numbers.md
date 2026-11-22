@@ -141,9 +141,9 @@ Adopters select clauses in `disciplines.json`. Selecting one clause adopts its d
 | CD-29 | Component/integration tests are the minimum, not the bulk | `CD-29#test-pyramid` (review) | — | [test-discipline](../methods/lenses/test-discipline.md) |
 | CD-30 | Integration tests catch composition bugs only | `CD-30#composition-only` (review) | — | [test-discipline](../methods/lenses/test-discipline.md) |
 | CD-31 | No coverage thresholds | `CD-31#no-coverage-thresholds` (review) | — | [test-discipline](../methods/lenses/test-discipline.md) |
-| CD-32 | PII strings redact-by-default in structured logs | `CD-32#pii-redaction` (review) | — | [clean-architecture](../methods/lenses/clean-architecture.md) |
-| CD-33 | Sensitive types brand-redact unconditionally | `CD-33#sensitive-brands` (review) | — | [clean-architecture](../methods/lenses/clean-architecture.md) |
-| CD-34 | Secrets never enter the repo | `CD-34#no-repo-secrets` (review) | — | [clean-architecture](../methods/lenses/clean-architecture.md) |
+| CD-32 | PII strings redact-by-default in structured logs | `CD-32#pii-redaction` (review) | — | none |
+| CD-33 | Sensitive types brand-redact unconditionally | `CD-33#sensitive-brands` (review) | — | none |
+| CD-34 | Secrets never enter the repo | `CD-34#no-repo-secrets` (review) | — | none |
 | CD-39 | Cite principles by Roman numeral and rules by ID | `CD-39#cite-by-id` (review) | — | none |
 | CD-40 | Single-object-argument functions | `CD-40#parameter-count`, `CD-40#named-object-argument` (review) | files the ESLint run includes | [function-first](../methods/lenses/function-first.md) |
 | CD-41 | Orchestrators contain only orchestration | `CD-41#cognitive-complexity`, `CD-41#function-length`, `CD-41#orchestration-only` (review) | files the ESLint run includes | [decomposition](../methods/lenses/decomposition.md) |
