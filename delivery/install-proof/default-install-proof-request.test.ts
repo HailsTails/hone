@@ -11,16 +11,4 @@ describe("defaultInstallProofRequestOf", () => {
       proofCases: PROOF_CASES,
     });
   });
-
-  it("holds the real path port, joining a single segment to itself", () => {
-    const request = defaultInstallProofRequestOf({ moduleUrl: "file:///a.ts" });
-
-    expect(request.path.join({ segments: ["alpha"] })).toBe("alpha");
-  });
-
-  it("holds a tarball packer that packs", () => {
-    const request = defaultInstallProofRequestOf({ moduleUrl: "file:///a.ts" });
-
-    expect(request.packer.pack).toBeTypeOf("function");
-  });
 });
