@@ -84,25 +84,25 @@ A path-only audit piece reads no source, so its test can prepare `check` and cal
 
 ### Worked example: the probe discipline
 
-`tests/probe-rule-set/` is a test-only rule set, named `probe`, holding one discipline written exactly as a team would write its own. It was added beside Hone's own rule set with no change to core or to the audit runner.
+`src/infrastructure/content-files/rule-sets/probe-rule-set/` is a test-only rule set, named `probe`, holding one discipline written exactly as a team would write its own. It was added beside Hone's own rule set with no change to core or to the audit runner.
 
-- `tests/probe-rule-set/rules/PD-1/discipline.json` declares one mechanical clause, `no-tmp-files`: mechanisms `["audit"]`, anchor `{ "kind": "file" }`, one flag case (`src/scratch.tmp.ts`, line 1) and one allow case (`src/kept.ts`, no lines).
-- `tests/probe-rule-set/mechanisms/audit/PD-1/piece.json` maps that clause to the module `no-tmp-files.ts`.
-- `tests/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts` exports `check`, an audit piece that completes each file from its path alone: a hit at line 1 for a path ending `.tmp.ts`, none otherwise. It reads no file, so the walker never parses on its behalf.
+- `src/infrastructure/content-files/rule-sets/probe-rule-set/rules/PD-1/discipline.json` declares one mechanical clause, `no-tmp-files`: mechanisms `["audit"]`, anchor `{ "kind": "file" }`, one flag case (`src/scratch.tmp.ts`, line 1) and one allow case (`src/kept.ts`, no lines).
+- `src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/piece.json` maps that clause to the module `no-tmp-files.ts`.
+- `src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts` exports `check`, an audit piece that completes each file from its path alone: a hit at line 1 for a path ending `.tmp.ts`, none otherwise. It reads no file, so the walker never parses on its behalf.
 - `no-tmp-files.test.ts` tests `check` directly; the probe has no conformance test of its own.
 - The piece imports only a type, `WalkerPiece`, from the audit runner, as a path relative to its own file. Type imports are erased when Node runs the source, so the path matters only to typechecking.
 
-A repository selects it by naming the rule set and the clause:
+A repository selects it by naming the rule set and the clause. The test's selection sits beside the `probe-rule-set` folder, so the rule set is named `probe-rule-set`:
 
 ```json
 {
   "version": 1,
-  "ruleSets": { "probe": "probe" },
+  "ruleSets": { "probe": "probe-rule-set" },
   "clauses": { "probe/PD-1#no-tmp-files": "audit", "CD-23#export-test-sibling": "audit" }
 }
 ```
 
-`src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts` runs that selection: the probe flags `src/scratch.tmp.ts`, `unit-without-a-running-test#companion-test-file` (`CD-23#export-test-sibling`) flags `src/kept.ts` for its missing test sibling, and the audit runner parses each file once even though two disciplines are selected.
+`src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts` resolves that selection through the selection reader over the real `probe-rule-set` files and runs it: the probe flags `src/scratch.tmp.ts`, `unit-without-a-running-test#companion-test-file` (`CD-23#export-test-sibling`) flags `src/kept.ts` for its missing test sibling, and the audit runner parses each file once even though two disciplines are selected.
 
 ## Adding a mechanism
 
