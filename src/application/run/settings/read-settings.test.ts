@@ -141,6 +141,7 @@ describe("readSettings", () => {
     }>({
       outcome: "ok",
       value: {
+        available: [],
         selection: {
           selection: {
             selected: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, exceptions: "allowed" }],

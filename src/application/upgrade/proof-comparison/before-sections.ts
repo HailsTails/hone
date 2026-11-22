@@ -58,7 +58,6 @@ export const beforeSectionsOf = (request: { readonly report: CheckReport }): Sec
     forfeited: report.forfeited.map((record) => recordFileKeyOf({ record })),
     "doubly-held": report.doublyHeld.map(({ clause, file, mechanism }) => joinedKey({ parts: [clauseAddressText({ address: clause }), file, mechanism] })),
     "invalid-records": report.invalidRecords.map(({ place }) => joinedKey({ parts: [place.file, place.index] })),
-    uncovered: uniqueKeys({ keys: report.uncovered.map((address) => clauseAddressText({ address })) }),
     "not-adopted": uniqueKeys({ keys: report.notAdopted.map((address) => clauseAddressText({ address })) }),
     "not-run": uniqueKeys({ keys: report.notRun.map((address) => clauseAddressText({ address })) }),
     editions: uniqueKeys({

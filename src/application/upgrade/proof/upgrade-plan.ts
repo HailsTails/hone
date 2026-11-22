@@ -9,7 +9,6 @@ import { recordInputsOf } from "../record-answers/record-inputs.ts";
 import { reachBeyondEntriesOf } from "../proof-comparison/written-reach.ts";
 import { mappedRecords, type MappedRecordsDocument, type RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
 import { mappedSettings } from "../mapping/settings-mapping.ts";
-import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 import type { PlanRefusal, ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { PlannedRepoFile } from "./planned-repo-file.ts";
@@ -25,7 +24,6 @@ export type ProjectionFilesOf = (request: {
 }) => Promise<Result<PlannedProjection, ProjectionFailure>>;
 
 export type UpgradePlan = {
-  readonly markedNotAdopted: readonly MarkedNotAdopted[];
   readonly inputs: readonly RecordInput[];
   readonly files: readonly PlannedRepoFile[];
   readonly projected: readonly PlannedRepoFile[];
@@ -70,7 +68,6 @@ export const upgradePlanOf = async (request: UpgradePlanRequest): Promise<Result
   return {
     outcome: "ok",
     value: {
-      markedNotAdopted: settings.value.markedNotAdopted,
       inputs: inputs.value,
       files: [{ file: SETTINGS_FILE, text: request.settingsFormat.textOf({ settings: settings.value.settings }) }, ...recordFilesOf({ documents }), ...projected.value.files],
       projected: projected.value.projections,

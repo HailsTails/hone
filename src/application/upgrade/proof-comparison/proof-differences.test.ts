@@ -6,7 +6,6 @@ import type { RunReport } from "../../../domain/report/run-report.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 import { proofDifferencesOf } from "./proof-differences.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
@@ -119,7 +118,7 @@ const EMPTY_AFTER: RunReport = {
   editions: [],
   findings: [],
   answered: [],
-  uncovered: [],
+  available: [],
   stale: [],
   forfeited: [],
   unrecorded: [],
@@ -169,41 +168,19 @@ const INLINE_DISABLE: AttributedNativeException = {
   mechanism: AUDIT,
 };
 
-const MARKED_TEST_BODY: MarkedNotAdopted = {
-  check: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#test-body" },
-  clause: TEST_BODY_CLAUSE,
-  reason: "discipline-not-selected",
-};
-
 const differencesBetween = (request: {
   readonly before?: Partial<CheckReport>;
   readonly after?: Partial<RunReport>;
-  readonly marked?: readonly MarkedNotAdopted[];
-}) => {
-  const given = { marked: [], ...request };
-  return proofDifferencesOf({
-    before: { ...EMPTY_BEFORE, ...given.before },
-    after: { ...EMPTY_AFTER, ...given.after },
-    marked: given.marked,
+}) =>
+  proofDifferencesOf({
+    before: { ...EMPTY_BEFORE, ...request.before },
+    after: { ...EMPTY_AFTER, ...request.after },
     catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }],
   });
-};
 
 describe("proofDifferencesOf", () => {
-  it("finds no difference when version 2 reports as not adopted what version 1 reported and what the upgrade marked", () => {
-    expect(
-      differencesBetween({
-        before: { notAdopted: [LOOPS_CLAUSE] },
-        after: { "not-adopted": [LOOP_KEYWORD_LOOPS, LOOP_KEYWORD_TEST_BODY] },
-        marked: [MARKED_TEST_BODY],
-      }),
-    ).toEqual([]);
-  });
-
-  it("names a mark version 2 does not report as not adopted", () => {
-    expect(differencesBetween({ marked: [MARKED_TEST_BODY] })).toEqual([
-      { section: "not-adopted", onlyBefore: ["CD-27#test-body-logic"], onlyAfter: [] },
-    ]);
+  it("finds no difference when version 2 reports as not adopted what version 1 reported", () => {
+    expect(differencesBetween({ before: { notAdopted: [LOOPS_CLAUSE] }, after: { "not-adopted": [LOOP_KEYWORD_LOOPS] } })).toEqual([]);
   });
 
   it("names a clause version 2 reports as not adopted that version 1 reported as not run", () => {
@@ -274,17 +251,6 @@ describe("proofDifferencesOf", () => {
       { section: "unrecorded", onlyBefore: ["audit inline-disable CD-15#loops src/a.ts:3"], onlyAfter: [] },
       { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
     ]);
-  });
-
-  it("names a clause uncovered on one side", () => {
-    expect(differencesBetween({ before: { uncovered: [TEST_BODY_CLAUSE] }, after: { uncovered: [] } })).toEqual([
-      { section: "uncovered", onlyBefore: ["CD-27#test-body-logic"], onlyAfter: [] },
-      { section: "verdict", onlyBefore: ["fail"], onlyAfter: ["pass"] },
-    ]);
-  });
-
-  it("reads each uncovered check as its clause, once", () => {
-    expect(differencesBetween({ before: { uncovered: [TEST_BODY_CLAUSE] }, after: { uncovered: [LOOP_KEYWORD_TEST_BODY, REBINDING_TEST_BODY] } })).toEqual([]);
   });
 
   it("names a clause that is stale on a side, by its file", () => {

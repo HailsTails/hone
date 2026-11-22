@@ -101,7 +101,7 @@ describe("checkChoicesOf", () => {
           },
           { clause: LOOPS_CLAUSE, checks: [LISTED_LOOPS.address], choice: { state: "not-adopted" } },
         ],
-        uncovered: [],
+        available: [],
       },
     });
   });
@@ -125,10 +125,32 @@ describe("checkChoicesOf", () => {
     });
   });
 
-  it("names as uncovered the clause of every check of a listed symptom that is listed nowhere", () => {
+  it("offers as available every check of a listed symptom that is listed nowhere", () => {
     expect(checkChoicesOf({ catalogues: CATALOGUES, checks: LISTED_TEST_BODY, checkSettings: [] })).toMatchObject({
       outcome: "ok",
-      value: { uncovered: [LOOPS_CLAUSE] },
+      value: { available: [LOOP_KEYWORD_LOOPS] },
+    });
+  });
+
+  it("chooses only the listed checks when the catalogue gains a check under a listed symptom, and offers the new check as available", () => {
+    const rebindingLayering: Check = { name: "layering", symptom: REBINDING, clause: LAYERING_CLAUSE, engines: [WALKER], forms: [] };
+    const grown: readonly RuleSetCatalogue[] = [{ ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: [...SETTINGS_CATALOGUE.checks, rebindingLayering] } }];
+    expect(checkChoicesOf({ catalogues: grown, checks: [...LISTED_TEST_BODY, LISTED_LOOPS], checkSettings: [] })).toEqual<{
+      readonly outcome: "ok";
+      readonly value: CheckChoices;
+    }>({
+      outcome: "ok",
+      value: {
+        clauses: [
+          {
+            clause: TEST_BODY_CLAUSE,
+            checks: [LISTED_TEST_BODY[0].address, LISTED_TEST_BODY[1].address],
+            choice: { state: "run", mechanism: "audit", settings: undefined },
+          },
+          { clause: LOOPS_CLAUSE, checks: [LISTED_LOOPS.address], choice: { state: "not-adopted" } },
+        ],
+        available: [rebindingLayering],
+      },
     });
   });
 

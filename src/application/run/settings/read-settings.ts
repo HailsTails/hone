@@ -6,6 +6,7 @@ import type { ClauseAddress } from "../../../domain/rule-set/clause-address-type
 import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { type CheckChoiceRefusal, type ChosenClause, checkChoicesOf, type RuleSetCatalogue, sameRuleSet } from "../../../domain/settings/check-choices.ts";
 import { settledCheckSettings } from "../../../domain/settings/clause-settings/check-settings.ts";
 import type { Conventions } from "../../../domain/settings/conventions.ts";
@@ -23,6 +24,7 @@ export type SettingsReading = {
   readonly eslintConfigLookup: EslintConfigLookupChoice;
   readonly conventions: Conventions;
   readonly notes: readonly SettingsNote[];
+  readonly available: readonly Check[];
 };
 
 export type SettingsRepository = {
@@ -138,13 +140,13 @@ const editionReadingsOf = (request: { readonly bound: readonly BoundClause[] }):
 const settingsReadingOf = (request: {
   readonly file: SettingsFile;
   readonly clauses: readonly ChosenClause[];
-  readonly uncovered: readonly ClauseAddress[];
+  readonly available: readonly Check[];
   readonly bound: readonly BoundClause[];
 }): SettingsReading => ({
   selection: {
     selection: {
       selected: request.bound.map((bound) => bound.selected),
-      uncovered: request.uncovered,
+      uncovered: [],
       notAdopted: clausesIn({ clauses: request.clauses, state: "not-adopted" }),
       notRun: clausesIn({ clauses: request.clauses, state: "not-run" }),
       editions: editionReadingsOf({ bound: request.bound }),
@@ -159,6 +161,7 @@ const settingsReadingOf = (request: {
   eslintConfigLookup: request.file.eslintConfigLookup,
   conventions: request.file.conventions.conventions,
   notes: request.file.conventions.declared.map((key) => ({ kind: "declared-not-read", key })),
+  available: request.available,
 });
 
 const parsedSettingsFile = (request: SettingsReadRequest): Result<SettingsDocument & { readonly file: SettingsFile }, VersionTwoLoadFailure> => {
@@ -196,5 +199,5 @@ export const readSettings = (request: SettingsReadRequest): Result<SettingsReadi
   if (bound.outcome === "failed") {
     return bound;
   }
-  return { outcome: "ok", value: settingsReadingOf({ file, clauses: choices.value.clauses, uncovered: choices.value.uncovered, bound: bound.value }) };
+  return { outcome: "ok", value: settingsReadingOf({ file, clauses: choices.value.clauses, available: choices.value.available, bound: bound.value }) };
 };

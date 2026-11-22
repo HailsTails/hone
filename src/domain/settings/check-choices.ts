@@ -18,7 +18,7 @@ export type ClauseChoice =
 
 export type ChosenClause = { readonly clause: ClauseAddress; readonly checks: readonly ListedAddress[]; readonly choice: ClauseChoice };
 
-export type CheckChoices = { readonly clauses: readonly ChosenClause[]; readonly uncovered: readonly ClauseAddress[] };
+export type CheckChoices = { readonly clauses: readonly ChosenClause[]; readonly available: readonly Check[] };
 
 export type CheckSettingsListing = "unlisted" | "not-run" | "not-adopted";
 
@@ -207,13 +207,10 @@ const withSettings = (request: { readonly clause: ChosenClause; readonly settled
     : request.clause;
 };
 
-export const uncoveredOf = (request: CatalogueRequest & { readonly checks: readonly Check[] }): readonly ClauseAddress[] => {
+const availableOf = (request: CatalogueRequest & { readonly checks: readonly Check[] }): readonly Check[] => {
   const symptoms = new Set(request.checks.map((check) => check.symptom.name));
   const listed = new Set(request.checks);
-  const clauses = request.catalogues.flatMap((held) =>
-    held.catalogue.checks.filter((check) => symptoms.has(check.symptom.name) && !listed.has(check)).map((check) => check.clause),
-  );
-  return clauses.filter((clause, index) => clauses.findIndex((earlier) => sameClauseAddress({ left: earlier, right: clause }) === "same") === index);
+  return request.catalogues.flatMap((held) => held.catalogue.checks.filter((check) => symptoms.has(check.symptom.name) && !listed.has(check)));
 };
 
 const failedWith = (refusal: CheckChoiceRefusal): { readonly outcome: "failed"; readonly error: CheckChoiceRefusal } => ({ outcome: "failed", error: refusal });
@@ -251,7 +248,7 @@ export const checkChoicesOf = (
     outcome: "ok",
     value: {
       clauses: clauses.map((clause) => withSettings({ clause, settled: settled.value })),
-      uncovered: uncoveredOf({ catalogues: request.catalogues, checks: resolved.value.map((each) => each.check) }),
+      available: availableOf({ catalogues: request.catalogues, checks: resolved.value.map((each) => each.check) }),
     },
   };
 };

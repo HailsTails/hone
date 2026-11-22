@@ -2,7 +2,6 @@ import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import type { OracleFailure } from "./record-answer-oracle.ts";
 import type { PlanRefusal } from "./plan-refusal.ts";
 import type { ProofRunFailure } from "./proof-runs.ts";
@@ -18,7 +17,6 @@ export const PROOF_SECTIONS = [
   "forfeited",
   "doubly-held",
   "invalid-records",
-  "uncovered",
   "not-adopted",
   "not-run",
   "editions",
@@ -34,12 +32,6 @@ export type ProofDifference = {
   readonly section: ProofSection;
   readonly onlyBefore: readonly string[];
   readonly onlyAfter: readonly string[];
-};
-
-export type MarkedNotAdopted = {
-  readonly check: ListedAddress;
-  readonly clause: ClauseAddress;
-  readonly reason: "discipline-not-selected";
 };
 
 export type ProofWrite =
@@ -66,7 +58,6 @@ export type RemovalFailure =
   | { readonly kind: "unremovable"; readonly path: AbsolutePath; readonly detail: string; readonly removed: Removed };
 
 export type ProofCarriedOver = {
-  readonly markedNotAdopted: readonly MarkedNotAdopted[];
   readonly written: readonly RepoPath[];
   readonly replaced: readonly RepoPath[];
   readonly removed: Removed;

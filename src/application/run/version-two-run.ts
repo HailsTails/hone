@@ -86,6 +86,7 @@ export const versionTwoRunOver = async (request: { readonly stages: VersionTwoSt
     touched,
     runs: runs.value,
     tracked: tree.value.tracked,
+    available: settings.available,
   });
   return {
     outcome: "ok",

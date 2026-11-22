@@ -198,6 +198,7 @@ const stagesOver = (request: { readonly git: GitPort; readonly baseRevision: str
   versionTwoStagesOver({ ports: portsOver(request), locations: { repoRoot: REPO, installRoot: INSTALL, moduleExtension: ".ts", baseRevision: request.baseRevision } });
 
 const SETTINGS: SettingsReading = {
+  available: [],
   selection: {
     selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],

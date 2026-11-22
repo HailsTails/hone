@@ -439,8 +439,6 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
 
   const CLAUSE = "CD-15#loops";
 
-  const MARKED_CHECK = "claimed-type#claimed-type";
-
   const FILE = repoPathOf("src/a.ts");
 
   const MECHANISM = "eslint" as const;
@@ -643,7 +641,6 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
     repoRoot: REPO,
     path: PATH,
     carried: {
-      markedNotAdopted: [{ check: { ruleSet: TOOL_RULE_SET, check: MARKED_CHECK }, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") }, reason: "discipline-not-selected" }],
       written: [repoPathOf("hone.config.json")],
       replaced: [CONFIG],
       removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [absoluteRootOf("/repo/discipline-exceptions")] },
@@ -654,7 +651,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
     ...SAMPLES.flatMap(({ failure, fills }) => linesOf({ text: upgradeFailureOutcomeOf({ failure, placement: { repoRoot: REPO, path: PATH } }).text, fills: { ...BASE_FILLS, ...fills } })),
     ...SUCCESS_TEXT.trimEnd()
       .split("\n")
-      .map((text): PrintedLine => ({ label: "upgrade", text, fills: { path: text.slice(text.indexOf(" ") + 1), check: MARKED_CHECK } })),
+      .map((text): PrintedLine => ({ label: "upgrade", text, fills: { path: text.slice(text.indexOf(" ") + 1) } })),
     ...linesOf({ text: ALREADY_ON_VERSION_TWO.text, fills: {} }),
   ];
 })();
@@ -2006,7 +2003,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
         fills: { ...WEBHOOK_SITE_FILLS, line: "4", column: "9", snippet: "body as Event", reference: UNOWED_REFERENCE },
       },
     ],
-    uncovered: [{ entry: CLOCK_CHECK, fills: CLOCK_FILLS }],
+    available: [{ entry: CLOCK_CHECK, fills: CLOCK_FILLS }],
     stale: [
       { entry: { placed: LOCATION_PLACED, reason: "credited-nothing" }, fills: { subject: LOCATION_SUBJECT } },
       { entry: { placed: LOCATION_PLACED, reason: "file-gone" }, fills: { subject: LOCATION_SUBJECT } },
@@ -2082,7 +2079,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
     editions: [],
     findings: [],
     answered: [],
-    uncovered: [],
+    available: [],
     stale: [],
     forfeited: [],
     unrecorded: [],
@@ -2105,7 +2102,7 @@ const { RUN_PRINTABLE_LINES, RUN_SECTION_ROLES } = (() => {
     editions: entriesOf(SECTION_SAMPLES.editions),
     findings: entriesOf(SECTION_SAMPLES.findings),
     answered: entriesOf(SECTION_SAMPLES.answered),
-    uncovered: entriesOf(SECTION_SAMPLES.uncovered),
+    available: entriesOf(SECTION_SAMPLES.available),
     stale: entriesOf(SECTION_SAMPLES.stale),
     forfeited: entriesOf(SECTION_SAMPLES.forfeited),
     unrecorded: entriesOf(SECTION_SAMPLES.unrecorded),

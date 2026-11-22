@@ -1,6 +1,6 @@
 import { reportOutputOfVersionOne } from "../../../domain/settings/report-output.ts";
 import type { ClauseSettingValues } from "../../../domain/runner/runner-module-types.ts";
-import { type RuleSetCatalogue, sameRuleSet, uncoveredOf } from "../../../domain/settings/check-choices.ts";
+import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import { type CheckState, eslintConfigLookupOf, type GivenCheckSettings, type ListedCheck, RENAMED_SETTINGS, type SettingsFile } from "../../../domain/settings/settings-file.ts";
@@ -12,7 +12,6 @@ import type { Result } from "../../../domain/result.ts";
 import type { ClauseChoice, ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
 import { checksOfClause } from "../../../domain/language-layer/clause-checks.ts";
 import type { UpgradeDrop, UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
-import type { MarkedNotAdopted } from "../../ports/upgrade/proof-outcome.ts";
 
 export type SettingsMappingRequest = {
   readonly selection: ConsumerSelectionFile;
@@ -22,12 +21,10 @@ export type SettingsMappingRequest = {
 export type MappedSettings = {
   readonly settings: SettingsFile;
   readonly drops: readonly UpgradeDrop[];
-  readonly markedNotAdopted: readonly MarkedNotAdopted[];
 };
 
 type ClauseListing = {
   readonly clause: ClauseAddress;
-  readonly checks: readonly Check[];
   readonly listed: readonly ListedCheck[];
   readonly refusals: readonly UpgradeRefusal[];
 };
@@ -69,7 +66,6 @@ const listingOf = (request: {
   if (checks.length === 0) {
     return {
       clause: request.clause,
-      checks: [],
       listed: [],
       refusals: [{ kind: "clause-without-check", clause: clauseAddressText({ address: request.clause }) }],
     };
@@ -77,7 +73,6 @@ const listingOf = (request: {
   const states = checks.map((check) => ({ check, state: stateOf({ check, choice: request.choice }) }));
   return {
     clause: request.clause,
-    checks: states.flatMap(({ check, state }) => (state.outcome === "ok" ? [check] : [])),
     listed: states.flatMap(({ check, state }) =>
       state.outcome === "ok" ? [{ address: listedAddressOf({ clause: request.clause, check }), state: state.value }] : [],
     ),
@@ -104,32 +99,6 @@ const givenSettingsOf = (request: {
 const whyChainDropsOf = (request: { readonly selection: ConsumerSelectionFile }): readonly UpgradeDrop[] =>
   request.selection.fileExceptionWhyChains === "optional" ? [{ kind: "file-exception-why-chains", value: "optional" }] : [];
 
-const sameDiscipline = (request: { readonly left: ClauseAddress; readonly right: ClauseAddress }): "same" | "different" =>
-  sameRuleSet({ left: request.left.ruleSet, right: request.right.ruleSet }) === "same" && request.left.discipline === request.right.discipline
-    ? "same"
-    : "different";
-
-const unselectedUncoveredOf = (request: SettingsMappingRequest & { readonly listings: readonly ClauseListing[] }): readonly ClauseAddress[] =>
-  uncoveredOf({ catalogues: request.catalogues, checks: request.listings.flatMap((listing) => listing.checks) }).filter(
-    (clause) => !request.selection.clauses.some(([selected]) => sameDiscipline({ left: selected, right: clause }) === "same"),
-  );
-
-const NOT_ADOPTED: ClauseChoice = { state: "not-adopted" };
-
-const markedListingsOf = (request: SettingsMappingRequest & { readonly listings: readonly ClauseListing[] }): readonly ClauseListing[] => {
-  const clauses = unselectedUncoveredOf(request);
-  if (clauses.length === 0) {
-    return [];
-  }
-  const marked = clauses.map((clause) => listingOf({ catalogues: request.catalogues, clause, choice: NOT_ADOPTED }));
-  return [...marked, ...markedListingsOf({ ...request, listings: [...request.listings, ...marked] })];
-};
-
-const markedNotAdoptedOf = (request: { readonly marked: readonly ClauseListing[] }): readonly MarkedNotAdopted[] =>
-  request.marked.flatMap((listing) =>
-    listing.listed.map(({ address }): MarkedNotAdopted => ({ check: address, clause: listing.clause, reason: "discipline-not-selected" })),
-  );
-
 export const mappedSettings = (request: SettingsMappingRequest): Result<MappedSettings, readonly UpgradeRefusal[]> => {
   const { selection } = request;
   const listings = selection.clauses.map(([clause, choice]) => listingOf({ catalogues: request.catalogues, clause, choice }));
@@ -137,15 +106,13 @@ export const mappedSettings = (request: SettingsMappingRequest): Result<MappedSe
   if (refusals.length > 0) {
     return { outcome: "failed", error: refusals };
   }
-  const marked = markedListingsOf({ ...request, listings });
   return {
     outcome: "ok",
     value: {
-      markedNotAdopted: markedNotAdoptedOf({ marked }),
       settings: {
         exclude: selection.exclude,
         ruleSets: selection.ruleSets.map(([name, location]) => ({ name, location })),
-        checks: [...listings, ...marked].flatMap((listing) => listing.listed),
+        checks: listings.flatMap((listing) => listing.listed),
         checkSettings: givenSettingsOf({ selection, listings }),
         forfeiture: selection.assessment.forfeiture,
         reportOutput: reportOutputOfVersionOne({ output: selection.reportOutput }),

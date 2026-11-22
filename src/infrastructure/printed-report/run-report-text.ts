@@ -26,7 +26,7 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
   editions: (request) => request.report.editions.map((reading) => editionLine({ reading })),
   findings: (request) => request.report.findings.map((finding) => findingLine({ catalogue: request.catalogue, finding })),
   answered: (request) => request.report.answered.map((answered) => answeredLine({ catalogue: request.catalogue, answered })),
-  uncovered: (request) => request.report.uncovered.map((check) => checkLine({ check })),
+  available: (request) => request.report.available.map((check) => checkLine({ check })),
   stale: (request) => request.report.stale.map((stale) => staleLine({ stale, pruneCommand: request.pruneCommand })),
   forfeited: (request) => request.report.forfeited.map((placed) => forfeitedLine({ placed, pruneCommand: request.pruneCommand })),
   unrecorded: (request) => request.report.unrecorded.flatMap((exception) => unrecordedLines({ catalogue: request.catalogue, exception })),

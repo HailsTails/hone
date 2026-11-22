@@ -211,6 +211,7 @@ const NO_RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: 
 const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set() };
 
 const REQUEST: RunReportRequest = {
+  available: [],
   catalogue: REPORT_CATALOGUE,
   selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
   excluded: [],
@@ -228,7 +229,7 @@ const EMPTY_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
-  uncovered: [],
+  available: [],
   stale: [],
   forfeited: [],
   unrecorded: [],
@@ -462,19 +463,20 @@ describe("runReportOf, what the run could not measure", () => {
 });
 
 describe("runReportOf, the selection and the settings", () => {
-  it("lists the checks of the clauses marked not-adopted, not-run or left unlisted, the editions ran, the excluded paths and the settings notes", () => {
+  it("lists the checks of the clauses marked not-adopted or not-run, the checks available to list, the editions ran, the excluded paths and the settings notes", () => {
     expect(
       runReportOf({
         ...REQUEST,
         selection: {
           selected: [],
-          uncovered: [CLOCK_SOURCES],
+          uncovered: [],
           notAdopted: [CAST_EXPRESSIONS],
           notRun: [TEST_BODY_LOGIC],
           editions: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, edition: editionOf("1"), latest: editionOf("2") }],
         },
         excluded: [repoPathOf("dist")],
         notes: [{ kind: "declared-not-read", key: "layers" }],
+        available: [CLOCK_CHECK],
       }),
     ).toEqual({
       ...EMPTY_REPORT,
@@ -482,7 +484,7 @@ describe("runReportOf, the selection and the settings", () => {
       "not-adopted": [CAST_CHECK],
       "not-run": [TEST_BODY_CHECK],
       editions: [{ check: CAST_CHECK, engine: ESLINT_ENGINE, edition: "1", latest: "2" }],
-      uncovered: [CLOCK_CHECK],
+      available: [CLOCK_CHECK],
       "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
     });
   });

@@ -538,7 +538,7 @@ An `arguments-invalid` line says what was wrong with the command as typed. Its w
 
 `hone upgrade` moves a version 1 repository to version 2. It writes `hone.config.json`, the `hone-records` folder and the version 2 projections, one for the repository root and one for each package folder version 1 projected into, rewrites each team ESLint config that imports a version 1 projection to import the version 2 projection in its own folder, carries `eslintConfigRoots` over, runs version 1 and version 2 over the same repository, and removes the version 1 files only when both report the same thing. A repository that is already on version 2 prints one line and exits `0`.
 
-On success it prints `upgraded to version 2`, then a `marked` line for each check it wrote as `not-adopted` because its discipline was not selected in version 1 (version 2 lists every check of a symptom a listed check sees, and a clause of an unselected discipline that shares such a symptom would otherwise be `uncovered`), then a `wrote` line for each file it wrote, a `rewrote` line for each team config it rewrote, and a `removed` line for each version 1 file and folder it removed, and exits `0`. The version 1 files it removes are `disciplines.json`, every version 1 projection, and every `.json` file and folder it finds in `discipline-exceptions.json` or the `discipline-exceptions` folder, whether or not it holds a record. The `wrote`, `rewrote` and `removed` lines print a path inside `--repo` relative to it; the lines of a refusal print the paths as the files are, absolute.
+On success it prints `upgraded to version 2`, then a `wrote` line for each file it wrote, a `rewrote` line for each team config it rewrote, and a `removed` line for each version 1 file and folder it removed, and exits `0`. The version 1 files it removes are `disciplines.json`, every version 1 projection, and every `.json` file and folder it finds in `discipline-exceptions.json` or the `discipline-exceptions` folder, whether or not it holds a record. The `wrote`, `rewrote` and `removed` lines print a path inside `--repo` relative to it; the lines of a refusal print the paths as the files are, absolute.
 
 A refusal prints `upgrade refused:`, then one or more lines saying what to do, then either `Nothing was changed.` or the files that could not be put back, and exits `1`. A refusal before anything is written never changes the repository. A refusal after files were written puts them back. A file that could not be put back is named with what to do: a file or folder the upgrade created is deleted by hand, and a file it replaced is restored from version control. A refusal that names a fault in Hone prints where to report it. The upgrade asks version 1 which projections it writes by running version 1's own `project` once, after version 1's run has reported every projection current, so a current projection that no config root owns any more is removed, as version 1's own `project` removes it. Version 1's own `project` is expected to change nothing but that removal: if it rewrites a projection, the upgrade refuses and names the file, since the run it measured was made before, and if it fails, the upgrade cannot know what it did before failing, so that refusal prints `version 1's own project may have changed files before it failed; check version control for what it changed.` in place of `Nothing was changed.`. A refusal that comes after that removal lists each file removed under `version 1's own project removed these files, and the upgrade does not put them back; restore them from version control:`, apart from the files the upgrade itself could not put back, and does not print `Nothing was changed.`; a success lists it among the version 1 files removed.
 
@@ -552,7 +552,6 @@ When version 2 is in place but a version 1 file could not be removed, it prints 
 | `upgrade` | `upgrade incomplete:` |
 | `upgrade` | `Nothing was changed.` |
 | `upgrade` | `upgraded to version 2` |
-| `upgrade` | `marked <check> not-adopted: its discipline was not selected in version 1` |
 | `upgrade` | `wrote <path>` |
 | `upgrade` | `rewrote <path>` |
 | `upgrade` | `removed <path>` |
@@ -651,7 +650,7 @@ As in 1.x, a minor release may add a section, a line form or a value, and a tool
 | `<check>` | a check address, `<symptom>#<check>`, such as `date-used-directly#clock-sources`; for a finding or native exception of a clause the symptom catalogue gives no check, such as a team rule set's, the clause address; in a load failure, the check as `hone.config.json` lists it, led by its rule set and `/` when it has one, or the clause address when the failure is in the rule set's own files | never in the report; may hold a space in a load failure |
 | `<engine>` | the engine that ran the check, such as `walker` or `eslint`; beside a clause address, or in a load failure when the catalogue names no engine for it, the mechanism id | never |
 | `<symptom>`, `<recipe>`, `<case name>` | a name in the symptom catalogue | never |
-| `<section>` | in a finding, the section of its fix page, as in 1.x; in an upgrade refusal, a compared section of the two reports, always written in version 2's style: `excluded`, `findings`, `answered`, `unrecorded`, `misnamed`, `paid`, `stale`, `forfeited`, `doubly-held`, `invalid-records`, `uncovered`, `not-adopted`, `not-run`, `editions`, `unmeasured`, `projection-problems`, `assessment` or `verdict` | never |
+| `<section>` | in a finding, the section of its fix page, as in 1.x; in an upgrade refusal, a compared section of the two reports, always written in version 2's style: `excluded`, `findings`, `answered`, `unrecorded`, `misnamed`, `paid`, `stale`, `forfeited`, `doubly-held`, `invalid-records`, `not-adopted`, `not-run`, `editions`, `unmeasured`, `projection-problems`, `assessment` or `verdict` | never |
 | `<check name>` | the check an authorised location names that its symptom does not have, as the record writes it | never |
 | `<outside party>`, `<dependency>` | a boundary record's outside party, such as `runtime:clock`, `node:fs` or `uuid/v4`, and a dependency record's package name | never |
 | `<records file>` | a records file under `hone-records/`, bare, or as a JSON string in double quotes when its path holds a space, a double quote or a line break | never outside a JSON string |
@@ -679,7 +678,7 @@ As in 1.x, a minor release may add a section, a line form or a value, and a tool
 
 ## The version 2 report
 
-`hone check` prints the report's non-empty sections in this order, then the verdict line. A failing section makes the verdict `fail`; a next-step, informational or guidance section never does, so paid debt, a note, an answered finding, a carried record or a symptom never fails a run. `actionable` prints the failing, next-step and guidance sections and leaves out the informational ones, so a hook that prints failures only still shows paid debt and the command that removes it. A passing run can therefore print a `paid` section under `actionable`, so a hook tells pass from fail by the exit code, not by whether anything was printed.
+`hone check` prints the report's non-empty sections in this order, then the verdict line. A failing section makes the verdict `fail`; a next-step, informational or guidance section never does, so paid debt, a note, an answered finding, a check available to list, a carried record or a symptom never fails a run. `actionable` prints the failing, next-step and guidance sections and leaves out the informational ones, so a hook that prints failures only still shows paid debt and the command that removes it. A passing run can therefore print a `paid` section under `actionable`, so a hook tells pass from fail by the exit code, not by whether anything was printed.
 
 | Section | Role | What it lists |
 | --- | --- | --- |
@@ -689,7 +688,7 @@ As in 1.x, a minor release may add a section, a line form or a value, and a tool
 | `editions` | informational | the edition each check ran, for checks with more than one edition |
 | `findings` | failing | each place a check sees its symptom, unanswered |
 | `answered` | informational | findings a record answers, with the records that answer them |
-| `uncovered` | failing | checks neither listed nor marked |
+| `available` | informational | checks no setting lists whose symptom a listed check sees, offered to list |
 | `stale` | failing | records that answer no finding and hold no native exception |
 | `forfeited` | failing | debt on files this change touched |
 | `unrecorded` | failing | native exceptions no record holds |
@@ -732,7 +731,7 @@ A finding names what its symptom may indicate after the snippet, and ends with `
 | `findings` | `<check> <engine> <file>:<line>:<column> <snippet>` |
 | `findings` | `<check> <engine> <file>:<line>:<column> <snippet> fix: <fix> (<fix page>#<section>)` |
 | `answered` | `<check> <engine> <file>:<line>:<column> <snippet> answered by <reference>` |
-| `uncovered` | `<check>` |
+| `available` | `<check>` |
 | `stale` | `<subject>` |
 | `stale` | `<subject>; its file is no longer in the repository` |
 | `stale` | `<subject>; its file is excluded by the settings, so nothing there was checked` |

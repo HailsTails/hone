@@ -30,7 +30,7 @@ const AFTER: RunReport = {
   editions: [],
   findings: [],
   answered: [],
-  uncovered: [],
+  available: [],
   stale: [],
   forfeited: [],
   unrecorded: [],

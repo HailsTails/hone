@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { PlacedRecord } from "../records/hone-records/hone-record.ts";
 import { RUN_SECTION_NAMES, type RunSectionName, type RunSectionRole, runSectionRoleOf, runVerdictOf } from "./report-sections.ts";
 import type { RunReport } from "./run-report.ts";
-import type { Symptom } from "../language-layer/symptom-catalogue.ts";
+import type { Check, Symptom } from "../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../repository/repo-path-of.ts";
+import { clauseIdOf } from "../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 
 const CLAIMED_TYPE: Symptom = {
   name: "claimed-type",
@@ -58,7 +61,7 @@ const EMPTY_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
-  uncovered: [],
+  available: [],
   stale: [],
   forfeited: [],
   unrecorded: [],
@@ -83,7 +86,7 @@ describe("RUN_SECTION_NAMES", () => {
       "editions",
       "findings",
       "answered",
-      "uncovered",
+      "available",
       "stale",
       "forfeited",
       "unrecorded",
@@ -105,6 +108,7 @@ describe("runSectionRoleOf", () => {
   it.each<{ readonly section: RunSectionName; readonly role: RunSectionRole }>([
     { section: "findings", role: "failing" },
     { section: "answered", role: "informational" },
+    { section: "available", role: "informational" },
     { section: "paid", role: "next-step" },
     { section: "refused", role: "failing" },
     { section: "settings-notes", role: "informational" },
@@ -145,6 +149,17 @@ describe("runVerdictOf", () => {
         },
       }),
     ).toBe("pass");
+  });
+
+  it("passes a run whose only entries are checks available to list, since an offer never fails a run", () => {
+    const castExpressions: Check = {
+      name: "cast-expressions",
+      symptom: CLAIMED_TYPE,
+      clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-2"), clause: clauseIdOf("cast-expressions") },
+      engines: [{ name: "eslint", mechanism: "eslint" }],
+      forms: [],
+    };
+    expect(runVerdictOf({ report: { ...EMPTY_REPORT, available: [castExpressions] } })).toBe("pass");
   });
 
   it("fails a run with an entry in a failing section", () => {

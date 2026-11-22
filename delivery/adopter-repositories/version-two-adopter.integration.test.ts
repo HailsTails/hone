@@ -448,14 +448,14 @@ describe("the settings a version 2 adopter edits, run as the real tool command",
   );
 
   it(
-    "fails on a check of a selected symptom that is neither listed nor marked not-adopted, with nothing else wrong",
+    "passes with a check of a selected symptom that is neither listed nor marked, offering it as available",
     () => {
       const repo = adopterRepository({ sources: { "clean.ts": CLEAN_SOURCE } });
       runCommandIn({ repo, subcommand: "project", options: [] });
       writeIn({ repo, file: "hone.config.json", text: CONFIG_LEAVING_A_CHECK_UNLISTED });
       expect(runCommandIn({ repo, subcommand: "check", options: [] })).toEqual({
-        text: `${NOT_ADOPTED_WITHOUT_THE_UNLISTED_CAST_SITE}uncovered (1)\nclaimed-type#unlisted-cast-site\nverdict: fail\n`,
-        code: 1,
+        text: `${NOT_ADOPTED_WITHOUT_THE_UNLISTED_CAST_SITE}available (1)\nclaimed-type#unlisted-cast-site\nverdict: pass\n`,
+        code: 0,
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,

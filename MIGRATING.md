@@ -414,7 +414,6 @@ Version 2 keeps its settings in `hone.config.json`, its records in the `hone-rec
 On success it exits `0` and prints these lines, in this order:
 
 - `upgraded to version 2`.
-- `marked <check> not-adopted: its discipline was not selected in version 1`, once for each check the upgrade wrote as `not-adopted` in `hone.config.json`. Version 2 lists every check of a symptom that one of your checks sees; a check of a discipline you never selected in version 1 would otherwise be reported `uncovered`. It is not run, as in version 1.
 - `wrote <file>`: `hone.config.json`, each records file under `hone-records/`, each `hone.eslint.mjs` and each `hone.eslint.d.mts`, one for each projection folder, which types the projection beside it. Commit them all.
 - `rewrote <file>`: each ESLint config of yours that imported a version 1 projection, now importing the version 2 one.
 - `removed <path>`: each version 1 file and folder, which are `disciplines.json`, the `disciplines.eslint.mjs` files, and every file and folder of `discipline-exceptions.json` or `discipline-exceptions/`.

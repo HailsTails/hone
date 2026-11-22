@@ -188,7 +188,7 @@ const EMPTY_AFTER: RunReport = {
   editions: [],
   findings: [],
   answered: [],
-  uncovered: [],
+  available: [],
   stale: [],
   forfeited: [],
   unrecorded: [],
@@ -465,7 +465,6 @@ describe("upgradeProof", () => {
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "ok",
       value: {
-        markedNotAdopted: [],
         written: ["hone.config.json", "hone-records/debt/loop-keyword.json", "hone.eslint.mjs"],
         replaced: ["eslint.config.mjs"],
         removed: {
@@ -611,7 +610,6 @@ describe("upgradeProof", () => {
     await expect(upgradeProof({ ...requestOver({ doubles }), versionOneFiles: SINGLE_FILE_LAYOUT })).resolves.toEqual({
       outcome: "ok",
       value: {
-        markedNotAdopted: [],
         written: ["hone.config.json", "hone-records/debt/loop-keyword.json", "hone.eslint.mjs"],
         replaced: ["eslint.config.mjs"],
         removed: { files: ["/repo/discipline-exceptions.json", "/repo/disciplines.eslint.mjs", "/repo/disciplines.json"], folders: [] },
@@ -765,7 +763,6 @@ describe("upgradeProof", () => {
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "ok",
       value: {
-        markedNotAdopted: [],
         written: ["hone.config.json", "hone-records/debt/loop-keyword.json", "hone.eslint.mjs"],
         replaced: ["eslint.config.mjs"],
         removed: {
