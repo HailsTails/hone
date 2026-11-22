@@ -32,6 +32,7 @@ import type {
   AssessmentFileNote,
   AssessmentSection,
   CheckReport,
+  ClausePage,
   ClauseReading,
   PaidDebtNote,
   PartialAssessment,
@@ -246,7 +247,7 @@ const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
 
 const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
-const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
+const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 
@@ -669,6 +670,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   const MECHANISM = "eslint" as const;
   const FILE = repoPathOf("src/basket.ts");
   const RULE_PAGE = "node_modules/@hailstails/hone/rules/CD-15/README.md";
+  const CHECK_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms/loop-keyword/loop-statement.md";
   const ADOPTION_GUIDE = "node_modules/@hailstails/hone/ADOPTING.md";
 
   const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
@@ -683,6 +685,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     column: "0",
     snippet: "const total = 0;\\nreturn total;",
     "rule page": RULE_PAGE,
+    "check page": CHECK_PAGE,
     "adoption guide": ADOPTION_GUIDE,
     "project command": PROJECT_COMMAND,
     "prune command": PRUNE_COMMAND,
@@ -698,8 +701,8 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   const FINDING: Finding = { clause: LOOPS, mechanism: MECHANISM, file: FILE, anchor: { line: 15, column: 0 }, snippet: "const total = 0;\nreturn total;" };
 
   const REMEDIED_FINDING: Filled<Finding> = {
-    entry: { ...FINDING, remedy: { fix: "write the values out", page: "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md", section: "a-method-that-computes-a-value" } },
-    fills: { fix: "write the values out", "fix page": "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md", section: "a-method-that-computes-a-value" },
+    entry: { ...FINDING, remedy: { fix: "write the values out", page: "node_modules/@hailstails/hone/rules/typescript/symptoms/computed-value-in-a-test/test-body.md", section: "a-method-that-computes-a-value" } },
+    fills: { fix: "write the values out", "fix page": "node_modules/@hailstails/hone/rules/typescript/symptoms/computed-value-in-a-test/test-body.md", section: "a-method-that-computes-a-value" },
   };
 
   const RECORDS: EveryKind<ExceptionRecord> = {
@@ -936,7 +939,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
     kind: "clause",
     clause: LOOPS,
     assessmentSection: request.assessmentSection,
-    rulePage: { path: RULE_PAGE, presence: request.presence },
+    pages: [{ path: RULE_PAGE, presence: request.presence, section: "spirit" }],
   });
 
   const READINGS: Readonly<Record<AssessmentSection, Readonly<Record<FilePresence, ClauseReading>>>> = {
@@ -946,6 +949,39 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       absent: readingOf({ assessmentSection: "not-assessed", presence: "absent" }),
     },
     unread: { present: readingOf({ assessmentSection: "unread", presence: "present" }), absent: readingOf({ assessmentSection: "unread", presence: "absent" }) },
+  };
+
+  type CheckPageShape = "fix" | "whole-page" | "absent";
+
+  const CHECK_PAGES: Readonly<Record<CheckPageShape, ClausePage>> = {
+    fix: { path: CHECK_PAGE, presence: "present", section: "fix" },
+    "whole-page": { path: CHECK_PAGE, presence: "present", section: "whole-page" },
+    absent: { path: CHECK_PAGE, presence: "absent", section: "whole-page" },
+  };
+
+  const checkReadingOf = (request: { readonly assessmentSection: AssessmentSection; readonly shape: CheckPageShape }): ClauseReading => ({
+    kind: "clause",
+    clause: LOOPS,
+    assessmentSection: request.assessmentSection,
+    pages: [CHECK_PAGES[request.shape]],
+  });
+
+  const CHECK_READINGS: Readonly<Record<AssessmentSection, Readonly<Record<CheckPageShape, ClauseReading>>>> = {
+    present: {
+      fix: checkReadingOf({ assessmentSection: "present", shape: "fix" }),
+      "whole-page": checkReadingOf({ assessmentSection: "present", shape: "whole-page" }),
+      absent: checkReadingOf({ assessmentSection: "present", shape: "absent" }),
+    },
+    "not-assessed": {
+      fix: checkReadingOf({ assessmentSection: "not-assessed", shape: "fix" }),
+      "whole-page": checkReadingOf({ assessmentSection: "not-assessed", shape: "whole-page" }),
+      absent: checkReadingOf({ assessmentSection: "not-assessed", shape: "absent" }),
+    },
+    unread: {
+      fix: checkReadingOf({ assessmentSection: "unread", shape: "fix" }),
+      "whole-page": checkReadingOf({ assessmentSection: "unread", shape: "whole-page" }),
+      absent: checkReadingOf({ assessmentSection: "unread", shape: "absent" }),
+    },
   };
 
   const NOTES: Readonly<Record<AssessmentFileNote["state"], AssessmentFileNote>> = {
@@ -997,7 +1033,11 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
       .flatMap((byState) => Object.values(byState))
       .map((problem) => ({ entry: problem, fills: projectionFillsOf({ problem }) })),
     assessment: Object.values(PARTIAL_ASSESSMENTS).flatMap((byAssessor) => Object.values(byAssessor).flat()),
-    readFirst: [...unfilled(Object.values(READINGS).flatMap((byPresence) => Object.values(byPresence))), ...PAID_DEBT_NOTES],
+    readFirst: [
+      ...unfilled(Object.values(READINGS).flatMap((byPresence) => Object.values(byPresence))),
+      ...unfilled(Object.values(CHECK_READINGS).flatMap((byShape) => Object.values(byShape))),
+      ...PAID_DEBT_NOTES,
+    ],
   };
 
   const EMPTY_REPORT: CheckReport = {
@@ -1049,6 +1089,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   const NOTED_REPORTS: readonly CheckReport[] = Object.values(NOTES).flatMap((note) => [
     { ...EMPTY_REPORT, findings: [FINDING], readFirst: [note, READINGS.unread.present] },
     { ...EMPTY_REPORT, findings: [FINDING], readFirst: [note, READINGS.unread.absent] },
+    { ...EMPTY_REPORT, findings: [FINDING], readFirst: [note, CHECK_READINGS.unread.fix] },
   ]);
 
   const VERDICT_REPORTS: Readonly<Record<Verdict, Readonly<Record<"whole" | "partial", CheckReport>>>> = {
@@ -1060,7 +1101,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
 
   const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
-  const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
+  const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms/branch-in-a-test/test-body.md";
 
   const AUDIT = "audit" as const;
 

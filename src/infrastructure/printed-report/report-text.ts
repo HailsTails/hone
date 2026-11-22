@@ -14,6 +14,7 @@ import type { BaseRevisionAvailability } from "../../domain/repository/base-revi
 import type {
   AssessmentFileNote,
   CheckReport,
+  ClausePage,
   ClauseReading,
   PaidDebtNote,
   PartialAssessment,
@@ -263,25 +264,51 @@ const assessmentLine = (request: { readonly partial: PartialAssessment }): strin
 const sectionRead = (request: { readonly reading: ClauseReading }): string =>
   `read the ${JSON.stringify(assessmentSectionHeading(request.reading))} section of ${ASSESSMENT_FILE_NAME}`;
 
-const pointedReading = (request: { readonly reading: ClauseReading }): string => {
-  const page = request.reading.rulePage.path;
+const PAGE_ANCHORS: Readonly<Record<ClausePage["section"], string>> = { spirit: "#spirit", fix: "#fix", "whole-page": "" };
+
+const PAGE_KINDS: Readonly<Record<ClausePage["section"], string>> = { spirit: "rule page", fix: "check page", "whole-page": "check page" };
+
+const NO_PAGE = "its rule set names no page for it";
+
+const readTargets = (request: { readonly reading: ClauseReading; readonly targets: readonly string[] }): readonly string[] => {
   const sectioned = request.reading.assessmentSection === "present";
-  if (request.reading.rulePage.presence === "absent") {
-    const missingPage = `its rule set has no rule page at ${page}`;
-    return sectioned ? `${sectionRead(request)}; ${missingPage}` : missingPage;
+  if (request.targets.length === 0) {
+    return sectioned ? [sectionRead(request)] : [];
   }
-  return sectioned ? `${sectionRead(request)}, then ${page}#spirit` : `read ${page}#spirit`;
+  const pages = request.targets.join(" and ");
+  return [sectioned ? `${sectionRead(request)}, then ${pages}` : `read ${pages}`];
+};
+
+const pointedReading = (request: { readonly reading: ClauseReading }): string => {
+  const targets = request.reading.pages.filter((page) => page.presence === "present").map((page) => `${page.path}${PAGE_ANCHORS[page.section]}`);
+  const missing = request.reading.pages
+    .filter((page) => page.presence === "absent")
+    .map((page) => `its rule set has no ${PAGE_KINDS[page.section]} at ${page.path}`);
+  const parts = [...readTargets({ ...request, targets }), ...missing];
+  return parts.length === 0 ? NO_PAGE : parts.join("; ");
 };
 
 const assessmentContext = (request: { readonly reading: ClauseReading }): string =>
   request.reading.assessmentSection === "not-assessed" ? `; ${ASSESSMENT_FILE_NAME} does not assess this clause` : "";
 
-const SPIRIT_LEAD = "Start from each rule's Spirit below. ";
+type SpiritBelow = "rule-pages" | "symptom-rules" | "none";
 
-type SpiritBelow = "named" | "none";
+const SPIRIT_LEADS: Readonly<Record<SpiritBelow, string>> = {
+  "rule-pages": "Start from each rule's Spirit below. ",
+  "symptom-rules": "Start from the Spirit of each rule its symptom may indicate. ",
+  none: "",
+};
 
-const spiritBelowIn = (request: { readonly entries: readonly ReadFirstEntry[] }): SpiritBelow =>
-  request.entries.some((entry) => entry.kind === "clause" && entry.rulePage.presence === "present") ? "named" : "none";
+const presentPagesIn = (request: { readonly entries: readonly ReadFirstEntry[] }): readonly ClausePage[] =>
+  request.entries.flatMap((entry) => (entry.kind === "clause" ? entry.pages.filter((page) => page.presence === "present") : []));
+
+const spiritBelowIn = (request: { readonly entries: readonly ReadFirstEntry[] }): SpiritBelow => {
+  const pages = presentPagesIn(request);
+  if (pages.some((page) => page.section === "spirit")) {
+    return "rule-pages";
+  }
+  return pages.length === 0 ? "none" : "symptom-rules";
+};
 
 const assessmentFileState = (request: { readonly note: AssessmentFileNote }): string => {
   switch (request.note.state) {
@@ -293,7 +320,7 @@ const assessmentFileState = (request: { readonly note: AssessmentFileNote }): st
 };
 
 const assessmentFileLine = (request: { readonly note: AssessmentFileNote; readonly spiritBelow: SpiritBelow }): string =>
-  `${request.spiritBelow === "named" ? SPIRIT_LEAD : ""}${assessmentFileState(request)}`;
+  `${SPIRIT_LEADS[request.spiritBelow]}${assessmentFileState(request)}`;
 
 const reprojectionStep = (request: NextCommands & { readonly projections: readonly MechanismId[] }): string =>
   request.projections.length === 0

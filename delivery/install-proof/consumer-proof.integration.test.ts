@@ -139,9 +139,13 @@ const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-23\/(?:pie
 
 const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-14\/(?:piece\.json|[^/]+\.cases\.json)`;
 
-const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-23|src\/infrastructure\/engines\/audit\/runner|src\/infrastructure\/engines\/audit\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA})`;
+const CD_23_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/unit-without-a-running-test\/companion-test-file\.md`;
 
-const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-14|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA})`;
+const CD_14_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/authored-class-or-this\/class-keyword\.md`;
+
+const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|src\/infrastructure\/engines\/audit\/runner|src\/infrastructure\/engines\/audit\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA}|${CD_23_CHECK_ITEM})`;
+
+const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA}|${CD_14_CHECK_ITEM})`;
 
 const WALKER_INSTALL_LIST = new RegExp(`^${WALKER_INSTALLED}$`);
 
@@ -282,11 +286,11 @@ const UNSIBLINGED_FINDING = {
   mechanism: "audit",
 };
 
-const readingOf = (request: { readonly clause: { readonly discipline: string } }) => ({
+const readingOf = (request: { readonly clause: { readonly discipline: string }; readonly checkPage: string }) => ({
   kind: "clause",
   clause: request.clause,
   assessmentSection: "unread",
-  rulePage: { path: `../../../../rules/${request.clause.discipline}/README.md`, presence: "present" },
+  pages: [{ path: `../../../../rules/typescript/symptoms/${request.checkPage}`, presence: "present", section: "fix" }],
 });
 
 const ASSESSMENT_NOT_WRITTEN = { kind: "assessment-file", state: "not-written", guide: "../../../../ADOPTING.md" };
@@ -350,7 +354,7 @@ describe("a consumer with no harness directory selecting CD-23 through the audit
     const checked = await checkOf({ repo: WALKER_CONSUMER, tracked: UNSIBLINGED_TRACKED, ports });
     expect(checked).toEqual({
       outcome: "ok",
-      value: { ...CLEAN_REPORT, findings: [UNSIBLINGED_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: UNSIBLINGED_FINDING.clause })] },
+      value: { ...CLEAN_REPORT, findings: [UNSIBLINGED_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: UNSIBLINGED_FINDING.clause, checkPage: "unit-without-a-running-test/companion-test-file.md" })] },
     });
     expect(fullReportExitCode({ checked })).toBe(1);
   });
@@ -396,7 +400,7 @@ describe("a consumer with no harness directory selecting CD-14 through ESLint, r
     const checked = await checkOf({ repo: ESLINT_CONSUMER, tracked: ESLINT_CLASS_TRACKED, ports });
     expect(checked).toEqual({
       outcome: "ok",
-      value: { ...CLEAN_REPORT, findings: [CLASS_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: CLASS_FINDING.clause })] },
+      value: { ...CLEAN_REPORT, findings: [CLASS_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: CLASS_FINDING.clause, checkPage: "authored-class-or-this/class-keyword.md" })] },
     });
     expect(fullReportExitCode({ checked })).toBe(1);
   });

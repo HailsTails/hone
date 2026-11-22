@@ -6,6 +6,7 @@ import type { FileExceptionWhyChains } from "./file-exception-why-chains.ts";
 import type { MechanismId } from "../../rule-set/identifier-types.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { ClauseExceptions } from "../../rule-set/rule-set-types.ts";
+import type { AddressedCheck } from "../../language-layer/check-address-text.ts";
 
 export type SelectedClause = {
   readonly address: ClauseAddress;
@@ -26,6 +27,7 @@ export type Selection = {
 export type ClauseRoot = {
   readonly clause: ClauseAddress;
   readonly ruleSetRoot: AbsolutePath;
+  readonly checks: readonly AddressedCheck[];
 };
 
 export type ClauseBinding = {
