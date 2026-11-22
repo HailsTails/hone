@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { catalogueNameOf } from "../language-layer/catalogue-name.ts";
 import { disciplineIdOf } from "./discipline-id-of.ts";
-import { enginesFolderSegmentsOf, pieceFolderSegmentsOf } from "./piece-folder.ts";
+import { enginesFolderSegmentsOf, namedPieceFolderSegmentsOf, pieceFolderSegmentsOf } from "./piece-folder.ts";
 
 describe("enginesFolderSegmentsOf", () => {
   it("is the install's engines source folder for the install's own rule set", () => {
@@ -23,5 +24,14 @@ describe("pieceFolderSegmentsOf", () => {
     expect(
       pieceFolderSegmentsOf({ ruleSetRoot: "/team", installRoot: "/install", mechanism: "eslint", discipline: disciplineIdOf("TM-1") }),
     ).toEqual(["/team", "mechanisms", "eslint", "TM-1"]);
+  });
+});
+
+describe("namedPieceFolderSegmentsOf", () => {
+  it("locates a shipped check by its symptom and name", () => {
+    expect(namedPieceFolderSegmentsOf({
+      ruleSetRoot: "/install", installRoot: "/install", mechanism: "audit",
+      symptom: catalogueNameOf("ambient-randomness"), check: catalogueNameOf("direct-call"),
+    })).toEqual(["/install", "src", "infrastructure", "engines", "audit", "ambient-randomness", "direct-call"]);
   });
 });

@@ -29,7 +29,7 @@ export const SUPPORTED_VERSION = 1;
 
 const NOT_A_CATALOGUE_NAME = "is not a lower-case hyphenated name";
 
-export const catalogueNameSchema = z.string().refine(isCatalogueName, { error: NOT_A_CATALOGUE_NAME });
+export const catalogueNameSchema = z.string().refine((text): boolean => isCatalogueName(text), { error: NOT_A_CATALOGUE_NAME });
 
 const textSchema = z.string().min(1);
 
