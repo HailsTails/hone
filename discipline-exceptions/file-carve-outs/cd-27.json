@@ -129,11 +129,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/CD-14/piece.test.ts"
     },
     {
@@ -190,11 +185,6 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "delivery/packaging/published-manifest/peer-manifest.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -324,42 +314,12 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/composition/upgrade-command.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/composition/upgrade-command.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/command-line/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/command-line/adopter-repositories/version-two-check.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/command-line/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/command-line/documentation/adopting-guide-checks.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/command-line/documentation/output-contract.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/command-line/documentation/walkthrough.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -429,22 +389,7 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projected-off-switch.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-type.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -464,22 +409,12 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-unavailable.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/hone-config-file/settings-sources.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/node/file-system/file-creation-port.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/operations/prune-debt/prune-debt-answered.integration.test.ts"
     }
   ]
 }
