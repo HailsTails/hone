@@ -1,89 +1,72 @@
 {
-  "version": 1,
-  "exceptions": [
+  "version": 2,
+  "records": [
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#exact-optional-property-types",
+      "answers": "strictness-weakened#exact-optional-property-types",
       "file": "tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-property-access-from-index-signature",
+      "answers": "strictness-weakened#no-property-access-from-index-signature",
       "file": "tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-unchecked-indexed-access",
+      "answers": "strictness-weakened#no-unchecked-indexed-access",
       "file": "tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#exact-optional-property-types",
+      "answers": "strictness-weakened#exact-optional-property-types",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-fallthrough-cases-in-switch",
+      "answers": "strictness-weakened#no-fallthrough-cases-in-switch",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-implicit-override",
+      "answers": "strictness-weakened#no-implicit-override",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-property-access-from-index-signature",
+      "answers": "strictness-weakened#no-property-access-from-index-signature",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-unchecked-indexed-access",
+      "answers": "strictness-weakened#no-unchecked-indexed-access",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#strict",
+      "answers": "strictness-weakened#strict",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#use-unknown-in-catch-variables",
+      "answers": "strictness-weakened#use-unknown-in-catch-variables",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/broken/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-implicit-override",
+      "answers": "strictness-weakened#no-implicit-override",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/layered/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-unchecked-indexed-access",
+      "answers": "strictness-weakened#no-unchecked-indexed-access",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/loosened/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#exact-optional-property-types",
+      "answers": "strictness-weakened#exact-optional-property-types",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/unset/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-fallthrough-cases-in-switch",
+      "answers": "strictness-weakened#no-fallthrough-cases-in-switch",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/unset/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-implicit-override",
+      "answers": "strictness-weakened#no-implicit-override",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/unset/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-property-access-from-index-signature",
+      "answers": "strictness-weakened#no-property-access-from-index-signature",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/unset/tsconfig.json"
     },
     {
-      "kind": "file-carve-out",
-      "clause": "CD-3#no-unchecked-indexed-access",
+      "answers": "strictness-weakened#no-unchecked-indexed-access",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends/packages/unset/tsconfig.json"
     }
   ]

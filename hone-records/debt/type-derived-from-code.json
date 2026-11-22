@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "type-derived-from-code#factory-return-types",
+      "file": "src/composition/version-chosen-command.test.ts"
+    }
+  ]
+}

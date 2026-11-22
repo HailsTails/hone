@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "shorthand-name#identifier-names",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
+    },
+    {
+      "answers": "shorthand-name#identifier-names",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.ts"
+    }
+  ]
+}

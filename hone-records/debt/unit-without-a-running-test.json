@@ -1,0 +1,69 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/application/run/settings/selection-holding.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/discipline-exceptions/exception-baseline.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/discipline-exceptions/exception-entry.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/discipline-exceptions/version-one-why-chain.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/hone-records/record-identity.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/hone-records/record-listings.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/hone-records/recorded-reach.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/records/why-chain.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/rule-set/clause-address.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/settings/clause-settings/check-editions.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/settings/clause-settings/reserved-edition-setting.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/settings/selection/file-exception-why-chains.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/domain/settings/settings-file.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts"
+    },
+    {
+      "answers": "unit-without-a-running-test#companion-test-file",
+      "file": "src/infrastructure/engines/protocol/engine-port.ts"
+    }
+  ]
+}
