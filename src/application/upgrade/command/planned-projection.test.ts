@@ -1,14 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
-import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
-import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
-import { recordsReader } from "../../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { createSymptomCatalogueRepository } from "../../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
 
 const SETTINGS: SettingsFile = {
   exclude: [],
@@ -27,15 +23,30 @@ const notUsed = (): never => {
   throw new Error("this port is not used by the command under test");
 };
 
+const PATH: PathPort = {
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/install/rules/typescript/symptoms.json"),
+  joinRepository: notUsed,
+  relative: notUsed,
+  directoryOf: notUsed,
+  repositoryDirectoryOf: notUsed,
+  resolve: notUsed,
+  fromFileUrl: notUsed,
+};
+
 const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
   process: { arguments: [], writeOut: () => undefined, writeError: () => undefined, exitWith: () => undefined },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  path: PATH,
   fileText: {
     exists: () => "absent",
     read: ({ path }) => ({ outcome: "failed", error: { kind: "unreadable", path, detail: "absent" } }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
-  engine: createDefaultEnginePort({}),
+  engine: {
+    load: notUsed,
+    run: { checks: notUsed, withRecords: notUsed },
+    project: { checks: notUsed, withRecords: notUsed },
+    conform: notUsed,
+  },
   modules: { load: notUsed },
   git: { trackedPaths: notUsed, changedSince: notUsed, contentInBase: notUsed, textInBase: notUsed, renamedSince: notUsed },
   exceptionRepositoryOf: notUsed,
@@ -45,6 +56,8 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
   moduleUrl: "file:///install/src/hone.ts",
 };
 
+const NO_CATALOGUE: SymptomCatalogueOf = () => ({ read: () => ({ outcome: "ok", value: { held: "none" } }) });
+
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
     const command = EMPTY_REPOSITORY_COMMAND;
@@ -52,10 +65,10 @@ describe("plannedProjectionOf", () => {
       command,
       repoRoot: absolutePathSchema.parse("/repo"),
       installRoot: absolutePathSchema.parse("/install"),
-      recordsReader,
-      symptomCatalogueOf: createSymptomCatalogueRepository,
-      settingsFormat: SETTINGS_FILE_FORMAT,
-      settingsSourcesOf: createSettingsSources,
+      recordsReader: { recordsReadingOf: notUsed },
+      symptomCatalogueOf: NO_CATALOGUE,
+      settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
+      settingsSourcesOf: notUsed,
     })({
       settings: SETTINGS,
       documents: [],
@@ -65,5 +78,6 @@ describe("plannedProjectionOf", () => {
         failure: { kind: "catalogue-not-read", path: "/install/rules/typescript/symptoms.json", reason: { reason: "absent" } },
       },
     });
+    expect(PATH.join).toHaveBeenCalledWith({ segments: ["/install", "rules", "typescript", "symptoms.json"] });
   });
 });

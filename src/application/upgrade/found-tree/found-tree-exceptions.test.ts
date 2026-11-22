@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
@@ -9,6 +9,8 @@ import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
 const ENTRY: PlacedEntry["entry"] = { kind: "file-carve-out", clause: "CD-15#loops", file: "src/a.ts", reason: "legacy loop" };
 
 const PLACED: PlacedEntry = { place: { layout: "single-file", file: repoPathSchema.parse("discipline-exceptions.json"), index: 0 }, entry: ENTRY };
+
+const loadFailureDetail: LoadFailureDetail = () => "file-unreadable discipline-exceptions.json EACCES";
 
 const repositoryReading = (request: { readonly read: ReturnType<ExceptionRepository["read"]> }): ExceptionRepository => ({
   read: vi.fn<ExceptionRepository["read"]>().mockReturnValue(request.read),
@@ -32,7 +34,7 @@ describe("foundTreeExceptionsOf, the version 1 entries at the tree the upgrade f
     const repository = repositoryReading({ read: { outcome: "failed", error: failure } });
     expect(foundTreeExceptionsOf({ repository, loadFailureDetail }).readAt()).toEqual({
       outcome: "failed",
-      error: { kind: "git-failed", command: "read the tree the upgrade found", detail: loadFailureDetail({ failure }) },
+      error: { kind: "git-failed", command: "read the tree the upgrade found", detail: "file-unreadable discipline-exceptions.json EACCES" },
     });
   });
 

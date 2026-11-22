@@ -1,33 +1,33 @@
 import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
-import { runCheck } from "./run-check.ts";
-import type { CheckReport } from "../../../domain/report/check-report.ts";
-import type { Result } from "../../../domain/result.ts";
-import { checkCommandOutcome } from "../../../infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
-import { createSelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
-import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../ports/git-port.ts";
-import type { ModuleExtension } from "../../ports/host/module-extension.ts";
-import { createDefaultModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import type { ExitCode } from "../../ports/host/process-port.ts";
-import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { PathPort } from "../../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
-import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
-import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
+import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
+import { runCheck } from "../../src/application/run/check/run-check.ts";
+import type { CheckReport } from "../../src/domain/report/check-report.ts";
+import type { Result } from "../../src/domain/result.ts";
+import { checkCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
+import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
+import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
+import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../../src/application/ports/git-port.ts";
+import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import type { PathPort } from "../../src/application/ports/host/path-port.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
+import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
+import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -284,7 +284,7 @@ describe("the shipped CD-1 rule, read from rules/CD-1/discipline.json through a 
   it("accepts an authorised location for CD-1 and still flags an unrecorded any cast", async () => {
     const report = await runCheck(withSingleFileRecords({
       repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),
-      installRoot: resolvedPath({ path: `${import.meta.dirname}/../../../..` }),
+      installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
       moduleExtension: ".ts",
       baseRevision: undefined,
       assessment: DEFAULT_ASSESSMENT,
@@ -307,7 +307,7 @@ describe("the shipped CD-1 rule, read from rules/CD-1/discipline.json through a 
 
 const scratch = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({ parent: resolvedPath({ path: `${import.meta.dirname}/../../../../artefacts` }), fileText: createDefaultFileTextPort({}), scratch });
+const repositories = scratchRepositoriesUnder({ parent: resolvedPath({ path: `${import.meta.dirname}/../../artefacts` }), fileText: createDefaultFileTextPort({}), scratch });
 
 afterAll(() => {
   repositories.removeAll();
@@ -340,7 +340,7 @@ const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
   };
   return runCheck(withSingleFileRecords({
     repoRoot: CASCADE_REPO,
-    installRoot: resolvedPath({ path: `${import.meta.dirname}/../../../..` }),
+    installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
     moduleExtension: ".ts",
     baseRevision: "origin/main",
     assessment: DEFAULT_ASSESSMENT,

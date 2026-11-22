@@ -5,7 +5,7 @@ import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.
 import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { type PlannedFile, type ProofWritePorts, type ProofWrites, rolledBackProofWrites, writeProofFiles } from "./proof-writes.ts";
 
@@ -42,7 +42,27 @@ const PACKAGE_CONFIG = absolutePathSchema.parse("/repo/packages/a/eslint.config.
 
 const REWRITTEN_PACKAGE_CONFIG: PlannedFile = { path: PACKAGE_CONFIG, text: "rewritten package config" };
 
+const PROJECTION_FILE = absolutePathSchema.parse("/repo/hone.eslint.mjs");
+
 const ORIGINAL_CONFIG = "original config";
+
+const PARENTS = new Map<string, string>([
+  [DEBT_FILE.path, DEBT_FOLDER],
+  [DEBT_FOLDER, RECORDS_FOLDER],
+  [RECORDS_FOLDER, REPO],
+  [PROJECTION_FILE, REPO],
+  [REPO, "/"],
+]);
+
+const PATH: PathPort = {
+  join: vi.fn<PathPort["join"]>(),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: ({ path }) => PARENTS.get(path) ?? path,
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
+};
 
 const WRITTEN: ProofWrites = [
   { kind: "directory-created", path: RECORDS_FOLDER },
@@ -85,7 +105,7 @@ const portsOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]> }):
   directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>().mockReturnValue(ok) },
   directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(ok) },
   entryKind: { kindOf: request.kindOf },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+  path: PATH,
 });
 
 const sequenceOf = (request: { readonly ports: MockedPorts }) =>
@@ -176,7 +196,7 @@ describe("writeProofFiles", () => {
   });
 
   it("creates no folder that already exists", () => {
-    const projection = { path: absolutePathSchema.parse("/repo/hone.eslint.mjs"), text: "projection" };
+    const projection = { path: PROJECTION_FILE, text: "projection" };
     const ports = portsOver({ kindOf: kindsOfNewFileUnderExistingFolder() });
     expect(writeProofFiles({ ports, files: [projection], replacements: [] })).toEqual({
       outcome: "ok",

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { foundTreeGitOf } from "./found-tree-git.ts";
@@ -11,7 +11,15 @@ const REPO_ROOT = absolutePathSchema.parse("/repo");
 
 const FILE = repoPathSchema.parse("src/a.ts");
 
-const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
+const PATH: PathPort = {
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
+};
 
 const underlyingGit = (): GitPort => ({
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: [FILE] }),

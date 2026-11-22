@@ -1,62 +1,42 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { Result } from "../../../domain/result.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { packageLinkOf } from "../../../infrastructure/command-line/installation/package-link.ts";
-import { shownPathOf } from "../../../infrastructure/command-line/installation/shown-path.ts";
 import { clauseReadingsOf } from "./clause-readings.ts";
 
-type FakeFile = {
-  readonly read: Result<string, { readonly kind: "unreadable"; readonly path: string; readonly detail: string }>;
-  readonly presence: "present" | "absent";
-};
+type ReadableFiles = Pick<FileTextPort, "read" | "exists">;
 
-const presentFile = (request: { readonly text: string }): FakeFile => ({
-  read: { outcome: "ok", value: request.text },
-  presence: "present",
+const pathJoining = (join: PathPort["join"]): PathPort => ({
+  join,
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
 });
 
-const ABSENT_FILE: FakeFile = {
-  read: { outcome: "failed", error: { kind: "unreadable", path: "", detail: "ENOENT" } },
-  presence: "absent",
-};
+const shownAs = (shown: string): ShownPathOf => vi.fn<ShownPathOf>().mockReturnValue(shown);
 
-const UNREADABLE_FILE: FakeFile = {
-  read: { outcome: "failed", error: { kind: "unreadable", path: "/repo/disciplines.assessment.md", detail: "EACCES" } },
-  presence: "present",
-};
-
-const fileOf = (request: { readonly files: Readonly<Record<string, FakeFile>>; readonly path: string }): FakeFile =>
-  request.files[request.path] ?? ABSENT_FILE;
-
-const filesOver = (files: Readonly<Record<string, FakeFile>>): FileTextPort => ({
-  read: ({ path }) => fileOf({ files, path }).read,
-  exists: ({ path }) => fileOf({ files, path }).presence,
-  write: vi.fn<FileTextPort["write"]>(),
+const assessmentHolding = (request: { readonly text: string }): ReadableFiles => ({
+  exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+  read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: request.text }),
 });
 
-type LinkedRequest = {
-  readonly path: PathPort;
-  readonly fileText: Pick<FileTextPort, "read" | "exists">;
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-};
+const assessmentNotWritten = (): ReadableFiles => ({
+  exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValue("present"),
+  read: vi.fn<FileTextPort["read"]>(),
+});
 
-const shownThroughLinkOf =
-  (request: LinkedRequest): ShownPathOf =>
-  ({ target }) =>
-    shownPathOf({ path: request.path, repoRoot: request.repoRoot, link: packageLinkOf(request), target });
-
-const readingsThroughLinkOf = (request: Omit<Parameters<typeof clauseReadingsOf>[0], "shownPathOf">) =>
-  clauseReadingsOf({ ...request, shownPathOf: shownThroughLinkOf(request) });
+const assessmentUnreadable = (): ReadableFiles => ({
+  exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+  read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/disciplines.assessment.md", detail: "EACCES" } }),
+});
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -71,6 +51,10 @@ const TEAM_CLAUSE = clauseAddressSchema.parse("team/TM-1#no-tmp-files");
 const LOOPS_PAGE = "/repo/node_modules/@hailstails/hone/rules/CD-15/README.md";
 
 const CLASS_SYNTAX_PAGE = "/repo/node_modules/@hailstails/hone/rules/CD-14/README.md";
+
+const TEAM_PAGE = "/repo/team-rules/rules/TM-1/README.md";
+
+const GUIDE_PAGE = "/repo/node_modules/@hailstails/hone/ADOPTING.md";
 
 const SHIPPED_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
 
@@ -88,26 +72,31 @@ const findingOn = (request: { readonly clause: Finding["clause"]; readonly file:
   snippet: "const total = 0;",
 });
 
-const SHIPPED_PAGES: Readonly<Record<string, FakeFile>> = {
-  [LOOPS_PAGE]: presentFile({ text: "# CD-15\n" }),
-  [CLASS_SYNTAX_PAGE]: presentFile({ text: "# CD-14\n" }),
-};
-
 const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
 
-const readingsOver = (request: { readonly files: FileTextPort; readonly findings: readonly Finding[] }) =>
-  readingsThroughLinkOf({
+const LOOPS_PAGE_TEXT = "node_modules/@hailstails/hone/rules/CD-15/README.md";
+
+const CLASS_SYNTAX_PAGE_TEXT = "node_modules/@hailstails/hone/rules/CD-14/README.md";
+
+const GUIDE_TEXT = "node_modules/@hailstails/hone/ADOPTING.md";
+
+const TEAM_PAGE_TEXT = "team-rules/rules/TM-1/README.md";
+
+const readingsOver = (request: {
+  readonly fileText: ReadableFiles;
+  readonly findings: readonly Finding[];
+  readonly join: PathPort["join"];
+  readonly shownPathOf: ShownPathOf;
+}) =>
+  clauseReadingsOf({
     findings: request.findings,
     clauseRoots: CLAUSE_ROOTS,
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
-    fileText: request.files,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    fileText: request.fileText,
+    path: pathJoining(request.join),
+    shownPathOf: request.shownPathOf,
   });
-
-const LOOPS_PAGE_TEXT = "node_modules/@hailstails/hone/rules/CD-15/README.md";
-
-const GUIDE_TEXT = "node_modules/@hailstails/hone/ADOPTING.md";
 
 const loopsReading = (request: { readonly assessmentSection: "present" | "not-assessed" | "unread" }) => ({
   kind: "clause",
@@ -118,48 +107,50 @@ const loopsReading = (request: { readonly assessmentSection: "present" | "not-as
 
 const ONE_LOOPS_FINDING = [findingOn({ clause: LOOPS, file: "src/a.ts" })];
 
+const CLASS_SYNTAX_READING = {
+  kind: "clause",
+  clause: CLASS_SYNTAX,
+  assessmentSection: "unread",
+  rulePage: { path: CLASS_SYNTAX_PAGE_TEXT, presence: "present" },
+};
+
 describe("clauseReadingsOf", () => {
   it("reads nothing and points nowhere when there are no findings", () => {
-    const files = filesOver(SHIPPED_PAGES);
-    const reads = vi.spyOn(files, "read");
-    const checks = vi.spyOn(files, "exists");
-
-    expect({ readings: readingsOver({ files, findings: [] }), reads: reads.mock.calls, checks: checks.mock.calls }).toEqual({
-      readings: [],
-      reads: [],
-      checks: [],
-    });
+    const fileText = assessmentHolding({ text: "" });
+    expect({
+      readings: readingsOver({ fileText, findings: [], join: vi.fn<PathPort["join"]>(), shownPathOf: vi.fn<ShownPathOf>() }),
+      reads: vi.mocked(fileText.read).mock.calls,
+      checks: vi.mocked(fileText.exists).mock.calls,
+    }).toEqual({ readings: [], reads: [], checks: [] });
   });
 
   it("points once per failing clause, in the order the findings first name them", () => {
-    const files = filesOver({ ...SHIPPED_PAGES, [ASSESSMENT_PATH]: presentFile({ text: "# Disciplines assessment\n\n## CD-15#loops\n\n- **Cause here:** x\n" }) });
+    const fileText = assessmentHolding({ text: "# Disciplines assessment\n\n## CD-15#loops\n\n- **Cause here:** x\n" });
 
     expect(
       readingsOver({
-        files,
+        fileText,
         findings: [
           findingOn({ clause: LOOPS, file: "src/a.ts" }),
           findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" }),
           findingOn({ clause: LOOPS, file: "src/b.ts" }),
         ],
+        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(LOOPS_PAGE).mockReturnValueOnce(CLASS_SYNTAX_PAGE),
+        shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(LOOPS_PAGE_TEXT).mockReturnValueOnce(CLASS_SYNTAX_PAGE_TEXT),
       }),
-    ).toEqual([
-      loopsReading({ assessmentSection: "present" }),
-      {
-        kind: "clause",
-        clause: CLASS_SYNTAX,
-        assessmentSection: "not-assessed",
-        rulePage: { path: "node_modules/@hailstails/hone/rules/CD-14/README.md", presence: "present" },
-      },
-    ]);
+    ).toEqual([loopsReading({ assessmentSection: "present" }), { ...CLASS_SYNTAX_READING, assessmentSection: "not-assessed" }]);
   });
 
   it("reads the assessment file once however many clauses fail", () => {
-    const files = filesOver({ ...SHIPPED_PAGES, [ASSESSMENT_PATH]: presentFile({ text: "## CD-15#loops\n" }) });
-    const reads = vi.spyOn(files, "read");
-    readingsOver({ files, findings: [findingOn({ clause: LOOPS, file: "src/a.ts" }), findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" })] });
+    const fileText = assessmentHolding({ text: "## CD-15#loops\n" });
+    readingsOver({
+      fileText,
+      findings: [findingOn({ clause: LOOPS, file: "src/a.ts" }), findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" })],
+      join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(LOOPS_PAGE).mockReturnValueOnce(CLASS_SYNTAX_PAGE),
+      shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(LOOPS_PAGE_TEXT).mockReturnValueOnce(CLASS_SYNTAX_PAGE_TEXT),
+    });
 
-    expect(reads.mock.calls).toEqual([[{ path: ASSESSMENT_PATH }]]);
+    expect(vi.mocked(fileText.read).mock.calls).toEqual([[{ path: ASSESSMENT_PATH }]]);
   });
 });
 
@@ -178,52 +169,69 @@ describe("clauseReadingsOf matching a clause's section", () => {
     { shape: "a heading inside a tilde code fence that holds a backtick line", text: "~~~\n```\n## CD-15#loops\n~~~\n", expected: "not-assessed" },
   ] as const)("finds the section only by a level-2 heading that is exactly the clause address, given $shape", ({ text, expected }) => {
     expect(
-      readingsOver({ files: filesOver({ ...SHIPPED_PAGES, [ASSESSMENT_PATH]: presentFile({ text }) }), findings: ONE_LOOPS_FINDING }),
+      readingsOver({
+        fileText: assessmentHolding({ text }),
+        findings: ONE_LOOPS_FINDING,
+        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(LOOPS_PAGE),
+        shownPathOf: shownAs(LOOPS_PAGE_TEXT),
+      }),
     ).toEqual([loopsReading({ assessmentSection: expected })]);
   });
 });
 
 describe("clauseReadingsOf without a readable assessment file", () => {
   it.each([
-    { state: "not-written", assessment: ABSENT_FILE },
-    { state: "unreadable", assessment: UNREADABLE_FILE },
-  ])("notes once that the file is $state, naming the adoption guide, then points each clause at its rule page", ({ state, assessment }) => {
+    { state: "not-written", fileText: assessmentNotWritten() },
+    { state: "unreadable", fileText: assessmentUnreadable() },
+  ])("notes once that the file is $state, naming the adoption guide, then points each clause at its rule page", ({ state, fileText }) => {
     expect(
       readingsOver({
-        files: filesOver({ ...SHIPPED_PAGES, [ASSESSMENT_PATH]: assessment }),
+        fileText,
         findings: [findingOn({ clause: LOOPS, file: "src/a.ts" }), findingOn({ clause: CLASS_SYNTAX, file: "src/a.ts" })],
+        join: vi
+          .fn<PathPort["join"]>()
+          .mockReturnValueOnce(ASSESSMENT_PATH)
+          .mockReturnValueOnce(GUIDE_PAGE)
+          .mockReturnValueOnce(LOOPS_PAGE)
+          .mockReturnValueOnce(CLASS_SYNTAX_PAGE),
+        shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(GUIDE_TEXT).mockReturnValueOnce(LOOPS_PAGE_TEXT).mockReturnValueOnce(CLASS_SYNTAX_PAGE_TEXT),
       }),
-    ).toEqual([
-      { kind: "assessment-file", state, guide: GUIDE_TEXT },
-      loopsReading({ assessmentSection: "unread" }),
-      {
-        kind: "clause",
-        clause: CLASS_SYNTAX,
-        assessmentSection: "unread",
-        rulePage: { path: "node_modules/@hailstails/hone/rules/CD-14/README.md", presence: "present" },
-      },
-    ]);
+    ).toEqual([{ kind: "assessment-file", state, guide: GUIDE_TEXT }, loopsReading({ assessmentSection: "unread" }), CLASS_SYNTAX_READING]);
   });
 });
 
 describe("clauseReadingsOf pointing at the rule page", () => {
   it("names a team rule set's page and says when it has none", () => {
+    const fileText: ReadableFiles = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: "## CD-15#loops\n" }),
+    };
     expect(
-      readingsOver({ files: filesOver({ [ASSESSMENT_PATH]: presentFile({ text: "## CD-15#loops\n" }) }), findings: [findingOn({ clause: TEAM_CLAUSE, file: "src/a.ts" })] }),
-    ).toEqual([
-      { kind: "clause", clause: TEAM_CLAUSE, assessmentSection: "not-assessed", rulePage: { path: "team-rules/rules/TM-1/README.md", presence: "absent" } },
-    ]);
+      readingsOver({
+        fileText,
+        findings: [findingOn({ clause: TEAM_CLAUSE, file: "src/a.ts" })],
+        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(TEAM_PAGE),
+        shownPathOf: shownAs(TEAM_PAGE_TEXT),
+      }),
+    ).toEqual([{ kind: "clause", clause: TEAM_CLAUSE, assessmentSection: "not-assessed", rulePage: { path: TEAM_PAGE_TEXT, presence: "absent" } }]);
   });
 
-  it("names the page and the guide by their absolute paths, with forward slashes, when they are on another root than the repository", () => {
+  it("names the page and the guide as the shown path gives them when they are on another root than the repository", () => {
     expect(
-      readingsThroughLinkOf({
+      clauseReadingsOf({
         findings: ONE_LOOPS_FINDING,
         clauseRoots: [{ clause: LOOPS, ruleSetRoot: absolutePathSchema.parse("D:\\hone") }],
         repoRoot: absolutePathSchema.parse("C:\\repo"),
         installRoot: absolutePathSchema.parse("D:\\hone"),
-        fileText: filesOver({ "D:\\hone\\rules\\CD-15\\README.md": presentFile({ text: "# CD-15\n" }) }),
-        path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }),
+        fileText: assessmentNotWritten(),
+        path: pathJoining(
+          vi
+            .fn<PathPort["join"]>()
+            .mockReturnValueOnce("C:\\repo\\disciplines.assessment.md")
+            .mockReturnValueOnce("D:\\hone\\ADOPTING.md")
+            .mockReturnValueOnce("D:\\hone\\rules\\CD-15\\README.md"),
+        ),
+        shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce("D:/hone/ADOPTING.md").mockReturnValueOnce("D:/hone/rules/CD-15/README.md"),
       }),
     ).toEqual([
       { kind: "assessment-file", state: "not-written", guide: "D:/hone/ADOPTING.md" },
@@ -234,30 +242,39 @@ describe("clauseReadingsOf pointing at the rule page", () => {
 
 describe("clauseReadingsOf when pnpm runs the package from its store", () => {
   const storeRoot = absolutePathSchema.parse("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone");
-  const manifest = presentFile({ text: '{"name":"@hailstails/hone","version":"1.0.0"}' });
-  const storedPages: Readonly<Record<string, FakeFile>> = {
-    [`${storeRoot}/rules/CD-15/README.md`]: presentFile({ text: "# CD-15\n" }),
-    [`${storeRoot}/package.json`]: manifest,
-  };
-  const storedReadings = (request: { readonly files: Readonly<Record<string, FakeFile>> }) =>
-    readingsThroughLinkOf({
+  const storedReadings = (request: { readonly shownPathOf: ShownPathOf }) =>
+    clauseReadingsOf({
       findings: ONE_LOOPS_FINDING,
       clauseRoots: [{ clause: LOOPS, ruleSetRoot: storeRoot }],
       repoRoot: REPO_ROOT,
       installRoot: storeRoot,
-      fileText: filesOver(request.files),
-      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+      fileText: assessmentNotWritten(),
+      path: pathJoining(
+        vi
+          .fn<PathPort["join"]>()
+          .mockReturnValueOnce(ASSESSMENT_PATH)
+          .mockReturnValueOnce("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/ADOPTING.md")
+          .mockReturnValueOnce("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/rules/CD-15/README.md"),
+      ),
+      shownPathOf: request.shownPathOf,
     });
 
   it("names the page and the guide through the repository's node_modules link when it holds the running package", () => {
-    expect(storedReadings({ files: { ...storedPages, "/repo/node_modules/@hailstails/hone/package.json": manifest } })).toEqual([
+    expect(storedReadings({ shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(GUIDE_TEXT).mockReturnValueOnce(LOOPS_PAGE_TEXT) })).toEqual([
       { kind: "assessment-file", state: "not-written", guide: GUIDE_TEXT },
       loopsReading({ assessmentSection: "unread" }),
     ]);
   });
 
   it("names the page and the guide where pnpm put them when the repository has no link to the running package", () => {
-    expect(storedReadings({ files: storedPages })).toEqual([
+    expect(
+      storedReadings({
+        shownPathOf: vi
+          .fn<ShownPathOf>()
+          .mockReturnValueOnce("node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/ADOPTING.md")
+          .mockReturnValueOnce("node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/rules/CD-15/README.md"),
+      }),
+    ).toEqual([
       {
         kind: "assessment-file",
         state: "not-written",

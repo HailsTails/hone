@@ -1,40 +1,40 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { Result } from "../../../../../domain/result.ts";
-import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import { symptomCatalogueOf } from "../../../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
-import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
-import { createEslintPort, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
+import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
+import type { Result } from "../../src/domain/result.ts";
+import type { EmbeddedRunner } from "../../src/infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
+import type { RunnerClause } from "../../src/domain/runner/runner-module-types.ts";
+import { toolchainBoundEmbeddedRunner } from "../../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { symptomCatalogueOf } from "../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort, type EslintPort, type EslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
   type EslintToolchainPeers,
   installedEslintBoundary,
   loadEslintToolchain,
-} from "../toolchain/eslint-toolchain.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import SYMPTOMS from "../../../../../../rules/typescript/symptoms.json" with { type: "json" };
-import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };
-import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../projection/checks-projection.ts";
-import type { ChecksRunRequest } from "./checks-run-types.ts";
-import { createChecksRunner } from "./checks-runner.ts";
+} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { FIRST_EDITION } from "../../src/infrastructure/content-files/edition.ts";
+import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
+import SYMPTOMS from "../../rules/typescript/symptoms.json" with { type: "json" };
+import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
+import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/CD-14/piece.json" with { type: "json" };
+import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
+import type { ChecksRunRequest } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-run-types.ts";
+import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
 
-const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
+const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
 const installedBoundary = await installedEslintBoundary();
 

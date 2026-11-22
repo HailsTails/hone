@@ -12,7 +12,7 @@ import type { FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracl
 import type { RecordInput } from "../../../domain/records/upgrade/records-mapping.ts";
 import { type ProjectionFilesOf, type UpgradePlanRequest, upgradePlanOf } from "./upgrade-plan.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
-import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 
@@ -123,20 +123,17 @@ const FINDINGS_ON_LOOPS = { kind: "file-carve-out", record: CARVE_OUT, answer: {
 
 const CARVE_OUT_INPUT: RecordInput = { ...CARVE_OUT_HEAD, answer: { credit: "findings", checks: [LOOP_KEYWORD_LOOPS] } };
 
-const PLANNED_SETTINGS = {
-  file: "hone.config.json",
-  text: '{\n  "version": 2,\n  "ruleSets": {},\n  "checks": {\n    "loop-keyword#loops": "walker"\n  }\n}\n',
-};
+const SETTINGS_TEXT = "the settings format's text";
 
-const PLANNED_SETTINGS_WITH_PACKAGE_ROOT =
-  '{\n  "version": 2,\n  "ruleSets": {},\n  "checks": {\n    "loop-keyword#loops": "walker"\n  },\n  "eslintConfigRoots": [\n    "packages/a"\n  ]\n}\n';
+const PLANNED_SETTINGS = { file: "hone.config.json", text: SETTINGS_TEXT };
+
+const settingsFormatWriting = (): Pick<SettingsFileFormat, "textOf"> => ({ textOf: vi.fn<SettingsFileFormat["textOf"]>().mockReturnValue(SETTINGS_TEXT) });
 
 const PLANNED_DEBT = {
   file: "hone-records/debt/loop-keyword.json",
   text: '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "loop-keyword#loops",\n      "file": "src/a.ts",\n      "note": "legacy loop"\n    }\n  ]\n}\n',
 };
 
-const PLANNED_SETTINGS_MARKING_TEST_BODY = { file: "hone.config.json", text: '{\n  "version": 2,\n  "ruleSets": {},\n  "checks": {\n    "loop-keyword#loops": "walker",\n    "loop-keyword#test-body": "not-adopted",\n    "rebinding#test-body": "not-adopted"\n  }\n}\n' };
 
 const LOOPS_SETTINGS = {
   exclude: [],
@@ -161,44 +158,67 @@ const requestOver =(overrides: Partial<UpgradePlanRequest>): UpgradePlanRequest 
   answered: [FINDINGS_ON_LOOPS],
   catalogues: CATALOGUES,
   projectionFilesOf: projecting({ files: [PLANNED_PROJECTION] }),
-  settingsFormat: SETTINGS_FILE_FORMAT,
+  settingsFormat: settingsFormatWriting(),
   ...overrides,
 });
 
 describe("upgradePlanOf", () => {
   it("plans the settings, the debt records and the projection for a repository that carries over, naming the projection it planned", async () => {
-    await expect(upgradePlanOf(requestOver({}))).resolves.toEqual({
-      outcome: "ok",
-      value: { markedNotAdopted: [], inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
+    const settingsFormat = settingsFormatWriting();
+    expect({ planned: await upgradePlanOf(requestOver({ settingsFormat })), written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
+      planned: {
+        outcome: "ok",
+        value: { markedNotAdopted: [], inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
+      },
+      written: [[{ settings: LOOPS_SETTINGS }]],
     });
   });
 
   it("plans the checks of an unselected discipline that share a symptom with a selected one as not-adopted, and names them", async () => {
-    await expect(upgradePlanOf(requestOver({ catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }] }))).resolves.toEqual({
-      outcome: "ok",
-      value: {
-        markedNotAdopted: [
-          { check: { ruleSet: "hone", check: "loop-keyword#test-body" }, clause: TEST_BODY_CLAUSE, reason: "discipline-not-selected" },
-          { check: { ruleSet: "hone", check: "rebinding#test-body" }, clause: TEST_BODY_CLAUSE, reason: "discipline-not-selected" },
-        ],
-        inputs: [CARVE_OUT_INPUT],
-        files: [PLANNED_SETTINGS_MARKING_TEST_BODY, PLANNED_DEBT, PLANNED_PROJECTION],
-        projected: [PLANNED_PROJECTION],
+    const settingsFormat = settingsFormatWriting();
+    const planned = await upgradePlanOf(requestOver({ settingsFormat, catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: SETTINGS_CATALOGUE }] }));
+    expect({ planned, written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
+      planned: {
+        outcome: "ok",
+        value: {
+          markedNotAdopted: [
+            { check: { ruleSet: "hone", check: "loop-keyword#test-body" }, clause: TEST_BODY_CLAUSE, reason: "discipline-not-selected" },
+            { check: { ruleSet: "hone", check: "rebinding#test-body" }, clause: TEST_BODY_CLAUSE, reason: "discipline-not-selected" },
+          ],
+          inputs: [CARVE_OUT_INPUT],
+          files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION],
+          projected: [PLANNED_PROJECTION],
+        },
       },
+      written: [
+        [
+          {
+            settings: {
+              ...LOOPS_SETTINGS,
+              checks: [
+                { address: { ruleSet: "hone", check: "loop-keyword#loops" }, state: { state: "run", engine: "walker" } },
+                { address: { ruleSet: "hone", check: "loop-keyword#test-body" }, state: { state: "not-adopted" } },
+                { address: { ruleSet: "hone", check: "rebinding#test-body" }, state: { state: "not-adopted" } },
+              ],
+            },
+          },
+        ],
+      ],
     });
   });
 
   it("carries the declared eslintConfigRoots into the settings it plans, and into the settings the projection is asked over", async () => {
     const projectionFilesOf = projecting({ files: [PLANNED_PROJECTION] });
-    const planned = await upgradePlanOf(requestOver({ projectionFilesOf, reading: { ...READING, selection: { ...SELECTION, eslintConfigRoots: [repoPathSchema.parse("packages/a")] } } }));
-    expect(planned).toEqual({
-      outcome: "ok",
-      value: {
-        markedNotAdopted: [],
-        inputs: [CARVE_OUT_INPUT],
-        files: [{ file: "hone.config.json", text: PLANNED_SETTINGS_WITH_PACKAGE_ROOT }, PLANNED_DEBT, PLANNED_PROJECTION],
-        projected: [PLANNED_PROJECTION],
+    const settingsFormat = settingsFormatWriting();
+    const planned = await upgradePlanOf(
+      requestOver({ projectionFilesOf, settingsFormat, reading: { ...READING, selection: { ...SELECTION, eslintConfigRoots: [repoPathSchema.parse("packages/a")] } } }),
+    );
+    expect({ planned, written: vi.mocked(settingsFormat.textOf).mock.calls }).toEqual({
+      planned: {
+        outcome: "ok",
+        value: { markedNotAdopted: [], inputs: [CARVE_OUT_INPUT], files: [PLANNED_SETTINGS, PLANNED_DEBT, PLANNED_PROJECTION], projected: [PLANNED_PROJECTION] },
       },
+      written: [[{ settings: { ...LOOPS_SETTINGS, eslintConfigRoots: ["packages/a"] } }]],
     });
     expect(projectionFilesOf).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ settings: expect.objectContaining({ eslintConfigRoots: ["packages/a"] }) }));
   });

@@ -1,16 +1,16 @@
-import { assert, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../domain/finding/governance.ts";
-import { answerFindings } from "../../domain/records/answering/answering.ts";
 import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { PlacedRecord, RecordsDocument, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
+import type { PlacedRecord, RecordsDocument, RecordsDocumentRefusal, RefusedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordsEdit } from "../../domain/records/hone-records/records-edit.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "./record-commands.ts";
-import { recordsReader, recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
+import type { RecordsEditor } from "../ports/records/records-editor.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
 import type { RecordsStore } from "../ports/records/records-store.ts";
 
@@ -164,6 +164,12 @@ const TOUCHED_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
 
 const DEBT_FILE = repoPathSchema.parse("hone-records/debt/date-used-directly.json");
 
+const WEBHOOK_DEBT_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
+
+const AUTHORISED_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+
+const RECORDS_FOLDER = repoPathSchema.parse("hone-records");
+
 const CLOCK_FINDING: Finding = { clause: CLOCK_SOURCES, mechanism: AUDIT, file: ORDER_FILE, anchor: { line: 14, column: 0 }, snippet: "chargedAt" };
 
 const UNCATALOGUED_FINDING: Finding = { ...CLOCK_FINDING, clause: clauseAddressSchema.parse("CD-99#nowhere") };
@@ -174,20 +180,56 @@ const TOUCHED_FINDING: Finding = { clause: CAST_EXPRESSIONS, mechanism: ESLINT, 
 
 const OK = { outcome: "ok", value: undefined } as const;
 
-const DEBT_DOCUMENT: RecordsDocument = {
-  file: DEBT_FILE,
-  document: { version: 2, records: [{ answers: "date-used-directly#clock-sources", file: ORDER_FILE }] },
+const CLOCK_DEBT_ENTRY = { answers: "date-used-directly#clock-sources", file: ORDER_FILE };
+
+const WEBHOOK_DEBT_ENTRY = { answers: "claimed-type#cast-expressions", file: TOUCHED_FILE };
+
+const DEBT_DOCUMENT: RecordsDocument = { file: DEBT_FILE, document: { version: 2, records: [CLOCK_DEBT_ENTRY] } };
+
+const WEBHOOK_DEBT_DOCUMENT: RecordsDocument = { file: WEBHOOK_DEBT_FILE, document: { version: 2, records: [WEBHOOK_DEBT_ENTRY] } };
+
+const HELD_CLOCK_DEBT: PlacedRecord = {
+  place: { file: DEBT_FILE, index: 0 },
+  record: { kind: "debt", symptom: DATE_USED_DIRECTLY, reach: { reaches: "one-check", check: CLOCK_CHECK }, file: ORDER_FILE, holding: { held: "stated" } },
 };
 
-const sourceOf = (request: { readonly documents: readonly RecordsDocument[] }): RecordsSource => ({
-  read: () => ({ outcome: "ok", value: request.documents }),
-  readAt: () => ({ outcome: "ok", value: [] }),
+const NOT_A_RECORDS_DOCUMENT: readonly RecordsDocumentRefusal[] = [
+  { kind: "document-refused", file: DEBT_FILE, issues: [{ path: ["version"], message: "Invalid input: expected 2" }] },
+];
+
+const sourceOf = (request: { readonly documents: readonly RecordsDocument[] }): Pick<RecordsSource, "read"> => ({
+  read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: request.documents }),
 });
 
 const storeOf = () => {
   const apply = vi.fn<RecordsStore["apply"]>().mockReturnValue(OK);
   return { apply, store: { apply } };
 };
+
+const readerRefusing = (request: { readonly refused: readonly RefusedRecord[] }): RecordsReader => ({
+  recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
+    outcome: "ok",
+    value: { records: [], refused: request.refused, notes: [], base: { measured: "no", base: { state: "not-given" } } },
+  }),
+});
+
+const readerHolding = (request: { readonly records: readonly PlacedRecord[] }): RecordsReader => ({
+  recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
+    outcome: "ok",
+    value: { records: request.records, refused: [], notes: [], base: { measured: "no", base: { state: "not-given" } } },
+  }),
+});
+
+const READER_HOLDING_NOTHING = readerHolding({ records: [] });
+
+const editorAdding = (request: { readonly added: readonly RecordsDocument[] }): Pick<RecordsEditor, "documentsWithAdded" | "placeOfAddition"> => ({
+  documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>().mockReturnValue({ outcome: "ok", value: request.added }),
+  placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>().mockReturnValue({ file: AUTHORISED_FILE, index: 0 }),
+});
+
+const editorRemoving = (request: { readonly edit: RecordsEdit }): Pick<RecordsEditor, "documentsWithRemoved"> => ({
+  documentsWithRemoved: vi.fn<RecordsEditor["documentsWithRemoved"]>().mockReturnValue({ outcome: "ok", value: request.edit }),
+});
 
 const NOTHING_CHANGED: TouchedSet = { measured: "yes", paths: new Set() };
 
@@ -197,50 +239,57 @@ const LEFT_TO_ANOTHER_RUN: TouchedSet = { measured: "elsewhere" };
 
 const UNMEASURED: TouchedSet = { measured: "no", base: { state: "git-failed", revision: "origin/main", gitMessage: "bad revision" } };
 
-const COMMAND = { catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor };
-const WEBHOOK_DEBT_DOCUMENT: RecordsDocument = {
-  file: repoPathSchema.parse("hone-records/debt/claimed-type.json"),
-  document: { version: 2, records: [{ answers: "claimed-type#cast-expressions", file: TOUCHED_FILE }] },
-};
-
-const answeredFor = (request: { readonly documents: readonly RecordsDocument[]; readonly touched: TouchedSet; readonly finding: Finding }) => {
-  const reading = recordsReadingOf({ documents: request.documents, catalogue: REPORT_CATALOGUE, base: { measured: "no", base: { state: "not-given" } } });
-  assert(reading.outcome === "ok", "the records read");
-  return answerFindings({
-    catalogue: REPORT_CATALOGUE,
-    records: reading.value.records,
-    findings: [{ finding: request.finding, party: { reported: "not-reported" } }],
-    touched: request.touched,
-    runs: [], measurements: { runs: [], tracked: [], excluded: [] },
-  });
-};
-
 describe("hone record-debt over a run's unanswered findings", () => {
   const request: RecordDebtRequest = { findings: [CLOCK_FINDING], unrecorded: [], runs: [], touched: NOTHING_CHANGED, leave: [] };
 
-  it("writes one debt record under hone-records/debt for the symptom and check, in the format the records reader reads", () => {
+  it("writes one debt record under hone-records/debt for the symptom and check, as the editor adds it", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: request });
+    const recordsEditor = editorAdding({ added: [DEBT_DOCUMENT] });
+    const recorded = recordDebtOf({
+      ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor, source: sourceOf({ documents: [] }), store },
+      run: request,
+    });
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" }] });
-    expect(apply).toHaveBeenCalledWith({
-      edit: { write: [{ file: DEBT_FILE, document: { version: 2, records: [{ answers: "date-used-directly#clock-sources", file: ORDER_FILE }] } }], remove: [] },
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(expect.objectContaining({ documents: [], additions: [{ file: DEBT_FILE, entry: CLOCK_DEBT_ENTRY }] }));
+    expect(apply).toHaveBeenCalledWith({ edit: { write: [DEBT_DOCUMENT], remove: [] } });
+  });
+
+  it("reads the held records from the source's documents, against the catalogue and no base", () => {
+    const { store } = storeOf();
+    const recordsReader = readerHolding({ records: [HELD_CLOCK_DEBT] });
+    recordDebtOf({
+      ports: { catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor: editorAdding({ added: [] }), source: sourceOf({ documents: [DEBT_DOCUMENT] }), store },
+      run: request,
+    });
+    expect(recordsReader.recordsReadingOf).toHaveBeenCalledWith({
+      documents: [DEBT_DOCUMENT],
+      catalogue: REPORT_CATALOGUE,
+      base: { measured: "no", base: { state: "not-given" } },
     });
   });
 
   it("writes nothing the second time, when the first run's records are held", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store }, run: request });
+    const recorded = recordDebtOf({
+      ports: {
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerHolding({ records: [HELD_CLOCK_DEBT] }),
+        recordsEditor: editorAdding({ added: [] }),
+        source: sourceOf({ documents: [DEBT_DOCUMENT] }),
+        store,
+      },
+      run: request,
+    });
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "already-recorded", heldIn: DEBT_FILE }] });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("declines debt on a file the change created or changed when this run assesses forfeiture, as the check forfeits the same debt", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: {
-      ...request,
-      findings: [NEW_FILE_FINDING, TOUCHED_FINDING],
-      touched: NEW_AND_WEBHOOK_CHANGED,
-    } });
+    const recorded = recordDebtOf({
+      ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor: editorAdding({ added: [] }), source: sourceOf({ documents: [] }), store },
+      run: { ...request, findings: [NEW_FILE_FINDING, TOUCHED_FINDING], touched: NEW_AND_WEBHOOK_CHANGED },
+    });
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
@@ -249,27 +298,27 @@ describe("hone record-debt over a run's unanswered findings", () => {
       ],
     });
     expect(apply).not.toHaveBeenCalled();
-    const checked = answeredFor({ documents: [WEBHOOK_DEBT_DOCUMENT], touched: NEW_AND_WEBHOOK_CHANGED, finding: TOUCHED_FINDING });
-    expect(checked).toMatchObject({ findings: [TOUCHED_FINDING], answered: [], forfeited: [{ place: { file: WEBHOOK_DEBT_DOCUMENT.file, index: 0 } }] });
   });
 
   it("writes debt on a file the change changed when another run assesses forfeiture, as the check answers the finding by it", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: {
-      ...request,
-      findings: [TOUCHED_FINDING],
-      touched: LEFT_TO_ANOTHER_RUN,
-    } });
+    const recordsEditor = editorAdding({ added: [WEBHOOK_DEBT_DOCUMENT] });
+    const recorded = recordDebtOf({
+      ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor, source: sourceOf({ documents: [] }), store },
+      run: { ...request, findings: [TOUCHED_FINDING], touched: LEFT_TO_ANOTHER_RUN },
+    });
     expect(recorded).toEqual({ outcome: "ok", value: [{ address: "claimed-type#cast-expressions", file: TOUCHED_FILE, effect: "recorded" }] });
-    const [written] = apply.mock.calls;
-    assert(written !== undefined, "the debt was written");
-    const checked = answeredFor({ documents: written[0].edit.write, touched: LEFT_TO_ANOTHER_RUN, finding: TOUCHED_FINDING });
-    expect(checked).toMatchObject({ findings: [], answered: [{ finding: TOUCHED_FINDING }], forfeited: [] });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(expect.objectContaining({ documents: [], additions: [{ file: WEBHOOK_DEBT_FILE, entry: WEBHOOK_DEBT_ENTRY }] }));
+    expect(apply).toHaveBeenCalledWith({ edit: { write: [WEBHOOK_DEBT_DOCUMENT], remove: [] } });
   });
 
   it("gives a line to a finding it cannot record debt for, and records the others", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, findings: [UNCATALOGUED_FINDING, CLOCK_FINDING] } });
+    const recordsEditor = editorAdding({ added: [DEBT_DOCUMENT] });
+    const recorded = recordDebtOf({
+      ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor, source: sourceOf({ documents: [] }), store },
+      run: { ...request, findings: [UNCATALOGUED_FINDING, CLOCK_FINDING] },
+    });
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
@@ -277,27 +326,47 @@ describe("hone record-debt over a run's unanswered findings", () => {
         { address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" },
       ],
     });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(expect.objectContaining({ documents: [], additions: [{ file: DEBT_FILE, entry: CLOCK_DEBT_ENTRY }] }));
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
   it("writes nothing when every finding is one it cannot record debt for", () => {
     const { apply, store } = storeOf();
-    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, findings: [UNCATALOGUED_FINDING] } })).toEqual({
+    const recordsEditor = editorAdding({ added: [] });
+    expect(
+      recordDebtOf({
+        ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor, source: sourceOf({ documents: [] }), store },
+        run: { ...request, findings: [UNCATALOGUED_FINDING] },
+      }),
+    ).toEqual({
       outcome: "ok",
       value: [{ address: "CD-99#nowhere", file: ORDER_FILE, effect: "unrecordable", because: { kind: "no-check" } }],
     });
+    expect(recordsEditor.documentsWithAdded).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
   });
 
-  it("writes nothing and prints nothing when the run left nothing unanswered", () => {
+  it("writes nothing, reads nothing and prints nothing when the run left nothing unanswered", () => {
     const { apply, store } = storeOf();
-    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, findings: [] } })).toEqual({ outcome: "ok", value: [] });
+    const source = sourceOf({ documents: [] });
+    expect(
+      recordDebtOf({
+        ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor: editorAdding({ added: [] }), source, store },
+        run: { ...request, findings: [] },
+      }),
+    ).toEqual({ outcome: "ok", value: [] });
+    expect(source.read).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("fails with git's own words when the run could not measure the change", () => {
     const { apply, store } = storeOf();
-    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: { ...request, touched: UNMEASURED } })).toEqual({
+    expect(
+      recordDebtOf({
+        ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor: editorAdding({ added: [] }), source: sourceOf({ documents: [] }), store },
+        run: { ...request, touched: UNMEASURED },
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "git-failed", detail: "bad revision" },
     });
@@ -306,19 +375,29 @@ describe("hone record-debt over a run's unanswered findings", () => {
 
   it("fails, without writing, when hone-records holds a file it cannot read as records", () => {
     const { apply, store } = storeOf();
-    const recorded = recordDebtOf({ ports: {
-      ...COMMAND,
-      source: sourceOf({ documents: [{ file: DEBT_FILE, document: { records: [] } }] }),
-      store,
-    }, run: request });
-    expect(recorded).toMatchObject({ outcome: "failed", error: { kind: "records-documents" } });
+    const recorded = recordDebtOf({
+      ports: {
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: { recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({ outcome: "failed", error: NOT_A_RECORDS_DOCUMENT }) },
+        recordsEditor: editorAdding({ added: [] }),
+        source: sourceOf({ documents: [{ file: DEBT_FILE, document: { records: [] } }] }),
+        store,
+      },
+      run: request,
+    });
+    expect(recorded).toEqual({ outcome: "failed", error: { kind: "records-documents", refusals: NOT_A_RECORDS_DOCUMENT } });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("passes on the failure of the store that could not write", () => {
     const { apply, store } = storeOf();
     apply.mockReturnValue({ outcome: "failed", error: { kind: "file-unwritable", path: "/work/shop/hone-records/debt/date-used-directly.json", detail: "EACCES" } });
-    expect(recordDebtOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, run: request })).toEqual({
+    expect(
+      recordDebtOf({
+        ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor: editorAdding({ added: [DEBT_DOCUMENT] }), source: sourceOf({ documents: [] }), store },
+        run: request,
+      }),
+    ).toEqual({
       outcome: "failed",
       error: { kind: "file-unwritable", path: "/work/shop/hone-records/debt/date-used-directly.json", detail: "EACCES" },
     });
@@ -333,14 +412,18 @@ const PAID_DEBT: PlacedRecord = {
 describe("hone prune-debt over a run's paid, stale and forfeited debt", () => {
   it("removes exactly the debt the report listed, from the document that holds it", () => {
     const { apply, store } = storeOf();
+    const recordsEditor = editorRemoving({ edit: { write: [], remove: [DEBT_FILE] } });
     const pruned = pruneDebtOf({ ports: { recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store }, report: { paid: [{ debt: PAID_DEBT, answeredBy: [] }], stale: [], forfeited: [] } });
     expect(pruned).toMatchObject({ outcome: "ok", value: [{ place: { file: DEBT_FILE, index: 0 }, reason: "paid" }] });
+    expect(recordsEditor.documentsWithRemoved).toHaveBeenCalledWith({ documents: [DEBT_DOCUMENT], places: [{ file: DEBT_FILE, index: 0 }] });
     expect(apply).toHaveBeenCalledWith({ edit: { write: [], remove: [DEBT_FILE] } });
   });
 
   it("writes nothing when the report lists nothing to remove", () => {
     const { apply, store } = storeOf();
+    const recordsEditor = editorRemoving({ edit: { write: [], remove: [] } });
     expect(pruneDebtOf({ ports: { recordsEditor, source: sourceOf({ documents: [DEBT_DOCUMENT] }), store }, report: { paid: [], stale: [], forfeited: [] } })).toEqual({ outcome: "ok", value: [] });
+    expect(recordsEditor.documentsWithRemoved).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
   });
 });
@@ -357,26 +440,94 @@ const AUTHORISE = {
   owner: CAUSAL_WHY_CHAIN.owner,
 };
 
+const AUTHORISED_DOCUMENT: RecordsDocument = {
+  file: AUTHORISED_FILE,
+  document: {
+    version: 2,
+    records: [
+      {
+        answers: "claimed-type",
+        file: TOUCHED_FILE,
+        case: "gives-a-value-its-type",
+        owes: "declared-not-asserted",
+        whyChain: {
+          whys: CAUSAL_WHY_CHAIN.whys,
+          rootCause: CAUSAL_WHY_CHAIN.rootCause,
+          rootEvidence: CAUSAL_WHY_CHAIN.rootEvidence,
+          readback: CAUSAL_WHY_CHAIN.readback,
+          owner: CAUSAL_WHY_CHAIN.owner,
+        },
+      },
+    ],
+  },
+};
+
 describe("hone authorise over the person's arguments", () => {
-  it("writes the one record when the form accepts it", () => {
+  it("writes the one record when the reading accepts it", () => {
     const { apply, store } = storeOf();
-    expect(authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, request: AUTHORISE })).toMatchObject({ outcome: "ok", value: { judged: "accepted" } });
-    expect(apply).toHaveBeenCalledTimes(1);
+    expect(
+      authoriseOf({
+        ports: { catalogue: REPORT_CATALOGUE, recordsReader: READER_HOLDING_NOTHING, recordsEditor: editorAdding({ added: [AUTHORISED_DOCUMENT] }), source: sourceOf({ documents: [] }), store },
+        request: AUTHORISE,
+      }),
+    ).toEqual({ outcome: "ok", value: { judged: "accepted", edit: { write: [AUTHORISED_DOCUMENT], remove: [] } } });
+    expect(apply).toHaveBeenCalledWith({ edit: { write: [AUTHORISED_DOCUMENT], remove: [] } });
   });
 
-  it("writes nothing when the form refuses the chain", () => {
+  it("writes nothing when the reading refuses the chain", () => {
     const { apply, store } = storeOf();
-    expect(authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store }, request: { ...AUTHORISE, rootCause: "no" } })).toMatchObject({ outcome: "ok", value: { judged: "refused" } });
+    expect(
+      authoriseOf({
+        ports: {
+          catalogue: REPORT_CATALOGUE,
+          recordsReader: readerRefusing({
+            refused: [{ place: { file: AUTHORISED_FILE, index: 0 }, refusals: [{ kind: "form-refused", issues: [{ path: ["whyChain", "rootCause"], message: "too short" }] }] }],
+          }),
+          recordsEditor: editorAdding({ added: [AUTHORISED_DOCUMENT] }),
+          source: sourceOf({ documents: [] }),
+          store,
+        },
+        request: { ...AUTHORISE, rootCause: "no" },
+      }),
+    ).toMatchObject({ outcome: "ok", value: { judged: "refused" } });
     expect(apply).not.toHaveBeenCalled();
   });
 
   it("writes nothing for a record already held", () => {
-    const first = storeOf();
-    authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: [] }), store: first.store }, request: AUTHORISE });
     const { apply, store } = storeOf();
-    const [firstCall] = first.apply.mock.calls;
-    assert(firstCall !== undefined, "the first authorise wrote its record");
-    expect(authoriseOf({ ports: { ...COMMAND, source: sourceOf({ documents: firstCall[0].edit.write }), store }, request: AUTHORISE })).toMatchObject({ outcome: "ok", value: { judged: "already-held" } });
+    expect(
+      authoriseOf({
+        ports: {
+          catalogue: REPORT_CATALOGUE,
+          recordsReader: readerRefusing({
+            refused: [{ place: { file: AUTHORISED_FILE, index: 0 }, refusals: [{ kind: "duplicate", of: { file: AUTHORISED_FILE, index: 1 } }] }],
+          }),
+          recordsEditor: editorAdding({ added: [AUTHORISED_DOCUMENT] }),
+          source: sourceOf({ documents: [AUTHORISED_DOCUMENT] }),
+          store,
+        },
+        request: AUTHORISE,
+      }),
+    ).toEqual({ outcome: "ok", value: { judged: "already-held", heldIn: AUTHORISED_FILE } });
+    expect(apply).not.toHaveBeenCalled();
+  });
+
+  it("fails, without reading, when the records folder cannot be read", () => {
+    const { apply, store } = storeOf();
+    const recordsReader = readerHolding({ records: [] });
+    expect(
+      authoriseOf({
+        ports: {
+          catalogue: REPORT_CATALOGUE,
+          recordsReader,
+          recordsEditor: editorAdding({ added: [AUTHORISED_DOCUMENT] }),
+          source: { read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "records-folder-unreadable", folder: RECORDS_FOLDER, detail: "EACCES" } }) },
+          store,
+        },
+        request: AUTHORISE,
+      }),
+    ).toEqual({ outcome: "failed", error: { kind: "records-folder", failure: { kind: "records-folder-unreadable", folder: RECORDS_FOLDER, detail: "EACCES" } } });
+    expect(recordsReader.recordsReadingOf).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
   });
 });

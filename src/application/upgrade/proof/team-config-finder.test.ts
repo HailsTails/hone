@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { teamConfigsOf, type TeamConfigsRequest } from "./team-config-finder.ts";
@@ -16,7 +16,7 @@ const UNRELATED = "export default [];\n";
 const requestOver = (overrides: Partial<TeamConfigsRequest>): TeamConfigsRequest => ({
   repoRoot: absolutePathSchema.parse("/repo"),
   fileText: { read: vi.fn<FileTextPort["read"]>() },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+  path: { join: vi.fn<PathPort["join"]>() },
   trackedPaths: [],
   projections: [PROJECTION],
   ...overrides,
@@ -35,6 +35,7 @@ describe("teamConfigsOf", () => {
     const request = requestOver({
       trackedPaths: [repoPathSchema.parse("eslint.config.mjs"), repoPathSchema.parse("src/a.ts"), repoPathSchema.parse("disciplines.eslint.mjs"), repoPathSchema.parse("README.md")],
       fileText: { read },
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/eslint.config.mjs").mockReturnValueOnce("/repo/src/a.ts") },
     });
     expect(teamConfigsOf(request)).toEqual({ outcome: "ok", value: [{ projection: "disciplines.eslint.mjs", teamConfigs: [{ file: "eslint.config.mjs", text: IMPORTING }] }] });
     expect(read.mock.calls).toEqual([[{ path: "/repo/eslint.config.mjs" }], [{ path: "/repo/src/a.ts" }]]);
@@ -49,6 +50,7 @@ describe("teamConfigsOf", () => {
       trackedPaths: [repoPathSchema.parse("eslint.config.mjs"), repoPathSchema.parse("packages/a/eslint.config.mjs"), repoPathSchema.parse("disciplines.eslint.mjs"), SLICE],
       projections: [PROJECTION, SLICE],
       fileText: { read },
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/eslint.config.mjs").mockReturnValueOnce("/repo/packages/a/eslint.config.mjs") },
     });
     expect(teamConfigsOf(request)).toEqual({
       outcome: "ok",
@@ -65,6 +67,7 @@ describe("teamConfigsOf", () => {
     const request = requestOver({
       trackedPaths: [repoPathSchema.parse("config/eslint.config.mjs")],
       fileText: fileTextHolding({ text: nested }),
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/config/eslint.config.mjs") },
     });
     expect(teamConfigsOf(request)).toEqual({ outcome: "ok", value: [{ projection: "disciplines.eslint.mjs", teamConfigs: [{ file: "config/eslint.config.mjs", text: nested }] }] });
   });
@@ -73,6 +76,7 @@ describe("teamConfigsOf", () => {
     const request = requestOver({
       trackedPaths: [repoPathSchema.parse("eslint.config.mjs")],
       fileText: fileTextHolding({ text: UNRELATED }),
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/eslint.config.mjs") },
     });
     expect(teamConfigsOf(request)).toEqual({ outcome: "failed", error: { kind: "no-file-imports-projection", projection: "disciplines.eslint.mjs" } });
   });
@@ -87,6 +91,7 @@ describe("teamConfigsOf", () => {
           .mockReturnValueOnce({ outcome: "ok", value: IMPORTING })
           .mockReturnValueOnce({ outcome: "ok", value: UNRELATED }),
       },
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/eslint.config.mjs").mockReturnValueOnce("/repo/packages/a/eslint.config.mjs") },
     });
     expect(teamConfigsOf(request)).toEqual({ outcome: "failed", error: { kind: "no-file-imports-projection", projection: "packages/a/disciplines.eslint.mjs" } });
   });
@@ -95,6 +100,7 @@ describe("teamConfigsOf", () => {
     const request = requestOver({
       trackedPaths: [repoPathSchema.parse("eslint.config.mjs"), repoPathSchema.parse("lint.config.js")],
       fileText: fileTextHolding({ text: IMPORTING }),
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/eslint.config.mjs").mockReturnValueOnce("/repo/lint.config.js") },
     });
     expect(teamConfigsOf(request)).toEqual({
       outcome: "ok",
@@ -114,6 +120,7 @@ describe("teamConfigsOf", () => {
     const request = requestOver({
       trackedPaths: [repoPathSchema.parse("eslint.config.mjs")],
       fileText: { read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: "/repo/eslint.config.mjs", detail: "ENOENT" } }) },
+      path: { join: vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/eslint.config.mjs") },
     });
     expect(teamConfigsOf(request)).toEqual({ outcome: "failed", error: { kind: "config-candidate-unreadable", file: "eslint.config.mjs", detail: "ENOENT" } });
   });

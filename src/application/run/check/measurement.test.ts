@@ -20,7 +20,8 @@ import {
   touchedSetFor,
   unmeasuredOf,
 } from "./measurement.ts";
-import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -384,31 +385,41 @@ describe("partialAssessmentsOf", () => {
   });
 });
 
+const entriesReaderFinding = (request: { readonly imported: "present" | "absent"; readonly sources: readonly RepoPath[] }): Pick<ExceptionEntryParser, "importedEntriesIn" | "importSourcesOf"> => ({
+  importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>().mockReturnValue(request.imported),
+  importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>().mockReturnValue(request.sources),
+});
+
+const NOTHING_IMPORTED = entriesReaderFinding({ imported: "absent", sources: [] });
+
 describe("baselineNeedOf", () => {
   it("settles on unmeasured when no base revision is given", () => {
-    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: undefined, entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser: entriesReaderFinding({ imported: "present", sources: [LEGACY_SOURCE_FILE] }), baseRevision: undefined, entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY] })).toEqual({
       kind: "settled",
       baseline: UNMEASURED_NOT_GIVEN,
     });
   });
 
   it("settles on unmeasured when no entry is imported or holds a legacy chain", () => {
-    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [CARVE_OUT_ENTRY, REASON_ONLY_LOCATION_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser: NOTHING_IMPORTED, baseRevision: "main", entries: [CARVE_OUT_ENTRY, REASON_ONLY_LOCATION_ENTRY] })).toEqual({
       kind: "settled",
       baseline: UNMEASURED_NOT_GIVEN,
     });
   });
 
   it("needs the records at the base and only the imported entries' sources", () => {
-    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] })).toEqual({
-      kind: "read-at-base",
-      baseRevision: "main",
-      sources: [LEGACY_SOURCE_FILE],
+    const exceptionEntryParser = entriesReaderFinding({ imported: "present", sources: [LEGACY_SOURCE_FILE] });
+    expect({
+      need: baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] }),
+      sourcesAskedOf: vi.mocked(exceptionEntryParser.importSourcesOf).mock.calls,
+    }).toEqual({
+      need: { kind: "read-at-base", baseRevision: "main", sources: [LEGACY_SOURCE_FILE] },
+      sourcesAskedOf: [[{ entries: [IMPORTED_LOCATION_ENTRY, CARVE_OUT_ENTRY] }]],
     });
   });
 
   it("needs the records at the base and no source for a legacy chain", () => {
-    expect(baselineNeedOf({ exceptionEntryParser, baseRevision: "main", entries: [LEGACY_CHAIN_ENTRY] })).toEqual({
+    expect(baselineNeedOf({ exceptionEntryParser: NOTHING_IMPORTED, baseRevision: "main", entries: [LEGACY_CHAIN_ENTRY] })).toEqual({
       kind: "read-at-base",
       baseRevision: "main",
       sources: [],
@@ -542,7 +553,7 @@ describe("exceptionBaselineOf", () => {
           baseRevision: "main",
           git: baseGitAnswering({ text: { outcome: "ok", value: { presence: "present-in-base", text: "[]" } }, renames: NO_RENAMES }),
           exceptionRepository: exceptionRepositoryAnswering({ outcome: "ok", value: [] }),
-          exceptionEntryParser,
+          exceptionEntryParser: entriesReaderFinding({ imported: "present", sources: [LEGACY_SOURCE_FILE] }),
         },
         entries: [IMPORTED_LOCATION_ENTRY],
       }),
@@ -552,7 +563,7 @@ describe("exceptionBaselineOf", () => {
   it("is the settled baseline when none is needed", () => {
     expect(
       exceptionBaselineOf({
-        check: { repoRoot: REPO_ROOT, baseRevision: undefined, git: UNASKED_BASE_GIT, exceptionRepository: UNASKED_REPOSITORY, exceptionEntryParser },
+        check: { repoRoot: REPO_ROOT, baseRevision: undefined, git: UNASKED_BASE_GIT, exceptionRepository: UNASKED_REPOSITORY, exceptionEntryParser: NOTHING_IMPORTED },
         entries: [IMPORTED_LOCATION_ENTRY, LEGACY_CHAIN_ENTRY],
       }),
     ).toEqual(UNMEASURED_NOT_GIVEN);

@@ -1,4 +1,4 @@
-import piece0 from "../../../../infrastructure/engines/eslint/CD-1/cd1/cd1.eslint-plugin.ts";
+import piece0 from "../../../src/infrastructure/engines/eslint/CD-1/cd1/cd1.eslint-plugin.ts";
 
 export default [
   {

@@ -1,10 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import type { RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordsDocument, RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import { readHoneRecords } from "./read-hone-records.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
-import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 
@@ -34,60 +34,66 @@ const DOCUMENTS: readonly RecordsDocument[] = [{ file: FILE, document: { version
 
 const sourceOf = (request: { readonly read: RecordsSource["read"]; readonly readAt: RecordsSource["readAt"] }): RecordsSource => request;
 
+const READING: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
+
+const readerGiving = (reading: ReturnType<RecordsReader["recordsReadingOf"]>): { readonly recordsReadingOf: Mock<RecordsReader["recordsReadingOf"]> } => ({
+  recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue(reading),
+});
+
 describe("readHoneRecords", () => {
   it("judges carried records unjudged when no base revision is given, and reads nothing at a base", () => {
     const readAt = vi.fn<RecordsSource["readAt"]>();
+    const recordsReader = readerGiving({ outcome: "ok", value: READING });
     const reading = readHoneRecords({
       recordsReader,
       source: sourceOf({ read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }), readAt }),
       catalogue: CATALOGUE,
       baseRevision: undefined,
     });
-    expect({ reading, readAt: readAt.mock.calls }).toMatchObject({
-      reading: { outcome: "ok", value: { records: [{ record: { holding: { held: "carried", standing: "unjudged" } } }], refused: [], base: { measured: "no", base: { state: "not-given" } } } },
+    expect({ reading, readAt: readAt.mock.calls, judged: recordsReader.recordsReadingOf.mock.calls }).toEqual({
+      reading: { outcome: "ok", value: READING },
       readAt: [],
+      judged: [[{ documents: DOCUMENTS, catalogue: CATALOGUE, base: { measured: "no", base: { state: "not-given" } } }]],
     });
   });
 
   it("judges carried records against the records the base revision holds", () => {
     const readAt = vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS });
+    const recordsReader = readerGiving({ outcome: "ok", value: READING });
     const reading = readHoneRecords({
       recordsReader,
       source: sourceOf({ read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }), readAt }),
       catalogue: CATALOGUE,
       baseRevision: "origin/main",
     });
-    expect({ reading, readAt: readAt.mock.calls }).toMatchObject({
-      reading: { outcome: "ok", value: { records: [{ record: { holding: { held: "carried", standing: "established" } } }], refused: [], base: { measured: "yes" } } },
+    expect({ reading, readAt: readAt.mock.calls, judged: recordsReader.recordsReadingOf.mock.calls }).toEqual({
+      reading: { outcome: "ok", value: READING },
       readAt: [[{ revision: "origin/main" }]],
+      judged: [[{ documents: DOCUMENTS, catalogue: CATALOGUE, base: { measured: "yes", documents: DOCUMENTS } }]],
     });
   });
 
   it("judges carried records unjudged when git cannot read the base revision", () => {
-    expect(
-      readHoneRecords({
-        recordsReader,
-        source: sourceOf({
-          read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }),
-          readAt: vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "failed", error: { kind: "git-failed", command: "git ls-tree", detail: "fatal: bad revision\nmore" } }),
-        }),
-        catalogue: CATALOGUE,
-        baseRevision: "nowhere",
+    const recordsReader = readerGiving({ outcome: "ok", value: READING });
+    const reading = readHoneRecords({
+      recordsReader,
+      source: sourceOf({
+        read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }),
+        readAt: vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "failed", error: { kind: "git-failed", command: "git ls-tree", detail: "fatal: bad revision\nmore" } }),
       }),
-    ).toMatchObject({
-      outcome: "ok",
-      value: {
-        records: [{ record: { holding: { held: "carried", standing: "unjudged" } } }],
-        refused: [],
-        base: { measured: "no", base: { state: "git-failed", revision: "nowhere", gitMessage: "fatal: bad revision" } },
-      },
+      catalogue: CATALOGUE,
+      baseRevision: "nowhere",
+    });
+    expect({ reading, judged: recordsReader.recordsReadingOf.mock.calls }).toEqual({
+      reading: { outcome: "ok", value: READING },
+      judged: [[{ documents: DOCUMENTS, catalogue: CATALOGUE, base: { measured: "no", base: { state: "git-failed", revision: "nowhere", gitMessage: "fatal: bad revision" } } }]],
     });
   });
 
   it("fails with the folder's failure when the working records cannot be read", () => {
     expect(
       readHoneRecords({
-        recordsReader,
+        recordsReader: readerGiving({ outcome: "ok", value: READING }),
         source: sourceOf({
           read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "not-a-records-file", file: repoPathSchema.parse("hone-records/notes.md") } }),
           readAt: vi.fn<RecordsSource["readAt"]>(),
@@ -101,7 +107,7 @@ describe("readHoneRecords", () => {
   it("fails with the folder's failure when a base records file cannot be read", () => {
     expect(
       readHoneRecords({
-        recordsReader,
+        recordsReader: readerGiving({ outcome: "ok", value: READING }),
         source: sourceOf({
           read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: DOCUMENTS }),
           readAt: vi.fn<RecordsSource["readAt"]>().mockReturnValue({ outcome: "failed", error: { kind: "records-file-not-json", file: FILE, detail: "Unexpected end" } }),
@@ -115,11 +121,11 @@ describe("readHoneRecords", () => {
   it("fails with each document refused", () => {
     expect(
       readHoneRecords({
-        recordsReader,
+        recordsReader: readerGiving({ outcome: "failed", error: [{ kind: "document-refused", file: FILE, issues: [] }] }),
         source: sourceOf({ read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: [{ file: FILE, document: [] }] }), readAt: vi.fn<RecordsSource["readAt"]>() }),
         catalogue: CATALOGUE,
         baseRevision: undefined,
       }),
-    ).toMatchObject({ outcome: "failed", error: { kind: "records-documents", refusals: [{ kind: "document-refused", file: FILE }] } });
+    ).toEqual({ outcome: "failed", error: { kind: "records-documents", refusals: [{ kind: "document-refused", file: FILE, issues: [] }] } });
   });
 });

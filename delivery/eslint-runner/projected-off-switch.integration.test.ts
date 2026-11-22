@@ -1,33 +1,33 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
-import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { Result } from "../../../../../domain/result.ts";
-import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
-import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
-import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
-import { createEslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
+import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import type { PathPort } from "../../src/application/ports/host/path-port.ts";
+import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
+import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
+import type { Result } from "../../src/domain/result.ts";
+import type { ExceptionRecord } from "../../src/domain/records/discipline-exceptions/exception-record.ts";
+import type { EmbeddedRunner } from "../../src/infrastructure/engines/protocol/embedded/embedded-runner-module-schema.ts";
+import type { RunnerClause } from "../../src/domain/runner/runner-module-types.ts";
+import { toolchainBoundEmbeddedRunner } from "../../src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { FIRST_EDITION } from "../../src/infrastructure/content-files/edition.ts";
+import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
+import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
+import { createEslintPort, type EslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
   type EslintToolchainPeers,
   loadEslintToolchain,
-} from "../toolchain/eslint-toolchain.ts";
+} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -39,7 +39,7 @@ type LineDefinition = {
   readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
 };
 
-const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../../../../../..`, installForm: "source" });
+const DEVELOPMENT_PEERS: EslintToolchainPeers = defaultEslintToolchainPeers({ installRoot: `${import.meta.dirname}/../..`, installForm: "source" });
 
 const LINES: Readonly<Record<EslintLine, LineDefinition>> = {
   "eslint-10": { eslintVersion: /^10\./, modules: DEVELOPMENT_PEERS.modules, pieceModules: (request) => request.base },
@@ -278,7 +278,7 @@ const restoredFixtureRepositoriesOver = (dependencies: Dependencies): RestoredFi
   };
 };
 
-const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
+const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 
 const CLAUSE = clauseAddressSchema.parse("CD-14#class-syntax");
 
@@ -308,7 +308,7 @@ afterAll(() => {
 const ROUTE_FILES = [repoPathSchema.parse("route/[id].ts"), repoPathSchema.parse("route/i.ts")];
 
 const ROUTE_RUN = {
-  repoRoot: restoredFixtures.restoredFrom({ fixtureRoot: absolutePathSchema.parse(`${import.meta.dirname}/route-brackets`), textFiles: NO_TEXT_FILES }),
+  repoRoot: restoredFixtures.restoredFrom({ fixtureRoot: absolutePathSchema.parse(`${import.meta.dirname}/../../src/infrastructure/engines/eslint/runner/native-exceptions/route-brackets`), textFiles: NO_TEXT_FILES }),
   installRoot: INSTALL_ROOT,
   declaredConfigRoots: [],
   files: ROUTE_FILES,

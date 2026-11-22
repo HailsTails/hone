@@ -1,14 +1,14 @@
-import { assert, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authorisingOf } from "./authorising.ts";
-import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
 import type { AuthoriseRequest } from "../ports/authorising.ts";
-import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordPlace, RecordRefusal, RecordsDocument, RecordsDocumentRefusal } from "../../domain/records/hone-records/hone-record.ts";
+import type { RecordsReader } from "../ports/records/records-reader.ts";
+import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -104,7 +104,11 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const WEBHOOK_FILE = repoPathSchema.parse("src/adapters/stripe-webhook.ts");
 
+const OTHER_FILE = repoPathSchema.parse("src/adapters/other-webhook.ts");
+
 const RECORDS_FILE = repoPathSchema.parse("hone-records/authorised-locations/claimed-type.json");
+
+const UNRELATED_RECORDS_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
 
 const REQUEST: AuthoriseRequest = {
   answers: "claimed-type",
@@ -118,119 +122,215 @@ const REQUEST: AuthoriseRequest = {
   owner: CAUSAL_WHY_CHAIN.owner,
 };
 
-const NO_DOCUMENTS: readonly RecordsDocument[] = [];
+const WEBHOOK_ENTRY = {
+  answers: "claimed-type",
+  file: WEBHOOK_FILE,
+  case: "gives-a-value-its-type",
+  owes: "declared-not-asserted",
+  whyChain: {
+    whys: CAUSAL_WHY_CHAIN.whys,
+    rootCause: CAUSAL_WHY_CHAIN.rootCause,
+    rootEvidence: CAUSAL_WHY_CHAIN.rootEvidence,
+    readback: CAUSAL_WHY_CHAIN.readback,
+    owner: CAUSAL_WHY_CHAIN.owner,
+  },
+};
 
-const authorised = (request: { readonly request: AuthoriseRequest; readonly documents: readonly RecordsDocument[] }) =>
-  authorisingOf({ ...request, catalogue: REPORT_CATALOGUE, recordsReader, recordsEditor });
+const OTHER_ENTRY = { ...WEBHOOK_ENTRY, file: OTHER_FILE };
 
-const OTHER_FILE = repoPathSchema.parse("src/adapters/other-webhook.ts");
+const WEBHOOK_DOCUMENT: RecordsDocument = { file: RECORDS_FILE, document: { version: 2, records: [WEBHOOK_ENTRY] } };
 
-const [FIRST_WHY, SECOND_WHY, THIRD_WHY, FOURTH_WHY] = CAUSAL_WHY_CHAIN.whys;
+const BOTH_DOCUMENT: RecordsDocument = { file: RECORDS_FILE, document: { version: 2, records: [WEBHOOK_ENTRY, OTHER_ENTRY] } };
+
+const UNRELATED_DOCUMENT: RecordsDocument = { file: UNRELATED_RECORDS_FILE, document: { version: 2, records: [] } };
+
+const ADDED_PLACE: RecordPlace = { file: RECORDS_FILE, index: 0 };
+
+const OTHER_PLACE: RecordPlace = { file: RECORDS_FILE, index: 1 };
+
+const SHORT_ROOT_CAUSE_ISSUES = [{ path: ["whyChain", "rootCause"], message: "a root cause names what is true today" }];
+
+const NOT_A_RECORDS_DOCUMENT: readonly RecordsDocumentRefusal[] = [{ kind: "not-a-records-file", file: RECORDS_FILE }];
+
+const editorAdding = (request: {
+  readonly added: ReturnType<RecordsEditor["documentsWithAdded"]>;
+  readonly place: RecordPlace;
+}): Pick<RecordsEditor, "documentsWithAdded" | "placeOfAddition"> => ({
+  documentsWithAdded: vi.fn<RecordsEditor["documentsWithAdded"]>().mockReturnValue(request.added),
+  placeOfAddition: vi.fn<RecordsEditor["placeOfAddition"]>().mockReturnValue(request.place),
+});
+
+const readerRefusing = (refused: readonly { readonly place: RecordPlace; readonly refusals: readonly RecordRefusal[] }[]): RecordsReader => ({
+  recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({
+    outcome: "ok",
+    value: { records: [], refused, notes: [], base: { measured: "no", base: { state: "not-given" } } },
+  }),
+});
+
+const READER_REFUSING_NOTHING = readerRefusing([]);
+
+const EDITOR_WRITING_WEBHOOK = editorAdding({ added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] }, place: ADDED_PLACE });
+
+const EDIT_FAILURE: RecordsEditFailure = { kind: "records-documents", refusals: NOT_A_RECORDS_DOCUMENT };
 
 describe("the authorised location a person's arguments write", () => {
   it("writes one record from the arguments, with the why chain the person gave", () => {
-    expect(authorised({ request: REQUEST, documents: NO_DOCUMENTS })).toEqual({
+    expect(
+      authorisingOf({ request: REQUEST, documents: [], catalogue: REPORT_CATALOGUE, recordsReader: READER_REFUSING_NOTHING, recordsEditor: EDITOR_WRITING_WEBHOOK }),
+    ).toEqual({
       outcome: "ok",
-      value: {
-        judged: "accepted",
-        edit: {
-          write: [
-            {
-              file: RECORDS_FILE,
-              document: {
-                version: 2,
-                records: [
-                  {
-                    answers: "claimed-type",
-                    file: WEBHOOK_FILE,
-                    case: "gives-a-value-its-type",
-                    owes: "declared-not-asserted",
-                    whyChain: {
-                      whys: CAUSAL_WHY_CHAIN.whys,
-                      rootCause: CAUSAL_WHY_CHAIN.rootCause,
-                      rootEvidence: CAUSAL_WHY_CHAIN.rootEvidence,
-                      readback: CAUSAL_WHY_CHAIN.readback,
-                      owner: CAUSAL_WHY_CHAIN.owner,
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-          remove: [],
-        },
-      },
+      value: { judged: "accepted", edit: { write: [WEBHOOK_DOCUMENT], remove: [] } },
     });
+  });
+
+  it("hands the editor the arguments as one entry for the symptom's authorised-locations file", () => {
+    const recordsEditor = editorAdding({ added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] }, place: ADDED_PLACE });
+    authorisingOf({ request: REQUEST, documents: [], catalogue: REPORT_CATALOGUE, recordsReader: READER_REFUSING_NOTHING, recordsEditor });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith({ documents: [], additions: [{ file: RECORDS_FILE, entry: WEBHOOK_ENTRY }] });
   });
 
   it("files a record that names one check under its symptom, and keeps the check in the record", () => {
-    const authorisedCheck = authorised({ request: { ...REQUEST, answers: "claimed-type#cast-expressions" }, documents: NO_DOCUMENTS });
-    expect(authorisedCheck).toMatchObject({
-      outcome: "ok",
-      value: { judged: "accepted", edit: { write: [{ file: RECORDS_FILE, document: { records: [{ answers: "claimed-type#cast-expressions" }] } }] } },
+    const recordsEditor = editorAdding({ added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] }, place: ADDED_PLACE });
+    authorisingOf({
+      request: { ...REQUEST, answers: "claimed-type#cast-expressions" },
+      documents: [],
+      catalogue: REPORT_CATALOGUE,
+      recordsReader: READER_REFUSING_NOTHING,
+      recordsEditor,
+    });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith({
+      documents: [],
+      additions: [{ file: RECORDS_FILE, entry: { ...WEBHOOK_ENTRY, answers: "claimed-type#cast-expressions" } }],
     });
   });
 
-  it("adds to the records the file already holds", () => {
-    const first = authorised({ request: REQUEST, documents: NO_DOCUMENTS });
-    assert(first.outcome === "ok", "the first record is read");
-    assert(first.value.judged === "accepted", "the first record is accepted");
-    const second = authorised({ request: { ...REQUEST, file: OTHER_FILE }, documents: first.value.edit.write });
-    expect(second).toMatchObject({
-      outcome: "ok",
-      value: {
-        judged: "accepted",
-        edit: { write: [{ file: RECORDS_FILE, document: { version: 2, records: [expect.objectContaining({ file: WEBHOOK_FILE }), expect.objectContaining({ file: OTHER_FILE })] } }] },
-      },
+  it("adds to the records the file already holds, reading the other files beside the file it rewrote", () => {
+    const recordsReader = readerRefusing([]);
+    const recordsEditor = editorAdding({ added: { outcome: "ok", value: [BOTH_DOCUMENT] }, place: OTHER_PLACE });
+    const authorised = authorisingOf({
+      request: { ...REQUEST, file: OTHER_FILE },
+      documents: [WEBHOOK_DOCUMENT, UNRELATED_DOCUMENT],
+      catalogue: REPORT_CATALOGUE,
+      recordsReader,
+      recordsEditor,
+    });
+    expect(authorised).toEqual({ outcome: "ok", value: { judged: "accepted", edit: { write: [BOTH_DOCUMENT], remove: [] } } });
+    expect(recordsReader.recordsReadingOf).toHaveBeenCalledWith({
+      documents: [UNRELATED_DOCUMENT, BOTH_DOCUMENT],
+      catalogue: REPORT_CATALOGUE,
+      base: { measured: "no", base: { state: "not-given" } },
     });
   });
 
   it("writes nothing for a record the file already holds, and says where", () => {
-    const first = authorised({ request: REQUEST, documents: NO_DOCUMENTS });
-    assert(first.outcome === "ok", "the first record is read");
-    assert(first.value.judged === "accepted", "the first record is accepted");
-    expect(authorised({ request: REQUEST, documents: first.value.edit.write })).toEqual({
+    expect(
+      authorisingOf({
+        request: REQUEST,
+        documents: [WEBHOOK_DOCUMENT],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerRefusing([{ place: OTHER_PLACE, refusals: [{ kind: "duplicate", of: ADDED_PLACE }] }]),
+        recordsEditor: editorAdding({ added: { outcome: "ok", value: [BOTH_DOCUMENT] }, place: OTHER_PLACE }),
+      }),
+    ).toEqual({
       outcome: "ok",
       value: { judged: "already-held", heldIn: RECORDS_FILE },
     });
   });
 
-  it("accepts a case or owes the catalogue does not list, since an authorised location is never refused for it", () => {
-    expect(authorised({ request: { ...REQUEST, case: "no-such-case", owes: "nothing" }, documents: NO_DOCUMENTS })).toMatchObject({ outcome: "ok", value: { judged: "accepted" } });
-  });
-
-  it("refuses a why chain the why-chain contract refuses, and writes nothing", () => {
-    expect(authorised({ request: { ...REQUEST, rootCause: "no" }, documents: NO_DOCUMENTS })).toEqual({
+  it("accepts the added record when the reading refuses only a record at another place", () => {
+    expect(
+      authorisingOf({
+        request: REQUEST,
+        documents: [],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerRefusing([{ place: OTHER_PLACE, refusals: [{ kind: "unknown-symptom", symptom: "no-such-symptom" }] }]),
+        recordsEditor: EDITOR_WRITING_WEBHOOK,
+      }),
+    ).toEqual({
       outcome: "ok",
-      value: { judged: "refused", refusals: [{ kind: "form-refused", issues: expect.any(Array) }] },
+      value: { judged: "accepted", edit: { write: [WEBHOOK_DOCUMENT], remove: [] } },
     });
   });
 
-  it("refuses a chain of fewer than five whys", () => {
-    expect(authorised({ request: { ...REQUEST, whys: [FIRST_WHY, SECOND_WHY, THIRD_WHY, FOURTH_WHY] }, documents: NO_DOCUMENTS })).toMatchObject({
+  it("refuses a why chain the reading refuses at the added record's place, and writes nothing", () => {
+    expect(
+      authorisingOf({
+        request: { ...REQUEST, rootCause: "no" },
+        documents: [],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerRefusing([{ place: ADDED_PLACE, refusals: [{ kind: "form-refused", issues: SHORT_ROOT_CAUSE_ISSUES }] }]),
+        recordsEditor: EDITOR_WRITING_WEBHOOK,
+      }),
+    ).toEqual({
       outcome: "ok",
-      value: { judged: "refused", refusals: [{ kind: "form-refused" }] },
+      value: { judged: "refused", refusals: [{ kind: "form-refused", issues: SHORT_ROOT_CAUSE_ISSUES }] },
     });
   });
 
-  it("refuses a symptom the catalogue does not name", () => {
-    expect(authorised({ request: { ...REQUEST, answers: "no-such-symptom" }, documents: NO_DOCUMENTS })).toEqual({
+  it("refuses with every refusal at the added record's place, a duplicate among them included", () => {
+    expect(
+      authorisingOf({
+        request: REQUEST,
+        documents: [],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerRefusing([
+          { place: ADDED_PLACE, refusals: [{ kind: "duplicate", of: OTHER_PLACE }, { kind: "form-refused", issues: SHORT_ROOT_CAUSE_ISSUES }] },
+        ]),
+        recordsEditor: EDITOR_WRITING_WEBHOOK,
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: { judged: "refused", refusals: [{ kind: "duplicate", of: OTHER_PLACE }, { kind: "form-refused", issues: SHORT_ROOT_CAUSE_ISSUES }] },
+    });
+  });
+
+  it("refuses a symptom the reading does not find in the catalogue", () => {
+    expect(
+      authorisingOf({
+        request: { ...REQUEST, answers: "no-such-symptom" },
+        documents: [],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: readerRefusing([{ place: ADDED_PLACE, refusals: [{ kind: "unknown-symptom", symptom: "no-such-symptom" }] }]),
+        recordsEditor: EDITOR_WRITING_WEBHOOK,
+      }),
+    ).toEqual({
       outcome: "ok",
       value: { judged: "refused", refusals: [{ kind: "unknown-symptom", symptom: "no-such-symptom" }] },
     });
   });
 
-  it("refuses a symptom whose name cannot name a records file", () => {
-    expect(authorised({ request: { ...REQUEST, answers: "Not A Name" }, documents: NO_DOCUMENTS })).toEqual({
+  it("refuses a symptom whose name cannot name a records file, and edits nothing", () => {
+    const recordsEditor = editorAdding({ added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] }, place: ADDED_PLACE });
+    expect(
+      authorisingOf({ request: { ...REQUEST, answers: "Not A Name" }, documents: [], catalogue: REPORT_CATALOGUE, recordsReader: READER_REFUSING_NOTHING, recordsEditor }),
+    ).toEqual({
       outcome: "ok",
       value: { judged: "refused", refusals: [{ kind: "not-a-records-name", name: "Not A Name" }] },
     });
+    expect(recordsEditor.documentsWithAdded).not.toHaveBeenCalled();
   });
 
   it("fails, rather than rewrite, when a records file it would add to is not a records document", () => {
-    expect(authorised({ request: REQUEST, documents: [{ file: RECORDS_FILE, document: { records: [] } }] })).toMatchObject({
-      outcome: "failed",
-      error: { kind: "records-documents" },
-    });
+    expect(
+      authorisingOf({
+        request: REQUEST,
+        documents: [{ file: RECORDS_FILE, document: { records: [] } }],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: READER_REFUSING_NOTHING,
+        recordsEditor: editorAdding({ added: { outcome: "failed", error: EDIT_FAILURE }, place: ADDED_PLACE }),
+      }),
+    ).toEqual({ outcome: "failed", error: EDIT_FAILURE });
+  });
+
+  it("fails with the reading's refusals when the documents it would write cannot be read as records", () => {
+    expect(
+      authorisingOf({
+        request: REQUEST,
+        documents: [],
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: { recordsReadingOf: vi.fn<RecordsReader["recordsReadingOf"]>().mockReturnValue({ outcome: "failed", error: NOT_A_RECORDS_DOCUMENT }) },
+        recordsEditor: EDITOR_WRITING_WEBHOOK,
+      }),
+    ).toEqual({ outcome: "failed", error: { kind: "records-documents", refusals: NOT_A_RECORDS_DOCUMENT } });
   });
 });

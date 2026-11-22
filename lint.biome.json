@@ -15,6 +15,6 @@
     }
   },
   "files": {
-    "includes": ["**", "!node_modules", "!dist", "!artefacts", "!src/application/run/check/cd1-exempted/src", "!src/application/run/check/cd1-cascade/src"]
+    "includes": ["**", "!node_modules", "!dist", "!artefacts", "!delivery/adopter-repositories/cd1-exempted/src", "!delivery/adopter-repositories/cd1-cascade/src"]
   }
 }

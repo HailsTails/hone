@@ -6,21 +6,37 @@ import type { ProjectionWrite } from "../../../domain/runner/runner-result-types
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
+import type { EnginePort } from "../../ports/engine/engine-port.ts";
+import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import { type VersionOneProject, versionOneProjectionsOfRepository } from "./version-one-projections.ts";
-import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
 import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
-import { loadFailureDetail } from "../../../infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
-const path = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
+const path: PathPort = {
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/eslint.config.mjs"),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
+};
+
+const UNUSED_ENGINE: EnginePort = {
+  load: vi.fn<EnginePort["load"]>(),
+  run: { checks: vi.fn<EnginePort["run"]["checks"]>(), withRecords: vi.fn<EnginePort["run"]["withRecords"]>() },
+  project: { checks: vi.fn<EnginePort["project"]["checks"]>(), withRecords: vi.fn<EnginePort["project"]["withRecords"]>() },
+  conform: vi.fn<EnginePort["conform"]>(),
+};
+
+const loadFailureDetail: LoadFailureDetail = () => "git-failed git ls-files: not a git repository";
 
 const PROJECTION = repoPathSchema.parse("disciplines.eslint.mjs");
 
@@ -35,9 +51,9 @@ const CHECK: CheckRequest = {
   installRoot: absolutePathSchema.parse("/install"),
   moduleExtension: ".ts",
   baseRevision: undefined,
-  assessment: DEFAULT_ASSESSMENT,
+  assessment: { forfeiture: "this-run" },
   fileText: { read: vi.fn<FileTextPort["read"]>(), exists: vi.fn<FileTextPort["exists"]>() },
-  engine: createDefaultEnginePort({}),
+  engine: UNUSED_ENGINE,
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   path,
   git: {
