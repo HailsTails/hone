@@ -106,10 +106,10 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
     expect(readAfter().runSettings).toEqual(readBeforeRunSettings());
   });
 
-  it("offers as available every check of a listed symptom that is listed nowhere, and names nothing uncovered", () => {
+  it("offers as available every check of a listed symptom that is listed nowhere, and leaves the selection without an uncovered field", () => {
     const after = readAfter();
-    expect({ uncovered: after.selection.selection.uncovered, available: after.available }).toMatchObject({
-      uncovered: [],
+    expect(after.selection.selection).not.toHaveProperty("uncovered");
+    expect({ available: after.available }).toMatchObject({
       available: [
         { name: "cast-to-any", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") } },
         { name: "stub-implementation", clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-25"), clause: clauseIdOf("dependency-isolation") } },

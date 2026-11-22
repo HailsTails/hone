@@ -187,7 +187,6 @@ const debtAt = (request: { readonly file: Debt["file"]; readonly index: number }
 
 const SELECTS_CAST: RunReportRequest["selection"] = {
   selected: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, exceptions: "allowed" }],
-  uncovered: [],
   notAdopted: [],
   notRun: [],
   editions: [],
@@ -213,7 +212,7 @@ const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set()
 const REQUEST: RunReportRequest = {
   available: [],
   catalogue: REPORT_CATALOGUE,
-  selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+  selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
   excluded: [],
   notes: [],
   records: NO_RECORDS,
@@ -469,7 +468,6 @@ describe("runReportOf, the selection and the settings", () => {
         ...REQUEST,
         selection: {
           selected: [],
-          uncovered: [],
           notAdopted: [CAST_EXPRESSIONS],
           notRun: [TEST_BODY_LOGIC],
           editions: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, edition: editionOf("1"), latest: editionOf("2") }],

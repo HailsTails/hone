@@ -145,7 +145,6 @@ describe("readSettings", () => {
         selection: {
           selection: {
             selected: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, exceptions: "allowed" }],
-            uncovered: [],
             notAdopted: [TEST_BODY_CLAUSE],
             notRun: [],
             editions: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, edition: SECOND, latest: SECOND }],

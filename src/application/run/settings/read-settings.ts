@@ -1,7 +1,7 @@
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { VersionTwoReportOutput } from "../../../domain/settings/report-output.ts";
 import type { RunSettings } from "../../../domain/settings/run-settings.ts";
-import type { ClauseBinding, ClauseEditionReading, ClauseRoot, SelectedClause, SelectionReading } from "../../../domain/settings/selection/selection.ts";
+import type { ClauseBinding, ClauseEditionReading, ClauseRoot, SelectedClause, VersionTwoSelectionReading } from "../../../domain/settings/selection/selection.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { ClauseEditions } from "../../../domain/rule-set/edition-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
@@ -21,7 +21,7 @@ import type { SettingsFileFormat } from "../../ports/settings/settings-file-form
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
 export type SettingsReading = {
-  readonly selection: SelectionReading;
+  readonly selection: VersionTwoSelectionReading;
   readonly runSettings: RunSettings<VersionTwoReportOutput>;
   readonly eslintConfigLookup: EslintConfigLookupChoice;
   readonly conventions: Conventions;
@@ -156,7 +156,6 @@ const settingsReadingOf = (request: {
   selection: {
     selection: {
       selected: request.bound.map((bound) => bound.selected),
-      uncovered: [],
       notAdopted: clausesIn({ clauses: request.clauses, state: "not-adopted" }),
       notRun: clausesIn({ clauses: request.clauses, state: "not-run" }),
       editions: editionReadingsOf({ bound: request.bound }),

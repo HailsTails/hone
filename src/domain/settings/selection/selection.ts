@@ -24,6 +24,8 @@ export type Selection = {
   readonly editions: readonly ClauseEditionReading[];
 };
 
+export type VersionTwoSelection = Omit<Selection, "uncovered">;
+
 export type ClauseRoot = {
   readonly clause: ClauseAddress;
   readonly ruleSetRoot: AbsolutePath;
@@ -43,3 +45,5 @@ export type SelectionReading = {
   readonly eslintConfigRoots: readonly RepoPath[];
   readonly fileExceptionWhyChains: FileExceptionWhyChains;
 };
+
+export type VersionTwoSelectionReading = Omit<SelectionReading, "selection"> & { readonly selection: VersionTwoSelection };

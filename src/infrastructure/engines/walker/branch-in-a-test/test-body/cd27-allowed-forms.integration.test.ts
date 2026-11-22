@@ -21,7 +21,6 @@ import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../../runner/toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "../../runner/runner.ts";
-import { TEST_BODY_REMEDIES, TEST_BODY_SECTIONS } from "./test-body-logic.ts";
 import * as eslintRunnerModule from "../../../eslint/runner/runner.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 
@@ -292,10 +291,42 @@ const REPO_ROOT = createDefaultPathPort({}).join({ segments: [import.meta.dirnam
 
 const checkItemTextOf = (request: { readonly page: string }): string => {
   const read = createDefaultFileTextPort({}).read({ path: createDefaultPathPort({}).join({ segments: [REPO_ROOT, "rules", "typescript", "symptoms", request.page] }) });
-  return read.outcome === "ok" ? read.value : "";
+  assert(read.outcome === "ok", `reads the check item ${request.page}`);
+  return read.value;
 };
 
-const CHECK_ITEM_PAGES: readonly string[] = [...new Set(TEST_BODY_REMEDIES.map((remedy) => remedy.page))];
+const CHECK_ITEM_PAGES = [
+  {
+    page: "branch-in-a-test/test-body.md",
+    sections: [
+      "branching-with-if",
+      "a-ternary",
+      "a-short-circuit",
+      "an-optional-chain-after-an-index",
+      "an-optional-chain-on-a-mock-call",
+      "an-optional-chain-on-a-mock-result",
+      "an-optional-chain-on-a-property",
+      "an-optional-call",
+      "a-switch",
+    ],
+  },
+  { page: "throw-or-catch-in-a-test/try-block.md", sections: ["a-try-block"] },
+  { page: "rebinding/test-body.md", sections: ["a-let"] },
+  {
+    page: "computed-value-in-a-test/test-body.md",
+    sections: [
+      "a-method-that-picks-or-tests-an-element",
+      "a-method-that-computes-a-value",
+      "a-method-that-mutates",
+      "merging-objects",
+      "building-an-object-from-entries",
+      "building-an-array-from-a-length",
+      "a-math-call",
+    ],
+  },
+  { page: "text-past-its-reader/test-body.md", sections: ["serialising-or-parsing-json"] },
+  { page: "double-with-a-body/logic-in-a-passed-function.md", sections: ["logic-inside-a-function-the-test-passes-on"] },
+];
 
 const heldNames = readInstalledNames({ fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), installRoot: RULE_SET_ROOT });
 
@@ -321,7 +352,15 @@ const CLAUSES_THAT_REACH_TEST_FILES = {
   eslint: ["CD-1#explicit-any", "CD-2#non-null-assertions", "CD-10#throw-only-error", "CD-14#class-syntax", "CD-40#parameter-count", "CD-41#function-length"],
 };
 
-const SECTIONS = CHECK_ITEM_PAGES.flatMap((page) => allowedFormSectionsOf({ page: checkItemTextOf({ page }) }).map((section) => ({ ...section, page })));
+const checkItems = CHECK_ITEM_PAGES.map(({ page, sections }) => ({
+  page,
+  expected: sections,
+  actual: allowedFormSectionsOf({ page: checkItemTextOf({ page }) }),
+}));
+
+const SECTIONS = checkItems.flatMap((item) => item.actual);
+
+const orderedSections = checkItems.map(({ page, expected, actual }) => ({ page, expected, actual: actual.map(({ section }) => section) }));
 
 const BLOCKS = allowedBlocksOf({ sections: SECTIONS });
 
@@ -364,12 +403,8 @@ describe("the allowed-form compilation over written-out forms, so it can fail", 
 });
 
 describe("the check items' Allowed forms in a test", () => {
-  it("has as many sections as there are fixes a CD-27#test-body-logic finding names, each shown below on its check item", () => {
-    expect(SECTIONS).toHaveLength(TEST_BODY_SECTIONS.length);
-  });
-
-  it.each(TEST_BODY_REMEDIES)("shows $section on $page, the check item its fix names", ({ page, section }) => {
-    expect(SECTIONS).toContainEqual(expect.objectContaining({ page, section }));
+  it.each(orderedSections)("lists every allowed form on $page in order", ({ actual, expected }) => {
+    expect(actual).toEqual(expected);
   });
 
   it("holds the forms to every audit and ESLint clause, among them those that reach a test file", () => {

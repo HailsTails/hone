@@ -1,4 +1,4 @@
-import type { Selection } from "../../domain/settings/selection/selection.ts";
+import type { VersionTwoSelection } from "../../domain/settings/selection/selection.ts";
 import type { Finding } from "../../domain/finding/governance.ts";
 import { type Answering, answerFindings, type RaisedFinding } from "../../domain/records/answering/answering.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
@@ -19,7 +19,7 @@ import { checksOfClauses, editionsOf } from "../../domain/settings/selection/sel
 
 export type RunReportRequest = {
   readonly catalogue: SymptomCatalogue;
-  readonly selection: Selection;
+  readonly selection: VersionTwoSelection;
   readonly excluded: readonly RepoPath[];
   readonly notes: readonly SettingsNote[];
   readonly records: RecordsReading;

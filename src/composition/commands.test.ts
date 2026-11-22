@@ -326,7 +326,7 @@ const FILE_A = repoPathOf("src/a.ts");
 const settingsWith = (request: { readonly forfeiture: ForfeitureAssessment }): SettingsReading => ({
   available: [],
   selection: {
-    selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
     bindings: [],
     clauseRoots: [],
     excluded: [],

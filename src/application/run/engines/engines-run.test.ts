@@ -100,7 +100,7 @@ const bindingOn = (request: { readonly mechanism: EngineId }): ClauseBinding => 
 const settingsBinding = (request: { readonly bindings: readonly ClauseBinding[]; readonly lookup: SettingsReading["eslintConfigLookup"] }): SettingsReading => ({
   available: [],
   selection: {
-    selection: { selected: [], uncovered: [], notAdopted: [], notRun: [], editions: [] },
+    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
     bindings: request.bindings,
     clauseRoots: [],
     excluded: [],
