@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../ports/git-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
@@ -19,7 +19,7 @@ const WEB_X = repoPathSchema.parse("packages/web/x.ts");
 
 const DIST = repoPathSchema.parse("dist");
 
-const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
+const POSIX: Pick<PathPort, "join"> = { join: ({ segments }) => segments.join("/") };
 
 const trackedByGit = (request: { readonly tracked: readonly RepoPath[] }): Pick<GitPort, "trackedPaths"> => ({
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: request.tracked }),

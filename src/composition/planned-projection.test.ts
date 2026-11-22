@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
-import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
-import { plannedProjectionOf } from "./planned-projection.ts";
-import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
-import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
-import { recordsReader } from "../../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { createSymptomCatalogueRepository } from "../../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
-import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
+import type { SettingsFile } from "../domain/settings/settings-file.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import { plannedProjectionOf } from "../application/upgrade/command/planned-projection.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
+import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
+import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 
 const SETTINGS: SettingsFile = {
   exclude: [],

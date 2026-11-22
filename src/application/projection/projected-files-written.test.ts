@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { projectedFilesWrittenOf } from "./projected-files-written.ts";
@@ -10,7 +10,7 @@ const REPO = absolutePathSchema.parse("/repo");
 
 const FILE: ProjectedFile = { file: repoPathSchema.parse("hone.eslint.mjs"), text: "export default [];\n" };
 
-const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/work" });
+const POSIX_PATH: Pick<PathPort, "join"> = { join: ({ segments }) => segments.join("/") };
 
 const fileTextAbsent = (): FileTextPort => ({
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),

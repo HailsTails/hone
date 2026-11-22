@@ -8,8 +8,7 @@ import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.
 import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { PathPort } from "../../ports/host/path-port.ts";
+import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
@@ -26,7 +25,7 @@ import type { ProjectionFilesOf } from "./upgrade-plan.ts";
 import type { VersionOneReading } from "../../ports/upgrade/version-one-reading.ts";
 import type { VersionOneProjection } from "./team-config-finder.ts";
 import type { VersionOneProjectionsOf, VersionOneProjectionsReading } from "./version-one-projections-reading.ts";
-import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -216,6 +215,33 @@ const LOOP_FINDING: Finding = {
 
 const ok = { outcome: "ok", value: undefined } as const;
 
+const PARENTS = new Map<string, string>([
+  ["/repo/hone-records", "/repo"],
+  ["/repo/hone-records/debt", "/repo/hone-records"],
+  ["/repo/hone-records/debt/loop-keyword.json", "/repo/hone-records/debt"],
+  ["/repo/hone.config.json", "/repo"],
+  ["/repo/hone.eslint.mjs", "/repo"],
+  ["/repo", "/"],
+]);
+
+const RELATIVE_LOCATIONS = new Map<string, RelativeLocation>([
+  ["/repo /repo/discipline-exceptions.json", { relation: "within-root", path: "discipline-exceptions.json" }],
+  ["/repo/discipline-exceptions /repo/discipline-exceptions/cd-15.json", { relation: "within-root", path: "cd-15.json" }],
+  ["/repo/discipline-exceptions /repo/tools/x.json", { relation: "within-root", path: "../tools/x.json" }],
+]);
+
+const POSIX_PATH: PathPort = {
+  join: ({ segments }) => segments.join("/"),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: ({ from, to }) => RELATIVE_LOCATIONS.get(`${from} ${to}`) ?? { relation: "different-root" },
+  directoryOf: ({ path }) => PARENTS.get(path) ?? path,
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
+};
+
+const SETTINGS_FORMAT: Pick<SettingsFileFormat, "textOf"> = { textOf: () => "the settings format's text" };
+
 type MockedPorts = {
   readonly fileText: { readonly read: Mock<FileTextPort["read"]>; readonly exists: Mock<FileTextPort["exists"]>; readonly write: Mock<FileTextPort["write"]> };
   readonly fileCreation: { readonly createNew: Mock<FileCreationPort["createNew"]> };
@@ -251,7 +277,7 @@ const portsOver = (request: { readonly kindOf: Mock<EntryKindPort["kindOf"]> }):
   directory: { list: vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>().mockReturnValue(ok) },
   directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(ok) },
   entryKind: { kindOf: request.kindOf },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+  path: POSIX_PATH,
 });
 
 type Doubles = {
@@ -289,7 +315,7 @@ const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofReques
   catalogues: CATALOGUES,
   repoRoot: REPO,
   projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({ outcome: "ok", value: { files: [ROOT_PROJECTION_FILE], projections: [ROOT_PROJECTION_FILE] } }),
-  settingsFormat: SETTINGS_FILE_FORMAT,
+  settingsFormat: SETTINGS_FORMAT,
   versionOneProjectionsOf: request.doubles.projections,
 });
 
@@ -352,7 +378,7 @@ const PLANNING_THE_WRITES = [
 const WRITING = [
   { port: "create", arguments: [{ path: "/repo/hone-records" }] },
   { port: "create", arguments: [{ path: "/repo/hone-records/debt" }] },
-  { port: "createNew", arguments: [{ path: SETTINGS_PATH, text: expect.any(String) }] },
+  { port: "createNew", arguments: [{ path: SETTINGS_PATH, text: "the settings format's text" }] },
   { port: "createNew", arguments: [{ path: DEBT_PATH, text: expect.any(String) }] },
   { port: "createNew", arguments: [{ path: PROJECTION_PATH, text: "projection text" }] },
   { port: "write", arguments: [{ path: CONFIG_PATH, text: 'import disciplines from "./hone.eslint.mjs";\nexport default [...disciplines];\n' }] },

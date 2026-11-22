@@ -1,14 +1,14 @@
 import { assert, describe, expect, it } from "vitest";
-import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { WhyChain } from "../../domain/records/why-chain.ts";
-import { authorisingOf } from "./authorising.ts";
-import { recordsReader } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
-import type { AuthoriseRequest } from "../ports/authorising.ts";
-import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
+import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import type { WhyChain } from "../domain/records/why-chain.ts";
+import { authorisingOf } from "../application/records/authorising.ts";
+import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
+import type { AuthoriseRequest } from "../application/ports/authorising.ts";
+import type { RecordsDocument } from "../domain/records/hone-records/hone-record.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [

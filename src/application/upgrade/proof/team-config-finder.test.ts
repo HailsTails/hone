@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { teamConfigsOf, type TeamConfigsRequest } from "./team-config-finder.ts";
@@ -16,7 +15,7 @@ const UNRELATED = "export default [];\n";
 const requestOver = (overrides: Partial<TeamConfigsRequest>): TeamConfigsRequest => ({
   repoRoot: absolutePathSchema.parse("/repo"),
   fileText: { read: vi.fn<FileTextPort["read"]>() },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+  path: { join: ({ segments }) => segments.join("/") },
   trackedPaths: [],
   projections: [PROJECTION],
   ...overrides,

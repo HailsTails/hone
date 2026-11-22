@@ -2,7 +2,7 @@ import { describe, expect, it, type Mock, vi } from "vitest";
 import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
 import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
+import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { removedVersionOneFiles, type VersionOneRemoval, type VersionOneRemovalPorts } from "./version-one-removal.ts";
 
@@ -41,7 +41,37 @@ const REMOVAL: VersionOneRemoval = { recordsFiles: [CARVE_OUT_FILE, AUTHORISED_F
 
 const SLICE = absolutePathSchema.parse("/repo/packages/a/disciplines.eslint.mjs");
 
+const DIRECT = absolutePathSchema.parse("/repo/discipline-exceptions/records.json");
+
+const SINGLE = absolutePathSchema.parse("/repo/discipline-exceptions.json");
+
+const REPOSITORY = absolutePathSchema.parse("/repo");
+
+const OUTSIDE = absolutePathSchema.parse("/repo/tools/x.json");
+
+const OTHER_CASE = absolutePathSchema.parse("/repo/Discipline-Exceptions/file-carve-outs/cd-15.json");
+
 const ok = { outcome: "ok", value: undefined } as const;
+
+const RELATIVE_LOCATIONS = new Map<string, RelativeLocation>([
+  [`${ROOT} ${CARVE_OUT_FILE}`, { relation: "within-root", path: "file-carve-outs/cd-15.json" }],
+  [`${ROOT} ${AUTHORISED_FILE}`, { relation: "within-root", path: "authorised-locations/cd-15.json" }],
+  [`${ROOT} ${DIRECT}`, { relation: "within-root", path: "records.json" }],
+  [`${REPOSITORY} ${SINGLE}`, { relation: "within-root", path: "discipline-exceptions.json" }],
+  [`${ROOT} ${OUTSIDE}`, { relation: "within-root", path: "../tools/x.json" }],
+  [`${ROOT} ${OTHER_CASE}`, { relation: "within-root", path: "../Discipline-Exceptions/file-carve-outs/cd-15.json" }],
+  [`${ROOT} ${ROOT}`, { relation: "within-root", path: "" }],
+]);
+
+const PATH: PathPort = {
+  join: ({ segments }) => segments.join("/"),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: ({ from, to }) => RELATIVE_LOCATIONS.get(`${from} ${to}`) ?? { relation: "different-root" },
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
+};
 
 type MockedPorts = {
   readonly fileRemoval: { readonly remove: Mock<FileRemovalPort["remove"]> };
@@ -54,7 +84,7 @@ const portsOver = (): MockedPorts => ({
   fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>().mockReturnValue(ok) },
   directory: { list: vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>() },
   directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(ok) },
-  path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+  path: PATH,
 });
 
 const sequenceOf = (request: { readonly ports: MockedPorts }) =>
@@ -134,23 +164,20 @@ describe("removedVersionOneFiles", () => {
 
   it("tries only the records folder for a records file directly under it", () => {
     const ports = portsOver();
-    const direct = absolutePathSchema.parse("/repo/discipline-exceptions/records.json");
-    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [direct], projections: [] } })).toEqual({
+    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [DIRECT], projections: [] } })).toEqual({
       outcome: "ok",
-      value: { files: [direct, SETTINGS], folders: [ROOT] },
+      value: { files: [DIRECT, SETTINGS], folders: [ROOT] },
     });
-    expect(sequenceOf({ ports })).toEqual([{ port: "remove", arguments: [{ path: direct }] }, ...REMOVING_ROOT, REMOVING_SETTINGS]);
+    expect(sequenceOf({ ports })).toEqual([{ port: "remove", arguments: [{ path: DIRECT }] }, ...REMOVING_ROOT, REMOVING_SETTINGS]);
   });
 
   it("removes a records file at the repository root and no folder, since the root is not a records folder", () => {
     const ports = portsOver();
-    const single = absolutePathSchema.parse("/repo/discipline-exceptions.json");
-    const repository = absolutePathSchema.parse("/repo");
-    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [single], recordsRoot: { kind: "repository", path: repository } } })).toEqual({
+    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [SINGLE], recordsRoot: { kind: "repository", path: REPOSITORY } } })).toEqual({
       outcome: "ok",
-      value: { files: [single, PROJECTION, SETTINGS], folders: [] },
+      value: { files: [SINGLE, PROJECTION, SETTINGS], folders: [] },
     });
-    expect(sequenceOf({ ports })).toEqual([{ port: "remove", arguments: [{ path: single }] }, REMOVING_PROJECTION, REMOVING_SETTINGS]);
+    expect(sequenceOf({ ports })).toEqual([{ port: "remove", arguments: [{ path: SINGLE }] }, REMOVING_PROJECTION, REMOVING_SETTINGS]);
   });
 
   it("removes every projection, the root one and a slice, after the records and before the settings file", () => {
@@ -173,20 +200,18 @@ describe("removedVersionOneFiles", () => {
 
   it("refuses, before removing anything, a records file that is not under the records folder", () => {
     const ports = portsOver();
-    const outside = absolutePathSchema.parse("/repo/tools/x.json");
-    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [CARVE_OUT_FILE, outside] } })).toEqual({
+    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [CARVE_OUT_FILE, OUTSIDE] } })).toEqual({
       outcome: "failed",
-      error: { kind: "records-file-outside-root", path: outside, root: ROOT },
+      error: { kind: "records-file-outside-root", path: OUTSIDE, root: ROOT },
     });
     expect(sequenceOf({ ports })).toEqual([]);
   });
 
   it("refuses a records file whose path differs from the records folder's only in case", () => {
     const ports = portsOver();
-    const otherCase = absolutePathSchema.parse("/repo/Discipline-Exceptions/file-carve-outs/cd-15.json");
-    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [otherCase] } })).toEqual({
+    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [OTHER_CASE] } })).toEqual({
       outcome: "failed",
-      error: { kind: "records-file-outside-root", path: otherCase, root: ROOT },
+      error: { kind: "records-file-outside-root", path: OTHER_CASE, root: ROOT },
     });
     expect(sequenceOf({ ports })).toEqual([]);
   });

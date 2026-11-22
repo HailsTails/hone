@@ -1,40 +1,40 @@
 import { assert, describe, expect, it, type MockInstance, vi } from "vitest";
-import { runCheck } from "./run-check.ts";
-import type { CheckReport } from "../../../domain/report/check-report.ts";
-import type { Result } from "../../../domain/result.ts";
-import { checkCommandOutcome } from "../../../infrastructure/command-line/outcomes/check-command-outcome.ts";
-import type { LoadFailure } from "../../../domain/report/load-failure.ts";
-import { createExceptionRepository } from "../../../infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
-import { createSelectionRepository } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
-import type { EntryKindPort } from "../../ports/file-system/entry-kind-port.ts";
-import type { ModuleExtension } from "../../ports/host/module-extension.ts";
-import type { ExitCode } from "../../ports/host/process-port.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
-import { createEslintPort } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { runProject } from "../../projection/run-project.ts";
-import { createDefaultFileRemovalPort } from "../../../infrastructure/node/file-system/file-removal-port.ts";
-import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../ports/git-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../infrastructure/node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../ports/host/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
-import type { PathPort } from "../../ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../../infrastructure/hone-config-file/assessment.ts";
-import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import { createEslintRunner } from "../../../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createWalkerRunner } from "../../../infrastructure/engines/audit/runner/create-walker-runner.ts";
-import { createDefaultEnginePort } from "../../../infrastructure/engines/protocol/engine-port.ts";
-import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../../ports/records/exception-entries.ts";
-import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../../../infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../../infrastructure/command-line/installation/shown-path.ts";
+import { runCheck } from "../application/run/check/run-check.ts";
+import type { CheckReport } from "../domain/report/check-report.ts";
+import type { Result } from "../domain/result.ts";
+import { checkCommandOutcome } from "../infrastructure/command-line/outcomes/check-command-outcome.ts";
+import type { LoadFailure } from "../domain/report/load-failure.ts";
+import { createExceptionRepository } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import type { ExceptionRepository } from "../application/ports/records/exception-repository.ts";
+import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import type { SelectionRepository } from "../application/ports/selection/selection-repository.ts";
+import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
+import type { ModuleExtension } from "../application/ports/host/module-extension.ts";
+import type { ExitCode } from "../application/ports/host/process-port.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { runProject } from "../application/projection/run-project.ts";
+import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import type { GitPort } from "../application/ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import type { PathPort } from "../application/ports/host/path-port.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { DEFAULT_ASSESSMENT } from "../infrastructure/hone-config-file/assessment.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../domain/repository/repo-path-types.ts";
+import { createEslintRunner } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createWalkerRunner } from "../infrastructure/engines/audit/runner/create-walker-runner.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import type { SelectionRepositoryOf } from "../application/ports/selection/selection-repository.ts";
+import type { ExceptionEntryParser } from "../application/ports/records/exception-entries.ts";
+import type { ShownPathOf } from "../application/ports/installation/shown-path-of.ts";
+import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
 
 const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
 
@@ -115,7 +115,7 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: `${import.meta.dirname}/../../../..` });
+const INSTALL_ROOT = resolvedPath({ path: `${import.meta.dirname}/../..` });
 
 const loadedParsePort = await loadParsePort({ peers: defaultTypeScriptPeers({ installRoot: INSTALL_ROOT, installForm: "source" }) });
 assert(loadedParsePort.outcome === "ok", "the typescript line loads from the development install");
@@ -129,9 +129,9 @@ assert(/^10\./.test(loadedEslintToolchain.value.eslintVersion), `the eslint-10 t
 
 const defaultEslintPort = createEslintPort({ toolchain: loadedEslintToolchain.value });
 
-const WALKER_CONSUMER =resolvedPath({ path: `${import.meta.dirname}/../../../../delivery/install-proof/consumer-proof/audit` });
+const WALKER_CONSUMER =resolvedPath({ path: `${import.meta.dirname}/../../delivery/install-proof/consumer-proof/audit` });
 
-const ESLINT_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/../../../../delivery/install-proof/consumer-proof/eslint` });
+const ESLINT_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/../../delivery/install-proof/consumer-proof/eslint` });
 
 const INSTALLED_SOURCE = String.raw`(?!(?:[^/]*\/)*tests\/)(?!.*\.test\.ts$).*`;
 

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../../infrastructure/node/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
@@ -9,9 +8,6 @@ import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo
 import type { Result } from "../../../domain/result.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { packageLinkOf } from "../../../infrastructure/command-line/installation/package-link.ts";
-import { shownPathOf } from "../../../infrastructure/command-line/installation/shown-path.ts";
 import { clauseReadingsOf } from "./clause-readings.ts";
 
 type FakeFile = {
@@ -43,20 +39,24 @@ const filesOver = (files: Readonly<Record<string, FakeFile>>): FileTextPort => (
   write: vi.fn<FileTextPort["write"]>(),
 });
 
-type LinkedRequest = {
-  readonly path: PathPort;
-  readonly fileText: Pick<FileTextPort, "read" | "exists">;
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-};
+const pathJoinedBy = (separator: string): PathPort => ({
+  join: ({ segments }) => segments.join(separator),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
+});
 
-const shownThroughLinkOf =
-  (request: LinkedRequest): ShownPathOf =>
+const POSIX = pathJoinedBy("/");
+
+const WINDOWS = pathJoinedBy("\\");
+
+const shownPathsOf =
+  (shown: ReadonlyMap<string, string>): ShownPathOf =>
   ({ target }) =>
-    shownPathOf({ path: request.path, repoRoot: request.repoRoot, link: packageLinkOf(request), target });
-
-const readingsThroughLinkOf = (request: Omit<Parameters<typeof clauseReadingsOf>[0], "shownPathOf">) =>
-  clauseReadingsOf({ ...request, shownPathOf: shownThroughLinkOf(request) });
+    shown.get(target) ?? target;
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 
@@ -71,6 +71,10 @@ const TEAM_CLAUSE = clauseAddressSchema.parse("team/TM-1#no-tmp-files");
 const LOOPS_PAGE = "/repo/node_modules/@hailstails/hone/rules/CD-15/README.md";
 
 const CLASS_SYNTAX_PAGE = "/repo/node_modules/@hailstails/hone/rules/CD-14/README.md";
+
+const TEAM_PAGE = "/repo/team-rules/rules/TM-1/README.md";
+
+const GUIDE_PAGE = "/repo/node_modules/@hailstails/hone/ADOPTING.md";
 
 const SHIPPED_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
 
@@ -95,19 +99,29 @@ const SHIPPED_PAGES: Readonly<Record<string, FakeFile>> = {
 
 const INSTALL_ROOT = absolutePathSchema.parse("/repo/node_modules/@hailstails/hone");
 
+const LOOPS_PAGE_TEXT = "node_modules/@hailstails/hone/rules/CD-15/README.md";
+
+const GUIDE_TEXT = "node_modules/@hailstails/hone/ADOPTING.md";
+
+const SHOWN_IN_REPOSITORY = shownPathsOf(
+  new Map([
+    [LOOPS_PAGE, LOOPS_PAGE_TEXT],
+    [CLASS_SYNTAX_PAGE, "node_modules/@hailstails/hone/rules/CD-14/README.md"],
+    [TEAM_PAGE, "team-rules/rules/TM-1/README.md"],
+    [GUIDE_PAGE, GUIDE_TEXT],
+  ]),
+);
+
 const readingsOver = (request: { readonly files: FileTextPort; readonly findings: readonly Finding[] }) =>
-  readingsThroughLinkOf({
+  clauseReadingsOf({
     findings: request.findings,
     clauseRoots: CLAUSE_ROOTS,
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
     fileText: request.files,
-    path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    path: POSIX,
+    shownPathOf: SHOWN_IN_REPOSITORY,
   });
-
-const LOOPS_PAGE_TEXT = "node_modules/@hailstails/hone/rules/CD-15/README.md";
-
-const GUIDE_TEXT = "node_modules/@hailstails/hone/ADOPTING.md";
 
 const loopsReading = (request: { readonly assessmentSection: "present" | "not-assessed" | "unread" }) => ({
   kind: "clause",
@@ -215,15 +229,21 @@ describe("clauseReadingsOf pointing at the rule page", () => {
     ]);
   });
 
-  it("names the page and the guide by their absolute paths, with forward slashes, when they are on another root than the repository", () => {
+  it("names the page and the guide as the shown path gives them when they are on another root than the repository", () => {
     expect(
-      readingsThroughLinkOf({
+      clauseReadingsOf({
         findings: ONE_LOOPS_FINDING,
         clauseRoots: [{ clause: LOOPS, ruleSetRoot: absolutePathSchema.parse("D:\\hone") }],
         repoRoot: absolutePathSchema.parse("C:\\repo"),
         installRoot: absolutePathSchema.parse("D:\\hone"),
         fileText: filesOver({ "D:\\hone\\rules\\CD-15\\README.md": presentFile({ text: "# CD-15\n" }) }),
-        path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }),
+        path: WINDOWS,
+        shownPathOf: shownPathsOf(
+          new Map([
+            ["D:\\hone\\ADOPTING.md", "D:/hone/ADOPTING.md"],
+            ["D:\\hone\\rules\\CD-15\\README.md", "D:/hone/rules/CD-15/README.md"],
+          ]),
+        ),
       }),
     ).toEqual([
       { kind: "assessment-file", state: "not-written", guide: "D:/hone/ADOPTING.md" },
@@ -234,30 +254,43 @@ describe("clauseReadingsOf pointing at the rule page", () => {
 
 describe("clauseReadingsOf when pnpm runs the package from its store", () => {
   const storeRoot = absolutePathSchema.parse("/repo/node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone");
-  const manifest = presentFile({ text: '{"name":"@hailstails/hone","version":"1.0.0"}' });
-  const storedPages: Readonly<Record<string, FakeFile>> = {
-    [`${storeRoot}/rules/CD-15/README.md`]: presentFile({ text: "# CD-15\n" }),
-    [`${storeRoot}/package.json`]: manifest,
-  };
-  const storedReadings = (request: { readonly files: Readonly<Record<string, FakeFile>> }) =>
-    readingsThroughLinkOf({
+  const storedPage = `${storeRoot}/rules/CD-15/README.md`;
+  const storedGuide = `${storeRoot}/ADOPTING.md`;
+  const storedReadings = (request: { readonly shownPathOf: ShownPathOf }) =>
+    clauseReadingsOf({
       findings: ONE_LOOPS_FINDING,
       clauseRoots: [{ clause: LOOPS, ruleSetRoot: storeRoot }],
       repoRoot: REPO_ROOT,
       installRoot: storeRoot,
-      fileText: filesOver(request.files),
-      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+      fileText: filesOver({ [storedPage]: presentFile({ text: "# CD-15\n" }) }),
+      path: POSIX,
+      shownPathOf: request.shownPathOf,
     });
 
   it("names the page and the guide through the repository's node_modules link when it holds the running package", () => {
-    expect(storedReadings({ files: { ...storedPages, "/repo/node_modules/@hailstails/hone/package.json": manifest } })).toEqual([
-      { kind: "assessment-file", state: "not-written", guide: GUIDE_TEXT },
-      loopsReading({ assessmentSection: "unread" }),
-    ]);
+    expect(
+      storedReadings({
+        shownPathOf: shownPathsOf(
+          new Map([
+            [storedPage, LOOPS_PAGE_TEXT],
+            [storedGuide, GUIDE_TEXT],
+          ]),
+        ),
+      }),
+    ).toEqual([{ kind: "assessment-file", state: "not-written", guide: GUIDE_TEXT }, loopsReading({ assessmentSection: "unread" })]);
   });
 
   it("names the page and the guide where pnpm put them when the repository has no link to the running package", () => {
-    expect(storedReadings({ files: storedPages })).toEqual([
+    expect(
+      storedReadings({
+        shownPathOf: shownPathsOf(
+          new Map([
+            [storedPage, "node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/rules/CD-15/README.md"],
+            [storedGuide, "node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/ADOPTING.md"],
+          ]),
+        ),
+      }),
+    ).toEqual([
       {
         kind: "assessment-file",
         state: "not-written",

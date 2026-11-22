@@ -1,15 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import type { Result } from "./result.ts";
-import type { Equal } from "../infrastructure/engines/protocol/runner-module/type-equality.ts";
 
 describe("Result", () => {
   it("is exactly the ok-or-failed union", () => {
-    const lockedShape: Equal<
-      Result<number, string>,
+    expectTypeOf<Result<number, string>>().toEqualTypeOf<
       | { readonly outcome: "ok"; readonly value: number }
       | { readonly outcome: "failed"; readonly error: string }
-    > = true;
-    expect(lockedShape).toBe(true);
+    >();
   });
 
   it("carries a failure as data under the failed outcome", () => {

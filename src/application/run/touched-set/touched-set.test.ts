@@ -1,10 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { Equal } from "../../../infrastructure/engines/protocol/runner-module/type-equality.ts";
 import { baseRevisionAvailabilityOf, computeTouchedSet } from "./touched-set.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 
@@ -36,14 +35,9 @@ const fakeGit = (changedSince: GitPort["changedSince"]): GitPort => ({
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 });
 
-const measuredMemberKeysArePaths: Equal<
-  keyof Extract<TouchedSet, { readonly measured: "yes" }>,
-  "measured" | "paths"
-> = true;
-
 describe("computeTouchedSet", () => {
   it("names the measured member's field paths", () => {
-    expect(measuredMemberKeysArePaths).toBe(true);
+    expectTypeOf<keyof Extract<TouchedSet, { readonly measured: "yes" }>>().toEqualTypeOf<"measured" | "paths">();
   });
 
   it("measures the de-duplicated changed paths when a base revision is given", () => {

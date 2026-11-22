@@ -1,12 +1,12 @@
 import { assert, describe, expect, it } from "vitest";
-import { createSelectionRepository, readRunSettings } from "../../../infrastructure/disciplines-file/consumer-selection.ts";
-import { createDefaultFileTextPort } from "../../../infrastructure/node/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../../../infrastructure/node/path-port.ts";
-import { createSettingsRepository } from "./read-settings.ts";
-import { createSettingsSources } from "../../../infrastructure/hone-config-file/settings-sources.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { SETTINGS_FILE_FORMAT } from "../../../infrastructure/hone-config-file/settings-file.ts";
+import { createSelectionRepository, readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import { createSettingsRepository } from "../application/run/settings/read-settings.ts";
+import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
+import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
+import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { SETTINGS_FILE_FORMAT } from "../infrastructure/hone-config-file/settings-file.ts";
 
 const path = createDefaultPathPort({});
 
@@ -18,11 +18,11 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
-const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [`${import.meta.dirname}/../../..`, ".."] }) });
+const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [`${import.meta.dirname}/..`, ".."] }) });
 
-const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "settings-pair", "before"] }) });
+const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "application", "run", "settings", "settings-pair", "before"] }) });
 
-const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "settings-pair", "after"] }) });
+const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "application", "run", "settings", "settings-pair", "after"] }) });
 
 const readBefore = () => {
   const reading = createSelectionRepository({ repoRoot: BEFORE_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});

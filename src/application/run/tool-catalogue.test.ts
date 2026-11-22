@@ -1,53 +1,54 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
+import type { SymptomCatalogueOf, SymptomCatalogueRepository } from "../ports/symptom-catalogue-repository.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { toolCatalogueOf } from "./tool-catalogue.ts";
-import { createSymptomCatalogueRepository } from "../../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 
 const INSTALL = absolutePathSchema.parse("/install");
 
 const CATALOGUE_PATH = "/install/rules/typescript/symptoms.json";
 
-const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
+const POSIX: Pick<PathPort, "join"> = { join: ({ segments }) => segments.join("/") };
 
-const catalogueOver = (request: { readonly fileText: FileTextPort }) => toolCatalogueOf({ symptomCatalogueOf: createSymptomCatalogueRepository, fileText: request.fileText, path: POSIX, installRoot: INSTALL });
-
-const filesHolding = (request: { readonly text: string }): FileTextPort => ({
-  exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
-  read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: request.text }),
+const FILE_TEXT: FileTextPort = {
+  exists: vi.fn<FileTextPort["exists"]>(),
+  read: vi.fn<FileTextPort["read"]>(),
   write: vi.fn<FileTextPort["write"]>(),
-});
+};
+
+const cataloguesReading = (read: SymptomCatalogueRepository["read"]): SymptomCatalogueOf => () => ({ read });
+
+const catalogueOver = (request: { readonly read: SymptomCatalogueRepository["read"] }) =>
+  toolCatalogueOf({ symptomCatalogueOf: cataloguesReading(request.read), fileText: FILE_TEXT, path: POSIX, installRoot: INSTALL });
 
 describe("toolCatalogueOf", () => {
+  it("asks for the catalogue of the install's rule set through the file text and path it is given", () => {
+    const symptomCatalogueOf = vi.fn<SymptomCatalogueOf>().mockReturnValue({ read: () => ({ outcome: "ok", value: { held: "none" } }) });
+    toolCatalogueOf({ symptomCatalogueOf, fileText: FILE_TEXT, path: POSIX, installRoot: INSTALL });
+    expect(symptomCatalogueOf.mock.calls).toEqual([[{ fileText: FILE_TEXT, path: POSIX, ruleSetRoot: INSTALL }]]);
+  });
+
   it("fails as a catalogue not read, absent, when the install holds no catalogue", () => {
-    const absent: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-      read: vi.fn<FileTextPort["read"]>(),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    expect(catalogueOver({ fileText: absent })).toEqual({
+    expect(catalogueOver({ read: () => ({ outcome: "ok", value: { held: "none" } }) })).toEqual({
       outcome: "failed",
       error: { kind: "catalogue-not-read", path: CATALOGUE_PATH, reason: { reason: "absent" } },
     });
   });
 
   it("fails as a catalogue not read, unreadable, with the reader's words when the file cannot be read", () => {
-    const unreadable: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
-      read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: CATALOGUE_PATH, detail: "EACCES" } }),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    expect(catalogueOver({ fileText: unreadable })).toEqual({
+    expect(catalogueOver({ read: () => ({ outcome: "failed", error: { kind: "file-unreadable", path: CATALOGUE_PATH, detail: "EACCES" } }) })).toEqual({
       outcome: "failed",
       error: { kind: "catalogue-not-read", path: CATALOGUE_PATH, reason: { reason: "unreadable", detail: "EACCES" } },
     });
   });
 
   it("fails as a catalogue not read, unreadable, when the file is not JSON", () => {
-    expect(catalogueOver({ fileText: filesHolding({ text: "{" }) })).toMatchObject({
+    expect(
+      catalogueOver({ read: () => ({ outcome: "failed", error: { kind: "file-malformed", path: CATALOGUE_PATH, detail: "Unexpected end of JSON input" } }) }),
+    ).toEqual({
       outcome: "failed",
-      error: { kind: "catalogue-not-read", path: CATALOGUE_PATH, reason: { reason: "unreadable" } },
+      error: { kind: "catalogue-not-read", path: CATALOGUE_PATH, reason: { reason: "unreadable", detail: "Unexpected end of JSON input" } },
     });
   });
 });

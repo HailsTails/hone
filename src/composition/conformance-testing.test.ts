@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
-import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
-import type { PathPort } from "../ports/host/path-port.ts";
-import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import { createConformanceTesting } from "./conformance-testing.ts";
-import { createDefaultEnginePort } from "../../infrastructure/engines/protocol/engine-port.ts";
-import { installRootOfApiEntry } from "../../infrastructure/command-line/installation/install-root.ts";
-import { createRuleSetFileReader } from "../../infrastructure/content-files/rule-sets/rule-set-reader.ts";
-import { loadFailureDetail } from "../../infrastructure/printed-report/load-failures/load-failure-text.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
+import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../application/ports/host/path-port.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import { createConformanceTesting } from "../application/conformance/conformance-testing.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { installRootOfApiEntry } from "../infrastructure/command-line/installation/install-root.ts";
+import { createRuleSetFileReader } from "../infrastructure/content-files/rule-sets/rule-set-reader.ts";
+import { loadFailureDetail } from "../infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 const AUDIT = mechanismIdSchema.parse("audit");
 

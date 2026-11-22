@@ -1,18 +1,18 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { Finding } from "../../domain/finding/governance.ts";
-import { answerFindings } from "../../domain/records/answering/answering.ts";
-import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import type { TouchedSet } from "../../domain/repository/touched-set.ts";
-import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
-import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
-import type { PlacedRecord, RecordsDocument, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
-import type { WhyChain } from "../../domain/records/why-chain.ts";
-import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "./record-commands.ts";
-import { recordsReader, recordsReadingOf } from "../../infrastructure/hone-records-folder/reading/records-reading.ts";
-import { recordsEditor } from "../../infrastructure/hone-records-folder/writing/records-edit.ts";
-import type { RecordsSource } from "../ports/records/records-source.ts";
-import type { RecordsStore } from "../ports/records/records-store.ts";
+import type { Finding } from "../domain/finding/governance.ts";
+import { answerFindings } from "../domain/records/answering/answering.ts";
+import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import type { TouchedSet } from "../domain/repository/touched-set.ts";
+import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
+import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import type { PlacedRecord, RecordsDocument, SymptomReach } from "../domain/records/hone-records/hone-record.ts";
+import type { WhyChain } from "../domain/records/why-chain.ts";
+import { authoriseOf, pruneDebtOf, type RecordDebtRequest, recordDebtOf } from "../application/records/record-commands.ts";
+import { recordsReader, recordsReadingOf } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
+import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
+import type { RecordsSource } from "../application/ports/records/records-source.ts";
+import type { RecordsStore } from "../application/ports/records/records-store.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
