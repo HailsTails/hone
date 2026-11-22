@@ -40,7 +40,7 @@ The config roots are the repository root, every folder holding a tracked `eslint
 - `eslint-piece-settings-schema.ts`, `eslint-plugin-schema.ts`, `eslint-config-schema.ts` and `eslint-file-schemas.ts` hold the schemas for a piece's settings, a loaded plugin module, ESLint's resolved configuration, and `package.json` and suppressions files.
 - `runner.ts` is the runner core loads: the default ports, bound to the toolchain loaded from the install's own resolution.
 - `piece-type-packages.json` lists the packages a piece may import types from, `["eslint"]`. It is not the runtime list above.
-- `test-fixtures/` holds the consumer repositories that `src/composition/native-exceptions.integration.test.ts` checks on real ESLint.
+- `test-fixtures/` holds the consumer repositories that `native-exceptions/native-exceptions.integration.test.ts` checks on real ESLint.
 
 ## Writing a piece
 
