@@ -192,6 +192,20 @@ describe("createScratchFilesPort listTree", () => {
   });
 });
 
+describe("createScratchFilesPort given a path that is not absolute", () => {
+  it("returns effect-failed from removeTree and from listTree, reaching the tree port with neither", () => {
+    const tree = treeOver({});
+    const scratch = createScratchFilesPort({ surface: surfaceOver({}), tree });
+
+    expect({ removed: scratch.removeTree({ path: "relative/proof" }), listed: scratch.listTree({ path: "relative/proof" }) }).toEqual({
+      removed: { outcome: "failed", error: { kind: "effect-failed", detail: "relative/proof is not an absolute path" } },
+      listed: { outcome: "failed", error: { kind: "effect-failed", detail: "relative/proof is not an absolute path" } },
+    });
+    expect(tree.remove).not.toHaveBeenCalled();
+    expect(tree.list).not.toHaveBeenCalled();
+  });
+});
+
 describe("createScratchFilesPort realPathOf", () => {
   it("returns the real path the surface resolved for the requested path", () => {
     const realPathOf = vi.fn<ScratchFilesSurface["realPathOf"]>().mockReturnValue("/store/zod");

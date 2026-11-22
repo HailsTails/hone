@@ -95,7 +95,11 @@ export const createScratchFilesPort = (options: { readonly surface: ScratchFiles
   createTemporaryDirectory: (request) =>
     attempted({ action: () => options.surface.makeTemporaryDirectory({ prefix: request.prefix }) }),
   removeTree: (request) => {
-    const removed = options.tree.remove({ path: absolutePathSchema.parse(request.path) });
+    const path = absolutePathSchema.safeParse(request.path);
+    if (!path.success) {
+      return treeFailureOf({ detail: `${request.path} is not an absolute path` });
+    }
+    const removed = options.tree.remove({ path: path.data });
     return removed.outcome === "ok" ? { outcome: "ok", value: null } : treeFailureOf({ detail: removed.error.detail });
   },
   makeDirectory: (request) => completed({ action: () => options.surface.makeDirectory({ path: request.path }) }),
@@ -105,7 +109,11 @@ export const createScratchFilesPort = (options: { readonly surface: ScratchFiles
         options.surface.copyTree({ from: request.from, to: request.to, disposition: request.disposition }),
     }),
   listTree: (request) => {
-    const listed = options.tree.list({ path: absolutePathSchema.parse(request.path) });
+    const path = absolutePathSchema.safeParse(request.path);
+    if (!path.success) {
+      return treeFailureOf({ detail: `${request.path} is not an absolute path` });
+    }
+    const listed = options.tree.list({ path: path.data });
     return listed.outcome === "ok"
       ? { outcome: "ok", value: listed.value.map(({ path, name, kind }) => ({ path, name, entryKind: kind === "directory" ? "folder" : "file" })) }
       : treeFailureOf({ detail: listed.error.detail });
