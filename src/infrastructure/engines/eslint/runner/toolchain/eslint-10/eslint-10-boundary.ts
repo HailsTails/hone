@@ -1,9 +1,7 @@
-import type { EslintMajorBoundary } from "../eslint-major-boundary.ts";
-
-const DECLARATION_TEXT = `import type { Linter } from ${JSON.stringify("eslint")};\ndeclare const projection: Linter.Config[];\nexport default projection;\n`;
+import { type EslintMajorBoundary, PROJECTION_DECLARATION_TEXT } from "../eslint-major-boundary.ts";
 
 export const eslintBoundary: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
-  declarationText: DECLARATION_TEXT,
+  declarationText: PROJECTION_DECLARATION_TEXT,
   reportDataOf: (request) => request.descriptor.data,
 };

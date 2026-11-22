@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { runMechanism } from "./mechanism-dispatch.ts";
+import { runMechanism } from "./standalone-mechanism-dispatch.ts";
 import { checksProjectResultSchema, checksRunnerModuleSchema, checksRunResultSchema } from "../checks/checks-runner-module-schema.ts";
 import type { ChecksRunFailure, ChecksRunReport } from "../checks/checks-runner-types.ts";
 import type { ChecksRunRequest, LoadedStandaloneRunner } from "../../../../application/ports/engine/runner-module.ts";

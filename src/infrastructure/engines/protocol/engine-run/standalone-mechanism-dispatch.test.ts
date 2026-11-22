@@ -5,7 +5,7 @@ import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { runMechanism } from "./mechanism-dispatch.ts";
+import { runMechanism } from "./standalone-mechanism-dispatch.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
 
 const WALKER = mechanismIdSchema.parse("audit");

@@ -18,6 +18,7 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import { fixedRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import type { RecordPlace } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import { exceptionEntriesOfDocument, exceptionEntriesOfText, foreignKeysOfDocument } from "./exception-records.ts";
@@ -47,9 +48,9 @@ type RuleFileGroup = { readonly file: RepoPath; readonly entries: readonly Writa
 
 type RecordsDocument = { readonly entries: readonly StructuralExceptionEntry[]; readonly foreignKeys: readonly string[] };
 
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
+const SINGLE_FILE = fixedRepoPath("discipline-exceptions.json");
 
-const SPLIT_FOLDER = repoPathSchema.parse("discipline-exceptions");
+const SPLIT_FOLDER = fixedRepoPath("discipline-exceptions");
 
 const RECORDS_FILE_EXTENSION = ".json";
 

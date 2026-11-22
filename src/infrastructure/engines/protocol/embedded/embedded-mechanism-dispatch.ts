@@ -5,7 +5,7 @@ import type { RunRequest } from "../../../../application/ports/engine/runner-mod
 import type { MechanismProjectionRequest, MechanismRequest } from "../../../../application/ports/engine/mechanism-request.ts";
 import { projectionWriteSchema, runnerResultSchema } from "../runner-module/runner-result-schema.ts";
 import type { NativeException, ProjectionWrite } from "../../../../domain/runner/runner-result-types.ts";
-import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/mechanism-dispatch.ts";
+import { firstUnrequestedDetail, NOTHING_MEASURED, runMechanism as runStandaloneMechanism, unrequestedNativeException } from "../engine-run/standalone-mechanism-dispatch.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import { clauseAddressText } from "../../../../domain/rule-set/clause-address.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";

@@ -7,6 +7,7 @@ import type { InstallForm } from "../../../../node/modules/install-layout.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { createEslintOn, type EslintModule, type EslintToolchain, type TypescriptParser } from "./eslint-instance.ts";
 import type { EslintMajorBoundary } from "./eslint-major-boundary.ts";
+import type { DeepReadonly, Equal } from "../../../protocol/runner-module/type-equality.ts";
 
 export type TypescriptEslintPluginModule = { readonly default: Pick<typeof typescriptEslintPlugin, "meta"> };
 
@@ -60,6 +61,8 @@ const boundaryModuleSchema = z.object({
     reportDataOf: z.custom<EslintMajorBoundary["reportDataOf"]>((candidate) => typeof candidate === "function"),
   }),
 });
+
+export const isBoundaryModuleSchemaEqual: Equal<DeepReadonly<z.output<typeof boundaryModuleSchema>["eslintBoundary"]>, EslintMajorBoundary> = true;
 
 const SUPPORTED_MAJORS: ReadonlySet<number> = new Set([9, 10]);
 
