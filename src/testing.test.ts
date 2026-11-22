@@ -18,7 +18,7 @@ describe("testing.ts, the conformance API wired over the default ports", () => {
     const bound = clauseUnderTestOf({ ruleSetRoot: RULE_SET_ROOT, clause: "CD-5#comments-directives" });
 
     assert(bound.outcome === "ok", "the shipped audit clause binds");
-    expect(bound.value.clause.pieceRoot).toBe(path.join({ segments: [import.meta.dirname, "infrastructure", "engines", "audit", "CD-5"] }));
+    expect(bound.value.clause.pieceRoot).toBe(path.join({ segments: [import.meta.dirname, "infrastructure", "engines", "walker", "untracked-escape", "directive-pointers"] }));
   });
 
   it("refuses a clause the shipped rules do not hold as not mechanical", async () => {
