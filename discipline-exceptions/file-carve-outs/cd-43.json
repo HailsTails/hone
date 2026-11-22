@@ -5,6 +5,26 @@
       "kind": "file-carve-out",
       "clause": "CD-43#boolean-signatures",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-43#boolean-signatures",
+      "file": "src/composition/commands.version-two-needed.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-43#boolean-signatures",
+      "file": "src/composition/run-tool-command.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-43#boolean-signatures",
+      "file": "src/composition/upgrade-command.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-43#boolean-signatures",
+      "file": "src/domain/language-layer/catalogue-name.ts"
     }
   ]
 }

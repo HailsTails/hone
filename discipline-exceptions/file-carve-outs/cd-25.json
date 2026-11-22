@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "exceptions": [
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-25#dependency-isolation",
+      "file": "src/operations/record-debt/run-record-debt-command.test.ts"
+    }
+  ]
+}

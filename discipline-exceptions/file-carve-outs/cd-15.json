@@ -4,11 +4,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-15#loops",
-      "file": "src/application/run/check/cd1-cascade/src/legacy.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-15#loops",
       "file": "src/infrastructure/command-line/documentation/walkthrough/before/src/basket.ts"
     }
   ]

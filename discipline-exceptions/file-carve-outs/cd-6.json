@@ -24,11 +24,31 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-6#identifier-names",
-      "file": "src/application/run/check/cd1-cascade/src/legacy.ts"
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-6#naming-convention",
+      "file": "delivery/install-proof/install-proof-plan.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-6#naming-convention",
+      "file": "src/infrastructure/command-line/documentation/output-contract.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-6#identifier-names",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-6#naming-convention",
+      "file": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-6#naming-convention",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
     }
   ]
