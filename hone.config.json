@@ -59,9 +59,7 @@
       "edition": "2"
     },
     "outside-import-past-a-boundary#import-or-require": {
-      "confinedOutsideDependencies": [
-        "eslint"
-      ]
+      "confinedOutsideDependencies": ["eslint"]
     },
     "rebinding#test-body": {
       "edition": "2"
