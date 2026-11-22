@@ -48,17 +48,22 @@ jobs:
         run: pnpm run package-determinism
       - name: Pack the package
         run: pnpm run pack-package
-      - name: Prove the packed tarball installs and runs in real consumers
-        run: |
-          tarballs=(artefacts/*.tgz)
-          test "${#tarballs[@]}" -eq 1
-          pnpm run install-proof --tarball "${tarballs[0]}"
       - name: Fingerprint the packed tarball
         id: tarball
         run: |
           tarballs=(artefacts/*.tgz)
           test "${#tarballs[@]}" -eq 1
           echo "sha256=$(sha256sum "${tarballs[0]}" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.22.2
+      - name: Enable corepack on Node 24
+        run: corepack enable
+      - name: Prove the packed tarball installs and runs in real consumers on Node 24
+        run: |
+          tarballs=(artefacts/*.tgz)
+          test "${#tarballs[@]}" -eq 1
+          pnpm run install-proof --tarball "${tarballs[0]}"
 
   windows:
     name: Discipline core on Windows
