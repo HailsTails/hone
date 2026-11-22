@@ -415,6 +415,66 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/node/file-system/file-creation-port.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "delivery/shipped-content/projection-type.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/native-exceptions.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/output-contract.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/probe-check.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/projection-pair.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/prune-debt-answered.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/toolchain-unavailable.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/composition/walkthrough.integration.test.ts"
     }
   ]
 }

@@ -65,6 +65,46 @@
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
       "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/shipped-content/projection-type.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/composition/native-exceptions.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/composition/output-contract.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/composition/walkthrough.integration.test.ts"
     }
   ]
 }
