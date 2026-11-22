@@ -245,7 +245,7 @@ describe("readDisciplineFile", () => {
       readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, mechanisms: ["audit", "not-adopted"] }] }),
     ).toMatchObject({
       outcome: "failed",
-      error: { kind: "file-malformed", path: DISCIPLINE_PATH, detail: expect.stringContaining("expected one of") },
+      error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH, detail: expect.stringContaining("expected one of") },
     });
   });
 

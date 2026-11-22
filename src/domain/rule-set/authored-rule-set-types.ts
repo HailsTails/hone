@@ -1,5 +1,4 @@
 import type { AnchorKind } from "../finding/anchor.ts";
-import type { MechanismId } from "./identifier-types.ts";
 import type { ReadonlyJsonValue } from "../settings/json-values/json-value.ts";
 
 export type ClauseExceptions = "allowed" | "refused";
@@ -17,7 +16,7 @@ export type AuthoredClauseDefinition =
       readonly kind: "mechanical";
       readonly id: string;
       readonly summary: string;
-      readonly mechanisms: readonly MechanismId[];
+      readonly mechanisms: readonly string[];
       readonly anchor: AnchorKind;
       readonly exceptions?: ClauseExceptions;
       readonly cases: {
@@ -48,7 +47,7 @@ export type ClauseSettingDeclarations = { readonly [key: string]: ClauseSettingD
 export type AuthoredPieceFile = {
   readonly version: 1;
   readonly discipline: string;
-  readonly mechanism: MechanismId;
+  readonly mechanism: string;
   readonly clauses: readonly {
     readonly clause: string;
     readonly settings: unknown;

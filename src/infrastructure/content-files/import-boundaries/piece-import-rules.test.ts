@@ -100,15 +100,23 @@ describe("pieceFilesOf", () => {
         ruleSetRoots: [INSTALL_ROOT, PROBE_ROOT],
         installRoot: INSTALL_ROOT,
       }),
-    ).toEqual([WALKER_PIECE]);
+    ).toEqual({ outcome: "ok", value: [WALKER_PIECE] });
   });
 
   it.each([
-    "packages/hone/src/infrastructure/engines/protocol/CD-14/class-syntax.ts",
+    "packages/hone/src/infrastructure/engines/protocol/checks/checks-runner.ts",
     "packages/hone/src/infrastructure/engines/audit/runner/runner.ts",
-    "packages/hone/src/infrastructure/engines/audit/not-a-discipline/class-syntax.ts",
-  ])("does not list %s", (file) => {
-    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual([]);
+  ])("does not list %s, which is no piece's file", (file) => {
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: [] });
+  });
+
+  it("refuses a piece folder under a mechanism other than audit or eslint", () => {
+    const file = "packages/hone/src/infrastructure/engines/oxlint/CD-14/class-syntax.ts";
+
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual({
+      outcome: "failed",
+      error: { kind: "unknown-mechanism", file, mechanism: "oxlint" },
+    });
   });
 });
 

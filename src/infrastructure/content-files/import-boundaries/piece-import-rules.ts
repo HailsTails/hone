@@ -28,7 +28,8 @@ export type PieceImportFindings = {
 
 export type PieceImportFindingsFailure =
   | { readonly kind: "type-packages-missing"; readonly path: string }
-  | { readonly kind: "type-packages-malformed"; readonly path: string; readonly detail: string };
+  | { readonly kind: "type-packages-malformed"; readonly path: string; readonly detail: string }
+  | { readonly kind: "unknown-mechanism"; readonly file: string; readonly mechanism: string };
 
 export type ImportForm = "type-only" | "value" | "dynamic";
 
@@ -74,7 +75,7 @@ const pieceLocationOf = (request: {
   readonly file: string;
   readonly ruleSetRoot: string;
   readonly installRoot: string;
-}): readonly PieceLocation[] => {
+}): Result<readonly PieceLocation[], PieceImportFindingsFailure> => {
   const enginesFolder = enginesFolderSegmentsOf({
     ruleSetRoot: normalisedOf({ text: request.ruleSetRoot }),
     installRoot: normalisedOf({ text: request.installRoot }),
@@ -82,26 +83,38 @@ const pieceLocationOf = (request: {
   const prefix = `${folderPrefixOf({ root: request.ruleSetRoot })}${enginesFolder}/`;
   const file = normalisedOf({ text: request.file });
   if (!file.startsWith(prefix) || file.endsWith(".test.ts") || !file.endsWith(".ts")) {
-    return [];
+    return { outcome: "ok", value: [] };
   }
   const [mechanismText, discipline, ...rest] = file.slice(prefix.length).split("/");
+  if (discipline === undefined || !isDisciplineId(discipline) || rest.length === 0) {
+    return { outcome: "ok", value: [] };
+  }
   const mechanism = mechanismIdSchema.safeParse(mechanismText);
-  return mechanism.success && discipline !== undefined && isDisciplineId(discipline) && rest.length > 0
-    ? [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, discipline }]
-    : [];
+  return mechanism.success
+    ? { outcome: "ok", value: [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, discipline }] }
+    : { outcome: "failed", error: { kind: "unknown-mechanism", file: request.file, mechanism: mechanismText ?? "" } };
 };
 
 export const pieceFilesOf = (request: {
   readonly trackedPaths: readonly string[];
   readonly ruleSetRoots: readonly string[];
   readonly installRoot: string;
-}): readonly PieceLocation[] =>
-  request.trackedPaths.flatMap(
-    (file) =>
-      request.ruleSetRoots
-        .map((ruleSetRoot) => pieceLocationOf({ file, ruleSetRoot, installRoot: request.installRoot }))
-        .find((locations) => locations.length > 0) ?? [],
+}): Result<readonly PieceLocation[], PieceImportFindingsFailure> => {
+  const located = request.trackedPaths.map((file) => locationOfFile({ file, ruleSetRoots: request.ruleSetRoots, installRoot: request.installRoot }));
+  const failed = located.find((location) => location.outcome === "failed");
+  return failed ?? { outcome: "ok", value: located.flatMap((location) => (location.outcome === "ok" ? location.value : [])) };
+};
+
+const locationOfFile = (request: {
+  readonly file: string;
+  readonly ruleSetRoots: readonly string[];
+  readonly installRoot: string;
+}): Result<readonly PieceLocation[], PieceImportFindingsFailure> => {
+  const attempts = request.ruleSetRoots.map((ruleSetRoot) =>
+    pieceLocationOf({ file: request.file, ruleSetRoot, installRoot: request.installRoot }),
   );
+  return attempts.find((attempt) => attempt.outcome === "failed" || attempt.value.length > 0) ?? { outcome: "ok", value: [] };
+};
 
 const specifierKindOf = (request: { readonly specifier: string }): "relative" | "package" =>
   request.specifier.startsWith("./") || request.specifier.startsWith("../") ? "relative" : "package";
@@ -255,11 +268,15 @@ export const pieceImportFindings = (request: {
   readonly sources: Readonly<Record<string, string>>;
   readonly typePackageTexts: Readonly<Record<string, string>>;
 }): Result<PieceImportFindings, PieceImportFindingsFailure> => {
-  const pieces = pieceFilesOf({
+  const located = pieceFilesOf({
     trackedPaths: Object.keys(request.sources),
     ruleSetRoots: request.ruleSetRoots,
     installRoot: request.installRoot,
   });
+  if (located.outcome === "failed") {
+    return located;
+  }
+  const pieces = located.value;
   const packages = typePackagesByMechanism({ ...request, pieces });
   if (packages.outcome === "failed") {
     return packages;
