@@ -232,6 +232,16 @@ describe("what record-debt does with each symptom and file the check finds", () 
     ]);
   });
 
+  it("says the debt sits in the first records file that holds it when two files hold it", () => {
+    const heldAgain: PlacedRecord = {
+      ...HELD_CLOCK_DEBT,
+      place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
+    };
+    expect(debtOutcomesOf({ ...REQUEST, records: [HELD_CLOCK_DEBT, heldAgain] })).toEqual([
+      { address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "already-recorded", heldIn: DEBT_FILE },
+    ]);
+  });
+
   it("holds a whole-symptom debt to its symptom and a one-check debt to its check", () => {
     expect(
       debtOutcomesOf({

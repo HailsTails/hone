@@ -171,18 +171,6 @@ export type RecordPlace =
 
 export type ReachedPlace = { readonly check: Check; readonly place: RecordPlace };
 
-export const placeCovers = (request: {
-  readonly place: RecordPlace;
-  readonly file: RepoPath;
-}): Holding => {
-  switch (request.place.at) {
-    case "file":
-      return sameName({ left: request.place.file, right: request.file });
-    case "module":
-      return moduleCovers({ module: request.place.module, file: request.file });
-  }
-};
-
 const checksReachedBy = (request: {
   readonly record: HoneRecord;
   readonly catalogue: SymptomCatalogue;

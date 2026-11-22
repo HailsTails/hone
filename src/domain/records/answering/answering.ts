@@ -8,7 +8,12 @@ import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
-import { measurementOf, type RunMeasurements } from "../measurement/measured-at.ts";
+import {
+  type MeasurementIndex,
+  measurementIndexOf,
+  measurementOf,
+  type RunMeasurements,
+} from "../measurement/measured-at.ts";
 import { holdsAt, type PartyReport, placesReachedBy, type Site } from "./record-reach.ts";
 import {
   placedInRecordOrder,
@@ -238,7 +243,7 @@ const nativeHoldings = (request: {
 const staleReasonOf = (request: {
   readonly record: HoneRecord;
   readonly catalogue: SymptomCatalogue;
-  readonly measurements: RunMeasurements;
+  readonly measurements: MeasurementIndex;
 }): StaleReason | "unjudged" => {
   const measurements = placesReachedBy(request).map((reached) =>
     measurementOf({ measurements: request.measurements, reached }),
@@ -257,7 +262,7 @@ const staleRecords = (request: {
   readonly credited: ReadonlySet<PlacedRecord>;
   readonly paidDebt: ReadonlySet<PlacedRecord>;
   readonly catalogue: SymptomCatalogue;
-  readonly measurements: RunMeasurements;
+  readonly measurements: MeasurementIndex;
 }): readonly StaleRecord[] =>
   request.inForce
     .filter(
@@ -312,7 +317,7 @@ export const answerFindings = (request: AnsweringRequest): Answering => {
       credited,
       paidDebt: new Set(paid.map((entry) => entry.debt)),
       catalogue,
-      measurements: request.measurements,
+      measurements: measurementIndexOf({ measurements: request.measurements }),
     }),
     forfeited,
     paid,

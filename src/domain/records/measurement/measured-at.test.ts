@@ -6,7 +6,13 @@ import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { ReachedPlace } from "../answering/record-reach.ts";
-import { measurementOf, type RunMeasurement, type RunMeasurements } from "./measured-at.ts";
+import {
+  type MeasurementIndex,
+  measurementIndexOf,
+  measurementOf,
+  type RunMeasurement,
+  type RunMeasurements,
+} from "./measured-at.ts";
 
 const WALKER = "walker" as const;
 
@@ -52,9 +58,8 @@ const AT_SRC: ReachedPlace = { check: CHECK, place: { at: "module", module: repo
 
 const TRACKED = [FILE_A, FILE_B];
 
-const measurementsOf = (request: {
-  readonly runs: readonly RunMeasurement[];
-}): RunMeasurements => ({ runs: request.runs, tracked: TRACKED, excluded: [] });
+const measurementsOf = (request: { readonly runs: readonly RunMeasurement[] }): MeasurementIndex =>
+  measurementIndexOf({ measurements: { runs: request.runs, tracked: TRACKED, excluded: [] } });
 
 const eslintRun = (request: Pick<RunMeasurement, "selected" | "measured">): RunMeasurement => ({
   mechanism: ESLINT,
@@ -128,7 +133,9 @@ describe("measurementOf", () => {
       tracked: [FILE_B],
       excluded: [],
     };
-    expect(measurementOf({ measurements, reached: AT_FILE_A })).toBe("gone");
+    expect(
+      measurementOf({ measurements: measurementIndexOf({ measurements }), reached: AT_FILE_A }),
+    ).toBe("gone");
   });
 
   it("says excluded, not gone, when the settings exclude the file, which is also out of the tracked files", () => {
@@ -137,7 +144,9 @@ describe("measurementOf", () => {
       tracked: [FILE_B],
       excluded: [FILE_A],
     };
-    expect(measurementOf({ measurements, reached: AT_FILE_A })).toBe("excluded");
+    expect(
+      measurementOf({ measurements: measurementIndexOf({ measurements }), reached: AT_FILE_A }),
+    ).toBe("excluded");
   });
 
   it("says excluded for a module place inside an excluded folder", () => {
@@ -148,10 +157,44 @@ describe("measurementOf", () => {
     };
     expect(
       measurementOf({
-        measurements,
+        measurements: measurementIndexOf({ measurements }),
         reached: { check: CHECK, place: { at: "module", module: repoPathOf("src/adapters") } },
       }),
     ).toBe("excluded");
+  });
+
+  it("says measured for a module place when the run measured a file folders below it", () => {
+    const deep = repoPathOf("src/adapters/files/read.ts");
+    expect(
+      measurementOf({
+        measurements: measurementIndexOf({
+          measurements: {
+            runs: [eslintRun({ selected: [CLAUSE], measured: [{ clause: CLAUSE, file: deep }] })],
+            tracked: [deep],
+            excluded: [],
+          },
+        }),
+        reached: AT_SRC,
+      }),
+    ).toBe("measured");
+  });
+
+  it("says gone for a file place when only files under a folder of its name are tracked", () => {
+    const beneath = repoPathOf("src/a.ts/inner.ts");
+    expect(
+      measurementOf({
+        measurements: measurementIndexOf({
+          measurements: {
+            runs: [
+              eslintRun({ selected: [CLAUSE], measured: [{ clause: CLAUSE, file: beneath }] }),
+            ],
+            tracked: [beneath],
+            excluded: [],
+          },
+        }),
+        reached: AT_FILE_A,
+      }),
+    ).toBe("gone");
   });
 
   it("says not-run when there are no runs", () => {

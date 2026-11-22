@@ -1,8 +1,9 @@
+import { checkAddressTextOf } from "../../language-layer/check-address-text.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { AuthorisedReach, HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import { reachOf, type Site } from "./record-reach.ts";
 
-type ReachKey = `symptom:${string}` | `check:${string}#${string}` | `recipe:${string}`;
+type ReachKey = `symptom:${string}` | `check:${string}` | `recipe:${string}`;
 
 type Ranked = { readonly placed: PlacedRecord; readonly rank: number };
 
@@ -22,7 +23,7 @@ const symptomKey = (request: { readonly symptom: string }): ReachKey =>
   `symptom:${request.symptom}`;
 
 const checkKey = (request: { readonly symptom: string; readonly check: string }): ReachKey =>
-  `check:${request.symptom}#${request.check}`;
+  `check:${checkAddressTextOf({ check: { name: request.check, symptom: { name: request.symptom } } })}`;
 
 const recipeKey = (request: { readonly recipe: string }): ReachKey => `recipe:${request.recipe}`;
 

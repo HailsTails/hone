@@ -25,6 +25,8 @@ export type DebtEffectsRequest = {
 
 type HeldDebt = { readonly place: PlacedRecord["place"]; readonly debt: Debt };
 
+type HeldByFile = ReadonlyMap<RepoPath, ReadonlyMap<string, HeldDebt>>;
+
 export const debtAddressOf = (request: { readonly debt: Debt }): string =>
   request.debt.reach.reaches === "one-check"
     ? checkAddressOf({ check: request.debt.reach.check })
@@ -35,6 +37,23 @@ const heldDebtsIn = (request: { readonly records: readonly PlacedRecord[] }): re
     placed.record.kind === "debt" ? [{ place: placed.place, debt: placed.record }] : [],
   );
 
+const firstByAddress = (request: {
+  readonly held: readonly HeldDebt[];
+}): ReadonlyMap<string, HeldDebt> =>
+  new Map(
+    request.held
+      .toReversed()
+      .map((candidate) => [debtAddressOf({ debt: candidate.debt }), candidate]),
+  );
+
+const heldByFileOf = (request: { readonly held: readonly HeldDebt[] }): HeldByFile =>
+  new Map(
+    [...Map.groupBy(request.held, (candidate) => candidate.debt.file)].map(([file, held]) => [
+      file,
+      firstByAddress({ held }),
+    ]),
+  );
+
 const leavingPath = (request: {
   readonly file: RepoPath;
   readonly leave: readonly RepoPath[];
@@ -43,14 +62,11 @@ const leavingPath = (request: {
 
 const effectOf = (request: {
   readonly site: DebtSite;
-  readonly held: readonly HeldDebt[];
+  readonly held: HeldByFile;
   readonly rest: Omit<DebtEffectsRequest, "sites" | "unrecordable" | "records">;
 }): DebtEffect => {
   const { site, held, rest } = request;
-  const heldHere = held.find(
-    (candidate) =>
-      candidate.debt.file === site.file && debtAddressOf({ debt: candidate.debt }) === site.address,
-  );
+  const heldHere = held.get(site.file)?.get(site.address);
   if (heldHere !== undefined) {
     return { effect: "already-recorded", heldIn: heldHere.place.file };
   }
@@ -64,7 +80,7 @@ const effectOf = (request: {
 };
 
 export const debtOutcomesOf = (request: DebtEffectsRequest): readonly DebtOutcome[] => {
-  const held = heldDebtsIn(request);
+  const held = heldByFileOf({ held: heldDebtsIn(request) });
   const decided = request.sites.map((site): DebtOutcome => ({
     address: site.address,
     file: site.file,

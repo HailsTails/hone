@@ -23,7 +23,7 @@ import type {
   SymptomReach,
 } from "../hone-records/hone-record.ts";
 import type { WhyChain } from "../why-chain.ts";
-import { holdsAt, type PartyReport, placeCovers, placesReachedBy } from "./record-reach.ts";
+import { holdsAt, type PartyReport, placesReachedBy } from "./record-reach.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -793,22 +793,5 @@ describe("placesReachedBy", () => {
       whyNotEnough: "Each adapter would repeat its checks.",
     };
     expect(placesReachedBy({ record: dependency, catalogue: CATALOGUE_WITH_CHECKS })).toEqual([]);
-  });
-});
-
-describe("placeCovers", () => {
-  it("holds for the file of a file place and for a file under a module place, and not for another file", () => {
-    expect([
-      placeCovers({ place: { at: "file", file: ADAPTER }, file: ADAPTER }),
-      placeCovers({ place: { at: "file", file: ADAPTER }, file: OTHER_FILE }),
-      placeCovers({
-        place: { at: "module", module: repoPathOf("src/adapters/files") },
-        file: READ_TEXT_FILE,
-      }),
-      placeCovers({
-        place: { at: "module", module: repoPathOf("src/adapters/files") },
-        file: OTHER_FILE,
-      }),
-    ]).toEqual(["holds", "does-not-hold", "holds", "does-not-hold"]);
   });
 });
