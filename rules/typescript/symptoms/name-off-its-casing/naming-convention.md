@@ -1,12 +1,12 @@
 # naming-convention
 
 ```json
-{}
+{
+  "settingsTracedTo": "Hone's own casing option lists: **nothing**; casing is the adopter's own lint."
+}
 ```
 
 A name that breaks the naming convention for its kind.
-
-- **Settings traced to:** Hone's own casing option lists: **nothing**; casing is the adopter's own lint.
 
 ## Flags
 Needs ESLint adopted through the projection.

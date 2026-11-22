@@ -1,14 +1,14 @@
 # no-unchecked-indexed-access
 
 ```json
-{}
+{
+  "flagsBeyondTheSymptom": "edition 1: a flag set to `true`.",
+  "misses": "edition 1: a base reached by `extends`.",
+  "settingsTracedTo": "flag list: The type checker proves it. Edition 1 flags presence, which is the Shared strict base config recipe: **traced to a recipe, not a rule**."
+}
 ```
 
 `noUncheckedIndexedAccess` is set in a `tsconfig.json`; edition 2 adds that it resolves to on.
-
-- **Flags beyond the symptom:** edition 1: a flag set to `true`.
-- **Misses:** edition 1: a base reached by `extends`.
-- **Settings traced to:** flag list: The type checker proves it. Edition 1 flags presence, which is the Shared strict base config recipe: **traced to a recipe, not a rule**.
 
 ## Flags
 Each strictness-weakened check has two editions. Edition 1 runs by default. Edition 2 also judges what each `tsconfig.json` inherits, and becomes the default in the next major release; see [Settings](#settings) to run it now.

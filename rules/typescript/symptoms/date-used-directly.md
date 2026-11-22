@@ -40,8 +40,7 @@
       "kind": "boundary-record",
       "at": "on the clock adapter"
     }
-  ]
+  ],
+  "toNameTheBreach": "person."
 }
 ```
-
-- **To name the breach, a check needs:** person.

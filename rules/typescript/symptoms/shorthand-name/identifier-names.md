@@ -1,13 +1,13 @@
 # identifier-names
 
 ```json
-{}
+{
+  "misses": "shorthand not on the list.",
+  "settingsTracedTo": "shorthand and filler list: Whole words recipe."
+}
 ```
 
 A binding named from a fixed shorthand or filler list.
-
-- **Misses:** shorthand not on the list.
-- **Settings traced to:** shorthand and filler list: Whole words recipe.
 
 ## Flags
 - `.ts` and `.tsx` files, including tests; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

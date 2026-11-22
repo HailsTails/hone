@@ -202,6 +202,31 @@ describe("catalogueContentOf", () => {
     });
   });
 
+  it("reads a symptom's breach facts and a check's margin facts as page facts, keeping them off the catalogue", () => {
+    const [symptom] = DOCUMENT.symptoms;
+    expect(
+      catalogueContentOf({
+        document: {
+          ...DOCUMENT,
+          symptoms: [{ ...symptom, howItIsSeen: "syntax.", breachACheckCouldName: "the unit.", toNameTheBreach: "the call graph." }],
+          checks: [
+            { symptom: "loop-keyword", name: "loops", clause: "CD-15#loops", flagsBeyondTheSymptom: "`for await`.", misses: "recursion.", settingsTracedTo: "none." },
+            { symptom: "loop-keyword", name: "test-body", clause: "CD-27#test-body-logic" },
+          ],
+        },
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: expect.objectContaining({
+        symptoms: [LOOP_KEYWORD],
+        checks: [
+          { name: "loops", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-15"), clause: clauseIdOf("loops") }, forms: [] },
+          { name: "test-body", symptom: LOOP_KEYWORD, clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-27"), clause: clauseIdOf("test-body-logic") }, forms: ["a-let"] },
+        ],
+      }),
+    });
+  });
+
   it("gives a check on a clause that sees symptoms by form only the forms of its own symptom", () => {
     expect(
       catalogueContentOf({

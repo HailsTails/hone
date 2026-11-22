@@ -1,13 +1,13 @@
 # logic-in-a-passed-function
 
 ```json
-{}
+{
+  "misses": "hand-written doubles.",
+  "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
+}
 ```
 
 Branching, `let`, and computing methods in a test file; edition 2 adds short-circuits, optional chaining, `switch` and computing namespace calls.
-
-- **Misses:** hand-written doubles.
-- **Settings traced to:** test file is `.test.ts(x)`: Companion test file recipe.
 
 ## Flags
 `CD-27#test-body-logic` has two editions. Edition 1 runs by default. Edition 2 adds the constructs below and becomes the default in the next major release; see [Settings](#settings) to run it now.

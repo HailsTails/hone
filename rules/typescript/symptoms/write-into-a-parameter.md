@@ -23,8 +23,7 @@
   "recipes": [
     "copy-never-write-in"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "types for in-place methods."
 }
 ```
-
-- **How it is seen:** types for in-place methods.

@@ -1,5 +1,5 @@
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { anchorOf, blocksOf, type CataloguePage, everyRendered, itemPaths, namedEntryOf, type PageSource, pageOf, pointedTitleOf, proseAt, type Rendered } from "./catalogue-page.ts";
+import { anchorOf, blocksOf, type CataloguePage, everyRendered, type FactLabel, factLines, itemPaths, namedEntryOf, type PageSource, pageOf, pointedTitleOf, proseAt, type Rendered } from "./catalogue-page.ts";
 import { checkTodayOf } from "./check-today.ts";
 
 const PAGE = "typescript/symptoms.md";
@@ -9,6 +9,12 @@ type Symptom = CatalogueFile["symptoms"][number];
 type Indication = Symptom["mayIndicate"][number];
 
 type CorrectUse = Symptom["correctUses"][number];
+
+const BREACH_LABELS: readonly FactLabel<"howItIsSeen" | "breachACheckCouldName" | "toNameTheBreach">[] = [
+  { key: "howItIsSeen", label: "How it is seen" },
+  { key: "breachACheckCouldName", label: "The breach a check could name" },
+  { key: "toNameTheBreach", label: "To name the breach, a check needs" },
+];
 
 const REPORTS_TEXT: Readonly<Record<NonNullable<Symptom["reports"]>, string>> = { seen: "seen", "seen-to-breach": "seen → breach" };
 
@@ -58,6 +64,7 @@ const factLinesOf = (request: PageSource & { readonly symptom: Symptom }): Rende
     listLine({ label: "Covered by a record", entries: uses.value, separator: "; " }),
     listLine({ label: "Seen by", entries: symptom.seenBy, separator: ", " }),
     symptom.reports === undefined ? "" : `- **Reports:** ${REPORTS_TEXT[symptom.reports]}.`,
+    factLines({ facts: symptom, labels: BREACH_LABELS }),
     `- **Check today:** ${checkTodayOf({ file, symptom })}.`,
     listLine({ label: "Checks", entries: checks.map((check) => `[${check.name}](symptoms/${check.symptom}/${check.name}.md)`), separator: ", " }),
     listLine({ label: "Recipes", entries: recipes.map((recipe) => `[${recipe.title}](recipes.md#${anchorOf({ title: recipe.title })})`), separator: "; " }),

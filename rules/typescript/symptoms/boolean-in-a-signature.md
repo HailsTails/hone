@@ -32,8 +32,7 @@
   "recipes": [
     "tagged-union-and-exhaustive-switch"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "types to tell a predicate."
 }
 ```
-
-- **How it is seen:** types to tell a predicate.

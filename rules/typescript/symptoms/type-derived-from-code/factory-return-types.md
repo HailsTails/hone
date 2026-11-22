@@ -1,14 +1,14 @@
 # factory-return-types
 
 ```json
-{}
+{
+  "flagsBeyondTheSymptom": "text in comments.",
+  "misses": "`Parameters<typeof>`, `typeof` alone.",
+  "settingsTracedTo": "none."
+}
 ```
 
 A line containing `ReturnType<typeof`.
-
-- **Flags beyond the symptom:** text in comments.
-- **Misses:** `Parameters<typeof>`, `typeof` alone.
-- **Settings traced to:** none.
 
 ## Flags
 - `.ts` and `.tsx` files, including tests and declaration files; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

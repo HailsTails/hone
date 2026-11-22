@@ -30,8 +30,7 @@
   "recipes": [
     "tagged-union-and-exhaustive-switch"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "types to find candidates."
 }
 ```
-
-- **How it is seen:** types to find candidates.

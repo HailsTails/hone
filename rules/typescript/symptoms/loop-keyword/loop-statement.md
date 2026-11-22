@@ -1,12 +1,12 @@
 # loop-statement
 
 ```json
-{}
+{
+  "settingsTracedTo": "none."
+}
 ```
 
 `for...of`, `for await`, counted `for` and `while` loops.
-
-- **Settings traced to:** none.
 
 ## Flags
 

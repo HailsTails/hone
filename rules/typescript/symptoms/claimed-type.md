@@ -47,11 +47,10 @@
       "kind": "authorised-location",
       "at": "in the adapter whose outside contract forces it"
     }
-  ]
+  ],
+  "breachACheckCouldName": "the declaration, by types.",
+  "toNameTheBreach": "types."
 }
 ```
 
 "this feels like its hiding a problem with out modelling"
-
-- **The breach a check could name:** the declaration, by types.
-- **To name the breach, a check needs:** types.

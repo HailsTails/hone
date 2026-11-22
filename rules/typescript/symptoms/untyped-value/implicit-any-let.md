@@ -1,12 +1,12 @@
 # implicit-any-let
 
 ```json
-{}
+{
+  "settingsTracedTo": "none."
+}
 ```
 
 A `let` or `var` with neither a type annotation nor an initialiser.
-
-- **Settings traced to:** none.
 
 ## Flags
 Needs ESLint adopted through the projection.

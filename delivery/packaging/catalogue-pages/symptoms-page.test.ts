@@ -127,4 +127,34 @@ describe("symptomsPageOf", () => {
     };
     expect(symptomsPageOf({ file, path: PATH, prose: new Map() })).toEqual({ outcome: "failed", error: "the record kinds hold no deviation" });
   });
+
+  it("lists how the symptom is seen and what a check would need to name its breach, after its reports", () => {
+    const file: CatalogueFile = {
+      ...FILE,
+      symptoms: [
+        {
+          name: "absence-as-state",
+          title: "Absence as state",
+          group: "Loose types",
+          seen: "A null.",
+          mayIndicate: [],
+          breachUsuallySits: "in the type",
+          seenBy: ["types"],
+          reports: "seen-to-breach",
+          recipes: [],
+          correctUses: [],
+          howItIsSeen: "types to find candidates.",
+          breachACheckCouldName: "the field.",
+          toNameTheBreach: "the declaring type.",
+        },
+      ],
+    };
+    expect(symptomsPageOf({ file, path: PATH, prose: new Map() })).toEqual({
+      outcome: "ok",
+      value: {
+        path: "rules/typescript/symptoms.md",
+        text: "# Symptoms in TypeScript\n\n## Loose types\n\n### Absence as state\n\n- **Seen:** A null.\n- **Breach usually sits:** in the type.\n- **Seen by:** types.\n- **Reports:** seen → breach.\n- **How it is seen:** types to find candidates.\n- **The breach a check could name:** the field.\n- **To name the breach, a check needs:** the declaring type.\n- **Check today:** new.\n",
+      },
+    });
+  });
 });

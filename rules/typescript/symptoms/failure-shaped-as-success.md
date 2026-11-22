@@ -22,8 +22,7 @@
   "recipes": [
     "result-union"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "syntax for a `catch` that returns."
 }
 ```
-
-- **How it is seen:** syntax for a `catch` that returns.

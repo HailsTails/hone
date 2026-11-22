@@ -1,13 +1,13 @@
 # drawer-names
 
 ```json
-{}
+{
+  "misses": "a drawer under an ordinary name.",
+  "settingsTracedTo": "drawer names: Screaming folders recipe."
+}
 ```
 
 A forbidden file name or folder name in a path.
-
-- **Misses:** a drawer under an ordinary name.
-- **Settings traced to:** drawer names: Screaming folders recipe.
 
 ## Flags
 - `.ts` and `.tsx` files only, judged by path; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

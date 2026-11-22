@@ -55,6 +55,19 @@ export const proseAt = (request: { readonly path: ItemPathPort; readonly prose: 
 
 export const blocksOf = (request: { readonly blocks: readonly string[] }): string => request.blocks.filter((block) => block.length > 0).join("\n\n");
 
+export type FactLabel<Key extends string> = { readonly key: Key; readonly label: string };
+
+export const factLines = <Key extends string>(request: {
+  readonly facts: Readonly<Partial<Record<Key, string | undefined>>>;
+  readonly labels: readonly FactLabel<Key>[];
+}): string =>
+  request.labels
+    .flatMap(({ key, label }) => {
+      const fact = request.facts[key];
+      return fact === undefined ? [] : [`- **${label}:** ${fact}`];
+    })
+    .join("\n");
+
 export const pageOf = (request: { readonly path: string; readonly blocks: readonly string[] }): CataloguePage => ({
   path: request.path,
   text: `${blocksOf({ blocks: request.blocks })}\n`,

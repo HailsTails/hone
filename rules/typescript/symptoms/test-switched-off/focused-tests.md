@@ -1,13 +1,13 @@
 # focused-tests
 
 ```json
-{}
+{
+  "misses": "`.todo`.",
+  "settingsTracedTo": "`.todo` not flagged: a miss."
+}
 ```
 
 `.only` on a test or suite, or `fdescribe`, `fit`, `ftest`, `fsuite`.
-
-- **Misses:** `.todo`.
-- **Settings traced to:** `.todo` not flagged: a miss.
 
 ## Flags
 Needs ESLint adopted through the projection.

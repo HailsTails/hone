@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import { anchorOf, blocksOf, everyRendered, itemPaths, namedEntryOf, pageOf, pointedTitleOf, principleOfPointed, proseAt, rebasedProse } from "./catalogue-page.ts";
+import { anchorOf, blocksOf, everyRendered, factLines, itemPaths, namedEntryOf, pageOf, pointedTitleOf, principleOfPointed, proseAt, rebasedProse } from "./catalogue-page.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
@@ -106,6 +106,21 @@ describe("proseAt", () => {
 describe("blocksOf", () => {
   it("separates the blocks by a blank line, leaving out empty ones", () => {
     expect(blocksOf({ blocks: ["# Title", "", "Body"] })).toBe("# Title\n\nBody");
+  });
+});
+
+describe("factLines", () => {
+  it("lists each fact the labels name that the facts hold, in the labels' order, leaving out the rest", () => {
+    expect(
+      factLines({
+        facts: { misses: "casts in strings.", flagsBeyondTheSymptom: "`as const`." },
+        labels: [
+          { key: "flagsBeyondTheSymptom", label: "Flags beyond the symptom" },
+          { key: "misses", label: "Misses" },
+          { key: "settingsTracedTo", label: "Settings traced to" },
+        ],
+      }),
+    ).toBe("- **Flags beyond the symptom:** `as const`.\n- **Misses:** casts in strings.");
   });
 });
 

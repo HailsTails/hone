@@ -31,8 +31,7 @@
       "kind": "boundary-record",
       "at": "on the adapter, or beyond it with a Conformist statement for an outside model adopted as ours"
     }
-  ]
+  ],
+  "breachACheckCouldName": "the adapter that returns it, by types."
 }
 ```
-
-- **The breach a check could name:** the adapter that returns it, by types.

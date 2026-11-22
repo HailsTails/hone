@@ -1,13 +1,13 @@
 # non-null-assertions
 
 ```json
-{}
+{
+  "misses": "`any` reached through an outside dependency's types.",
+  "settingsTracedTo": "`as const` allowed: Declared, not asserted."
+}
 ```
 
 A non-null assertion, `x!`, or a definite assignment assertion, `let x!: T` or `field!: T`.
-
-- **Misses:** `any` reached through an outside dependency's types.
-- **Settings traced to:** `as const` allowed: Declared, not asserted.
 
 ## Flags
 Needs ESLint adopted through the projection.

@@ -60,6 +60,9 @@ export const symptomWireSchema = z.strictObject({
   reports: reportsSchema.optional(),
   recipes: z.array(catalogueNameSchema),
   correctUses: z.array(correctUseWireSchema),
+  howItIsSeen: textSchema.optional(),
+  breachACheckCouldName: textSchema.optional(),
+  toNameTheBreach: textSchema.optional(),
 });
 
 export const sightWireSchema = z.discriminatedUnion("kind", [
@@ -83,6 +86,9 @@ export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
   clause: clauseAddressSchema,
+  flagsBeyondTheSymptom: textSchema.optional(),
+  misses: textSchema.optional(),
+  settingsTracedTo: textSchema.optional(),
 });
 
 export const catalogueFileSchema = z.strictObject({

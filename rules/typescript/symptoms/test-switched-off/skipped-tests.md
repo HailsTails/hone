@@ -1,13 +1,13 @@
 # skipped-tests
 
 ```json
-{}
+{
+  "misses": "`.todo`.",
+  "settingsTracedTo": "`.todo` not flagged: a miss."
+}
 ```
 
 `.skip` or `.fixme` on a test or suite, or `xdescribe`, `xit`, `xtest`, `xsuite`.
-
-- **Misses:** `.todo`.
-- **Settings traced to:** `.todo` not flagged: a miss.
 
 ## Flags
 Needs ESLint adopted through the projection.

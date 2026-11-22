@@ -1,13 +1,13 @@
 # throw-statement
 
 ```json
-{}
+{
+  "misses": "`catch`.",
+  "settingsTracedTo": "none."
+}
 ```
 
 A `throw` statement in a test file.
-
-- **Misses:** `catch`.
-- **Settings traced to:** none.
 
 ## Flags
 - Test files only: `*.test.ts` and `*.test.tsx`. `*.spec.ts` and `.js` tests are not read. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.

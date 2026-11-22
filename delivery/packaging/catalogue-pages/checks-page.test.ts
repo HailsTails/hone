@@ -61,4 +61,24 @@ describe("checksPageOf", () => {
       text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Misses:** casts in [tests](../rules/tests-stub-ports.md).\n\n### non-null-assertions\n",
     });
   });
+
+  it("lists a check's margin facts above its prose, in the order flags beyond the symptom, misses, settings traced to", () => {
+    const file: CatalogueFile = {
+      ...FILE,
+      checks: [
+        {
+          symptom: "claimed-type",
+          name: "cast-to-any",
+          clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-1"), clause: clauseIdOf("any-cast") },
+          settingsTracedTo: "none.",
+          misses: "casts in strings.",
+          flagsBeyondTheSymptom: "`as const`.",
+        },
+      ],
+    };
+    expect(checksPageOf({ file, path: PATH, prose: new Map([["typescript/symptoms/claimed-type/cast-to-any.md", "## Fix\n\nDeclare it."]]) })).toEqual({
+      path: "rules/typescript/checks.md",
+      text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Flags beyond the symptom:** `as const`.\n- **Misses:** casts in strings.\n- **Settings traced to:** none.\n\n## Fix\n\nDeclare it.\n",
+    });
+  });
 });

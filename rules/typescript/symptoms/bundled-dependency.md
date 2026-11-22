@@ -22,8 +22,7 @@
   "recipes": [
     "declared-not-bundled"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "howItIsSeen": "files (build output)."
 }
 ```
-
-- **How it is seen:** files (build output).

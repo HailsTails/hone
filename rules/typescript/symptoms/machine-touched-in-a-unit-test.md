@@ -33,9 +33,8 @@
     "integration-test-suffix",
     "ports-in-the-argument"
   ],
-  "correctUses": []
+  "correctUses": [],
+  "breachACheckCouldName": "the unit with no port.",
+  "toNameTheBreach": "graph: what the unit imports."
 }
 ```
-
-- **The breach a check could name:** the unit with no port.
-- **To name the breach, a check needs:** graph: what the unit imports.

@@ -1,13 +1,13 @@
 # else-after-an-exit
 
 ```json
-{}
+{
+  "misses": "an `if` nested with no `else`.",
+  "settingsTracedTo": "none."
+}
 ```
 
 An `else` after an `if` branch that always exits.
-
-- **Misses:** an `if` nested with no `else`.
-- **Settings traced to:** none.
 
 ## Flags
 
