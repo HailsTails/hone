@@ -47,7 +47,7 @@ const shippedSources = import.meta.glob(
 
 describe("core's shipped source under the oldest supported TypeScript, read as build-time raw modules (CD-47: the shipped source is the assertion's subject; nothing is spawned or written)", () => {
   it("reads a known file, so the scanned set is not silently empty", () => {
-    expect(shippedSources).toEqual(expect.objectContaining({ "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts": expect.any(String) }));
+    expect(shippedSources).toEqual(expect.objectContaining({ "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts": expect.any(String) }));
   });
 
   it("reports a syntax the oldest supported TypeScript cannot parse, naming the file, so the scan can fail", async () => {

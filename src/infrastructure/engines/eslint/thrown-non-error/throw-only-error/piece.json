@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "throw"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd10",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "throw-only-error"
+  }
+}

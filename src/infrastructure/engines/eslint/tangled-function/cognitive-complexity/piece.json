@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "function"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd41",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "cognitive-complexity"
+  }
+}

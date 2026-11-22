@@ -2,9 +2,9 @@ import type { DirectoryPort } from "../../application/ports/file-system/director
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { pieceFilePath, readPieceFile } from "../content-files/rule-sets/rule-set-reader.ts";
+import { pieceFilePath } from "../content-files/rule-sets/rule-set-reader.ts";
 import { readHeldDiscipline } from "../content-files/rule-sets/held-discipline.ts";
-import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
+import { readLocatedPieceFile } from "../content-files/rule-sets/located-piece-file.ts";
 import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
@@ -91,10 +91,10 @@ const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoa
     discipline: request.clause.discipline,
     mechanism: request.mechanism,
   };
-  if (request.fileText.exists({ path: pieceFilePath(location) }) === "absent") {
+  if (request.ruleSetRoot !== request.installRoot && request.fileText.exists({ path: pieceFilePath(location) }) === "absent") {
     return failed({ kind: "piece-missing", address, mechanism: request.mechanism });
   }
-  const piece = readPieceFile({ ...location, fileText: request.fileText, discipline: defined.value.discipline });
+  const piece = readLocatedPieceFile({ ...location, fileText: request.fileText, discipline: defined.value.discipline });
   if (piece.outcome === "failed") {
     return piece;
   }
@@ -107,7 +107,7 @@ const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoa
     value: {
       exceptions: defined.value.definition.exceptions,
       anchor: defined.value.definition.anchor,
-      pieceRoot: request.path.join({ segments: pieceFolderSegmentsOf(location) }),
+      pieceRoot: entry.pieceRoot,
       settings: entry.settings,
       declarations: entry.clauseSettings,
       editions: entry.editions,

@@ -26,7 +26,7 @@ import {
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
-import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/CD-14/piece.json" with { type: "json" };
+import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json" with { type: "json" };
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import type { ChecksRunRequest } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-run-types.ts";
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
@@ -175,9 +175,9 @@ const CLASS_RULE = "hone/authored-class-or-this#class-keyword";
 
 const SOURCE_FILE = repoPathOf("kept.ts");
 
-const BINDING_SETTINGS = ESLINT_CD_14_PIECE.clauses[0].settings;
+const BINDING_SETTINGS = ESLINT_CD_14_PIECE.settings;
 
-const PIECE_ROOT = `${INSTALL_ROOT}/src/infrastructure/engines/eslint/CD-14`;
+const PIECE_ROOT = `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`;
 
 const BINDINGS: ChecksRunRequest["bindings"] = [{ mechanism: "eslint", clause: { address: CLASS_SYNTAX, pieceRoot: PIECE_ROOT, settings: BINDING_SETTINGS } }];
 

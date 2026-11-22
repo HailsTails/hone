@@ -2,6 +2,8 @@ import type { EngineBindings } from "../../domain/language-layer/catalogue-bindi
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { Result } from "../../domain/result.ts";
 
+import type { CheckContent } from "../../domain/language-layer/symptom-catalogue.ts";
+
 export type EngineBindingsRepository = {
-  readonly read: (request: Record<string, never>) => Result<EngineBindings, VersionTwoLoadFailure>;
+  readonly read: (request: { readonly checks?: readonly CheckContent[] }) => Result<EngineBindings, VersionTwoLoadFailure>;
 };

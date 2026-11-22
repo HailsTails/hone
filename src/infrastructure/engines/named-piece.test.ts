@@ -6,6 +6,7 @@ import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { readNamedPiece } from "./named-piece.ts";
 
 const PIECE_ROOT = "/install/src/infrastructure/engines/walker/ambient-randomness/direct-call";
+const EXAMPLES_PATH = "/install/src/infrastructure/engines/walker/ambient-randomness/direct-call/direct-call.examples.json";
 const PIECE_PATH = "/install/src/infrastructure/engines/walker/ambient-randomness/direct-call/piece.json";
 const SUBJECT = {
   installRoot: "/install",
@@ -17,7 +18,7 @@ const SUBJECT = {
 
 describe("readNamedPiece", () => {
   it("binds an audit check directly from its named declaration", () => {
-    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(PIECE_PATH).mockReturnValueOnce(PIECE_ROOT);
+    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(PIECE_PATH).mockReturnValueOnce(EXAMPLES_PATH).mockReturnValueOnce(PIECE_ROOT);
     const read = vi.fn<FileTextPort["read"]>().mockReturnValue({
       outcome: "ok",
       value: '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"ambient-randomness.ts"},"editions":["1","2"]}',
@@ -28,6 +29,8 @@ describe("readNamedPiece", () => {
         anchor: { kind: "file" }, exceptions: "allowed", settings: { module: "ambient-randomness.ts" }, declarations: {},
         editions: { declared: [editionOf("1"), editionOf("2")], default: editionOf("1"), latest: editionOf("2") },
         pieceRoot: PIECE_ROOT,
+        examplesPath: EXAMPLES_PATH,
+        forms: {},
       },
     });
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });

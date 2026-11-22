@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "compiler-overrides.ts"
+  },
+  "editions": [
+    "1",
+    "2"
+  ],
+  "implementation": {
+    "symptom": "strictness-weakened",
+    "check": "strict"
+  }
+}

@@ -24,21 +24,21 @@ describe("shippedCataloguesOf", () => {
     });
   });
 
-  it("fails with the load failure when the install's pieces cannot be read", () => {
+  it("fails with the load failure when the install's rule items cannot be listed", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
       list: vi
         .fn<DirectoryPort["list"]>()
-        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/walker"), detail: "EACCES" } }),
+        .mockReturnValueOnce({ outcome: "failed", error: { kind: "directory-unreadable", path: absoluteRootOf("/install/rules"), detail: "EACCES" } }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     expect(shippedCataloguesOf({ fileText, directory, path: PATH, installRoot: INSTALL_ROOT })).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/walker", detail: "EACCES" },
+      error: { kind: "file-unreadable", path: "/install/rules", detail: "EACCES" },
     });
   });
 

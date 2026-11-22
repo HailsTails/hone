@@ -4,7 +4,7 @@ import type { ModuleLoad, ModuleLoaderPort } from "../../../../../application/po
 import { createPathPort } from "../../../../node/path-port.ts";
 import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
-import cd27Plugin from "../../CD-27/cd27/cd27.eslint-plugin.ts";
+import cd27Plugin from "../../test-switched-off/focused-tests/eslint-plugin.ts";
 import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./hone-plugin.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
@@ -33,12 +33,12 @@ const SKIPPED_TESTS_CHECK: Check = {
   forms: [],
 };
 
-const PIECE_FILE = "/install/src/infrastructure/engines/eslint/CD-27/piece.json";
+const PIECE_FILE = "/install/src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json";
 
-const PLUGIN_MODULE_PATH = "/install/src/infrastructure/engines/eslint/CD-27/cd27/cd27.eslint-plugin.ts";
+const PLUGIN_MODULE_PATH = "/install/src/infrastructure/engines/eslint/test-switched-off/focused-tests/eslint-plugin.ts";
 
 const PIECE_TEXT =
-  '{"discipline":"CD-27","clauses":[{"clause":"skipped-tests","settings":{"pluginNamespace":"hone-cd27","pluginModule":"cd27/cd27.eslint-plugin.ts","rule":"skipped-tests"}}]}';
+  '{"version":2,"anchor":{"kind":"file"},"implementation":{"symptom":"test-switched-off","check":"focused-tests"},"settings":{"pluginNamespace":"hone-cd27","pluginModule":"eslint-plugin.ts","rule":"skipped-tests"}}';
 
 const PIECE_READ: ReturnType<FileTextPort["read"]> = { outcome: "ok", value: PIECE_TEXT };
 
@@ -50,7 +50,7 @@ const pluginBuiltFrom = (request: { readonly read: ReturnType<FileTextPort["read
   const built = honePluginAt({
     checks: [SKIPPED_TESTS_CHECK],
     installRoot: absoluteRootOf("/install"),
-    fileText: { read, exists: vi.fn<FileTextPort["exists"]>(), write: vi.fn<FileTextPort["write"]>() },
+    fileText: { read, exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"), write: vi.fn<FileTextPort["write"]>() },
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
     modules: { load },
     boundary: SILENT_BOUNDARY,
@@ -59,14 +59,14 @@ const pluginBuiltFrom = (request: { readonly read: ReturnType<FileTextPort["read
 };
 
 describe("honePluginAt", () => {
-  it("builds the plugin from the piece of each ESLint check's discipline and the plugin module that piece names", async () => {
+  it("builds the plugin from the piece of each ESLint check and the plugin module that piece names", async () => {
     expect(await pluginBuiltFrom({ read: PIECE_READ, load: PLUGIN_LOADED }).built).toEqual({
       outcome: "ok",
       value: { meta: { name: "@hailstails/hone/eslint-plugin", version: "0.0.0-local" }, rules: { "test-switched-off#skipped-tests": expect.anything() } },
     });
   });
 
-  it("reads the discipline's piece under the install root", async () => {
+  it("reads the check's piece under the install root", async () => {
     const { built, read } = pluginBuiltFrom({ read: PIECE_READ, load: PLUGIN_LOADED });
     await built;
     expect(read).toHaveBeenCalledWith({ path: PIECE_FILE });
@@ -81,18 +81,18 @@ describe("honePluginAt", () => {
   it("fails naming a piece that cannot be read", async () => {
     expect(
       await pluginBuiltFrom({ read: { outcome: "failed", error: { kind: "unreadable", path: PIECE_FILE, detail: "ENOENT" } }, load: PLUGIN_LOADED }).built,
-    ).toEqual({ outcome: "failed", error: { kind: "piece-unreadable", pieceFile: PIECE_FILE, detail: "ENOENT" } });
+    ).toEqual({ outcome: "failed", error: { kind: "piece-unreadable", pieceFile: PIECE_FILE, detail: "test-switched-off#skipped-tests: ENOENT" } });
   });
 
   it("fails naming a piece that is not JSON", async () => {
     expect(await pluginBuiltFrom({ read: { outcome: "ok", value: "not json" }, load: PLUGIN_LOADED }).built).toMatchObject({
       outcome: "failed",
-      error: { kind: "piece-unreadable", pieceFile: PIECE_FILE },
+      error: { kind: "piece-source-invalid", pieceFile: PIECE_FILE },
     });
   });
 
   it("fails naming a piece that names no plugin module", async () => {
-    expect(await pluginBuiltFrom({ read: { outcome: "ok", value: '{"clauses":"none"}' }, load: PLUGIN_LOADED }).built).toMatchObject({
+    expect(await pluginBuiltFrom({ read: { outcome: "ok", value: '{"version":2,"anchor":{"kind":"file"},"settings":{}}' }, load: PLUGIN_LOADED }).built).toMatchObject({
       outcome: "failed",
       error: { kind: "piece-source-invalid", pieceFile: PIECE_FILE },
     });
@@ -110,14 +110,14 @@ describe("honePluginAt", () => {
   it("fails naming a plugin module that exports nothing", async () => {
     expect(await pluginBuiltFrom({ read: PIECE_READ, load: { outcome: "ok", value: "not a module" } }).built).toMatchObject({
       outcome: "failed",
-      error: { kind: "plugin-invalid", pieceFile: PIECE_FILE, pluginModule: "cd27/cd27.eslint-plugin.ts" },
+      error: { kind: "plugin-invalid", pieceFile: PIECE_FILE, pluginModule: "eslint-plugin.ts" },
     });
   });
 
   it("fails naming a plugin module whose default export is not an ESLint plugin", async () => {
     expect(await pluginBuiltFrom({ read: PIECE_READ, load: { outcome: "ok", value: { default: { rules: "none" } } } }).built).toMatchObject({
       outcome: "failed",
-      error: { kind: "plugin-invalid", pieceFile: PIECE_FILE, pluginModule: "cd27/cd27.eslint-plugin.ts" },
+      error: { kind: "plugin-invalid", pieceFile: PIECE_FILE, pluginModule: "eslint-plugin.ts" },
     });
   });
 });
@@ -126,23 +126,23 @@ describe("honePluginFailureText", () => {
   it.each<{ readonly failure: HonePluginFailure; readonly text: string }>([
     {
       failure: { kind: "piece-unreadable", pieceFile: PIECE_FILE, detail: "ENOENT" },
-      text: "the piece /install/src/infrastructure/engines/eslint/CD-27/piece.json cannot be read: ENOENT",
+      text: "the piece /install/src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json cannot be read: ENOENT",
     },
     {
       failure: { kind: "piece-source-invalid", pieceFile: PIECE_FILE, detail: "clauses: expected array" },
-      text: "the piece /install/src/infrastructure/engines/eslint/CD-27/piece.json is not an ESLint piece: clauses: expected array",
+      text: "the piece /install/src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json is not an ESLint piece: clauses: expected array",
     },
     {
       failure: { kind: "plugin-unloadable", path: PLUGIN_MODULE_PATH, detail: "SyntaxError" },
-      text: "the plugin module /install/src/infrastructure/engines/eslint/CD-27/cd27/cd27.eslint-plugin.ts cannot be loaded: SyntaxError",
+      text: "the plugin module /install/src/infrastructure/engines/eslint/test-switched-off/focused-tests/eslint-plugin.ts cannot be loaded: SyntaxError",
     },
     {
-      failure: { kind: "plugin-invalid", pieceFile: PIECE_FILE, pluginModule: "cd27/cd27.eslint-plugin.ts", detail: "rules: expected record" },
-      text: "the plugin module cd27/cd27.eslint-plugin.ts of the piece /install/src/infrastructure/engines/eslint/CD-27/piece.json is not an ESLint plugin: rules: expected record",
+      failure: { kind: "plugin-invalid", pieceFile: PIECE_FILE, pluginModule: "eslint-plugin.ts", detail: "rules: expected record" },
+      text: "the plugin module eslint-plugin.ts of the piece /install/src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json is not an ESLint plugin: rules: expected record",
     },
     {
       failure: { kind: "piece-rule-missing", pieceFile: PIECE_FILE, rule: "skipped-tests" },
-      text: "the piece /install/src/infrastructure/engines/eslint/CD-27/piece.json runs the rule skipped-tests, which its plugin module does not hold",
+      text: "the piece /install/src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json runs the rule skipped-tests, which its plugin module does not hold",
     },
     {
       failure: { kind: "check-rule-missing", ruleId: "hone/test-switched-off#skipped-tests" },

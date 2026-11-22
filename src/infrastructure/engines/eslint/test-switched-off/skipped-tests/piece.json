@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "skip"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd27",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "skipped-tests"
+  },
+  "implementation": {
+    "symptom": "test-switched-off",
+    "check": "focused-tests"
+  }
+}

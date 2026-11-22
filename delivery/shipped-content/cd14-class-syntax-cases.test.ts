@@ -6,10 +6,10 @@ import { absolutePathSchema } from "../../src/infrastructure/content-files/absol
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { eslintPluginModuleSchema } from "../../src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.ts";
-import classAuthoringPlugin from "../../src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
+import classAuthoringPlugin from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
 
-const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../src/infrastructure/engines/eslint/CD-14`);
+const PIECE_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`);
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
 

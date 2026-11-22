@@ -6,6 +6,10 @@ import type { DisciplineFile, PieceFile } from "../../../domain/rule-set/rule-se
 
 export type Held<File> = { readonly held: "absent" } | { readonly held: "present"; readonly file: File };
 
+export type LocatedPieceFile = Omit<PieceFile, "clauses"> & {
+  readonly clauses: readonly (PieceFile["clauses"][number] & { readonly pieceRoot: string })[];
+};
+
 export type RuleSetFiles = {
   readonly disciplineFile: (request: {
     readonly ruleSetRoot: AbsolutePath;
@@ -17,5 +21,5 @@ export type RuleSetFiles = {
     readonly installRoot: AbsolutePath;
     readonly mechanism: EngineId;
     readonly discipline: DisciplineFile;
-  }) => Result<PieceFile, VersionTwoLoadFailure>;
+  }) => Result<LocatedPieceFile, VersionTwoLoadFailure>;
 };

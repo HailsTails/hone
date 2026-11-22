@@ -4,7 +4,7 @@ import { createDefaultFileTextPort } from "../../node/file-system/file-text-port
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import { readBoundCatalogue } from "./bound-catalogue.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
-import { TEST_BODY_SECTIONS } from "../../engines/walker/CD-27/test-body-logic.ts";
+import { TEST_BODY_SECTIONS } from "../../engines/walker/branch-in-a-test/test-body/test-body-logic.ts";
 import { checkAddressOf, checkAt, checksOf } from "../../../domain/language-layer/check-address.ts";
 import type {
   Case,

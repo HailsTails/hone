@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "keyword",
+    "keyword": "let"
+  },
+  "settings": {
+    "pluginNamespace": "hone-cd1",
+    "pluginModule": "eslint-plugin.ts",
+    "rule": "implicit-any-let"
+  },
+  "implementation": {
+    "symptom": "untyped-value",
+    "check": "explicit-any"
+  }
+}

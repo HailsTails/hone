@@ -4,7 +4,6 @@ import type { RunnerClause } from "../../domain/runner/runner-module-types.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
-import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import type { ClauseDefinition, SourceCase } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressOf } from "../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
@@ -74,14 +73,7 @@ export const boundClauseOf = (request: RuleSetReading & ClauseRequest): Result<B
       clause: {
         address,
         anchor: definition.anchor,
-        pieceRoot: request.path.join({
-          segments: pieceFolderSegmentsOf({
-            ruleSetRoot: ruleSetRoot.value,
-            installRoot: request.installRoot,
-            mechanism: request.mechanism,
-            discipline: address.discipline,
-          }),
-        }),
+        pieceRoot: entry.pieceRoot,
         settings: entry.settings,
         clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
         edition: entry.editions.default,

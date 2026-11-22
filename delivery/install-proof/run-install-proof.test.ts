@@ -53,7 +53,7 @@ const installedZodManifest = (request: { readonly version: string }): string => 
 
 const TARBALL = "/scratch/package-tarball/hailstails-hone-0.0.0.tgz";
 
-const PROJECTION = 'import piece0 from "@hailstails/hone/src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js";\n';
+const PROJECTION = 'import piece0 from "@hailstails/hone/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.js";\n';
 
 const PACKAGE_FILES: Readonly<Record<string, string>> = {
   "/package/package.json": PACKAGE_MANIFEST,

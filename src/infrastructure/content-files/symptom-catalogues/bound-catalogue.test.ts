@@ -116,7 +116,7 @@ describe("readBoundCatalogue", () => {
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
 
     expect(readBoundCatalogue({ fileText, directory, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/install/src/infrastructure/engines/walker" });
+    expect(directory.list).not.toHaveBeenCalled();
   });
 });
 
@@ -124,12 +124,12 @@ describe("createBoundCatalogueOf", () => {
   it("reads through the directory it was built with", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent").mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [] }), create: vi.fn<DirectoryPort["create"]>() };
 
     expect(createBoundCatalogueOf({ directory })({ fileText, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT })).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(directory.list).toHaveBeenCalledExactlyOnceWith({ path: "/install/src/infrastructure/engines/walker" });
+    expect(directory.list).toHaveBeenCalledExactlyOnceWith({ path: "/install/rules" });
   });
 });

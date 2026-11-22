@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "cast-expressions.ts",
+    "escapingDirectives": [
+      "@ts-expect-error",
+      "@ts-ignore",
+      "@ts-nocheck"
+    ]
+  }
+}

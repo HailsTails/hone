@@ -135,17 +135,17 @@ const ESLINT_CONSUMER = resolvedPath({ path: `${import.meta.dirname}/consumer-pr
 
 const INSTALLED_SOURCE = String.raw`(?!(?:[^/]*\/)*tests\/)(?!.*\.test\.ts$).*`;
 
-const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-23\/(?:piece\.json|[^/]+\.cases\.json)`;
+const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/unit-without-a-running-test\/companion-test-file\/(?:piece\.json|companion-test-file\.examples\.json)`;
 
-const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-14\/(?:piece\.json|[^/]+\.cases\.json)`;
+const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/authored-class-or-this\/(?:class-keyword|static-members-only)\/(?:piece\.json|[^/]+\.examples\.json)`;
 
 const CD_23_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/unit-without-a-running-test\/companion-test-file\.md`;
 
 const CD_14_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/authored-class-or-this\/class-keyword\.md`;
 
-const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/walker\/runner|src\/infrastructure\/engines\/walker\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA}|${CD_23_CHECK_ITEM})`;
+const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/walker\/runner|src\/infrastructure\/engines\/walker\/unit-without-a-running-test\/companion-test-file)\/${INSTALLED_SOURCE}|${CD_23_DATA}|${CD_23_CHECK_ITEM})`;
 
-const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA}|${CD_14_CHECK_ITEM})`;
+const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/authored-class-or-this\/(?:class-keyword|static-members-only))\/${INSTALLED_SOURCE}|${CD_14_DATA}|${CD_14_CHECK_ITEM})`;
 
 const WALKER_INSTALL_LIST = new RegExp(`^${WALKER_INSTALLED}$`);
 

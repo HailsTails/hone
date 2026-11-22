@@ -1,14 +1,19 @@
 import { z } from "zod";
-import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import { everyOk } from "../../../../../domain/settings/every-ok.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
-import { checkRuleIdOf, checkRuleNameOf, type RuledCheck, runsOnEslint } from "./check-rule-id.ts";
-import { eslintPieceSettingsSchema } from "../pieces/eslint-piece-settings-schema.ts";
+import { checkRuleNameOf, type RuledCheck } from "./check-rule-id.ts";
 import type { Rule } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import { eslintPluginModuleSchema, type LoadedEslintPlugin } from "../pieces/eslint-plugin-schema.ts";
 
-export type PieceSource = { readonly pieceFile: string; readonly pluginModule: string; readonly piece: unknown; readonly plugin: unknown };
+export type PieceSource = {
+  readonly check: RuledCheck;
+  readonly pieceFile: string;
+  readonly pluginModule: string;
+  readonly ruleName: string;
+  readonly plugin: unknown;
+};
 
 export type ChecksPlugin = {
   readonly meta: { readonly name: string; readonly version: string };
@@ -23,20 +28,11 @@ export type ChecksPluginFailure =
 
 type PieceRule = LoadedEslintPlugin["rules"][string];
 
-type ClauseRule = { readonly discipline: string; readonly clause: string; readonly rule: PieceRule };
-
 type Built<Value> = Result<Value, ChecksPluginFailure>;
 
 const PLUGIN_META = { name: `${TOOL_IDENTITY.packageName}/eslint-plugin`, version: "0.0.0-local" };
 
 const NUMBERED_LEAD = /^CD-\d+: /;
-
-const pieceSchema = z.looseObject({
-  discipline: z.string(),
-  clauses: z.array(z.looseObject({ clause: z.string(), settings: eslintPieceSettingsSchema })),
-});
-
-type PieceClause = z.infer<typeof pieceSchema>["clauses"][number];
 
 export const inSymptomWords = (request: { readonly message: string; readonly title: string }): string =>
   `${request.title}: ${request.message.replace(NUMBERED_LEAD, "")}`;
@@ -79,64 +75,20 @@ const checkRuleOf = (request: {
   create: (context) => request.rule.create(contextInSymptomWords({ context, boundary: request.boundary })),
 });
 
-const clauseRuleOf = (request: {
-  readonly source: PieceSource;
-  readonly discipline: string;
-  readonly entry: PieceClause;
-  readonly rules: LoadedEslintPlugin["rules"];
-}): Built<readonly ClauseRule[]> => {
-  const rule = Object.hasOwn(request.rules, request.entry.settings.rule) ? request.rules[request.entry.settings.rule] : undefined;
-  return rule === undefined
-    ? { outcome: "failed", error: { kind: "piece-rule-missing", pieceFile: request.source.pieceFile, rule: request.entry.settings.rule } }
-    : { outcome: "ok", value: [{ discipline: request.discipline, clause: request.entry.clause, rule }] };
-};
-
-const clauseRulesOf = (request: { readonly source: PieceSource }): Built<readonly ClauseRule[]> => {
-  const piece = pieceSchema.safeParse(request.source.piece);
-  if (!piece.success) {
-    return { outcome: "failed", error: { kind: "piece-source-invalid", pieceFile: request.source.pieceFile, detail: z.prettifyError(piece.error) } };
-  }
+const namedRuleOf = (request: { readonly source: PieceSource; readonly boundary: EslintMajorBoundary }): Built<readonly [string, Rule.RuleModule]> => {
+  const { check, pieceFile, pluginModule, ruleName } = request.source;
   const plugin = eslintPluginModuleSchema.safeParse({ default: request.source.plugin });
   if (!plugin.success) {
-    return {
-      outcome: "failed",
-      error: { kind: "plugin-invalid", pieceFile: request.source.pieceFile, pluginModule: request.source.pluginModule, detail: z.prettifyError(plugin.error) },
-    };
+    return { outcome: "failed", error: { kind: "plugin-invalid", pieceFile, pluginModule, detail: z.prettifyError(plugin.error) } };
   }
-  return gatheredOutcomes({
-    outcomes: piece.data.clauses
-      .filter((entry) => entry.settings.pluginModule === request.source.pluginModule)
-      .map((entry) => clauseRuleOf({ source: request.source, discipline: piece.data.discipline, entry, rules: plugin.data.default.rules })),
-  });
+  const { rules } = plugin.data.default;
+  const rule = Object.hasOwn(rules, ruleName) ? rules[ruleName] : undefined;
+  return rule === undefined
+    ? { outcome: "failed", error: { kind: "piece-rule-missing", pieceFile, rule: ruleName } }
+    : { outcome: "ok", value: [checkRuleNameOf({ check }), checkRuleOf({ rule, title: check.symptom.title, boundary: request.boundary })] };
 };
 
-const namedRuleOf = (request: {
-  readonly check: RuledCheck;
-  readonly clauseRules: readonly ClauseRule[];
-  readonly boundary: EslintMajorBoundary;
-}): Built<readonly (readonly [string, Rule.RuleModule])[]> => {
-  const clauseRule = request.clauseRules.find(
-    (candidate) =>
-      request.check.clause.ruleSet === TOOL_IDENTITY.ownRuleSet &&
-      request.check.clause.discipline === candidate.discipline &&
-      request.check.clause.clause === candidate.clause,
-  );
-  return clauseRule === undefined
-    ? { outcome: "failed", error: { kind: "check-rule-missing", ruleId: checkRuleIdOf({ check: request.check }) } }
-    : { outcome: "ok", value: [[checkRuleNameOf({ check: request.check }), checkRuleOf({ rule: clauseRule.rule, title: request.check.symptom.title, boundary: request.boundary })]] };
-};
-
-export const checksPluginOf = (request: {
-  readonly checks: readonly RuledCheck[];
-  readonly sources: readonly PieceSource[];
-  readonly boundary: EslintMajorBoundary;
-}): Built<ChecksPlugin> => {
-  const clauseRules = gatheredOutcomes({ outcomes: request.sources.map((source) => clauseRulesOf({ source })) });
-  if (clauseRules.outcome === "failed") {
-    return clauseRules;
-  }
-  const rules = gatheredOutcomes({
-    outcomes: request.checks.filter((check) => runsOnEslint({ check }) === "eslint").map((check) => namedRuleOf({ check, clauseRules: clauseRules.value, boundary: request.boundary })),
-  });
+export const checksPluginOf = (request: { readonly sources: readonly PieceSource[]; readonly boundary: EslintMajorBoundary }): Built<ChecksPlugin> => {
+  const rules = everyOk({ entries: request.sources, resolve: (source) => namedRuleOf({ source, boundary: request.boundary }) });
   return rules.outcome === "failed" ? rules : { outcome: "ok", value: { meta: PLUGIN_META, rules: Object.fromEntries(rules.value) } };
 };

@@ -17,7 +17,7 @@ const AUDIT_PIECE_TEXT =
 const ESLINT_PIECE_TEXT = '{ "version": 1, "discipline": "CD-17", "mechanism": "eslint", "clauses": [{ "clause": "clock-sources", "settings": {} }] }';
 
 describe("createEngineBindingsRepository", () => {
-  it("gives each clause the engines whose pieces under the install's engines folder run it, in the order of the registry, passing over folders that hold no piece", () => {
+  it("gives each clause the engines whose pieces under a team's mechanisms folder run it, in the order of the registry, passing over folders that hold no piece", () => {
     const fileText: FileTextPort = {
       exists: vi
         .fn<FileTextPort["exists"]>()
@@ -46,7 +46,7 @@ describe("createEngineBindingsRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "CD-17", kind: "directory" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: INSTALL, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
       outcome: "ok",
       value: new Map([
         [
@@ -59,10 +59,10 @@ describe("createEngineBindingsRepository", () => {
         ["CD-17#timers", [{ name: "walker" }]],
       ]),
     });
-    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/install/src/infrastructure/engines/walker" });
-    expect(fileText.exists).toHaveBeenNthCalledWith(2, { path: "/install/src/infrastructure/engines/walker/CD-17/piece.json" });
-    expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/install/src/infrastructure/engines/walker/runner/piece.json" });
-    expect(directory.list).toHaveBeenNthCalledWith(2, { path: "/install/src/infrastructure/engines/eslint" });
+    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/mechanisms/audit" });
+    expect(fileText.exists).toHaveBeenNthCalledWith(2, { path: "/repo/team-rules/mechanisms/audit/CD-17/piece.json" });
+    expect(fileText.exists).toHaveBeenNthCalledWith(3, { path: "/repo/team-rules/mechanisms/audit/runner/piece.json" });
+    expect(directory.list).toHaveBeenNthCalledWith(2, { path: "/repo/team-rules/mechanisms/eslint" });
   });
 
   it("reads a team's pieces from the mechanisms folder of its rule set", () => {
@@ -90,7 +90,7 @@ describe("createEngineBindingsRepository", () => {
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: INSTALL, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
       outcome: "ok",
       value: new Map(),
     });
@@ -110,9 +110,9 @@ describe("createEngineBindingsRepository", () => {
         .mockReturnValueOnce({ outcome: "ok", value: [] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: INSTALL, installRoot: INSTALL }).read({})).toMatchObject({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toMatchObject({
       outcome: "failed",
-      error: { kind: "file-malformed", path: "/install/src/infrastructure/engines/walker/CD-17/piece.json" },
+      error: { kind: "file-malformed", path: "/repo/team-rules/mechanisms/audit/CD-17/piece.json" },
     });
   });
 
@@ -127,14 +127,14 @@ describe("createEngineBindingsRepository", () => {
         .fn<DirectoryPort["list"]>()
         .mockReturnValueOnce({
           outcome: "failed",
-          error: { kind: "directory-unreadable", path: absoluteRootOf("/install/src/infrastructure/engines/walker"), detail: "EACCES" },
+          error: { kind: "directory-unreadable", path: absoluteRootOf("/repo/team-rules/mechanisms/audit"), detail: "EACCES" },
         })
         .mockReturnValueOnce({ outcome: "ok", value: [] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
-    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: INSTALL, installRoot: INSTALL }).read({})).toEqual({
+    expect(createEngineBindingsRepository({ fileText, directory, path: PATH, ruleSetRoot: TEAM, installRoot: INSTALL }).read({})).toEqual({
       outcome: "failed",
-      error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/walker", detail: "EACCES" },
+      error: { kind: "file-unreadable", path: "/repo/team-rules/mechanisms/audit", detail: "EACCES" },
     });
   });
 });

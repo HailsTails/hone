@@ -24,7 +24,8 @@ export const readBoundCatalogue = (source: BoundCatalogueSource): Result<Catalog
   if (holding.outcome === "failed") {
     return holding;
   }
-  const bindings = createEngineBindingsRepository(source).read({});
+  const checks = holding.value.held === "catalogue" ? holding.value.content.checks : [];
+  const bindings = createEngineBindingsRepository(source).read({ checks });
   if (bindings.outcome === "failed") {
     return bindings;
   }

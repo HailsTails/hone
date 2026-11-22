@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "test-body-logic.ts"
+  },
+  "editions": [
+    "1",
+    "2"
+  ],
+  "forms": {
+    "branching-with-if": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "a-try-block": {
+      "symptom": "throw-or-catch-in-a-test",
+      "check": "try-block"
+    },
+    "a-ternary": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "a-let": {
+      "symptom": "rebinding",
+      "check": "test-body"
+    },
+    "a-method-that-picks-or-tests-an-element": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "a-method-that-computes-a-value": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "a-method-that-mutates": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "a-short-circuit": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "an-optional-chain-after-an-index": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "an-optional-chain-on-a-mock-call": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "an-optional-chain-on-a-mock-result": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "an-optional-chain-on-a-property": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "an-optional-call": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "a-switch": {
+      "symptom": "branch-in-a-test",
+      "check": "test-body"
+    },
+    "serialising-or-parsing-json": {
+      "symptom": "text-past-its-reader",
+      "check": "test-body"
+    },
+    "merging-objects": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "building-an-object-from-entries": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "building-an-array-from-a-length": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "a-math-call": {
+      "symptom": "computed-value-in-a-test",
+      "check": "test-body"
+    },
+    "logic-inside-a-function-the-test-passes-on": {
+      "symptom": "double-with-a-body",
+      "check": "logic-in-a-passed-function"
+    }
+  }
+}

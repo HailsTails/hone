@@ -14,7 +14,8 @@ import type { FileTextPort } from "../../../../../application/ports/file-system/
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
+import { readLocatedPieceFile } from "../../../../content-files/rule-sets/located-piece-file.ts";
+import { readInstalledNames } from "../../../../content-files/rule-sets/installed-pieces.ts";
 import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
@@ -51,8 +52,6 @@ const eslintRunnerOnEslint9 = (): EmbeddedRunner =>
       }),
   });
 
-type RawTable = Readonly<Record<string, string>>;
-
 type ConformanceRow = {
   readonly name: string;
   readonly clause: RunnerClause;
@@ -60,19 +59,6 @@ type ConformanceRow = {
 };
 
 const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
-
-const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
-
-const foldersUnder = (request: { readonly table: RawTable; readonly prefix: string }): readonly string[] =>
-  [
-    ...new Set(
-      Object.keys(request.table)
-        .filter((key) => key.startsWith(request.prefix))
-        .map((key) => folderOf({ key })),
-    ),
-  ].sort();
-
-
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
   const held = readHeldDiscipline({
@@ -92,10 +78,9 @@ const rowsOf = (request: {
   readonly fileText: FileTextPort;
   readonly discipline: string;
   readonly mechanism: EngineId;
-  readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const discipline = disciplineOf(request);
-  const piece = readPieceFile({
+  const piece = readLocatedPieceFile({
     fileText: request.fileText,
     path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
@@ -110,7 +95,7 @@ const rowsOf = (request: {
     const clause: RunnerClause = {
       address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
       anchor: definition.anchor,
-      pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
+      pieceRoot: entry.pieceRoot,
       settings: entry.settings,
       clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
       edition: entry.editions.default,
@@ -127,11 +112,10 @@ const rowsOf = (request: {
 const conformanceRows = (request: {
   readonly disciplines: readonly string[];
   readonly mechanism: EngineId;
-  readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
-    rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
+    rowsOf({ fileText, discipline, mechanism: request.mechanism }),
   );
 };
 
@@ -144,17 +128,15 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
-  base: "../../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const heldNames = readInstalledNames({ fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), installRoot: RULE_SET_ROOT });
+
+assert(heldNames.outcome === "ok", "the install's version 1 names read");
+
+const legacyDisciplines = [...new Set(heldNames.value.namedClauses.filter((clause) => clause.kind === "mechanical").map(({ clause }) => clause.discipline))].sort();
 
 const ROWS = conformanceRows({
-  disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
+  disciplines: legacyDisciplines,
   mechanism: "eslint",
-  mechanismRoot: `${import.meta.dirname}/../..`,
 });
 
 describe("the ESLint engine behind the compatibility check", () => {

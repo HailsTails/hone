@@ -10,6 +10,7 @@ import type { Result } from "../../../domain/result.ts";
 import { readVersionOneNames, VERSION_ONE_NAMES_SEGMENTS } from "../../disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../engines/engine-registry.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
+import { catalogueClausesOf } from "../rule-sets/installed-pieces.ts";
 import { createItemFolderCatalogueRepository } from "../item-folders/read-item-folder-catalogue.ts";
 
 type CatalogueSource = {
@@ -29,7 +30,11 @@ const readSymptomCatalogue = (request: CatalogueSource): Result<ContentHolding, 
   if (names.outcome === "failed") {
     return names;
   }
-  const beside = { engines: ENGINE_REGISTRY, clauses: names.value.clauses, clauseOfCheck: names.value.clauseOfCheck, formatsOfToday: names.value.formatsOfToday };
+  const clauses = catalogueClausesOf({ ...request, installRoot: request.ruleSetRoot, names: names.value });
+  if (clauses.outcome === "failed") {
+    return clauses;
+  }
+  const beside = { engines: ENGINE_REGISTRY, clauses: clauses.value, clauseOfCheck: names.value.clauseOfCheck, formatsOfToday: names.value.formatsOfToday };
   return createItemFolderCatalogueRepository({ fileText: request.fileText, directory: request.directory, path: request.path, root: root.data, beside }).read({});
 };
 

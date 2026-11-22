@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "import-boundaries.ts"
+  },
+  "clauseSettings": {
+    "confinedPackages": {
+      "default": []
+    }
+  }
+}

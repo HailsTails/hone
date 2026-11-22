@@ -4,8 +4,7 @@ import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../node/path-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import { pieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
-import type { ClauseExceptions, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
+import type { ClauseExceptions, ClauseSettingDeclarations, DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { settledClauseEdition } from "../../domain/settings/clause-settings/clause-edition.ts";
 import { settledClauseSettings } from "./clause-settings.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
@@ -25,6 +24,7 @@ import { createRuleSetFiles, type RuleSetFiles } from "../content-files/rule-set
 import { runSettingsOf } from "./selection-file.ts";
 import type { ConsumerSelectionFile, RuleSetLocation, UnrunState } from "../../domain/settings/selection/selection-file.ts";
 import { readSelectionFile, selectionFilePathOf } from "./selection-reader.ts";
+import type { LocatedPieceFile } from "../../application/ports/rule-set/rule-set-files.ts";
 import type { SelectionRepository } from "../../application/ports/selection/selection-repository.ts";
 
 export const createSelectionRepository = (options: {
@@ -50,7 +50,7 @@ export const createDefaultSelectionRepository = (options: {
 type ResolvedClause = {
   readonly ruleSetRoot: AbsolutePath;
   readonly discipline: DisciplineFile;
-  readonly piece: PieceFile;
+  readonly piece: LocatedPieceFile;
   readonly binding: ClauseBinding;
   readonly exceptions: ClauseExceptions;
   readonly declarations: ClauseSettingDeclarations;
@@ -168,7 +168,7 @@ const pieceMissing = (request: PieceRequest): LoadFailure => ({
   mechanism: request.mechanism,
 });
 
-const pieceOf = (request: PieceRequest): Result<PieceFile, LoadFailure> => {
+const pieceOf = (request: PieceRequest): Result<LocatedPieceFile, LoadFailure> => {
   const loaded = request.earlier.find(
     (earlier) =>
       earlier.ruleSetRoot === request.ruleSetRoot &&
@@ -186,7 +186,8 @@ const pieceOf = (request: PieceRequest): Result<PieceFile, LoadFailure> => {
 };
 
 type PieceEntry = {
-  readonly piece: PieceFile;
+  readonly piece: LocatedPieceFile;
+  readonly pieceRoot: string;
   readonly settings: unknown;
   readonly declarations: ClauseSettingDeclarations;
   readonly editions: ClauseEditions;
@@ -209,7 +210,7 @@ const pieceEntry = (request: PieceRequest): Result<PieceEntry, LoadFailure> => {
   if (entry === undefined) {
     return failed(pieceMissing(request));
   }
-  return { outcome: "ok", value: { piece: piece.value, settings: entry.settings, declarations: entry.clauseSettings, editions: entry.editions } };
+  return { outcome: "ok", value: { piece: piece.value, pieceRoot: entry.pieceRoot, settings: entry.settings, declarations: entry.clauseSettings, editions: entry.editions } };
 };
 
 const resolvedClauseOf = (request: {
@@ -232,14 +233,7 @@ const resolvedClauseOf = (request: {
       clause: {
         address: clauseRequest.address,
         anchor: defined.definition.anchor,
-        pieceRoot: clauseRequest.path.join({
-          segments: pieceFolderSegmentsOf({
-            ruleSetRoot: clauseRequest.ruleSetRoot,
-            installRoot: clauseRequest.installRoot,
-            mechanism: clauseRequest.mechanism,
-            discipline: clauseRequest.address.discipline,
-          }),
-        }),
+        pieceRoot: entry.pieceRoot,
         settings: entry.settings,
         clauseSettings: defaultClauseSettings({ declarations: entry.declarations }),
         edition: entry.editions.default,

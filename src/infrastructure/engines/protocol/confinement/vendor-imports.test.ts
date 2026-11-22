@@ -522,10 +522,10 @@ describe("Vendor confinement over what this repository's own Hone source imports
       installProofPortSources: { "./delivery/install-proof/install-proof-ports.ts": expect.any(String) },
       bundlerPortSources: { "./delivery/packaging/building/esbuild-bundler-port.ts": expect.any(String) },
       walkerPieceSources: expect.objectContaining({
-        "./src/infrastructure/engines/walker/CD-14/class-syntax.ts": expect.any(String),
+        "./src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.ts": expect.any(String),
         "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts": expect.any(String),
       }),
-      eslintPieceSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts": expect.any(String) }),
+      eslintPieceSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts": expect.any(String) }),
       testSources: expect.objectContaining({
         "./src/application/run/check/run-check.test.ts": expect.any(String),
         "./src/infrastructure/node/file-system/file-system-port.test.ts": expect.any(String),

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { CATALOGUE_NAME } from "../../../src/domain/language-layer/catalogue-name.ts";
+import { namedPieceImplementationSchema } from "../../../src/infrastructure/engines/named-piece.ts";
 import { parsedJson } from "../../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import { CHANGELOG_FILE } from "../../release/changelog.ts";
@@ -32,6 +34,8 @@ const COMMAND_SOURCE = "src/hone.ts";
 const RUNNER_ENTRY = /^src\/infrastructure\/engines\/[^/]+\/runner\/runner\.ts$/;
 
 const PIECE_FILE = /^src\/infrastructure\/engines\/([^/]+)\/([^/]+)\/piece\.json$/;
+
+const NAMED_PIECE_FILE = new RegExp(`^src/infrastructure/engines/([^/]+)/(${CATALOGUE_NAME})/(${CATALOGUE_NAME})/piece\\.json$`);
 
 const RUNNER_FOLDER = "runner";
 
@@ -85,9 +89,20 @@ const pieceModuleSettingsSchema = z.looseObject({
   pluginModule: z.string().optional(),
 });
 
-const pieceFileSchema = z.looseObject({
+const legacyPieceFileSchema = z.looseObject({
   clauses: z.array(z.looseObject({ settings: pieceModuleSettingsSchema })),
 });
+
+const namedPieceFileSchema = z.looseObject({
+  version: z.literal(2),
+  implementation: namedPieceImplementationSchema.optional(),
+  settings: pieceModuleSettingsSchema,
+});
+
+const pieceFileSchema = z.union([
+  namedPieceFileSchema.transform((file) => ({ kind: "named" as const, file })),
+  legacyPieceFileSchema.transform((file) => ({ kind: "legacy" as const, file })),
+]);
 
 const PIECE_MODULE_KEYS: ReadonlySet<string> = new Set(pieceModuleSettingsSchema.keyof().options);
 
@@ -113,7 +128,8 @@ export const builtModulePath = (request: { readonly path: string }): string =>
 export const piecePathsIn = (request: { readonly sourcePaths: readonly string[] }): readonly string[] =>
   shippedPaths(request).filter((path) => {
     const match = PIECE_FILE.exec(path);
-    return match !== null && match[2] !== RUNNER_FOLDER;
+    const named = NAMED_PIECE_FILE.exec(path);
+    return (named !== null && named[2] !== RUNNER_FOLDER) || (match !== null && match[2] !== RUNNER_FOLDER);
   });
 
 type ParsedPiece = { readonly piece: PieceText; readonly document: unknown; readonly file: PieceFile };
@@ -134,15 +150,22 @@ const modulesNamedIn = (request: { readonly settings: PieceModuleSettings }): re
 
 const pieceFolderOf = (request: { readonly path: string }): string => request.path.slice(0, request.path.lastIndexOf("/"));
 
-const pieceModuleEntries = (request: ParsedPiece): readonly string[] =>
-  request.file.clauses.flatMap((clause) =>
-    modulesNamedIn({ settings: clause.settings }).map((module) => `${pieceFolderOf({ path: request.piece.path })}/${module}`),
-  );
+const pieceModuleEntries = (request: ParsedPiece): readonly string[] => {
+  const folder = pieceFolderOf({ path: request.piece.path });
+  const { kind, file } = request.file;
+  if (kind === "legacy") {
+    return file.clauses.flatMap(({ settings }) => modulesNamedIn({ settings }).map((module) => `${folder}/${module}`));
+  }
+  const { implementation, settings } = file;
+  const mechanismFolder = pieceFolderOf({ path: pieceFolderOf({ path: folder }) });
+  const moduleFolder = implementation === undefined ? folder : `${mechanismFolder}/${implementation.symptom}/${implementation.check}`;
+  return modulesNamedIn({ settings }).map((module) => `${moduleFolder}/${module}`);
+};
 
 type MechanismImport = "by-package-name" | "by-path";
 
 const mechanismImportOf = (request: ParsedPiece): MechanismImport =>
-  PACKAGE_IMPORTED_MECHANISMS.has(PIECE_FILE.exec(request.piece.path)?.[1] ?? "") ? "by-package-name" : "by-path";
+  PACKAGE_IMPORTED_MECHANISMS.has((NAMED_PIECE_FILE.exec(request.piece.path) ?? PIECE_FILE.exec(request.piece.path))?.[1] ?? "") ? "by-package-name" : "by-path";
 
 const exportedModulesOf = (request: { readonly pieces: readonly ParsedPiece[] }): readonly string[] => [
   ...new Set(request.pieces.filter((piece) => mechanismImportOf(piece) === "by-package-name").flatMap(pieceModuleEntries).map((path) => builtModulePath({ path }))),
@@ -170,15 +193,17 @@ const builtClauseOf = (request: { readonly clause: unknown }): unknown =>
       )
     : request.clause;
 
-const builtPieceOf = (request: { readonly document: unknown }): unknown =>
-  isRecord(request.document)
+const builtPieceOf = ({ document }: { readonly document: unknown }): unknown =>
+  isRecord(document)
     ? Object.fromEntries(
-        Object.entries(request.document).map(([key, field]) => [
+        Object.entries(document).map(([key, field]) => [
           key,
-          key === "clauses" && Array.isArray(field) ? field.map((clause: unknown) => builtClauseOf({ clause })) : field,
+          key === "clauses" && Array.isArray(field) ? field.map((clause: unknown) => builtClauseOf({ clause }))
+            : key === "settings" && document.version === 2 ? builtSettingsOf({ settings: field })
+            : field,
         ]),
       )
-    : request.document;
+    : document;
 
 const builtPieceText = (request: { readonly document: unknown }): string =>
   `${JSON.stringify(builtPieceOf({ document: request.document }), null, 2)}\n`;

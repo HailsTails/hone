@@ -2,8 +2,9 @@ import { assert, describe, expect, it, vi } from "vitest";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { createDefaultFileTextPort } from "../node/file-system/file-text-port.ts";
 import { createDefaultPathPort, createPathPort } from "../node/path-port.ts";
+import type { LocatedPieceFile } from "../../application/ports/rule-set/rule-set-files.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
-import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
+import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { clauseEditionsSchema } from "../content-files/edition.ts";
 import { clauseIdSchema, disciplineIdSchema } from "../hone-config-file/identifiers.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
@@ -66,20 +67,21 @@ const disciplineFile = (request: { readonly id: string; readonly clauses: readon
 const pieceFile = (request: {
   readonly discipline: string;
   readonly mechanism: EngineId;
-  readonly clauses: PieceFile["clauses"];
-}): PieceFile => ({
+  readonly clauses: readonly Omit<LocatedPieceFile["clauses"][number], "pieceRoot">[];
+  readonly pieceRoot?: string;
+}): LocatedPieceFile => ({
   version: 1,
   discipline: disciplineIdSchema.parse(request.discipline),
   mechanism: request.mechanism,
-  clauses: request.clauses,
+  clauses: request.clauses.map((clause) => ({ ...clause, pieceRoot: request.pieceRoot ?? `/install/src/infrastructure/engines/${request.mechanism}/${request.discipline}` })),
 });
 
 const pieceClause = (request: {
   readonly clause: string;
   readonly settings: unknown;
   readonly clauseSettings: ClauseSettingDeclarations;
-  readonly editions: PieceFile["clauses"][number]["editions"];
-}): PieceFile["clauses"][number] => ({
+  readonly editions: LocatedPieceFile["clauses"][number]["editions"];
+}): Omit<LocatedPieceFile["clauses"][number], "pieceRoot"> => ({
   clause: clauseIdSchema.parse(request.clause),
   settings: request.settings,
   clauseSettings: request.clauseSettings,
@@ -136,6 +138,7 @@ const TEAM_CD_14 = disciplineFile({
 });
 
 const TEAM_CD_14_PIECE = pieceFile({
+  pieceRoot: "/repo/team-rules/mechanisms/audit/CD-14",
   discipline: "CD-14",
   mechanism: AUDIT,
   clauses: [moduleClause({ clause: "class-syntax", module: "team-class-syntax.ts" })],
@@ -144,6 +147,7 @@ const TEAM_CD_14_PIECE = pieceFile({
 const TM_1 = disciplineFile({ id: "TM-1", clauses: [auditClause("no-tmp-files")] });
 
 const TM_1_PIECE = pieceFile({
+  pieceRoot: "/repo/team-rules/mechanisms/audit/TM-1",
   discipline: "TM-1",
   mechanism: AUDIT,
   clauses: [moduleClause({ clause: "no-tmp-files", module: "no-tmp-files.ts" })],
@@ -206,12 +210,12 @@ const NO_CHECKS: ReturnType<RuleSetFiles["checks"]> = { outcome: "ok", value: []
 const disciplineReads = (first: FileRead<DisciplineFile>, second: FileRead<DisciplineFile> = first) =>
   vi.fn<RuleSetFiles["discipline"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
 
-const pieceReads = (first: FileRead<PieceFile>, second: FileRead<PieceFile> = first) =>
+const pieceReads = (first: FileRead<LocatedPieceFile>, second: FileRead<LocatedPieceFile> = first) =>
   vi.fn<RuleSetFiles["piece"]>().mockReturnValueOnce(first).mockReturnValueOnce(second);
 
 const rulesReturning = (request: {
   readonly disciplines: readonly [FileRead<DisciplineFile>, FileRead<DisciplineFile>?];
-  readonly pieces: readonly [FileRead<PieceFile>, FileRead<PieceFile>?];
+  readonly pieces: readonly [FileRead<LocatedPieceFile>, FileRead<LocatedPieceFile>?];
   readonly runner: "present" | "absent";
 }) => {
   const [firstDiscipline, secondDiscipline] = request.disciplines;
@@ -405,7 +409,8 @@ describe("selectionFrom selecting clauses", () => {
   });
 
   it("roots a named rule set declared as . at the repo root", () => {
-    const rules = rulesReturning({ disciplines: [present(TM_1)], pieces: [present(TM_1_PIECE)], runner: "present" });
+    const piece = pieceFile({ discipline: "TM-1", mechanism: "walker", pieceRoot: "/repo/mechanisms/audit/TM-1", clauses: [moduleClause({ clause: "no-tmp-files", module: "no-tmp-files.ts" })] });
+    const rules = rulesReturning({ disciplines: [present(TM_1)], pieces: [present(piece)], runner: "present" });
     expect(
       selectionOver(rules, { version: 1, ruleSets: { team: "." }, clauses: { "team/TM-1#no-tmp-files": "walker" } }),
     ).toMatchObject({

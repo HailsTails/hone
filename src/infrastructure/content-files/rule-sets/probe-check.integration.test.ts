@@ -10,7 +10,7 @@ import { createDefaultPathPort } from "../../node/path-port.ts";
 import { selectionFrom } from "../../disciplines-file/consumer-selection.ts";
 import { selectionFileOf } from "../../disciplines-file/selection-file.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
-import * as exportTestSibling from "../../engines/walker/CD-23/export-test-sibling.ts";
+import * as exportTestSibling from "../../engines/walker/unit-without-a-running-test/companion-test-file/export-test-sibling.ts";
 import { createWalkerRunner } from "../../engines/walker/runner/create-walker-runner.ts";
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -88,7 +88,7 @@ assert.isDefined(PROBE_BINDING, "the selection binds the probe clause");
 assert.isDefined(EXPORT_TEST_SIBLING_BINDING, "the selection binds the CD-23 clause");
 
 const PIECE_MODULES: Readonly<Record<string, unknown>> = {
-  [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "walker", "CD-23", "export-test-sibling.ts"] })]: exportTestSibling,
+  [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "walker", "unit-without-a-running-test", "companion-test-file", "export-test-sibling.ts"] })]: exportTestSibling,
   [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "audit", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
 };
 

@@ -70,10 +70,9 @@ const TM_1_PIECE = `{
 }`;
 
 const CD_15_PIECE = `{
-  "version": 1,
-  "discipline": "CD-15",
-  "mechanism": "walker",
-  "clauses": [{ "clause": "loops", "settings": { "module": "loops.ts" } }]
+  "version": 2,
+  "anchor": { "kind": "file" },
+  "settings": { "module": "loops.ts" }
 }`;
 
 const RUNNER_TEXT = "export const runner = {};\n";
@@ -81,8 +80,8 @@ const RUNNER_TEXT = "export const runner = {};\n";
 const INSTALL_FILES: Readonly<Record<string, string>> = {
   "/repo/hone.config.json": SETTINGS_TEXT,
   "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
-  "/install/src/infrastructure/engines/walker/CD-15/piece.json": CD_15_PIECE,
-  "/install/src/infrastructure/engines/walker/CD-15/loops.cases.json": LOOPS_CASES,
+  "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/piece.json": CD_15_PIECE,
+  "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json": LOOPS_CASES,
   "/install/src/infrastructure/engines/walker/runner/runner.ts": RUNNER_TEXT,
 };
 
@@ -191,7 +190,7 @@ describe("createSettingsSources", () => {
       outcome: "ok",
       value: {
         anchor: { kind: "file" },
-        pieceRoot: "/install/src/infrastructure/engines/walker/CD-15",
+        pieceRoot: "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement",
         settings: { module: "loops.ts" },
         declarations: {},
       },
@@ -231,8 +230,8 @@ describe("createSettingsSources", () => {
       pieceOf({
         files: {
           "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
-          "/install/src/infrastructure/engines/walker/CD-15/piece.json": CD_15_PIECE,
-          "/install/src/infrastructure/engines/walker/CD-15/loops.cases.json": LOOPS_CASES,
+          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/piece.json": CD_15_PIECE,
+          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json": LOOPS_CASES,
         },
         ruleSetRoot: INSTALL_ROOT,
         clause: "CD-15#loops",

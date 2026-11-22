@@ -5,13 +5,13 @@ import type { Held } from "../../../application/ports/rule-set/rule-set-files.ts
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ClauseId, DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
+import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { ClauseDefinition, DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
-import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
-import { type NamedClause, readVersionOneNames, VERSION_ONE_NAMES_SEGMENTS } from "../../disciplines-file/version-one-names.ts";
+import type { NamedClause, VersionOneNames } from "../../disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../engines/engine-registry.ts";
-import { clauseCasesSchema, pieceFilePath, pieceFileSchema, readVersionOneJson } from "./rule-set-reader.ts";
+import { installedNamesPathOf, installedPiecesFor, readInstalledNames } from "./installed-pieces.ts";
+import { clauseCasesSchema, readVersionOneJson } from "./rule-set-reader.ts";
 
 type InstallSource = {
   readonly fileText: FileTextPort;
@@ -20,11 +20,7 @@ type InstallSource = {
   readonly discipline: DisciplineId;
 };
 
-type PieceHolding = { readonly mechanism: EngineId; readonly folder: string; readonly clauses: readonly ClauseId[] };
-
 type MechanicalClause = Extract<ClauseDefinition, { readonly kind: "mechanical" }>;
-
-const CASES_FILE_SUFFIX = ".cases.json";
 
 const MECHANISMS: readonly EngineId[] = ENGINE_REGISTRY.map((engine) => engine.name);
 
@@ -33,43 +29,12 @@ const ruleSetInvalid = (request: { readonly path: string; readonly detail: strin
   error: { kind: "rule-set-invalid", path: request.path, detail: request.detail },
 });
 
-const pieceOf = (request: InstallSource & { readonly mechanism: EngineId }): Result<readonly PieceHolding[], VersionTwoLoadFailure> => {
-  const location = { path: request.path, ruleSetRoot: request.installRoot, installRoot: request.installRoot, mechanism: request.mechanism, discipline: request.discipline };
-  const path = pieceFilePath(location);
-  if (request.fileText.exists({ path }) === "absent") {
-    return { outcome: "ok", value: [] };
-  }
-  const document = readVersionOneJson({ fileText: request.fileText, path });
-  if (document.outcome === "failed") {
-    return document;
-  }
-  const piece = pieceFileSchema.safeParse(document.value);
-  return piece.success
-    ? {
-        outcome: "ok",
-        value: [{ mechanism: request.mechanism, folder: request.path.join({ segments: pieceFolderSegmentsOf(location) }), clauses: piece.data.clauses.map((entry) => entry.clause) }],
-      }
-    : { outcome: "failed", error: { kind: "file-malformed", path, detail: z.prettifyError(piece.error) } };
-};
-
-const piecesOf = (request: InstallSource): Result<readonly PieceHolding[], VersionTwoLoadFailure> => {
-  const held = everyOk({ entries: MECHANISMS, resolve: (mechanism) => pieceOf({ ...request, mechanism }) });
-  return held.outcome === "failed" ? held : { outcome: "ok", value: held.value.flat() };
-};
-
 const casesOf = (
-  request: InstallSource & { readonly clause: ClauseId; readonly running: readonly PieceHolding[]; readonly namesPath: string },
+  request: InstallSource & { readonly address: string; readonly examplesPaths: readonly string[]; readonly namesPath: string },
 ): Result<MechanicalClause["cases"], VersionTwoLoadFailure> => {
-  const address = `${request.discipline}#${request.clause}`;
-  const held = request.running
-    .map((piece) => request.path.join({ segments: [piece.folder, `${request.clause}${CASES_FILE_SUFFIX}`] }))
-    .filter((path) => request.fileText.exists({ path }) === "present");
-  const [path, ...others] = held;
+  const path = request.examplesPaths.find((path) => request.fileText.exists({ path }) === "present");
   if (path === undefined) {
-    return ruleSetInvalid({ path: request.namesPath, detail: `no piece that runs ${address} holds its ${request.clause}${CASES_FILE_SUFFIX}` });
-  }
-  if (others.length > 0) {
-    return ruleSetInvalid({ path, detail: `the cases of ${address} sit beside more than one piece: ${held.join(", ")}` });
+    return ruleSetInvalid({ path: request.namesPath, detail: `no piece that runs ${request.address} holds its examples` });
   }
   const document = readVersionOneJson({ fileText: request.fileText, path });
   if (document.outcome === "failed") {
@@ -80,17 +45,21 @@ const casesOf = (
 };
 
 const definitionOf = (
-  request: InstallSource & { readonly named: NamedClause; readonly pieces: readonly PieceHolding[]; readonly namesPath: string },
+  request: InstallSource & { readonly named: NamedClause; readonly names: VersionOneNames; readonly namesPath: string },
 ): Result<ClauseDefinition, VersionTwoLoadFailure> => {
   const { named } = request;
   if (named.kind === "judgement") {
     return { outcome: "ok", value: { kind: "judgement", id: named.clause.clause, enforcedBy: "review" } };
   }
-  const running = request.pieces.filter((piece) => piece.clauses.includes(named.clause.clause));
-  if (running.length === 0) {
-    return ruleSetInvalid({ path: request.namesPath, detail: `no piece runs ${request.discipline}#${named.clause.clause}` });
+  const running = installedPiecesFor({ ...request, clause: named.clause, mechanisms: MECHANISMS });
+  if (running.outcome === "failed") {
+    return running;
   }
-  const cases = casesOf({ ...request, clause: named.clause.clause, running });
+  const address = `${request.discipline}#${named.clause.clause}`;
+  if (running.value.length === 0) {
+    return ruleSetInvalid({ path: request.namesPath, detail: `no piece runs ${address}` });
+  }
+  const cases = casesOf({ ...request, address, examplesPaths: running.value.map((piece) => piece.examplesPath) });
   return cases.outcome === "failed"
     ? cases
     : {
@@ -98,7 +67,7 @@ const definitionOf = (
         value: {
           kind: "mechanical",
           id: named.clause.clause,
-          mechanisms: running.map((piece) => piece.mechanism),
+          mechanisms: running.value.map((piece) => piece.mechanism),
           anchor: named.anchor,
           exceptions: "allowed",
           cases: cases.value,
@@ -107,8 +76,8 @@ const definitionOf = (
 };
 
 export const readInstallDiscipline = (request: InstallSource): Result<Held<DisciplineFile>, VersionTwoLoadFailure> => {
-  const namesPath = request.path.join({ segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS] });
-  const names = readVersionOneNames({ fileText: request.fileText, path: namesPath });
+  const namesPath = installedNamesPathOf(request);
+  const names = readInstalledNames(request);
   if (names.outcome === "failed") {
     return names;
   }
@@ -116,11 +85,7 @@ export const readInstallDiscipline = (request: InstallSource): Result<Held<Disci
   if (named.length === 0) {
     return { outcome: "ok", value: { held: "absent" } };
   }
-  const pieces = piecesOf(request);
-  if (pieces.outcome === "failed") {
-    return pieces;
-  }
-  const clauses = everyOk({ entries: named, resolve: (entry) => definitionOf({ ...request, named: entry, pieces: pieces.value, namesPath }) });
+  const clauses = everyOk({ entries: named, resolve: (entry) => definitionOf({ ...request, named: entry, names: names.value, namesPath }) });
   return clauses.outcome === "failed"
     ? clauses
     : { outcome: "ok", value: { held: "present", file: { version: 1, id: request.discipline, clauses: clauses.value } } };

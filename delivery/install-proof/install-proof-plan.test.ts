@@ -151,7 +151,7 @@ describe("toolchainPinsOf, over this package's own package.json read as a build-
   });
 });
 
-const PROJECTION = `import piece0 from "@hailstails/hone/src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js";
+const PROJECTION = `import piece0 from "@hailstails/hone/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.js";
 
 export default [
   {
@@ -208,7 +208,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
   },
 ];
 
-const WORKSPACE_SLICE = `import piece0 from "@hailstails/hone/src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.js";
+const WORKSPACE_SLICE = `import piece0 from "@hailstails/hone/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.js";
 
 export default [
   {

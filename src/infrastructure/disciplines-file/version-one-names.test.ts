@@ -39,6 +39,7 @@ describe("versionOneNamesOf", () => {
       outcome: "ok",
       value: {
         clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "outside-the-cases" } }],
+        claimsPieceForms: [],
         namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" }, checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" } }] }],
         clauseOfCheck: new Map([["date-used-directly#clock-sources", { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }]]),
         formatsOfToday: { debt: "file-carve-out" },
@@ -122,6 +123,7 @@ describe("readVersionOneNames", () => {
       outcome: "ok",
       value: {
         clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
+        claimsPieceForms: [],
         namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" }, checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" } }] }],
         clauseOfCheck: new Map([["date-used-directly#clock-sources", { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }]]),
         formatsOfToday: {},

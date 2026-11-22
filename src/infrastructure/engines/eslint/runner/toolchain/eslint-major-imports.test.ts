@@ -327,7 +327,7 @@ describe("where ESLint is imported, read as build-time raw modules (CD-47: that 
 
   it("finds every static import and re-export of eslint or eslint-9 outside the two boundaries, by file, specifier, form and names, a list that can only shrink", () => {
     expect(importFactsReaching({ sources: outsideTheBoundaries, specifier: ESLINT_MAJOR_SPECIFIER })).toEqual([
-      { file: "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts", kind: "import", specifier: "eslint", form: "type-only", names: ["ESLint", "Rule"] },
+      { file: "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts", kind: "import", specifier: "eslint", form: "type-only", names: ["ESLint", "Rule"] },
       { file: "./src/infrastructure/engines/eslint/runner/pieces/native-rules.ts", kind: "import", specifier: "eslint/use-at-your-own-risk", form: "value", names: ["builtinRules"] },
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts", kind: "import", specifier: "eslint-9", form: "value", names: ["ESLint"] },
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts", kind: "import", specifier: "eslint-9/use-at-your-own-risk", form: "value", names: ["builtinRules"] },
@@ -355,7 +355,7 @@ describe("where ESLint is imported, read as build-time raw modules (CD-47: that 
 
   it("finds every import of eslint or eslint-9 of any form outside the two boundaries, the dynamic loads and the one re-export included, by file and form", () => {
     expect(importsOutside({ sources: outsideTheBoundaries, allowed: [notAnEslintMajor] })).toEqual([
-      { file: "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts", specifier: "eslint", form: "type-only" },
+      { file: "./src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts", specifier: "eslint", form: "type-only" },
       { file: "./src/infrastructure/engines/eslint/runner/pieces/native-rules.ts", specifier: "eslint/use-at-your-own-risk", form: "value" },
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts", specifier: "eslint-9", form: "value" },
       { file: "./src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts", specifier: "eslint-9/use-at-your-own-risk", form: "value" },

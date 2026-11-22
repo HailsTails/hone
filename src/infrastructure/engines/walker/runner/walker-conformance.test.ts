@@ -7,7 +7,8 @@ import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-s
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
-import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
+import { readLocatedPieceFile } from "../../../content-files/rule-sets/located-piece-file.ts";
+import { readInstalledNames } from "../../../content-files/rule-sets/installed-pieces.ts";
 import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discipline.ts";
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
@@ -24,8 +25,6 @@ import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
 import { loadParsePort, typeScriptPeersNamed } from "./toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "./runner.ts";
 
-type RawTable = Readonly<Record<string, string>>;
-
 type ConformanceRow = {
   readonly name: string;
   readonly clause: RunnerClause;
@@ -33,18 +32,6 @@ type ConformanceRow = {
 };
 
 const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
-
-const folderOf = (request: { readonly key: string }): string => request.key.split("/").at(-2) ?? "";
-
-const foldersUnder = (request: { readonly table: RawTable; readonly prefix: string }): readonly string[] =>
-  [
-    ...new Set(
-      Object.keys(request.table)
-        .filter((key) => key.startsWith(request.prefix))
-        .map((key) => folderOf({ key })),
-    ),
-  ].sort();
-
 
 const disciplineOf = (request: { readonly fileText: FileTextPort; readonly discipline: string }): DisciplineFile => {
   const held = readHeldDiscipline({
@@ -64,10 +51,9 @@ const rowsOf = (request: {
   readonly fileText: FileTextPort;
   readonly discipline: string;
   readonly mechanism: EngineId;
-  readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const discipline = disciplineOf(request);
-  const piece = readPieceFile({
+  const piece = readLocatedPieceFile({
     fileText: request.fileText,
     path: createDefaultPathPort({}),
     ruleSetRoot: RULE_SET_ROOT,
@@ -82,7 +68,7 @@ const rowsOf = (request: {
     const clause: RunnerClause = {
       address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
       anchor: definition.anchor,
-      pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
+      pieceRoot: entry.pieceRoot,
       settings: entry.settings,
       clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
       edition: entry.editions.default,
@@ -99,11 +85,10 @@ const rowsOf = (request: {
 const conformanceRows = (request: {
   readonly disciplines: readonly string[];
   readonly mechanism: EngineId;
-  readonly mechanismRoot: string;
 }): readonly ConformanceRow[] => {
   const fileText = createDefaultFileTextPort({});
   return request.disciplines.flatMap((discipline) =>
-    rowsOf({ fileText, discipline, mechanism: request.mechanism, mechanismRoot: request.mechanismRoot }),
+    rowsOf({ fileText, discipline, mechanism: request.mechanism }),
   );
 };
 
@@ -125,33 +110,22 @@ declare global {
   }
 }
 
-const ruleSetTexts = import.meta.glob(["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const heldNames = readInstalledNames({ fileText: createDefaultFileTextPort({}), path: createDefaultPathPort({}), installRoot: RULE_SET_ROOT });
 
-const walkerModules = import.meta.glob(["./src/infrastructure/engines/walker/*/*.ts", "!./src/infrastructure/engines/walker/*/*.test.ts", "!./src/infrastructure/engines/walker/runner/*"], {
-  base: "../../../../../",
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+assert(heldNames.outcome === "ok", "the install's version 1 names read");
 
-const walkerDisciplines = foldersUnder({ table: walkerModules, prefix: "./src/infrastructure/engines/walker/" });
+const legacyDisciplines = [...new Set(heldNames.value.namedClauses.filter((clause) => clause.kind === "mechanical").map(({ clause }) => clause.discipline))].sort();
 
 const CONFORMANCE_ROWS = conformanceRows({
-  disciplines: walkerDisciplines,
+  disciplines: legacyDisciplines,
   mechanism: "walker",
-  mechanismRoot: `${import.meta.dirname}/..`,
 });
 
 const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
 
-describe("every audit piece on disk is registered with a piece.json", () => {
-  it("has a piece.json for each audit piece folder", () => {
-    expect(foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/walker/" })).toEqual(walkerDisciplines);
+describe("the shipped walker pieces", () => {
+  it("includes example coverage through the installed version-one adapter", () => {
+    expect(CONFORMANCE_ROWS).toEqual(expect.arrayContaining([expect.objectContaining({ name: "CD-14#class-syntax" })]));
   });
 });
 
