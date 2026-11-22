@@ -1,9 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join, relative } from "node:path";
+import { basename, join } from "node:path";
 import type { Result } from "../../src/domain/result.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import { createDefaultDirectoryTreePort } from "../../src/infrastructure/node/file-system/directory-tree-port.ts";
 import { type EntryDisposition, type EntryKind, environmentWithoutGit, type StepRun } from "./install-proof-plan.ts";
 
 export type EffectFailure = { readonly kind: "effect-failed"; readonly detail: string };
@@ -141,10 +143,15 @@ export const createCommandRunPort = (options: {
   };
 };
 
+const directoryTree = createDefaultDirectoryTreePort({});
+
 export const defaultScratchFilesSurface: ScratchFilesSurface = {
   makeTemporaryDirectory: (request) => realpathSync(mkdtempSync(join(tmpdir(), request.prefix))),
   removeTree: (request) => {
-    rmSync(request.path, { recursive: true, force: true });
+    const removed = directoryTree.remove({ path: absolutePathSchema.parse(request.path) });
+    if (removed.outcome === "failed") {
+      throw new Error(removed.error.detail);
+    }
   },
   makeDirectory: (request) => {
     mkdirSync(request.path, { recursive: true });
@@ -159,12 +166,13 @@ export const defaultScratchFilesSurface: ScratchFilesSurface = {
         }) === "kept",
     });
   },
-  listTree: (request) =>
-    readdirSync(request.path, { recursive: true, withFileTypes: true }).map((entry) => ({
-      path: relative(request.path, join(entry.parentPath, entry.name)),
-      name: entry.name,
-      entryKind: entry.isDirectory() ? "folder" : "file",
-    })),
+  listTree: (request) => {
+    const listed = directoryTree.list({ path: absolutePathSchema.parse(request.path) });
+    if (listed.outcome === "failed") {
+      throw new Error(listed.error.detail);
+    }
+    return listed.value.map(({ path, name, kind }) => ({ path, name, entryKind: kind === "directory" ? "folder" : "file" }));
+  },
   digestOf: (request) => createHash("sha256").update(readFileSync(request.path)).digest("hex"),
   realPathOf: (request) => realpathSync.native(request.path),
 };

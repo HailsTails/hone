@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { createDefaultDirectoryPort, createDefaultEntryKindPort, createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import type { EntryDisposition, StepRun } from "./install-proof-plan.ts";
 import {
   type CommandSpawn,
   type CopiedEntry,
   createCommandRunPort,
+  createDefaultScratchFilesPort,
   createScratchFilesPort,
   type ScratchFilesSurface,
 } from "./install-proof-ports.ts";
@@ -251,5 +254,29 @@ describe("createCommandRunPort run", () => {
     }).run({ command: "npm", arguments: ["install"], directory: "/root" });
 
     expect(run).toEqual({ outcome: "not-exited", detail: "spawnSync npm ENOENT" });
+  });
+});
+
+describe("createDefaultScratchFilesPort lists and removes a tree through the directory tree port", () => {
+  const SCRATCH = absolutePathSchema.parse(`${import.meta.dirname}/../../artefacts/install-proof-ports-${globalThis.crypto.randomUUID()}`);
+
+  it("lists each entry of a tree by slash-separated path and kind, then removes the whole tree", () => {
+    const scratch = createDefaultScratchFilesPort({});
+    createDefaultDirectoryPort({}).create({ path: absolutePathSchema.parse(`${SCRATCH}/folder`) });
+    createDefaultFileTextPort({}).write({ path: `${SCRATCH}/folder/file.txt`, text: "text" });
+
+    expect(scratch.listTree({ path: SCRATCH })).toEqual({
+      outcome: "ok",
+      value: [
+        { path: "folder", name: "folder", entryKind: "folder" },
+        { path: "folder/file.txt", name: "file.txt", entryKind: "file" },
+      ],
+    });
+    expect(scratch.removeTree({ path: SCRATCH })).toEqual({ outcome: "ok", value: null });
+    expect(createDefaultEntryKindPort({}).kindOf({ path: SCRATCH })).toBe("absent");
+  });
+
+  it("reports listing a tree that is not there as a failure", () => {
+    expect(createDefaultScratchFilesPort({}).listTree({ path: SCRATCH })).toMatchObject({ outcome: "failed" });
   });
 });
