@@ -504,6 +504,7 @@ const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofReques
   },
   catalogues: CATALOGUES,
   repoRoot: REPO,
+  trackedPaths: [],
   projectionFilesOf: vi.fn<ProjectionFilesOf>().mockResolvedValue({
     outcome: "ok",
     value: { files: [ROOT_PROJECTION_FILE], projections: [ROOT_PROJECTION_FILE] },

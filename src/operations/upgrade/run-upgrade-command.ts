@@ -197,6 +197,7 @@ const proofRequestOf = (
     versionOneFiles: prepared.read.versionOneFiles,
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
+    trackedPaths: prepared.trackedPaths,
     projectionFilesOf: plannedProjectionOf({
       command,
       repoRoot: located.repoRoot,
