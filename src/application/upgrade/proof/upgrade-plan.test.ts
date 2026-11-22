@@ -180,11 +180,11 @@ const CARVE_OUT_INPUT: RecordInput = {
 };
 
 const DEBT_LINE = {
-  oldKind: "file-carve-out",
-  oldAddress: "CD-15#loops",
-  file: "src/a.ts",
+  recordKind: "file-carve-out",
+  clause: LOOPS_CLAUSE,
+  file: repoPathOf("src/a.ts"),
   newKind: "debt",
-  symptom: "loop-keyword#loops",
+  check: LOOP_KEYWORD_LOOPS,
   holding: "stated",
 } as const;
 

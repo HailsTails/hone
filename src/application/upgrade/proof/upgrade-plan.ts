@@ -2,7 +2,6 @@ import { recordsTextOf } from "../../../domain/records/hone-records/records-edit
 import {
   mappedRecords,
   type RecordLine,
-  recordLinesOf,
   type MappedRecordsDocument,
   type RecordInput,
 } from "../../../domain/records/upgrade/records-mapping.ts";
@@ -79,7 +78,7 @@ export const upgradePlanOf = async (
       },
     };
   }
-  const { documents } = records.value;
+  const { documents, lines } = records.value;
   const beyond = reachBeyondEntriesOf({
     written: documents.flatMap(({ records: written }) => written),
     inputs: inputs.value,
@@ -99,7 +98,7 @@ export const upgradePlanOf = async (
     outcome: "ok",
     value: {
       inputs: inputs.value,
-      lines: recordLinesOf({ inputs: inputs.value, catalogues: request.catalogues }),
+      lines,
       files: [
         {
           file: SETTINGS_FILE,

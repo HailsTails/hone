@@ -1,7 +1,9 @@
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { UpgradeCarriedOver } from "../../../application/ports/upgrade/upgrade-mentions.ts";
+import type { UpgradeCarriedOver } from "../../../application/ports/upgrade/upgrade-carried-over.ts";
+import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
 import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
 
 export const ALREADY_ON_VERSION_TWO: CommandOutcome = {
@@ -19,14 +21,14 @@ const shownOf = (request: {
 };
 
 const recordLineOf = (request: { readonly record: RecordLine }): string => {
-  const { oldKind, oldAddress, file, newKind, symptom } = request.record;
-  return `${oldKind} ${oldAddress} ${file} -> ${newKind} ${symptom}`;
+  const { recordKind, clause, file, newKind, check } = request.record;
+  return `${recordKind} ${clauseAddressText({ address: clause })} ${file} -> ${newKind} ${checkAddressOf({ check })}`;
 };
 
 const carriedLinesOf = (request: { readonly records: readonly RecordLine[] }): readonly string[] =>
   request.records
     .filter(({ holding }) => holding === "carried")
-    .map(({ symptom, file }) => `carried ${symptom} ${file}`);
+    .map(({ check, file }) => `carried ${checkAddressOf({ check })} ${file}`);
 
 export const upgradeSuccessOutcomeOf = (request: {
   readonly carried: UpgradeCarriedOver;
@@ -45,6 +47,7 @@ export const upgradeSuccessOutcomeOf = (request: {
       ...carried.records.map((record) => recordLineOf({ record })),
       ...carriedLinesOf({ records: carried.records }),
       ...carried.mentions.map(({ file, line }) => `mention ${file}:${line}`),
+      ...carried.unread.map(({ file, detail }) => `mention-unread ${file} ${detail}`),
       `upgrade: same findings (${carried.findings}), same verdict`,
     ]
       .map((line) => `${line}\n`)

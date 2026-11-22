@@ -39,34 +39,44 @@ describe("mentionsInText", () => {
 describe("versionOneMentionsOf", () => {
   const REPO = absoluteRootOf("/repo");
 
-  it("reads each tracked file outside the excluded folders and skips a file no longer there", () => {
+  it("reads each tracked file outside the excluded folders, drops a file the upgrade removed without reading it, and names a file it cannot read", () => {
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: '{ "files": ["disciplines.json"] }' })
       .mockReturnValueOnce({
         outcome: "failed",
-        error: { kind: "unreadable", path: "/repo/disciplines.json", detail: "ENOENT" },
+        error: {
+          kind: "unreadable",
+          path: "/repo/vendor-sub",
+          detail: "EISDIR: illegal operation on a directory, read",
+        },
       });
     const join = vi
       .fn<PathPort["join"]>()
       .mockReturnValueOnce("/repo/package.json")
-      .mockReturnValueOnce("/repo/disciplines.json");
+      .mockReturnValueOnce("/repo/disciplines.json")
+      .mockReturnValueOnce("/repo/vendor-sub");
     expect(
       versionOneMentionsOf({
         tracked: [
           repoPathOf("package.json"),
           repoPathOf("vendor/x.md"),
           repoPathOf("disciplines.json"),
+          repoPathOf("vendor-sub"),
         ],
         excluded: [repoPathOf("vendor")],
+        removed: [absoluteRootOf("/repo/disciplines.json")],
         repoRoot: REPO,
         fileText: { read },
         path: { join },
       }),
-    ).toEqual([{ file: "package.json", line: 1 }]);
+    ).toEqual({
+      mentions: [{ file: "package.json", line: 1 }],
+      unread: [{ file: "vendor-sub", detail: "EISDIR: illegal operation on a directory, read" }],
+    });
     expect(read.mock.calls).toEqual([
       [{ path: "/repo/package.json" }],
-      [{ path: "/repo/disciplines.json" }],
+      [{ path: "/repo/vendor-sub" }],
     ]);
   });
 });

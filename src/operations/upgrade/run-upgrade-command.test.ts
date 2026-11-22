@@ -1,14 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../application/ports/git-port.ts";
+import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type {
   RecordsOnDiskOf,
   VersionOneReadOf,
 } from "../../application/ports/records/version-one-reading.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
+import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { type UpgradeInput, type UpgradePorts, upgradeOf } from "./run-upgrade-command.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
@@ -82,6 +86,7 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
   recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),
   versionOneReadOf: vi.fn<VersionOneReadOf>(),
   proofRunsOf: vi.fn(),
+  proofOf: vi.fn(),
   foundTreeStages: vi.fn(),
   ...request,
 });
@@ -163,6 +168,122 @@ describe("upgradeOf", () => {
         stopped: "refused",
         failure: { kind: "version-one-unreadable", failure: SELECTION_ABSENT },
       },
+    });
+  });
+
+  describe("reading mentions once the proof is decided", () => {
+    const CARRIED: ProofCarriedOver = {
+      written: [],
+      replaced: [],
+      removed: { files: [], folders: [] },
+      records: [],
+      findings: 0,
+    };
+
+    const versionOneReadExcludingVendor = vi.fn<VersionOneReadOf>().mockReturnValue({
+      outcome: "ok",
+      value: {
+        reading: {
+          selection: {
+            version: 1,
+            ruleSets: [],
+            clauses: [],
+            exclude: [repoPathOf("vendor")],
+            eslintConfigRoots: [],
+            fileExceptionWhyChains: "required",
+            reportOutput: "full",
+            assessment: { forfeiture: "this-run" },
+            clauseSettings: [],
+            checkEditions: "pinned",
+          },
+          heads: [],
+        },
+        versionOneFiles: {
+          recordsFiles: [],
+          recordsFolders: [],
+          recordsRoot: { kind: "repository" },
+          settings: repoPathOf("disciplines.json"),
+        },
+      },
+    });
+
+    const recordsOnDisk = vi.fn<RecordsOnDiskOf>().mockReturnValue({
+      outcome: "ok",
+      value: { files: [], folders: [], root: { kind: "repository" } },
+    });
+
+    it("reads the tracked files outside the version 1 exclude and returns what they mention when the proof is ok", async () => {
+      const git = gitListing({
+        tracked: {
+          outcome: "ok",
+          value: [repoPathOf("package.json"), repoPathOf("vendor/x.md")],
+        },
+      });
+      const read = vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: '"lint": "cat disciplines.json"' });
+      const join = vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/package.json");
+      const proofOf = vi.fn().mockResolvedValue({ outcome: "ok", value: CARRIED });
+      const command = commandOver({ git });
+
+      expect(
+        await upgradeOf(
+          inputWith({
+            git,
+            command: {
+              ...command,
+              fileText: { ...command.fileText, read },
+              path: { ...command.path, join },
+            },
+            recordsOnDiskOf: recordsOnDisk,
+            versionOneReadOf: versionOneReadExcludingVendor,
+            proofOf,
+          }),
+        ),
+      ).toEqual({
+        outcome: "ok",
+        value: { ...CARRIED, mentions: [{ file: "package.json", line: 1 }], unread: [] },
+      });
+      expect(read.mock.calls).toEqual([[{ path: "/repo/package.json" }]]);
+    });
+
+    it("reads no tracked file when the proof is refused", async () => {
+      const git = gitListing({
+        tracked: { outcome: "ok", value: [repoPathOf("package.json")] },
+      });
+      const read = vi.fn<FileTextPort["read"]>();
+      const proofOf = vi.fn().mockResolvedValue({
+        outcome: "failed",
+        error: {
+          kind: "unplaceable-path",
+          file: repoPathOf("package.json"),
+          removedByVersionOne: [],
+        },
+      });
+      const command = commandOver({ git });
+
+      expect(
+        await upgradeOf(
+          inputWith({
+            git,
+            command: { ...command, fileText: { ...command.fileText, read } },
+            recordsOnDiskOf: recordsOnDisk,
+            versionOneReadOf: versionOneReadExcludingVendor,
+            proofOf,
+          }),
+        ),
+      ).toEqual({
+        outcome: "failed",
+        error: {
+          stopped: "refused",
+          failure: {
+            kind: "unplaceable-path",
+            file: "package.json",
+            removedByVersionOne: [],
+          },
+        },
+      });
+      expect(read).not.toHaveBeenCalled();
     });
   });
 });

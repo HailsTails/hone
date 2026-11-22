@@ -9,13 +9,15 @@ import type {
   SymptomCatalogue,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
+import type { Result } from "../../result.ts";
 import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
-import { mappedRecords, recordLinesOf } from "./records-mapping.ts";
+import { mappedRecords } from "./records-mapping.ts";
+import type { UpgradeRefusal } from "./upgrade-refusal.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -188,7 +190,7 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -215,7 +217,7 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -253,7 +255,7 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -291,7 +293,7 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -338,7 +340,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -388,7 +390,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -432,7 +434,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -470,7 +472,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -503,7 +505,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -536,7 +538,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -576,7 +578,7 @@ describe("mappedRecords carrying what version 2 has no field for", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -772,7 +774,7 @@ describe("mappedRecords ordering", () => {
           },
         ],
       }),
-    ).toEqual({
+    ).toMatchObject({
       outcome: "ok",
       value: {
         documents: [
@@ -795,10 +797,10 @@ describe("mappedRecords ordering", () => {
   });
 });
 
-describe("recordLinesOf", () => {
+describe("mappedRecords lines", () => {
   it("names a stated debt by the kind and clause it came from, the file it covers and the symptom it now answers", () => {
     expect(
-      recordLinesOf({
+      mappedRecords({
         catalogues: CATALOGUES,
         inputs: [
           {
@@ -820,16 +822,21 @@ describe("recordLinesOf", () => {
           },
         ],
       }),
-    ).toEqual([
-      {
-        oldKind: "file-carve-out",
-        oldAddress: "CD-15#loops",
-        file: "src/a.ts",
-        newKind: "debt",
-        symptom: "loop-keyword#loops",
-        holding: "stated",
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        lines: [
+          {
+            recordKind: "file-carve-out",
+            clause: LOOPS_CLAUSE,
+            file: SRC_A,
+            newKind: "debt",
+            check: LOOP_KEYWORD_LOOPS,
+            holding: "stated",
+          },
+        ],
       },
-    ]);
+    });
   });
 
   it("gives an authorised location one carried line at each check of its clause", () => {
@@ -840,7 +847,7 @@ describe("recordLinesOf", () => {
       reason: "the tests need it",
     } as const;
     expect(
-      recordLinesOf({
+      mappedRecords({
         catalogues: CATALOGUES,
         inputs: [
           {
@@ -851,23 +858,28 @@ describe("recordLinesOf", () => {
           },
         ],
       }),
-    ).toEqual([
-      {
-        oldKind: "authorised-location",
-        oldAddress: "CD-27#test-body-logic",
-        file: "src/a.ts",
-        newKind: "authorised-location",
-        symptom: "loop-keyword#test-body",
-        holding: "carried",
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        lines: [
+          {
+            recordKind: "authorised-location",
+            clause: TEST_BODY_CLAUSE,
+            file: SRC_A,
+            newKind: "authorised-location",
+            check: CATALOGUE_LOOP_KEYWORD_TEST_BODY,
+            holding: "carried",
+          },
+          {
+            recordKind: "authorised-location",
+            clause: TEST_BODY_CLAUSE,
+            file: SRC_A,
+            newKind: "authorised-location",
+            check: CATALOGUE_REBINDING_TEST_BODY,
+            holding: "carried",
+          },
+        ],
       },
-      {
-        oldKind: "authorised-location",
-        oldAddress: "CD-27#test-body-logic",
-        file: "src/a.ts",
-        newKind: "authorised-location",
-        symptom: "rebinding#test-body",
-        holding: "carried",
-      },
-    ]);
+    });
   });
 });

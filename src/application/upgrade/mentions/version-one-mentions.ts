@@ -3,14 +3,18 @@ import { exclusionOf } from "../../../domain/repository/exclusion.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { FileMention } from "../../ports/upgrade/upgrade-mentions.ts";
+import type {
+  FileMention,
+  UnreadFile,
+  VersionOneMentions,
+} from "../../ports/upgrade/upgrade-mentions.ts";
 
-export const VERSION_ONE_FILE_NAMES: readonly string[] = [
+const VERSION_ONE_FILE_NAMES = [
   "disciplines.json",
   "discipline-exceptions",
   "disciplines.eslint.mjs",
   "disciplines.assessment.md",
-];
+] as const;
 
 const NUL = "\u0000";
 
@@ -34,18 +38,42 @@ export const mentionsInText = (request: {
         .filter(({ line }) => namesVersionOneFile({ line }) === "names")
         .map(({ number }) => ({ file: request.file, line: number }));
 
-export const versionOneMentionsOf = (request: {
-  readonly tracked: readonly RepoPath[];
-  readonly excluded: readonly RepoPath[];
+type FileRead =
+  | { readonly outcome: "mentions"; readonly mentions: readonly FileMention[] }
+  | { readonly outcome: "unread"; readonly unread: UnreadFile }
+  | { readonly outcome: "removed" };
+
+const readOf = (request: {
+  readonly file: RepoPath;
+  readonly removed: readonly AbsolutePath[];
   readonly repoRoot: AbsolutePath;
   readonly fileText: Pick<FileTextPort, "read">;
   readonly path: Pick<PathPort, "join">;
-}): readonly FileMention[] =>
-  request.tracked
+}): FileRead => {
+  const { file, removed } = request;
+  const absolute = request.path.join({ segments: [request.repoRoot, file] });
+  if (removed.some((target) => target === absolute)) {
+    return { outcome: "removed" };
+  }
+  const read = request.fileText.read({ path: absolute });
+  return read.outcome === "ok"
+    ? { outcome: "mentions", mentions: mentionsInText({ file, text: read.value }) }
+    : { outcome: "unread", unread: { file, detail: read.error.detail } };
+};
+
+export const versionOneMentionsOf = (request: {
+  readonly tracked: readonly RepoPath[];
+  readonly excluded: readonly RepoPath[];
+  readonly removed: readonly AbsolutePath[];
+  readonly repoRoot: AbsolutePath;
+  readonly fileText: Pick<FileTextPort, "read">;
+  readonly path: Pick<PathPort, "join">;
+}): VersionOneMentions => {
+  const reads = request.tracked
     .filter((file) => exclusionOf({ path: file, excluded: request.excluded }) === "checked")
-    .flatMap((file) => {
-      const read = request.fileText.read({
-        path: request.path.join({ segments: [request.repoRoot, file] }),
-      });
-      return read.outcome === "ok" ? mentionsInText({ file, text: read.value }) : [];
-    });
+    .map((file) => readOf({ ...request, file }));
+  return {
+    mentions: reads.flatMap((read) => (read.outcome === "mentions" ? read.mentions : [])),
+    unread: reads.flatMap((read) => (read.outcome === "unread" ? [read.unread] : [])),
+  };
+};

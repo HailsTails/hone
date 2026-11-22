@@ -66,18 +66,21 @@ export type MappedRecordsDocument = {
   readonly records: readonly WrittenRecord[];
 };
 
-export type MappedRecords = { readonly documents: readonly MappedRecordsDocument[] };
-
 export type RecordLine = {
-  readonly oldKind: ExceptionRecord["kind"];
-  readonly oldAddress: string;
-  readonly file: string;
+  readonly recordKind: ExceptionRecord["kind"];
+  readonly clause: ClauseAddress;
+  readonly file: RepoPath;
   readonly newKind: "debt" | "authorised-location";
-  readonly symptom: string;
+  readonly check: Check;
   readonly holding: "carried" | "stated";
 };
 
-type RecordOrigin = Pick<RecordLine, "oldKind" | "oldAddress" | "file">;
+export type MappedRecords = {
+  readonly documents: readonly MappedRecordsDocument[];
+  readonly lines: readonly RecordLine[];
+};
+
+type RecordOrigin = Pick<RecordLine, "recordKind" | "clause" | "file">;
 
 type MappedFolderKind = Extract<NamedFolderKind, "debt" | "authorised-locations">;
 
@@ -113,11 +116,12 @@ const withoutRepeats = (request: { readonly checks: readonly Check[] }): readonl
 const lineOf = (request: {
   readonly origin: RecordOrigin;
   readonly kind: MappedFolderKind;
+  readonly check: Check;
   readonly record: WrittenRecord;
 }): RecordLine => ({
   ...request.origin,
   newKind: NEW_KIND_OF_FOLDER[request.kind],
-  symptom: request.record.answers,
+  check: request.check,
   holding: request.record.carried === undefined ? "stated" : "carried",
 });
 
@@ -154,11 +158,11 @@ const noteOf = (request: { readonly reason: string | undefined }): { readonly no
   request.reason === undefined ? {} : { note: request.reason };
 
 const originOf = (request: {
-  readonly oldKind: RecordOrigin["oldKind"];
-  readonly record: { readonly clause: ClauseAddress; readonly file: string };
+  readonly recordKind: RecordOrigin["recordKind"];
+  readonly record: { readonly clause: ClauseAddress; readonly file: RepoPath };
 }): RecordOrigin => ({
-  oldKind: request.oldKind,
-  oldAddress: clauseAddressText({ address: request.record.clause }),
+  recordKind: request.recordKind,
+  clause: request.record.clause,
   file: request.record.file,
 });
 
@@ -197,7 +201,7 @@ const carveOutOutcome = (request: {
   return outcomeOfPlacements({
     placements: withoutRepeats({ checks: answer.checks }).map((check) =>
       placedAt({
-        origin: originOf({ oldKind: "file-carve-out", record }),
+        origin: originOf({ recordKind: "file-carve-out", record }),
         kind: "debt",
         check,
         record: debtRecordOf({ record, check, entry }),
@@ -231,7 +235,7 @@ const authorisedLocationOutcome = (request: {
   return outcomeOfPlacements({
     placements: checksAnsweredBy({ answer, clauseChecks }).map((check) =>
       placedAt({
-        origin: originOf({ oldKind: "authorised-location", record }),
+        origin: originOf({ recordKind: "authorised-location", record }),
         kind: "authorised-locations",
         check,
         record: { answers: checkAddressOf({ check }), file: record.file, carried: entry },
@@ -278,17 +282,11 @@ export const mappedRecords = (
     outcomeOf({ input, catalogues: request.catalogues }),
   );
   const refusals = outcomes.flatMap((outcome) => outcome.refusals);
+  const placed = outcomes.flatMap((outcome) => outcome.placed);
   return refusals.length > 0
     ? { outcome: "failed", error: refusals }
     : {
         outcome: "ok",
-        value: {
-          documents: documentsOf({ placed: outcomes.flatMap((outcome) => outcome.placed) }),
-        },
+        value: { documents: documentsOf({ placed }), lines: placed.map(({ line }) => line) },
       };
 };
-
-export const recordLinesOf = (request: RecordsMappingRequest): readonly RecordLine[] =>
-  request.inputs.flatMap((input) =>
-    outcomeOf({ input, catalogues: request.catalogues }).placed.map(({ line }) => line),
-  );

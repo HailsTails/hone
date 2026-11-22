@@ -12,8 +12,12 @@ import type {
 } from "../../application/ports/records/version-one-reading.ts";
 import type { LoadFailureDetail } from "../../application/ports/report/load-failure-detail.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
+import type {
+  ProofCarriedOver,
+  ProofRefusal,
+} from "../../application/ports/upgrade/proof-outcome.ts";
 import type { ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
-import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-mentions.ts";
+import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-carried-over.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import { runProject } from "../../application/projection/run-project.ts";
@@ -26,10 +30,7 @@ import {
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
 import { foundTreeCheckReachOf } from "../../application/upgrade/found-tree/found-tree-reach.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
-import {
-  type UpgradeProofRequest,
-  upgradeProof,
-} from "../../application/upgrade/proof/upgrade-proof.ts";
+import type { UpgradeProofRequest } from "../../application/upgrade/proof/upgrade-proof.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
 import { createVersionOneEnginePass } from "../../application/upgrade/record-answers/version-one-engine-pass.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
@@ -56,6 +57,9 @@ export type UpgradeInput = {
   readonly recordsOnDiskOf: RecordsOnDiskOf;
   readonly versionOneReadOf: VersionOneReadOf;
   readonly proofRunsOf: ProofRunsOf;
+  readonly proofOf: (
+    request: UpgradeProofRequest,
+  ) => Promise<Result<ProofCarriedOver, ProofRefusal>>;
   readonly foundTreeStages: () => VersionTwoStages;
 };
 
@@ -217,6 +221,22 @@ const proofRequestOf = (
   };
 };
 
+const withMentions = (request: {
+  readonly input: UpgradeInput;
+  readonly prepared: Prepared;
+  readonly carried: ProofCarriedOver;
+}): UpgradeCarriedOver => ({
+  ...request.carried,
+  ...versionOneMentionsOf({
+    tracked: request.prepared.trackedPaths,
+    excluded: request.prepared.read.reading.selection.exclude,
+    removed: request.carried.removed.files,
+    repoRoot: request.input.located.repoRoot,
+    fileText: request.input.command.fileText,
+    path: request.input.command.path,
+  }),
+});
+
 export const upgradeOf = async (
   request: UpgradeInput,
 ): Promise<Result<UpgradeCarriedOver, UpgradeStop>> => {
@@ -224,20 +244,11 @@ export const upgradeOf = async (
   if (prepared.outcome === "failed") {
     return prepared;
   }
-  const carried = await upgradeProof(proofRequestOf({ ...request, prepared: prepared.value }));
+  const carried = await request.proofOf(proofRequestOf({ ...request, prepared: prepared.value }));
   return carried.outcome === "failed"
     ? { outcome: "failed", error: { stopped: "refused", failure: carried.error } }
     : {
         outcome: "ok",
-        value: {
-          ...carried.value,
-          mentions: versionOneMentionsOf({
-            tracked: prepared.value.trackedPaths,
-            excluded: prepared.value.read.reading.selection.exclude,
-            repoRoot: request.located.repoRoot,
-            fileText: request.command.fileText,
-            path: request.command.path,
-          }),
-        },
+        value: withMentions({ input: request, prepared: prepared.value, carried: carried.value }),
       };
 };

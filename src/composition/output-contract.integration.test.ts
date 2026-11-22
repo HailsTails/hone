@@ -233,6 +233,27 @@ const documentedRolesIn = (request: { readonly text: string }): readonly Documen
     return row === null ? [] : [{ section: row[1], role: row[2] }];
   });
 
+const VALUE_ROW = /^\| ((?:`<[^`]+>`(?:, )?)+) \|/;
+
+const definedPlaceholdersIn = (request: { readonly text: string }): ReadonlySet<string> =>
+  new Set(
+    docLines(request).flatMap((line) =>
+      [...(VALUE_ROW.exec(line)?.[1] ?? "").matchAll(PLACEHOLDER)].map(([, name]) => name),
+    ),
+  );
+
+const UPGRADE_PLACEHOLDER_FORMS: Readonly<Record<string, RegExp>> = {
+  "record kind": /^(?:file-carve-out|authorised-location)$/,
+  "new kind": /^(?:debt|authorised-location)$/,
+  clause: /^(?:[a-z][a-z0-9-]*\/)?[A-Z][A-Za-z]*-\d+#[a-z][a-z0-9-]*$/,
+  check: /^[a-z][a-z0-9-]*#[a-z][a-z0-9-]*$/,
+  file: /^[^\n]+$/,
+  line: /^[1-9]\d*$/,
+  count: /^\d+$/,
+  detail: /^[^\n]+$/,
+  path: /^[^\n]+$/,
+};
+
 const filledTemplate = (request: { readonly template: string; readonly fills: Fills }): string =>
   request.template.replace(
     PLACEHOLDER,
@@ -661,7 +682,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
   owner: CAUSAL_WHY_CHAIN.owner,
 };
 
-const UPGRADE_LINES: readonly PrintedLine[] = (() => {
+const { UPGRADE_LINES, UPGRADE_SUCCESS_LINES } = (() => {
   const REPO = absoluteRootOf("/repo");
 
   const SETTINGS = absoluteRootOf("/repo/hone.config.json");
@@ -1230,70 +1251,94 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
       },
       records: [
         {
-          oldKind: "file-carve-out",
-          oldAddress: "CD-15#loops",
-          file: "src/a.ts",
+          recordKind: "file-carve-out",
+          clause: CLOCK_SOURCES,
+          file: repoPathOf("src/a.ts"),
           newKind: "debt",
-          symptom: "loop-keyword#loops",
+          check: CLOCK_CHECK,
           holding: "stated",
         },
         {
-          oldKind: "authorised-location",
-          oldAddress: "CD-15#loops",
-          file: "src/b.ts",
+          recordKind: "authorised-location",
+          clause: CAST_EXPRESSIONS,
+          file: repoPathOf("src/b.ts"),
           newKind: "authorised-location",
-          symptom: "loop-keyword#loops",
+          check: CAST_CHECK,
           holding: "carried",
         },
       ],
       findings: 3,
       mentions: [{ file: repoPathOf("package.json"), line: 4 }],
+      unread: [
+        { file: repoPathOf("vendor/lib"), detail: "EISDIR: illegal operation on a directory" },
+      ],
     },
   }).text;
 
-  const successFillsOf = (request: { readonly text: string }): Fills => {
-    const { text } = request;
-    const words = text.split(" ");
-    if (text.startsWith("upgrade: same findings")) {
-      return { count: "3" };
-    }
-    if (text.startsWith("mention ")) {
-      return {
-        file: text.slice(text.indexOf(" ") + 1, text.lastIndexOf(":")),
-        line: text.slice(text.lastIndexOf(":") + 1),
-      };
-    }
-    if (text.startsWith("carried ")) {
-      return { symptom: words[1] ?? "", file: words[2] ?? "" };
-    }
-    if (text.includes(" -> ")) {
-      return {
-        "old kind": words[0] ?? "",
-        "old address": words[1] ?? "",
-        file: words[2] ?? "",
-        "new kind": words[4] ?? "",
-        symptom: words[5] ?? "",
-      };
-    }
-    return { path: text.slice(text.indexOf(" ") + 1) };
+  type LineFills = {
+    readonly marker: RegExp;
+    readonly fills: (text: string) => Fills;
   };
 
-  return [
+  const wordsOf = (text: string): readonly string[] => text.split(" ");
+
+  const SUCCESS_LINE_FILLS: readonly LineFills[] = [
+    {
+      marker: /^upgrade: same findings/,
+      fills: () => ({ count: "3" }),
+    },
+    {
+      marker: /^mention-unread /,
+      fills: (text) => ({ file: wordsOf(text)[1] ?? "", detail: wordsOf(text).slice(2).join(" ") }),
+    },
+    {
+      marker: /^mention /,
+      fills: (text) => ({
+        file: text.slice(text.indexOf(" ") + 1, text.lastIndexOf(":")),
+        line: text.slice(text.lastIndexOf(":") + 1),
+      }),
+    },
+    {
+      marker: /^carried /,
+      fills: (text) => ({ check: wordsOf(text)[1] ?? "", file: wordsOf(text)[2] ?? "" }),
+    },
+    {
+      marker: / -> /,
+      fills: (text) => ({
+        "record kind": wordsOf(text)[0] ?? "",
+        clause: wordsOf(text)[1] ?? "",
+        file: wordsOf(text)[2] ?? "",
+        "new kind": wordsOf(text)[4] ?? "",
+        check: wordsOf(text)[5] ?? "",
+      }),
+    },
+  ];
+
+  const successFillsOf = (request: { readonly text: string }): Fills => {
+    const { text } = request;
+    const line = SUCCESS_LINE_FILLS.find(({ marker }) => marker.test(text));
+    return line === undefined ? { path: text.slice(text.indexOf(" ") + 1) } : line.fills(text);
+  };
+
+  const UPGRADE_SUCCESS_LINES: readonly PrintedLine[] = SUCCESS_TEXT.trimEnd()
+    .split("\n")
+    .map((text): PrintedLine => ({
+      label: "upgrade",
+      text,
+      fills: successFillsOf({ text }),
+    }));
+
+  const lines: readonly PrintedLine[] = [
     ...SAMPLES.flatMap(({ failure, fills }) =>
       linesOf({
         text: upgradeFailureOutcomeOf({ failure, placement: { repoRoot: REPO, path: PATH } }).text,
         fills: { ...BASE_FILLS, ...fills },
       }),
     ),
-    ...SUCCESS_TEXT.trimEnd()
-      .split("\n")
-      .map((text): PrintedLine => ({
-        label: "upgrade",
-        text,
-        fills: successFillsOf({ text }),
-      })),
+    ...UPGRADE_SUCCESS_LINES,
     ...linesOf({ text: ALREADY_ON_VERSION_TWO.text, fills: {} }),
   ];
+  return { UPGRADE_LINES: lines, UPGRADE_SUCCESS_LINES };
 })();
 
 const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_SAMPLES } = (() => {
@@ -4734,6 +4779,22 @@ describe("docs/output-contract.md, read against every line the command can print
     ).toEqual({
       undocumented: [],
       unprinted: [],
+    });
+  });
+
+  it("fills every placeholder of an upgrade success line with a value its definition allows, and defines each in the values table", () => {
+    const filledAgainstForm = UPGRADE_SUCCESS_LINES.flatMap(({ fills }) =>
+      Object.entries(fills).filter(
+        ([placeholder, filled]) => !(UPGRADE_PLACEHOLDER_FORMS[placeholder]?.test(filled) ?? false),
+      ),
+    );
+    const defined = definedPlaceholdersIn({ text: CONTRACT_PARTS.versionOne });
+    const undefinedNames = Object.keys(UPGRADE_PLACEHOLDER_FORMS).filter(
+      (name) => !defined.has(name),
+    );
+    expect({ filledAgainstForm, undefinedNames }).toEqual({
+      filledAgainstForm: [],
+      undefinedNames: [],
     });
   });
 
