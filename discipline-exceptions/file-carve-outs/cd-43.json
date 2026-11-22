@@ -20,11 +20,6 @@
       "kind": "file-carve-out",
       "clause": "CD-43#boolean-signatures",
       "file": "src/composition/upgrade-command.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-43#boolean-signatures",
-      "file": "src/domain/language-layer/catalogue-name.ts"
     }
   ]
 }

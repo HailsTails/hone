@@ -80,23 +80,23 @@ export default [
   {
     name: "hone-core/file-records/CD-41#cognitive-complexity",
     files: [
-      "src/infrastructure/engines/audit/CD-43/boolean-signatures.ts",
+      "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.ts",
     ],
     rules: { "hone-cd41/cognitive-complexity": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#cognitive-complexity, CD-41#function-length",
     files: [
-      "src/infrastructure/engines/audit/CD-6/identifier-names.ts",
+      "src/infrastructure/engines/walker/shorthand-name/identifier-names/identifier-names.ts",
     ],
     rules: { "hone-cd41/cognitive-complexity": "off", "hone-cd41/function-length": "off" },
   },
   {
     name: "hone-core/file-records/CD-41#function-length",
     files: [
-      "src/infrastructure/engines/audit/runner/observe-walker-file.test.ts",
-      "src/infrastructure/engines/audit/runner/prepare-walker-pieces.test.ts",
-      "src/infrastructure/engines/eslint/CD-6/cd6/cd6.eslint-plugin.test.ts",
+      "src/infrastructure/engines/eslint/name-off-its-casing/naming-convention/eslint-plugin.test.ts",
+      "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts",
+      "src/infrastructure/engines/walker/runner/prepare-walker-pieces.test.ts",
     ],
     rules: { "hone-cd41/function-length": "off" },
   },

@@ -34,81 +34,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-1/any-cast.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-10/throws-in-tests.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-14/piece.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-2/cast-expressions.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-25/dependency-isolation.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-26/module-mocking.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-3/compiler-overrides.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-43/boolean-signatures.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-44/parameter-mutation.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-5/comments-directives.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-6/identifier-names.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/runner/pieces/cast-shape.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/runner/observe-walker-file.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/runner/pieces/type-directives.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/eslint/CD-14/piece.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.test.ts"
     },
     {
@@ -259,11 +184,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/content-files/import-boundaries/piece-imports.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/content-files/symptom-catalogues/record-reach-catalogue.integration.test.ts"
     },
     {
@@ -275,26 +195,6 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-27/cd27-allowed-forms.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/CD-27/test-body-forms.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/runner/toolchain/typescript-floor-syntax.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-27#test-body-logic",
-      "file": "src/infrastructure/engines/audit/runner/walker-conformance.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -425,6 +325,91 @@
       "kind": "file-carve-out",
       "clause": "CD-27#test-body-logic",
       "file": "src/composition/single-mechanism.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/claimed-type/cast-to-any/any-cast.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/cast-expressions.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/double-with-a-body/stub-implementation/dependency-isolation.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/module-or-global-patched/module-mock-call/module-mocking.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/runner/pieces/cast-shape.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/runner/pieces/type-directives.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/runner/toolchain/typescript-floor-syntax.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/shorthand-name/identifier-names/identifier-names.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/strictness-weakened/strict/compiler-overrides.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/throw-or-catch-in-a-test/throw-statement/throws-in-tests.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/untracked-escape/directive-pointers/comments-directives.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-27#test-body-logic",
+      "file": "src/infrastructure/engines/walker/write-into-a-parameter/parameter-mutation/parameter-mutation.test.ts"
     }
   ]
 }
