@@ -11,3 +11,7 @@
 - **Source:** This is Fowler's narrow integration test; Freeman and Pryce warn against mocks at boundary objects.
 
 Both halves answer one reason to change, which test owns a behaviour, so it stays one rule written as two sentences. A test that inherits nothing from the machine is the principle's own must-hold, so it is a case, not a rule.
+
+- **Review:** unit tests form the bulk and component or integration tests stay few
+- **Review:** an integration test targets the wiring between units, not their logic
+- **Review:** no percentage coverage threshold gates a run

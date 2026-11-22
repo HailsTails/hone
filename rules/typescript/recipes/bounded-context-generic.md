@@ -16,3 +16,4 @@
 - **Method:** A middleware that reads a context field takes a generic bounded so the field must exist. Each layer widens it.
 - **You can tell because:** No middleware checks for, or defaults, a field it reads.
 - **Industry name:** none; ours.
+- **Review:** middleware reads its context through a constrained generic, not an open property bag

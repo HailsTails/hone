@@ -18,3 +18,5 @@
 - **Industry name:** Result type (Wlaschin).
 
 [Failure mapping at the adapter](failure-mapping-at-the-adapter.md) also serves this rule.
+
+- **Review:** operational errors are tagged data built by a factory and dispatched on their tag
