@@ -75,9 +75,6 @@ export const versionOneNamesOf = (request: { readonly document: unknown }): Resu
 };
 
 export const readVersionOneNames = (request: { readonly fileText: FileTextPort; readonly path: string }): Result<VersionOneNames, VersionTwoLoadFailure> => {
-  if (request.fileText.exists({ path: request.path }) === "absent") {
-    return { outcome: "ok", value: NO_VERSION_ONE_NAMES };
-  }
   const document = readVersionOneJson(request);
   if (document.outcome === "failed") {
     return document;

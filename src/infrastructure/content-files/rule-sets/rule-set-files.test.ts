@@ -87,13 +87,16 @@ describe("createRuleSetFiles checks", () => {
     ).toEqual({ outcome: "ok", value: [] });
   });
 
-  it("reads a clause of the tool's own rule set its checks from the install's names map, giving none where the install holds no map", () => {
+  it("reads a clause of the tool's own rule set its checks from the install's names map, failing where the install holds no map", () => {
     expect(
       RULE_SET_FILES.checks({
         installRoot: INSTALL_ROOT,
         clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
       }),
-    ).toEqual({ outcome: "ok", value: [] });
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: PATH.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "disciplines-file", "version-one-names.json"] }), detail: expect.any(String) },
+    });
   });
 });
 

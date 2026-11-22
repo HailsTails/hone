@@ -58,19 +58,18 @@ const fileTextOf = (request: { readonly exists: FileTextPort["exists"]; readonly
 
 describe("readInstallDiscipline", () => {
   it("holds nothing, probing no piece, when the names map names no clause of the discipline", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present");
+    const exists = vi.fn<FileTextPort["exists"]>();
     const read = vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: NAMES_WITHOUT_CD_14_TEXT });
     expect(readInstallDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, installRoot: INSTALL_ROOT, discipline: CD_14 })).toEqual({
       outcome: "ok",
       value: { held: "absent" },
     });
-    expect(exists.mock.calls).toEqual([[{ path: NAMES_PATH }]]);
+    expect(exists).not.toHaveBeenCalled();
   });
 
   it("assembles each mechanical clause from the names map, the pieces that run it and the cases beside one of them, and each judgement clause as reviewed", () => {
     const exists = vi
       .fn<FileTextPort["exists"]>()
-      .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
@@ -109,7 +108,7 @@ describe("readInstallDiscipline", () => {
   });
 
   it("refuses a mechanical clause no piece runs as rule-set-invalid at the names map", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent").mockReturnValueOnce("absent");
     const read = vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT });
     expect(readInstallDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, installRoot: INSTALL_ROOT, discipline: CD_14 })).toEqual({
       outcome: "failed",
@@ -118,7 +117,7 @@ describe("readInstallDiscipline", () => {
   });
 
   it("refuses a mechanical clause whose cases sit beside no piece that runs it", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("present").mockReturnValueOnce("absent").mockReturnValueOnce("absent");
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent").mockReturnValueOnce("absent");
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
@@ -132,7 +131,6 @@ describe("readInstallDiscipline", () => {
   it("refuses a mechanical clause whose cases sit beside more than one piece, naming each", () => {
     const exists = vi
       .fn<FileTextPort["exists"]>()
-      .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
       .mockReturnValueOnce("present")
@@ -153,7 +151,7 @@ describe("readInstallDiscipline", () => {
   });
 
   it("refuses cases that are not a clause's cases as rule-set-invalid at the cases file", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("present").mockReturnValueOnce("absent").mockReturnValueOnce("present");
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent").mockReturnValueOnce("present");
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
@@ -170,7 +168,7 @@ describe("readInstallDiscipline", () => {
   });
 
   it("refuses a piece that is not a piece file as file-malformed at the piece", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("present");
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present");
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
@@ -182,7 +180,7 @@ describe("readInstallDiscipline", () => {
   });
 
   it("carries the names map's refusal", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present");
+    const exists = vi.fn<FileTextPort["exists"]>();
     const read = vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "unreadable", path: NAMES_PATH, detail: "EACCES" } });
     expect(readInstallDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, installRoot: INSTALL_ROOT, discipline: CD_14 })).toEqual({
       outcome: "failed",

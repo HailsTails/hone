@@ -9,7 +9,9 @@ import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
-const RULE_SET_ROOT = absoluteRootOf("/install");
+const INSTALL_ROOT = absoluteRootOf("/install");
+
+const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
 
@@ -110,7 +112,7 @@ const ITEM_FOLDER_DIRECTORY: DirectoryPort = {
 
 describe("createSymptomCatalogueRepository", () => {
   it("reads the items under the rule set's rules folder, with the clauses and formats of today the version 1 names give and the engines the registry names", () => {
-    expect(createSymptomCatalogueRepository({ fileText: ITEM_FOLDER_FILE_TEXT, directory: ITEM_FOLDER_DIRECTORY, path: PATH, ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+    expect(createSymptomCatalogueRepository({ fileText: ITEM_FOLDER_FILE_TEXT, directory: ITEM_FOLDER_DIRECTORY, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "ok",
       value: {
         held: "catalogue",
@@ -134,17 +136,29 @@ describe("createSymptomCatalogueRepository", () => {
     expect(ITEM_FOLDER_FILE_TEXT.write).not.toHaveBeenCalled();
   });
 
-  it("holds no catalogue, reading nothing, when the rule set holds no rules folder and no version 1 names", () => {
+  it("holds no catalogue, reading nothing, when a team's rule set holds no rules folder, since version 1 names are Hone's own", () => {
     const fileText: FileTextPort = {
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
       read: vi.fn<FileTextPort["read"]>(),
       write: vi.fn<FileTextPort["write"]>(),
     };
-    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "ok",
       value: { held: "none" },
     });
     expect(fileText.read).not.toHaveBeenCalled();
+  });
+
+  it("fails file-unreadable naming the version 1 names when Hone's own install is missing them", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "failed", error: { kind: "unreadable", path: NAMES_PATH, detail: "ENOENT" } }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: NAMES_PATH, detail: "ENOENT" },
+    });
   });
 
   it("fails file-unreadable naming the version 1 names when they cannot be read", () => {
@@ -153,7 +167,7 @@ describe("createSymptomCatalogueRepository", () => {
       read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "failed", error: { kind: "unreadable", path: NAMES_PATH, detail: "EACCES" } }),
       write: vi.fn<FileTextPort["write"]>(),
     };
-    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
+    expect(createSymptomCatalogueRepository({ fileText, directory: UNLISTED, path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT }).read({})).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", path: NAMES_PATH, detail: "EACCES" },
     });

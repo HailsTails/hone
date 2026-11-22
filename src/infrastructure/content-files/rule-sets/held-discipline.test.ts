@@ -54,12 +54,14 @@ describe("readHeldDiscipline", () => {
     });
   });
 
-  it("assembles the install's discipline from its names map rather than a discipline file", () => {
-    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("absent");
-    const read = vi.fn<FileTextPort["read"]>();
+  it("reads the install's discipline from its names map rather than a discipline file, carrying the map's failure", () => {
+    const exists = vi.fn<FileTextPort["exists"]>();
+    const read = vi
+      .fn<FileTextPort["read"]>()
+      .mockReturnValueOnce({ outcome: "failed", error: { kind: "unreadable", path: "/install/src/infrastructure/disciplines-file/version-one-names.json", detail: "ENOENT" } });
     expect(
       readHeldDiscipline({ fileText: fileTextOf({ exists, read }), path: PATH, ruleSetRoot: INSTALL_ROOT, installRoot: INSTALL_ROOT, discipline: disciplineIdOf("CD-14") }),
-    ).toEqual({ outcome: "ok", value: { held: "absent" } });
-    expect(exists.mock.calls).toEqual([[{ path: "/install/src/infrastructure/disciplines-file/version-one-names.json" }]]);
+    ).toEqual({ outcome: "failed", error: { kind: "file-unreadable", path: "/install/src/infrastructure/disciplines-file/version-one-names.json", detail: "ENOENT" } });
+    expect(exists).not.toHaveBeenCalled();
   });
 });
