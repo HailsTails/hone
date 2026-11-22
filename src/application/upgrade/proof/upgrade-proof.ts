@@ -19,6 +19,10 @@ import type {
   VersionOneFiles,
   VersionOneReading,
 } from "../../ports/upgrade/version-one-reading.ts";
+import {
+  patchedProjectionsOf,
+  restoredOriginalProjections,
+} from "../patching/projection-patching.ts";
 import { proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
 import {
   type PlannedFile,
@@ -52,6 +56,7 @@ export type UpgradeProofRequest = {
   readonly versionOneFiles: VersionOneFiles;
   readonly catalogues: readonly RuleSetCatalogue[];
   readonly repoRoot: AbsolutePath;
+  readonly trackedPaths: readonly RepoPath[];
   readonly projectionFilesOf: ProjectionFilesOf;
   readonly settingsFormat: Pick<SettingsFileFormat, "textOf">;
   readonly versionOneProjectionsOf: VersionOneProjectionsOf;
@@ -412,7 +417,7 @@ const afterReading = async (
   });
 };
 
-export const upgradeProof = async (
+const provenOver = async (
   request: UpgradeProofRequest,
 ): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
   const answered = await request.oracle.answer({
@@ -452,4 +457,26 @@ export const upgradeProof = async (
     };
   }
   return projectedOver({ ...request, plan: plan.value, before: before.value });
+};
+
+export const upgradeProof = async (
+  request: UpgradeProofRequest,
+): Promise<Result<ProofCarriedOver, ProofRefusal>> => {
+  const { ports, repoRoot, trackedPaths } = request;
+  const patches = patchedProjectionsOf({ ports, repoRoot, trackedPaths });
+  if (patches.outcome === "failed") {
+    return patches;
+  }
+  const proven = await provenOver(request);
+  return proven.outcome === "ok"
+    ? proven
+    : {
+        outcome: "failed",
+        error: restoredOriginalProjections({
+          ports,
+          repoRoot,
+          patches: patches.value,
+          refusal: proven.error,
+        }),
+      };
 };
