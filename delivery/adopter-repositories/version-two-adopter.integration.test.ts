@@ -1,11 +1,12 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
-import { projectCommandOf, pruneCommandOf } from "../arguments/tool-invocations.ts";
-import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import { createDefaultPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../../../../delivery/install-proof/install-proof-ports.ts";
+import { projectCommandOf, pruneCommandOf } from "../../src/infrastructure/command-line/arguments/tool-invocations.ts";
+import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
+import { createDefaultCommandRunPort, createDefaultScratchFilesPort, type ScratchFilesPort } from "../install-proof/install-proof-ports.ts";
 
 type ScratchRepositories = {
   readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
@@ -62,11 +63,11 @@ const repositoryWithSubfolder = (request: {
   return repo;
 };
 
-const INSTALL_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] }));
+const INSTALL_ROOT = absolutePathSchema.parse(createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }));
 
 const TOOL_COMMAND_FILE = `${INSTALL_ROOT}/src/hone.ts`;
 
-const ENTRY_URL = new URL("../../../hone.ts", import.meta.url).href;
+const ENTRY_URL = new URL("../../src/hone.ts", import.meta.url).href;
 
 const EACH_STEP_IS_A_PROCESS_MILLISECONDS = 120_000;
 
@@ -467,7 +468,7 @@ describe("the settings a version 2 adopter edits, run as the real tool command",
       runCommandIn({ repo, subcommand: "project", options: [] });
       writeIn({ repo, file: "hone.eslint.mjs", text: PROJECTION_WITH_AN_EXTRA_LINE });
       const outOfDate = runCommandIn({ repo, subcommand: "check", options: [] });
-      const removed = scratch.removeTree({ path: `${repo}/hone.eslint.mjs` });
+      const removed = createDefaultFileRemovalPort({}).remove({ path: `${repo}/hone.eslint.mjs` });
       assert(removed.outcome === "ok", "the projection is removed");
       const missing = runCommandIn({ repo, subcommand: "check", options: [] });
       expect({ outOfDate, missing }).toEqual({

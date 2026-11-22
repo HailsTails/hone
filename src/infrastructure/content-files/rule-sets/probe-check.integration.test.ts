@@ -1,26 +1,20 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
-import { createExceptionRepository } from "../../discipline-exceptions-folder/exception-layout.ts";
+import type { RunRequest } from "../../../application/ports/engine/runner-module.ts";
 import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
-import { runCheck } from "../../../application/run/check/run-check.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
-import { createPathPort } from "../../node/path-port.ts";
-import { absolutePathSchema } from "../absolute-path.ts";
-import { DEFAULT_ASSESSMENT } from "../../hone-config-file/assessment.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../engines/audit/runner/toolchain/typescript-toolchain.ts";
+import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../node/path-port.ts";
+import { selectionFrom } from "../../disciplines-file/consumer-selection.ts";
+import { selectionFileOf } from "../../disciplines-file/selection-file.ts";
+import { createRuleSetFiles } from "./rule-set-files.ts";
+import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import * as exportTestSibling from "../../engines/audit/CD-23/export-test-sibling.ts";
-import cd23Piece from "../../engines/audit/CD-23/piece.json" with { type: "json" };
 import { createWalkerRunner } from "../../engines/audit/runner/create-walker-runner.ts";
-import cd23Discipline from "../../../../rules/CD-23/discipline.json" with { type: "json" };
 import * as noTmpFiles from "./probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts";
-import probePiece from "./probe-rule-set/mechanisms/audit/PD-1/piece.json" with { type: "json" };
-import probeDiscipline from "./probe-rule-set/rules/PD-1/discipline.json" with { type: "json" };
-import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
-import { exceptionEntryParser } from "../../discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../command-line/installation/shown-path.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -34,57 +28,65 @@ const UNSIBLINGED_SOURCE = "export const kept = 1;\n";
 const PLAIN_SOURCE = "export const plain = 3;\n";
 const PLAIN_TEST_SOURCE = 'import { plain } from "./plain.ts";\n';
 
-type FakeFile = {
-  readonly read: ReturnType<FileTextPort["read"]>;
-  readonly presence: ReturnType<FileTextPort["exists"]>;
+const path = createDefaultPathPort({});
+
+const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
+  const resolved = path.resolve(request);
+  assert(resolved.outcome === "ok", `${request.path} resolves to an absolute path`);
+  return resolved.value;
 };
 
-const presentFile = (request: { readonly text: string }): FakeFile => ({
-  read: { outcome: "ok", value: request.text },
-  presence: "present",
-});
+const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "..", "..", ".."] }) });
 
-const ABSENT_FILE: FakeFile = {
-  read: { outcome: "failed", error: { kind: "unreadable", path: "", detail: "ENOENT" } },
-  presence: "absent",
-};
+const RULE_SETS_ROOT = resolvedPath({ path: import.meta.dirname });
 
-const FILES: Readonly<Record<string, FakeFile>> = {
-  "/repo/disciplines.json": presentFile({
-    text: JSON.stringify({
-      version: 1,
-      ruleSets: { probe: "probe" },
-      clauses: { "probe/PD-1#no-tmp-files": "audit", "CD-23#export-test-sibling": "audit" },
-    }),
-  }),
-  "/repo/discipline-exceptions.json": ABSENT_FILE,
-  "/install/package.json": ABSENT_FILE,
-  "/install/rules/CD-23/discipline.json": presentFile({ text: JSON.stringify(cd23Discipline) }),
-  "/install/src/infrastructure/engines/audit/CD-23/piece.json": presentFile({ text: JSON.stringify(cd23Piece) }),
-  "/install/src/infrastructure/engines/audit/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
-  "/repo/probe/rules/PD-1/discipline.json": presentFile({ text: JSON.stringify(probeDiscipline) }),
-  "/repo/probe/mechanisms/audit/PD-1/piece.json": presentFile({ text: JSON.stringify(probePiece) }),
-  "/repo/src/scratch.tmp.ts": presentFile({ text: TEMPORARY_SOURCE }),
-  "/repo/src/kept.ts": presentFile({ text: UNSIBLINGED_SOURCE }),
-  "/repo/src/plain.ts": presentFile({ text: PLAIN_SOURCE }),
-  "/repo/src/plain.test.ts": presentFile({ text: PLAIN_TEST_SOURCE }),
-  "/repo/README.md": presentFile({ text: "# probe\n" }),
-  "/repo/disciplines.assessment.md": presentFile({ text: "# Disciplines assessment\n\n## probe/PD-1#no-tmp-files\n\n- **Cause here:** scratch files\n" }),
-  "/repo/probe/rules/PD-1/README.md": ABSENT_FILE,
-  "/install/rules/CD-23/README.md": presentFile({ text: "# CD-23\n" }),
+const REPO_ROOT = resolvedPath({ path: "/repo" });
+
+const sourceAt = (request: { readonly file: string }): string => path.join({ segments: [REPO_ROOT, request.file] });
+
+const SOURCES: Readonly<Record<string, string>> = {
+  [sourceAt({ file: "src/scratch.tmp.ts" })]: TEMPORARY_SOURCE,
+  [sourceAt({ file: "src/kept.ts" })]: UNSIBLINGED_SOURCE,
+  [sourceAt({ file: "src/plain.ts" })]: PLAIN_SOURCE,
+  [sourceAt({ file: "src/plain.test.ts" })]: PLAIN_TEST_SOURCE,
 };
 
 const fileText: FileTextPort = {
-  read: ({ path }) => FILES[path].read,
-  exists: ({ path }) => FILES[path].presence,
+  read: ({ path: file }) => ({ outcome: "ok", value: SOURCES[file] }),
+  exists: () => "present",
   write: vi.fn<FileTextPort["write"]>(),
 };
 
-const path = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
+const SELECTION_FILE_PATH = path.join({ segments: [RULE_SETS_ROOT, "disciplines.json"] });
+
+const SELECTION_FILE = selectionFileOf({
+  path: SELECTION_FILE_PATH,
+  document: {
+    version: 1,
+    ruleSets: { probe: "probe-rule-set" },
+    clauses: { "probe/PD-1#no-tmp-files": "audit", "CD-23#export-test-sibling": "audit" },
+  },
+});
+assert(SELECTION_FILE.outcome === "ok", "the selection names the probe rule set's PD-1 beside CD-23");
+
+const selection = selectionFrom({
+  ruleSetFiles: createRuleSetFiles({ fileText: createDefaultFileTextPort({}), path }),
+  path,
+  repoRoot: RULE_SETS_ROOT,
+  installRoot: INSTALL_ROOT,
+  moduleExtension: ".ts",
+  file: SELECTION_FILE.value,
+  filePath: SELECTION_FILE_PATH,
+});
+assert(selection.outcome === "ok", "the probe rule set and CD-23 resolve from the team's rule set files and the install");
+
+const [PROBE_BINDING, EXPORT_TEST_SIBLING_BINDING] = selection.value.bindings;
+assert.isDefined(PROBE_BINDING, "the selection binds the probe clause");
+assert.isDefined(EXPORT_TEST_SIBLING_BINDING, "the selection binds the CD-23 clause");
 
 const PIECE_MODULES: Readonly<Record<string, unknown>> = {
-  "/install/src/infrastructure/engines/audit/CD-23/export-test-sibling.ts": exportTestSibling,
-  "/repo/probe/mechanisms/audit/PD-1/no-tmp-files.ts": noTmpFiles,
+  [path.join({ segments: [INSTALL_ROOT, "src", "infrastructure", "engines", "audit", "CD-23", "export-test-sibling.ts"] })]: exportTestSibling,
+  [path.join({ segments: [RULE_SETS_ROOT, "probe-rule-set", "mechanisms", "audit", "PD-1", "no-tmp-files.ts"] })]: noTmpFiles,
 };
 
 const pieceModules: ModuleLoaderPort = {
@@ -92,124 +94,55 @@ const pieceModules: ModuleLoaderPort = {
     Promise.resolve({ outcome: "ok", value: PIECE_MODULES[modulePath] }),
 };
 
-const git: GitPort = {
-  trackedPaths: vi
-    .fn<GitPort["trackedPaths"]>()
-    .mockReturnValue({
-      outcome: "ok",
-      value: [
-        repoPathSchema.parse("src/scratch.tmp.ts"),
-        repoPathSchema.parse("src/kept.ts"),
-        repoPathSchema.parse("src/plain.ts"),
-        repoPathSchema.parse("src/plain.test.ts"),
-        repoPathSchema.parse("README.md"),
-      ],
-    }),
-  changedSince: vi.fn<GitPort["changedSince"]>(),
-  contentInBase: vi.fn<GitPort["contentInBase"]>(),
-  textInBase: vi.fn<GitPort["textInBase"]>(),
-  renamedSince: vi.fn<GitPort["renamedSince"]>(),
+const PROBE_ADDRESS = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
+const EXPORT_TEST_SIBLING_ADDRESS = clauseAddressSchema.parse("CD-23#export-test-sibling");
+
+const TRACKED = [
+  repoPathSchema.parse("src/scratch.tmp.ts"),
+  repoPathSchema.parse("src/kept.ts"),
+  repoPathSchema.parse("src/plain.ts"),
+  repoPathSchema.parse("src/plain.test.ts"),
+  repoPathSchema.parse("README.md"),
+];
+
+const RUN: RunRequest = {
+  repoRoot: REPO_ROOT,
+  installRoot: INSTALL_ROOT,
+  files: TRACKED,
+  trackedPaths: TRACKED,
+  clauses: [PROBE_BINDING.clause, EXPORT_TEST_SIBLING_BINDING.clause],
 };
 
-const PROBE_ADDRESS = { ruleSet: { name: "probe" }, discipline: "PD-1", clause: "no-tmp-files" };
-const EXPORT_TEST_SIBLING_ADDRESS = { ruleSet: "hone", discipline: "CD-23", clause: "export-test-sibling" };
-
-const probeCheck = () => {
+const probeRun = () => {
   const parse = { ...DEFAULT_PARSE_PORT };
   const parseCalls = vi.spyOn(parse, "parse");
-  const runnerModule = { runner: createWalkerRunner({ fileText, modules: pieceModules, path, parse, entryKind: ABSENT_ENTRY_KIND }) };
-  const records = {
-    repoRoot: absolutePathSchema.parse("/repo"),
-    installRoot: absolutePathSchema.parse("/install"),
-    moduleExtension: ".ts",
-    baseRevision: undefined,
-    assessment: DEFAULT_ASSESSMENT,
-    fileText,
-    engine: createDefaultEnginePort({}),
-    modules: {
-      load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({ outcome: "ok", value: runnerModule }),
-    },
-    path,
-    git,
-  } as const;
-  const report = runCheck({
-    ...records,
-    selectionRepository: createSelectionRepository(records),
-    exceptionEntryParser,
-    shownPathOf: shownPathOfRepository(records),
-    exceptionRepository: createExceptionRepository({
-      ...records,
-      fileText: {
-        ...records.fileText,
-        exists: (query) => (query.path.endsWith("discipline-exceptions") ? "absent" : records.fileText.exists(query)),
-      },
-      directory: {
-        list: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path: folder, detail: "the single-file fake holds no folders" } }),
-        create: ({ path: folder }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path: folder, detail: "the single-file fake holds no folders" } }),
-      },
-      fileRemoval: { remove: ({ path: file }) => ({ outcome: "failed", error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" } }) },
-      gitTree: { pathsAt: () => ({ outcome: "ok", value: [repoPathSchema.parse("discipline-exceptions.json")] }) },
-    }),
-  });
-  return { report, parseCalls };
+  const ran = createWalkerRunner({ fileText, modules: pieceModules, path, parse, entryKind: ABSENT_ENTRY_KIND }).run(RUN);
+  return { ran, parseCalls };
 };
 
-describe("a check selecting the probe rule set's PD-1 beside CD-23 through the audit", () => {
+describe("a run selecting the probe rule set's PD-1 beside CD-23 through the audit", () => {
   it("flags the temporary file through the probe and the unit without a test sibling through CD-23 in one run", async () => {
-    await expect(probeCheck().report).resolves.toEqual({
-      outcome: "ok",
-      value: {
-        excluded: [],
-        notAdopted: [],
-        notRun: [],
-        editions: [],
-        findings: [
-          {
-            clause: PROBE_ADDRESS,
-            file: "src/scratch.tmp.ts",
-            anchor: { line: 1, column: 0 },
-            snippet: "src/scratch.tmp.ts",
-            mechanism: "audit",
-          },
-          {
-            clause: EXPORT_TEST_SIBLING_ADDRESS,
-            file: "src/kept.ts",
-            anchor: { line: 1, column: 0 },
-            snippet: "missing co-located *.test.ts(x) sibling",
-            mechanism: "audit",
-          },
-        ],
-        exempted: [],
-        uncovered: [],
-        stale: [],
-        forfeited: [],
-        unrecorded: [],
-        doublyHeld: [],
-        invalidRecords: [],
-        unmeasured: [],
-        projectionProblems: [],
-        assessment: [],
-        readFirst: [
-          {
-            kind: "clause",
-            clause: PROBE_ADDRESS,
-            assessmentSection: "present",
-            rulePage: { path: "probe/rules/PD-1/README.md", presence: "absent" },
-          },
-          {
-            kind: "clause",
-            clause: EXPORT_TEST_SIBLING_ADDRESS,
-            assessmentSection: "not-assessed",
-            rulePage: { path: "../install/rules/CD-23/README.md", presence: "present" },
-          },
-        ],
+    const ran = await probeRun().ran;
+    assert(ran.outcome === "ok", "the run measures the tracked files");
+    expect(ran.value.hits).toEqual([
+      {
+        clause: PROBE_ADDRESS,
+        file: "src/scratch.tmp.ts",
+        anchor: { line: 1, column: 0 },
+        snippet: "src/scratch.tmp.ts",
       },
-    });
+      {
+        clause: EXPORT_TEST_SIBLING_ADDRESS,
+        file: "src/kept.ts",
+        anchor: { line: 1, column: 0 },
+        snippet: "missing co-located *.test.ts(x) sibling",
+      },
+    ]);
   });
 
   it("parses each tracked TypeScript file exactly once", async () => {
-    const { report, parseCalls } = probeCheck();
-    await report;
+    const { ran, parseCalls } = probeRun();
+    await ran;
     expect(parseCalls.mock.calls).toEqual([
       [{ fileName: "src/scratch.tmp.ts", source: TEMPORARY_SOURCE }],
       [{ fileName: "src/kept.ts", source: UNSIBLINGED_SOURCE }],

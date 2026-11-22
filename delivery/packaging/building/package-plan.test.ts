@@ -38,7 +38,7 @@ const SOURCE_PATHS = [
   "methods/README.md",
   "methods/lenses/naming.md",
   "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/piece.json",
-  "src/infrastructure/command-line/documentation/walkthrough.integration.test.ts",
+  "src/composition/walkthrough.integration.test.ts",
 ];
 
 const AUDIT_PIECE = {

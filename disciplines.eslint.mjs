@@ -103,7 +103,7 @@ export default [
   {
     name: "hone-core/file-records/CD-41#function-length, CD-6#naming-convention",
     files: [
-      "src/infrastructure/command-line/documentation/output-contract.integration.test.ts",
+      "src/composition/output-contract.integration.test.ts",
     ],
     rules: { "hone-cd41/function-length": "off", "hone-cd6/naming-convention": "off" },
   },

@@ -5,7 +5,7 @@ import { clauseAddressSchema } from "./clause-address.ts";
 import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries } from "./exception-records.ts";
+import { exceptionEntriesOfDocument, exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile } from "./exception-records.ts";
 import { authorisationStandingOf, type ExceptionBaseline, UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { type ImportEvidence, legacyChainsIn, type PlacedEntry, recordImportOf, type StructuralExceptionEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
@@ -1572,5 +1572,63 @@ const RECORD_IMPORT_CASES: readonly RecordImportCase[] = [
 describe("recordImportOf names the provenance source of an imported record, and of no other", () => {
   it.each(RECORD_IMPORT_CASES)("reads $label", ({ record, recordImport }) => {
     expect(recordImportOf({ record })).toEqual(recordImport);
+  });
+});
+
+const SINGLE_FILE_TEXT = `{
+  "version": 1,
+  "exceptions": [
+    {
+      "kind": "authorised-location",
+      "provenance": { "kind": "existing-authorisation", "source": "fictional unit fixture exception-records.test.ts#SINGLE_FILE_TEXT; not historical authorisation" },
+      "clause": "CD-14#class-syntax",
+      "file": "src/factory.ts",
+      "reason": "the wrapping factory for the library"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-99#other",
+      "file": "src/legacy.ts",
+      "reason": "legacy class awaiting paydown"
+    }
+  ]
+}`;
+
+describe("parseExceptionEntries over the entries of a discipline-exceptions.json text placed in that file", () => {
+  it("reads the entries of a discipline-exceptions.json text as records, placing each invalid one by its position in that file", () => {
+    expect(
+      parseExceptionEntries({
+        entries: placedInSingleFile({ entries: exceptionEntriesOfText({ text: SINGLE_FILE_TEXT }) }),
+        selection: SELECTION,
+        fileExceptionWhyChains: "required",
+        baseline: UNMEASURED_EXCEPTION_BASELINE,
+      }),
+    ).toEqual({
+      records: [
+        {
+          kind: "authorised-location",
+          clause: CLASS_SYNTAX,
+          mechanism: "audit",
+          file: "src/factory.ts",
+          reason: LOCATION.reason,
+          provenance: { kind: "existing-authorisation", source: "fictional unit fixture exception-records.test.ts#SINGLE_FILE_TEXT; not historical authorisation" },
+        },
+      ],
+      invalid: [
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 },
+          problem: { kind: "clause-not-selected", clause: { ruleSet: "hone", discipline: "CD-99", clause: "other" } },
+        },
+      ],
+    });
+  });
+});
+
+describe("placedInSingleFile", () => {
+  it("places each entry in discipline-exceptions.json at its position", () => {
+    expect(placedInSingleFile({ entries: [LOCATION, FILE_CARVE_OUT] })).toEqual([
+      { place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 }, entry: LOCATION },
+      { place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 }, entry: FILE_CARVE_OUT },
+    ]);
   });
 });

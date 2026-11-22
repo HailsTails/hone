@@ -1,11 +1,11 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { editionRunsOf } from "../../../../application/conformance/edition-runs.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { Result } from "../../../../domain/result.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
 import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
@@ -85,18 +85,15 @@ const rowsOf = (request: {
   return piece.value.clauses.flatMap((entry) => {
     const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
     assert(definition?.kind === "mechanical", `${request.discipline}#${entry.clause} is a mechanical clause`);
-    const runs = editionRunsOf({
-      clause: {
-        address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
-        anchor: definition.anchor,
-        pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
-        settings: entry.settings,
-        clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
-        edition: entry.editions.default,
-      },
-      cases: [...definition.cases.flag, ...definition.cases.allow],
-    });
-    return runs.map((run) => ({
+    const clause: RunnerClause = {
+      address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
+      anchor: definition.anchor,
+      pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
+      settings: entry.settings,
+      clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
+      edition: entry.editions.default,
+    };
+    return editionRunsOf({ clause, cases: [...definition.cases.flag, ...definition.cases.allow] }).map((run) => ({
       name: run.clause.edition === entry.editions.default
         ? `${request.discipline}#${entry.clause}`
         : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,

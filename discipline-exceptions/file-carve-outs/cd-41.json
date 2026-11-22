@@ -34,7 +34,7 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-41#function-length",
-      "file": "src/infrastructure/command-line/documentation/output-contract.integration.test.ts"
+      "file": "src/composition/output-contract.integration.test.ts"
     }
   ]
 }

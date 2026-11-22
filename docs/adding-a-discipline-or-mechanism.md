@@ -84,25 +84,25 @@ A path-only audit piece reads no source, so its test can prepare `check` and cal
 
 ### Worked example: the probe discipline
 
-`tests/probe-rule-set/` is a test-only rule set, named `probe`, holding one discipline written exactly as a team would write its own. It was added beside Hone's own rule set with no change to core or to the audit runner.
+`src/infrastructure/content-files/rule-sets/probe-rule-set/` is a test-only rule set, named `probe`, holding one discipline written exactly as a team would write its own. It was added beside Hone's own rule set with no change to core or to the audit runner.
 
-- `tests/probe-rule-set/rules/PD-1/discipline.json` declares one mechanical clause, `no-tmp-files`: mechanisms `["audit"]`, anchor `{ "kind": "file" }`, one flag case (`src/scratch.tmp.ts`, line 1) and one allow case (`src/kept.ts`, no lines).
-- `tests/probe-rule-set/mechanisms/audit/PD-1/piece.json` maps that clause to the module `no-tmp-files.ts`.
-- `tests/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts` exports `check`, an audit piece that completes each file from its path alone: a hit at line 1 for a path ending `.tmp.ts`, none otherwise. It reads no file, so the walker never parses on its behalf.
+- `src/infrastructure/content-files/rule-sets/probe-rule-set/rules/PD-1/discipline.json` declares one mechanical clause, `no-tmp-files`: mechanisms `["audit"]`, anchor `{ "kind": "file" }`, one flag case (`src/scratch.tmp.ts`, line 1) and one allow case (`src/kept.ts`, no lines).
+- `src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/piece.json` maps that clause to the module `no-tmp-files.ts`.
+- `src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.ts` exports `check`, an audit piece that completes each file from its path alone: a hit at line 1 for a path ending `.tmp.ts`, none otherwise. It reads no file, so the walker never parses on its behalf.
 - `no-tmp-files.test.ts` tests `check` directly; the probe has no conformance test of its own.
 - The piece imports only a type, `WalkerPiece`, from the audit runner, as a path relative to its own file. Type imports are erased when Node runs the source, so the path matters only to typechecking.
 
-A repository selects it by naming the rule set and the clause:
+A repository selects it by naming the rule set and the clause. The test's selection sits beside the `probe-rule-set` folder, so the rule set is named `probe-rule-set`:
 
 ```json
 {
   "version": 1,
-  "ruleSets": { "probe": "probe" },
+  "ruleSets": { "probe": "probe-rule-set" },
   "clauses": { "probe/PD-1#no-tmp-files": "audit", "CD-23#export-test-sibling": "audit" }
 }
 ```
 
-`tests/probe-check.integration.test.ts` runs that selection: the probe flags `src/scratch.tmp.ts`, `unit-without-a-running-test#companion-test-file` (`CD-23#export-test-sibling`) flags `src/kept.ts` for its missing test sibling, and the audit runner parses each file once even though two disciplines are selected.
+`src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts` resolves that selection through the selection reader over the real `probe-rule-set` files and runs it: the probe flags `src/scratch.tmp.ts`, `unit-without-a-running-test#companion-test-file` (`CD-23#export-test-sibling`) flags `src/kept.ts` for its missing test sibling, and the audit runner parses each file once even though two disciplines are selected.
 
 ## Adding a mechanism
 
@@ -149,7 +149,7 @@ Core knows only these two paths. A mechanism that fits neither would need a chan
 
 ### 4. Conformance
 
-Each runner's suite runs core's `checkConformance` (`core/conformance/conformance.ts`) over the real runner as core loads it, for every shared clause its pieces serve. It calls the runner's `conform` and compares the flagged lines with each case's expected lines; the runner conforms for a clause when the result is ok and lists no failures. The audit mechanism's is `mechanisms/audit/runner/walker-conformance.test.ts`; the ESLint runner's is in `mechanisms/eslint/runner/native-exceptions.integration.test.ts`. Conformance runs the real tool in memory, because the tool's verdict is what is being checked.
+Each runner's suite runs core's `checkConformance` (`core/conformance/conformance.ts`) over the real runner as core loads it, for every shared clause its pieces serve. It calls the runner's `conform` and compares the flagged lines with each case's expected lines; the runner conforms for a clause when the result is ok and lists no failures. The audit mechanism's is `mechanisms/audit/runner/walker-conformance.test.ts`; the ESLint runner's is in `src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts` and `delivery/shipped-content/eslint-conformance.test.ts`. Conformance runs the real tool in memory, because the tool's verdict is what is being checked.
 
 A runner that answers a version 2 run through a checks runner, as ESLint does with its `checksRunner` export (`ChecksRunner` in `core/mechanism-port/checks-runner-types.ts`), implements `conform` there as well as `run`. `conform` is required: a module whose `checksRunner` has none is the load failure `runner-invalid`. `toolchainBoundChecksRunner` passes `conform` through the toolchain binding, as it does `run`. The report of a checks runner's `run` holds `projection`, the state of the root projection file, and `slices`, each other projection file it found `missing`, `out-of-date` or `unconfigured` (written for a declared config root whose folder holds no lint configuration on disk, so nothing loads it), named by its repository path. A checks runner reports no other slice state. Core lists each entry under `projectionProblems` as a line naming the file, which fails the check, whatever the root projection's state. The conformance kit (`clauseConformanceOf` in `@hailstails/hone/testing`) asks a standalone runner's `runner.conform`, and for an engine that runs through a native tool asks `checksRunner.conform`; such an engine with no `checksRunner` is the setup failure `runner-unloadable`, "the runner module exports no checksRunner, which version 2 conformance needs of an engine that runs through a native tool". Importing the module still builds its `runner` export; version 2 conformance does not call it.
 

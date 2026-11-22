@@ -39,11 +39,6 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
-      "file": "src/composition/upgrade-command.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
       "file": "src/composition/upgrade-command.test.ts"
     },
     {
@@ -54,47 +49,12 @@
     {
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/command-line/adopter-repositories/version-two-adopter.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/command-line/adopter-repositories/version-two-check.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/command-line/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/command-line/documentation/output-contract.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/command-line/documentation/walkthrough.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
       "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.integration.test.ts"
     },
     {
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
       "file": "src/infrastructure/engines/eslint/runner/native-exceptions/projected-off-switch.integration.test.ts"
-    },
-    {
-      "kind": "file-carve-out",
-      "clause": "CD-10#throws-in-tests",
-      "file": "src/infrastructure/engines/eslint/runner/projection/projection-type.test.ts"
     },
     {
       "kind": "file-carve-out",
@@ -105,6 +65,46 @@
       "kind": "file-carve-out",
       "clause": "CD-10#throws-in-tests",
       "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/composition/output-contract.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/composition/walkthrough.integration.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-10#throws-in-tests",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
     }
   ]
 }

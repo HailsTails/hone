@@ -3,7 +3,7 @@ import type { EnginePort } from "../ports/engine/engine-port.ts";
 import type { Result } from "../../domain/result.ts";
 import { boundClauseOf, type RuleSetReading } from "./clause-under-test.ts";
 import { conformingRunnerOf } from "./conforming-runner.ts";
-import { editionRunsOf } from "./edition-runs.ts";
+import { editionRunsOf } from "../../domain/runner/edition-runs.ts";
 import { gatheredOutcomes } from "../../domain/gathered-outcomes.ts";
 import type { ClauseRequest, ConformanceFailure, ConformanceSetupFailure } from "./conformance-testing-types.ts";
 

@@ -1,13 +1,13 @@
 import { assert, describe, expect, it } from "vitest";
-import { symptomCatalogueOf } from "../../../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
-import SYMPTOMS from "../../../../../../rules/typescript/symptoms.json" with { type: "json" };
-import { checkOfRuleId, eslintRuleIdsOf } from "./check-rule-id.ts";
-import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
-import { honePluginAt } from "./hone-plugin.ts";
+import { symptomCatalogueOf } from "../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
+import SYMPTOMS from "../../rules/typescript/symptoms.json" with { type: "json" };
+import { checkOfRuleId, eslintRuleIdsOf } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
+import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
+import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
+import type { EslintMajorBoundary } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-major-boundary.ts";
+import { honePluginAt } from "../../src/infrastructure/engines/eslint/runner/hone-plugin/hone-plugin.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
   nearestLookup: { flags: [] },
@@ -23,7 +23,7 @@ const path = createDefaultPathPort({});
 
 const honePlugin = await honePluginAt({
   checks: CATALOGUE.value.checks,
-  installRoot: absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", "..", "..", "..", "..", ".."] })),
+  installRoot: absolutePathSchema.parse(path.join({ segments: [import.meta.dirname, "..", ".."] })),
   fileText: createDefaultFileTextPort({}),
   path,
   modules: createDefaultModuleLoaderPort({}),

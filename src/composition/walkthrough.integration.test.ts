@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import type { VersionOneCommandRequest } from "../../../application/ports/version-one-command-request.ts";
-import { INSTALLED_PORTS, toolCommandOver } from "../../../composition/run-tool-command.ts";
-import type { VersionOneCommandRequest as ToolCommandRequest } from "../../../application/ports/version-one-command-request.ts";
-import { createDefaultExceptionRepositoryOf } from "../../discipline-exceptions-folder/exception-layout.ts";
-import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { createDefaultDirectoryPort } from "../../node/file-system/file-system-port.ts";
-import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
-import type { GitPort } from "../../../application/ports/git-port.ts";
-import { createDefaultModuleLoaderPort } from "../../node/modules/module-loader-port.ts";
-import { createDefaultPathPort } from "../../node/path-port.ts";
-import type { ProcessPort } from "../../../application/ports/host/process-port.ts";
-import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
-import { createDefaultEnginePort } from "../../engines/protocol/engine-port.ts";
-import { exceptionEntryParser } from "../../discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository } from "../../disciplines-file/consumer-selection.ts";
-import { shownPathOfRepository } from "../installation/shown-path.ts";
+import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { INSTALLED_PORTS, toolCommandOver } from "./run-tool-command.ts";
+import type { VersionOneCommandRequest as ToolCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { createDefaultExceptionRepositoryOf } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
+import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
+import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
+import type { GitPort } from "../application/ports/git-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
+import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
+import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
+import type { RepoPath } from "../domain/repository/repo-path-types.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
+import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
+import { shownPathOfRepository } from "../infrastructure/command-line/installation/shown-path.ts";
 
 const commandRan = (command: ToolCommandRequest): Promise<void> => toolCommandOver({ ...INSTALLED_PORTS, ...command })(command);
 
@@ -46,7 +46,7 @@ const contractTextAt = (request: { readonly path: string }): string => {
   return text.outcome === "ok" ? text.value : "";
 };
 
-const REPOSITORY_ROOT = createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/../../..`, ".."] });
+const REPOSITORY_ROOT = createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] });
 
 const ADOPTING_GUIDE_TEXT = contractTextAt({ path: `${REPOSITORY_ROOT}/ADOPTING.md` });
 
@@ -86,13 +86,13 @@ const recordedProcessWith = (request: { readonly arguments: readonly string[] })
   };
 };
 
-const WALKTHROUGH = `${import.meta.dirname}/walkthrough`;
+const WALKTHROUGH = `${import.meta.dirname}/../infrastructure/command-line/documentation/walkthrough`;
 
 const BEFORE = `${WALKTHROUGH}/before`;
 
 const AFTER = `${WALKTHROUGH}/after`;
 
-const ENTRY_URL = new URL("../../../hone.ts", import.meta.url).href;
+const ENTRY_URL = new URL("../hone.ts", import.meta.url).href;
 
 const BEFORE_TRACKED: readonly RepoPath[] = [
   repoPathSchema.parse("generated/schema.ts"),

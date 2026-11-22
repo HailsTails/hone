@@ -616,3 +616,8 @@ export const exceptionEntriesOfText = (request: { readonly text: string }): read
 };
 
 export const exceptionEntryParser: ExceptionEntryParser = { parseExceptionEntries, importedEntriesIn, importSourcesOf };
+
+const SINGLE_FILE_RECORDS = repoPathSchema.parse("discipline-exceptions.json");
+
+export const placedInSingleFile = (request: { readonly entries: readonly StructuralExceptionEntry[] }): readonly PlacedEntry[] =>
+  request.entries.map((entry, index) => ({ place: { layout: "single-file", file: SINGLE_FILE_RECORDS, index }, entry }));

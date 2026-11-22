@@ -5,12 +5,11 @@ import type { FileTextPort } from "../../../../../application/ports/file-system/
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import { symptomCatalogueOf } from "../../../../content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import SYMPTOMS from "../../../../../../rules/typescript/symptoms.json" with { type: "json" };
+import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
 import ESLINT_CD_14_PIECE from "../../CD-14/piece.json" with { type: "json" };
 import { CHECKS_DECLARATION_PATH, CHECKS_PROJECTION_PATH, checksProjectionText } from "../projection/checks-projection.ts";
 import type { ChecksRepository } from "./checks-repository.ts";
@@ -120,9 +119,12 @@ const SCRATCH_REPO_ROOT = absolutePathSchema.parse(`${REAL_INSTALL_ROOT}/artefac
 
 const INSTALLED_ESLINT_PACKAGE_JSON = path.join({ segments: [SCRATCH_REPO_ROOT, "node_modules", "eslint", "package.json"] });
 
-const SYMPTOM_CATALOGUE = symptomCatalogueOf({ document: SYMPTOMS });
-
-assert(SYMPTOM_CATALOGUE.outcome === "ok", "the shipped symptom catalogue reads");
+const CLASS_KEYWORD_CHECK: RuledCheck = {
+  name: "class-keyword",
+  symptom: { name: "authored-class-or-this", title: "Authored class or this" },
+  clause: clauseAddressSchema.parse("CD-14#class-syntax"),
+  engines: [{ mechanism: "audit" }, { mechanism: "eslint" }],
+};
 
 const CLASS_PROJECTED = { symptom: "authored-class-or-this", check: "class-keyword", ruleId: "hone/authored-class-or-this#class-keyword", options: [] };
 
@@ -144,7 +146,7 @@ const SELECTING_THE_CLASS_CHECK: ChecksRunRequest = {
   installRoot: REAL_INSTALL_ROOT,
   files: [repoPathSchema.parse("kept.ts")],
   trackedPaths: [repoPathSchema.parse("kept.ts")],
-  checks: SYMPTOM_CATALOGUE.value.checks,
+  checks: [CLASS_KEYWORD_CHECK],
   bindings: CLASS_BINDINGS,
   answered: [],
   declaredConfigRoots: [],

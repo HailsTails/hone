@@ -1,108 +1,38 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import { runCheck } from "../../../../application/run/check/run-check.ts";
-import { createSelectionRepository } from "../../../disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../../../application/ports/selection/selection-repository.ts";
-import { createExceptionRepository } from "../../../discipline-exceptions-folder/exception-layout.ts";
-import type { ExceptionRepository } from "../../../../application/ports/records/exception-repository.ts";
+import type { EmbeddedRunRequest } from "../embedded/embedded-runner-module-schema.ts";
+import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
+import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import type { EntryKindPort } from "../../../../application/ports/file-system/entry-kind-port.ts";
-import type { ModuleExtension } from "../../../../application/ports/host/module-extension.ts";
 import { loadFailureText } from "../../../printed-report/load-failures/load-failure-text.ts";
 import { toolchainBoundEmbeddedRunner, toolchainBoundStandaloneRunner } from "./toolchain-bound-runner.ts";
 import { createDefaultFileRemovalPort } from "../../../node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
-import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../../../application/ports/git-port.ts";
 import type { PackageLocationPort } from "../../../node/modules/package-location-port.ts";
-import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
-import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../../hone-config-file/assessment.ts";
-import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
+import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { createWalkerRunner } from "../../audit/runner/create-walker-runner.ts";
 import { defaultTypeScriptModules } from "../../audit/runner/toolchain/typescript-parse.ts";
 import { loadParsePort } from "../../audit/runner/toolchain/typescript-toolchain.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../engine-port.ts";
-import type { SelectionRepositoryOf } from "../../../../application/ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../../../../application/ports/records/exception-entries.ts";
-import type { ShownPathOf } from "../../../../application/ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../../../discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../../command-line/installation/shown-path.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
+
+const ESLINT = mechanismIdSchema.parse("eslint");
+
+const AUDIT = mechanismIdSchema.parse("audit");
+
+const REPO = absolutePathSchema.parse("/repository");
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
 const DEVELOPMENT_ESLINT_MODULES = defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }).modules;
 
-const modulesServingRunner = (request: {
-  readonly runnerSuffix: string;
-  readonly runner: unknown;
-  readonly base: ModuleLoaderPort;
-}): ModuleLoaderPort => ({
-  load: (load) =>
-    load.path.replaceAll("\\", "/").endsWith(request.runnerSuffix)
-      ? Promise.resolve({ outcome: "ok", value: { runner: request.runner } })
-      : request.base.load(load),
-});
+const RUN: RunRequest = { repoRoot: REPO, installRoot: INSTALL_ROOT, files: [], trackedPaths: [], clauses: [] };
 
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
-
-const SPLIT_FOLDER_NAME = "discipline-exceptions";
-
-const singleFileRepositoryOver = (request: {
-  readonly repoRoot: AbsolutePath;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-}): ExceptionRepository =>
-  createExceptionRepository({
-    ...request,
-    fileText: {
-      ...request.fileText,
-      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
-    },
-    directory: {
-      list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
-      create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
-    },
-    fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
-    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE] }) },
-  });
-
-type DiskRequest = {
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-  readonly moduleExtension: ModuleExtension;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-};
-
-type SingleFileRecords = {
-  readonly selectionRepository: SelectionRepository;
-  readonly selectionRepositoryOf: SelectionRepositoryOf;
-  readonly exceptionRepository: ExceptionRepository;
-  readonly exceptionEntryParser: ExceptionEntryParser;
-  readonly shownPathOf: ShownPathOf;
-};
-
-const withSingleFileRecords = <Request extends DiskRequest>(
-  request: Request,
-): Request & SingleFileRecords => ({
-  ...request,
-  selectionRepository: createSelectionRepository(request),
-  selectionRepositoryOf: createSelectionRepository,
-  exceptionRepository: singleFileRepositoryOver(request),
-  exceptionEntryParser,
-  shownPathOf: shownPathOfRepository(request),
-});
+const EMBEDDED_RUN: EmbeddedRunRequest = { ...RUN, declaredConfigRoots: [], records: [] };
 
 const fileText = createDefaultFileTextPort({});
 
@@ -113,14 +43,6 @@ TYPESCRIPT_NOT_INSTALLED.code = "ERR_MODULE_NOT_FOUND";
 
 const ESLINT_NOT_INSTALLED: NodeJS.ErrnoException = new Error("Cannot find package 'eslint' imported from /install/x.ts");
 ESLINT_NOT_INSTALLED.code = "ERR_MODULE_NOT_FOUND";
-
-const gitTracking = (request: { readonly tracked: readonly RepoPath[] }): GitPort => ({
-  trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: request.tracked }),
-  changedSince: vi.fn<GitPort["changedSince"]>(),
-  contentInBase: vi.fn<GitPort["contentInBase"]>(),
-  textInBase: vi.fn<GitPort["textInBase"]>(),
-  renamedSince: vi.fn<GitPort["renamedSince"]>(),
-});
 
 const pieceLoads = (): ModuleLoaderPort => ({
   load: vi.fn<ModuleLoaderPort["load"]>(),
@@ -155,68 +77,34 @@ const auditRunnerWithoutTypescript = (request: { readonly pieces: ModuleLoaderPo
     runnerOf: (parse) => createWalkerRunner({ fileText, modules: request.pieces, path, parse, entryKind: ABSENT_ENTRY_KIND }),
   });
 
-const checkWith = (request: { readonly fixture: string; readonly runner: unknown; readonly tracked: readonly RepoPath[] }) =>
-  runCheck(withSingleFileRecords({
-    repoRoot: absolutePathSchema.parse(`${INSTALL_ROOT}/${request.fixture}`),
-    installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-    baseRevision: undefined,
-    assessment: DEFAULT_ASSESSMENT,
-    fileText,
-    engine: createDefaultEnginePort({}),
-    modules: modulesServingRunner({ runnerSuffix: "/runner/runner.ts", runner: request.runner, base: createDefaultModuleLoaderPort({}) }),
-    path,
-    git: gitTracking({ tracked: request.tracked }),
-  }));
-
-describe("a check whose adopter has not installed a toolchain peer the selected mechanism needs", () => {
+describe("a run whose adopter has not installed a toolchain peer the selected mechanism needs", () => {
   it("fails the ESLint mechanism as toolchain-unavailable naming eslint and its supported range, before loading any piece", async () => {
     const pieces = pieceLoads();
-    const checked = await checkWith({
-      fixture: "delivery/install-proof/consumer-proof/eslint",
-      runner: eslintRunnerLocatingBy({ pieces, location: unresolvedFirst({ notInstalled: ESLINT_NOT_INSTALLED }) }),
-      tracked: [repoPathSchema.parse("src/plain.ts")],
-    });
-    expect({ checked, pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
-      checked: {
+    const ran = await eslintRunnerLocatingBy({ pieces, location: unresolvedFirst({ notInstalled: ESLINT_NOT_INSTALLED }) }).run(EMBEDDED_RUN);
+    expect({ ran, pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
+      ran: {
         outcome: "failed",
-        error: {
-          kind: "runner-failed",
-          mechanism: "eslint",
-          failure: { kind: "toolchain-unavailable", peers: [{ packageName: "eslint", peer: "optional", supported: "^9.39.5 || ^10.15.0", found: "not installed" }] },
-        },
+        error: { kind: "toolchain-unavailable", peers: [{ packageName: "eslint", peer: "optional", supported: "^9.39.5 || ^10.15.0", found: "not installed" }] },
       },
       pieceLoads: [],
     });
   });
 
   it("prints that failure as one load-failure line telling the adopter what to add, never a stack trace", async () => {
-    const checked = await checkWith({
-      fixture: "delivery/install-proof/consumer-proof/eslint",
-      runner: eslintRunnerLocatingBy({ pieces: pieceLoads(), location: unresolvedFirst({ notInstalled: ESLINT_NOT_INSTALLED }) }),
-      tracked: [repoPathSchema.parse("src/plain.ts")],
-    });
-    assert(checked.outcome === "failed", "the check fails to load");
-    expect(loadFailureText({ failure: checked.error })).toBe(
+    const ran = await eslintRunnerLocatingBy({ pieces: pieceLoads(), location: unresolvedFirst({ notInstalled: ESLINT_NOT_INSTALLED }) }).run(EMBEDDED_RUN);
+    assert(ran.outcome === "failed", "the run fails to load");
+    expect(loadFailureText({ failure: { kind: "runner-failed", mechanism: ESLINT, failure: ran.error } })).toBe(
       "load failure: runner-failed eslint toolchain-unavailable eslint found not installed, supported ^9.39.5 || ^10.15.0: add a supported version to the devDependencies of the repository root\n",
     );
   });
 
   it("fails the audit mechanism as toolchain-unavailable naming typescript, before loading any piece", async () => {
     const pieces = pieceLoads();
-    const checked = await checkWith({
-      fixture: "delivery/install-proof/consumer-proof/audit",
-      runner: auditRunnerWithoutTypescript({ pieces }),
-      tracked: [repoPathSchema.parse("src/plain.ts")],
-    });
-    expect({ checked, pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
-      checked: {
+    const ran = await auditRunnerWithoutTypescript({ pieces }).run(RUN);
+    expect({ ran, pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
+      ran: {
         outcome: "failed",
-        error: {
-          kind: "runner-failed",
-          mechanism: "audit",
-          failure: { kind: "toolchain-unavailable", peers: [{ packageName: "typescript", peer: "required", supported: ">=4.8.4 <7.0.0", found: "not installed" }] },
-        },
+        error: { kind: "toolchain-unavailable", peers: [{ packageName: "typescript", peer: "required", supported: ">=4.8.4 <7.0.0", found: "not installed" }] },
       },
       pieceLoads: [],
     });
@@ -224,28 +112,20 @@ describe("a check whose adopter has not installed a toolchain peer the selected 
 
   it("fails the ESLint mechanism as toolchain-shadowed when eslint resolves from inside the core install, and prints what to delete", async () => {
     const pieces = pieceLoads();
-    const checked = await checkWith({
-      fixture: "delivery/install-proof/consumer-proof/eslint",
-      runner: eslintRunnerLocatingBy({ pieces, location: shadowedEslint }),
-      tracked: [repoPathSchema.parse("src/plain.ts")],
-    });
-    assert(checked.outcome === "failed", "the check fails to load");
-    expect({ printed: loadFailureText({ failure: checked.error }), pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
+    const ran = await eslintRunnerLocatingBy({ pieces, location: shadowedEslint }).run(EMBEDDED_RUN);
+    assert(ran.outcome === "failed", "the run fails to load");
+    expect({ printed: loadFailureText({ failure: { kind: "runner-failed", mechanism: ESLINT, failure: ran.error } }), pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
       printed: `load failure: runner-failed eslint toolchain-shadowed eslint resolved from ${INSTALL_ROOT}/node_modules/eslint/lib/api.js inside the core install ${INSTALL_ROOT}: delete ${INSTALL_ROOT}/node_modules, then reinstall the package with the repository's package manager, so the repository's own copy is used\n`,
       pieceLoads: [],
     });
   });
 });
 
-describe("a check whose adopter's install is missing the required peer typescript", () => {
+describe("a run whose adopter's install is missing the required peer typescript", () => {
   it("prints a missing typescript as an incomplete install, since typescript is a required peer", async () => {
-    const checked = await checkWith({
-      fixture: "delivery/install-proof/consumer-proof/audit",
-      runner: auditRunnerWithoutTypescript({ pieces: pieceLoads() }),
-      tracked: [repoPathSchema.parse("src/plain.ts")],
-    });
-    assert(checked.outcome === "failed", "the check fails to load");
-    expect(loadFailureText({ failure: checked.error })).toBe(
+    const ran = await auditRunnerWithoutTypescript({ pieces: pieceLoads() }).run(RUN);
+    assert(ran.outcome === "failed", "the run fails to load");
+    expect(loadFailureText({ failure: { kind: "runner-failed", mechanism: AUDIT, failure: ran.error } })).toBe(
       "load failure: runner-failed audit toolchain-unavailable typescript found not installed, supported >=4.8.4 <7.0.0: typescript is a required peer of @hailstails/hone, so this install is incomplete; add a supported version to the devDependencies of the repository root and reinstall\n",
     );
   });

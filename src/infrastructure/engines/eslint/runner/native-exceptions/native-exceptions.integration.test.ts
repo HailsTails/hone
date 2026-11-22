@@ -1,34 +1,30 @@
-import { afterAll, assert, describe, expect, it, vi } from "vitest";
-import { createDefaultScratchFilesPort, type ListedEntry, type ScratchFilesPort } from "../../../../../../delivery/install-proof/install-proof-ports.ts";
+import { afterAll, assert, describe, expect, it } from "vitest";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { createExceptionRepository } from "../../../../discipline-exceptions-folder/exception-layout.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
-import type { SelectionRepository } from "../../../../../application/ports/selection/selection-repository.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import type { ModuleExtension } from "../../../../../application/ports/host/module-extension.ts";
-import { runCheck } from "../../../../../application/run/check/run-check.ts";
 import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
-import type { ExceptionRepository } from "../../../../../application/ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { LoadedRunner } from "../../../../../application/ports/engine/runner-module.ts";
+import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "../../../../../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import { createSelectionRepository } from "../../../../disciplines-file/consumer-selection.ts";
+import { exceptionEntriesOfText, parseExceptionEntries, placedInSingleFile } from "../../../../discipline-exceptions-folder/exception-records.ts";
+import { UNMEASURED_EXCEPTION_BASELINE } from "../../../../../domain/records/discipline-exceptions/exception-baseline.ts";
 import { readDisciplineFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
-import { DEFAULT_ASSESSMENT } from "../../../../hone-config-file/assessment.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
@@ -36,25 +32,9 @@ import type { RepoPath } from "../../../../../domain/repository/repo-path-types.
 import { runner as walkerRunner } from "../../../audit/runner/runner.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../toolchain/eslint-9/eslint-9-engine.ts";
-import {
-  createEslintPort,
-  type EslintClass,
-  type EslintPort,
-  type EslintToolchain,
-} from "../toolchain/eslint-instance.ts";
-import {
-  defaultEslintToolchainPeers,
-  type EslintToolchainModules,
-  type EslintToolchainPeers,
-  loadEslintToolchain,
-} from "../toolchain/eslint-toolchain.ts";
+import { createEslintPort, type EslintClass, type EslintPort, type EslintToolchain } from "../toolchain/eslint-instance.ts";
+import { defaultEslintToolchainPeers, type EslintToolchainModules, type EslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { createDefaultEnginePort } from "../../../protocol/engine-port.ts";
-import type { SelectionRepositoryOf } from "../../../../../application/ports/selection/selection-repository.ts";
-import type { ExceptionEntryParser } from "../../../../../application/ports/records/exception-entries.ts";
-import type { ShownPathOf } from "../../../../../application/ports/installation/shown-path-of.ts";
-import { exceptionEntryParser } from "../../../../discipline-exceptions-folder/exception-records.ts";
-import { shownPathOfRepository } from "../../../../command-line/installation/shown-path.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -169,24 +149,31 @@ const overlaidFileText = (request: {
   };
 };
 
+const directory = createDefaultDirectoryPort({});
+
+const directoryTree = createDefaultDirectoryTreePort({});
+
+const madeDirectory = (request: { readonly path: string }): void => {
+  const made = directory.create({ path: absolutePathSchema.parse(request.path) });
+  assert(made.outcome === "ok", `${request.path} is made`);
+};
+
+const removedTree = (request: { readonly path: AbsolutePath }): void => {
+  const removed = directoryTree.remove({ path: request.path });
+  assert(removed.outcome === "ok", `${request.path} is removed`);
+};
+
 type ScratchRepositories = {
   readonly repositoryWith: (request: { readonly files: Readonly<Record<string, string>> }) => AbsolutePath;
   readonly removeAll: () => void;
 };
 
-const scratchRepositoriesUnder = (request: {
-  readonly parent: string;
-  readonly fileText: FileTextPort;
-  readonly scratch: ScratchFilesPort;
-}): ScratchRepositories => {
+const scratchRepositoriesUnder = (request: { readonly parent: string; readonly fileText: FileTextPort }): ScratchRepositories => {
   const made: AbsolutePath[] = [];
   return {
     repositoryWith: (repository) => {
       const folder = absolutePathSchema.parse(`${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`);
-      const directory = request.scratch.makeDirectory({ path: folder });
-      if (directory.outcome !== "ok") {
-        throw new Error(`a scratch folder could not be made at ${folder}: ${directory.error.detail}`);
-      }
+      madeDirectory({ path: folder });
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
         request.fileText.write({ path: `${folder}/${name}`, text });
@@ -195,63 +182,11 @@ const scratchRepositoriesUnder = (request: {
     },
     removeAll: () => {
       made.forEach((folder) => {
-        request.scratch.removeTree({ path: folder });
+        removedTree({ path: folder });
       });
     },
   };
 };
-
-const SINGLE_FILE = repoPathSchema.parse("discipline-exceptions.json");
-
-const SPLIT_FOLDER_NAME = "discipline-exceptions";
-
-const singleFileRepositoryOver = (request: {
-  readonly repoRoot: AbsolutePath;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-}): ExceptionRepository =>
-  createExceptionRepository({
-    ...request,
-    fileText: {
-      ...request.fileText,
-      exists: (query) => (query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query)),
-    },
-    directory: {
-      list: ({ path }) => ({ outcome: "failed", error: { kind: "directory-unreadable", path, detail: "the single-file fake holds no folders" } }),
-      create: ({ path }) => ({ outcome: "failed", error: { kind: "directory-uncreatable", path, detail: "the single-file fake holds no folders" } }),
-    },
-    fileRemoval: { remove: ({ path }) => ({ outcome: "failed", error: { kind: "unremovable", path, detail: "the single-file fake removes nothing" } }) },
-    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE] }) },
-  });
-
-type DiskRequest = {
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-  readonly moduleExtension: ModuleExtension;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-};
-
-type SingleFileRecords = {
-  readonly selectionRepository: SelectionRepository;
-  readonly selectionRepositoryOf: SelectionRepositoryOf;
-  readonly exceptionRepository: ExceptionRepository;
-  readonly exceptionEntryParser: ExceptionEntryParser;
-  readonly shownPathOf: ShownPathOf;
-};
-
-const withSingleFileRecords = <Request extends DiskRequest>(
-  request: Request,
-): Request & SingleFileRecords => ({
-  ...request,
-  selectionRepository: createSelectionRepository(request),
-  selectionRepositoryOf: createSelectionRepository,
-  exceptionRepository: singleFileRepositoryOver(request),
-  exceptionEntryParser,
-  shownPathOf: shownPathOfRepository(request),
-});
 
 const STORED_LINT_CONFIG_NAME = "lint-config.fixture";
 
@@ -300,10 +235,11 @@ const rehomedImports = (request: RehomedImports): string =>
 
 type Dependencies = {
   readonly repositories: ScratchRepositories;
-  readonly scratch: ScratchFilesPort;
   readonly fileText: FileTextPort;
   readonly path: PathPort;
 };
+
+type ListedEntry = { readonly path: string; readonly name: string; readonly entryKind: "file" | "directory" };
 
 type EntryRequest = Dependencies & {
   readonly fixtureRoot: AbsolutePath;
@@ -327,10 +263,7 @@ const failed = (request: { readonly what: string; readonly detail: string }): ne
 };
 
 const copiedFolder = (request: EntryRequest): void => {
-  const made = request.scratch.makeDirectory({ path: `${request.repo}/${slashed({ path: request.entry.path })}` });
-  if (made.outcome !== "ok") {
-    failed({ what: `a fixture folder could not be made for ${request.entry.path}`, detail: made.error.detail });
-  }
+  madeDirectory({ path: `${request.repo}/${slashed({ path: request.entry.path })}` });
 };
 
 const textOf = (request: EntryRequest): string => {
@@ -362,7 +295,7 @@ const copiedFile = (request: EntryRequest): void => {
 };
 
 const copiedEntry = (request: EntryRequest): void => {
-  if (request.entry.entryKind === "folder") {
+  if (request.entry.entryKind === "directory") {
     copiedFolder(request);
     return;
   }
@@ -381,24 +314,24 @@ type RestoredFixtureRepositories = {
 
 const writtenText = (request: Dependencies & { readonly repo: AbsolutePath; readonly file: string; readonly text: string }): void => {
   const target = `${request.repo}/${request.file}`;
-  const made = request.scratch.makeDirectory({ path: request.path.directoryOf({ path: target }) });
-  if (made.outcome !== "ok") {
-    failed({ what: `a folder for the fixture text could not be made for ${request.file}`, detail: made.error.detail });
-  }
+  madeDirectory({ path: request.path.directoryOf({ path: target }) });
   const written = request.fileText.write({ path: target, text: request.text });
   if (written.outcome !== "ok") {
     failed({ what: `a fixture text could not be written at ${target}`, detail: written.error.detail });
   }
 };
 
+const listedTree = (request: { readonly root: AbsolutePath }): readonly ListedEntry[] => {
+  const listed = directoryTree.list({ path: request.root });
+  assert(listed.outcome === "ok", `${request.root} lists for restoring`);
+  return listed.value.map(({ path: entryPath, name, kind }): ListedEntry => ({ path: entryPath, name, entryKind: kind }));
+};
+
 const restoredOnce = (request: Dependencies & RestoredFixture): AbsolutePath => {
-  const listed = request.scratch.listTree({ path: request.fixtureRoot });
-  if (listed.outcome !== "ok") {
-    return failed({ what: `the fixture at ${request.fixtureRoot} could not be listed`, detail: listed.error.detail });
-  }
+  const listed = listedTree({ root: request.fixtureRoot });
   const repo = request.repositories.repositoryWith({ files: {} });
-  const folders = listed.value.filter(({ entryKind }) => entryKind === "folder");
-  const files = listed.value.filter(({ entryKind }) => entryKind === "file");
+  const folders = listed.filter(({ entryKind }) => entryKind === "directory");
+  const files = listed.filter(({ entryKind }) => entryKind === "file");
   [...folders, ...files].forEach((entry) => {
     copiedEntry({ ...request, repo, entry });
   });
@@ -455,11 +388,9 @@ const modules = createDefaultModuleLoaderPort({});
 
 const path = createDefaultPathPort({});
 
-const scratch = createDefaultScratchFilesPort({});
+const repositories = scratchRepositoriesUnder({ parent: `${INSTALL_ROOT}/artefacts`, fileText });
 
-const repositories = scratchRepositoriesUnder({ parent: `${INSTALL_ROOT}/artefacts`, fileText, scratch });
-
-const restoredFixtures = restoredFixtureRepositoriesOver({ repositories, scratch, fileText, path });
+const restoredFixtures = restoredFixtureRepositoriesOver({ repositories, fileText, path });
 
 afterAll(() => {
   repositories.removeAll();
@@ -470,100 +401,103 @@ const consumerRepoWithText = (request: { readonly name: string; readonly textFil
 
 const consumerRepo = (request: { readonly name: string }): AbsolutePath => consumerRepoWithText({ name: request.name, textFiles: NO_TEXT_FILES });
 
-const gitTracking = (request: { readonly tracked: readonly RepoPath[] }): GitPort => ({
-  trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({ outcome: "ok", value: request.tracked }),
-  changedSince: vi.fn<GitPort["changedSince"]>(),
-  contentInBase: vi.fn<GitPort["contentInBase"]>(),
-  textInBase: vi.fn<GitPort["textInBase"]>(),
-  renamedSince: vi.fn<GitPort["renamedSince"]>(),
-});
+const TYPESCRIPT_FILE = /\.ts$/;
 
-const checkOver = (request: { readonly repoRoot: AbsolutePath; readonly tracked: readonly RepoPath[]; readonly line: EslintLine }) =>
-  runCheck(withSingleFileRecords({
-    repoRoot: request.repoRoot,
+const fixtureRecords = (request: { readonly name: string }): readonly ExceptionRecord[] => {
+  const repoRoot = absolutePathSchema.parse(`${import.meta.dirname}/${request.name}`);
+  const selection = createSelectionRepository({ repoRoot, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
+  assert(selection.outcome === "ok", `${request.name} selects its clauses`);
+  const text = fileText.read({ path: `${repoRoot}/discipline-exceptions.json` });
+  assert(text.outcome === "ok", `${request.name} holds its records`);
+  const reading = parseExceptionEntries({
+    entries: placedInSingleFile({ entries: exceptionEntriesOfText({ text: text.value }) }),
+    selection: selection.value.selection,
+    baseline: UNMEASURED_EXCEPTION_BASELINE,
+    fileExceptionWhyChains: selection.value.fileExceptionWhyChains,
+  });
+  assert.isEmpty(reading.invalid, `${request.name}'s records are all valid`);
+  return reading.records;
+};
+
+const runOf = (request: {
+  readonly name: string;
+  readonly tracked: readonly RepoPath[];
+  readonly line: EslintLine;
+  readonly records?: readonly ExceptionRecord[];
+  readonly textFiles?: TextFiles;
+}) =>
+  eslintRunnerOn({ line: request.line }).run({
+    repoRoot: consumerRepoWithText({ name: request.name, textFiles: request.textFiles ?? NO_TEXT_FILES }),
     installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-    baseRevision: undefined,
-    assessment: DEFAULT_ASSESSMENT,
-    fileText,
-    engine: createDefaultEnginePort({}),
-    modules: runnerModulesOn({ line: request.line, base: modules }),
-    path,
-    git: gitTracking({ tracked: request.tracked }),
-  }));
+    declaredConfigRoots: [],
+    files: request.tracked.filter((file) => TYPESCRIPT_FILE.test(file)),
+    trackedPaths: request.tracked,
+    clauses: [ESLINT_CLAUSE],
+    records: request.records ?? [],
+  });
 
-const checkOf = (request: { readonly name: string; readonly tracked: readonly RepoPath[]; readonly line: EslintLine }) =>
-  checkOver({ repoRoot: consumerRepo({ name: request.name }), tracked: request.tracked, line: request.line });
-
-const classFinding = (request: { readonly file: string; readonly line: number }) => ({
+const classHit = (request: { readonly file: string; readonly line: number }) => ({
   clause: CLASS_SYNTAX,
   file: request.file,
   anchor: { line: request.line, column: 7 },
   snippet: "export class Kept {}",
-  mechanism: "eslint",
 });
-
-const NOT_RUN_NOT_INCLUDED = { kind: "mechanism-not-run", mechanism: "eslint", projection: "not-included", nestedConfigurations: [] };
 
 describe.each(ESLINT_LINES)("real %s config resolution behind the ESLint runner's query instance, over a consumer repository", (line) => {
   it("reports an unrecorded override block placed after the projection as a config-override", async () => {
-    await expect(checkOf({ name: "override-after", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "override-after", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [classFinding({ file: "x.ts", line: 1 })],
-        unrecorded: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts", mechanism: "eslint" }],
-        unmeasured: [],
-        projectionProblems: [],
+        hits: [classHit({ file: "x.ts", line: 1 })],
+        nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts" }],
+        projection: "current",
       },
     });
   });
 
   it("reports an unrecorded global ignore over a file holding a class, and core still finds the class", async () => {
-    await expect(checkOf({ name: "global-ignore", tracked: [repoPathSchema.parse("gen/g.ts"), repoPathSchema.parse("src/clean.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "global-ignore", tracked: [repoPathSchema.parse("gen/g.ts"), repoPathSchema.parse("src/clean.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [classFinding({ file: "gen/g.ts", line: 1 })],
-        unrecorded: [{ kind: "ignore", clause: CLASS_SYNTAX, file: "gen/g.ts", mechanism: "eslint" }],
-        unmeasured: [],
+        hits: [classHit({ file: "gen/g.ts", line: 1 })],
+        nativeExceptions: [{ kind: "ignore", clause: CLASS_SYNTAX, file: "gen/g.ts" }],
+        projection: "current",
       },
     });
   });
 
   it("reports a rule the team sets to severity 0 everywhere with no records as config-overrides, the projection still in effect", async () => {
-    await expect(checkOf({ name: "severity-zero", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+    await expect(runOf({ name: "severity-zero", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [classFinding({ file: "x.ts", line: 1 })],
-        unrecorded: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts", mechanism: "eslint" }],
-        unmeasured: [],
-        projectionProblems: [],
+        hits: [classHit({ file: "x.ts", line: 1 })],
+        nativeExceptions: [{ kind: "config-override", clause: CLASS_SYNTAX, file: "x.ts" }],
+        projection: "current",
       },
     });
   });
 
-  it("lists mechanism-not-run not-included when a later team block sets a recorded file back to error", async () => {
-    await expect(checkOf({ name: "re-enabled-record", tracked: [repoPathSchema.parse("src/owned.ts")], line })).resolves.toMatchObject({
-      outcome: "ok",
-      value: { findings: [], unrecorded: [], unmeasured: [NOT_RUN_NOT_INCLUDED] },
-    });
+  it("finds no projection in effect when a later team block sets a recorded file back to error", async () => {
+    await expect(
+      runOf({ name: "re-enabled-record", tracked: [repoPathSchema.parse("src/owned.ts")], line, records: fixtureRecords({ name: "re-enabled-record" }) }),
+    ).resolves.toMatchObject({ outcome: "ok", value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] } });
   });
 });
 
 describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lint scripts read by the ESLint runner on %s, over a consumer repository", (line) => {
   it("reports an entry in the default eslint-suppressions.json as a suppression-entry", async () => {
     await expect(
-      checkOf({ name: "suppression-default", tracked: [repoPathSchema.parse("supp/a.ts"), repoPathSchema.parse("eslint-suppressions.json")], line }),
+      runOf({ name: "suppression-default", tracked: [repoPathSchema.parse("supp/a.ts"), repoPathSchema.parse("eslint-suppressions.json")], line }),
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [classFinding({ file: "supp/a.ts", line: 1 })],
-        unrecorded: [
+        hits: [classHit({ file: "supp/a.ts", line: 1 })],
+        nativeExceptions: [
           {
             kind: "suppression-entry",
             clause: CLASS_SYNTAX,
             file: "supp/a.ts",
             location: "eslint-suppressions.json",
-            mechanism: "eslint",
           },
         ],
       },
@@ -572,7 +506,7 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
 
   it("reports entries in suppressions files a package.json script names in space and equals form, a dormant one included", async () => {
     await expect(
-      checkOf({
+      runOf({
         line,
         name: "suppression-scripted",
         tracked: [
@@ -586,21 +520,19 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [classFinding({ file: "supp/b.ts", line: 1 })],
-        unrecorded: [
+        hits: [classHit({ file: "supp/b.ts", line: 1 })],
+        nativeExceptions: [
           {
             kind: "suppression-entry",
             clause: CLASS_SYNTAX,
             file: "supp/b.ts",
             location: "custom/supp.json",
-            mechanism: "eslint",
           },
           {
             kind: "suppression-entry",
             clause: CLASS_SYNTAX,
             file: "supp/clean.ts",
             location: "custom/supp2.json",
-            mechanism: "eslint",
           },
         ],
       },
@@ -609,7 +541,7 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
 
   it("reports an entry in a nested tracked eslint-suppressions.json against its own directory", async () => {
     await expect(
-      checkOf({
+      runOf({
         line,
         name: "suppression-nested",
         tracked: [repoPathSchema.parse("packages/a/src/n.ts"), repoPathSchema.parse("packages/a/eslint-suppressions.json")],
@@ -617,13 +549,12 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        unrecorded: [
+        nativeExceptions: [
           {
             kind: "suppression-entry",
             clause: CLASS_SYNTAX,
             file: "packages/a/src/n.ts",
             location: "packages/a/eslint-suppressions.json",
-            mechanism: "eslint",
           },
         ],
       },
@@ -632,7 +563,7 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
 
   it("reports each command-line option that weakens the run, and neither one that changes nothing ESLint already does nor a rule id that merely extends the selected one", async () => {
     await expect(
-      checkOf({
+      runOf({
         line,
         name: "command-line-options",
         tracked: [repoPathSchema.parse("src/plain.ts"), repoPathSchema.parse("package.json")],
@@ -640,15 +571,14 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [],
-        unrecorded: [
+        hits: [],
+        nativeExceptions: [
           {
             kind: "command-line-option",
             clause: CLASS_SYNTAX,
             location: "package.json",
             script: "lint",
             option: "--rule hone/no-class-authoring: off",
-            mechanism: "eslint",
           },
           {
             kind: "command-line-option",
@@ -656,7 +586,6 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
             location: "package.json",
             script: "lint",
             option: "-c alt.config.mjs",
-            mechanism: "eslint",
           },
           {
             kind: "command-line-option",
@@ -664,7 +593,6 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
             location: "package.json",
             script: "lint:suppress",
             option: "--suppress-all",
-            mechanism: "eslint",
           },
           {
             kind: "command-line-option",
@@ -672,7 +600,6 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
             location: "package.json",
             script: "lint:suppress",
             option: "--suppress-rule hone/no-class-authoring",
-            mechanism: "eslint",
           },
           {
             kind: "command-line-option",
@@ -680,7 +607,6 @@ describe.each(ESLINT_LINES)("eslint-suppressions.json files and package.json lin
             location: "package.json",
             script: "lint:hidden",
             option: "--ignore-pattern src/**",
-            mechanism: "eslint",
           },
         ],
       },
@@ -706,22 +632,21 @@ const INLINE_FORM_TEXTS: TextFiles = {
   "i/rule-config.ts": '/* eslint hone/no-class-authoring: "off" */\nexport class Kept {}\n',
 };
 
-const inlineFormsCheckOf = (request: { readonly line: EslintLine }) =>
-  checkOver({ repoRoot: consumerRepoWithText({ name: "inline-forms", textFiles: INLINE_FORM_TEXTS }), tracked: INLINE_FORM_FILES, line: request.line });
+const inlineFormsRunOf = (request: { readonly line: EslintLine }) =>
+  runOf({ name: "inline-forms", textFiles: INLINE_FORM_TEXTS, tracked: INLINE_FORM_FILES, line: request.line });
 
 describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint runner's governance rule on real %s, over a consumer repository", (line) => {
   it("reports each disable and rule-config form naming the selected rule and none of the rest", async () => {
-    await expect(inlineFormsCheckOf({ line })).resolves.toMatchObject({
+    await expect(inlineFormsRunOf({ line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        unrecorded: [
+        nativeExceptions: [
           {
             kind: "inline-disable",
             clause: CLASS_SYNTAX,
             file: "i/disable-file.ts",
             line: 1,
             text: "/* eslint-disable */",
-            mechanism: "eslint",
           },
           {
             kind: "inline-disable",
@@ -729,7 +654,6 @@ describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint ru
             file: "i/disable-file-named.ts",
             line: 1,
             text: "/* eslint-disable hone/no-class-authoring */",
-            mechanism: "eslint",
           },
           {
             kind: "inline-disable",
@@ -737,7 +661,6 @@ describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint ru
             file: "i/disable-line.ts",
             line: 2,
             text: "// eslint-disable-line hone/no-class-authoring",
-            mechanism: "eslint",
           },
           {
             kind: "inline-disable",
@@ -745,7 +668,6 @@ describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint ru
             file: "i/disable-next-line.ts",
             line: 1,
             text: "// eslint-disable-next-line hone/no-class-authoring",
-            mechanism: "eslint",
           },
           {
             kind: "inline-rule-config",
@@ -753,7 +675,6 @@ describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint ru
             file: "i/rule-config.ts",
             line: 1,
             text: '/* eslint hone/no-class-authoring: "off" */',
-            mechanism: "eslint",
           },
         ],
       },
@@ -761,24 +682,23 @@ describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint ru
   });
 
   it("still finds the class in every file whatever its inline comment says", async () => {
-    await expect(inlineFormsCheckOf({ line })).resolves.toMatchObject({
+    await expect(inlineFormsRunOf({ line })).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [
-          classFinding({ file: "i/disable-file.ts", line: 2 }),
-          classFinding({ file: "i/disable-file-named.ts", line: 2 }),
+        hits: [
+          classHit({ file: "i/disable-file.ts", line: 2 }),
+          classHit({ file: "i/disable-file-named.ts", line: 2 }),
           {
             clause: CLASS_SYNTAX,
             file: "i/disable-line.ts",
             anchor: { line: 2, column: 7 },
             snippet: "export class Kept {} // eslint-disable-line hone/no-class-authoring",
-            mechanism: "eslint",
           },
-          classFinding({ file: "i/disable-next-line.ts", line: 2 }),
-          classFinding({ file: "i/rule-config.ts", line: 2 }),
-          classFinding({ file: "i/other-rule.ts", line: 2 }),
-          classFinding({ file: "i/enable.ts", line: 2 }),
-          classFinding({ file: "i/global.ts", line: 2 }),
+          classHit({ file: "i/disable-next-line.ts", line: 2 }),
+          classHit({ file: "i/rule-config.ts", line: 2 }),
+          classHit({ file: "i/other-rule.ts", line: 2 }),
+          classHit({ file: "i/enable.ts", line: 2 }),
+          classHit({ file: "i/global.ts", line: 2 }),
         ],
       },
     });
@@ -786,63 +706,58 @@ describe.each(ESLINT_LINES)("inline configuration comments read by the ESLint ru
 });
 
 describe.each(ESLINT_LINES)("real %s glob matching of the generated projection's record blocks, over a consumer repository", (line) => {
-  it("exempts route/[id].ts by its authorised location and still finds the class in route/i.ts", async () => {
+  it("matches route/[id].ts by its authorised location, leaving the projection current with no native exception", async () => {
     await expect(
-      checkOf({ name: "route-brackets", tracked: [repoPathSchema.parse("route/[id].ts"), repoPathSchema.parse("route/i.ts")], line }),
+      runOf({
+        name: "route-brackets",
+        tracked: [repoPathSchema.parse("route/[id].ts"), repoPathSchema.parse("route/i.ts")],
+        line,
+        records: fixtureRecords({ name: "route-brackets" }),
+      }),
     ).resolves.toMatchObject({
       outcome: "ok",
       value: {
-        findings: [classFinding({ file: "route/i.ts", line: 1 })],
-        exempted: [
-          {
-            finding: classFinding({ file: "route/[id].ts", line: 1 }),
-            by: [{ kind: "authorised-location", file: "route/[id].ts" }],
-          },
-        ],
-        unrecorded: [],
-        unmeasured: [],
-        projectionProblems: [],
+        hits: [classHit({ file: "route/[id].ts", line: 1 }), classHit({ file: "route/i.ts", line: 1 })],
+        nativeExceptions: [],
+        projection: "current",
       },
     });
   });
 });
 
 describe.each(ESLINT_LINES)("the ESLint runner's projection states under real %s, over a consumer repository", (line) => {
-  it("lists mechanism-not-run missing when the projection was never generated", async () => {
-    await expect(checkOf({ name: "projection-missing", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+  it("reports the projection missing when it was never generated", async () => {
+    await expect(runOf({ name: "projection-missing", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
-      value: { findings: [], unmeasured: [{ kind: "mechanism-not-run", mechanism: "eslint", projection: "missing" }] },
+      value: { hits: [], projection: "missing" },
     });
   });
 
-  it("lists the projection out-of-date when it was hand-edited", async () => {
-    await expect(checkOf({ name: "projection-hand-edited", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+  it("reports the projection out-of-date when it was hand-edited", async () => {
+    await expect(runOf({ name: "projection-hand-edited", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
-      value: {
-        findings: [classFinding({ file: "x.ts", line: 1 })],
-        unmeasured: [],
-        projectionProblems: [{ mechanism: "eslint", state: "out-of-date" }],
-      },
+      value: { hits: [classHit({ file: "x.ts", line: 1 })], projection: "out-of-date" },
     });
   });
 
-  it("lists mechanism-not-run not-included when the team config does not import the projection", async () => {
-    await expect(checkOf({ name: "projection-not-imported", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
+  it("reports no projection in effect when the team config does not import the projection", async () => {
+    await expect(runOf({ name: "projection-not-imported", tracked: [repoPathSchema.parse("x.ts")], line })).resolves.toMatchObject({
       outcome: "ok",
-      value: { findings: [], unrecorded: [], unmeasured: [NOT_RUN_NOT_INCLUDED] },
+      value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] },
     });
   });
 
-  it("lists mechanism-not-run not-included when the piece's fragment is imported instead of the projection beside an authorised location", async () => {
+  it("reports no projection in effect when the piece's fragment is imported instead of the projection beside an authorised location", async () => {
     await expect(
-      checkOf({
+      runOf({
         line,
         name: "fragment-not-projection",
         tracked: [repoPathSchema.parse("src/owned.ts"), repoPathSchema.parse("src/clean.ts")],
+        records: fixtureRecords({ name: "fragment-not-projection" }),
       }),
     ).resolves.toMatchObject({
       outcome: "ok",
-      value: { findings: [], unrecorded: [], unmeasured: [NOT_RUN_NOT_INCLUDED] },
+      value: { hits: [], nativeExceptions: [], projection: "not-included", unprojectedFolders: [] },
     });
   });
 });
