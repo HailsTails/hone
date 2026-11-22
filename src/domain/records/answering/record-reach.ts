@@ -82,7 +82,7 @@ const clearOfOutsideParties = (request: { readonly symptom: Symptom }): Holding 
     ? "does-not-hold"
     : "holds";
 
-const reachOf = (request: { readonly party: OutsideParty }): readonly string[] => {
+export const reachOf = (request: { readonly party: OutsideParty }): readonly string[] => {
   switch (request.party.kind) {
     case "package":
     case "scheme-module":

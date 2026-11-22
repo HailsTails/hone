@@ -210,6 +210,21 @@ describe("queryExceptionsOf", () => {
     ).toEqual([]);
   });
 
+  it("reports the off state of a file only the answers at other files name", () => {
+    expect(
+      queryExceptionsOf({
+        selected: [EXPLICIT_ANY],
+        answered: ANSWERED_B,
+        queried: {
+          ignored: [],
+          checked: [checkedWith({ file: A, state: OFF }), checkedWith({ file: B, state: OFF })],
+        },
+      }),
+    ).toEqual([
+      { kind: "config-override", clause: CLAUSE, file: A, check: "untyped-value#explicit-any" },
+    ]);
+  });
+
   it("reports nothing for a rule enforced at severity 2", () => {
     expect(
       queryExceptionsOf({
