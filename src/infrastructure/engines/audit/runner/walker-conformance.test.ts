@@ -5,6 +5,7 @@ import type { Result } from "../../../../domain/result.ts";
 import { checkConformance } from "../../protocol/conformance.ts";
 import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
 import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
 import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
@@ -84,23 +85,19 @@ const rowsOf = (request: {
   return piece.value.clauses.flatMap((entry) => {
     const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
     assert(definition?.kind === "mechanical", `${request.discipline}#${entry.clause} is a mechanical clause`);
-    const casesByEdition = Map.groupBy(
-      [...definition.cases.flag, ...definition.cases.allow],
-      (sourceCase) => sourceCase.edition ?? entry.editions.default,
-    );
-    return [...casesByEdition].map(([edition, cases]) => ({
-      name: edition === entry.editions.default
+    const clause: RunnerClause = {
+      address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
+      anchor: definition.anchor,
+      pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
+      settings: entry.settings,
+      clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
+      edition: entry.editions.default,
+    };
+    return editionRunsOf({ clause, cases: [...definition.cases.flag, ...definition.cases.allow] }).map((run) => ({
+      name: run.clause.edition === entry.editions.default
         ? `${request.discipline}#${entry.clause}`
-        : `${request.discipline}#${entry.clause} edition ${edition}`,
-      clause: {
-        address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
-        anchor: definition.anchor,
-        pieceRoot: `${request.mechanismRoot}/${request.discipline}`,
-        settings: entry.settings,
-        clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
-        edition,
-      },
-      cases,
+        : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
+      ...run,
     }));
   });
 };
