@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RecordKind, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { createPathPort } from "../../infrastructure/node/path-port.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import type { BoundCatalogueOf } from "../ports/symptom-catalogue-repository.ts";
 import { toolCatalogueOf } from "./tool-catalogue.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
@@ -10,7 +10,7 @@ const INSTALL = absoluteRootOf("/install");
 
 const CATALOGUE_PATH = "/install/rules";
 
-const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
+const POSIX: Pick<PathPort, "join"> = { join: vi.fn<PathPort["join"]>().mockReturnValue(CATALOGUE_PATH) };
 
 const FILE_TEXT: FileTextPort = { exists: vi.fn<FileTextPort["exists"]>(), read: vi.fn<FileTextPort["read"]>(), write: vi.fn<FileTextPort["write"]>() };
 
