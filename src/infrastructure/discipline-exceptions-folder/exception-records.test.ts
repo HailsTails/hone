@@ -1575,34 +1575,46 @@ describe("recordImportOf names the provenance source of an imported record, and 
   });
 });
 
+const SINGLE_FILE_TEXT = `{
+  "version": 1,
+  "exceptions": [
+    {
+      "kind": "authorised-location",
+      "provenance": { "kind": "existing-authorisation", "source": "fictional unit fixture exception-records.test.ts#SINGLE_FILE_TEXT; not historical authorisation" },
+      "clause": "CD-14#class-syntax",
+      "file": "src/factory.ts",
+      "reason": "the wrapping factory for the library"
+    },
+    {
+      "kind": "file-carve-out",
+      "clause": "CD-99#other",
+      "file": "src/legacy.ts",
+      "reason": "legacy class awaiting paydown"
+    }
+  ]
+}`;
+
 describe("singleFileExceptionReading", () => {
-  it("reads the entries of a discipline-exceptions.json text as records placed by their position in that file", () => {
+  it("reads the entries of a discipline-exceptions.json text as records, placing each invalid one by its position in that file", () => {
     expect(
-      singleFileExceptionReading({
-        text: `{ "version": 1, "exceptions": [${JSON.stringify(LOCATION)}, ${JSON.stringify(FILE_CARVE_OUT)}] }`,
-        selection: SELECTION,
-        fileExceptionWhyChains: "required",
-        baseline: UNMEASURED_EXCEPTION_BASELINE,
-      }),
+      singleFileExceptionReading({ text: SINGLE_FILE_TEXT, selection: SELECTION, fileExceptionWhyChains: "required", baseline: UNMEASURED_EXCEPTION_BASELINE }),
     ).toEqual({
       records: [
-        { kind: "authorised-location", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/factory.ts", reason: LOCATION.reason, provenance: LOCATION.provenance },
-        { kind: "file-carve-out", clause: CLASS_SYNTAX, mechanism: "audit", file: "src/legacy.ts", reason: FILE_CARVE_OUT.reason, whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN },
+        {
+          kind: "authorised-location",
+          clause: CLASS_SYNTAX,
+          mechanism: "audit",
+          file: "src/factory.ts",
+          reason: LOCATION.reason,
+          provenance: { kind: "existing-authorisation", source: "fictional unit fixture exception-records.test.ts#SINGLE_FILE_TEXT; not historical authorisation" },
+        },
       ],
-      invalid: [],
+      invalid: [
+        {
+          place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 },
+          problem: { kind: "clause-not-selected", clause: { ruleSet: "hone", discipline: "CD-99", clause: "other" } },
+        },
+      ],
     });
-  });
-
-  it("places an entry the selection does not hold at its index in the file", () => {
-    const unselected = { ...FILE_CARVE_OUT, clause: "CD-99#other" };
-
-    expect(
-      singleFileExceptionReading({
-        text: `{ "version": 1, "exceptions": [${JSON.stringify(LOCATION)}, ${JSON.stringify(unselected)}] }`,
-        selection: SELECTION,
-        fileExceptionWhyChains: "required",
-        baseline: UNMEASURED_EXCEPTION_BASELINE,
-      }),
-    ).toMatchObject({ invalid: [{ place: { layout: "single-file", file: "discipline-exceptions.json", index: 1 } }] });
   });
 });

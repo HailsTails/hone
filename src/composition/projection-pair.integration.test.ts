@@ -11,20 +11,17 @@ import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.
 import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
 import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
-import { type ProjectedPiece, projectionText } from "../infrastructure/engines/eslint/runner/projection/projection-text.ts";
+import { type ProjectionClause, sliceTextOf } from "../infrastructure/engines/eslint/runner/config-roots/sliced-projection.ts";
 import { createDefaultDirectoryTreePort } from "../infrastructure/node/file-system/directory-tree-port.ts";
 import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import { checksOf } from "../domain/language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { ClauseBinding } from "../domain/settings/selection/selection.ts";
-import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import { checkRuleIdOf, runsOnEslint } from "../infrastructure/engines/eslint/runner/hone-plugin/check-rule-id.ts";
-import { type EslintPieceSettings, eslintPieceSettingsSchema, ruleOptionsOf } from "../infrastructure/engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
+import { eslintPieceSettingsSchema, ruleOptionsOf } from "../infrastructure/engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
 import type { EslintClass } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
@@ -43,61 +40,6 @@ const ESLINT_MODULES: Readonly<Record<EslintLine, EslintToolchainModules>> = {
 
 const eslintClassOn = (request: { readonly line: EslintLine }): Promise<EslintClass> =>
   ESLINT_MODULES[request.line].eslint().then((eslintModule) => eslintModule.ESLint);
-
-type SpecifierOf = (request: { readonly modulePath: string }) => string;
-
-type SettledBinding = { readonly binding: ClauseBinding; readonly settings: EslintPieceSettings };
-
-const ESLINT_MECHANISM = "eslint";
-
-const settledBindingsOf = (request: { readonly bindings: readonly ClauseBinding[] }): readonly SettledBinding[] =>
-  request.bindings
-    .filter((binding) => binding.mechanism === ESLINT_MECHANISM)
-    .flatMap((binding) => {
-      const settings = eslintPieceSettingsSchema.safeParse(binding.clause.settings);
-      return settings.success ? [{ binding, settings: settings.data }] : [];
-    });
-
-const versionOneRuleIdOf = (request: { readonly settings: EslintPieceSettings }): string => `${request.settings.pluginNamespace}/${request.settings.rule}`;
-
-const versionOnePiecesOf = (request: {
-  readonly bindings: readonly ClauseBinding[];
-  readonly path: PathPort;
-  readonly specifierOf: SpecifierOf;
-}): readonly ProjectedPiece[] => {
-  const settledBindings = settledBindingsOf(request);
-  return settledBindings
-    .filter((settled, index) => settledBindings.findIndex((other) => other.settings.pluginNamespace === settled.settings.pluginNamespace) === index)
-    .map((leader) => ({
-      pluginNamespace: leader.settings.pluginNamespace,
-      pluginImport: request.specifierOf({ modulePath: request.path.join({ segments: [leader.binding.clause.pieceRoot, leader.settings.pluginModule] }) }),
-      clauses: settledBindings
-        .filter((settled) => settled.settings.pluginNamespace === leader.settings.pluginNamespace)
-        .map((settled) => ({
-          address: settled.binding.clause.address,
-          ruleId: versionOneRuleIdOf({ settings: settled.settings }),
-          options: ruleOptionsOf({ settings: settled.settings }),
-        })),
-    }));
-};
-
-const checkRuleIdsOfBinding = (request: { readonly catalogue: Pick<SymptomCatalogue, "checks">; readonly settled: SettledBinding }): readonly string[] =>
-  checksOf({ catalogue: request.catalogue, clause: request.settled.binding.clause.address })
-    .filter((check) => runsOnEslint({ check }) === "eslint")
-    .map((check) => checkRuleIdOf({ check }));
-
-const inCheckRuleIds = <Entry>(request: {
-  readonly catalogue: Pick<SymptomCatalogue, "checks">;
-  readonly bindings: readonly ClauseBinding[];
-  readonly rules: Readonly<Record<string, Entry>>;
-}): Readonly<Record<string, Entry>> => {
-  const renames = new Map(
-    settledBindingsOf(request).flatMap((settled) =>
-      checkRuleIdsOfBinding({ catalogue: request.catalogue, settled }).map((ruleId): readonly [string, string] => [versionOneRuleIdOf(settled), ruleId]),
-    ),
-  );
-  return Object.fromEntries(Object.entries(request.rules).map(([ruleId, entry]) => [renames.get(ruleId) ?? ruleId, entry]));
-};
 
 const path = createDefaultPathPort({});
 
@@ -156,9 +98,27 @@ const PROBED_FILES: readonly string[] = [
   "src/skipping.test.ts",
 ];
 
-const specifierOf: SpecifierOf = ({ modulePath }) => {
-  const location = path.relative({ from: import.meta.dirname, to: modulePath });
-  assert(location.relation === "within-root", `${modulePath} is on this test's root`);
+const NON_NULL_ASSERTIONS_V1 = "hone-cd2/no-restricted-syntax";
+const NAMING_CONVENTION_V1 = "hone-cd6/naming-convention";
+const CLASS_SYNTAX_V1 = "hone/no-class-authoring";
+const STATIC_ONLY_CLASS_V1 = "hone/no-extraneous-class";
+const FOCUSED_TESTS_V1 = "hone-cd27/focused-tests";
+const SKIPPED_TESTS_V1 = "hone-cd27/skipped-tests";
+const PARAMETER_COUNT_V1 = "hone-cd40/max-params";
+const PARAMETER_REASSIGNMENT_V1 = "hone-cd44/no-param-reassign";
+
+const NON_NULL_ASSERTIONS_V2 = "hone/claimed-type#non-null-assertions";
+const NAMING_CONVENTION_V2 = "hone/name-off-its-casing#naming-convention";
+const CLASS_SYNTAX_V2 = "hone/authored-class-or-this#class-keyword";
+const STATIC_ONLY_CLASS_V2 = "hone/authored-class-or-this#static-members-only";
+const FOCUSED_TESTS_V2 = "hone/test-switched-off#focused-tests";
+const SKIPPED_TESTS_V2 = "hone/test-switched-off#skipped-tests";
+const PARAMETER_COUNT_V2 = "hone/positional-parameters#parameter-count";
+const PARAMETER_REASSIGNMENT_V2 = "hone/rebinding#parameter-reassignment";
+
+const specifierOf = (request: { readonly modulePath: string }): string => {
+  const location = path.relative({ from: import.meta.dirname, to: request.modulePath });
+  assert(location.relation === "within-root", `${request.modulePath} is on this test's root`);
   return import.meta.resolve(location.path);
 };
 
@@ -169,48 +129,38 @@ const toolCatalogue = (): SymptomCatalogue => {
   return reading.value.catalogue;
 };
 
-const versionOneBindings = (): readonly ClauseBinding[] => {
-  const reading = createSelectionRepository({ repoRoot: BEFORE_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
-  assert(reading.outcome === "ok", "the pair's version 1 selection file loads");
-  return reading.value.bindings;
-};
+const versionOneSelection = createSelectionRepository({ repoRoot: BEFORE_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", fileText, path }).read({});
+assert(versionOneSelection.outcome === "ok", "the pair's version 1 selection file loads");
 
-const versionTwoBindings = (): readonly ClauseBinding[] => {
-  const stages = versionTwoStagesOver({
-    ports: {
-      fileText,
-      path,
-      modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
-      engine: createDefaultEnginePort({}),
-      git: {
-        trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
-        changedSince: vi.fn<GitPort["changedSince"]>(),
-        contentInBase: vi.fn<GitPort["contentInBase"]>(),
-        textInBase: vi.fn<GitPort["textInBase"]>(),
-        renamedSince: vi.fn<GitPort["renamedSince"]>(),
-      },
-      gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
-      directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
-      recordsSourceOf: vi.fn<RecordsSourceOf>(),
-    },
-    locations: { repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", baseRevision: undefined },
-  });
-  const settings = stages.settings({ catalogue: toolCatalogue() });
-  assert(settings.outcome === "ok", "the pair's version 2 settings file loads");
-  return settings.value.selection.bindings;
-};
+const [
+  NON_NULL_ASSERTIONS,
+  NAMING_CONVENTION,
+  CLASS_SYNTAX,
+  STATIC_ONLY_CLASS,
+  FOCUSED_TESTS,
+  SKIPPED_TESTS,
+  PARAMETER_COUNT,
+  PARAMETER_REASSIGNMENT,
+] = versionOneSelection.value.bindings;
+assert.isDefined(NON_NULL_ASSERTIONS, "the version 1 selection binds CD-2");
+assert.isDefined(NAMING_CONVENTION, "the version 1 selection binds CD-6");
+assert.isDefined(CLASS_SYNTAX, "the version 1 selection binds CD-14 class-syntax");
+assert.isDefined(STATIC_ONLY_CLASS, "the version 1 selection binds CD-14 static-only-class");
+assert.isDefined(FOCUSED_TESTS, "the version 1 selection binds CD-27 focused-tests");
+assert.isDefined(SKIPPED_TESTS, "the version 1 selection binds CD-27 skipped-tests");
+assert.isDefined(PARAMETER_COUNT, "the version 1 selection binds CD-40");
+assert.isDefined(PARAMETER_REASSIGNMENT, "the version 1 selection binds CD-44");
 
-const versionOneText = (): string =>
-  projectionText({ selectedPieces: versionOnePiecesOf({ bindings: versionOneBindings(), path, specifierOf }), records: VERSION_ONE_RECORDS });
-
-const versionTwoText = (): string => {
-  const checks = projectedChecksOf({ checks: toolCatalogue().checks, bindings: versionTwoBindings() });
-  assert(checks.outcome === "ok", "the pair's version 2 checks project");
-  return checksProjectionText({
-    pluginImport: specifierOf({ modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }) }),
-    checks: checks.value,
-    answered: VERSION_TWO_ANSWERED,
-  });
+const projectionClauseOf = (request: { readonly binding: ClauseBinding }): ProjectionClause => {
+  const settings = eslintPieceSettingsSchema.parse(request.binding.clause.settings);
+  return {
+    address: request.binding.clause.address,
+    ruleId: `${settings.pluginNamespace}/${settings.rule}`,
+    options: ruleOptionsOf({ settings }),
+    pluginNamespace: settings.pluginNamespace,
+    pieceRoot: request.binding.clause.pieceRoot,
+    pluginModule: settings.pluginModule,
+  };
 };
 
 const directory = createDefaultDirectoryPort({});
@@ -223,6 +173,49 @@ const madeScratch = directory.create({ path: SCRATCH });
 
 assert(madeScratch.outcome === "ok", "a scratch folder is made for the two projections");
 
+const versionOneText = sliceTextOf({
+  clauses: [
+    projectionClauseOf({ binding: NON_NULL_ASSERTIONS }),
+    projectionClauseOf({ binding: NAMING_CONVENTION }),
+    projectionClauseOf({ binding: CLASS_SYNTAX }),
+    projectionClauseOf({ binding: STATIC_ONLY_CLASS }),
+    projectionClauseOf({ binding: FOCUSED_TESTS }),
+    projectionClauseOf({ binding: SKIPPED_TESTS }),
+    projectionClauseOf({ binding: PARAMETER_COUNT }),
+    projectionClauseOf({ binding: PARAMETER_REASSIGNMENT }),
+  ],
+  records: VERSION_ONE_RECORDS,
+  origin: { path, repoRoot: SCRATCH, install: { form: "source" } },
+  root: { placement: "repository" },
+});
+assert(versionOneText.outcome === "ok", "the pair's version 1 projection is written");
+
+const versionTwoStages = versionTwoStagesOver({
+  ports: {
+    fileText,
+    path,
+    modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
+    engine: createDefaultEnginePort({}),
+    git: {
+      trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
+      changedSince: vi.fn<GitPort["changedSince"]>(),
+      contentInBase: vi.fn<GitPort["contentInBase"]>(),
+      textInBase: vi.fn<GitPort["textInBase"]>(),
+      renamedSince: vi.fn<GitPort["renamedSince"]>(),
+    },
+    gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
+    directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
+    recordsSourceOf: vi.fn<RecordsSourceOf>(),
+  },
+  locations: { repoRoot: AFTER_ROOT, installRoot: INSTALL_ROOT, moduleExtension: ".ts", baseRevision: undefined },
+});
+
+const versionTwoSettings = versionTwoStages.settings({ catalogue: toolCatalogue() });
+assert(versionTwoSettings.outcome === "ok", "the pair's version 2 settings file loads");
+
+const versionTwoChecks = projectedChecksOf({ checks: toolCatalogue().checks, bindings: versionTwoSettings.value.selection.bindings });
+assert(versionTwoChecks.outcome === "ok", "the pair's version 2 checks project");
+
 const writtenConfig = (request: { readonly name: string; readonly text: string }): string => {
   const configPath = path.join({ segments: [SCRATCH, request.name] });
   const written = fileText.write({ path: configPath, text: request.text });
@@ -230,9 +223,16 @@ const writtenConfig = (request: { readonly name: string; readonly text: string }
   return configPath;
 };
 
-const VERSION_ONE_CONFIG = writtenConfig({ name: "version-one.eslint.mjs", text: versionOneText() });
+const VERSION_ONE_CONFIG = writtenConfig({ name: "version-one.eslint.mjs", text: versionOneText.value });
 
-const VERSION_TWO_CONFIG = writtenConfig({ name: "version-two.eslint.mjs", text: versionTwoText() });
+const VERSION_TWO_CONFIG = writtenConfig({
+  name: "version-two.eslint.mjs",
+  text: checksProjectionText({
+    pluginImport: specifierOf({ modulePath: path.join({ segments: [INSTALL_ROOT, "src", "eslint-plugin.ts"] }) }),
+    checks: versionTwoChecks.value,
+    answered: VERSION_TWO_ANSWERED,
+  }),
+});
 
 const resolvedRules = async (request: { readonly line: EslintLine; readonly config: string; readonly file: string }) => {
   const Eslint = await eslintClassOn({ line: request.line });
@@ -253,6 +253,15 @@ describe.each(ESLINT_LINES)("on %s, the version 1 projection and its version 2 f
   it.each(PROBED_FILES)("enable the same rules with the same options on %s", async (file) => {
     const before = await resolvedRules({ line, config: VERSION_ONE_CONFIG, file });
     const after = await resolvedRules({ line, config: VERSION_TWO_CONFIG, file });
-    expect(after).toEqual(inCheckRuleIds({ catalogue: toolCatalogue(), bindings: versionOneBindings(), rules: before }));
+    expect(after).toEqual({
+      [NON_NULL_ASSERTIONS_V2]: before[NON_NULL_ASSERTIONS_V1],
+      [NAMING_CONVENTION_V2]: before[NAMING_CONVENTION_V1],
+      [CLASS_SYNTAX_V2]: before[CLASS_SYNTAX_V1],
+      [STATIC_ONLY_CLASS_V2]: before[STATIC_ONLY_CLASS_V1],
+      [FOCUSED_TESTS_V2]: before[FOCUSED_TESTS_V1],
+      [SKIPPED_TESTS_V2]: before[SKIPPED_TESTS_V1],
+      [PARAMETER_COUNT_V2]: before[PARAMETER_COUNT_V1],
+      [PARAMETER_REASSIGNMENT_V2]: before[PARAMETER_REASSIGNMENT_V1],
+    });
   });
 });
