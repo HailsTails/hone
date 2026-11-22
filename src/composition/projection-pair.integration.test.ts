@@ -11,17 +11,19 @@ import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.
 import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
 import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
-import { type ProjectionClause, sliceTextOf } from "../infrastructure/engines/eslint/runner/config-roots/sliced-projection.ts";
+import { createEslintRunner } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+import { loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
+import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultDirectoryTreePort } from "../infrastructure/node/file-system/directory-tree-port.ts";
 import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
-import type { ClauseBinding } from "../domain/settings/selection/selection.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import { eslintPieceSettingsSchema, ruleOptionsOf } from "../infrastructure/engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
 import type { EslintClass } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, type EslintToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
@@ -151,18 +153,6 @@ assert.isDefined(SKIPPED_TESTS, "the version 1 selection binds CD-27 skipped-tes
 assert.isDefined(PARAMETER_COUNT, "the version 1 selection binds CD-40");
 assert.isDefined(PARAMETER_REASSIGNMENT, "the version 1 selection binds CD-44");
 
-const projectionClauseOf = (request: { readonly binding: ClauseBinding }): ProjectionClause => {
-  const settings = eslintPieceSettingsSchema.parse(request.binding.clause.settings);
-  return {
-    address: request.binding.clause.address,
-    ruleId: `${settings.pluginNamespace}/${settings.rule}`,
-    options: ruleOptionsOf({ settings }),
-    pluginNamespace: settings.pluginNamespace,
-    pieceRoot: request.binding.clause.pieceRoot,
-    pluginModule: settings.pluginModule,
-  };
-};
-
 const directory = createDefaultDirectoryPort({});
 
 const directoryTree = createDefaultDirectoryTreePort({});
@@ -173,22 +163,34 @@ const madeScratch = directory.create({ path: SCRATCH });
 
 assert(madeScratch.outcome === "ok", "a scratch folder is made for the two projections");
 
-const versionOneText = sliceTextOf({
+const eslintToolchain = await loadEslintToolchain({ peers: DEVELOPMENT_PEERS });
+assert(eslintToolchain.outcome === "ok", "the eslint toolchain loads from the development install");
+
+const versionOneProjection = await createEslintRunner({
+  fileText,
+  fileRemoval: createDefaultFileRemovalPort({}),
+  modules: createDefaultModuleLoaderPort({}),
+  path,
+  eslint: createEslintPort({ toolchain: eslintToolchain.value }),
+  moduleExtension: ".ts",
+}).project({
+  repoRoot: SCRATCH,
+  installRoot: INSTALL_ROOT,
+  declaredConfigRoots: [],
+  trackedPaths: [],
   clauses: [
-    projectionClauseOf({ binding: NON_NULL_ASSERTIONS }),
-    projectionClauseOf({ binding: NAMING_CONVENTION }),
-    projectionClauseOf({ binding: CLASS_SYNTAX }),
-    projectionClauseOf({ binding: STATIC_ONLY_CLASS }),
-    projectionClauseOf({ binding: FOCUSED_TESTS }),
-    projectionClauseOf({ binding: SKIPPED_TESTS }),
-    projectionClauseOf({ binding: PARAMETER_COUNT }),
-    projectionClauseOf({ binding: PARAMETER_REASSIGNMENT }),
+    NON_NULL_ASSERTIONS.clause,
+    NAMING_CONVENTION.clause,
+    CLASS_SYNTAX.clause,
+    STATIC_ONLY_CLASS.clause,
+    FOCUSED_TESTS.clause,
+    SKIPPED_TESTS.clause,
+    PARAMETER_COUNT.clause,
+    PARAMETER_REASSIGNMENT.clause,
   ],
   records: VERSION_ONE_RECORDS,
-  origin: { path, repoRoot: SCRATCH, install: { form: "source" } },
-  root: { placement: "repository" },
 });
-assert(versionOneText.outcome === "ok", "the pair's version 1 projection is written");
+assert(versionOneProjection.outcome === "ok", "the pair's version 1 projection is written");
 
 const versionTwoStages = versionTwoStagesOver({
   ports: {
@@ -223,7 +225,7 @@ const writtenConfig = (request: { readonly name: string; readonly text: string }
   return configPath;
 };
 
-const VERSION_ONE_CONFIG = writtenConfig({ name: "version-one.eslint.mjs", text: versionOneText.value });
+const VERSION_ONE_CONFIG = path.join({ segments: [SCRATCH, "disciplines.eslint.mjs"] });
 
 const VERSION_TWO_CONFIG = writtenConfig({
   name: "version-two.eslint.mjs",
