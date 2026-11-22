@@ -65,41 +65,41 @@ Each mechanical clause and the [symptom](typescript/symptoms.md) it sees.
 
 | Clause | Symptom |
 |---|---|
-| CD-1 (3 clauses) | [Claimed type](typescript/symptoms.md#claimed-type); [Untyped value](typescript/symptoms.md#untyped-value) |
-| CD-2 (2 clauses) | [Claimed type](typescript/symptoms.md#claimed-type) |
-| CD-3 (7 clauses) | [Strictness weakened](typescript/symptoms.md#strictness-weakened) |
-| CD-5 | [Untracked escape](typescript/symptoms.md#untracked-escape) |
-| CD-6#identifier-names | [Shorthand name](typescript/symptoms.md#shorthand-name) |
-| CD-6#naming-convention | [Name off its casing](typescript/symptoms.md#name-off-its-casing) |
-| CD-7#categorical-paths | [Drawer path](typescript/symptoms.md#drawer-path) |
-| CD-7#filename-case | [Name off its casing](typescript/symptoms.md#name-off-its-casing) |
-| CD-7a | [Type derived from code](typescript/symptoms.md#type-derived-from-code) |
-| CD-8 | [Default on a closed union](typescript/symptoms.md#default-on-a-closed-union) |
-| CD-10#throws-in-tests | [Throw or catch in a test](typescript/symptoms.md#throw-or-catch-in-a-test) |
-| CD-10#throw-only-error | [Thrown non-error](typescript/symptoms.md#thrown-non-error) |
-| CD-14#class-syntax, CD-14#static-only-class | [Authored class or this](typescript/symptoms.md#authored-class-or-this) |
-| CD-15 | [Loop keyword](typescript/symptoms.md#loop-keyword) |
-| CD-17 | [Date used directly](typescript/symptoms.md#date-used-directly) |
-| CD-19 | [Outside import past a boundary](typescript/symptoms.md#outside-import-past-a-boundary) |
-| CD-23 | [Unit without a running test](typescript/symptoms.md#unit-without-a-running-test) |
-| CD-25 | [Double with a body](typescript/symptoms.md#double-with-a-body) |
-| CD-26 | [Module or global patched](typescript/symptoms.md#module-or-global-patched) |
-| CD-27#test-body-logic | [Branch in a test](typescript/symptoms.md#branch-in-a-test); [Computed value in a test](typescript/symptoms.md#computed-value-in-a-test); [Rebinding](typescript/symptoms.md#rebinding); [Text past its reader](typescript/symptoms.md#text-past-its-reader) |
-| CD-27#focused-tests, CD-27#skipped-tests | [Test switched off](typescript/symptoms.md#test-switched-off) |
-| CD-40#parameter-count | [Positional parameters](typescript/symptoms.md#positional-parameters) |
-| CD-41#cognitive-complexity | [Tangled function](typescript/symptoms.md#tangled-function) |
-| CD-41#function-length | [Long function](typescript/symptoms.md#long-function) |
-| CD-42 | [Work inside a condition](typescript/symptoms.md#work-inside-a-condition) |
-| CD-43 | [Boolean in a signature](typescript/symptoms.md#boolean-in-a-signature) |
-| CD-44#parameter-mutation | [Write into a parameter](typescript/symptoms.md#write-into-a-parameter) |
-| CD-44#parameter-reassignment | [Rebinding](typescript/symptoms.md#rebinding) |
-| CD-47 | [Inherited environment in a subprocess](typescript/symptoms.md#inherited-environment-in-a-subprocess) |
+| CD-1 (3 clauses) | [Claimed type](typescript/symptoms/claimed-type.md); [Untyped value](typescript/symptoms/untyped-value.md) |
+| CD-2 (2 clauses) | [Claimed type](typescript/symptoms/claimed-type.md) |
+| CD-3 (7 clauses) | [Strictness weakened](typescript/symptoms/strictness-weakened.md) |
+| CD-5 | [Untracked escape](typescript/symptoms/untracked-escape.md) |
+| CD-6#identifier-names | [Shorthand name](typescript/symptoms/shorthand-name.md) |
+| CD-6#naming-convention | [Name off its casing](typescript/symptoms/name-off-its-casing.md) |
+| CD-7#categorical-paths | [Drawer path](typescript/symptoms/drawer-path.md) |
+| CD-7#filename-case | [Name off its casing](typescript/symptoms/name-off-its-casing.md) |
+| CD-7a | [Type derived from code](typescript/symptoms/type-derived-from-code.md) |
+| CD-8 | [Default on a closed union](typescript/symptoms/default-on-a-closed-union.md) |
+| CD-10#throws-in-tests | [Throw or catch in a test](typescript/symptoms/throw-or-catch-in-a-test.md) |
+| CD-10#throw-only-error | [Thrown non-error](typescript/symptoms/thrown-non-error.md) |
+| CD-14#class-syntax, CD-14#static-only-class | [Authored class or this](typescript/symptoms/authored-class-or-this.md) |
+| CD-15 | [Loop keyword](typescript/symptoms/loop-keyword.md) |
+| CD-17 | [Date used directly](typescript/symptoms/date-used-directly.md) |
+| CD-19 | [Outside import past a boundary](typescript/symptoms/outside-import-past-a-boundary.md) |
+| CD-23 | [Unit without a running test](typescript/symptoms/unit-without-a-running-test.md) |
+| CD-25 | [Double with a body](typescript/symptoms/double-with-a-body.md) |
+| CD-26 | [Module or global patched](typescript/symptoms/module-or-global-patched.md) |
+| CD-27#test-body-logic | [Branch in a test](typescript/symptoms/branch-in-a-test.md); [Computed value in a test](typescript/symptoms/computed-value-in-a-test.md); [Rebinding](typescript/symptoms/rebinding.md); [Text past its reader](typescript/symptoms/text-past-its-reader.md) |
+| CD-27#focused-tests, CD-27#skipped-tests | [Test switched off](typescript/symptoms/test-switched-off.md) |
+| CD-40#parameter-count | [Positional parameters](typescript/symptoms/positional-parameters.md) |
+| CD-41#cognitive-complexity | [Tangled function](typescript/symptoms/tangled-function.md) |
+| CD-41#function-length | [Long function](typescript/symptoms/long-function.md) |
+| CD-42 | [Work inside a condition](typescript/symptoms/work-inside-a-condition.md) |
+| CD-43 | [Boolean in a signature](typescript/symptoms/boolean-in-a-signature.md) |
+| CD-44#parameter-mutation | [Write into a parameter](typescript/symptoms/write-into-a-parameter.md) |
+| CD-44#parameter-reassignment | [Rebinding](typescript/symptoms/rebinding.md) |
+| CD-47 | [Inherited environment in a subprocess](typescript/symptoms/inherited-environment-in-a-subprocess.md) |
 
-The test-logic check, CD-27#test-body-logic, also sees the `let` form of [Answer set in a hook](typescript/symptoms.md#answer-set-in-a-hook), and `try`, a form of [Throw or catch in a test](typescript/symptoms.md#throw-or-catch-in-a-test).
+The test-logic check, CD-27#test-body-logic, also sees the `let` form of [Answer set in a hook](typescript/symptoms/answer-set-in-a-hook.md), and `try`, a form of [Throw or catch in a test](typescript/symptoms/throw-or-catch-in-a-test.md).
 
 Review clauses that demand a method (CD-4, CD-9, CD-11, CD-12, CD-21 and CD-22) map to their [recipes](typescript/recipes.md). The outcome each protects is seen by Schema past its adapter, Throw between our units, Failure shaped as success, Port outside the domain, Adapter built outside the root and Default for a required value.
 
-Sensitive data and citation clauses (CD-32, CD-33, CD-34 and CD-39) are outside the 2.0 model, as safety (CD-32, CD-33 and CD-34) and process (CD-39): no item, no symptom, no check. Each is applied in review.
+Sensitive data and citation clauses (CD-32, CD-33, CD-34 and CD-39) are outside the 2.0 model, as safety (CD-32, CD-33 and CD-34) and process (CD-39): they are outside Hone's catalogue, with no item, symptom or check, and no Hone lens applies them.
 
 ## Every numbered discipline
 
