@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+Business logic hands the adapter our own value. Only the adapter maps it to the receiver's form.

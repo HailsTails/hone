@@ -32,10 +32,10 @@ const DEBT = '# Debt\n\n```json\n{ "phrase": "debt", "todaysFormat": "none-yet" 
 
 const WRITTEN_OUT_ANSWERS = '# Written-out answers\n\n```json\n{ "principle": "tests-are-ours", "standing": "accepted" }\n```\n';
 
-const WORLD_VALUES = '# World values through a port\n\n```json\n{ "standing": "accepted", "reason": { "text": "the world is passed in", "standing": "accepted" } }\n```\n';
+const WORLD_VALUES = '# World values through a port\n\n```json\n{ "serves": { "rule": "written-out-answers" }, "standing": "accepted", "reason": { "text": "the world is passed in", "standing": "accepted" } }\n```\n';
 
 const DATE_USED_DIRECTLY =
-  '# Date used directly\n\n```json\n{ "seen": "Any use of Date.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "rule": "written-out-answers" }] }], "breachUsuallySits": "in the unit", "recipes": ["world-values-through-a-port"], "correctUses": [{ "situation": "correct use", "kind": "debt" }] }\n```\n';
+  '# Date used directly\n\n```json\n{ "group": "The outside world reached directly", "seen": "Any use of Date.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "rule": "written-out-answers" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": ["world-values-through-a-port"], "correctUses": [{ "situation": "correct use", "kind": "debt" }] }\n```\n';
 
 const CLOCK_SOURCES_CHECK = '# Clock sources\n\n```json\n{ "engines": ["walker"] }\n```\n';
 

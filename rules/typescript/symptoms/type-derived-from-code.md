@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Claimed or loose types",
   "seen": "`ReturnType<typeof x>`, `Parameters<typeof x>` or `typeof x` used as a type of our own.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the producer, which has no named type",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "named-exported-type"
   ],

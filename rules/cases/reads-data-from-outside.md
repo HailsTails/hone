@@ -19,3 +19,5 @@
   ]
 }
 ```
+
+The reader for whoever produced it parses it once, at the boundary, into a type of our own. A required value that is missing is a failure, never a default. A test never sets the environment. Past the reader, units and their tests use objects, never text.

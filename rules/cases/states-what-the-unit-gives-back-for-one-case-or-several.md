@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+Each test is one complete, distinct case. The expected value is written out, never worked out. Several cases are each written out; nothing in the test builds or picks them. No throw or catch in a test.

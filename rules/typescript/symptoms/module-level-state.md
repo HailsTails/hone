@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Effects and state",
   "seen": "A module-scope `let`, or a module-scope collection that functions change.",
   "mayIndicate": [
     {
@@ -17,6 +18,10 @@
     }
   ],
   "breachUsuallySits": "at a missing adapter for the state",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "closure-factory"
   ],

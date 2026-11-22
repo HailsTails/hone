@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Layers and wiring",
   "seen": "A domain or business-logic file that imports an adapter or infrastructure file.",
   "mayIndicate": [
     {
@@ -20,6 +21,10 @@
     }
   ],
   "breachUsuallySits": "in the import, or in a port declared on the wrong side",
+  "seenBy": [
+    "app"
+  ],
+  "reports": "seen",
   "recipes": [
     "port-in-the-domain"
   ],

@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+An assertion proves which outcome it is, so the type narrows; then the test reads it plainly. No condition, optional read or cast.

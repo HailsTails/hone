@@ -181,6 +181,7 @@ const SOURCE_WITHOUT_LOCK: Readonly<Record<string, string>> = {
   "/package/src/testing.ts": "export {};\n",
   "/package/src/hone.ts": "await run();\n",
   "/package/src/infrastructure/engines/typescript-compiler/runner/runner.ts": "await project();\n",
+  "/package/src/infrastructure/disciplines-file/version-one-names.json": '{ "version": 1, "clauses": [] }',
 };
 
 const EMPTY_LOCK = `lockfileVersion: '9.0'
@@ -322,7 +323,7 @@ describe("runBuildPackage", () => {
     await runBuildPackage(request);
 
     expect({ report: reportOf(request), runs: npm.runs(), left: files.pathsUnder({ folder: "/tmp" }) }).toEqual({
-      report: { writes: [[{ text: "build package: wrote 13 files to /package/dist\n" }]], exits: [[{ code: 0 }]] },
+      report: { writes: [[{ text: "build package: wrote 20 files to /package/dist\n" }]], exits: [[{ code: 0 }]] },
       runs: [],
       left: [],
     });
@@ -371,7 +372,7 @@ describe("runPackageDeterminism", () => {
 
     expect({ report: reportOf(request), left: files.pathsUnder({ folder: "/tmp" }) }).toEqual({
       report: {
-        writes: [[{ text: "package determinism: pass, 13 files and the packed tarball byte-identical across two builds\n" }]],
+        writes: [[{ text: "package determinism: pass, 20 files and the packed tarball byte-identical across two builds\n" }]],
         exits: [[{ code: 0 }]],
       },
       left: [],

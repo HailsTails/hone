@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+Two callers share a unit only when it is one decision for both. Shared behaviour is a call to that unit, never inheritance.

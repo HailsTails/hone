@@ -19,3 +19,5 @@
   ]
 }
 ```
+
+One place, at start-up, builds every real implementation and passes it in. Nothing else builds one.

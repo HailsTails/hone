@@ -23,7 +23,15 @@ const DOCUMENT = {
       owes: [{ principle: "no-hidden-effects" }, { rule: "doer-or-orchestrator" }],
     },
   ],
-  recipes: [{ name: "functional-iteration", title: "Functional iteration", standing: "accepted", reason: { text: "\"For of mutates by its nature.\"", standing: "proposed" } }],
+  recipes: [
+    {
+      name: "functional-iteration",
+      title: "Functional iteration",
+      serves: { rule: "doer-or-orchestrator" },
+      standing: "accepted",
+      reason: { text: "\"For of mutates by its nature.\"", standing: "proposed" },
+    },
+  ],
   recordKinds: RECORD_KINDS_DOCUMENT,
   engines: [
     { name: "walker", mechanism: "audit" },
@@ -33,12 +41,15 @@ const DOCUMENT = {
     {
       name: "loop-keyword",
       title: "Loop keyword",
+      group: "Effects and state",
       seen: "`for` or `while`.",
       mayIndicate: [
         { case: "makes-a-new-value-from-what-it-has", points: [{ principle: "no-hidden-effects" }] },
-        { case: "coordinates-other-units", points: [{ rule: "doer-or-orchestrator" }] },
+        { case: "coordinates-other-units", quote: "functions are doers or are orchestrator", points: [{ rule: "doer-or-orchestrator" }] },
       ],
       breachUsuallySits: "in the unit",
+      seenBy: ["syntax"],
+      reports: "seen",
       recipes: ["functional-iteration"],
       correctUses: [
         { situation: "draining a stream", kind: "authorised-location", at: "in its source's adapter" },
@@ -145,9 +156,11 @@ const CASE_DOCUMENT = {
 const SYMPTOM_DOCUMENT = {
   name: "work-inside-a-condition",
   title: "Work inside a condition",
+  group: "Unit shape",
   seen: "An `if` inside another `if`.",
   mayIndicate: [{ case: "checks-conditions-before-its-work", points: [{ principle: "one-place-decides" }] }],
   breachUsuallySits: "in the unit's questions",
+  seenBy: ["syntax", "types"],
   recipes: [],
   correctUses: [],
 };
@@ -450,13 +463,31 @@ describe("symptomCatalogueOf", () => {
     },
     {
       name: "a recipe without the reason it was chosen",
-      document: { ...EMPTY_DOCUMENT, recipes: [{ name: "guard-clauses", title: "Guard clauses", standing: "accepted" }] },
+      document: { ...EMPTY_DOCUMENT, recipes: [{ name: "guard-clauses", title: "Guard clauses", serves: { principle: "no-hidden-effects" }, standing: "accepted" }] },
       refusal: "✖ Invalid input: expected object, received undefined\n  → at recipes[0].reason",
     },
     {
       name: "a recipe reason that does not say whether it is accepted or proposed",
-      document: { ...EMPTY_DOCUMENT, recipes: [{ name: "guard-clauses", title: "Guard clauses", standing: "accepted", reason: { text: "\"it reads flat\"" } }] },
+      document: { ...EMPTY_DOCUMENT, recipes: [{ name: "guard-clauses", title: "Guard clauses", serves: { principle: "no-hidden-effects" }, standing: "accepted", reason: { text: "\"it reads flat\"" } }] },
       refusal: "✖ Invalid option: expected one of \"accepted\"|\"proposed\"\n  → at recipes[0].reason.standing",
+    },
+    {
+      name: "a recipe serving a rule the catalogue does not hold",
+      document: {
+        ...SYMPTOM_HOLDING_DOCUMENT,
+        recipes: [{ name: "guard-clauses", title: "Guard clauses", serves: { rule: "guard-first" }, standing: "accepted", reason: { text: "\"it reads flat\"", standing: "accepted" } }],
+      },
+      refusal: "✖ recipes names guard-first, which the catalogue does not hold",
+    },
+    {
+      name: "a symptom seen by nothing",
+      document: { ...SYMPTOM_HOLDING_DOCUMENT, symptoms: [{ ...SYMPTOM_DOCUMENT, seenBy: [] }] },
+      refusal: "✖ Too small: expected array to have >=1 items\n  → at symptoms[0].seenBy",
+    },
+    {
+      name: "a symptom seen by something no symptom is seen by",
+      document: { ...SYMPTOM_HOLDING_DOCUMENT, symptoms: [{ ...SYMPTOM_DOCUMENT, seenBy: ["eyesight"] }] },
+      refusal: expect.stringContaining("→ at symptoms[0].seenBy[0]"),
     },
     {
       name: "a correct use by a record kind the catalogue does not hold",
@@ -493,7 +524,7 @@ describe("symptomCatalogueOf", () => {
       name: "a clause demanding a method whose outcome no symptom sees",
       document: {
         ...EMPTY_DOCUMENT,
-        recipes: [{ name: "result-union", title: "Result union", standing: "accepted", reason: { text: "\"it makes the output clear\"", standing: "accepted" } }],
+        recipes: [{ name: "result-union", title: "Result union", serves: { principle: "no-hidden-effects" }, standing: "accepted", reason: { text: "\"it makes the output clear\"", standing: "accepted" } }],
         clauses: [{ clause: "CD-9#result-failures", sight: { kind: "method", recipe: "result-union", outcomeSeenBy: [] } }],
       },
       refusal: "✖ Too small: expected array to have >=1 items\n  → at clauses[0].sight.outcomeSeenBy",

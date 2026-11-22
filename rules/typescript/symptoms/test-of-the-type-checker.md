@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "A test that asserts only what the types already prove, such as exhaustiveness.",
   "mayIndicate": [
     {
@@ -14,6 +15,9 @@
     }
   ],
   "breachUsuallySits": "in the test",
+  "seenBy": [
+    "person"
+  ],
   "recipes": [],
   "correctUses": []
 }

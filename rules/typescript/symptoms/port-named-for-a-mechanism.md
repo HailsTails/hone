@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Layers and wiring",
   "seen": "A port named for a technology (`HttpClient`, `Fs`, `Sqlite`) rather than a capability.",
   "mayIndicate": [
     {
@@ -22,6 +23,9 @@
     }
   ],
   "breachUsuallySits": "in the port",
+  "seenBy": [
+    "person"
+  ],
   "recipes": [
     "port-in-the-domain"
   ],

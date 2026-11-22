@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+A closed union of our own, a name per kind, no catch-all. Absence or a true-or-false that stands for a state is a named kind.

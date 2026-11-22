@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "`if`, a ternary, `&&`, `||`, `??`, `?.` or `switch` in a test file.",
   "mayIndicate": [
     {
@@ -32,6 +33,10 @@
     }
   ],
   "breachUsuallySits": "in the unit's output type, where optional or loose shapes force the test to branch",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "assert-to-narrow",
     "iteach-over-typed-rows"
@@ -39,3 +44,6 @@
   "correctUses": []
 }
 ```
+
+- **The breach a check could name:** the type branched on, by types.
+- **To name the breach, a check needs:** types: the declaring type of the member read.

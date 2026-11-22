@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+Every way it fails is a named variant in its return type. Nothing is thrown, ends the process, becomes true or false, or is swapped for a default or an empty value. Callers handle each variant.

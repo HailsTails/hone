@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+Every unit has its own test in the companion file, and it runs. A unit that only wires has a test of its wiring. No coverage figure stands in.

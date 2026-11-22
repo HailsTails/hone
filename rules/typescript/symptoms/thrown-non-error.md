@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Failures",
   "seen": "`throw` of a literal, an object or a template.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "at the throw site",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "failure-mapping-at-the-adapter"
   ],

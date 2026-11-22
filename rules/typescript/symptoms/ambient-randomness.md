@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "The outside world reached directly",
   "seen": "`Math.random()`, `crypto.randomUUID()` or `crypto.getRandomValues()` outside their adapter.",
   "mayIndicate": [
     {
@@ -17,6 +18,10 @@
     }
   ],
   "breachUsuallySits": "in the unit that should be passed the value, often a doer doing two jobs",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "world-values-through-a-port"
   ],

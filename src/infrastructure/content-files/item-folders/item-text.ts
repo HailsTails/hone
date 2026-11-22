@@ -1,11 +1,13 @@
 import type { Result } from "../../../domain/result.ts";
 import { parsedJson } from "../parsed-json.ts";
 
-export type ItemText = { readonly title: string; readonly facts: unknown };
+export type ItemText = { readonly title: string; readonly facts: unknown; readonly prose: string };
 
-type Fence = { readonly language: string; readonly lines: readonly string[] };
+type OpenFence = { readonly language: string; readonly lines: readonly string[] };
 
-type Scan = { readonly open: Fence | undefined; readonly closed: readonly Fence[] };
+type Fence = OpenFence & { readonly closedAt: number };
+
+type Scan = { readonly open: OpenFence | undefined; readonly closed: readonly Fence[] };
 
 const TITLE_LINE = /^# (?<title>\S.*)$/;
 
@@ -15,14 +17,16 @@ const FACTS_LANGUAGE = "json";
 
 const LINE_BREAK = /\r?\n/;
 
-const scanned = (scan: Scan, line: string): Scan => {
-  const fence = FENCE_LINE.exec(line);
+type NumberedLine = { readonly line: string; readonly index: number };
+
+const scanned = (scan: Scan, numbered: NumberedLine): Scan => {
+  const fence = FENCE_LINE.exec(numbered.line);
   if (scan.open === undefined) {
     return fence === null ? scan : { open: { language: fence.groups?.language ?? "", lines: [] }, closed: scan.closed };
   }
   return fence === null
-    ? { open: { language: scan.open.language, lines: [...scan.open.lines, line] }, closed: scan.closed }
-    : { open: undefined, closed: [...scan.closed, scan.open] };
+    ? { open: { language: scan.open.language, lines: [...scan.open.lines, numbered.line] }, closed: scan.closed }
+    : { open: undefined, closed: [...scan.closed, { ...scan.open, closedAt: numbered.index }] };
 };
 
 const titleOf = (request: { readonly lines: readonly string[] }): Result<string, string> => {
@@ -32,7 +36,7 @@ const titleOf = (request: { readonly lines: readonly string[] }): Result<string,
 };
 
 const factsFenceOf = (request: { readonly lines: readonly string[] }): Result<Fence, string> => {
-  const scan = request.lines.reduce(scanned, { open: undefined, closed: [] });
+  const scan = request.lines.map((line, index): NumberedLine => ({ line, index })).reduce<Scan>(scanned, { open: undefined, closed: [] });
   if (scan.open !== undefined) {
     return { outcome: "failed", error: "has a fenced block that is never closed" };
   }
@@ -54,5 +58,8 @@ export const itemTextOf = (request: { readonly text: string }): Result<ItemText,
     return fence;
   }
   const facts = parsedJson({ text: fence.value.lines.join("\n") });
-  return facts.outcome === "failed" ? { outcome: "failed", error: `has facts that are not JSON: ${facts.error}` } : { outcome: "ok", value: { title: title.value, facts: facts.value } };
+  const prose = lines.slice(fence.value.closedAt + 1).join("\n").trim();
+  return facts.outcome === "failed"
+    ? { outcome: "failed", error: `has facts that are not JSON: ${facts.error}` }
+    : { outcome: "ok", value: { title: title.value, facts: facts.value, prose } };
 };

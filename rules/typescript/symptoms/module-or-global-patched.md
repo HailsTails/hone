@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "`vi.mock`, `vi.stubGlobal`, a spy on a global, or `process.env` set in a test.",
   "mayIndicate": [
     {
@@ -23,9 +24,16 @@
     }
   ],
   "breachUsuallySits": "in the unit, which imports what it should be passed",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "ports-in-the-argument"
   ],
   "correctUses": []
 }
 ```
+
+- **The breach a check could name:** the unit that imports the module, by graph.
+- **To name the breach, a check needs:** graph: who imports the mocked module.

@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "The outside world reached directly",
   "seen": "`new` on a class from an outside dependency, outside that dependency's adapter.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "at a missing adapter",
+  "seenBy": [
+    "types"
+  ],
+  "reports": "seen",
   "recipes": [
     "adapter-per-outside-party",
     "closure-factory"

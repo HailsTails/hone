@@ -3,9 +3,12 @@ import { itemFactsOf } from "./item-facts.ts";
 import type { ItemKind } from "./item-identity.ts";
 
 const SYMPTOM_FACTS = {
+  group: "The outside world reached directly",
   seen: "Any use of Date.",
-  mayIndicate: [{ case: "does-one-job", points: [{ rule: "doer-or-orchestrator" }] }],
+  mayIndicate: [{ case: "does-one-job", quote: "Dating and numbering an order is not the same job as charging it", points: [{ rule: "doer-or-orchestrator" }] }],
   breachUsuallySits: "in the unit",
+  seenBy: ["syntax"],
+  reports: "seen",
   recipes: ["result-union"],
   correctUses: [{ situation: "correct use", kind: "boundary-record", at: "on the clock adapter" }],
 };
@@ -15,7 +18,7 @@ describe("itemFactsOf", () => {
     { kind: "principle", facts: {} },
     { kind: "rule", facts: { principle: "tests-are-ours", standing: "accepted" } },
     { kind: "case", facts: { standing: "accepted", owes: [{ rule: "written-out-answers" }, { principle: "tests-are-ours" }] } },
-    { kind: "recipe", facts: { standing: "proposed", reason: { text: "stub with vi.fn", standing: "accepted" } } },
+    { kind: "recipe", facts: { serves: { rule: "written-out-answers" }, standing: "proposed", reason: { text: "stub with vi.fn", standing: "accepted" } } },
     { kind: "record-kind", facts: { phrase: "debt", todaysFormat: "none-yet" } },
     { kind: "symptom", facts: SYMPTOM_FACTS },
     { kind: "check", facts: { engines: ["walker"] } },

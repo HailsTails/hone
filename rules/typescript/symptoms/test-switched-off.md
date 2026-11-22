@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "`.only`, `.skip`, `fit` or `xit`.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the test file",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [],
   "correctUses": []
 }

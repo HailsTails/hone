@@ -36,6 +36,11 @@ const namesOf = (file: z.output<typeof versionOneNamesSchema>): VersionOneNames 
   clauseOfCheck: new Map(file.clauses.flatMap(({ clause, checks }) => checks.map((check): readonly [string, ClauseAddress] => [check, clause]))),
 });
 
+export const versionOneNamesOf = (request: { readonly document: unknown }): Result<VersionOneNames, string> => {
+  const parsed = versionOneNamesSchema.safeParse(request.document);
+  return parsed.success ? { outcome: "ok", value: namesOf(parsed.data) } : { outcome: "failed", error: z.prettifyError(parsed.error) };
+};
+
 export const readVersionOneNames = (request: { readonly fileText: FileTextPort; readonly path: string }): Result<VersionOneNames, VersionTwoLoadFailure> => {
   if (request.fileText.exists({ path: request.path }) === "absent") {
     return { outcome: "ok", value: NO_VERSION_ONE_NAMES };
@@ -44,8 +49,6 @@ export const readVersionOneNames = (request: { readonly fileText: FileTextPort; 
   if (document.outcome === "failed") {
     return document;
   }
-  const parsed = versionOneNamesSchema.safeParse(document.value);
-  return parsed.success
-    ? { outcome: "ok", value: namesOf(parsed.data) }
-    : { outcome: "failed", error: { kind: "file-malformed", path: request.path, detail: z.prettifyError(parsed.error) } };
+  const names = versionOneNamesOf({ document: document.value });
+  return names.outcome === "failed" ? { outcome: "failed", error: { kind: "file-malformed", path: request.path, detail: names.error } } : names;
 };

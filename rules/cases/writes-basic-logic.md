@@ -13,3 +13,5 @@
   ]
 }
 ```
+
+In the language's own constructs. No outside dependency's vocabulary stands in for it.

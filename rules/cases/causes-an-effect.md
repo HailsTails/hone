@@ -22,3 +22,5 @@
   ]
 }
 ```
+
+The effect is a call on a port passed in, and its test checks that call.

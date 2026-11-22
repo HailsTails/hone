@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "A coverage percentage threshold in test config.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the config",
+  "seenBy": [
+    "files"
+  ],
+  "reports": "seen",
   "recipes": [
     "companion-test-file"
   ],

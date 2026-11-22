@@ -665,5 +665,10 @@
         "inherited-environment-in-a-subprocess#git-spawn-environment"
       ]
     }
-  ]
+  ],
+  "recordKinds": {
+    "authorised-location": "authorised-location",
+    "boundary-record": "authorised-location",
+    "debt": "file-carve-out"
+  }
 }

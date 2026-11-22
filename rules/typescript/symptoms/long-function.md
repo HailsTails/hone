@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "A function body over the line limit.",
   "mayIndicate": [
     {
@@ -54,6 +55,10 @@
     }
   ],
   "breachUsuallySits": "in the unit: several jobs, an input wider than its use, nested questions, or a responsibility not isolated and named",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "composed-orchestrator",
     "guard-clauses",

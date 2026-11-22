@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Failures",
   "seen": "`throw` outside an adapter whose caller's contract is exceptions.",
   "mayIndicate": [
     {
@@ -22,6 +23,11 @@
     }
   ],
   "breachUsuallySits": "in the unit, or at a missing mapping in the adapter",
+  "seenBy": [
+    "syntax",
+    "graph"
+  ],
+  "reports": "seen",
   "recipes": [
     "result-union",
     "failure-mapping-at-the-adapter"
@@ -35,3 +41,7 @@
   ]
 }
 ```
+
+"Throwing in specific places allowed is just authorised locations as prose."
+
+- **How it is seen:** graph for adapters.

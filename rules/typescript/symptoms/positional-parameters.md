@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "A function of ours, whose shape no outside API fixes, that has two or more parameters.",
   "mayIndicate": [
     {
@@ -22,9 +23,15 @@
     }
   ],
   "breachUsuallySits": "in the signature",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "one-argument-object"
   ],
   "correctUses": []
 }
 ```
+
+"Functions with no outside influence should take 1. 2 is debatable. But for agents the goal is always 1."

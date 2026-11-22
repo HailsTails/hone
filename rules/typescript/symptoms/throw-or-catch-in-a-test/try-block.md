@@ -7,3 +7,6 @@
   ]
 }
 ```
+
+- **Misses:** `catch`.
+- **Settings traced to:** none.

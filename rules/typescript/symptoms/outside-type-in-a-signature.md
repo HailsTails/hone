@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "The outside world reached directly",
   "seen": "A type from an outside dependency or runtime library in a business-logic parameter, field or return, imported or inferred.",
   "mayIndicate": [
     {
@@ -17,6 +18,10 @@
     }
   ],
   "breachUsuallySits": "in the adapter that hands the outside type inward",
+  "seenBy": [
+    "types"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "adapter-per-outside-party"
   ],
@@ -29,3 +34,5 @@
   ]
 }
 ```
+
+- **The breach a check could name:** the adapter that returns it, by types.

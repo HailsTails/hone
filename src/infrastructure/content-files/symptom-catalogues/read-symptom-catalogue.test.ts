@@ -27,7 +27,7 @@ const AUTHORISED_LOCATION_TEXT = '# Authorised location\n\n```json\n{ "phrase": 
 const DEBT_TEXT = '# Debt\n\n```json\n{ "phrase": "debt", "todaysFormat": "file-carve-out" }\n```\n';
 
 const REBINDING_TEXT =
-  '# Rebinding\n\n```json\n{ "seen": "A `let` assigned again.", "mayIndicate": [{ "case": "makes-a-new-value-from-what-it-has", "points": [{ "principle": "no-hidden-effects" }] }], "breachUsuallySits": "in the unit", "recipes": [], "correctUses": [] }\n```\n';
+  '# Rebinding\n\n```json\n{ "group": "Effects and state", "seen": "A `let` assigned again.", "mayIndicate": [{ "case": "makes-a-new-value-from-what-it-has", "points": [{ "principle": "no-hidden-effects" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }\n```\n';
 
 const PARAMETER_REASSIGNMENT_TEXT = '# parameter-reassignment\n\n```json\n{ "engines": ["eslint"] }\n```\n';
 

@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "`throw`, `try` or `catch` in a test file.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the unit, which throws",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "failure-asserted-as-a-value"
   ],

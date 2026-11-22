@@ -37,18 +37,27 @@ const standingSchema = z.enum(["accepted", "proposed"]);
 
 export const recordKindNameSchema = z.enum(["authorised-location", "deviation", "debt", "boundary-record", "dependency-record"]);
 
-const pointedWireSchema = z.union([z.strictObject({ rule: catalogueNameSchema }), z.strictObject({ principle: catalogueNameSchema })]);
+export const pointedWireSchema = z.union([z.strictObject({ rule: catalogueNameSchema }), z.strictObject({ principle: catalogueNameSchema })]);
 
 export const caseWireSchema = z.strictObject({ name: catalogueNameSchema, title: textSchema, standing: standingSchema, owes: z.array(pointedWireSchema).min(1) });
 
 const correctUseWireSchema = z.strictObject({ situation: textSchema, kind: recordKindNameSchema, at: textSchema.optional() });
 
+export const seenBySchema = z.enum(["syntax", "types", "graph", "app", "files", "history", "person"]);
+
+export const reportsSchema = z.enum(["seen", "seen-to-breach"]);
+
 export const symptomWireSchema = z.strictObject({
   name: catalogueNameSchema,
   title: textSchema,
+  group: textSchema,
   seen: textSchema,
-  mayIndicate: z.array(z.strictObject({ case: catalogueNameSchema, situation: textSchema.optional(), points: z.array(pointedWireSchema).min(1) })).min(1),
+  mayIndicate: z
+    .array(z.strictObject({ case: catalogueNameSchema, situation: textSchema.optional(), quote: textSchema.optional(), points: z.array(pointedWireSchema).min(1) }))
+    .min(1),
   breachUsuallySits: textSchema,
+  seenBy: z.array(seenBySchema).min(1),
+  reports: reportsSchema.optional(),
   recipes: z.array(catalogueNameSchema),
   correctUses: z.array(correctUseWireSchema),
 });
@@ -86,6 +95,7 @@ export const catalogueFileSchema = z.strictObject({
     z.strictObject({
       name: catalogueNameSchema,
       title: textSchema,
+      serves: pointedWireSchema,
       standing: standingSchema,
       reason: z.strictObject({ text: textSchema, standing: standingSchema }),
     }),
@@ -238,8 +248,9 @@ const definitionsOf = (request: { readonly file: CatalogueFile }): Resolution<De
   const recordKinds = request.file.recordKinds.map(recordKindOf);
   const cases = allResolved(request.file.cases.map((wire) => caseOf({ wire, pointable: pointable.value })));
   const alwaysRecordable = alwaysRecordableOf({ recordKinds });
-  return cases.outcome === "failed" || alwaysRecordable.outcome === "failed"
-    ? { outcome: "failed", error: [...faultsOf(cases), ...faultsOf(alwaysRecordable)] }
+  const served = allResolved(request.file.recipes.map((wire) => pointedOf({ listing: "recipes", point: wire.serves, pointable: pointable.value })));
+  return cases.outcome === "failed" || alwaysRecordable.outcome === "failed" || served.outcome === "failed"
+    ? { outcome: "failed", error: [...faultsOf(cases), ...faultsOf(alwaysRecordable), ...faultsOf(served)] }
     : resolved({
         ...pointable.value,
         cases: cases.value,

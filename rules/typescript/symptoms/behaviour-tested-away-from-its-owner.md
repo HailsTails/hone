@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "A unit test that asserts what a collaborator does, or an integration test that pins a rule a unit owns.",
   "mayIndicate": [
     {
@@ -30,6 +31,10 @@
     }
   ],
   "breachUsuallySits": "in the level the test is written at",
+  "seenBy": [
+    "person",
+    "graph"
+  ],
   "recipes": [
     "companion-test-file",
     "integration-test-suffix"

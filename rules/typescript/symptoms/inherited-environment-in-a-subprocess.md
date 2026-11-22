@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "A process spawned in a test with no explicit environment, or one built from `process.env`.",
   "mayIndicate": [
     {
@@ -14,6 +15,11 @@
     }
   ],
   "breachUsuallySits": "at the spawn site",
+  "seenBy": [
+    "syntax",
+    "types"
+  ],
+  "reports": "seen",
   "recipes": [
     "integration-test-owns-its-scratch"
   ],

@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Names, prose and files",
   "seen": "A file that declares only types and is not a port declaration.",
   "mayIndicate": [
     {
@@ -18,10 +19,15 @@
         {
           "rule": "one-reason-per-module"
         }
-      ]
+      ],
+      "quote": "There shouldn't be type only files. They should be entities."
     }
   ],
   "breachUsuallySits": "in the entity's module",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "entity-module"
   ],

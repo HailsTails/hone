@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Effects and state",
   "seen": "The `class` keyword in our code, `static`-only classes included, or `this` read outside a class.",
   "mayIndicate": [
     {
@@ -30,6 +31,10 @@
     }
   ],
   "breachUsuallySits": "in the unit",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "closure-factory"
   ],

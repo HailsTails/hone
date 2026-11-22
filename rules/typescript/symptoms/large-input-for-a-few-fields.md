@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "A test that writes a large object, or casts, to give the unit the few fields it reads.",
   "mayIndicate": [
     {
@@ -22,9 +23,16 @@
     }
   ],
   "breachUsuallySits": "in the unit's declared input",
+  "seenBy": [
+    "person",
+    "syntax"
+  ],
   "recipes": [
     "one-argument-object"
   ],
   "correctUses": []
 }
 ```
+
+- **How it is seen:** syntax for the cast.
+- **To name the breach, a check needs:** types: the parameter's declaration and the fields read.

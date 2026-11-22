@@ -22,3 +22,5 @@
   ]
 }
 ```
+
+One unit makes the value and does nothing else. Every other unit is passed the value, not its source. The source is a port; its stub returns a written-out value.

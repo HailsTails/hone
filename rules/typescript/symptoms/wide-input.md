@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "A parameter type holding fields the unit never reads.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the unit's declared input",
+  "seenBy": [
+    "types"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "one-argument-object",
     "entity-module"
@@ -29,3 +34,5 @@
   "correctUses": []
 }
 ```
+
+- **The breach a check could name:** the input's declaration.

@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Claimed or loose types",
   "seen": "A field typed `T | null` or `T | undefined`, or optional, whose absence means a state rather than \"not given\".",
   "mayIndicate": [
     {
@@ -22,9 +23,15 @@
     }
   ],
   "breachUsuallySits": "in the type, which needs named kinds",
+  "seenBy": [
+    "person",
+    "types"
+  ],
   "recipes": [
     "tagged-union-and-exhaustive-switch"
   ],
   "correctUses": []
 }
 ```
+
+- **How it is seen:** types to find candidates.

@@ -25,3 +25,5 @@
   ]
 }
 ```
+
+Business logic is handed a port named for the capability, not the mechanism, speaking only our types. One implementation per capability touches it and may fill several narrow ports. The protocol is its own adapter. Each adapter is a recorded boundary.

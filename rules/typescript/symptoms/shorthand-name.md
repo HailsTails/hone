@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Names, prose and files",
   "seen": "A name of single letters, an abbreviation or a filler word (`data`, `result`, `options`, `tx`), at any scope.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the name",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "whole-words"
   ],

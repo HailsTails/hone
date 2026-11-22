@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Text and schemas past their reader",
   "seen": "`JSON.parse`, `JSON.stringify` or a YAML parse or dump outside the adapter for whoever produced or receives the text, tests included.",
   "mayIndicate": [
     {
@@ -38,6 +39,11 @@
     }
   ],
   "breachUsuallySits": "in a port that takes or gives text where it should carry objects",
+  "seenBy": [
+    "syntax",
+    "types"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "adapter-per-outside-party",
     "map-out-at-the-adapter",
@@ -58,3 +64,9 @@
   ]
 }
 ```
+
+"a boundary on whoever made json"
+
+- **How it is seen:** types to trace the port.
+- **The breach a check could name:** the port that carries text, by types.
+- **To name the breach, a check needs:** types: the port method the text is fed to.

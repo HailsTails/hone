@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "A port with methods its consumer never calls.",
   "mayIndicate": [
     {
@@ -17,9 +18,16 @@
     }
   ],
   "breachUsuallySits": "in the port",
+  "seenBy": [
+    "graph",
+    "types"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "narrow-ports"
   ],
   "correctUses": []
 }
 ```
+
+- **The breach a check could name:** the port.

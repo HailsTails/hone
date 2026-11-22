@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "A function that calls two or more units of ours and also branches, computes or reshapes between the calls.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the orchestrator",
+  "seenBy": [
+    "graph"
+  ],
+  "reports": "seen",
   "recipes": [
     "composed-orchestrator"
   ],

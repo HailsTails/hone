@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Names, prose and files",
   "seen": "A file or folder named utils, helpers, types, common, shared or the like.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the module's contents",
+  "seenBy": [
+    "files"
+  ],
+  "reports": "seen",
   "recipes": [
     "screaming-folders"
   ],

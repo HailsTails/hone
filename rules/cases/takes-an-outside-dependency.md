@@ -34,3 +34,5 @@
   ]
 }
 ```
+
+A record names the native way weighed and why it was not enough. It is used only inside the recorded boundary that needs it, with no wrapper, and its types and vocabulary never reach business logic. It never makes one of our decisions.

@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Dependencies and versions",
   "seen": "A change to a file inside a vendored folder.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the change",
+  "seenBy": [
+    "history"
+  ],
+  "reports": "seen",
   "recipes": [
     "extension-outside-the-vendored-code"
   ],

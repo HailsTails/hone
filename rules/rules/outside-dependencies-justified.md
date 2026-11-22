@@ -9,3 +9,6 @@
   ]
 }
 ```
+
+- **What must hold:** Every direct dependency, tools included, has a record that names the native way it was weighed against and why that way was not enough.
+- **Source:** Ours: a written reason for every outside dependency.

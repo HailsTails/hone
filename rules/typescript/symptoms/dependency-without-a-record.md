@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Dependencies and versions",
   "seen": "A direct dependency, tools included, with no record of the native way weighed.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the missing record",
+  "seenBy": [
+    "files"
+  ],
+  "reports": "seen",
   "recipes": [
     "dependency-record"
   ],

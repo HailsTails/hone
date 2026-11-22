@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Claimed or loose types",
   "seen": "`as T` other than `as const`, `<T>x`, `x!` or `x!:`, including `as unknown` and any cast whose type holds `any`.",
   "mayIndicate": [
     {
@@ -31,6 +32,10 @@
     }
   ],
   "breachUsuallySits": "in the declaration: an input too wide, a generic not bounded, a missing parse",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen-to-breach",
   "recipes": [
     "fix-the-declaration-not-the-value",
     "assert-to-narrow",
@@ -45,3 +50,8 @@
   ]
 }
 ```
+
+"this feels like its hiding a problem with out modelling"
+
+- **The breach a check could name:** the declaration, by types.
+- **To name the breach, a check needs:** types.

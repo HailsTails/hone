@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Effects and state",
   "seen": "Assigning to or deleting a parameter's field, or calling an in-place method (`push`, `sort`, `splice`) on a parameter.",
   "mayIndicate": [
     {
@@ -14,9 +15,16 @@
     }
   ],
   "breachUsuallySits": "in the unit",
+  "seenBy": [
+    "syntax",
+    "types"
+  ],
+  "reports": "seen",
   "recipes": [
     "copy-never-write-in"
   ],
   "correctUses": []
 }
 ```
+
+- **How it is seen:** types for in-place methods.

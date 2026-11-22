@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "The outside world reached directly",
   "seen": "`process.env`, `process.argv`, `process.exit`, `process.on`, `console.*` or `globalThis` read outside an adapter.",
   "mayIndicate": [
     {
@@ -30,6 +31,10 @@
     }
   ],
   "breachUsuallySits": "at a missing port, or at an adapter not built at the entry point",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "world-values-through-a-port",
     "adapter-per-outside-party",
@@ -44,3 +49,5 @@
   ]
 }
 ```
+
+"Process env reader is just an external world being wrapped."

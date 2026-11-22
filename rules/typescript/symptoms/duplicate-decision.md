@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Names, prose and files",
   "seen": "The same decision written in two or more places.",
   "mayIndicate": [
     {
@@ -22,6 +23,9 @@
     }
   ],
   "breachUsuallySits": "where the decision's home should be; a clone only surfaces a candidate",
+  "seenBy": [
+    "person"
+  ],
   "recipes": [
     "entity-module",
     "screaming-folders"
@@ -29,3 +33,5 @@
   "correctUses": []
 }
 ```
+
+- **How it is seen:** clone tools surface candidates.

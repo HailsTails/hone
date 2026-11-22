@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "An `if` inside another `if`, or an `else` after a branch that always exits.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the unit's questions",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "guard-clauses"
   ],

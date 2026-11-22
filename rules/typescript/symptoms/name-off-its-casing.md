@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Names, prose and files",
   "seen": "An identifier or file name outside the adopter's casing convention.",
   "mayIndicate": [
     {
@@ -14,6 +15,11 @@
     }
   ],
   "breachUsuallySits": "in the name",
+  "seenBy": [
+    "syntax",
+    "files"
+  ],
+  "reports": "seen",
   "recipes": [],
   "correctUses": [
     {

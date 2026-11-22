@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Effects and state",
   "seen": "`for`, `for…of`, `for…in`, `for await`, `while` or `do`.",
   "mayIndicate": [
     {
@@ -30,6 +31,10 @@
     }
   ],
   "breachUsuallySits": "in the unit",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "functional-iteration"
   ],

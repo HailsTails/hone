@@ -10,3 +10,5 @@
   ]
 }
 ```
+
+One setting, the strictest, for every unit. None weakens it.

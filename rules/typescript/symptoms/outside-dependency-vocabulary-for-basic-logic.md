@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Names, prose and files",
   "seen": "An import of a utility or functional outside dependency (lodash, fp-ts) for branching, matching, transforming or results.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the dependency",
+  "seenBy": [
+    "graph"
+  ],
+  "reports": "seen",
   "recipes": [],
   "correctUses": []
 }

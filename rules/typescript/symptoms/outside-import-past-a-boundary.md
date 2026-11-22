@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "The outside world reached directly",
   "seen": "An import, `import()` or `require` of an outside dependency or runtime module (`node:*`) in a file with no boundary record.",
   "mayIndicate": [
     {
@@ -25,6 +26,10 @@
     }
   ],
   "breachUsuallySits": "at a missing adapter and port",
+  "seenBy": [
+    "graph"
+  ],
+  "reports": "seen",
   "recipes": [
     "adapter-per-outside-party",
     "port-in-the-domain"

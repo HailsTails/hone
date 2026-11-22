@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Claimed or loose types",
   "seen": "A project whose resolved compiler options leave a strict flag off.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the base config or the project that overrides it",
+  "seenBy": [
+    "files"
+  ],
+  "reports": "seen",
   "recipes": [
     "shared-strict-base-config"
   ],

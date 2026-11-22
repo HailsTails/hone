@@ -19,10 +19,8 @@ import type {
   Pointed,
   Principle,
   Recipe,
-  RecipeReason,
   RecordKind,
   Rule,
-  Standing,
   Symptom,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -148,148 +146,9 @@ const foldersUnder = (request: { readonly table: Readonly<Record<string, string>
     ),
   ].sort();
 
-type PageCase = { readonly title: string; readonly standing: Standing };
-
-type PageReason = { readonly title: string; readonly reason: RecipeReason };
-
-const CASE_ROW = /^\| (.+?) \| .+? \| .* \|$/;
-
-const NOT_A_CASE_TITLE = new Set(["Case", "---"]);
-
-type CaseReading = { readonly standing: Standing; readonly within: "cases" | "outside"; readonly cases: readonly PageCase[] };
-
-const caseReadingAfter = (reading: CaseReading, line: string): CaseReading => {
-  if (reading.within === "outside" || line.startsWith("## Outside the cases")) {
-    return { ...reading, within: "outside" };
-  }
-  if (line.startsWith("### Proposed cases")) {
-    return { ...reading, standing: "proposed" };
-  }
-  const title = CASE_ROW.exec(line)?.[1];
-  return title === undefined || NOT_A_CASE_TITLE.has(title) ? reading : { ...reading, cases: [...reading.cases, { title, standing: reading.standing }] };
-};
-
-const casesOnCasesPage = (request: { readonly text: string }): readonly PageCase[] =>
-  request.text.split("\n").reduce<CaseReading>(caseReadingAfter, { standing: "accepted", within: "cases", cases: [] }).cases;
-
-const INDICATION_LINE = /^- \*\*May indicate:\*\* (.+)$/;
-
-const TEST_QUALIFIER = "In a test: ";
-
-const SITUATION_SEPARATOR = ": ";
-
-const caseSpellingsBefore = (request: { readonly indications: string }): readonly string[] =>
-  request.indications
-    .split(" → ")
-    .slice(0, -1)
-    .map((before) => before.split(/\. |; /).at(-1) ?? before)
-    .map((spelling) => (spelling.startsWith(TEST_QUALIFIER) ? spelling.slice(TEST_QUALIFIER.length) : spelling))
-    .map((spelling) => spelling.split(SITUATION_SEPARATOR)[0] ?? spelling);
-
-const pageSpellingsOf = (request: { readonly cases: readonly PageCase[] }): readonly string[] =>
-  request.cases
-    .map((entry) => (entry.standing === "proposed" ? `${entry.title} (proposed)` : entry.title))
-    .toSorted((left, right) => right.length - left.length);
-
-const unlistedRestOf = (request: { readonly rest: string; readonly spellings: readonly string[] }): string => {
-  if (request.rest === "") {
-    return "";
-  }
-  const known = request.spellings.find((spelling) => request.rest === spelling || request.rest.startsWith(`${spelling}, `));
-  return known === undefined ? request.rest : unlistedRestOf({ ...request, rest: request.rest.slice(known.length).replace(/^, /, "") });
-};
-
-const unlistedCaseNamesOn = (request: { readonly symptomsPage: string; readonly cases: readonly PageCase[] }): readonly string[] => {
-  const spellings = pageSpellingsOf(request);
-  return request.symptomsPage
-    .split("\n")
-    .flatMap((line) => {
-      const indications = INDICATION_LINE.exec(line)?.[1];
-      return indications === undefined ? [] : caseSpellingsBefore({ indications });
-    })
-    .filter((spelling) => unlistedRestOf({ rest: spelling, spellings }) !== "");
-};
-
-const SERVED_LINE = /^- \*\*Cases served:\*\* (.+)\.$/;
-
-const WOULD_SERVE_LINE = /^- \*\*Case it would serve:\*\* \[(.+?)\]/;
-
-const servedSpellingsOn = (request: { readonly line: string }): readonly string[] => {
-  const served = SERVED_LINE.exec(request.line)?.[1];
-  const wouldServe = WOULD_SERVE_LINE.exec(request.line)?.[1];
-  return [...(served === undefined ? [] : served.split("; ")), ...(wouldServe === undefined ? [] : [wouldServe])];
-};
-
-const unservedCaseNamesOn = (request: { readonly rulesPage: string; readonly cases: readonly PageCase[] }): readonly string[] => {
-  const titles = request.cases.map((entry) => entry.title);
-  return request.rulesPage
-    .split("\n")
-    .flatMap((line) => servedSpellingsOn({ line }))
-    .filter((spelling) => !titles.includes(spelling));
-};
-
-const RECIPE_HEADING = /^#{3,4} (.+)$/;
-
-const REASON_LINE = /^- \*\*Chosen because( \(proposed\))?:\*\* (.+)$/;
-
-type ReasonReading = { readonly title: string | undefined; readonly reasons: readonly PageReason[] };
-
-const reasonReadingAfter = (reading: ReasonReading, line: string): ReasonReading => {
-  const heading = RECIPE_HEADING.exec(line)?.[1];
-  if (heading !== undefined) {
-    return { ...reading, title: heading.trim() };
-  }
-  const reason = REASON_LINE.exec(line);
-  const text = reason?.[2];
-  if (reading.title === undefined || reason === null || text === undefined) {
-    return reading;
-  }
-  const standing: Standing = reason[1] === undefined ? "accepted" : "proposed";
-  return { title: undefined, reasons: [...reading.reasons, { title: reading.title, reason: { text, standing } }] };
-};
-
-const recipeReasonsOnPage = (request: { readonly text: string }): readonly PageReason[] =>
-  request.text.split("\n").reduce<ReasonReading>(reasonReadingAfter, { title: undefined, reasons: [] }).reasons;
-
-const reasonFitOf = (request: { readonly recipe: Recipe; readonly page: readonly PageReason[] }): "fits" | "differs" => {
-  const onPage = request.page.find((entry) => entry.title === request.recipe.title);
-  return onPage !== undefined && onPage.reason.text === request.recipe.reason.text && onPage.reason.standing === request.recipe.reason.standing
-    ? "fits"
-    : "differs";
-};
-
 const proposedReasonsOf = (request: { readonly recipes: readonly Recipe[] }): readonly string[] =>
   request.recipes.filter((recipe) => recipe.reason.standing === "proposed").map((recipe) => recipe.name);
 
-const reasonMismatchesOf = (request: { readonly recipes: readonly Recipe[]; readonly page: readonly PageReason[] }): readonly string[] =>
-  request.recipes.filter((recipe) => reasonFitOf({ recipe, page: request.page }) === "differs").map((recipe) => recipe.name);
-
-type ProseLink = { readonly sentence: string; readonly cases: readonly string[] };
-
-const RULE_HEADING = /^### (.+)$/;
-
-const CASE_SENTENCE = " a case";
-
-const ruleTitlesOn = (request: { readonly pages: readonly string[] }): readonly string[] =>
-  request.pages.flatMap((page) => page.split("\n").flatMap((line) => RULE_HEADING.exec(line)?.slice(1, 2) ?? []));
-
-const lineKindOf = (request: { readonly line: string }): "prose" | "other" => (/^[A-Za-z"]/.test(request.line) ? "prose" : "other");
-
-const SENTENCE_BREAK = /(?<=\.) (?!That is a case\.)/;
-
-const sentencesOf = (request: { readonly paragraph: string }): readonly string[] => request.paragraph.split(SENTENCE_BREAK);
-
-const unlinkedCaseSentencesOn = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly string[] => {
-  const titles = ruleTitlesOn(request);
-  return request.pages
-    .flatMap((page) => page.split("\n").filter((line) => lineKindOf({ line }) === "prose"))
-    .flatMap((paragraph) => sentencesOf({ paragraph }))
-    .filter((sentence) => sentence.includes(CASE_SENTENCE) && titles.some((title) => sentence.includes(title)))
-    .filter((sentence) => !request.links.some((link) => link.sentence === sentence));
-};
-
-const missingLinkSentencesOn = (request: { readonly pages: readonly string[]; readonly links: readonly ProseLink[] }): readonly string[] =>
-  request.links.filter((link) => !request.pages.some((page) => page.includes(link.sentence))).map((link) => link.sentence);
 
 type UnowedPointer = { readonly symptom: string; readonly case: string; readonly pointer: string };
 
@@ -360,14 +219,6 @@ const NOTES_OF_SYMPTOMS_WITH_A_CORRECT_USE = [
   "type-derived-from-code: Type derived from code. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; names something → One word everywhere. The breach usually sits in the producer, which has no named type. Recipe: Named, exported type. Correct use: an authorised location in the adapter for an outside dependency that gives no named type (today: authorised-location). Known debt: debt (today: file-carve-out). Read rules/typescript/symptoms.md#type-derived-from-code",
 ];
 
-const CASES_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rules", "cases.md"] }) });
-
-const SYMPTOMS_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rules", "typescript", "symptoms.md"] }) });
-
-const RULES_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rules", "rules.md"] }) });
-
-const RECIPES_PAGE = FILE_TEXT.read({ path: PATH.join({ segments: [REPO_ROOT, "rules", "typescript", "recipes.md"] }) });
-
 const RECIPES_WITH_A_PROPOSED_REASON = [
   "bounded-context-generic",
   "composition-root",
@@ -424,26 +275,6 @@ const OUTSIDE_ADDRESSES = [
   { address: "untyped-value#implicit-any-let", clause: "CD-1#implicit-any-let" },
   { address: "work-inside-a-condition#else-after-an-exit", clause: "CD-42#useless-else" },
   { address: "write-into-a-parameter#parameter-mutation", clause: "CD-44#parameter-mutation" },
-];
-
-const PROSE_LINKS: readonly ProseLink[] = [
-  {
-    sentence: "Building every real implementation in one place at start-up is a case: Doer or orchestrator plus Ports declared inside give it.",
-    cases: ["Builds the real implementations"],
-  },
-  {
-    sentence: "The clock, random values, new ids and outside ordering are a case: the principle plus Ports declared inside give it.",
-    cases: ["Needs the current time, a random value, a new id or an outside ordering"],
-  },
-  {
-    sentence:
-      "The principle, now covering data and failures, plus One reason per module, gives one adapter per outside party that maps both ways, so Reads data from outside (request, file, environment, stored row, response) and Sends data out of the program are each a case that owes One reason per module.",
-    cases: ["Reads data from outside (request, file, environment, stored row, response)", "Sends data out of the program"],
-  },
-  {
-    sentence: "A case under [Outside dependencies justified](rules.md#outside-dependencies-justified).",
-    cases: ["An adopter is not handed our risk"],
-  },
 ];
 
 describe("the catalogue guards over written-out pages and catalogues, so each can fail", () => {
@@ -517,32 +348,9 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
     write: vi.fn<FileTextPort["write"]>(),
   };
 
-  const PAGE_CASES: readonly PageCase[] = [
-    { title: "Makes a new value from what it has", standing: "accepted" },
-    { title: "Causes an effect (writes, logs, sends, exits)", standing: "accepted" },
-    { title: "Ships code for others", standing: "proposed" },
-  ];
-
-  const OWES_RULES_PAGE =
-    "# Rules\n\n## One place decides\n\n### Doer or orchestrator\n\n- **What must hold:** An orchestrator only calls.\n- **Cases served:** Makes a new value from what it has.\n\nBuilding every real implementation in one place at start-up is a case: Doer or orchestrator plus Ports declared inside give it.\n";
-
   const ONE_PLACE: Principle = { name: "one-place-decides", title: "One place decides" };
 
   const DOER: Rule = { name: "doer-or-orchestrator", title: "Doer or orchestrator", principle: ONE_PLACE, standing: "accepted" };
-
-  const STUB_WITH_VIFN: Recipe = {
-    name: "stub-with-vifn",
-    title: "Stub with vi.fn",
-    standing: "accepted",
-    reason: { text: '"Stubs return written-out values."', standing: "accepted" },
-  };
-
-  const COMPOSITION_ROOT: Recipe = {
-    name: "composition-root",
-    title: "Composition root",
-    standing: "accepted",
-    reason: { text: '"One place builds."', standing: "proposed" },
-  };
 
   it("names each clause a discipline defines that the catalogue lacks, and each catalogued clause no discipline defines", () => {
     expect(
@@ -606,25 +414,6 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
     ).toEqual(["causes", "gives-a-value-its-type-declares-it"]);
   });
 
-  it("names each spelling before an arrow on the symptoms page that is not a case on the cases page", () => {
-    expect(
-      unlistedCaseNamesOn({
-        symptomsPage:
-          "- **May indicate:** Makes a new value, Causes an effect (writes, logs, sends, exits) → Ports declared inside. Causes an effect → Written-out answers; Makes a new value from what it has (proposed) → One place decides.\n",
-        cases: PAGE_CASES,
-      }),
-    ).toEqual(["Makes a new value, Causes an effect (writes, logs, sends, exits)", "Causes an effect", "Makes a new value from what it has (proposed)"]);
-  });
-
-  it("names each served case on the rules page spelled otherwise than the cases page spells it", () => {
-    expect(
-      unservedCaseNamesOn({
-        rulesPage: "- **Cases served:** Makes a new value; Causes an effect (writes, logs, sends, exits).\n- **Case it would serve:** [Ships code](cases.md#proposed-cases) (proposed).\n",
-        cases: PAGE_CASES,
-      }),
-    ).toEqual(["Makes a new value", "Ships code"]);
-  });
-
   it("names a pointer of an indication whose case does not owe it", () => {
     expect(
       unowedPointersOf({
@@ -646,32 +435,6 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
         },
       }),
     ).toEqual([{ symptom: "wide-port", case: "builds-the-real-implementations", pointer: "Doer or orchestrator" }]);
-  });
-
-  it("names a sentence that makes a case of rules that no prose link lists, and a prose link whose sentence no page holds", () => {
-    expect({
-      unlinked: unlinkedCaseSentencesOn({ pages: [OWES_RULES_PAGE], links: [] }),
-      missing: missingLinkSentencesOn({ pages: [OWES_RULES_PAGE], links: [{ sentence: "Guard first gives it.", cases: ["Builds the real implementations"] }] }),
-    }).toEqual({
-      unlinked: ["Building every real implementation in one place at start-up is a case: Doer or orchestrator plus Ports declared inside give it."],
-      missing: ["Guard first gives it."],
-    });
-  });
-
-  it("names a recipe whose reason is presented as settled where the page proposes it, one whose words differ, and one the page has no reason for", () => {
-    expect(
-      reasonMismatchesOf({
-        recipes: [
-          { ...COMPOSITION_ROOT, reason: { text: '"One place builds."', standing: "accepted" } },
-          { ...STUB_WITH_VIFN, reason: { text: '"Stubs are simple."', standing: "accepted" } },
-          { ...STUB_WITH_VIFN, name: "guard-clauses", title: "Guard clauses" },
-        ],
-        page: [
-          { title: "Stub with vi.fn", reason: { text: '"Stubs return written-out values."', standing: "accepted" } },
-          { title: "Composition root", reason: { text: '"One place builds."', standing: "proposed" } },
-        ],
-      }),
-    ).toEqual(["composition-root", "stub-with-vifn", "guard-clauses"]);
   });
 });
 
@@ -734,20 +497,6 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     expect(caseNamesOffTheirTitles({ cases: reading.value.catalogue.cases })).toEqual([]);
   });
 
-  it("names on rules/typescript/symptoms.md only cases on rules/cases.md, spelled as that page spells them", () => {
-    assert(CASES_PAGE.outcome === "ok");
-    assert(SYMPTOMS_PAGE.outcome === "ok");
-
-    expect(unlistedCaseNamesOn({ symptomsPage: SYMPTOMS_PAGE.value, cases: casesOnCasesPage({ text: CASES_PAGE.value }) })).toEqual([]);
-  });
-
-  it("names in rules/rules.md's cases served only cases on rules/cases.md, spelled as that page spells them", () => {
-    assert(CASES_PAGE.outcome === "ok");
-    assert(RULES_PAGE.outcome === "ok");
-
-    expect(unservedCaseNamesOn({ rulesPage: RULES_PAGE.value, cases: casesOnCasesPage({ text: CASES_PAGE.value }) })).toEqual([]);
-  });
-
   it("points every indication only at what its case owes", () => {
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
@@ -755,22 +504,10 @@ describe("rules/typescript/symptoms.json, read from this repository through the 
     expect(unowedPointersOf({ catalogue: reading.value.catalogue })).toEqual([]);
   });
 
-  it("lists every sentence on rules/rules.md that makes a case of rules, and finds each listed sentence on its page", () => {
-    assert(CASES_PAGE.outcome === "ok");
-    assert(RULES_PAGE.outcome === "ok");
-
-    expect({
-      unlinked: unlinkedCaseSentencesOn({ pages: [RULES_PAGE.value], links: PROSE_LINKS }),
-      missing: missingLinkSentencesOn({ pages: [RULES_PAGE.value, CASES_PAGE.value], links: PROSE_LINKS }),
-    }).toEqual({ unlinked: [], missing: [] });
-  });
-
-  it("carries each recipe's reason in rules/typescript/recipes.md's words, proposed where the page proposes it", () => {
+  it("holds the recipes whose reason is proposed, in catalogue order", () => {
     assert(reading.outcome === "ok");
     assert(reading.value.held === "catalogue");
-    assert(RECIPES_PAGE.outcome === "ok");
 
-    expect(reasonMismatchesOf({ recipes: reading.value.catalogue.recipes, page: recipeReasonsOnPage({ text: RECIPES_PAGE.value }) })).toEqual([]);
     expect(proposedReasonsOf({ recipes: reading.value.catalogue.recipes })).toEqual(RECIPES_WITH_A_PROPOSED_REASON);
   });
 

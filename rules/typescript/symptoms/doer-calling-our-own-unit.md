@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Unit shape",
   "seen": "A function with logic that imports and calls a business-logic unit of ours that is not a port.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the unit, which mixes two roles",
+  "seenBy": [
+    "graph"
+  ],
+  "reports": "seen",
   "recipes": [
     "composed-orchestrator",
     "ports-in-the-argument"

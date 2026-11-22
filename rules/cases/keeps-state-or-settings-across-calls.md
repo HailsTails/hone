@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+Settings are passed in when the unit is built. State that changes between calls lives only in an adapter, behind a port.

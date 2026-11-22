@@ -19,3 +19,5 @@
   ]
 }
 ```
+
+One decision. It calls no other unit of business logic; it may call ports passed in to it. A second question, a mode picked by a true-or-false argument, or a mix of results is a second unit.

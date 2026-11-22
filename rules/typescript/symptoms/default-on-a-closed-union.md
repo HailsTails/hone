@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Claimed or loose types",
   "seen": "`default:` in a `switch` over a closed union.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the switch",
+  "seenBy": [
+    "types"
+  ],
+  "reports": "seen",
   "recipes": [
     "tagged-union-and-exhaustive-switch"
   ],

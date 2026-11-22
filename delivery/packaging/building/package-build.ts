@@ -15,6 +15,7 @@ import {
   versionMentionsOf,
 } from "./package-guards.ts";
 import { lockedDependenciesOf } from "../published-manifest/pnpm-lock.ts";
+import { cataloguePagesOf } from "../catalogue-pages/catalogue-pages.ts";
 import { type DependencyRanges, dependencyRangesOf, packageVersionOf, peerKindsOf, peerNamesOf, publishManifestOf } from "../published-manifest/published-manifest.ts";
 import { packageFileStemOf, TOOL_IDENTITY } from "../../../src/domain/rule-set/tool-identity.ts";
 import {
@@ -312,11 +313,16 @@ const contentFilesOf = (request: {
   if (copied.outcome === "failed") {
     return copied;
   }
+  const pages = cataloguePagesOf({ files: copied.value });
+  if (pages.outcome === "failed") {
+    return failedWith({ label: "render the catalogue pages", detail: pages.error });
+  }
   return {
     outcome: "ok",
     value: [
       ...request.bundle.outputs.map(({ path, text }) => ({ path, text })),
       ...copied.value,
+      ...pages.value,
       ...request.plan.pieces,
     ],
   };

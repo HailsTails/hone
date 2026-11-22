@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Tests",
   "seen": "A test that builds or picks a value: array methods, `find`, `Math.*`, `Object.assign`, `Object.fromEntries`, `Array.from` or a spread over a list. Calls on the unit's own API are not included.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the test, or in logic no unit owns",
+  "seenBy": [
+    "syntax"
+  ],
+  "reports": "seen",
   "recipes": [
     "whole-written-out-expectation",
     "iteach-over-typed-rows"

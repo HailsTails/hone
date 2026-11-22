@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Text and schemas past their reader",
   "seen": "A schema, a `.parse` call or a `z.infer` type outside the producer's adapter, or the same value parsed twice.",
   "mayIndicate": [
     {
@@ -22,6 +23,10 @@
     }
   ],
   "breachUsuallySits": "in the adapter, which hands the wire type inward instead of mapping it",
+  "seenBy": [
+    "graph"
+  ],
+  "reports": "seen",
   "recipes": [
     "zod-at-the-producers-adapter"
   ],

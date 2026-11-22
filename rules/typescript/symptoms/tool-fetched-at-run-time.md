@@ -2,6 +2,7 @@
 
 ```json
 {
+  "group": "Dependencies and versions",
   "seen": "`npx`, `dlx`, `bunx` or a download-and-run in a script, CI step or doc.",
   "mayIndicate": [
     {
@@ -14,6 +15,10 @@
     }
   ],
   "breachUsuallySits": "in the script",
+  "seenBy": [
+    "files"
+  ],
+  "reports": "seen",
   "recipes": [
     "repo-scripts-only"
   ],

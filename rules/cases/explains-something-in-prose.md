@@ -16,3 +16,5 @@
   ]
 }
 ```
+
+The meaning goes in a name or a type. The only annotations are a pointer to a tracked issue and a tool directive.

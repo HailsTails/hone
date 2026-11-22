@@ -7,3 +7,6 @@
   ]
 }
 ```
+
+- **Misses:** an `if` nested with no `else`.
+- **Settings traced to:** none.
