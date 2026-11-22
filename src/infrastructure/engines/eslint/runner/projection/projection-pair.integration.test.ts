@@ -84,14 +84,14 @@ const versionTwoText = (): string => {
   const checks = projectedChecksOf({
     checks: catalogue().checks,
     bindings: [
-        bindingOf({ clause: "CD-2#non-null-assertions" }),
-        bindingOf({ clause: "CD-6#naming-convention" }),
-        bindingOf({ clause: "CD-14#class-syntax" }),
-        bindingOf({ clause: "CD-14#static-only-class" }),
-        bindingOf({ clause: "CD-27#focused-tests" }),
-        bindingOf({ clause: "CD-27#skipped-tests" }),
-        bindingOf({ clause: "CD-40#parameter-count" }),
-        bindingOf({ clause: "CD-44#parameter-reassignment" }),
+      bindingOf({ clause: "CD-2#non-null-assertions" }),
+      bindingOf({ clause: "CD-6#naming-convention" }),
+      bindingOf({ clause: "CD-14#class-syntax" }),
+      bindingOf({ clause: "CD-14#static-only-class" }),
+      bindingOf({ clause: "CD-27#focused-tests" }),
+      bindingOf({ clause: "CD-27#skipped-tests" }),
+      bindingOf({ clause: "CD-40#parameter-count" }),
+      bindingOf({ clause: "CD-44#parameter-reassignment" }),
     ],
   });
   assert(checks.outcome === "ok", "the version 2 checks project");
