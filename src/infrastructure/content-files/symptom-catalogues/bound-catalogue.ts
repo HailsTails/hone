@@ -1,6 +1,7 @@
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { BoundCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { holdingBoundTo } from "../../../domain/language-layer/catalogue-binding.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
@@ -31,4 +32,9 @@ export const readBoundCatalogue = (source: BoundCatalogueSource): Result<Catalog
   return bound.outcome === "failed"
     ? { outcome: "failed", error: { kind: "file-malformed", path: source.path.join({ segments: [source.ruleSetRoot, ...SYMPTOM_CATALOGUE_SEGMENTS] }), detail: bound.error } }
     : bound;
+};
+
+export const createBoundCatalogueOf = (options: { readonly directory: DirectoryPort }): BoundCatalogueOf => {
+  const boundCatalogueOf: BoundCatalogueOf = (request) => readBoundCatalogue({ ...request, directory: options.directory });
+  return boundCatalogueOf;
 };

@@ -2,7 +2,6 @@ import type { CheckArguments, CheckLocations } from "../application/ports/comman
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
-import { boundCatalogueOf } from "../application/run/bound-catalogue.ts";
 import type { VersionTwoRun } from "../application/run/version-two-run.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import { runVerdictOf } from "../domain/report/report-sections.ts";
@@ -103,7 +102,7 @@ export const guidedCheckRunFor = async (request: GuidedCheckRequest): Promise<Re
   return { outcome: "ok", value: { ...run.value, guide } };
 };
 
-export const GUIDED_CHECK: ToolCommand<CheckArguments<ReportOutput>, GuidedCheckRun, VersionOneToolPorts & Pick<ToolPorts, "symptomCatalogueOf" | "engineBindingsOf">> = {
+export const GUIDED_CHECK: ToolCommand<CheckArguments<ReportOutput>, GuidedCheckRun, VersionOneToolPorts & Pick<ToolPorts, "boundCatalogueOf">> = {
   parse: parseVersionOneCheck,
   run: async ({ command, ports, parsed }) =>
     loadResultOf({
@@ -111,7 +110,7 @@ export const GUIDED_CHECK: ToolCommand<CheckArguments<ReportOutput>, GuidedCheck
         ports: { ...ports, moduleUrl: command.moduleUrl },
         arguments: parsed,
         checkRunAt,
-        symptomGuideIn: (locations) => symptomGuideIn({ ...locations, catalogueAt: (request) => boundCatalogueOf({ ...locations, ...request, symptomCatalogueOf: ports.symptomCatalogueOf, engineBindingsOf: ports.engineBindingsOf }) }),
+        symptomGuideIn: (locations) => symptomGuideIn({ ...locations, boundCatalogueOf: ports.boundCatalogueOf }),
       }),
     }),
   print: ({ produced }) => guidedCheckCommandOutcome({ result: { outcome: "ok", value: produced } }),

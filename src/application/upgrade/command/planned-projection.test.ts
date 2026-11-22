@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
-import type { EngineBindingsOf } from "../../ports/engine-bindings-repository.ts";
-import type { SymptomCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
+import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { plannedProjectionOf } from "./planned-projection.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
@@ -57,9 +56,7 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
   moduleUrl: "file:///install/src/hone.ts",
 };
 
-const NO_CATALOGUE: SymptomCatalogueOf = () => ({ read: () => ({ outcome: "ok", value: { held: "none" } }) });
-
-const NO_BINDINGS: EngineBindingsOf = () => ({ read: () => ({ outcome: "ok", value: new Map() }) });
+const NO_CATALOGUE: BoundCatalogueOf = () => ({ outcome: "ok", value: { held: "none" } });
 
 describe("plannedProjectionOf", () => {
   it("fails with the load failure itself when the tool's own symptom catalogue cannot be read", async () => {
@@ -70,8 +67,7 @@ describe("plannedProjectionOf", () => {
       installRoot: absoluteRootOf("/install"),
       directory: { list: notUsed, create: notUsed },
       recordsReader: { recordsReadingOf: notUsed },
-      symptomCatalogueOf: NO_CATALOGUE,
-      engineBindingsOf: NO_BINDINGS,
+      boundCatalogueOf: NO_CATALOGUE,
       settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
       settingsSourcesOf: notUsed,
     })({

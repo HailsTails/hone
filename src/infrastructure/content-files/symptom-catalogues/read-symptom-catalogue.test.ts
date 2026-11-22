@@ -3,7 +3,7 @@ import type { DirectoryPort } from "../../../application/ports/file-system/direc
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { Case, Engine, Principle, RecordKind, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { createPathPort } from "../../node/path-port.ts";
-import { createSymptomCatalogueOf, createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
+import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
@@ -158,19 +158,5 @@ describe("createSymptomCatalogueRepository", () => {
       error: { kind: "file-unreadable", path: NAMES_PATH, detail: "EACCES" },
     });
     expect(UNLISTED.list).not.toHaveBeenCalled();
-  });
-});
-
-describe("createSymptomCatalogueOf", () => {
-  it("reads through the directory it was given", () => {
-    const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-      read: vi.fn<FileTextPort["read"]>(),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    expect(createSymptomCatalogueOf({ directory: UNLISTED })({ fileText, path: PATH, ruleSetRoot: RULE_SET_ROOT }).read({})).toEqual({
-      outcome: "ok",
-      value: { held: "none" },
-    });
   });
 });

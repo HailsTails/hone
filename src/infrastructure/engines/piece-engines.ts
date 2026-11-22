@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { EngineBindingsOf, EngineBindingsRepository } from "../../application/ports/engine-bindings-repository.ts";
+import type { EngineBindingsRepository } from "../../application/ports/engine-bindings-repository.ts";
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
@@ -84,8 +84,3 @@ const readEngineBindings = (source: PieceSource): Result<EngineBindings, Version
 export const createEngineBindingsRepository = (options: PieceSource): EngineBindingsRepository => ({
   read: (_request) => readEngineBindings(options),
 });
-
-export const createEngineBindingsOf = (options: { readonly directory: DirectoryPort }): EngineBindingsOf => {
-  const bindingsOf: EngineBindingsOf = (request) => createEngineBindingsRepository({ ...request, directory: options.directory });
-  return bindingsOf;
-};

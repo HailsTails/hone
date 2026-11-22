@@ -3,7 +3,7 @@ import type { DirectoryPort } from "../../application/ports/file-system/director
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { createPathPort } from "../node/path-port.ts";
-import { createEngineBindingsOf, createEngineBindingsRepository } from "./piece-engines.ts";
+import { createEngineBindingsRepository } from "./piece-engines.ts";
 
 const INSTALL = absolutePathSchema.parse("/install");
 
@@ -136,24 +136,5 @@ describe("createEngineBindingsRepository", () => {
       outcome: "failed",
       error: { kind: "file-unreadable", path: "/install/src/infrastructure/engines/audit", detail: "EACCES" },
     });
-  });
-});
-
-describe("createEngineBindingsOf", () => {
-  it("reads through the directory it was built with", () => {
-    const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent"),
-      read: vi.fn<FileTextPort["read"]>(),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [] }),
-      create: vi.fn<DirectoryPort["create"]>(),
-    };
-    expect(createEngineBindingsOf({ directory })({ fileText, path: PATH, ruleSetRoot: INSTALL, installRoot: INSTALL }).read({})).toEqual({
-      outcome: "ok",
-      value: new Map(),
-    });
-    expect(directory.list).toHaveBeenCalledWith({ path: "/install/src/infrastructure/engines/audit" });
   });
 });

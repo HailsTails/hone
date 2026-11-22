@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import type { RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { type CatalogueAt, symptomGuideIn } from "./symptom-guide.ts";
+import { symptomGuideIn } from "./symptom-guide.ts";
+import type { BoundCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
@@ -42,7 +43,7 @@ const CATALOGUE: SymptomCatalogue = {
 
 describe("symptomGuideIn", () => {
   it("reads the installed catalogue and points at its page as the repository shows it", () => {
-    const catalogueAt = vi.fn<CatalogueAt>().mockReturnValue({ outcome: "ok", value: { held: "catalogue", catalogue: CATALOGUE } });
+    const boundCatalogueOf = vi.fn<BoundCatalogueOf>().mockReturnValue({ outcome: "ok", value: { held: "catalogue", catalogue: CATALOGUE } });
 
     expect(
       symptomGuideIn({
@@ -50,21 +51,21 @@ describe("symptomGuideIn", () => {
         fileText: FILE_TEXT,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
-        catalogueAt,
+        boundCatalogueOf,
       }),
     ).toEqual({ guide: "catalogue", catalogue: CATALOGUE, page: "node_modules/@hailstails/hone/rules/typescript/symptoms.md" });
   });
 
-  it("asks for the catalogue of the install root", () => {
-    const catalogueAt = vi.fn<CatalogueAt>().mockReturnValue({ outcome: "ok", value: { held: "none" } });
+  it("asks for the catalogue bound under the install root, through the port it is given", () => {
+    const boundCatalogueOf = vi.fn<BoundCatalogueOf>().mockReturnValue({ outcome: "ok", value: { held: "none" } });
 
-    symptomGuideIn({ path: POSIX, fileText: FILE_TEXT, repoRoot: REPO_ROOT, installRoot: INSTALL_ROOT, catalogueAt });
+    symptomGuideIn({ path: POSIX, fileText: FILE_TEXT, repoRoot: REPO_ROOT, installRoot: INSTALL_ROOT, boundCatalogueOf });
 
-    expect(catalogueAt).toHaveBeenCalledExactlyOnceWith({ ruleSetRoot: "/repo/node_modules/@hailstails/hone" });
+    expect(boundCatalogueOf).toHaveBeenCalledExactlyOnceWith({ fileText: FILE_TEXT, path: POSIX, ruleSetRoot: "/repo/node_modules/@hailstails/hone", installRoot: "/repo/node_modules/@hailstails/hone" });
   });
 
   it("gives no guide when the install holds no catalogue", () => {
-    const catalogueAt = vi.fn<CatalogueAt>().mockReturnValue({ outcome: "ok", value: { held: "none" } });
+    const boundCatalogueOf = vi.fn<BoundCatalogueOf>().mockReturnValue({ outcome: "ok", value: { held: "none" } });
 
     expect(
       symptomGuideIn({
@@ -72,13 +73,13 @@ describe("symptomGuideIn", () => {
         fileText: FILE_TEXT,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
-        catalogueAt,
+        boundCatalogueOf,
       }),
     ).toEqual({ guide: "none" });
   });
 
   it("gives a guide that says why the catalogue was not read, naming it as the repository shows it", () => {
-    const catalogueAt = vi.fn<CatalogueAt>().mockReturnValue({
+    const boundCatalogueOf = vi.fn<BoundCatalogueOf>().mockReturnValue({
         outcome: "failed",
         error: { kind: "file-malformed", path: "/repo/node_modules/@hailstails/hone/rules/typescript/symptoms.json", detail: "Unexpected end" },
       });
@@ -89,13 +90,13 @@ describe("symptomGuideIn", () => {
         fileText: FILE_TEXT,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
-        catalogueAt,
+        boundCatalogueOf,
       }),
     ).toEqual({ guide: "unreadable", failure: "file-malformed node_modules/@hailstails/hone/rules/typescript/symptoms.json Unexpected end" });
   });
 
   it("gives a guide that says the catalogue could not be read from disk, naming it as the repository shows it", () => {
-    const catalogueAt = vi.fn<CatalogueAt>().mockReturnValue({
+    const boundCatalogueOf = vi.fn<BoundCatalogueOf>().mockReturnValue({
         outcome: "failed",
         error: { kind: "file-unreadable", path: "/repo/node_modules/@hailstails/hone/rules/typescript/symptoms.json", detail: "EACCES" },
       });
@@ -106,13 +107,13 @@ describe("symptomGuideIn", () => {
         fileText: FILE_TEXT,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
-        catalogueAt,
+        boundCatalogueOf,
       }),
     ).toEqual({ guide: "unreadable", failure: "file-unreadable node_modules/@hailstails/hone/rules/typescript/symptoms.json EACCES" });
   });
 
   it("gives a guide that names the catalogue's version when it is one this release does not read", () => {
-    const catalogueAt = vi.fn<CatalogueAt>().mockReturnValue({
+    const boundCatalogueOf = vi.fn<BoundCatalogueOf>().mockReturnValue({
         outcome: "failed",
         error: { kind: "unsupported-version", path: "/repo/node_modules/@hailstails/hone/rules/typescript/symptoms.json", found: 2 },
       });
@@ -123,7 +124,7 @@ describe("symptomGuideIn", () => {
         fileText: FILE_TEXT,
         repoRoot: REPO_ROOT,
         installRoot: INSTALL_ROOT,
-        catalogueAt,
+        boundCatalogueOf,
       }),
     ).toEqual({ guide: "unreadable", failure: "unsupported-version node_modules/@hailstails/hone/rules/typescript/symptoms.json 2" });
   });

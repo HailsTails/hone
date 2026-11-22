@@ -1,7 +1,7 @@
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { SymptomCatalogueOf, SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
+import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import type { ContentHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
@@ -36,8 +36,3 @@ const readSymptomCatalogue = (request: CatalogueSource): Result<ContentHolding, 
 export const createSymptomCatalogueRepository = (options: CatalogueSource): SymptomCatalogueRepository => ({
   read: (_request) => readSymptomCatalogue(options),
 });
-
-export const createSymptomCatalogueOf = (options: { readonly directory: DirectoryPort }): SymptomCatalogueOf => {
-  const catalogueOf: SymptomCatalogueOf = (request) => createSymptomCatalogueRepository({ ...request, directory: options.directory });
-  return catalogueOf;
-};
