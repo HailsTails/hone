@@ -529,7 +529,7 @@ describe("Vendor confinement over what this repository's own Hone source imports
       }),
       eslintPieceSources: expect.objectContaining({ "./src/infrastructure/engines/eslint/CD-14/cd14/cd14.eslint-plugin.ts": expect.any(String) }),
       testSources: expect.objectContaining({
-        "./src/composition/run-check.test.ts": expect.any(String),
+        "./src/application/run/check/run-check.test.ts": expect.any(String),
         "./src/infrastructure/node/file-system/file-system-port.test.ts": expect.any(String),
         "./src/infrastructure/node/process/execution-port.test.ts": expect.any(String),
         "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.test.ts": expect.any(String),

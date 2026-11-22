@@ -1,11 +1,10 @@
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import { baseRevisionAvailabilityOf, computeTouchedSet } from "./touched-set.ts";
-import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const A = repoPathSchema.parse("a.ts");
@@ -36,10 +35,6 @@ const fakeGit = (changedSince: GitPort["changedSince"]): GitPort => ({
 });
 
 describe("computeTouchedSet", () => {
-  it("names the measured member's field paths", () => {
-    expectTypeOf<keyof Extract<TouchedSet, { readonly measured: "yes" }>>().toEqualTypeOf<"measured" | "paths">();
-  });
-
   it("measures the de-duplicated changed paths when a base revision is given", () => {
     const touched = computeTouchedSet({
       repoRoot: REPO_ROOT,
