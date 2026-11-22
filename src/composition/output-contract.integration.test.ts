@@ -1247,6 +1247,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
         },
       ],
       findings: 3,
+      mentions: [{ file: repoPathOf("package.json"), line: 4 }],
     },
   }).text;
 
@@ -1255,6 +1256,12 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
     const words = text.split(" ");
     if (text.startsWith("upgrade: same findings")) {
       return { count: "3" };
+    }
+    if (text.startsWith("mention ")) {
+      return {
+        file: text.slice(text.indexOf(" ") + 1, text.lastIndexOf(":")),
+        line: text.slice(text.lastIndexOf(":") + 1),
+      };
     }
     if (text.startsWith("carried ")) {
       return { symptom: words[1] ?? "", file: words[2] ?? "" };

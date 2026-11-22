@@ -610,6 +610,26 @@ describe("hone upgrade over a real repository, through the real ports", () => {
     });
   });
 
+  it("names each line of a tracked script that still mentions a version 1 file, after the records and before the proof line", async () => {
+    const repo = await versionOneRepositoryOf({
+      selection: SELECTION,
+      exceptions: EXCEPTIONS,
+      sources: {
+        "kept.ts": KEPT_CLASS,
+        "check.sh": "set -e\ncat disciplines.json\nrm -r discipline-exceptions\n",
+      },
+    });
+    const upgraded = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      modules: DEFAULT_MODULES,
+    });
+    expect(upgraded.writes[0]?.[0]?.text).toContain(
+      "authored-class-or-this#class-keyword\nmention src/check.sh:2\nmention src/check.sh:3\nupgrade: same findings (0), same verdict\n",
+    );
+  });
+
   it("removes a split records folder whose kind folder was emptied by an earlier prune", async () => {
     const repo = await versionOneRepository({ source: KEPT_CLASS, exceptions: EXCEPTIONS });
     await runCommandIn({

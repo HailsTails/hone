@@ -12,8 +12,8 @@ import type {
 } from "../../application/ports/records/version-one-reading.ts";
 import type { LoadFailureDetail } from "../../application/ports/report/load-failure-detail.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
-import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
 import type { ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
+import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-mentions.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import { runProject } from "../../application/projection/run-project.ts";
@@ -25,6 +25,7 @@ import {
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
 import { foundTreeCheckReachOf } from "../../application/upgrade/found-tree/found-tree-reach.ts";
+import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
 import {
   type UpgradeProofRequest,
   upgradeProof,
@@ -218,7 +219,7 @@ const proofRequestOf = (
 
 export const upgradeOf = async (
   request: UpgradeInput,
-): Promise<Result<ProofCarriedOver, UpgradeStop>> => {
+): Promise<Result<UpgradeCarriedOver, UpgradeStop>> => {
   const prepared = preparedOf(request);
   if (prepared.outcome === "failed") {
     return prepared;
@@ -226,5 +227,17 @@ export const upgradeOf = async (
   const carried = await upgradeProof(proofRequestOf({ ...request, prepared: prepared.value }));
   return carried.outcome === "failed"
     ? { outcome: "failed", error: { stopped: "refused", failure: carried.error } }
-    : carried;
+    : {
+        outcome: "ok",
+        value: {
+          ...carried.value,
+          mentions: versionOneMentionsOf({
+            tracked: prepared.value.trackedPaths,
+            excluded: prepared.value.read.reading.selection.exclude,
+            repoRoot: request.located.repoRoot,
+            fileText: request.command.fileText,
+            path: request.command.path,
+          }),
+        },
+      };
 };

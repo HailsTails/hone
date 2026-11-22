@@ -1,5 +1,5 @@
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
-import type { ProofCarriedOver } from "../../../application/ports/upgrade/proof-outcome.ts";
+import type { UpgradeCarriedOver } from "../../../application/ports/upgrade/upgrade-mentions.ts";
 import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { CommandOutcome } from "../../command-line/outcomes/command-outcome.ts";
@@ -29,7 +29,7 @@ const carriedLinesOf = (request: { readonly records: readonly RecordLine[] }): r
     .map(({ symptom, file }) => `carried ${symptom} ${file}`);
 
 export const upgradeSuccessOutcomeOf = (request: {
-  readonly carried: ProofCarriedOver;
+  readonly carried: UpgradeCarriedOver;
   readonly repoRoot: AbsolutePath;
   readonly path: Pick<PathPort, "relative">;
 }): CommandOutcome => {
@@ -44,6 +44,7 @@ export const upgradeSuccessOutcomeOf = (request: {
       ...removed.map((target) => `removed ${shownOf({ path, repoRoot, target })}`),
       ...carried.records.map((record) => recordLineOf({ record })),
       ...carriedLinesOf({ records: carried.records }),
+      ...carried.mentions.map(({ file, line }) => `mention ${file}:${line}`),
       `upgrade: same findings (${carried.findings}), same verdict`,
     ]
       .map((line) => `${line}\n`)

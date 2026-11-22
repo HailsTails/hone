@@ -47,11 +47,15 @@ describe("upgradeSuccessOutcomeOf", () => {
             },
           ],
           findings: 3,
+          mentions: [
+            { file: repoPathOf(".github/workflows/ci.yml"), line: 12 },
+            { file: repoPathOf("package.json"), line: 4 },
+          ],
         },
       }),
     ).toEqual({
       code: 0,
-      text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/loop-keyword.json\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions/cd-15.json\nremoved disciplines.json\nremoved discipline-exceptions\nfile-carve-out CD-15#loops src/a.ts -> debt loop-keyword#loops\nauthorised-location CD-15#loops src/b.ts -> authorised-location loop-keyword#loops\ncarried loop-keyword#loops src/b.ts\nupgrade: same findings (3), same verdict\n",
+      text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/loop-keyword.json\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions/cd-15.json\nremoved disciplines.json\nremoved discipline-exceptions\nfile-carve-out CD-15#loops src/a.ts -> debt loop-keyword#loops\nauthorised-location CD-15#loops src/b.ts -> authorised-location loop-keyword#loops\ncarried loop-keyword#loops src/b.ts\nmention .github/workflows/ci.yml:12\nmention package.json:4\nupgrade: same findings (3), same verdict\n",
     });
   });
 
@@ -66,6 +70,7 @@ describe("upgradeSuccessOutcomeOf", () => {
           removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
           records: [],
           findings: 0,
+          mentions: [],
         },
       }),
     ).toEqual({
