@@ -329,7 +329,6 @@ const loadedOutsideMechanisms = import.meta.glob(
     "!./delivery/install-proof/consumer-proof/**",
     "!./delivery/adopter-repositories/cd1-cascade/**",
     "!./delivery/adopter-repositories/cd1-exempted/**",
-    "!./src/infrastructure/command-line/documentation/walkthrough/**",
     "!./src/operations/prune-debt/prune-debt/**",
     "!./tests/required-entry.ts",
     "!./tests/confinement.ts",
@@ -441,7 +440,6 @@ const coreSources = import.meta.glob(
     "!./src/testing.ts",
     "!./src/infrastructure/engines/walker/**",
     "!./src/infrastructure/engines/eslint/*/**",
-    "!./src/infrastructure/command-line/documentation/walkthrough/**",
     "!./src/infrastructure/content-files/rule-sets/probe-rule-set/**",
     "!./src/infrastructure/content-files/rule-sets/team-rule-set/**",
     "!./src/operations/prune-debt/prune-debt/**",
@@ -540,7 +538,6 @@ const testSources = import.meta.glob(
     "!./node_modules/**",
     "!./artefacts/**",
     "!./delivery/install-proof/consumer-proof/**",
-    "!./src/infrastructure/command-line/documentation/walkthrough/**",
   ],
   { base: "../../../../../", query: "?raw", import: "default", eager: true },
 );
