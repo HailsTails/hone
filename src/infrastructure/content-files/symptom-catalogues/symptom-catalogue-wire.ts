@@ -25,7 +25,7 @@ import type {
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 
-const SUPPORTED_VERSION = 1;
+export const SUPPORTED_VERSION = 1;
 
 const NOT_A_CATALOGUE_NAME = "is not a lower-case hyphenated name";
 
@@ -35,15 +35,15 @@ const textSchema = z.string().min(1);
 
 const standingSchema = z.enum(["accepted", "proposed"]);
 
-const recordKindNameSchema = z.enum(["authorised-location", "deviation", "debt", "boundary-record", "dependency-record"]);
+export const recordKindNameSchema = z.enum(["authorised-location", "deviation", "debt", "boundary-record", "dependency-record"]);
 
 const pointedWireSchema = z.union([z.strictObject({ rule: catalogueNameSchema }), z.strictObject({ principle: catalogueNameSchema })]);
 
-const caseWireSchema = z.strictObject({ name: catalogueNameSchema, title: textSchema, standing: standingSchema, owes: z.array(pointedWireSchema).min(1) });
+export const caseWireSchema = z.strictObject({ name: catalogueNameSchema, title: textSchema, standing: standingSchema, owes: z.array(pointedWireSchema).min(1) });
 
 const correctUseWireSchema = z.strictObject({ situation: textSchema, kind: recordKindNameSchema, at: textSchema.optional() });
 
-const symptomWireSchema = z.strictObject({
+export const symptomWireSchema = z.strictObject({
   name: catalogueNameSchema,
   title: textSchema,
   seen: textSchema,
@@ -63,21 +63,21 @@ const sightWireSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("outside-the-cases") }),
 ]);
 
-const recordKindWireSchema = z.strictObject({
+export const recordKindWireSchema = z.strictObject({
   name: recordKindNameSchema,
   title: textSchema,
   phrase: textSchema,
   todaysFormat: z.enum(["authorised-location", "file-carve-out", "none-yet"]),
 });
 
-const checkWireSchema = z.strictObject({
+export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
   clause: clauseAddressSchema,
   engines: z.array(catalogueNameSchema).min(1),
 });
 
-const catalogueFileSchema = z.strictObject({
+export const catalogueFileSchema = z.strictObject({
   version: z.literal(SUPPORTED_VERSION),
   principles: z.array(z.strictObject({ name: catalogueNameSchema, title: textSchema })),
   rules: z.array(z.strictObject({ name: catalogueNameSchema, title: textSchema, principle: catalogueNameSchema, standing: standingSchema })),
@@ -98,7 +98,7 @@ const catalogueFileSchema = z.strictObject({
   namedBans: z.array(z.strictObject({ outsideDependency: textSchema })),
 });
 
-type CatalogueFile = z.infer<typeof catalogueFileSchema>;
+export type CatalogueFile = z.infer<typeof catalogueFileSchema>;
 
 type PrincipleWire = CatalogueFile["principles"][number];
 
@@ -481,6 +481,15 @@ const checkedCatalogueFileSchema = catalogueFileSchema.superRefine((file, contex
 });
 
 const refusalText = (request: { readonly faults: readonly string[] }): string => request.faults.map((fault) => `✖ ${fault}`).join("\n");
+
+export const symptomCatalogueFromFile = (request: { readonly file: CatalogueFile }): Result<SymptomCatalogue, string> => {
+  const repeats = repeatedNamesOf({ file: request.file });
+  if (repeats.length > 0) {
+    return { outcome: "failed", error: refusalText({ faults: repeats }) };
+  }
+  const catalogue = catalogueOf({ file: request.file });
+  return catalogue.outcome === "failed" ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) } : catalogue;
+};
 
 export const symptomCatalogueOf = (request: { readonly document: unknown }): Result<SymptomCatalogue, string> => {
   const parsed = checkedCatalogueFileSchema.safeParse(request.document);

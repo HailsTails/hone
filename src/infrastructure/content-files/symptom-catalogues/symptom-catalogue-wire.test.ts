@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Case, Engine, Principle, Recipe, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
+import { catalogueFileSchema, symptomCatalogueFromFile, symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
@@ -577,5 +577,21 @@ describe("symptomCatalogueOf", () => {
     },
   ])("refuses $name", ({ document, refusal }) => {
     expect(symptomCatalogueOf({ document })).toEqual({ outcome: "failed", error: refusal });
+  });
+});
+
+describe("symptomCatalogueFromFile", () => {
+  it("resolves a parsed file to the catalogue the document gives", () => {
+    expect(symptomCatalogueFromFile({ file: catalogueFileSchema.parse(DOCUMENT) })).toEqual(symptomCatalogueOf({ document: DOCUMENT }));
+  });
+
+  it("refuses a file that holds one name twice", () => {
+    const file = catalogueFileSchema.parse({ ...EMPTY_DOCUMENT, principles: [PRINCIPLES_DOCUMENT[0], PRINCIPLES_DOCUMENT[0]] });
+    expect(symptomCatalogueFromFile({ file })).toEqual({ outcome: "failed", error: "✖ principles holds no-hidden-effects more than once" });
+  });
+
+  it("refuses a file that names what it does not hold", () => {
+    const file = catalogueFileSchema.parse({ ...EMPTY_DOCUMENT, rules: [{ name: "guard-first", title: "Guard first", principle: "gone", standing: "accepted" }] });
+    expect(symptomCatalogueFromFile({ file })).toEqual({ outcome: "failed", error: expect.stringMatching(/^✖ .*gone/) });
   });
 });
