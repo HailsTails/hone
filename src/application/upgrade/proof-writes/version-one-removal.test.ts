@@ -5,6 +5,8 @@ import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
 import { removedVersionOneFiles, type VersionOneRemoval, type VersionOneRemovalPorts } from "./version-one-removal.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { absoluteWithin } from "../../../domain/repository/absolute-within.ts";
+import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 
 type RecordedMock = {
   readonly mock: { readonly calls: readonly (readonly unknown[])[]; readonly invocationCallOrder: readonly number[] };
@@ -201,10 +203,12 @@ describe("removedVersionOneFiles", () => {
   });
 
   it("removes a records file given with backslashes under a Windows records folder, and its emptied folder", () => {
-    const ports = { ...portsOver(), path: createPathPort({ flavour: "windows", workingDirectory: () => "C:\\repo" }) };
-    const windowsRoot = absolutePathSchema.parse("C:\\repo\\discipline-exceptions");
-    const windowsFolder = absolutePathSchema.parse("C:\\repo\\discipline-exceptions\\file-carve-outs");
-    const windowsFile = absolutePathSchema.parse("C:\\repo\\discipline-exceptions\\file-carve-outs\\cd-15.json");
+    const windowsRoot = absoluteRootOf("C:\\repo\\discipline-exceptions");
+    const windowsFolder = absoluteWithin({ root: windowsRoot, file: repoPathOf("file-carve-outs") });
+    const windowsFile = absoluteWithin({ root: windowsRoot, file: repoPathOf("file-carve-outs/cd-15.json") });
+    const IN_WINDOWS_FOLDER: RelativeLocation = { relation: "within-root", path: "file-carve-outs\\cd-15.json" };
+    const windowsBase = portsOver({ relative: vi.fn<PathPort["relative"]>().mockReturnValueOnce(IN_WINDOWS_FOLDER).mockReturnValueOnce(IN_WINDOWS_FOLDER) });
+    const ports = { ...windowsBase, path: { ...windowsBase.path, join: vi.fn<PathPort["join"]>().mockReturnValueOnce(windowsFolder) } };
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [windowsFile], recordsRoot: { kind: "folder", path: windowsRoot }, projections: [] } })).toEqual({
       outcome: "ok",
       value: { files: [windowsFile, SETTINGS], folders: [windowsFolder, windowsRoot] },
