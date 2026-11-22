@@ -3,7 +3,6 @@ import type { Finding } from "../../finding/governance.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
 import type { VersionOneWhyChain } from "./version-one-why-chain.ts";
@@ -51,8 +50,8 @@ const fileA = repoPathSchema.parse("src/a.ts");
 const fileB = repoPathSchema.parse("src/b.ts");
 const packageJson = repoPathSchema.parse("package.json");
 const suppressions = repoPathSchema.parse("eslint-suppressions.json");
-const audit = mechanismIdSchema.parse("audit");
-const eslint = mechanismIdSchema.parse("eslint");
+const audit = "audit" as const;
+const eslint = "eslint" as const;
 
 const noClassInA: Finding = {
   clause: noClass,

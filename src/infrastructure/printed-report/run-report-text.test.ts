@@ -4,7 +4,6 @@ import type { PlacedRecord, SymptomReach } from "../../domain/records/hone-recor
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../content-files/edition.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
@@ -48,9 +47,9 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 

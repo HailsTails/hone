@@ -1,15 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Engine, RecordKind, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import type { EngineRun } from "../../ports/engine/engine-run.ts";
 import { engineMeasurementOf, engineProblemsOf, engineUnmeasuredOf } from "./engine-states.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -66,9 +65,8 @@ describe("engineUnmeasuredOf", () => {
   });
 
   it("names the mechanism when the catalogue gives it no engine", () => {
-    const stranger = mechanismIdSchema.parse("stranger");
-    expect(engineUnmeasuredOf({ catalogue: REPORT_CATALOGUE, runs: [runWith({ mechanism: stranger, projection: "missing" })], tracked: TRACKED, selected: [] })).toEqual([
-      { kind: "engine-not-run", engine: { name: "stranger", mechanism: stranger }, projection: "missing" },
+    expect(engineUnmeasuredOf({ catalogue: { ...REPORT_CATALOGUE, engines: [WALKER] }, runs: [runWith({ mechanism: ESLINT, projection: "missing" })], tracked: TRACKED, selected: [] })).toEqual([
+      { kind: "engine-not-run", engine: { name: "eslint", mechanism: ESLINT }, projection: "missing" },
     ]);
   });
 

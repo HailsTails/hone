@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../language-layer/symptom-catalogue.ts";
-import { mechanismIdSchema, ruleSetNameSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
+import { ruleSetNameSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { type CheckChoiceRefusal, type CheckChoices, checkChoicesOf, type RuleSetCatalogue } from "./check-choices.ts";
 import type { GivenCheckSettings, ListedCheck } from "./settings-file.ts";
 
@@ -17,9 +17,9 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -95,7 +95,7 @@ describe("checkChoicesOf", () => {
           {
             clause: TEST_BODY_CLAUSE,
             checks: [LISTED_TEST_BODY[0].address, LISTED_TEST_BODY[1].address],
-            choice: { state: "run", mechanism: mechanismIdSchema.parse("audit"), settings: undefined },
+            choice: { state: "run", mechanism: "audit", settings: undefined },
           },
           { clause: LOOPS_CLAUSE, checks: [LISTED_LOOPS.address], choice: { state: "not-adopted" } },
         ],

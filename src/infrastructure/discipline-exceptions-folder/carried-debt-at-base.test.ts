@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
 import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
@@ -20,9 +19,9 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

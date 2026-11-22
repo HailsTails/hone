@@ -9,7 +9,6 @@ import type { GitFailure } from "../../../domain/repository/git-failure.ts";
 import type { TouchedSet } from "../../../domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import {
   baselineAtBase,
@@ -74,7 +73,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const LEGACY_FILE = repoPathSchema.parse("src/legacy.ts");
 

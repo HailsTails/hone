@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../../domain/records/why-chain.ts";
 import { authorisingOf } from "./authorising.ts";
@@ -47,7 +46,7 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
 
 const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
 const DECLARED_NOT_ASSERTED: Rule = {
   name: "declared-not-asserted",

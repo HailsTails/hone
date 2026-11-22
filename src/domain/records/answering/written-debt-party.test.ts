@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { HoneRecord } from "../hone-records/hone-record.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import { holdsAt, type Site } from "./record-reach.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

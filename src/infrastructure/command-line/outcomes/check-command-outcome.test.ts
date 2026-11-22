@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../../../domain/finding/governance.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import type { Case, Principle, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
@@ -13,7 +12,7 @@ const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
 const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
 const EMPTY_REPORT: CheckReport = {
   excluded: [],

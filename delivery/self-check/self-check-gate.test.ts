@@ -8,7 +8,6 @@ import type { ModuleLoaderPort } from "../../src/application/ports/host/module-l
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import type { ProcessPort } from "../../src/application/ports/host/process-port.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../src/domain/report/check-report.ts";
 import { NO_SYMPTOM_GUIDE, type SymptomGuide } from "../../src/infrastructure/printed-report/symptoms/symptom-notes.ts";
@@ -48,7 +47,7 @@ const CLASS_IN_A: Finding = {
   file: repoPathSchema.parse("src/a.ts"),
   anchor: { line: 3, column: 0 },
   snippet: "class A {}",
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
 };
 
 const ONE_PLACE_DECIDES: Principle = { name: "one-place-decides", title: "One place decides" };
@@ -122,7 +121,7 @@ const EMPTY_RUN_REPORT: RunReport = {
   symptoms: [],
 };
 
-const IGNORED_IN_A = { kind: "ignore", clause: clauseAddressSchema.parse("CD-14#class-syntax"), file: repoPathSchema.parse("src/a.ts"), mechanism: mechanismIdSchema.parse("eslint") } as const;
+const IGNORED_IN_A = { kind: "ignore", clause: clauseAddressSchema.parse("CD-14#class-syntax"), file: repoPathSchema.parse("src/a.ts"), mechanism: "eslint" } as const;
 
 describe("VERSION_TWO_GATED_SECTIONS", () => {
   it("names every failing section of a version 2 run except the findings and the unrecorded native exceptions, which are reported and not gated", () => {

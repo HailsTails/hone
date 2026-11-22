@@ -3,12 +3,11 @@ import type { RunnerClause } from "../../../../domain/runner/runner-module-types
 import type { LoadedStandaloneRunner, RunRequest } from "../../../../application/ports/engine/runner-module.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { runMechanism } from "./standalone-mechanism-dispatch.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");

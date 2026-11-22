@@ -1,7 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { Engine, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
 import type { RunnerCall } from "../../ports/engine/runner-module.ts";
 import type { EngineRun, EngineRunRequest, LoadedEngine } from "../../ports/engine/engine-run.ts";
@@ -27,9 +26,9 @@ const A = repoPathSchema.parse("src/a.ts");
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const CAST_EXPRESSIONS = clauseAddressSchema.parse("CD-2#cast-expressions");
 
@@ -90,7 +89,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const README = repoPathSchema.parse("README.md");
 
-const bindingOn = (request: { readonly mechanism: typeof ESLINT }): ClauseBinding => ({
+const bindingOn = (request: { readonly mechanism: MechanismId }): ClauseBinding => ({
   mechanism: request.mechanism,
   clause: { address: CAST_EXPRESSIONS, anchor: { kind: "file" }, pieceRoot: "/install/pieces", clauseSettings: {}, edition: FIRST_EDITION, settings: {} },
 });

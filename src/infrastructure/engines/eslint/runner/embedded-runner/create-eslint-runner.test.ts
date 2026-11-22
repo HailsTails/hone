@@ -11,7 +11,6 @@ import {
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
@@ -92,7 +91,7 @@ const PROJECTION_FILE = repoPathSchema.parse("disciplines.eslint.mjs");
 const RULE_ID = "hone/no-class-authoring";
 const LOOPS_RULE_ID = "loops/no-for-of";
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
 const FOR_OF = clauseAddressSchema.parse("CD-15#for-of");
 const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };

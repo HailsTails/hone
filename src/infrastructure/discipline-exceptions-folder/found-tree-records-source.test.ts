@@ -1,16 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import type { RecordsDocument } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsSource } from "../../application/ports/records/records-source.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { FoundTreeExceptions } from "../../application/ports/records/exception-repository.ts";
 import { foundTreeRecordsSourceOver } from "./found-tree-records-source.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

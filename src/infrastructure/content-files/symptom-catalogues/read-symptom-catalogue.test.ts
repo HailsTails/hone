@@ -4,7 +4,6 @@ import type { FilePresence } from "../../../domain/repository/file-presence.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 import type { Case, Engine, Principle, RecordKind, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 
@@ -57,7 +56,7 @@ const MAKES_A_NEW_VALUE: Case = {
   owes: [{ kind: "principle", principle: NO_HIDDEN_EFFECTS }],
 };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const PARAMETER_REASSIGNMENT = clauseAddressSchema.parse("CD-44#parameter-reassignment");
 

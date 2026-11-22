@@ -5,12 +5,11 @@ import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { projectMechanism, runMechanismWithRecords } from "./embedded-mechanism-dispatch.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 const REPO_ROOT = absolutePathSchema.parse("/repo");
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
@@ -94,7 +93,7 @@ describe("projectMechanism with a standalone runner", () => {
   });
 });
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const ESLINT_LOCATION: ExceptionRecord = {
   kind: "authorised-location",

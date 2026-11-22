@@ -5,7 +5,6 @@ import { createSymptomCatalogueRepository } from "../../../../content-files/symp
 import { createSettingsSources } from "../../../../hone-config-file/settings-sources.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts";
 import { type ProjectedBinding, projectedChecksOf } from "./projected-checks.ts";
@@ -44,7 +43,7 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
 
 const INSTALL_ROOT = resolvedPath({ path: path.join({ segments: [import.meta.dirname, "..", "..", "..", "..", "..", ".."] }) });
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const LEGACY = repoPathSchema.parse("src/legacy.ts");
 

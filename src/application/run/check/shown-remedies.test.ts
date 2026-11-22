@@ -3,7 +3,6 @@ import type { Finding } from "../../../domain/finding/governance.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import { shownRemediesOf } from "./shown-remedies.ts";
@@ -28,7 +27,7 @@ const CLAUSE = clauseAddressSchema.parse("CD-27#test-body-logic");
 
 const LOCATED: Finding = {
   clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
   file: repoPathSchema.parse("src/a.test.ts"),
   anchor: { line: 3, column: 5 },
   snippet: "rows.map(idOf);",

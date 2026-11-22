@@ -29,7 +29,7 @@ import { type CatalogueGuide, symptomNoteLineOf } from "../../printed-report/sym
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 
 type CatalogueCoverage = {
@@ -617,9 +617,9 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 
   const REBINDING: Symptom = { name: "rebinding", title: "rebinding", seen: "rebinding", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 
-  const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+  const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-  const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+  const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
   const MUTATION_CLAUSE = clauseAddressSchema.parse("CD-44#parameter-mutation");
 

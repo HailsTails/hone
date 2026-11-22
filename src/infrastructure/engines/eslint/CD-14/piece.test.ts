@@ -4,11 +4,7 @@ import { createPathPort } from "../../../node/path-port.ts";
 import { readPieceFile } from "../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile } from "../../../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import {
-  clauseIdSchema,
-  disciplineIdSchema,
-  mechanismIdSchema,
-} from "../../../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { eslintPieceSettingsSchema } from "../runner/pieces/eslint-piece-settings-schema.ts";
 import piece from "./piece.json" with { type: "json" };
 
@@ -45,7 +41,7 @@ describe("CD-14 ESLint piece.json", () => {
         path: createPathPort({ flavour: "posix", workingDirectory: () => "/install" }),
         ruleSetRoot: absolutePathSchema.parse("/install"),
         installRoot: absolutePathSchema.parse("/install"),
-        mechanism: mechanismIdSchema.parse("eslint"),
+        mechanism: "eslint",
         discipline: CD14,
       }),
     ).toEqual({

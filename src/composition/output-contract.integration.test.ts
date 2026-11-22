@@ -27,7 +27,6 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { editionSchema } from "../infrastructure/content-files/edition.ts";
 import type { ClauseEditionReading } from "../domain/rule-set/edition-types.ts";
 import { absolutePathSchema } from "../infrastructure/content-files/absolute-path.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import type { WhyChain } from "../domain/records/why-chain.ts";
 import type { VersionOneWhyChain } from "../domain/records/discipline-exceptions/version-one-why-chain.ts";
@@ -234,9 +233,9 @@ const contractTextAt = (request: { readonly path: string }): string => {
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
@@ -441,7 +440,7 @@ const UPGRADE_LINES: readonly PrintedLine[] = (() => {
 
   const FILE = repoPathSchema.parse("src/a.ts");
 
-  const MECHANISM = mechanismIdSchema.parse("eslint");
+  const MECHANISM = "eslint" as const;
 
   const CONFIG = repoPathSchema.parse("eslint.config.mjs");
 
@@ -667,7 +666,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
   };
 
   const LOOPS = clauseAddressSchema.parse("CD-15#loops");
-  const MECHANISM = mechanismIdSchema.parse("eslint");
+  const MECHANISM = "eslint" as const;
   const FILE = repoPathSchema.parse("src/basket.ts");
   const RULE_PAGE = "node_modules/@hailstails/hone/rules/CD-15/README.md";
   const ADOPTION_GUIDE = "node_modules/@hailstails/hone/ADOPTING.md";
@@ -1063,7 +1062,7 @@ const { PRINTABLE_LINES, PRINTED_SECTION_ROLES, PRINTED_BLOCKS, RUNNER_FAILURE_S
 
   const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
-  const AUDIT = mechanismIdSchema.parse("audit");
+  const AUDIT = "audit" as const;
 
   const TEST_BODY_LOGIC = clauseAddressSchema.parse("CD-27#test-body-logic");
 
@@ -2220,7 +2219,7 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
     ],
     "engine-missing": [
       { entry: { kind: "engine-missing", engine: { named: "engine", engine: ESLINT_ENGINE } }, fills: ENGINE_FILLS },
-      { entry: { kind: "engine-missing", engine: { named: "mechanism", mechanism: mechanismIdSchema.parse("stylelint") } }, fills: { engine: "stylelint" } },
+      { entry: { kind: "engine-missing", engine: { named: "mechanism", mechanism: "eslint" } }, fills: { engine: "eslint" } },
     ],
     "engine-invalid": [{ entry: { kind: "engine-invalid", engine: { named: "engine", engine: WALKER }, detail: "no runner export" }, fills: { engine: "walker", detail: "no runner export" } }],
     "engine-failed": RUNNER_FAILURE_SAMPLES.map((sample) => ({

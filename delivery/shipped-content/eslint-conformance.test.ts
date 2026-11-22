@@ -18,7 +18,7 @@ import { absolutePathSchema } from "../../src/infrastructure/content-files/absol
 import { readDisciplineFile, readPieceFile } from "../../src/infrastructure/content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile, SourceCase } from "../../src/domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../src/domain/rule-set/identifier-types.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
@@ -192,7 +192,7 @@ const eslintDisciplines = foldersUnder({ table: ruleSetTexts, prefix: "./src/inf
 const CONFORMANCE_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: eslintDisciplines,
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   mechanismRoot: `${import.meta.dirname}/../../src/infrastructure/engines/eslint`,
 });
 

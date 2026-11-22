@@ -6,7 +6,7 @@ import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { ClauseDefinition, ClauseSettingDeclarations, DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseEditionsSchema } from "../content-files/edition.ts";
-import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema, ruleSetNameSchema } from "../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
@@ -26,9 +26,8 @@ const SELECTION_PATH = "/repo/disciplines.json";
 
 const POSIX_PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
-const AUDIT = mechanismIdSchema.parse("audit");
-const OXLINT = mechanismIdSchema.parse("oxlint");
-const ESLINT = mechanismIdSchema.parse("eslint");
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
 
 const ONE_EDITION = clauseEditionsSchema.parse(undefined);
 const EDITIONS_ONE_AND_TWO = clauseEditionsSchema.parse(["1", "2"]);
@@ -113,14 +112,14 @@ const CD_14_PIECE = pieceFile({
 const CD_14_ON_TWO_MECHANISMS = disciplineFile({
   id: "CD-14",
   clauses: [
-    mechanical({ id: "class-syntax", mechanisms: [AUDIT, OXLINT], keyword: "class" }),
-    mechanical({ id: "abstract-syntax", mechanisms: [AUDIT, OXLINT], keyword: "class" }),
+    mechanical({ id: "class-syntax", mechanisms: [AUDIT, ESLINT], keyword: "class" }),
+    mechanical({ id: "abstract-syntax", mechanisms: [AUDIT, ESLINT], keyword: "class" }),
   ],
 });
 
-const CD_14_OXLINT_PIECE = pieceFile({
+const CD_14_ESLINT_PIECE = pieceFile({
   discipline: "CD-14",
-  mechanism: OXLINT,
+  mechanism: ESLINT,
   clauses: [pieceClause({ clause: "abstract-syntax", settings: { rule: "no-abstract" }, clauseSettings: NO_DECLARATIONS, editions: ONE_EDITION })],
 });
 
@@ -464,15 +463,15 @@ describe("selectionFrom reading each rule-set file", () => {
   it("reads each mechanism's own piece when two clauses of one discipline select different mechanisms", () => {
     const rules = rulesReturning({
       disciplines: [present(CD_14_ON_TWO_MECHANISMS)],
-      pieces: [present(CD_14_PIECE), present(CD_14_OXLINT_PIECE)],
+      pieces: [present(CD_14_PIECE), present(CD_14_ESLINT_PIECE)],
       runner: "present",
     });
-    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit", "CD-14#abstract-syntax": "oxlint" }))).toMatchObject({
+    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit", "CD-14#abstract-syntax": "eslint" }))).toMatchObject({
       outcome: "ok",
       value: {
         bindings: [
           { mechanism: "audit", clause: { settings: { module: "class-syntax.ts" } } },
-          { mechanism: "oxlint", clause: { pieceRoot: "/install/src/infrastructure/engines/oxlint/CD-14", settings: { rule: "no-abstract" } } },
+          { mechanism: "eslint", clause: { pieceRoot: "/install/src/infrastructure/engines/eslint/CD-14", settings: { rule: "no-abstract" } } },
         ],
       },
     });
@@ -484,9 +483,9 @@ describe("selectionFrom reading each rule-set file", () => {
       pieces: [present(CD_14_PIECE), ABSENT],
       runner: "present",
     });
-    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit", "CD-14#abstract-syntax": "oxlint" }))).toEqual({
+    expect(selectionOver(rules, withDocument({ "CD-14#class-syntax": "audit", "CD-14#abstract-syntax": "eslint" }))).toEqual({
       outcome: "failed",
-      error: { kind: "piece-missing", address: "CD-14#abstract-syntax", mechanism: "oxlint" },
+      error: { kind: "piece-missing", address: "CD-14#abstract-syntax", mechanism: "eslint" },
     });
   });
 
@@ -567,9 +566,9 @@ describe("selectionFrom refusing a selection the rule sets cannot meet", () => {
   });
 
   it("is mechanism-not-allowed for a mechanism the clause does not list", () => {
-    expect(selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#class-syntax": "oxlint" }))).toEqual({
+    expect(selectionOver(listingRules(present(CD_14)), withDocument({ "CD-14#class-syntax": "eslint" }))).toEqual({
       outcome: "failed",
-      error: { kind: "mechanism-not-allowed", address: "CD-14#class-syntax", mechanism: "oxlint" },
+      error: { kind: "mechanism-not-allowed", address: "CD-14#class-syntax", mechanism: "eslint" },
     });
   });
 

@@ -2,13 +2,16 @@ import { pieceTypePackagesSchema } from "./piece-type-packages-schema.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { parsedJson } from "../rule-sets/rule-set-reader.ts";
 import { enginesFolderSegmentsOf, pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
+import type { DisciplineId, MechanismId } from "../../../domain/rule-set/identifier-types.ts";
+import { isDisciplineId } from "../../../domain/rule-set/identifiers.ts";
+import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Result } from "../../../domain/result.ts";
 
 export type PieceLocation = {
   readonly file: string;
   readonly ruleSetRoot: string;
-  readonly mechanism: string;
-  readonly discipline: string;
+  readonly mechanism: MechanismId;
+  readonly discipline: DisciplineId;
 };
 
 export type PieceImportRefusal = {
@@ -81,10 +84,11 @@ const pieceLocationOf = (request: {
   if (!file.startsWith(prefix) || file.endsWith(".test.ts") || !file.endsWith(".ts")) {
     return [];
   }
-  const [mechanism, discipline, ...rest] = file.slice(prefix.length).split("/");
-  return discipline === undefined || discipline === "runner" || rest.length === 0
-    ? []
-    : [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism, discipline }];
+  const [mechanismText, discipline, ...rest] = file.slice(prefix.length).split("/");
+  const mechanism = mechanismIdSchema.safeParse(mechanismText);
+  return mechanism.success && discipline !== undefined && isDisciplineId(discipline) && rest.length > 0
+    ? [{ file: request.file, ruleSetRoot: request.ruleSetRoot, mechanism: mechanism.data, discipline }]
+    : [];
 };
 
 export const pieceFilesOf = (request: {

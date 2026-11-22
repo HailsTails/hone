@@ -4,18 +4,14 @@ import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import { absolutePathSchema } from "../absolute-path.ts";
 import { editionSchema } from "../edition.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import {
-  clauseIdSchema,
-  disciplineIdSchema,
-  mechanismIdSchema,
-} from "../../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { parsedJson, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 
 const ROOT = absolutePathSchema.parse("/install");
 const INSTALL_ROOT = absolutePathSchema.parse("/running-install");
 const CD_14 = disciplineIdSchema.parse("CD-14");
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 const DISCIPLINE_PATH = "/install/rules/CD-14/discipline.json";
 const PIECE_PATH = "/install/mechanisms/audit/CD-14/piece.json";
 
@@ -103,7 +99,7 @@ const LOADED_DISCIPLINE: DisciplineFile = {
       kind: "mechanical",
       id: clauseIdSchema.parse("class-syntax"),
       summary: CLASS_SYNTAX.summary,
-      mechanisms: [WALKER, mechanismIdSchema.parse("eslint")],
+      mechanisms: [WALKER, "eslint"],
       anchor: { kind: "keyword", keyword: "class" },
       exceptions: "allowed",
       cases: { flag: [], allow: [] },
@@ -243,12 +239,12 @@ describe("readDisciplineFile", () => {
     });
   });
 
-  it("refuses a mechanical clause listing not-adopted as a mechanism, naming the word as reserved", () => {
+  it("refuses a mechanical clause listing a mechanism other than audit or eslint", () => {
     expect(
       readDiscipline({ ...DISCIPLINE, clauses: [{ ...CLASS_SYNTAX, mechanisms: ["audit", "not-adopted"] }] }),
     ).toMatchObject({
       outcome: "failed",
-      error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH, detail: expect.stringContaining("reserved for a clause a repository does not adopt") },
+      error: { kind: "file-malformed", path: DISCIPLINE_PATH, detail: expect.stringContaining("expected one of") },
     });
   });
 
@@ -402,10 +398,10 @@ describe("readPieceFile", () => {
     });
   });
 
-  it("refuses a piece declaring not-adopted as its mechanism, naming the word as reserved", () => {
+  it("refuses a piece declaring a mechanism other than audit or eslint", () => {
     expect(readPiece({ ...PIECE, mechanism: "not-adopted" })).toMatchObject({
       outcome: "failed",
-      error: { detail: expect.stringContaining("reserved for a clause a repository does not adopt") },
+      error: { detail: expect.stringContaining("expected one of") },
     });
   });
 

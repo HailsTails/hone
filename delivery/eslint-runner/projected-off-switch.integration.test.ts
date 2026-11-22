@@ -17,7 +17,6 @@ import { absolutePathSchema } from "../../src/infrastructure/content-files/absol
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../src/infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import { createEslintRunner, ESLINT_PROJECTED_KINDS } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { eslint9PieceModules, eslint9ToolchainModules } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
@@ -319,7 +318,7 @@ const ROUTE_RUN = {
 const ROUTE_LOCATION: ExceptionRecord = {
   kind: "authorised-location",
   clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   file: repoPathSchema.parse("route/[id].ts"),
   reason: "wrapping factory for a library construction",
 };

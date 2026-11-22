@@ -5,12 +5,11 @@ import type { Check, Engine, Symptom } from "../../../../../domain/language-laye
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { checksPluginImportOf, projectedChecksOf } from "./projected-checks.ts";
 
-const WALKER_ENGINE: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER_ENGINE: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
 const TEST_SWITCHED_OFF: Symptom = {
   name: "test-switched-off",
@@ -86,9 +85,9 @@ const REBINDING_TEST_BODY: Check = {
 
 const PLUGIN_CHECKS: readonly Check[] = [SKIPPED_TESTS_CHECK, NON_NULL_ASSERTIONS_CHECK, PARAMETER_COUNT_CHECK, REBINDING_TEST_BODY];
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const PARAMETER_COUNT_BINDING: ClauseBinding = {
   mechanism: ESLINT,

@@ -20,7 +20,6 @@ import type { Assessment } from "../../../domain/settings/assessment.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { editionSchema, FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -80,8 +79,8 @@ const TEAM_ROOT = absolutePathSchema.parse("/repo/rules/team");
 const ASSESSMENT_PATH = "/repo/disciplines.assessment.md";
 const RULE_PAGE_PATH = "/install/rules/CD-14/README.md";
 
-const AUDIT = mechanismIdSchema.parse("audit");
-const LINT = mechanismIdSchema.parse("lint");
+const AUDIT = "audit" as const;
+const LINT = "eslint" as const;
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
 const ABSTRACT_SYNTAX = clauseAddressSchema.parse("CD-14#abstract-syntax");
 const NO_FOR_OF = clauseAddressSchema.parse("CD-15#no-for-of");
@@ -1003,7 +1002,7 @@ describe("runCheck with an embedded runner", () => {
     );
     expect(engine.run.withRecords).toHaveBeenCalledTimes(2);
     expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "audit", records: [WALKER_RECORD] }));
-    expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "lint", records: [LINT_RECORD] }));
+    expect(engine.run.withRecords).toHaveBeenCalledWith(expect.objectContaining({ mechanism: "eslint", records: [LINT_RECORD] }));
   });
 });
 

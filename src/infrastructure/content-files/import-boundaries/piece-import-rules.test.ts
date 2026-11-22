@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, vi } from "vitest";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import {
   type PieceLocation,
   pieceFilesOf,
@@ -72,7 +73,7 @@ const WALKER_PIECE: PieceLocation = {
   file: "packages/hone/src/infrastructure/engines/audit/CD-14/class-syntax.ts",
   ruleSetRoot: INSTALL_ROOT,
   mechanism: "audit",
-  discipline: "CD-14",
+  discipline: disciplineIdOf("CD-14"),
 };
 
 const refusalsOf = (request: {
@@ -100,6 +101,14 @@ describe("pieceFilesOf", () => {
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual([WALKER_PIECE]);
+  });
+
+  it.each([
+    "packages/hone/src/infrastructure/engines/protocol/CD-14/class-syntax.ts",
+    "packages/hone/src/infrastructure/engines/audit/runner/runner.ts",
+    "packages/hone/src/infrastructure/engines/audit/not-a-discipline/class-syntax.ts",
+  ])("does not list %s", (file) => {
+    expect(pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [INSTALL_ROOT], installRoot: INSTALL_ROOT })).toEqual([]);
   });
 });
 

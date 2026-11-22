@@ -4,7 +4,6 @@ import type { NativeException } from "../../runner/runner-result-types.ts";
 import type { Check, Recipe, RecordKind, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { answerFindings, type RaisedFinding, type StaleReason, type StaleRecord } from "./answering.ts";
 import type { AuthorisedLocation, Debt, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
@@ -47,9 +46,9 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
   owner: "capture 01a0b421",
 };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const AUTHORISED_LOCATION_KIND: RecordKind = { name: "authorised-location", title: "Authorised location", phrase: "an authorised location", todaysFormat: "authorised-location" };
 

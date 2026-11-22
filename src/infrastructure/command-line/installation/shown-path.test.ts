@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createPathPort } from "../../node/path-port.ts";
 import { absolutePathSchema } from "../../content-files/absolute-path.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { UNLINKED } from "./package-link.ts";
 import { shownFailureOf, shownPathOf } from "./shown-path.ts";
@@ -78,7 +77,7 @@ describe("shownFailureOf", () => {
       shownFailureOf({
         failure: {
           kind: "runner-failed",
-          mechanism: mechanismIdSchema.parse("eslint"),
+          mechanism: "eslint",
           failure: {
             kind: "toolchain-shadowed",
             packageName: "eslint",
@@ -100,7 +99,7 @@ describe("shownFailureOf", () => {
       shownFailureOf({
         failure: {
           kind: "runner-failed",
-          mechanism: mechanismIdSchema.parse("audit"),
+          mechanism: "audit",
           failure: { kind: "piece-invalid", pieceRoot: `${STORE_ROOT}\\mechanisms\\audit\\CD-15`, detail: "x" },
         },
         path: WINDOWS,
@@ -113,7 +112,7 @@ describe("shownFailureOf", () => {
   it("leaves a runner failure's repository path as it is", () => {
     const failure = {
       kind: "runner-failed",
-      mechanism: mechanismIdSchema.parse("audit"),
+      mechanism: "audit",
       failure: { kind: "file-unreadable", file: repoPathSchema.parse("src/a.ts"), detail: "EACCES" },
     } as const;
 

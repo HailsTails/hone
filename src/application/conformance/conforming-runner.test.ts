@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { LoadedRunner } from "../ports/engine/runner-module.ts";
 import type { LoadedEngine } from "../ports/engine/engine-run.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { conformingRunnerOf } from "./conforming-runner.ts";
 
-const MECHANISM = mechanismIdSchema.parse("eslint");
+const MECHANISM = "eslint" as const;
 
 const standalone = (): Extract<LoadedRunner, { readonly exceptionPath: "standalone" }> => ({
   exceptionPath: "standalone",

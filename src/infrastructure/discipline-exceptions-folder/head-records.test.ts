@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Selection } from "../../domain/settings/selection/selection.ts";
 import { clauseAddressSchema } from "./clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import { UNMEASURED_EXCEPTION_BASELINE } from "../../domain/records/discipline-exceptions/exception-baseline.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
@@ -47,7 +46,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 
 const RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const LOOPS = clauseAddressSchema.parse("CD-15#loops");
 

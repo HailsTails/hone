@@ -1,23 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record.ts";
 import type { Engine } from "../language-layer/symptom-catalogue.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { type RunLoadFailure, type RunLoadFailureSource, runLoadFailureOf } from "./run-load-failure.ts";
 
 type MappedRow = { readonly name: string; readonly source: RunLoadFailureSource; readonly failure: RunLoadFailure };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
 const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: ESLINT };
 
 const ENGINES: readonly Engine[] = [WALKER, ESLINT_ENGINE];
-
-const UNCATALOGUED = mechanismIdSchema.parse("stylelint");
 
 const RECORDS_FILE = repoPathSchema.parse("hone-records/debt/claimed-type.json");
 
@@ -42,11 +39,6 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
     },
     { name: "a missing runner", source: { kind: "runner-missing", mechanism: ESLINT }, failure: { kind: "engine-missing", engine: { named: "engine", engine: ESLINT_ENGINE } } },
     {
-      name: "a missing runner the catalogue names no engine for",
-      source: { kind: "runner-missing", mechanism: UNCATALOGUED },
-      failure: { kind: "engine-missing", engine: { named: "mechanism", mechanism: UNCATALOGUED } },
-    },
-    {
       name: "an invalid runner",
       source: { kind: "runner-invalid", mechanism: AUDIT, detail: "no runner export" },
       failure: { kind: "engine-invalid", engine: { named: "engine", engine: WALKER }, detail: "no runner export" },
@@ -63,6 +55,13 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
     },
   ])("names $name", ({ source, failure }) => {
     expect(runLoadFailureOf({ source, engines: ENGINES })).toEqual(failure);
+  });
+
+  it("names a missing runner the catalogue names no engine for", () => {
+    expect(runLoadFailureOf({ source: { kind: "runner-missing", mechanism: ESLINT }, engines: [WALKER] })).toEqual({
+      kind: "engine-missing",
+      engine: { named: "mechanism", mechanism: ESLINT },
+    });
   });
 
   it.each<MappedRow>([

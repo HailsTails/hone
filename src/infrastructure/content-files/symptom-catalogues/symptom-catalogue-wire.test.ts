@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { Case, Engine, Principle, Recipe, RecordKind, Rule, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { symptomCatalogueOf } from "./symptom-catalogue-wire.ts";
 
@@ -95,9 +94,9 @@ const AUTHORISED_LOCATION: RecordKind = {
 
 const DEBT: RecordKind = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

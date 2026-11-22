@@ -9,7 +9,7 @@ import type { Result } from "../../../../../domain/result.ts";
 import type { CoreInstall } from "./core-install.ts";
 import { eslintPieceSettingsSchema, ruleOptionsOf } from "../pieces/eslint-piece-settings-schema.ts";
 import { type PluginImport, pluginImportOf } from "./projection.ts";
-import { checkRuleIdOf, type RuledCheck, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
+import { checkRuleIdOf, ESLINT_MECHANISM, type RuledCheck, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
 import type { ProjectedCheck } from "./checks-projection.ts";
 
 export type ProjectionFailure =
@@ -18,8 +18,6 @@ export type ProjectionFailure =
   | { readonly kind: "check-outside-rule-set"; readonly address: string };
 
 export type ProjectedBinding = { readonly mechanism: string; readonly clause: { readonly address: ClauseAddress; readonly pieceRoot: string; readonly settings: unknown } };
-
-const ESLINT_MECHANISM = "eslint";
 
 const PLUGIN_EXPORT = "eslint-plugin";
 

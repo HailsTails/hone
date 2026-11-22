@@ -3,7 +3,6 @@ import type { ExceptionRecord } from "../../../../../domain/records/discipline-e
 import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { CurrentProjection, ProjectionFiles } from "../projection/projection.ts";
@@ -54,7 +53,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 };
 
 const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const eslint = mechanismIdSchema.parse("eslint");
+const eslint = "eslint" as const;
 
 const CLASS_CLAUSE: ProjectionClause = {
   address: classSyntax,

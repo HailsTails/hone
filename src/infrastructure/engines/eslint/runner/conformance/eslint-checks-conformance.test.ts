@@ -19,7 +19,7 @@ import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { readDisciplineFile, readPieceFile } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { createChecksRunner } from "../checks-runner/checks-runner.ts";
 import { ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
@@ -191,14 +191,14 @@ const ruleSetTexts = import.meta.glob(["./rules/*/discipline.json", "./src/infra
 const CONFORMANCE_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   mechanismRoot: `${import.meta.dirname}/../..`,
 });
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
 
 const shippedEngine = await loadedEngineOf({
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   installRoot: INSTALL_ROOT,
   moduleExtension: ".ts",
   path: createDefaultPathPort({}),

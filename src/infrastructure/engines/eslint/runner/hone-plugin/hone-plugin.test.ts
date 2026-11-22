@@ -5,7 +5,6 @@ import { createPathPort } from "../../../../node/path-port.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import cd27Plugin from "../../CD-27/cd27/cd27.eslint-plugin.ts";
 import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./hone-plugin.ts";
@@ -28,7 +27,7 @@ const SKIPPED_TESTS_CHECK: Check = {
     correctUses: [],
   },
   clause: clauseAddressSchema.parse("CD-27#skipped-tests"),
-  engines: [{ name: "eslint", mechanism: mechanismIdSchema.parse("eslint") }],
+  engines: [{ name: "eslint", mechanism: "eslint" }],
   forms: [],
 };
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { brandedTextSchema } from "../content-files/branded-schema.ts";
 import type { ClauseId, DisciplineId, MechanismId, RuleSetName } from "../../domain/rule-set/identifier-types.ts";
-import { RESERVED_CLAUSE_STATES, isClauseId, isDisciplineId, isMechanismId, isRuleSetName } from "../../domain/rule-set/identifiers.ts";
+import { isClauseId, isDisciplineId, isRuleSetName } from "../../domain/rule-set/identifiers.ts";
 import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
 const NOT_AN_IDENTIFIER = "not an identifier of its kind";
@@ -21,16 +21,7 @@ export const clauseIdSchema = brandedTextSchema({
   isBranded: isClauseId,
   refusal: NOT_AN_IDENTIFIER,
 });
-export const mechanismIdSchema = brandedTextSchema({
-  text: z.string().superRefine((text, context) => {
-    const reservedFor = RESERVED_CLAUSE_STATES.get(text);
-    if (reservedFor !== undefined) {
-      context.addIssue({ code: "custom", message: `"${text}" is reserved for ${reservedFor}, so it cannot name a mechanism` });
-    }
-  }),
-  isBranded: isMechanismId,
-  refusal: NOT_AN_IDENTIFIER,
-});
+export const mechanismIdSchema = z.enum(["audit", "eslint"]);
 
 export const isRuleSetNameSchemaEqual: Equal<z.output<typeof ruleSetNameSchema>, RuleSetName> = true;
 export const isDisciplineIdSchemaEqual: Equal<z.output<typeof disciplineIdSchema>, DisciplineId> = true;

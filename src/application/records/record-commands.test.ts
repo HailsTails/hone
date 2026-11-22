@@ -3,7 +3,6 @@ import type { Finding } from "../../domain/finding/governance.ts";
 import type { Case, Check, Engine, Principle, RecordKind, Recipe, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { PlacedRecord, RecordsDocument, RecordsDocumentRefusal, RefusedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordsEdit } from "../../domain/records/hone-records/records-edit.ts";
@@ -51,9 +50,9 @@ const CAUSAL_WHY_CHAIN: WhyChain = {
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 

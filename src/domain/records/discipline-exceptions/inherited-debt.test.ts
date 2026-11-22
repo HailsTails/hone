@@ -1,15 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type InheritedDebtOutcome, inheritedDebtEntriesOf, inheritedDebtOf, type InheritedDebtRequest, reachedDebtOf } from "./inherited-debt.ts";
 
 const LOOPS = clauseAddressSchema.parse("CD-15#loops");
 const CASTS = clauseAddressSchema.parse("CD-2#cast-expressions");
 const TEAM_CLAUSE = clauseAddressSchema.parse("team/TM-1#no-tmp-files");
-const AUDIT = mechanismIdSchema.parse("audit");
-const ESLINT = mechanismIdSchema.parse("eslint");
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
 const LEGACY_FOLDER = repoPathSchema.parse("src/legacy");
 const SOURCE_FOLDER = repoPathSchema.parse("src");
 const BASKET = repoPathSchema.parse("src/basket.ts");

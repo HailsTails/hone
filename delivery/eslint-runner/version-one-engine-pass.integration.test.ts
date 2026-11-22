@@ -21,7 +21,6 @@ import type { AbsolutePath } from "../../src/domain/repository/absolute-path-typ
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { runProject } from "../../src/application/projection/run-project.ts";
@@ -236,7 +235,7 @@ const KEPT = repoPathSchema.parse("src/kept.ts");
 const CARVE_OUT: FileCarveOutRecord = {
   kind: "file-carve-out",
   clause: clauseAddressSchema.parse("CD-14#class-syntax"),
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   file: KEPT,
   reason: "legacy class",
 };
@@ -246,7 +245,7 @@ const CLASS_FINDING: Finding = {
   file: KEPT,
   anchor: { line: 1, column: 7 },
   snippet: "export class Kept {}",
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
 };
 
 const catalogues = () => {

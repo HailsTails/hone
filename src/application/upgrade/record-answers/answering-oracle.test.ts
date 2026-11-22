@@ -5,15 +5,14 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Finding, GovernedRun } from "../../../domain/finding/governance.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { createAnsweringOracle } from "./answering-oracle.ts";
 import type { EngineFindings, EnginePass, EnginePassFailure } from "../../ports/upgrade/engine-pass.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

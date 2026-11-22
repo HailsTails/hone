@@ -3,7 +3,6 @@ import type { Finding } from "../../../domain/finding/governance.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
@@ -66,7 +65,7 @@ const CLAUSE_ROOTS = [
 
 const findingOn = (request: { readonly clause: Finding["clause"]; readonly file: string }): Finding => ({
   clause: request.clause,
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
   file: repoPathSchema.parse(request.file),
   anchor: { line: 1, column: 0 },
   snippet: "const total = 0;",

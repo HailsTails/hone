@@ -16,7 +16,6 @@ import { createSymptomCatalogueRepository } from "../../src/infrastructure/conte
 import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { Result } from "../../src/domain/result.ts";
 import type { ReadonlyJsonValue } from "../../src/domain/settings/json-values/json-value.ts";
@@ -191,7 +190,7 @@ const CAST_IN_ORDERS: Finding = {
   file: ORDER_FILE,
   anchor: { line: 3, column: 9 },
   snippet: "body as Event",
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
 };
 
 const RAISED: readonly RaisedFinding[] = [{ finding: CAST_IN_ORDERS, party: { reported: "not-reported" } }];

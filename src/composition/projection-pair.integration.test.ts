@@ -6,7 +6,6 @@ import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
 import { createSymptomCatalogueRepository } from "../infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../infrastructure/hone-records-folder/repo-path.ts";
 import { type AnsweredFile, checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
@@ -61,7 +60,7 @@ const BEFORE_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "befo
 
 const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "after"] }) });
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const LEGACY = repoPathSchema.parse("src/legacy.ts");
 

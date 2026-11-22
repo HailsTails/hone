@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
@@ -27,9 +26,9 @@ import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engi
 const versionTwoCheckCommandOf = (ports: Omit<VersionTwoRepositoryPorts, keyof CommandRequest>) => (command: CommandRequest) =>
   commandOf({ tool: VERSION_TWO_CHECK, ports: { ...command, ...ports } })(command);
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 

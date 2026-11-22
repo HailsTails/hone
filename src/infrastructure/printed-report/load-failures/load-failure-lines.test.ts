@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Engine } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsDocumentRefusal } from "../../../domain/records/hone-records/hone-record.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { runLoadFailureLine } from "./load-failure-lines.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
 type LineRow = { readonly failure: RunLoadFailure; readonly line: string };
 
@@ -59,8 +58,8 @@ describe("runLoadFailureLine, a failure version 2 renames", () => {
     },
     { failure: { kind: "engine-missing", engine: { named: "engine", engine: ESLINT_ENGINE } }, line: "load failure: engine-missing eslint" },
     {
-      failure: { kind: "engine-missing", engine: { named: "mechanism", mechanism: mechanismIdSchema.parse("stylelint") } },
-      line: "load failure: engine-missing stylelint",
+      failure: { kind: "engine-missing", engine: { named: "mechanism", mechanism: "eslint" } },
+      line: "load failure: engine-missing eslint",
     },
     {
       failure: { kind: "engine-invalid", engine: { named: "engine", engine: WALKER }, detail: "no runner export" },

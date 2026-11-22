@@ -26,7 +26,7 @@ import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-t
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { runner as walkerRunner } from "../../../audit/runner/runner.ts";
@@ -849,7 +849,7 @@ const coreLoadedEslintRunner = async (request: { readonly line: EslintLine }): P
     moduleExtension: ".ts",
     modules: runnerModulesOn({ line: request.line, base: modules }),
     path,
-    mechanism: mechanismIdSchema.parse("eslint"),
+    mechanism: "eslint",
   });
   assert(loaded.outcome === "ok", "core loads the ESLint runner module");
   return loaded.value.runner;
@@ -914,7 +914,7 @@ const PACKAGE_HIT = { file: "packages/a/x.ts" };
 const PACKAGE_LEGACY_CARVE_OUT: ExceptionRecord = {
   kind: "file-carve-out",
   clause: CLAUSE,
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   file: repoPathSchema.parse("packages/a/legacy.ts"),
   reason: "Inherited class awaiting paydown",
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,

@@ -3,7 +3,6 @@ import type { VersionOneCommandRequest } from "../application/ports/version-one-
 import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { GitTreePort } from "../application/ports/git-port.ts";
-import { mechanismIdSchema } from "../infrastructure/hone-config-file/identifiers.ts";
 import type { DirectoryEntry, DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
@@ -177,9 +176,9 @@ const authoriseArgumentsFor = (request: { readonly repo: string; readonly rootCa
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 

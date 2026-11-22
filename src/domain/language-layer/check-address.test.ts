@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { checkAddressOf, checkAt, checkNamedAt, checksOf } from "./check-address.ts";
 import type { Check, Engine, Principle, Recipe, RecordKind, Symptom, SymptomCatalogue } from "./symptom-catalogue.ts";
 
@@ -16,7 +15,7 @@ const AUTHORISED_LOCATION: RecordKind = {
   todaysFormat: "authorised-location",
 };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

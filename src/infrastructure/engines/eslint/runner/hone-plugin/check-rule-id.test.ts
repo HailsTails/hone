@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { checkAddressOf } from "../../../../../domain/language-layer/check-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { CHECKS_PLUGIN_NAMESPACE, checkOfRuleId, checkRuleIdOf, checkRuleNameOf, eslintRuleIdsOf, runsOnEslint } from "./check-rule-id.ts";
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",
@@ -124,7 +123,7 @@ describe("runsOnEslint", () => {
   });
 
   it("says a check only the walker runs runs elsewhere", () => {
-    expect(runsOnEslint({ check: { engines: [{ mechanism: mechanismIdSchema.parse("audit") }] } })).toBe("elsewhere");
+    expect(runsOnEslint({ check: { engines: [{ mechanism: "audit" }] } })).toBe("elsewhere");
   });
 });
 

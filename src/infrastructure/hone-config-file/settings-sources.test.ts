@@ -3,7 +3,8 @@ import type { FileTextPort } from "../../application/ports/file-system/file-text
 import { createPathPort } from "../node/path-port.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema, ruleSetNameSchema } from "./identifiers.ts";
+import { ruleSetNameSchema } from "./identifiers.ts";
+import type { MechanismId } from "../../domain/rule-set/identifier-types.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import { createSettingsSources } from "./settings-sources.ts";
@@ -12,7 +13,7 @@ const REPO_ROOT = absolutePathSchema.parse("/repo");
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const SETTINGS_TEXT = `{ "version": 2, "ruleSets": {}, "checks": {} }`;
 
@@ -88,11 +89,11 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   });
 
-const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly clause: string; readonly mechanism: string }) =>
+const pieceOf = (request: { readonly files: Readonly<Record<string, string>>; readonly clause: string; readonly mechanism: MechanismId }) =>
   sourcesOver({ files: request.files }).pieceClause({
     ruleSetRoot: INSTALL_ROOT,
     clause: clauseAddressSchema.parse(request.clause),
-    mechanism: mechanismIdSchema.parse(request.mechanism),
+    mechanism: request.mechanism,
   });
 
 describe("createSettingsSources", () => {

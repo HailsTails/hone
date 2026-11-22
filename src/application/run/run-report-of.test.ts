@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Case, Check, Engine, Principle, Recipe, RecordKind, Rule, Symptom, SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
 import type { Hit } from "../../domain/runner/runner-result-types.ts";
 import type { Debt, PlacedRecord, RecordsReading, RefusedRecord, SymptomReach } from "../../domain/records/hone-records/hone-record.ts";
@@ -14,9 +13,9 @@ import { type RunReportRequest, runReportOf } from "./run-report-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 

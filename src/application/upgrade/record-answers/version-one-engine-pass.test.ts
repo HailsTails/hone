@@ -13,7 +13,6 @@ import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../ports/records/exception-repository.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
@@ -24,7 +23,7 @@ const REPO_ROOT = absolutePathSchema.parse("/repo");
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
 

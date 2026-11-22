@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { inheritedDebtLine, pruneDebtCommandOutcome, splitRecordsCommandOutcome } from "./record-command-outcomes.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
 describe("splitRecordsCommandOutcome", () => {
   it("prints each file written, then the file removed, and exits 0", () => {
@@ -69,7 +68,7 @@ describe("inheritedDebtLine", () => {
           effect: "nested-configuration",
           under: repoPathSchema.parse("nested/src"),
           selectionFolder: repoPathSchema.parse("nested"),
-          mechanism: mechanismIdSchema.parse("eslint"),
+          mechanism: "eslint",
         },
       }),
     ).toBe(

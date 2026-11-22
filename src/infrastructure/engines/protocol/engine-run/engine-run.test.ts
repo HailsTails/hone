@@ -9,14 +9,13 @@ import type { Check } from "../../../../domain/language-layer/symptom-catalogue.
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../../content-files/edition.ts";
-import { mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import type { EngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import { engineProjectionOf, engineRunOf, loadedEngineOf } from "./engine-run.ts";
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const REPO = absolutePathSchema.parse("/repo");
 

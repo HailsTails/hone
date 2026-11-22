@@ -5,7 +5,6 @@ import { createPathPort } from "../node/path-port.ts";
 import type { SelectionReading } from "../../domain/settings/selection/selection.ts";
 import { absolutePathSchema } from "../content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { ExceptionRepository } from "../../application/ports/records/exception-repository.ts";
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
@@ -14,7 +13,7 @@ import { versionOneReadOf, type VersionOneReadRequest } from "./version-one-read
 
 const LOOPS = clauseAddressSchema.parse("CD-15#loops");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const SELECTION_TEXT = '{ "version": 1, "ruleSets": {}, "clauses": { "CD-15#loops": "eslint" } }';
 

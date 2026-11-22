@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { type DebtEffectsRequest, debtOutcomesOf } from "./debt-effects.ts";
 import type { PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
@@ -8,9 +7,9 @@ import type { Case, Check, Engine, Pointed, Principle, Recipe, RecordKind, Rule,
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 

@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { measurementOf, type RunMeasurement, type RunMeasurements } from "./measured-at.ts";
 import type { ReachedPlace } from "../answering/record-reach.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const SYMPTOM: Symptom = { name: "claimed-type", title: "Claimed type", seen: "Seen.", mayIndicate: [], breachUsuallySits: "in the unit", recipes: [], correctUses: [] };
 

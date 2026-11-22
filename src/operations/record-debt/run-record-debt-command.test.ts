@@ -11,7 +11,6 @@ import type { FileTextPort } from "../../application/ports/file-system/file-text
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { isAbsolutePath } from "../../domain/repository/absolute-path.ts";
@@ -64,7 +63,7 @@ const NOTHING_SELECTED: SelectionReading = {
 
 const LOOPS = clauseAddressSchema.parse("CD-15#loops");
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const BASKET = repoPathSchema.parse("src/basket.ts");
 

@@ -4,7 +4,6 @@ import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptio
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { editionSchema } from "../../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import { type SettingsReading, readSettings } from "./read-settings.ts";
 import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
@@ -18,7 +17,7 @@ const INSTALL_ROOT = absolutePathSchema.parse("/install");
 
 const SETTINGS_PATH = "/repo/hone.config.json";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
@@ -33,7 +32,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 
 const WALKER: Engine = { name: "walker", mechanism: AUDIT };
 
-const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT_ENGINE: Engine = { name: "eslint", mechanism: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
   name: "loop-keyword",

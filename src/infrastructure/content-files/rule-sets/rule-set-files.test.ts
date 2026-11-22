@@ -2,7 +2,7 @@ import { assert, describe, expect, it } from "vitest";
 import { createDefaultFileTextPort } from "../../node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../node/path-port.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
-import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../../domain/rule-set/identifier-types.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
 
@@ -10,9 +10,9 @@ const PATH = createDefaultPathPort({});
 
 const RULE_SET_FILES = createRuleSetFiles({ fileText: createDefaultFileTextPort({}), path: PATH });
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const OXLINT = mechanismIdSchema.parse("oxlint");
+const ESLINT = "eslint" as const;
 
 const rootOf = (name: string) => {
   const resolved = PATH.resolve({ path: PATH.join({ segments: [import.meta.dirname, "team-rule-set", name] }) });
@@ -67,7 +67,7 @@ describe("createRuleSetFiles piece", () => {
   });
 
   it("holds nothing for a piece file absent from disk", () => {
-    expect(RULE_SET_FILES.piece({ ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT, discipline: TM_1, mechanism: OXLINT })).toEqual({
+    expect(RULE_SET_FILES.piece({ ruleSetRoot: TEAM_ROOT, installRoot: INSTALL_ROOT, discipline: TM_1, mechanism: ESLINT })).toEqual({
       outcome: "ok",
       value: { held: "absent" },
     });
@@ -80,7 +80,7 @@ describe("createRuleSetFiles runner", () => {
   });
 
   it("is absent for a mechanism whose runner is not on disk", () => {
-    expect(RULE_SET_FILES.runner({ installRoot: INSTALL_ROOT, mechanism: OXLINT, moduleExtension: ".js" })).toBe("absent");
+    expect(RULE_SET_FILES.runner({ installRoot: INSTALL_ROOT, mechanism: ESLINT, moduleExtension: ".js" })).toBe("absent");
   });
 
   it("is absent for a runner module written with the other extension", () => {

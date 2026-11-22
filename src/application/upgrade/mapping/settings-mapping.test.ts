@@ -4,11 +4,11 @@ import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema, ruleSetNameSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
+import { ruleSetNameSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { mappedSettings, type SettingsMappingRequest } from "./settings-mapping.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const LAYERING_CLAUSE = clauseAddressSchema.parse("CD-13#layering");
 
@@ -46,7 +46,7 @@ const BASE_SETTINGS: SettingsFile = {
   conventions: { conventions: { generated: [], layers: [] }, declared: [] },
 };
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const LOOPS_CLAUSE = clauseAddressSchema.parse("CD-15#loops");
 
@@ -361,10 +361,9 @@ describe("mappedSettings turning clauses into checks", () => {
   });
 
   it("refuses a check with no engine on the mechanism the clause was run on", () => {
-    const oxlint = mechanismIdSchema.parse("oxlint");
     expect(
-      mappedSettings({ ...BASE_REQUEST, selection: { ...BASE_SELECTION, clauses: [[LOOPS_CLAUSE, { state: "run", mechanism: oxlint }]] } }),
-    ).toEqual({ outcome: "failed", error: [{ kind: "no-engine-on-mechanism", check: "loop-count#loops", mechanism: oxlint }] });
+      mappedSettings({ ...BASE_REQUEST, selection: { ...BASE_SELECTION, clauses: [[TEST_BODY_CLAUSE, { state: "run", mechanism: ESLINT }]] } }),
+    ).toEqual({ outcome: "failed", error: [{ kind: "no-engine-on-mechanism", check: "loop-keyword#test-body", mechanism: ESLINT }, { kind: "no-engine-on-mechanism", check: "rebinding#test-body", mechanism: ESLINT }] });
   });
 
   it("refuses a check with two engines on the mechanism, naming both", () => {

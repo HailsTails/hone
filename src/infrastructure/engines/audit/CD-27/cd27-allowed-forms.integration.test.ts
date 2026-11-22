@@ -14,7 +14,7 @@ import { readDisciplineFile, readPieceFile } from "../../../content-files/rule-s
 import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { disciplineIdSchema, mechanismIdSchema } from "../../../hone-config-file/identifiers.ts";
+import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
 import type { MechanismId } from "../../../../domain/rule-set/identifier-types.ts";
 import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
@@ -329,14 +329,14 @@ const ruleSetTexts = import.meta.glob(
 const AUDIT_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/audit/" }),
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/audit`,
 });
 
 const ESLINT_ROWS = conformanceRows({
   table: ruleSetTexts,
   disciplines: foldersUnder({ table: ruleSetTexts, prefix: "./src/infrastructure/engines/eslint/" }),
-  mechanism: mechanismIdSchema.parse("eslint"),
+  mechanism: "eslint",
   mechanismRoot: `${REPO_ROOT}/src/infrastructure/engines/eslint`,
 });
 

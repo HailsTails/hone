@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Check, Engine, Symptom } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import cd2Plugin from "../../CD-2/cd2/cd2.eslint-plugin.ts";
 import CD_2_PIECE from "../../CD-2/piece.json" with { type: "json" };
@@ -25,9 +24,9 @@ const NON_NULL_REPORTING_BOUNDARY: EslintMajorBoundary = {
   declarationText: DECLARATION_TEXT,
 };
 
-const WALKER: Engine = { name: "walker", mechanism: mechanismIdSchema.parse("audit") };
+const WALKER: Engine = { name: "walker", mechanism: "audit" };
 
-const ESLINT: Engine = { name: "eslint", mechanism: mechanismIdSchema.parse("eslint") };
+const ESLINT: Engine = { name: "eslint", mechanism: "eslint" };
 
 const TEST_SWITCHED_OFF: Symptom = {
   name: "test-switched-off",

@@ -20,15 +20,14 @@ import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { type ProjectRequest, runProject } from "./run-project.ts";
 
 const SELECTION_PATH = "/repo/disciplines.json";
 const EXCEPTIONS_PATH = "/repo/discipline-exceptions.json";
 
-const AUDIT = mechanismIdSchema.parse("audit");
-const LINT = mechanismIdSchema.parse("lint");
+const AUDIT = "audit" as const;
+const LINT = "eslint" as const;
 const CLASS_SYNTAX = clauseAddressSchema.parse("CD-14#class-syntax");
 const ABSTRACT_SYNTAX = clauseAddressSchema.parse("CD-14#abstract-syntax");
 const INSTALL_ROOT = absolutePathSchema.parse("/install");

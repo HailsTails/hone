@@ -14,7 +14,6 @@ import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts
 import { absolutePathSchema } from "../../../infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import type { RecordAnswerOracle, FileCarveOutRecord } from "../../ports/upgrade/record-answer-oracle.ts";
@@ -44,9 +43,9 @@ const callSequenceOf = (request: { readonly mocks: Readonly<Record<string, Recor
     .toSorted((left, right) => left.order - right.order)
     .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

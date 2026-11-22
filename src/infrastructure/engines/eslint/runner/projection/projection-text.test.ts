@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { type ProjectedPiece, projectionText } from "./projection-text.ts";
 
@@ -43,8 +42,8 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 
 const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
 const noTmpFiles = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
-const eslint = mechanismIdSchema.parse("eslint");
-const eslint10 = mechanismIdSchema.parse("eslint-10");
+const eslint = "eslint" as const;
+const audit = "audit" as const;
 
 const cd14Piece: ProjectedPiece = {
   pluginNamespace: "hone",
@@ -101,7 +100,7 @@ const clauseWideClassSyntax: ExceptionRecord = {
   whyChain: VERSION_ONE_CAUSAL_WHY_CHAIN,
 };
 
-const authorisedInBUnderEslint10: ExceptionRecord = { ...authorisedInB, mechanism: eslint10 };
+const authorisedInBUnderAudit: ExceptionRecord = { ...authorisedInB, mechanism: audit };
 
 const fullProjection = `import piece0 from "../team-rules/mechanisms/eslint/PD-1/plugin.ts";
 import piece1 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
@@ -298,8 +297,8 @@ describe("projectionText", () => {
     );
   });
 
-  it("emits the off block of a record carrying whatever mechanism id the runner is registered under", () => {
-    expect(projectionText({ selectedPieces: [cd14Piece], records: [authorisedInBUnderEslint10] })).toBe(
+  it("emits the off block of a record whichever mechanism it carries", () => {
+    expect(projectionText({ selectedPieces: [cd14Piece], records: [authorisedInBUnderAudit] })).toBe(
       authorisedInBOnlyProjection,
     );
   });

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
 import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import { answeredFilesOf } from "./answered-files.ts";
 
@@ -12,7 +11,7 @@ const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
   clause: clauseAddressSchema.parse("CD-1#explicit-any"),
-  engines: [{ name: "eslint", mechanism: mechanismIdSchema.parse("eslint") }],
+  engines: [{ name: "eslint", mechanism: "eslint" }],
   forms: [],
 };
 

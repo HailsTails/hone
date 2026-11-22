@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Check, Engine, Principle, RecordKind, Symptom, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { GitPort, GitTreePort } from "../../ports/git-port.ts";
@@ -16,9 +15,9 @@ import type { PlacedEntry } from "../../../domain/records/discipline-exceptions/
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import { FOUND_TREE_REVISION, foundTreeCheckReachOf, foundTreeRunReachOf } from "./found-tree-reach.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 

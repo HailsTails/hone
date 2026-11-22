@@ -59,25 +59,11 @@ describe("clauseIdSchema", () => {
 });
 
 describe("mechanismIdSchema", () => {
-  it("refuses not-run, which disciplines.json reserves for a clause adopted with its mechanism not run", () => {
-    expect(mechanismIdSchema.safeParse("not-run")).toMatchObject({
-      success: false,
-      error: { issues: [expect.objectContaining({ message: expect.stringContaining("\"not-run\" is reserved for a clause adopted with its mechanism not run") })] },
-    });
-  });
-
-  it("refuses not-adopted, which disciplines.json reserves for a clause a repository does not adopt", () => {
-    expect(mechanismIdSchema.safeParse("not-adopted")).toMatchObject({
-      success: false,
-      error: { issues: [expect.objectContaining({ message: expect.stringContaining("reserved for a clause a repository does not adopt") })] },
-    });
-  });
-
-  it.each(["audit", "eslint", "oxlint2"])("accepts %j", (text) => {
+  it.each(["audit", "eslint"])("accepts %j", (text) => {
     expect(mechanismIdSchema.safeParse(text).success).toBe(true);
   });
 
-  it.each(["", "ESLint", "2walker", "-walker", "type_script", "es lint", "audit/ts"])(
+  it.each(["", "ESLint", "oxlint", "not-run", "not-adopted", "audit/ts"])(
     "refuses %j",
     (text) => {
       expect(mechanismIdSchema.safeParse(text).success).toBe(false);

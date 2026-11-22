@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../records/discipline-exceptions/exception-record.ts";
 import type { Finding } from "../finding/governance.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import type { CheckReport } from "./check-report.ts";
 import { verdictOf } from "./verdict.ts";
@@ -11,8 +10,8 @@ const RECORDS_FILE = repoPathSchema.parse("discipline-exceptions.json");
 
 const noClass = clauseAddressSchema.parse("CD-14#no-class-syntax");
 const fileA = repoPathSchema.parse("src/a.ts");
-const audit = mechanismIdSchema.parse("audit");
-const eslint = mechanismIdSchema.parse("eslint");
+const audit = "audit" as const;
+const eslint = "eslint" as const;
 
 const finding: Finding = {
   clause: noClass,

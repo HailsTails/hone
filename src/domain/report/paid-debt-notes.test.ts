@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ExceptionRecord } from "../records/discipline-exceptions/exception-record.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { paidDebtNotesOf } from "./paid-debt-notes.ts";
 
 const LOOPS = clauseAddressSchema.parse("CD-15#loops");
-const AUDIT = mechanismIdSchema.parse("audit");
-const ESLINT = mechanismIdSchema.parse("eslint");
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
 const BASKET = repoPathSchema.parse("src/basket.ts");
 const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
 

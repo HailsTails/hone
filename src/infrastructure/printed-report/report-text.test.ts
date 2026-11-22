@@ -5,7 +5,6 @@ import type { Finding } from "../../domain/finding/governance.ts";
 import type { ScriptOptionCause } from "../../domain/runner/runner-result-types.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { editionSchema } from "../content-files/edition.ts";
-import { mechanismIdSchema } from "../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../hone-records-folder/repo-path.ts";
 import type { CheckReport, ClauseReading, PartialAssessment, ProjectionProblem, Unmeasured } from "../../domain/report/check-report.ts";
 import type { Case, Principle, Recipe, RecordKind, Rule, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
@@ -57,8 +56,8 @@ const probeNoTmp = clauseAddressSchema.parse("probe/PD-1#no-tmp-files");
 const fileA = repoPathSchema.parse("src/a.ts");
 const packageJson = repoPathSchema.parse("package.json");
 const suppressions = repoPathSchema.parse("eslint-suppressions.json");
-const audit = mechanismIdSchema.parse("audit");
-const eslint = mechanismIdSchema.parse("eslint");
+const audit = "audit" as const;
+const eslint = "eslint" as const;
 const SLICE = repoPathSchema.parse("packages/a/disciplines.eslint.mjs");
 const PROJECT_COMMAND = "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
 
@@ -1134,7 +1133,7 @@ describe("renderReportText readFirst by output", () => {
 describe("renderReportText clause editions", () => {
   const editionReading = {
     address: clauseAddressSchema.parse("CD-27#test-body-logic"),
-    mechanism: mechanismIdSchema.parse("audit"),
+    mechanism: "audit" as const,
     edition: editionSchema.parse("1"),
     latest: editionSchema.parse("2"),
   };

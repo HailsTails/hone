@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { VersionOneWhyChain } from "../../../../../domain/records/discipline-exceptions/version-one-why-chain.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
   type ConfigRoot,
@@ -52,7 +51,7 @@ const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {
 };
 
 const classSyntax = clauseAddressSchema.parse("CD-14#class-syntax");
-const eslint = mechanismIdSchema.parse("eslint");
+const eslint = "eslint" as const;
 
 const tracked = (paths: readonly string[]) => repoPathSchema.array().parse(paths);
 

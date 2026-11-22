@@ -13,7 +13,6 @@ import { createSymptomCatalogueRepository } from "../../src/infrastructure/conte
 import type { TouchedSet } from "../../src/domain/repository/touched-set.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../src/infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../src/infrastructure/hone-records-folder/repo-path.ts";
 import type { Recipe } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../src/domain/result.ts";
@@ -240,7 +239,7 @@ const source = createRecordsFolder({
   repoRoot: absolutePathSchema.parse(made.value),
 });
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
 const findingAt = (request: { readonly clause: string; readonly file: string }): Finding => ({
   clause: clauseAddressSchema.parse(request.clause),

@@ -5,15 +5,14 @@ import type { Finding } from "../../../domain/finding/governance.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { recordAnswersOf } from "./record-answers.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 const SRC_A = repoPathSchema.parse("src/a.ts");
 

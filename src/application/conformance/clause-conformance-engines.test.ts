@@ -10,12 +10,12 @@ import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-t
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
 import { clauseAddressSchema } from "../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { clauseConformanceOf } from "./clause-conformance.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse("/install");
-const MECHANISM = mechanismIdSchema.parse("audit");
+const MECHANISM = "audit" as const;
 const ACME_2 = disciplineIdSchema.parse("ACME-2");
 const SCRATCH_FILES_ID = clauseIdSchema.parse("scratch-files");
 

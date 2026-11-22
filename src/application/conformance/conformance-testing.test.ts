@@ -7,11 +7,11 @@ import type { RuleSetFiles } from "../ports/rule-set/rule-set-files.ts";
 import type { DisciplineFile, PieceFile } from "../../domain/rule-set/rule-set-types.ts";
 import { absolutePathSchema } from "../../infrastructure/content-files/absolute-path.ts";
 import { FIRST_EDITION } from "../../infrastructure/content-files/edition.ts";
-import { clauseIdSchema, disciplineIdSchema, mechanismIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
+import { clauseIdSchema, disciplineIdSchema } from "../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../infrastructure/hone-records-folder/repo-path.ts";
 import { type ConformanceTestingPorts, createConformanceTesting } from "./conformance-testing.ts";
 
-const AUDIT = mechanismIdSchema.parse("audit");
+const AUDIT = "audit" as const;
 const ACME_2 = disciplineIdSchema.parse("ACME-2");
 const SCRATCH_FILES_ID = clauseIdSchema.parse("scratch-files");
 

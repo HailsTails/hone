@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mechanismIdSchema } from "../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { loadFailureDetail, loadFailureText } from "./load-failure-text.ts";
 
-const WALKER = mechanismIdSchema.parse("audit");
+const WALKER = "audit" as const;
 
-const ESLINT = mechanismIdSchema.parse("eslint");
+const ESLINT = "eslint" as const;
 
 describe("loadFailureText", () => {
   it("prints records-in-both-layouts with the file, the folder and that only one layout is read", () => {

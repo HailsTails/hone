@@ -6,7 +6,6 @@ import { createDefaultFileTextPort } from "./infrastructure/node/file-system/fil
 import { createDefaultModuleLoaderPort } from "./infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultEnginePort } from "./infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultPathPort } from "./infrastructure/node/path-port.ts";
-import { mechanismIdSchema } from "./infrastructure/hone-config-file/identifiers.ts";
 import { loadFailureDetail } from "./infrastructure/printed-report/load-failures/load-failure-text.ts";
 
 export type {
@@ -23,7 +22,7 @@ const path = createDefaultPathPort({});
 const moduleUrl = import.meta.url;
 
 const testing = createConformanceTesting({
-  mechanism: mechanismIdSchema.parse("audit"),
+  mechanism: "audit",
   moduleUrl,
   installRoot: installRootOfApiEntry({ path, moduleUrl }),
   ruleSetFiles: createRuleSetFileReader({ fileText: createDefaultFileTextPort({}), path }),

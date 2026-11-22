@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AttributedNativeException, Finding } from "../../finding/governance.ts";
 import { clauseAddressSchema } from "../../../infrastructure/discipline-exceptions-folder/clause-address.ts";
-import { mechanismIdSchema } from "../../../infrastructure/hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../infrastructure/hone-records-folder/repo-path.ts";
 import type { LegacyWhyChain, VersionOneWhyChain } from "./version-one-why-chain.ts";
 import type { ExceptionRecord } from "./exception-record.ts";
@@ -57,8 +56,8 @@ const LEGACY_WHY_CHAIN: LegacyWhyChain = {
 
 const LOOPS = clauseAddressSchema.parse("CD-15#loops");
 const CASTS = clauseAddressSchema.parse("CD-2#cast-expressions");
-const AUDIT = mechanismIdSchema.parse("audit");
-const ESLINT = mechanismIdSchema.parse("eslint");
+const AUDIT = "audit" as const;
+const ESLINT = "eslint" as const;
 const BASKET = repoPathSchema.parse("src/basket.ts");
 const LEGACY = repoPathSchema.parse("src/legacy/report.ts");
 
