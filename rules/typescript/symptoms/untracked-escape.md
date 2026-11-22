@@ -22,6 +22,11 @@
   "recipes": [
     "meaning-in-names-not-comments"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a file legitimately carries untracked directives, such as generated code",
+      "kind": "authorised-location"
+    }
+  ]
 }
 ```

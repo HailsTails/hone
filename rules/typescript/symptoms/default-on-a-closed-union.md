@@ -22,6 +22,11 @@
   "recipes": [
     "tagged-union-and-exhaustive-switch"
   ],
-  "correctUses": []
+  "correctUses": [
+    {
+      "situation": "a switch is over an open set of values and needs a fallback",
+      "kind": "authorised-location"
+    }
+  ]
 }
 ```
