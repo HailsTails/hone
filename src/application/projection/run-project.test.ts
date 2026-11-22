@@ -5,7 +5,7 @@ import type { LegacyWhyChain } from "../../domain/records/discipline-exceptions/
 import type { PlacedEntry } from "../../domain/records/discipline-exceptions/exception-entry.ts";
 import type { ExceptionReading, ExceptionRecord } from "../../domain/records/discipline-exceptions/exception-record.ts";
 import type { EnginePort } from "../ports/engine/engine-port.ts";
-import type { LoadedRunner } from "../ports/engine/runner-module.ts";
+import type { LoadedRunner, RunnerCall } from "../ports/engine/runner-module.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../ports/git-port.ts";
 import type { ModuleLoaderPort } from "../ports/host/module-loader-port.ts";
@@ -139,18 +139,21 @@ const LEGACY_WALKER_RECORD: ExceptionRecord = {
 
 const ESLINT_WRITTEN: readonly ProjectionWrite[] = [{ path: ESLINT_PROJECTION, effect: "written" }];
 
-const notUsed = (): never => {
-  throw new Error("this port is not used by the projection under test");
+const AUDIT_RUNNER: LoadedRunner = {
+  exceptionPath: "embedded",
+  projectedKinds: ["config-override"],
+  run: vi.fn<RunnerCall>(),
+  conform: vi.fn<RunnerCall>(),
+  project: vi.fn<RunnerCall>(),
 };
 
-const AUDIT_RUNNER: LoadedRunner = { exceptionPath: "embedded", projectedKinds: ["config-override"], run: notUsed, conform: notUsed, project: notUsed };
-
-const LINT_RUNNER: LoadedRunner = { exceptionPath: "standalone", run: notUsed, conform: notUsed };
-
-const RUNNERS: Readonly<Record<string, LoadedRunner>> = { audit: AUDIT_RUNNER, lint: LINT_RUNNER };
+const LINT_RUNNER: LoadedRunner = { exceptionPath: "standalone", run: vi.fn<RunnerCall>(), conform: vi.fn<RunnerCall>() };
 
 const engineProjecting = (writes: Result<readonly ProjectionWrite[], RunnerFailure>): EnginePort => ({
-  load: vi.fn<EnginePort["load"]>(({ mechanism }) => Promise.resolve({ outcome: "ok", value: { mechanism, runner: RUNNERS[mechanism], checksRunner: undefined } })),
+  load: vi
+    .fn<EnginePort["load"]>()
+    .mockResolvedValueOnce({ outcome: "ok", value: { mechanism: AUDIT, runner: AUDIT_RUNNER, checksRunner: undefined } })
+    .mockResolvedValueOnce({ outcome: "ok", value: { mechanism: LINT, runner: LINT_RUNNER, checksRunner: undefined } }),
   run: { checks: vi.fn<EnginePort["run"]["checks"]>(), withRecords: vi.fn<EnginePort["run"]["withRecords"]>() },
   project: { checks: vi.fn<EnginePort["project"]["checks"]>(), withRecords: vi.fn<EnginePort["project"]["withRecords"]>().mockResolvedValue(writes) },
   conform: vi.fn<EnginePort["conform"]>(),
@@ -163,13 +166,13 @@ const fileTextOfPresentFiles = (): FileTextPort => ({
 });
 
 const POSIX_JOIN: PathPort = {
-  join: ({ segments }) => segments.join("/"),
-  joinRepository: notUsed,
-  relative: notUsed,
-  directoryOf: notUsed,
-  repositoryDirectoryOf: notUsed,
-  resolve: notUsed,
-  fromFileUrl: notUsed,
+  join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
 };
 
 const gitTracking = (tracked: readonly RepoPath[]): GitPort => ({
@@ -190,8 +193,8 @@ const exceptionRepositoryReading = (entries: Result<readonly PlacedEntry[], Load
 
 const parserReading = (reading: ExceptionReading): ExceptionEntryParser => ({
   parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>().mockReturnValue(reading),
-  importedEntriesIn: notUsed,
-  importSourcesOf: notUsed,
+  importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+  importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
 });
 
 const projectRequest = (overrides: Partial<ProjectRequest>): ProjectRequest => ({

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CheckRequest } from "../../run/check/run-check.ts";
 import type { SelectionRepository } from "../../ports/selection/selection-repository.ts";
-import type { LoadedRunner } from "../../ports/engine/runner-module.ts";
+import type { LoadedRunner, RunnerCall } from "../../ports/engine/runner-module.ts";
 import type { EnginePort } from "../../ports/engine/engine-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
@@ -58,11 +58,7 @@ const SELECTION_READING: SelectionReading = {
   fileExceptionWhyChains: "required",
 };
 
-const notUsed = (): never => {
-  throw new Error("this port is not used by the pass under test");
-};
-
-const RUNNER: LoadedRunner = { exceptionPath: "standalone", run: notUsed, conform: notUsed };
+const RUNNER: LoadedRunner = { exceptionPath: "standalone", run: vi.fn<RunnerCall>(), conform: vi.fn<RunnerCall>() };
 
 const STANDALONE_RUN: MechanismRun = {
   mechanism: AUDIT,
@@ -79,9 +75,9 @@ const EMBEDDED_RUN: MechanismRun = { ...STANDALONE_RUN, coverableKinds: ["config
 
 const engineRunning = (run: MechanismRun): EnginePort => ({
   load: vi.fn<EnginePort["load"]>().mockResolvedValue({ outcome: "ok", value: { mechanism: AUDIT, runner: RUNNER, checksRunner: undefined } }),
-  run: { checks: notUsed, withRecords: vi.fn<EnginePort["run"]["withRecords"]>().mockResolvedValue({ outcome: "ok", value: run }) },
-  project: { checks: notUsed, withRecords: notUsed },
-  conform: notUsed,
+  run: { checks: vi.fn<EnginePort["run"]["checks"]>(), withRecords: vi.fn<EnginePort["run"]["withRecords"]>().mockResolvedValue({ outcome: "ok", value: run }) },
+  project: { checks: vi.fn<EnginePort["project"]["checks"]>(), withRecords: vi.fn<EnginePort["project"]["withRecords"]>() },
+  conform: vi.fn<EnginePort["conform"]>(),
 });
 
 const gitTracking = (request: { readonly trackedPaths: ReturnType<GitPort["trackedPaths"]> }): GitPort => ({
@@ -94,18 +90,18 @@ const gitTracking = (request: { readonly trackedPaths: ReturnType<GitPort["track
 
 const PATH: PathPort = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),
-  joinRepository: notUsed,
-  relative: notUsed,
-  directoryOf: notUsed,
-  repositoryDirectoryOf: notUsed,
-  resolve: notUsed,
-  fromFileUrl: notUsed,
+  joinRepository: vi.fn<PathPort["joinRepository"]>(),
+  relative: vi.fn<PathPort["relative"]>(),
+  directoryOf: vi.fn<PathPort["directoryOf"]>(),
+  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
+  resolve: vi.fn<PathPort["resolve"]>(),
+  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
 };
 
 const NO_RECORDS_PARSED: ExceptionEntryParser = {
   parseExceptionEntries: vi.fn<ExceptionEntryParser["parseExceptionEntries"]>().mockReturnValue({ records: [], invalid: [] }),
-  importedEntriesIn: notUsed,
-  importSourcesOf: notUsed,
+  importedEntriesIn: vi.fn<ExceptionEntryParser["importedEntriesIn"]>(),
+  importSourcesOf: vi.fn<ExceptionEntryParser["importSourcesOf"]>(),
 };
 
 const checkRequest = (overrides: Partial<CheckRequest>): CheckRequest => ({
