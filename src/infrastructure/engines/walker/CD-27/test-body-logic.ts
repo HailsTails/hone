@@ -21,69 +21,76 @@ type FormRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
 const SECOND_EDITION: Edition = editionOf("2");
 
-const ALLOWED_FORMS_PAGE = "CHECKS.md";
+const BRANCH_IN_A_TEST = "branch-in-a-test/test-body.md";
 
-type PageSection = Omit<Remedy, "page">;
+const COMPUTED_VALUE_IN_A_TEST = "computed-value-in-a-test/test-body.md";
 
-const onAllowedFormsPage = (section: PageSection): Remedy => ({ fix: section.fix, page: ALLOWED_FORMS_PAGE, section: section.section });
+const REBINDING = "rebinding/test-body.md";
 
-const firstEdition = (section: PageSection): TestBodyForm => ({ introducedIn: editionOf("1"), remedy: onAllowedFormsPage(section) });
+const TEXT_PAST_ITS_READER = "text-past-its-reader/test-body.md";
 
-const secondEdition = (section: PageSection): TestBodyForm => ({ introducedIn: SECOND_EDITION, remedy: onAllowedFormsPage(section) });
+const THROW_OR_CATCH_IN_A_TEST = "throw-or-catch-in-a-test/try-block.md";
+
+const DOUBLE_WITH_A_BODY = "double-with-a-body/logic-in-a-passed-function.md";
+
+const firstEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: editionOf("1"), remedy });
+
+const secondEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: SECOND_EDITION, remedy });
 
 const BRANCHING = firstEdition({
   fix: "write one test per case, or one it.each table; to narrow a value that may be missing, assert.isDefined it",
-  section: "branching-with-if",
+  page: BRANCH_IN_A_TEST, section: "branching-with-if",
 });
 const TRY_BLOCK = firstEdition({
   fix: "assert the throw with expect(() => act()).toThrow or await expect(act()).rejects, or assert the failure the unit returns",
-  section: "a-try-block",
+  page: THROW_OR_CATCH_IN_A_TEST, section: "a-try-block",
 });
-const TERNARY = firstEdition({ fix: "write the value out, or give each case its own it.each row", section: "a-ternary" });
-const LET = firstEdition({ fix: "use const; record calls with vi.fn and assert them with toHaveBeenCalledWith", section: "a-let" });
+const TERNARY = firstEdition({ fix: "write the value out, or give each case its own it.each row", page: BRANCH_IN_A_TEST, section: "a-ternary" });
+const LET = firstEdition({ fix: "use const; record calls with vi.fn and assert them with toHaveBeenCalledWith", page: REBINDING, section: "a-let" });
 const PICKING_METHOD = firstEdition({
   fix: "assert on the whole array with toEqual, toContain, toContainEqual or expect.arrayContaining",
-  section: "a-method-that-picks-or-tests-an-element",
+  page: COMPUTED_VALUE_IN_A_TEST, section: "a-method-that-picks-or-tests-an-element",
 });
 const COMPUTING_METHOD = firstEdition({
   fix: "write the expected value out, or match part of it with toMatchObject, toHaveLength or expect.stringContaining",
-  section: "a-method-that-computes-a-value",
+  page: COMPUTED_VALUE_IN_A_TEST, section: "a-method-that-computes-a-value",
 });
-const MUTATING_METHOD = firstEdition({ fix: "write the finished array out as a literal", section: "a-method-that-mutates" });
+const MUTATING_METHOD = firstEdition({ fix: "write the finished array out as a literal", page: COMPUTED_VALUE_IN_A_TEST, section: "a-method-that-mutates" });
 const SHORT_CIRCUIT = secondEdition({
   fix: "write the value it gives; to narrow a value that may be missing, assert.isDefined it",
-  section: "a-short-circuit",
+  page: BRANCH_IN_A_TEST, section: "a-short-circuit",
 });
 const INDEXED_OPTIONAL_CHAIN = secondEdition({
   fix: "compare the whole element with toMatchObject, or destructure it and assert.isDefined it before reading it",
-  section: "an-optional-chain-after-an-index",
+  page: BRANCH_IN_A_TEST, section: "an-optional-chain-after-an-index",
 });
 const MOCK_CALL_OPTIONAL_CHAIN = secondEdition({
   fix: "assert the call with toHaveBeenNthCalledWith or toHaveBeenLastCalledWith",
-  section: "an-optional-chain-on-a-mock-call",
+  page: BRANCH_IN_A_TEST, section: "an-optional-chain-on-a-mock-call",
 });
 const MOCK_RESULT_OPTIONAL_CHAIN = secondEdition({
   fix: "assert what it returned with toHaveNthReturnedWith or toHaveLastReturnedWith",
-  section: "an-optional-chain-on-a-mock-result",
+  page: BRANCH_IN_A_TEST, section: "an-optional-chain-on-a-mock-result",
 });
 const PROPERTY_OPTIONAL_CHAIN = secondEdition({
   fix: "compare the whole value with toMatchObject, or destructure it and assert.isDefined it before reading it",
-  section: "an-optional-chain-on-a-property",
+  page: BRANCH_IN_A_TEST, section: "an-optional-chain-on-a-property",
 });
-const OPTIONAL_CALL = secondEdition({ fix: "assert.isDefined the function, then call it", section: "an-optional-call" });
-const SWITCH = secondEdition({ fix: "write one test per case, or one it.each table", section: "a-switch" });
+const OPTIONAL_CALL = secondEdition({ fix: "assert.isDefined the function, then call it", page: BRANCH_IN_A_TEST, section: "an-optional-call" });
+const SWITCH = secondEdition({ fix: "write one test per case, or one it.each table", page: BRANCH_IN_A_TEST, section: "a-switch" });
 const JSON_CALL = secondEdition({
   fix: "assert the object the unit gives back, written out; a unit that gives back only text should hand over an object, leaving the text to the adapter at its edge",
-  section: "serialising-or-parsing-json",
+  page: TEXT_PAST_ITS_READER, section: "serialising-or-parsing-json",
 });
-const OBJECT_ASSIGN = secondEdition({ fix: "write the object out, spreading what it copies; to give an Error a property, assign it", section: "merging-objects" });
-const OBJECT_FROM_ENTRIES = secondEdition({ fix: "write the object out as a literal", section: "building-an-object-from-entries" });
-const ARRAY_FROM = secondEdition({ fix: "write a short array out as a literal; the page shows no form for a long one", section: "building-an-array-from-a-length" });
-const MATH_CALL = secondEdition({ fix: "write the number out", section: "a-math-call" });
-const PASSED_ON_FUNCTION: Remedy = onAllowedFormsPage({
+const OBJECT_ASSIGN = secondEdition({ fix: "write the object out, spreading what it copies; to give an Error a property, assign it", page: COMPUTED_VALUE_IN_A_TEST, section: "merging-objects" });
+const OBJECT_FROM_ENTRIES = secondEdition({ fix: "write the object out as a literal", page: COMPUTED_VALUE_IN_A_TEST, section: "building-an-object-from-entries" });
+const ARRAY_FROM = secondEdition({ fix: "write a short array out as a literal; the page shows no form for a long one", page: COMPUTED_VALUE_IN_A_TEST, section: "building-an-array-from-a-length" });
+const MATH_CALL = secondEdition({ fix: "write the number out", page: COMPUTED_VALUE_IN_A_TEST, section: "a-math-call" });
+const PASSED_ON_FUNCTION: Remedy = {
   fix: "make it a vi.fn spy with a written-out mockReturnValue, and assert what it was asked with toHaveBeenCalledExactlyOnceWith; the recipe is Stub with vi.fn",
+  page: DOUBLE_WITH_A_BODY,
   section: "logic-inside-a-function-the-test-passes-on",
-});
+};
 
 const FORMS_IN_PAGE_ORDER: readonly TestBodyForm[] = [
   BRANCHING,

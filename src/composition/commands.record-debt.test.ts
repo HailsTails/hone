@@ -179,7 +179,7 @@ const repositoryFiles = (request: {
   "/install/src/infrastructure/engines/walker/runner/runner.ts": presentFile({ text: "export const runner = {};\n" }),
   "/repo/src/a.ts": presentFile({ text: "class A {}\n" }),
   "/repo/disciplines.assessment.md": ABSENT_FILE,
-  "/install/rules/CD-14/README.md": presentFile({ text: "# CD-14\n" }),
+  "/install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md": presentFile({ text: "# Class keyword\n\n## Fix\n" }),
 });
 
 const REASON_ONLY_NO_RECORDS = repositoryFiles({ fileExceptionWhyChains: "optional", exceptions: ABSENT_FILE });
@@ -207,7 +207,7 @@ const RELATIVE_TO_REPO: Readonly<Record<string, RelativeLocation>> = {
   [EXCEPTIONS_PATH]: { relation: "within-root", path: "discipline-exceptions.json" },
   "/install": { relation: "different-root" },
   "/install/ADOPTING.md": { relation: "different-root" },
-  "/install/rules/CD-14/README.md": { relation: "different-root" },
+  "/install/rules/typescript/symptoms/authored-class-or-this/class-keyword.md": { relation: "different-root" },
 };
 
 const TABLE_PATH: PathPort = {

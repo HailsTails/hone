@@ -62,9 +62,9 @@ const GUIDE_PAGE = "/repo/node_modules/@hailstails/hone/ADOPTING.md";
 const SHIPPED_ROOT = absoluteRootOf("/repo/node_modules/@hailstails/hone");
 
 const CLAUSE_ROOTS = [
-  { clause: LOOPS, ruleSetRoot: SHIPPED_ROOT },
-  { clause: CLASS_SYNTAX, ruleSetRoot: SHIPPED_ROOT },
-  { clause: TEAM_CLAUSE, ruleSetRoot: absoluteRootOf("/repo/team-rules") },
+  { clause: LOOPS, ruleSetRoot: SHIPPED_ROOT, checks: [] },
+  { clause: CLASS_SYNTAX, ruleSetRoot: SHIPPED_ROOT, checks: [] },
+  { clause: TEAM_CLAUSE, ruleSetRoot: absoluteRootOf("/repo/team-rules"), checks: [] },
 ];
 
 const findingOn = (request: { readonly clause: Finding["clause"]; readonly file: RepoPath }): Finding => ({
@@ -105,7 +105,7 @@ const loopsReading = (request: { readonly assessmentSection: "present" | "not-as
   kind: "clause",
   clause: LOOPS,
   assessmentSection: request.assessmentSection,
-  rulePage: { path: LOOPS_PAGE_TEXT, presence: "present" },
+  pages: [{ path: LOOPS_PAGE_TEXT, presence: "present", section: "spirit" }],
 });
 
 const ONE_LOOPS_FINDING = [findingOn({ clause: LOOPS, file: repoPathOf("src/a.ts") })];
@@ -114,7 +114,7 @@ const CLASS_SYNTAX_READING = {
   kind: "clause",
   clause: CLASS_SYNTAX,
   assessmentSection: "unread",
-  rulePage: { path: CLASS_SYNTAX_PAGE_TEXT, presence: "present" },
+  pages: [{ path: CLASS_SYNTAX_PAGE_TEXT, presence: "present", section: "spirit" }],
 };
 
 describe("clauseReadingsOf", () => {
@@ -216,14 +216,14 @@ describe("clauseReadingsOf pointing at the rule page", () => {
         join: vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(TEAM_PAGE),
         shownPathOf: shownAs(TEAM_PAGE_TEXT),
       }),
-    ).toEqual([{ kind: "clause", clause: TEAM_CLAUSE, assessmentSection: "not-assessed", rulePage: { path: TEAM_PAGE_TEXT, presence: "absent" } }]);
+    ).toEqual([{ kind: "clause", clause: TEAM_CLAUSE, assessmentSection: "not-assessed", pages: [{ path: TEAM_PAGE_TEXT, presence: "absent", section: "spirit" }] }]);
   });
 
   it("names the page and the guide as the shown path gives them when they are on another root than the repository", () => {
     expect(
       clauseReadingsOf({
         findings: ONE_LOOPS_FINDING,
-        clauseRoots: [{ clause: LOOPS, ruleSetRoot: absoluteRootOf("D:\\hone") }],
+        clauseRoots: [{ clause: LOOPS, ruleSetRoot: absoluteRootOf("D:\\hone"), checks: [] }],
         repoRoot: absoluteRootOf("C:\\repo"),
         installRoot: absoluteRootOf("D:\\hone"),
         fileText: assessmentNotWritten(),
@@ -238,7 +238,7 @@ describe("clauseReadingsOf pointing at the rule page", () => {
       }),
     ).toEqual([
       { kind: "assessment-file", state: "not-written", guide: "D:/hone/ADOPTING.md" },
-      { kind: "clause", clause: LOOPS, assessmentSection: "unread", rulePage: { path: "D:/hone/rules/CD-15/README.md", presence: "present" } },
+      { kind: "clause", clause: LOOPS, assessmentSection: "unread", pages: [{ path: "D:/hone/rules/CD-15/README.md", presence: "present", section: "spirit" }] },
     ]);
   });
 });
@@ -248,7 +248,7 @@ describe("clauseReadingsOf when pnpm runs the package from its store", () => {
   const storedReadings = (request: { readonly shownPathOf: ShownPathOf }) =>
     clauseReadingsOf({
       findings: ONE_LOOPS_FINDING,
-      clauseRoots: [{ clause: LOOPS, ruleSetRoot: storeRoot }],
+      clauseRoots: [{ clause: LOOPS, ruleSetRoot: storeRoot, checks: [] }],
       repoRoot: REPO_ROOT,
       installRoot: storeRoot,
       fileText: assessmentNotWritten(),
@@ -287,8 +287,117 @@ describe("clauseReadingsOf when pnpm runs the package from its store", () => {
         kind: "clause",
         clause: LOOPS,
         assessmentSection: "unread",
-        rulePage: { path: "node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/rules/CD-15/README.md", presence: "present" },
+        pages: [{ path: "node_modules/.pnpm/@hailstails+hone@1.0.0/node_modules/@hailstails/hone/rules/CD-15/README.md", presence: "present", section: "spirit" }],
       },
     ]);
+  });
+});
+
+describe("clauseReadingsOf pointing at check items", () => {
+  const classKeyword = { name: "class-keyword", symptom: { name: "authored-class-or-this" } };
+  const staticMembersOnly = { name: "static-members-only", symptom: { name: "authored-class-or-this" } };
+  const classKeywordPage = "/repo/node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/class-keyword.md";
+  const staticMembersOnlyPage = "/repo/node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/static-members-only.md";
+  const classKeywordText = "node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/class-keyword.md";
+  const staticMembersOnlyText = "node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/static-members-only.md";
+  const checkedRoots = [{ clause: CLASS_SYNTAX, ruleSetRoot: SHIPPED_ROOT, checks: [classKeyword, staticMembersOnly] }];
+
+  it("points a clause whose findings name no check at each of its check items, at the fix where the item has one", () => {
+    const join = vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(classKeywordPage).mockReturnValueOnce(staticMembersOnlyPage);
+    const fileText: ReadableFiles = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: "" })
+        .mockReturnValueOnce({ outcome: "ok", value: "# Class keyword\n\n## Fix\n\nWrite a closure factory.\n" })
+        .mockReturnValueOnce({ outcome: "ok", value: "# Static members only\n\n## Flags\n" }),
+    };
+    expect(
+      clauseReadingsOf({
+        findings: [findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") })],
+        clauseRoots: checkedRoots,
+        repoRoot: REPO_ROOT,
+        installRoot: INSTALL_ROOT,
+        fileText,
+        path: pathJoining(join),
+        shownPathOf: vi.fn<ShownPathOf>().mockReturnValueOnce(classKeywordText).mockReturnValueOnce(staticMembersOnlyText),
+      }),
+    ).toEqual([
+      {
+        kind: "clause",
+        clause: CLASS_SYNTAX,
+        assessmentSection: "not-assessed",
+        pages: [
+          { path: classKeywordText, presence: "present", section: "fix" },
+          { path: staticMembersOnlyText, presence: "present", section: "whole-page" },
+        ],
+      },
+    ]);
+    expect(join).toHaveBeenNthCalledWith(2, { segments: [SHIPPED_ROOT, "rules", "typescript", "symptoms", "authored-class-or-this", "class-keyword.md"] });
+  });
+
+  it("points only at the check items the clause's findings name", () => {
+    const fileText: ReadableFiles = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: "" })
+        .mockReturnValueOnce({ outcome: "ok", value: "## Fix\n" }),
+    };
+    expect(
+      clauseReadingsOf({
+        findings: [{ ...findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }), check: "authored-class-or-this#static-members-only" }],
+        clauseRoots: checkedRoots,
+        repoRoot: REPO_ROOT,
+        installRoot: INSTALL_ROOT,
+        fileText,
+        path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(staticMembersOnlyPage)),
+        shownPathOf: shownAs(staticMembersOnlyText),
+      }),
+    ).toEqual([
+      { kind: "clause", clause: CLASS_SYNTAX, assessmentSection: "not-assessed", pages: [{ path: staticMembersOnlyText, presence: "present", section: "fix" }] },
+    ]);
+  });
+
+  it("says when a check item is absent, reading nothing from it", () => {
+    const fileText: ReadableFiles = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present").mockReturnValueOnce("absent"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: "" }),
+    };
+    expect(
+      clauseReadingsOf({
+        findings: [{ ...findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }), check: "authored-class-or-this#class-keyword" }],
+        clauseRoots: checkedRoots,
+        repoRoot: REPO_ROOT,
+        installRoot: INSTALL_ROOT,
+        fileText,
+        path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce(classKeywordPage)),
+        shownPathOf: shownAs(classKeywordText),
+      }),
+    ).toEqual([
+      { kind: "clause", clause: CLASS_SYNTAX, assessmentSection: "not-assessed", pages: [{ path: classKeywordText, presence: "absent", section: "whole-page" }] },
+    ]);
+    expect(fileText.read).toHaveBeenCalledOnce();
+  });
+});
+describe("clauseReadingsOf when the findings name no check the clause carries", () => {
+  it("points at every check item of the clause", () => {
+    const classKeyword = { name: "class-keyword", symptom: { name: "authored-class-or-this" } };
+    const classKeywordText = "node_modules/@hailstails/hone/rules/typescript/symptoms/authored-class-or-this/class-keyword.md";
+    const fileText: ReadableFiles = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({ outcome: "ok", value: "" }).mockReturnValueOnce({ outcome: "ok", value: "## Fix\n" }),
+    };
+    expect(
+      clauseReadingsOf({
+        findings: [{ ...findingOn({ clause: CLASS_SYNTAX, file: repoPathOf("src/a.ts") }), check: "authored-class-or-this#elsewhere" }],
+        clauseRoots: [{ clause: CLASS_SYNTAX, ruleSetRoot: SHIPPED_ROOT, checks: [classKeyword] }],
+        repoRoot: REPO_ROOT,
+        installRoot: INSTALL_ROOT,
+        fileText,
+        path: pathJoining(vi.fn<PathPort["join"]>().mockReturnValueOnce(ASSESSMENT_PATH).mockReturnValueOnce("/repo/class-keyword.md")),
+        shownPathOf: shownAs(classKeywordText),
+      }),
+    ).toEqual([{ kind: "clause", clause: CLASS_SYNTAX, assessmentSection: "not-assessed", pages: [{ path: classKeywordText, presence: "present", section: "fix" }] }]);
   });
 });

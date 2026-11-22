@@ -61,7 +61,7 @@ const ABSTRACT_SYNTAX_CLAUSE = {
 const SELECTION_READING: SelectionReading = {
   selection: { selected: [{ address: CLASS_SYNTAX, mechanism: AUDIT, exceptions: "allowed" }], uncovered: [], notAdopted: [], notRun: [], editions: [] },
   bindings: [{ mechanism: AUDIT, clause: CLASS_SYNTAX_CLAUSE }],
-  clauseRoots: [{ clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT }],
+  clauseRoots: [{ clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] }],
   excluded: [],
   eslintConfigRoots: [],
   fileExceptionWhyChains: "required",
@@ -81,8 +81,8 @@ const TWO_MECHANISM_READING: SelectionReading = {
     { mechanism: LINT, clause: ABSTRACT_SYNTAX_CLAUSE },
   ],
   clauseRoots: [
-    { clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT },
-    { clause: ABSTRACT_SYNTAX, ruleSetRoot: INSTALL_ROOT },
+    { clause: CLASS_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] },
+    { clause: ABSTRACT_SYNTAX, ruleSetRoot: INSTALL_ROOT, checks: [] },
   ],
 };
 

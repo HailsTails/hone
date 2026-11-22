@@ -163,7 +163,7 @@ describe("readSettings", () => {
               },
             },
           ],
-          clauseRoots: [{ clause: LOOPS_CLAUSE, ruleSetRoot: INSTALL_ROOT }],
+          clauseRoots: [{ clause: LOOPS_CLAUSE, ruleSetRoot: INSTALL_ROOT, checks: [{ name: "loops", symptom: { name: "loop-keyword" } }] }],
           excluded: [],
           eslintConfigRoots: [],
           fileExceptionWhyChains: "required",

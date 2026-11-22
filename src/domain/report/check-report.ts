@@ -42,11 +42,17 @@ export type ProjectionProblem =
 
 export type AssessmentSection = "present" | "not-assessed" | "unread";
 
+export type ClausePage = {
+  readonly path: string;
+  readonly presence: FilePresence;
+  readonly section: "spirit" | "fix" | "whole-page";
+};
+
 export type ClauseReading = {
   readonly kind: "clause";
   readonly clause: ClauseAddress;
   readonly assessmentSection: AssessmentSection;
-  readonly rulePage: { readonly path: string; readonly presence: FilePresence };
+  readonly pages: readonly ClausePage[];
 };
 
 export type AssessmentFileNote = {

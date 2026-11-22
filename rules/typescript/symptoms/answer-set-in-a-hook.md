@@ -3,7 +3,7 @@
 ```json
 {
   "group": "Tests",
-  "seen": "A test hook that gives a stub its answer (`mockReturnValue`, `mockResolvedValue`, `mockImplementation`) or reassigns a value the tests read. A plain reset in `afterEach` is not this symptom.",
+  "seen": "A test hook that gives a stub its answer (`mockReturnValue`, `mockResolvedValue`, `mockImplementation`) or assigns a value the tests read, such as a `let` declared at file or suite scope. A plain reset in `afterEach` is not this symptom.",
   "mayIndicate": [
     {
       "case": "states-what-the-unit-gives-back-for-one-case-or-several",

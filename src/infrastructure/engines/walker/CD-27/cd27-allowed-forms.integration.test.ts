@@ -20,7 +20,7 @@ import { createWalkerRunner } from "../runner/create-walker-runner.ts";
 import type { CompilerOptions, SyntaxApi, TypeScriptParsePort } from "../runner/toolchain/typescript-parse.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../runner/toolchain/typescript-toolchain.ts";
 import * as walkerRunnerModule from "../runner/runner.ts";
-import { TEST_BODY_SECTIONS } from "./test-body-logic.ts";
+import { TEST_BODY_REMEDIES, TEST_BODY_SECTIONS } from "./test-body-logic.ts";
 import * as eslintRunnerModule from "../../eslint/runner/runner.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 
@@ -98,9 +98,6 @@ const cd3CompilerOptionsOf = (request: { readonly syntaxApi: SyntaxApi }): Compi
 });
 
 type AllowedBlock = { readonly name: string; readonly source: string };
-
-const sectionNamesOf = (request: { readonly sections: readonly AllowedFormSection[] }): readonly string[] =>
-  request.sections.map((section) => section.section);
 
 const allowedBlocksOf = (request: { readonly sections: readonly AllowedFormSection[] }): readonly AllowedBlock[] =>
   request.sections.flatMap((section) =>
@@ -308,11 +305,12 @@ const conformanceRows = (request: {
 
 const REPO_ROOT = createDefaultPathPort({}).join({ segments: [import.meta.dirname, "..", "..", "..", "..", ".."] });
 
-const CHECKS_PAGE_READ = createDefaultFileTextPort({}).read({
-  path: createDefaultPathPort({}).join({ segments: [REPO_ROOT, "rules", "CD-27", "CHECKS.md"] }),
-});
+const checkItemTextOf = (request: { readonly page: string }): string => {
+  const read = createDefaultFileTextPort({}).read({ path: createDefaultPathPort({}).join({ segments: [REPO_ROOT, "rules", "typescript", "symptoms", request.page] }) });
+  return read.outcome === "ok" ? read.value : "";
+};
 
-const CHECKS_PAGE = CHECKS_PAGE_READ.outcome === "ok" ? CHECKS_PAGE_READ.value : "";
+const CHECK_ITEM_PAGES: readonly string[] = [...new Set(TEST_BODY_REMEDIES.map((remedy) => remedy.page))];
 
 const ruleSetTexts = import.meta.glob(
   ["./src/infrastructure/disciplines-file/version-one-names.json", "./src/infrastructure/engines/*/*/piece.json", "./src/infrastructure/engines/*/*/*.cases.json"],
@@ -339,7 +337,7 @@ const CLAUSES_THAT_REACH_TEST_FILES = {
   eslint: ["CD-1#explicit-any", "CD-2#non-null-assertions", "CD-10#throw-only-error", "CD-14#class-syntax", "CD-40#parameter-count", "CD-41#function-length"],
 };
 
-const SECTIONS = allowedFormSectionsOf({ page: CHECKS_PAGE });
+const SECTIONS = CHECK_ITEM_PAGES.flatMap((page) => allowedFormSectionsOf({ page: checkItemTextOf({ page }) }).map((section) => ({ ...section, page })));
 
 const BLOCKS = allowedBlocksOf({ sections: SECTIONS });
 
@@ -381,9 +379,13 @@ describe("the allowed-form compilation over written-out forms, so it can fail", 
   });
 });
 
-describe("rules/CD-27/CHECKS.md, Allowed forms in a test", () => {
-  it("has one section for each fix a CD-27#test-body-logic finding names, in the same order", () => {
-    expect(sectionNamesOf({ sections: SECTIONS })).toEqual(TEST_BODY_SECTIONS);
+describe("the check items' Allowed forms in a test", () => {
+  it("has as many sections as there are fixes a CD-27#test-body-logic finding names, each shown below on its check item", () => {
+    expect(SECTIONS).toHaveLength(TEST_BODY_SECTIONS.length);
+  });
+
+  it.each(TEST_BODY_REMEDIES)("shows $section on $page, the check item its fix names", ({ page, section }) => {
+    expect(SECTIONS).toContainEqual(expect.objectContaining({ page, section }));
   });
 
   it("holds the forms to every audit and ESLint clause, among them those that reach a test file", () => {

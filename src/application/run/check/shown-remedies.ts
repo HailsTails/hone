@@ -2,6 +2,7 @@ import type { ClauseRoot } from "../../../domain/settings/selection/selection.ts
 import type { Finding } from "../../../domain/finding/governance.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
+import { CHECK_ITEMS_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import type { ShownPathOf } from "../../ports/installation/shown-path-of.ts";
 
 type ShownRemedyRequest = {
@@ -10,10 +11,13 @@ type ShownRemedyRequest = {
   readonly clauseRoots: readonly ClauseRoot[];
 };
 
-const ruleFolderOf = (request: ShownRemedyRequest & { readonly finding: Finding }): string | undefined => {
+const remedyFolderSegmentsOf = (root: ClauseRoot): readonly string[] =>
+  root.checks.length === 0 ? [root.ruleSetRoot, "rules", root.clause.discipline] : [root.ruleSetRoot, ...CHECK_ITEMS_SEGMENTS];
+
+const remedyFolderOf = (request: ShownRemedyRequest & { readonly finding: Finding }): string | undefined => {
   const clause = clauseAddressText({ address: request.finding.clause });
   const root = request.clauseRoots.find((candidate) => clauseAddressText({ address: candidate.clause }) === clause);
-  return root === undefined ? undefined : request.path.join({ segments: [root.ruleSetRoot, "rules", root.clause.discipline] });
+  return root === undefined ? undefined : request.path.join({ segments: remedyFolderSegmentsOf(root) });
 };
 
 const shownRemedyOf = (request: ShownRemedyRequest & { readonly finding: Finding }): Finding => {
@@ -21,11 +25,11 @@ const shownRemedyOf = (request: ShownRemedyRequest & { readonly finding: Finding
   if (remedy === undefined) {
     return request.finding;
   }
-  const ruleFolder = ruleFolderOf(request);
-  if (ruleFolder === undefined) {
+  const remedyFolder = remedyFolderOf(request);
+  if (remedyFolder === undefined) {
     return located;
   }
-  const page = request.shownPathOf({ target: request.path.join({ segments: [ruleFolder, remedy.page] }) });
+  const page = request.shownPathOf({ target: request.path.join({ segments: [remedyFolder, remedy.page] }) });
   return { ...located, remedy: { ...remedy, page } };
 };
 

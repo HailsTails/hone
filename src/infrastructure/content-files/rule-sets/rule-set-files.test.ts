@@ -6,6 +6,9 @@ import { clauseIdSchema, disciplineIdSchema } from "../../hone-config-file/ident
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { createRuleSetFiles } from "./rule-set-files.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 
 const PATH = createDefaultPathPort({});
 
@@ -71,6 +74,26 @@ describe("createRuleSetFiles piece", () => {
       outcome: "ok",
       value: { held: "absent" },
     });
+  });
+});
+
+describe("createRuleSetFiles checks", () => {
+  it("gives a clause of a named rule set no checks", () => {
+    expect(
+      RULE_SET_FILES.checks({
+        installRoot: INSTALL_ROOT,
+        clause: { ruleSet: { name: ruleSetNameOf("team") }, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("no-tmp-files") },
+      }),
+    ).toEqual({ outcome: "ok", value: [] });
+  });
+
+  it("reads a clause of the tool's own rule set its checks from the install's names map, giving none where the install holds no map", () => {
+    expect(
+      RULE_SET_FILES.checks({
+        installRoot: INSTALL_ROOT,
+        clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-14"), clause: clauseIdOf("class-syntax") },
+      }),
+    ).toEqual({ outcome: "ok", value: [] });
   });
 });
 

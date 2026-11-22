@@ -11,7 +11,7 @@ import type { SelectionRepository } from "../../src/application/ports/selection/
 import type { EntryKindPort } from "../../src/application/ports/file-system/entry-kind-port.ts";
 import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
 import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
-import { defaultTypeScriptPeers, loadParsePort } from "../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../../src/infrastructure/engines/audit/runner/toolchain/typescript-toolchain.ts";
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { runProject } from "../../src/application/projection/run-project.ts";
@@ -27,7 +27,7 @@ import type { AbsolutePath } from "../../src/domain/repository/absolute-path-typ
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import { createWalkerRunner } from "../../src/infrastructure/engines/walker/runner/create-walker-runner.ts";
+import { createWalkerRunner } from "../../src/infrastructure/engines/audit/runner/create-walker-runner.ts";
 import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
@@ -139,9 +139,13 @@ const CD_23_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-23\/(?:pie
 
 const CD_14_DATA = String.raw`src\/infrastructure\/engines\/[^/]+\/CD-14\/(?:piece\.json|[^/]+\.cases\.json)`;
 
-const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-23|src\/infrastructure\/engines\/walker\/runner|src\/infrastructure\/engines\/walker\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA})`;
+const CD_23_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/unit-without-a-running-test\/companion-test-file\.md`;
 
-const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:audit|eslint)\/))|rules\/CD-14|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA})`;
+const CD_14_CHECK_ITEM = String.raw`rules\/typescript\/symptoms\/authored-class-or-this\/class-keyword\.md`;
+
+const WALKER_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/walker\/runner|src\/infrastructure\/engines\/walker\/CD-23)\/${INSTALLED_SOURCE}|${CD_23_DATA}|${CD_23_CHECK_ITEM})`;
+
+const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|infrastructure(?!\/engines\/(?:walker|eslint)\/))|src\/infrastructure\/engines\/eslint\/runner|src\/infrastructure\/engines\/eslint\/CD-14)\/${INSTALLED_SOURCE}|${CD_14_DATA}|${CD_14_CHECK_ITEM})`;
 
 const WALKER_INSTALL_LIST = new RegExp(`^${WALKER_INSTALLED}$`);
 
@@ -188,7 +192,7 @@ const observedPorts = (): ObservedPorts => {
   };
   const pieceModules: ModuleLoaderPort = { load: createDefaultModuleLoaderPort({}).load };
   const runners: Readonly<Record<string, unknown>> = {
-    [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/walker/runner/runner.ts` })]: {
+    [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/audit/runner/runner.ts` })]: {
       runner: createWalkerRunner({ fileText, modules: pieceModules, path, parse: defaultParsePort, entryKind: ABSENT_ENTRY_KIND }),
     },
     [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/runner.ts` })]: {
@@ -282,11 +286,11 @@ const UNSIBLINGED_FINDING = {
   mechanism: "walker",
 };
 
-const readingOf = (request: { readonly clause: { readonly discipline: string } }) => ({
+const readingOf = (request: { readonly clause: { readonly discipline: string }; readonly checkPage: string }) => ({
   kind: "clause",
   clause: request.clause,
   assessmentSection: "unread",
-  rulePage: { path: `../../../../rules/${request.clause.discipline}/README.md`, presence: "present" },
+  pages: [{ path: `../../../../rules/typescript/symptoms/${request.checkPage}`, presence: "present", section: "fix" }],
 });
 
 const ASSESSMENT_NOT_WRITTEN = { kind: "assessment-file", state: "not-written", guide: "../../../../ADOPTING.md" };
@@ -350,7 +354,7 @@ describe("a consumer with no harness directory selecting CD-23 through the audit
     const checked = await checkOf({ repo: WALKER_CONSUMER, tracked: UNSIBLINGED_TRACKED, ports });
     expect(checked).toEqual({
       outcome: "ok",
-      value: { ...CLEAN_REPORT, findings: [UNSIBLINGED_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: UNSIBLINGED_FINDING.clause })] },
+      value: { ...CLEAN_REPORT, findings: [UNSIBLINGED_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: UNSIBLINGED_FINDING.clause, checkPage: "unit-without-a-running-test/companion-test-file.md" })] },
     });
     expect(fullReportExitCode({ checked })).toBe(1);
   });
@@ -396,7 +400,7 @@ describe("a consumer with no harness directory selecting CD-14 through ESLint, r
     const checked = await checkOf({ repo: ESLINT_CONSUMER, tracked: ESLINT_CLASS_TRACKED, ports });
     expect(checked).toEqual({
       outcome: "ok",
-      value: { ...CLEAN_REPORT, findings: [CLASS_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: CLASS_FINDING.clause })] },
+      value: { ...CLEAN_REPORT, findings: [CLASS_FINDING], readFirst: [ASSESSMENT_NOT_WRITTEN, readingOf({ clause: CLASS_FINDING.clause, checkPage: "authored-class-or-this/class-keyword.md" })] },
     });
     expect(fullReportExitCode({ checked })).toBe(1);
   });

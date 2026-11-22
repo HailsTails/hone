@@ -26,7 +26,7 @@ describe("VERSION_ONE_NAMES_SEGMENTS", () => {
 });
 
 describe("versionOneNamesOf", () => {
-  it("gives each clause its sight, each check named under a clause that clause, and each record kind its format of today", () => {
+  it("gives each clause its sight, a mechanical clause the checks it names, each check named under a clause that clause, and each record kind its format of today", () => {
     expect(
       versionOneNamesOf({
         document: {
@@ -39,7 +39,7 @@ describe("versionOneNamesOf", () => {
       outcome: "ok",
       value: {
         clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "outside-the-cases" } }],
-        namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" } }],
+        namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" }, checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" } }] }],
         clauseOfCheck: new Map([["date-used-directly#clock-sources", { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }]]),
         formatsOfToday: { debt: "file-carve-out" },
       },
@@ -122,7 +122,7 @@ describe("readVersionOneNames", () => {
       outcome: "ok",
       value: {
         clauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, sight: { kind: "one-symptom", symptom: "date-used-directly" } }],
-        namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" } }],
+        namedClauses: [{ clause: { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }, kind: "mechanical", anchor: { kind: "file" }, checks: [{ name: "clock-sources", symptom: { name: "date-used-directly" } }] }],
         clauseOfCheck: new Map([["date-used-directly#clock-sources", { ruleSet: TOOL_RULE_SET, discipline: disciplineIdOf("CD-17"), clause: clauseIdOf("clock-sources") }]]),
         formatsOfToday: {},
       },

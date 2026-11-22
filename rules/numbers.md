@@ -46,10 +46,10 @@ Rules, principles, cases, recipes and symptoms are named, not numbered. This is 
 | [CD-29](CD-29/README.md) | Merges | into [Tested where it's owned](rules.md#tested-where-its-owned) |
 | [CD-30](CD-30/README.md) | Merges | into [Tested where it's owned](rules.md#tested-where-its-owned) |
 | [CD-31](CD-31/README.md) | Check | of [Tested where it's owned](rules.md#tested-where-its-owned) |
-| [CD-32](CD-32/README.md) | Outside | safety |
-| [CD-33](CD-33/README.md) | Outside | safety |
-| [CD-34](CD-34/README.md) | Outside | safety |
-| [CD-39](CD-39/README.md) | Outside | records |
+| [CD-32](CD-32/README.md) | Outside | outside the 2.0 model (safety), no symptom |
+| [CD-33](CD-33/README.md) | Outside | outside the 2.0 model (safety), no symptom |
+| [CD-34](CD-34/README.md) | Outside | outside the 2.0 model (safety), no symptom |
+| [CD-39](CD-39/README.md) | Outside | outside the 2.0 model (process), no symptom |
 | [CD-40](CD-40/README.md) | Cases | of One word everywhere, Handed what it uses |
 | [CD-41](CD-41/README.md) | Keeps | [Doer or orchestrator](rules.md#doer-or-orchestrator) |
 | [CD-42](CD-42/README.md) | Keeps | [Guard first](rules.md#guard-first) |
@@ -99,7 +99,7 @@ The test-logic check, CD-27#test-body-logic, also sees the `let` form of [Answer
 
 Review clauses that demand a method (CD-4, CD-9, CD-11, CD-12, CD-21 and CD-22) map to their [recipes](typescript/recipes.md). The outcome each protects is seen by Schema past its adapter, Throw between our units, Failure shaped as success, Port outside the domain, Adapter built outside the root and Default for a required value.
 
-Sensitive data and citation clauses (CD-32, CD-33, CD-34 and CD-39) have no symptom: they are outside the cases.
+Sensitive data and citation clauses (CD-32, CD-33, CD-34 and CD-39) are outside the 2.0 model, as safety (CD-32, CD-33 and CD-34) and process (CD-39): no item, no symptom, no check. Each is applied in review.
 
 ## Every numbered discipline
 
