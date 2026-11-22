@@ -1,5 +1,8 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { ExceptionRepository, ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
+import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
+import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
+import type { FileCreationPort } from "../application/ports/file-system/file-creation-port.ts";
+import type { FileRemovalPort } from "../application/ports/file-system/file-removal-port.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
 import {
   toolchainBoundEmbeddedRunner,
@@ -8,7 +11,7 @@ import {
 import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
-import type { GitPort } from "../application/ports/git-port.ts";
+import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { PackageLocationPort } from "../infrastructure/node/modules/package-location-port.ts";
@@ -28,7 +31,8 @@ import {
 import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import { defaultEslintToolchainPeers, loadEslintToolchain } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { checkRunAt } from "./check-command.ts";
-import { INSTALLED_PORTS } from "./run-tool-command.ts";
+import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { installedPortsOver } from "./installed-ports.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -95,6 +99,10 @@ const repositoryFiles = (request: {
         ruleSets: {},
         clauses: request.clauses,
       }),
+      [`${REPO_ROOT}/discipline-exceptions.json`]: JSON.stringify({
+        version: 1,
+        exceptions: [],
+      }),
       [`${REPO_ROOT}/src/greeting.ts`]:
         "export const greetingFor = (visitorName: string): string => visitorName.trim();\n",
     },
@@ -129,6 +137,7 @@ const git: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
     outcome: "ok",
     value: [
+      repoPathSchema.parse("discipline-exceptions.json"),
       repoPathSchema.parse("disciplines.json"),
       repoPathSchema.parse("src/greeting.ts"),
     ],
@@ -221,26 +230,24 @@ const unloadableEslintOver = (request: {
 }): ModuleLoaderPort =>
   modulesServing({ eslintRunner: undefined, fileText: request.fileText });
 
-const NO_EXCEPTIONS: ExceptionRepository = {
-  read: vi.fn<ExceptionRepository["read"]>().mockReturnValue({ outcome: "ok", value: [] }),
-  readAt: vi.fn<ExceptionRepository["readAt"]>(),
-  add: vi.fn<ExceptionRepository["add"]>(),
-  remove: vi.fn<ExceptionRepository["remove"]>(),
-  moveToSplitLayout: vi.fn<ExceptionRepository["moveToSplitLayout"]>(),
-};
-
-const noExceptionsOf: ExceptionRepositoryOf = () => NO_EXCEPTIONS;
-
 const checkOf = (request: {
   readonly modules: ModuleLoaderPort;
   readonly fileText: FileTextPort;
 }) =>
   checkRunAt({
-    ...INSTALLED_PORTS,
-    exceptionRepositoryOf: noExceptionsOf,
-    fileText: request.fileText,
-    modules: request.modules,
-    git,
+    ...installedPortsOver({
+      path,
+      fileText: request.fileText,
+      modules: request.modules,
+      engine: createDefaultEnginePort({}),
+      git,
+      gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }) },
+      directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
+      fileCreation: { createNew: vi.fn<FileCreationPort["createNew"]>() },
+      fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
+      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+      entryKind: ABSENT_ENTRY_KIND,
+    }),
     moduleUrl: new URL("../hone.ts", import.meta.url).href,
     locations: {
       arguments: { repo: REPO_ROOT, baseRevision: undefined, reportOutput: undefined, forfeiture: undefined },
