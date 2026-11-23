@@ -7,7 +7,7 @@ import type { WalkerFile } from "./walker-piece.ts";
 
 export const PACKAGE_MANIFEST = /(?:^|\/)package\.json$/;
 export const WORKFLOW =
-  /^(?:\.github\/workflows\/.*\.ya?ml|\.gitlab-ci\.ya?ml|azure-pipelines\.ya?ml)$/;
+  /^(?:\.github\/workflows\/.*\.ya?ml|(?<gitlab>\.gitlab-ci\.ya?ml)|azure-pipelines\.ya?ml)$/;
 
 type ReadFile<Content> = Result<Content | undefined, PieceFailure>;
 

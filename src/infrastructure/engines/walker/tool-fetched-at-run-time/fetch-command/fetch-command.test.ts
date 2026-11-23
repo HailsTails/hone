@@ -67,6 +67,20 @@ const findingsIn = (request: {
 };
 
 describe("fetch-command", () => {
+  it("reports fetches in GitLab script list items and skips variable assignments", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          "build:\n  script:\n    - PNPX=1\n    - NPX=1\n    - BUNX=1\n    - pnpx some-tool\n    - npx another-tool",
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 6, column: 0 }, snippet: "- pnpx some-tool" },
+      { file, check: ADDRESS, anchor: { line: 7, column: 0 }, snippet: "- npx another-tool" },
+    ]);
+  });
+
   it("reports a fetch command in a package script", () => {
     expect(
       findingsIn({
@@ -79,6 +93,132 @@ describe("fetch-command", () => {
         check: ADDRESS,
         anchor: { line: 4, column: 4 },
         snippet: '"check": "pnpm dlx some-tool"',
+      },
+    ]);
+  });
+
+  it("ignores GitLab metadata and matches whole shell command names", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          "build:\n  before_script: npx setup\n  needs:\n    - npx-cache\n  script:\n  - npx-cache local\n  - pnpx some-tool\n  variables:\n    PNPX: 1\n  after_script:\n    - |\n      npx cleanup\n  hooks:\n    pre_get_sources_script:\n      - npx prepare",
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "before_script: npx setup" },
+      { file, check: ADDRESS, anchor: { line: 7, column: 0 }, snippet: "- pnpx some-tool" },
+      { file, check: ADDRESS, anchor: { line: 12, column: 0 }, snippet: "npx cleanup" },
+      { file, check: ADDRESS, anchor: { line: 15, column: 0 }, snippet: "- npx prepare" },
+    ]);
+  });
+
+  it("reports Windows launchers with command extensions and quoting", () => {
+    const file = repoPathSchema.parse("delivery/run.cmd");
+    expect(
+      findingsIn({
+        file,
+        source: 'npx.cmd tool\ncall "pnpx.cmd" "other-tool"\n"bunx" tool\nnpx-cache.cmd tool',
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "npx.cmd tool" },
+      {
+        file,
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: 'call "pnpx.cmd" "other-tool"',
+      },
+      { file, check: ADDRESS, anchor: { line: 3, column: 0 }, snippet: '"bunx" tool' },
+    ]);
+  });
+
+  it("reports quoted GitLab launchers and script keys inside YAML sequences", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          'build:\n  script:\n    - "npx.cmd" "tool"\n  commands:\n    - script: npx next-tool',
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 3, column: 0 }, snippet: '- "npx.cmd" "tool"' },
+      { file, check: ADDRESS, anchor: { line: 5, column: 0 }, snippet: "- script: npx next-tool" },
+    ]);
+  });
+
+  it("preserves quoted command tokens inside a workflow run block", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: '- run: |\n    "npx" "tool"\n    "npx other-tool"\n- run: \'npx inline-tool\'',
+      }),
+    ).toEqual([
+      { file: WORKFLOW, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: '"npx" "tool"' },
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 4, column: 0 },
+        snippet: "- run: 'npx inline-tool'",
+      },
+    ]);
+  });
+
+  it("follows GitLab script aliases and keeps anchored metadata outside command scanning", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          ".install: &install\n  - npx setup-tool\n.unused: &unused\n  - pnpx unrelated\nbuild:\n  variables:\n    script: bunx a-variable\n  script:\n    - *install",
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "- npx setup-tool" },
+    ]);
+  });
+
+  it("reports quoted scalar commands before an inline workflow comment", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: "- run: \"npx double-quoted\" # note\n- run: 'pnpx single-quoted' # note",
+      }),
+    ).toEqual([
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: '- run: "npx double-quoted" # note',
+      },
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: "- run: 'pnpx single-quoted' # note",
+      },
+    ]);
+  });
+
+  it("reports GitLab flow scripts and quoted list commands with an inline comment", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          'build:\n  before_script: [echo setup, pnpx prepare]\n  script:\n    - "npx quoted" # note\n  after_script: ["echo a,b", "bunx cleanup"] # note',
+      }),
+    ).toEqual([
+      {
+        file,
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: "before_script: [echo setup, pnpx prepare]",
+      },
+      { file, check: ADDRESS, anchor: { line: 4, column: 0 }, snippet: '- "npx quoted" # note' },
+      {
+        file,
+        check: ADDRESS,
+        anchor: { line: 5, column: 0 },
+        snippet: 'after_script: ["echo a,b", "bunx cleanup"] # note',
       },
     ]);
   });
@@ -123,5 +263,30 @@ describe("fetch-command", () => {
         snippet: "curl -fsSL https://example.test/setup | sh",
       },
     ]);
+  });
+
+  it("reports pnpx on its line inside a workflow run block", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: "- run: |\n    pnpm run check\n    # pnpx skipped-tool\n    pnpx some-tool\n",
+      }),
+    ).toEqual([
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 4, column: 0 },
+        snippet: "pnpx some-tool",
+      },
+    ]);
+  });
+
+  it("passes a workflow run block using local tools", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: "- run: |\n    pnpm exec vitest run\n    pnpm run lint\n",
+      }),
+    ).toEqual([]);
   });
 });

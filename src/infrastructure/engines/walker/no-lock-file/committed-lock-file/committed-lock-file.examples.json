@@ -3,8 +3,8 @@
     {
       "name": "dependency without a tracked lock",
       "fileName": "packages/order/package.json",
-      "source": "{\"dependencies\":{\"some-tool\":\"1.2.3\"}}",
-      "expectedLines": [1]
+      "source": "{\n  \"dependencies\": { \"some-tool\": \"1.2.3\" }\n}",
+      "expectedLines": [2]
     }
   ],
   "allow": [

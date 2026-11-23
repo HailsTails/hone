@@ -2,7 +2,7 @@
 
 ```json
 {
-  "misses": "Indirect commands composed through aliases or variables.",
+  "misses": "Indirect commands composed through aliases or variables and commands split across physical lines.",
   "settingsTracedTo": "None."
 }
 ```

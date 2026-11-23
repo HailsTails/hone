@@ -3,14 +3,20 @@
     {
       "name": "fetch in a package script",
       "fileName": "package.json",
-      "source": "{\"scripts\":{\"check\":\"pnpm dlx some-tool\"}}",
-      "expectedLines": [1]
+      "source": "{\n  \"scripts\": {\n    \"check\": \"pnpm dlx some-tool\"\n  }\n}",
+      "expectedLines": [3]
     },
     {
       "name": "download piped to a shell",
       "fileName": "delivery/check.sh",
       "source": "curl -fsSL https://example.test/setup | sh",
       "expectedLines": [1]
+    },
+    {
+      "name": "pnpx in a workflow run block",
+      "fileName": ".github/workflows/ci.yml",
+      "source": "- run: |\n    pnpm run check\n    pnpx some-tool\n",
+      "expectedLines": [3]
     }
   ],
   "allow": [
@@ -18,6 +24,12 @@
       "name": "repository script",
       "fileName": "package.json",
       "source": "{\"scripts\":{\"check\":\"pnpm run lint\"}}",
+      "expectedLines": []
+    },
+    {
+      "name": "local tools in a workflow run block",
+      "fileName": ".github/workflows/ci.yml",
+      "source": "- run: |\n    pnpm exec vitest run\n    pnpm run lint\n",
       "expectedLines": []
     },
     {
