@@ -30,41 +30,44 @@ export const sourceBindingsOf = ({
     )
     .getTypeChecker();
 
-const ambientDeclaration = ({
+const declarationKindOf = ({
   syntaxApi,
   node,
 }: {
   readonly syntaxApi: SyntaxApi;
   readonly node: SyntaxNode;
-}): boolean => {
-  if (syntaxApi.isSourceFile(node)) return node.isDeclarationFile;
-  if (syntaxApi.isInterfaceDeclaration(node) || syntaxApi.isTypeAliasDeclaration(node)) return true;
+}): "ambient" | "runtime" => {
+  if (syntaxApi.isSourceFile(node)) return node.isDeclarationFile ? "ambient" : "runtime";
+  if (syntaxApi.isInterfaceDeclaration(node) || syntaxApi.isTypeAliasDeclaration(node))
+    return "ambient";
   if (
     (syntaxApi.isImportSpecifier(node) ||
       syntaxApi.isImportClause(node) ||
       syntaxApi.isImportEqualsDeclaration(node)) &&
     node.isTypeOnly
   )
-    return true;
+    return "ambient";
   if (
     syntaxApi.canHaveModifiers(node) &&
     syntaxApi
       .getModifiers(node)
       ?.some((modifier) => modifier.kind === syntaxApi.SyntaxKind.DeclareKeyword)
   )
-    return true;
-  return node.parent !== undefined && ambientDeclaration({ syntaxApi, node: node.parent });
+    return "ambient";
+  return node.parent === undefined
+    ? "runtime"
+    : declarationKindOf({ syntaxApi, node: node.parent });
 };
 
-export const runtimeDeclarationsOf = (request: {
+const runtimeDeclarationsOf = (request: {
   readonly syntaxApi: SyntaxApi;
   readonly declarations: readonly SyntaxNode[];
 }): readonly SyntaxNode[] =>
   request.declarations.filter(
-    (node) => !ambientDeclaration({ syntaxApi: request.syntaxApi, node }),
+    (node) => declarationKindOf({ syntaxApi: request.syntaxApi, node }) === "runtime",
   );
 
-export const sourceValueDeclarationsOf = (request: {
+const sourceValueDeclarationsOf = (request: {
   readonly syntaxApi: SyntaxApi;
   readonly bindings: TypeChecker;
   readonly node: SyntaxNode;
