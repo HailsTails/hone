@@ -8,6 +8,7 @@ import type { NotReadyYetFailure } from "../runner/checks-run-report.ts";
 import type { RunnerFailure } from "../runner/runner-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "./load-failure.ts";
+import type { MissingProjection, RunProjectionProblem } from "./run-report.ts";
 
 type KeptKind =
   | "arguments-invalid"
@@ -93,6 +94,11 @@ export type RunLoadFailure =
       readonly listing: CheckSettingsListing;
     }
   | { readonly kind: "check-settings-differ"; readonly check: string; readonly other: string }
+  | {
+      readonly kind: "projection-stale";
+      readonly problem: RunProjectionProblem | MissingProjection;
+      readonly projectCommand: string;
+    }
   | {
       readonly kind: "records-folder-unreadable";
       readonly folder: RepoPath;

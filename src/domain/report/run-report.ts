@@ -34,6 +34,8 @@ export type EngineNotRun =
       readonly projection: "measured-nothing";
     };
 
+export type MissingProjection = Extract<EngineNotRun, { readonly projection: "missing" }>;
+
 export type RunUnmeasured = RecordsUnmeasured | EngineNotRun;
 
 export type RunProjectionProblem =
