@@ -14,43 +14,36 @@ type CommandFile = "shell" | "workflow" | "gitlab";
 
 const SHELL = /\.(?:sh|bash|zsh|ps1|cmd|bat)$/;
 const COMMAND_START =
-  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|pnpx|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)(?=$|[\s;&|])/i;
+  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?<quote>['"]?)(?:(?:npx|pnpx|bunx)(?:\.(?:cmd|bat|exe|ps1))?|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\k<quote>(?=$|[\s;&|])/i;
 const DOWNLOAD_PIPE =
   /(?:^|[;&|])\s*(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^|\r\n]*\|\s*(?:sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\b/i;
-const GITLAB_SCRIPT = /^(?:before_script|script|after_script)\s*:\s*/;
+const GITLAB_SCRIPT = /^(?:before_script|script|after_script|pre_get_sources_script)\s*:\s*/;
 const SEQUENCE_ITEM = /^-\s+/;
 const unquote = (source: string): string => source.replace(/^(?:'|")|(?:'|")$/g, "");
 
-const gitlabCommandsOf = (source: string): readonly Command[] => {
-  let scriptIndent: number | undefined;
-  return source.split(/\r?\n/).flatMap((line, index) => {
-    const snippet = line.trim();
-    if (snippet.length === 0 || snippet.startsWith("#")) return [];
-    const indent = line.length - line.trimStart().length;
-    if (GITLAB_SCRIPT.test(snippet)) {
-      scriptIndent = indent;
-      return [
-        {
-          text: unquote(snippet.replace(GITLAB_SCRIPT, "")),
-          anchor: { line: index + 1, column: 0 },
-          snippet,
-        },
-      ];
-    }
-    if (scriptIndent === undefined) return [];
-    if (indent < scriptIndent || (indent === scriptIndent && !SEQUENCE_ITEM.test(snippet))) {
-      scriptIndent = undefined;
-      return [];
-    }
-    return [
-      {
-        text: unquote(snippet.replace(SEQUENCE_ITEM, "")),
-        anchor: { line: index + 1, column: 0 },
-        snippet,
-      },
-    ];
-  });
-};
+type ScriptScan = { readonly scriptIndent: number | undefined; readonly commands: Command[] };
+
+const gitlabCommandsOf = (source: string): readonly Command[] =>
+  source.split(/\r?\n/).reduce<ScriptScan>(
+    (scan, line, index) => {
+      const snippet = line.trim();
+      if (snippet.length === 0 || snippet.startsWith("#")) return scan;
+      const indent = line.length - line.trimStart().length;
+      const { scriptIndent, commands } = scan;
+      const anchor = { line: index + 1, column: 0 };
+      if (GITLAB_SCRIPT.test(snippet)) {
+        commands.push({ text: unquote(snippet.replace(GITLAB_SCRIPT, "")), anchor, snippet });
+        return { scriptIndent: indent, commands };
+      }
+      if (scriptIndent === undefined) return scan;
+      if (indent < scriptIndent || (indent === scriptIndent && !SEQUENCE_ITEM.test(snippet))) {
+        return { scriptIndent: undefined, commands };
+      }
+      commands.push({ text: unquote(snippet.replace(SEQUENCE_ITEM, "")), anchor, snippet });
+      return scan;
+    },
+    { scriptIndent: undefined, commands: [] },
+  ).commands;
 
 const sourceCommandsOf = (request: {
   readonly source: string;

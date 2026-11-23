@@ -115,12 +115,35 @@ describe("fetch-command", () => {
           "  after_script:",
           "    - |",
           "      npx cleanup",
+          "  hooks:",
+          "    pre_get_sources_script:",
+          "      - npx prepare",
         ].join("\n"),
       }),
     ).toEqual([
       { file, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "before_script: npx setup" },
       { file, check: ADDRESS, anchor: { line: 7, column: 0 }, snippet: "- pnpx some-tool" },
       { file, check: ADDRESS, anchor: { line: 12, column: 0 }, snippet: "npx cleanup" },
+      { file, check: ADDRESS, anchor: { line: 15, column: 0 }, snippet: "- npx prepare" },
+    ]);
+  });
+
+  it("reports Windows launchers with command extensions and quoting", () => {
+    const file = repoPathSchema.parse("delivery/run.cmd");
+    expect(
+      findingsIn({
+        file,
+        source: 'npx.cmd tool\ncall "pnpx.cmd" "other-tool"\n"bunx" tool\nnpx-cache.cmd tool',
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "npx.cmd tool" },
+      {
+        file,
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: 'call "pnpx.cmd" "other-tool"',
+      },
+      { file, check: ADDRESS, anchor: { line: 3, column: 0 }, snippet: '"bunx" tool' },
     ]);
   });
 
