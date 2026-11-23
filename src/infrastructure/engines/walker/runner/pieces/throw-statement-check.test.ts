@@ -30,6 +30,8 @@ describe("throwStatementCheck", () => {
   it.each<{ readonly scope: "test" | "production"; readonly path: string }>([
     { scope: "test", path: "src/orders.ts" },
     { scope: "production", path: "src/orders.test.ts" },
+    { scope: "production", path: "src/orders.spec.mts" },
+    { scope: "production", path: "src/orders.d.tsx" },
   ])("skips $path when checking $scope scope", ({ scope, path }) => {
     const file = repoPathSchema.parse(path);
     const piece = throwStatementCheck(scope);
@@ -56,7 +58,7 @@ describe("throwStatementCheck", () => {
 
   it.each<{ readonly scope: "test" | "production"; readonly path: string }>([
     { scope: "test", path: "src/orders.test.ts" },
-    { scope: "production", path: "src/orders.spec.mts" },
+    { scope: "production", path: "src/orders.mts" },
     { scope: "production", path: "src/orders.ts" },
   ])(
     "observes a throw at its keyword with a bounded snippet in $scope scope",

@@ -2,12 +2,17 @@ import { typeScriptSourceKindOf } from "./source-scope.ts";
 import { sourceSnippetOf } from "./source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "./walker-piece.ts";
 
+const NON_PRODUCTION_THROW_FILE = /\.(?:d|test|spec)\.(?:ts|tsx|mts|cts)$/;
+
 export const throwStatementCheck = (scope: "production" | "test"): WalkerPiece => ({
   prepare: ({ bindings, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        if (typeScriptSourceKindOf({ file }) !== scope) {
+        if (
+          typeScriptSourceKindOf({ file }) !== scope ||
+          (scope === "production" && NON_PRODUCTION_THROW_FILE.test(file))
+        ) {
           return { outcome: "ok", value: { kind: "skipped" } };
         }
         return {

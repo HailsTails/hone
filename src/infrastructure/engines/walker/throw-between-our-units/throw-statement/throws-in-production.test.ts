@@ -160,15 +160,18 @@ describe("throws in production", () => {
     },
   );
 
-  it.each(["src/read-order.spec.ts", "src/read-order.test.mts", "src/read-order.test.cts"])(
-    "retains the production throw check in %s",
-    (name) => {
-      const file = repoPathSchema.parse(name);
-      expect(findingsIn({ file, source: "throw failure;" })).toEqual([
-        { file, check: BINDING.address, anchor: { line: 1, column: 0 }, snippet: "throw failure;" },
-      ]);
-    },
-  );
+  it.each([
+    "src/read-order.spec.ts",
+    "src/read-order.spec.tsx",
+    "src/read-order.spec.mts",
+    "src/read-order.spec.cts",
+    "src/read-order.test.mts",
+    "src/read-order.test.cts",
+    "src/read-order.d.tsx",
+  ])("preserves the production detector's existing exclusion for %s", (name) => {
+    const file = repoPathSchema.parse(name);
+    expect(findingsIn({ file, source: "throw failure;" })).toEqual([]);
+  });
 
   it("does not follow calls into another unit that might throw", () => {
     expect(findingsIn({ file: SOURCE_FILE, source: "return parseOrder(input);" })).toEqual([]);
