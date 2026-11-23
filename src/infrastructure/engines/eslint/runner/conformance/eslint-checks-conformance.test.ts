@@ -128,6 +128,7 @@ declare global {
 const fileText = createDefaultFileTextPort({});
 const path = createDefaultPathPort({});
 const catalogue = readBoundCatalogue({
+  ruleSet: "hone",
   fileText,
   path,
   directory: createDefaultDirectoryPort({}),

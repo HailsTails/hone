@@ -20,6 +20,8 @@ import {
 import { catalogueNotesOf } from "../../../domain/records/hone-records/record-listings.ts";
 import { recordsFileStandingOf } from "../../../domain/records/hone-records/records-layout.ts";
 import type { Result } from "../../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
+import type { RuleSetName } from "../../../domain/rule-set/identifier-types.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
 import { type FiledUnder, recordOf } from "./record-resolution.ts";
 
@@ -33,13 +35,33 @@ type Judged =
   | { readonly placed: "record"; readonly record: PlacedRecord }
   | { readonly placed: "refused"; readonly refused: RefusedRecord };
 
+const ruleSetsReadOf = (request: {
+  readonly catalogue: SymptomCatalogue;
+}): ReadonlySet<RuleSetName> =>
+  new Set(
+    request.catalogue.symptoms.flatMap(({ ruleSet }) =>
+      ruleSet === TOOL_RULE_SET ? [] : [ruleSet.name],
+    ),
+  );
+
 const entriesOf = (request: {
   readonly document: RecordsDocument;
+  readonly ruleSetsRead: ReadonlySet<RuleSetName>;
 }): Result<readonly PlacedEntry[], RecordsDocumentRefusal> => {
   const { file } = request.document;
   const standing = recordsFileStandingOf({ file });
   if (standing.standing === "not-a-records-file") {
     return { outcome: "failed", error: { kind: "not-a-records-file", file } };
+  }
+  if (
+    standing.standing === "named" &&
+    standing.ruleSet !== TOOL_RULE_SET &&
+    !request.ruleSetsRead.has(standing.ruleSet.name)
+  ) {
+    return {
+      outcome: "failed",
+      error: { kind: "unknown-rule-set", file, ruleSet: standing.ruleSet.name },
+    };
   }
   const parsed = recordsDocumentSchema.safeParse(request.document.document);
   if (!parsed.success) {
@@ -52,7 +74,10 @@ const entriesOf = (request: {
     outcome: "ok",
     value: parsed.data.records.map((entry, index) => ({
       place: { file, index },
-      filedUnder: { kind: standing.kind },
+      filedUnder:
+        standing.standing === "named"
+          ? { kind: standing.kind, ruleSet: standing.ruleSet }
+          : { kind: standing.kind },
       entry,
     })),
   };
@@ -166,7 +191,8 @@ export const recordsReadingOf = (request: {
   readonly catalogue: SymptomCatalogue;
   readonly base: RecordsAtBase;
 }): Result<RecordsReading, readonly RecordsDocumentRefusal[]> => {
-  const entries = request.documents.map((document) => entriesOf({ document }));
+  const ruleSetsRead = ruleSetsReadOf(request);
+  const entries = request.documents.map((document) => entriesOf({ document, ruleSetsRead }));
   const refusals = entries.flatMap((listed) => (listed.outcome === "failed" ? [listed.error] : []));
   if (refusals.length > 0) {
     return { outcome: "failed", error: refusals };

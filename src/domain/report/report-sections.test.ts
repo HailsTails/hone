@@ -16,6 +16,7 @@ import {
 import type { RunReport } from "./run-report.ts";
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",

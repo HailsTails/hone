@@ -1,4 +1,4 @@
-import type { Check, Engine, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { Engine, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
@@ -27,9 +27,9 @@ export type ParsedNamedRunner = {
   readonly project: RunnerCall;
 };
 
-export type EngineCheck = Pick<Check, "ruleSet"> & {
+export type EngineCheck = {
   readonly name: string;
-  readonly symptom: Pick<Symptom, "name" | "title">;
+  readonly symptom: Pick<Symptom, "ruleSet" | "name" | "title">;
   readonly engines: readonly Engine[];
 };
 

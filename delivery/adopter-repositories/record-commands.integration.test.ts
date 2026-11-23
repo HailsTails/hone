@@ -231,6 +231,7 @@ const holding = readBoundCatalogue({
   fileText,
   path,
   ruleSetRoot: SHIPPED_ROOT,
+  ruleSet: "hone",
   installRoot: SHIPPED_ROOT,
 });
 assert(holding.outcome === "ok", "the shipped symptom catalogue reads");

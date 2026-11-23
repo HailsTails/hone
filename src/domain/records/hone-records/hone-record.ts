@@ -7,6 +7,7 @@ import type {
 } from "../../language-layer/symptom-catalogue.ts";
 import type { BaseRevisionAvailability } from "../../repository/base-revision-availability.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { RuleSetName } from "../../rule-set/identifier-types.ts";
 import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
 import type { WhyChain } from "../why-chain.ts";
 
@@ -160,6 +161,7 @@ export type RecordsReading = {
 
 export type RecordsDocumentRefusal =
   | { readonly kind: "not-a-records-file"; readonly file: RepoPath }
+  | { readonly kind: "unknown-rule-set"; readonly file: RepoPath; readonly ruleSet: RuleSetName }
   | {
       readonly kind: "document-refused";
       readonly file: RepoPath;

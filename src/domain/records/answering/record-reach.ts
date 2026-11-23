@@ -1,6 +1,8 @@
 import type { FoundCheck } from "../../language-layer/check-address.ts";
 import type { Check, Symptom, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { sameOwnedName } from "../../rule-set/rule-set-identity.ts";
 import type {
   AuthorisedReach,
   BoundaryRecord,
@@ -48,6 +50,17 @@ const sameName = (request: { readonly left: string; readonly right: string }): H
 const namedIn = (request: { readonly name: string; readonly names: readonly string[] }): Holding =>
   request.names.includes(request.name) ? "holds" : "does-not-hold";
 
+const toolSymptomNamedIn = (request: {
+  readonly symptom: Symptom;
+  readonly names: readonly string[];
+}): Holding =>
+  request.symptom.ruleSet === TOOL_RULE_SET
+    ? namedIn({ name: request.symptom.name, names: request.names })
+    : "does-not-hold";
+
+const sameSymptom = (request: { readonly left: Symptom; readonly right: Symptom }): Holding =>
+  sameOwnedName(request) === "same" ? "holds" : "does-not-hold";
+
 const reachesCheck = (request: {
   readonly reach: AuthorisedReach;
   readonly check: FoundCheck;
@@ -72,13 +85,13 @@ const reachesSymptom = (request: {
 }): Holding =>
   everyHolds({
     holdings: [
-      sameName({ left: request.symptom.name, right: request.site.symptom.name }),
+      sameSymptom({ left: request.symptom, right: request.site.symptom }),
       reachesCheck({ reach: request.reach, check: request.site.check }),
     ],
   });
 
 const clearOfOutsideParties = (request: { readonly symptom: Symptom }): Holding =>
-  namedIn({ name: request.symptom.name, names: IMPORTED_PARTY_SYMPTOMS }) === "holds"
+  toolSymptomNamedIn({ symptom: request.symptom, names: IMPORTED_PARTY_SYMPTOMS }) === "holds"
     ? "does-not-hold"
     : "holds";
 
@@ -194,8 +207,10 @@ const checksReachedBy = (request: {
     case "boundary-record":
       return catalogue.checks.filter(
         (check) =>
-          namedIn({ name: check.symptom.name, names: reachOf({ party: record.outsideParty }) }) ===
-          "holds",
+          toolSymptomNamedIn({
+            symptom: check.symptom,
+            names: reachOf({ party: record.outsideParty }),
+          }) === "holds",
       );
     case "dependency-record":
       return [];
@@ -246,7 +261,10 @@ const sitedAt = (request: { readonly record: HoneRecord; readonly site: Site }):
       return everyHolds({
         holdings: [
           moduleCovers({ module: record.module, file: site.file }),
-          namedIn({ name: site.symptom.name, names: reachOf({ party: record.outsideParty }) }),
+          toolSymptomNamedIn({
+            symptom: site.symptom,
+            names: reachOf({ party: record.outsideParty }),
+          }),
         ],
       });
     case "dependency-record":

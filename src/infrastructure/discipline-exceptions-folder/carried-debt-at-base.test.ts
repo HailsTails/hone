@@ -13,6 +13,7 @@ import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.t
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import { carriedDebtDocumentsAtBaseOf } from "./carried-debt-at-base.ts";
 import type { VersionOneEntry } from "./version-one-entries.ts";
@@ -38,6 +39,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -185,6 +187,34 @@ describe("carriedDebtDocumentsAtBaseOf writing the debt the base's file carve-ou
             { answers: "loop-keyword#loops", file: "src/a.ts", carried: CARVE_OUT },
             { answers: "loop-keyword#loops", file: "src/b.ts", carried: other },
           ],
+        },
+      },
+    ]);
+  });
+
+  it("writes a team check's debt in its rule set's records folder", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const clause: ClauseAddress = { ...LOOPS_CLAUSE, ruleSet: acme };
+    const symptom: Symptom = { ...LOOP_KEYWORD, ruleSet: acme };
+    const check: Check = { ...LOOP_KEYWORD_LOOPS, symptom, clause };
+    const catalogue: SymptomCatalogue = {
+      ...SETTINGS_CATALOGUE,
+      symptoms: [symptom],
+      clauses: [{ clause, sight: { kind: "one-symptom", symptom } }],
+      checks: [check],
+    };
+    const entry: VersionOneEntry = { ...CARVE_OUT, clause: "acme/CD-15#loops" };
+    expect(
+      carriedDebtDocumentsAtBaseOf({
+        entries: [entry],
+        catalogues: [{ ruleSet: acme, catalogue }],
+      }),
+    ).toEqual([
+      {
+        file: "hone-records/acme/debt/loop-keyword.json",
+        document: {
+          version: 2,
+          records: [{ answers: "loop-keyword#loops", file: "src/a.ts", carried: entry }],
         },
       },
     ]);

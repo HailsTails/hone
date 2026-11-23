@@ -153,6 +153,7 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
+  ruleSet: "hone",
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -174,6 +175,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
+  ruleSet: "hone",
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -193,6 +195,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",

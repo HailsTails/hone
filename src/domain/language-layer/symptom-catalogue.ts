@@ -1,7 +1,7 @@
 import type { Finding } from "../finding/governance.ts";
-import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
+import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
-import type { EngineId, RuleSetName } from "../rule-set/identifier-types.ts";
+import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { Remedy } from "../runner/runner-result-types.ts";
 
 export type Standing = "accepted" | "proposed";
@@ -64,6 +64,7 @@ export type CorrectUse = {
 };
 
 export type Symptom = {
+  readonly ruleSet: RuleSetIdentity;
   readonly name: string;
   readonly sourceFile?: string;
   readonly title: string;
@@ -93,10 +94,7 @@ export type CheckContent = {
   readonly forms: readonly string[];
 };
 
-export type Check = CheckContent & {
-  readonly engines: readonly Engine[];
-  readonly ruleSet?: RuleSetName;
-};
+export type Check = CheckContent & { readonly engines: readonly Engine[] };
 
 export type NamedBan = { readonly outsideDependency: string };
 

@@ -303,6 +303,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
   };
 
   const WRITE_INTO_A_PARAMETER: Symptom = {
+    ruleSet: "hone",
     name: "write-into-a-parameter",
     title: "write-into-a-parameter",
     seen: "write-into-a-parameter",
@@ -313,6 +314,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
   };
 
   const REBINDING: Symptom = {
+    ruleSet: "hone",
     name: "rebinding",
     title: "rebinding",
     seen: "rebinding",
@@ -427,6 +429,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 });
 
 const reading = readBoundCatalogue({
+  ruleSet: "hone",
   directory: createDefaultDirectoryPort({}),
   fileText: FILE_TEXT,
   path: PATH,

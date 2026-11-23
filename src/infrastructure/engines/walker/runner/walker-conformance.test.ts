@@ -100,6 +100,7 @@ declare global {
 }
 
 const catalogue = readBoundCatalogue({
+  ruleSet: "hone",
   ...roots,
   fileText,
   path,

@@ -12,6 +12,7 @@ import { forfeitedLine, paidLine, staleLine } from "./debt-lines.ts";
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",

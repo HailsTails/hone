@@ -102,6 +102,7 @@ const symptomOf = (request: {
   readonly name: string;
   readonly recipes: readonly Recipe[];
 }): Symptom => ({
+  ruleSet: "hone",
   name: request.name,
   title: request.name,
   seen: "Seen.",

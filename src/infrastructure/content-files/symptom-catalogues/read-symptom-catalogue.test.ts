@@ -13,12 +13,15 @@ import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
 const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
+
+const TEAM = { name: ruleSetNameOf("team") };
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install" });
 
@@ -76,6 +79,7 @@ const PARAMETER_REASSIGNMENT = {
 };
 
 const REBINDING: Symptom = {
+  ruleSet: "hone",
   name: "rebinding",
   title: "Rebinding",
   seen: "A `let` assigned again.",
@@ -152,6 +156,7 @@ describe("createSymptomCatalogueRepository", () => {
         directory: ITEM_FOLDER_DIRECTORY,
         path: PATH,
         ruleSetRoot: INSTALL_ROOT,
+        ruleSet: "hone",
         installRoot: INSTALL_ROOT,
       }).read({}),
     ).toEqual({
@@ -198,6 +203,7 @@ describe("createSymptomCatalogueRepository", () => {
         directory: UNLISTED,
         path: PATH,
         ruleSetRoot: TEAM_ROOT,
+        ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
       }).read({}),
     ).toEqual({
@@ -222,6 +228,7 @@ describe("createSymptomCatalogueRepository", () => {
         directory: UNLISTED,
         path: PATH,
         ruleSetRoot: INSTALL_ROOT,
+        ruleSet: "hone",
         installRoot: INSTALL_ROOT,
       }).read({}),
     ).toEqual({
@@ -245,6 +252,7 @@ describe("createSymptomCatalogueRepository", () => {
         directory: UNLISTED,
         path: PATH,
         ruleSetRoot: INSTALL_ROOT,
+        ruleSet: "hone",
         installRoot: INSTALL_ROOT,
       }).read({}),
     ).toEqual({
@@ -263,11 +271,12 @@ const teamCatalogueOf = (request: {
     ...request,
     path: PATH,
     ruleSetRoot: TEAM_ROOT,
+    ruleSet: TEAM,
     installRoot: INSTALL_ROOT,
   }).read({});
 
 describe("createSymptomCatalogueRepository over a team's rule set", () => {
-  it("reads a symptom kept under a language folder other than typescript, naming its page by where it sits", () => {
+  it("reads a symptom kept under a language folder other than typescript as the team's, naming its page by where it sits", () => {
     const fileText: FileTextPort = {
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
       read: vi
@@ -331,7 +340,7 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
           checks: [
             {
               name: "parameter-reassignment",
-              symptom: { name: "rebinding", sourceFile: "rules/sql/symptoms/rebinding.md" },
+              symptom: { ruleSet: TEAM, sourceFile: "rules/sql/symptoms/rebinding.md" },
             },
           ],
         },

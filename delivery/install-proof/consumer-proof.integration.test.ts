@@ -321,7 +321,7 @@ const upgradeBeforeOver = (request: {
     fileText,
     path: selectionFilePathOf({ path, repoRoot: request.repo }),
   });
-  const catalogue = readBoundCatalogue({ ...context, ruleSetRoot: INSTALL_ROOT });
+  const catalogue = readBoundCatalogue({ ...context, ruleSetRoot: INSTALL_ROOT, ruleSet: "hone" });
   assert(selection.outcome === "ok");
   assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
   return createUpgradeBefore({

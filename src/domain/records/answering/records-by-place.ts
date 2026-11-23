@@ -1,5 +1,8 @@
 import { checkAddressTextOf } from "../../language-layer/check-address-text.ts";
+import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { ownedNameText } from "../../rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../runner/checks-run-report.ts";
 import type { AuthorisedReach, HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import { reachOf, type Site } from "./record-reach.ts";
@@ -20,11 +23,21 @@ export type RecordsByPlace = {
 
 const FOLDER_SEPARATOR = "/";
 
-const symptomKey = (request: { readonly symptom: string }): ReachKey =>
-  `symptom:${request.symptom}`;
+type OwnedSymptom = Pick<Symptom, "ruleSet" | "name">;
 
-const checkKey = (request: { readonly symptom: string; readonly check: string }): ReachKey =>
-  `check:${checkAddressTextOf({ check: { name: request.check, symptom: { name: request.symptom } } })}`;
+const symptomKey = (request: { readonly symptom: OwnedSymptom }): ReachKey =>
+  `symptom:${ownedNameText(request.symptom)}`;
+
+const checkKey = (request: { readonly symptom: OwnedSymptom; readonly check: string }): ReachKey =>
+  `check:${ownedNameText({
+    ruleSet: request.symptom.ruleSet,
+    name: checkAddressTextOf({ check: { name: request.check, symptom: request.symptom } }),
+  })}`;
+
+const answeredSymptom = (request: { readonly symptom: string }): OwnedSymptom => ({
+  ruleSet: TOOL_RULE_SET,
+  name: request.symptom,
+});
 
 export type AnsweredByPlace = ReadonlyMap<RepoPath, ReadonlySet<ReachKey>>;
 
@@ -36,7 +49,9 @@ export const answeredByPlaceOf = (request: {
       file,
       new Set(
         answers.map(({ symptom, check }) =>
-          check === undefined ? symptomKey({ symptom }) : checkKey({ symptom, check }),
+          check === undefined
+            ? symptomKey({ symptom: answeredSymptom({ symptom }) })
+            : checkKey({ symptom: answeredSymptom({ symptom }), check }),
         ),
       ),
     ]),
@@ -51,14 +66,15 @@ export const answeredAt = (request: {
   const answers = request.byPlace.get(request.file);
   return (
     answers !== undefined &&
-    (answers.has(symptomKey(request)) || answers.has(`check:${request.address}`))
+    (answers.has(symptomKey({ symptom: answeredSymptom(request) })) ||
+      answers.has(`check:${request.address}`))
   );
 };
 
 const recipeKey = (request: { readonly recipe: string }): ReachKey => `recipe:${request.recipe}`;
 
 const symptomReachKeysOf = (request: {
-  readonly symptom: string;
+  readonly symptom: OwnedSymptom;
   readonly reach: AuthorisedReach;
 }): readonly ReachKey[] => {
   const { symptom, reach } = request;
@@ -77,11 +93,13 @@ const reachKeysOf = (request: { readonly record: HoneRecord }): readonly ReachKe
   switch (record.kind) {
     case "debt":
     case "authorised-location":
-      return symptomReachKeysOf({ symptom: record.symptom.name, reach: record.reach });
+      return symptomReachKeysOf({ symptom: record.symptom, reach: record.reach });
     case "deviation":
       return [recipeKey({ recipe: record.recipe.name })];
     case "boundary-record":
-      return reachOf({ party: record.outsideParty }).map((symptom) => symptomKey({ symptom }));
+      return reachOf({ party: record.outsideParty }).map((name) =>
+        symptomKey({ symptom: { ruleSet: TOOL_RULE_SET, name } }),
+      );
     case "dependency-record":
       return [];
   }
@@ -158,10 +176,8 @@ export const placedInRecordOrder = (request: {
 const siteKeysOf = (request: { readonly site: Site }): readonly ReachKey[] => {
   const { symptom, check } = request.site;
   return [
-    symptomKey({ symptom: symptom.name }),
-    ...(check.found === "check"
-      ? [checkKey({ symptom: symptom.name, check: check.check.name })]
-      : []),
+    symptomKey({ symptom }),
+    ...(check.found === "check" ? [checkKey({ symptom, check: check.check.name })] : []),
     ...symptom.recipes.map((recipe) => recipeKey({ recipe: recipe.name })),
   ];
 };

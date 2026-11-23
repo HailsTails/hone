@@ -111,6 +111,8 @@ const documentRefusalText = (request: { readonly refusal: RecordsDocumentRefusal
   switch (refusal.kind) {
     case "not-a-records-file":
       return lead;
+    case "unknown-rule-set":
+      return `${lead} ${refusal.ruleSet}: no check this run reads comes from that rule set; declare it in ${SETTINGS_FILE_NAME} and list its checks, or remove its records`;
     case "document-refused":
       return `${lead} ${refusal.issues.map((issue) => issueText({ issue })).join(", ")}`;
   }

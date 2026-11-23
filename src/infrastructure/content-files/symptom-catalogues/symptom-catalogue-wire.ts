@@ -21,7 +21,10 @@ import type {
   Symptom,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import type {
+  ClauseAddress,
+  RuleSetIdentity,
+} from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { engineIdSchema } from "../../hone-config-file/identifiers.ts";
@@ -412,6 +415,7 @@ const correctUseOf = (request: {
 const symptomOf = (request: {
   readonly wire: SymptomWire;
   readonly definitions: Definitions;
+  readonly ruleSet: RuleSetIdentity;
 }): Resolution<Symptom> => {
   const { wire, definitions } = request;
   const mayIndicate = allResolved(
@@ -436,6 +440,7 @@ const symptomOf = (request: {
     };
   }
   return resolved({
+    ruleSet: request.ruleSet,
     name: wire.name,
     title: wire.title,
     seen: wire.seen,
@@ -617,13 +622,18 @@ const resolvedChecksOf = (
   return unchecked.length > 0 ? { outcome: "failed", error: unchecked } : checks;
 };
 
-const catalogueOf = (request: { readonly file: CatalogueFile }): Resolution<CatalogueContent> => {
+const catalogueOf = (request: {
+  readonly file: CatalogueFile;
+  readonly ruleSet: RuleSetIdentity;
+}): Resolution<CatalogueContent> => {
   const definitions = definitionsOf(request);
   if (definitions.outcome === "failed") {
     return definitions;
   }
   const symptoms = allResolved(
-    request.file.symptoms.map((wire) => symptomOf({ wire, definitions: definitions.value })),
+    request.file.symptoms.map((wire) =>
+      symptomOf({ wire, definitions: definitions.value, ruleSet: request.ruleSet }),
+    ),
   );
   if (symptoms.outcome === "failed") {
     return symptoms;
@@ -734,12 +744,13 @@ const refusalText = (request: { readonly faults: readonly string[] }): string =>
 
 export const catalogueContentFromFile = (request: {
   readonly file: CatalogueFile;
+  readonly ruleSet: RuleSetIdentity;
 }): Result<CatalogueContent, string> => {
   const repeats = repeatedNamesOf({ file: request.file });
   if (repeats.length > 0) {
     return { outcome: "failed", error: refusalText({ faults: repeats }) };
   }
-  const catalogue = catalogueOf({ file: request.file });
+  const catalogue = catalogueOf({ file: request.file, ruleSet: request.ruleSet });
   return catalogue.outcome === "failed"
     ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) }
     : catalogue;
@@ -747,12 +758,13 @@ export const catalogueContentFromFile = (request: {
 
 export const catalogueContentOf = (request: {
   readonly document: unknown;
+  readonly ruleSet: RuleSetIdentity;
 }): Result<CatalogueContent, string> => {
   const parsed = checkedCatalogueFileSchema.safeParse(request.document);
   if (!parsed.success) {
     return { outcome: "failed", error: z.prettifyError(parsed.error) };
   }
-  const catalogue = catalogueOf({ file: parsed.data });
+  const catalogue = catalogueOf({ file: parsed.data, ruleSet: request.ruleSet });
   return catalogue.outcome === "failed"
     ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) }
     : catalogue;

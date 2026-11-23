@@ -15,7 +15,6 @@ import type {
 import type { NamedEnginesRequest } from "../../run/engines/named-engines-run.ts";
 import { namedEngineCallsOf } from "../../run/engines/named-engines-run.ts";
 import {
-  checksOfRuleSet,
   type NamedSettingsReading,
   readNamedSettingsFile,
 } from "../../run/settings/read-settings.ts";
@@ -95,7 +94,7 @@ const findingsFor = async (
   if (names.outcome === "failed") return names;
   const checkedProjection = await request.checkProjection({ records: request.records });
   if (checkedProjection.outcome === "failed") return checkedProjection;
-  const checks = request.catalogues.flatMap(checksOfRuleSet);
+  const checks = request.catalogues.flatMap(({ catalogue }) => catalogue.checks);
   const ran = await namedEngineCallsOf({
     ...request,
     checks,

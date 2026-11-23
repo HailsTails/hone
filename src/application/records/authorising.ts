@@ -9,6 +9,7 @@ import type { RecordAddition } from "../../domain/records/hone-records/records-e
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
@@ -109,6 +110,7 @@ export const authorisingOf = (
   },
 ): Result<Authorising, RecordsEditFailure> => {
   const file = namedRecordsFileOf({
+    ruleSet: TOOL_RULE_SET,
     kind: "authorised-locations",
     name: symptomNameOf({ address: request.request.answers }),
   });

@@ -52,7 +52,7 @@ const CATALOGUE: SymptomCatalogue = {
 };
 
 describe("toolCatalogueOf", () => {
-  it("gives the install's catalogue, bound under the install root through the port it is given", () => {
+  it("gives the install's catalogue, bound under the install root as Hone's own rule set through the port it is given", () => {
     const boundCatalogueOf = vi
       .fn<BoundCatalogueOf>()
       .mockReturnValueOnce({ outcome: "ok", value: { held: "catalogue", catalogue: CATALOGUE } });
@@ -63,6 +63,7 @@ describe("toolCatalogueOf", () => {
       fileText: FILE_TEXT,
       path: POSIX,
       ruleSetRoot: INSTALL,
+      ruleSet: "hone",
       installRoot: INSTALL,
     });
   });

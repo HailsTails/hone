@@ -1,21 +1,42 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import { namedRecordsFileOf, recordsFileStandingOf } from "./records-layout.ts";
+
+const ACME = { name: ruleSetNameOf("acme") };
 
 describe("recordsFileStandingOf", () => {
   it.each([
     {
       file: repoPathOf("hone-records/debt/text-past-its-reader.json"),
-      standing: { standing: "named", kind: "debt", name: "text-past-its-reader" },
+      standing: { standing: "named", ruleSet: "hone", kind: "debt", name: "text-past-its-reader" },
     },
     {
       file: repoPathOf("hone-records/authorised-locations/claimed-type.json"),
-      standing: { standing: "named", kind: "authorised-locations", name: "claimed-type" },
+      standing: {
+        standing: "named",
+        ruleSet: "hone",
+        kind: "authorised-locations",
+        name: "claimed-type",
+      },
     },
     {
       file: repoPathOf("hone-records/deviations/stub-with-vifn.json"),
-      standing: { standing: "named", kind: "deviations", name: "stub-with-vifn" },
+      standing: { standing: "named", ruleSet: "hone", kind: "deviations", name: "stub-with-vifn" },
+    },
+    {
+      file: repoPathOf("hone-records/acme/debt/console-output.json"),
+      standing: { standing: "named", ruleSet: ACME, kind: "debt", name: "console-output" },
+    },
+    {
+      file: repoPathOf("hone-records/acme/authorised-locations/console-output.json"),
+      standing: {
+        standing: "named",
+        ruleSet: ACME,
+        kind: "authorised-locations",
+        name: "console-output",
+      },
     },
     {
       file: repoPathOf("hone-records/boundary-records.json"),
@@ -44,8 +65,28 @@ describe("recordsFileStandingOf", () => {
       why: "a folder that is not a kind",
     },
     {
-      file: repoPathOf("hone-records/team/debt/claimed-type.json"),
-      why: "a folder inside a kind folder's place",
+      file: repoPathOf("hone-records/debt/acme/claimed-type.json"),
+      why: "a folder inside a kind folder",
+    },
+    {
+      file: repoPathOf("hone-records/hone/debt/claimed-type.json"),
+      why: "a rule set folder named for Hone's own rule set, whose records sit at the top",
+    },
+    {
+      file: repoPathOf("hone-records/Acme/debt/claimed-type.json"),
+      why: "a rule set folder whose name is no rule set name",
+    },
+    {
+      file: repoPathOf("hone-records/debt/debt/claimed-type.json"),
+      why: "a rule set folder named for a kind folder",
+    },
+    {
+      file: repoPathOf("hone-records/acme/boundary-records.json"),
+      why: "a single file inside a rule set folder, which holds only kind folders",
+    },
+    {
+      file: repoPathOf("hone-records/acme/debt/nested/claimed-type.json"),
+      why: "a folder inside a rule set's kind folder",
     },
     {
       file: repoPathOf("discipline-exceptions/authorised-locations/cd-6.json"),
@@ -59,16 +100,25 @@ describe("recordsFileStandingOf", () => {
 
 describe("the records file a record belongs in", () => {
   it("names a kind folder's file after the symptom or recipe it holds", () => {
-    expect(namedRecordsFileOf({ kind: "authorised-locations", name: "claimed-type" })).toEqual({
+    expect(
+      namedRecordsFileOf({ ruleSet: "hone", kind: "authorised-locations", name: "claimed-type" }),
+    ).toEqual({
       outcome: "ok",
       value: "hone-records/authorised-locations/claimed-type.json",
+    });
+  });
+
+  it("names a team's kind folder's file inside its rule set's folder", () => {
+    expect(namedRecordsFileOf({ ruleSet: ACME, kind: "debt", name: "console-output" })).toEqual({
+      outcome: "ok",
+      value: "hone-records/acme/debt/console-output.json",
     });
   });
 
   it.each([{ name: "/x" }, { name: "../claimed-type" }, { name: "claimed-type\n" }, { name: "" }])(
     "names no file for a name written $name, without throwing",
     ({ name }) => {
-      expect(namedRecordsFileOf({ kind: "debt", name })).toEqual({
+      expect(namedRecordsFileOf({ ruleSet: "hone", kind: "debt", name })).toEqual({
         outcome: "failed",
         error: { kind: "not-a-records-name", name },
       });

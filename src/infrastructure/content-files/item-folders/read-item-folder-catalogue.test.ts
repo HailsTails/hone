@@ -6,6 +6,7 @@ import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import type { HeldBesideItems } from "./item-document.ts";
 import { createItemFolderCatalogueRepository } from "./read-item-folder-catalogue.ts";
@@ -109,7 +110,7 @@ const FULL_LISTING = vi
   .mockReturnValueOnce({ outcome: "ok", value: [{ name: "clock-sources.md", kind: "file" }] });
 
 describe("createItemFolderCatalogueRepository", () => {
-  it("assembles a catalogue from the item files under its kind folders, each named by its file and titled by its heading, reading no other file", () => {
+  it("assembles a catalogue from the item files under its kind folders, each named by its file, titled by its heading and owned by the rule set it reads for, reading no other file", () => {
     const fileText = fileTextReading(
       vi
         .fn<FileTextPort["read"]>()
@@ -128,6 +129,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: { name: ruleSetNameOf("acme") },
         fileText,
         directory,
         path: PATH,
@@ -157,6 +159,7 @@ describe("createItemFolderCatalogueRepository", () => {
           engines: [{ name: "walker" }],
           symptoms: [
             {
+              ruleSet: { name: "acme" },
               name: "date-used-directly",
               title: "Date used directly",
               recipes: [{ name: "world-values-through-a-port" }],
@@ -189,6 +192,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: "hone",
         fileText,
         directory,
         path: PATH,
@@ -212,6 +216,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: "hone",
         fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
         directory,
         path: PATH,
@@ -237,6 +242,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: "hone",
         fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
         directory,
         path: PATH,
@@ -266,6 +272,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: "hone",
         fileText: fileTextReading(
           vi
             .fn<FileTextPort["read"]>()
@@ -309,6 +316,7 @@ describe("createItemFolderCatalogueRepository", () => {
     );
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: "hone",
         fileText,
         directory,
         path: PATH,
@@ -338,6 +346,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        ruleSet: "hone",
         fileText: fileTextReading(
           vi
             .fn<FileTextPort["read"]>()

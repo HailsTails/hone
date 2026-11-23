@@ -8,6 +8,7 @@ import type { CatalogueHolding } from "../../../domain/language-layer/symptom-ca
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
 import type { VersionOneNames } from "../../disciplines-file/version-one-names.ts";
 import { createEngineBindingsRepository } from "../../engines/piece-engines.ts";
 import { createSymptomCatalogueRepository } from "./read-symptom-catalogue.ts";
@@ -17,6 +18,7 @@ type BoundCatalogueSource = {
   readonly directory: DirectoryPort;
   readonly path: Pick<PathPort, "join">;
   readonly ruleSetRoot: AbsolutePath;
+  readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
   readonly upgradeNames?: VersionOneNames;
 };

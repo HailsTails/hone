@@ -180,6 +180,7 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 
 const toolCatalogue = (): SymptomCatalogue => {
   const reading = readBoundCatalogue({
+    ruleSet: "hone",
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

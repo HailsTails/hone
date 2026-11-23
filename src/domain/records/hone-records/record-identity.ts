@@ -1,3 +1,4 @@
+import { sameOwnedName } from "../../rule-set/rule-set-identity.ts";
 import type {
   AuthorisedLocation,
   AuthorisedReach,
@@ -51,7 +52,7 @@ const sameSymptomSite = (request: {
   const { left, right } = request;
   return (right.kind === "debt" || right.kind === "authorised-location") &&
     right.kind === left.kind &&
-    right.symptom.name === left.symptom.name &&
+    sameOwnedName({ left: left.symptom, right: right.symptom }) === "same" &&
     sameReach({ left: left.reach, right: right.reach }) === "same" &&
     right.file === left.file
     ? "same"

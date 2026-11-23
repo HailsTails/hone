@@ -16,6 +16,7 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { recordsReadingOf } from "./records-reading.ts";
 
 const AUTHORISED_LOCATION_KIND: RecordKind = {
@@ -33,6 +34,7 @@ const DEBT_KIND: RecordKind = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -82,6 +84,7 @@ const CATALOGUE: SymptomCatalogue = {
 };
 
 const TEXT_PAST_ITS_READER: Symptom = {
+  ruleSet: "hone",
   name: "text-past-its-reader",
   title: "Text past its reader",
   seen: "A string.",
@@ -850,6 +853,57 @@ describe("recordsReadingOf", () => {
     ).toEqual({
       outcome: "failed",
       error: [{ kind: "not-a-records-file", file }],
+    });
+  });
+
+  it("reads a team's debt in its rule set's folder as owed on the team's symptom", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamClaimedType: Symptom = { ...CLAIMED_TYPE, ruleSet: acme };
+    const file = repoPathOf("hone-records/acme/debt/claimed-type.json");
+    expect(
+      recordsReadingOf({
+        documents: [
+          {
+            file,
+            document: { version: 2, records: [{ answers: "claimed-type", file: ADAPTER }] },
+          },
+        ],
+        catalogue: { ...CATALOGUE, symptoms: [...CATALOGUE.symptoms, teamClaimedType] },
+        base: UNMEASURED,
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        records: [
+          {
+            place: { file, index: 0 },
+            record: {
+              kind: "debt",
+              symptom: teamClaimedType,
+              reach: WHOLE_SYMPTOM,
+              file: ADAPTER,
+              holding: { held: "stated" },
+            },
+          },
+        ],
+        refused: [],
+        notes: [],
+        base: { measured: "no", base: { state: "not-given" } },
+      },
+    });
+  });
+
+  it("refuses a records file in the folder of a rule set the catalogue holds no symptom of, naming the rule set", () => {
+    const file = repoPathOf("hone-records/acme/debt/claimed-type.json");
+    expect(
+      recordsReadingOf({
+        documents: [{ file, document: { version: 2, records: [] } }],
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: [{ kind: "unknown-rule-set", file, ruleSet: "acme" }],
     });
   });
 });

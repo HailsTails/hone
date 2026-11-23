@@ -338,7 +338,11 @@ const source = {
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
 };
-const catalogue = readBoundCatalogue({ ...source, directory: createDefaultDirectoryPort({}) });
+const catalogue = readBoundCatalogue({
+  ruleSet: "hone",
+  ...source,
+  directory: createDefaultDirectoryPort({}),
+});
 assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
 const CHECKS = catalogue.value.catalogue.checks;
 const rowsFor = (mechanism: EngineId) =>

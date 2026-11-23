@@ -165,6 +165,7 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
+  ruleSet: "hone",
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -186,6 +187,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
+  ruleSet: "hone",
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -205,6 +207,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -385,6 +388,7 @@ describe("findingLine", () => {
   it("uses the team symptom's own page in its finding", () => {
     const symptom: Symptom = {
       name: "outside-import-past-a-boundary",
+      ruleSet: { name: ruleSetNameOf("acme") },
       sourceFile: "rules/team/symptoms/outside-import-past-a-boundary.md",
       title: "Outside import past a boundary",
       seen: "A domain unit imports an outside dependency.",
@@ -395,7 +399,6 @@ describe("findingLine", () => {
     };
     const check: Check = {
       name: "no-moment",
-      ruleSet: ruleSetNameOf("acme"),
       symptom,
       engines: [ESLINT_ENGINE],
       forms: [],

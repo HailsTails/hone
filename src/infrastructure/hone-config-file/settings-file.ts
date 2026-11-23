@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { SettingsFileFormat } from "../../application/ports/settings/settings-file-format.ts";
+import { NAMED_FOLDER_KINDS } from "../../domain/records/hone-records/records-layout.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { NOT_ADOPTED, NOT_RUN } from "../../domain/rule-set/identifiers.ts";
@@ -155,7 +156,9 @@ const ruleSetFaultOf = (request: {
   const names: readonly string[] = request.ruleSets.map(({ name }) => name);
   const reserved = names.find(
     (name) =>
-      name === TOOL_RULE_SET || name.startsWith(`${TOOL_RULE_SET}${RULE_SET_SUFFIX_SEPARATOR}`),
+      name === TOOL_RULE_SET ||
+      name.startsWith(`${TOOL_RULE_SET}${RULE_SET_SUFFIX_SEPARATOR}`) ||
+      NAMED_FOLDER_KINDS.some((kind) => kind === name),
   );
   if (reserved !== undefined) {
     return { kind: "reserved-rule-set-name", name: reserved };

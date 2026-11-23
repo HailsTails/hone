@@ -77,6 +77,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
+  ruleSet: "hone",
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -87,6 +88,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const REBINDING: Symptom = {
+  ruleSet: "hone",
   name: "rebinding",
   title: "Rebinding",
   seen: "A `let` assigned again.",

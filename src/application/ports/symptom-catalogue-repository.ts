@@ -5,6 +5,7 @@ import type {
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import type { FileTextPort } from "./file-system/file-text-port.ts";
 import type { PathPort } from "./host/path-port.ts";
 
@@ -16,5 +17,6 @@ export type BoundCatalogueOf = (request: {
   readonly fileText: FileTextPort;
   readonly path: Pick<PathPort, "join">;
   readonly ruleSetRoot: AbsolutePath;
+  readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
 }) => Result<CatalogueHolding, VersionTwoLoadFailure>;

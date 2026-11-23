@@ -7,6 +7,7 @@ import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { carriedJudgementOf, recordsUnmeasuredOf } from "./records-unmeasured.ts";
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",

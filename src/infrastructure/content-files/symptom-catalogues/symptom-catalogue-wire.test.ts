@@ -12,6 +12,7 @@ import type {
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import {
   catalogueFileSchema,
   catalogueContentFromFile,
@@ -166,6 +167,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -236,8 +238,15 @@ const SYMPTOM_HOLDING_DOCUMENT = {
 };
 
 describe("catalogueContentOf", () => {
+  it("gives each symptom the rule set it was read for", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    expect(
+      catalogueContentOf({ ruleSet: acme, document: { ...DOCUMENT, clauses: [], checks: [] } }),
+    ).toMatchObject({ outcome: "ok", value: { symptoms: [{ ...LOOP_KEYWORD, ruleSet: acme }] } });
+  });
+
   it("resolves every name a document gives to the entry it names, field by field", () => {
-    expect(catalogueContentOf({ document: DOCUMENT })).toEqual({
+    expect(catalogueContentOf({ ruleSet: "hone", document: DOCUMENT })).toEqual({
       outcome: "ok",
       value: {
         principles: [NO_HIDDEN_EFFECTS],
@@ -315,6 +324,7 @@ describe("catalogueContentOf", () => {
     const [symptom] = DOCUMENT.symptoms;
     expect(
       catalogueContentOf({
+        ruleSet: "hone",
         document: {
           ...DOCUMENT,
           symptoms: [
@@ -371,6 +381,7 @@ describe("catalogueContentOf", () => {
   it("gives a check on a clause that sees symptoms by form only the forms of its own symptom", () => {
     expect(
       catalogueContentOf({
+        ruleSet: "hone",
         document: {
           ...SYMPTOM_HOLDING_DOCUMENT,
           symptoms: [
@@ -414,6 +425,7 @@ describe("catalogueContentOf", () => {
   it("reads the situation an indication of a case is about, and takes one case once in each situation", () => {
     expect(
       catalogueContentOf({
+        ruleSet: "hone",
         document: {
           ...SYMPTOM_HOLDING_DOCUMENT,
           symptoms: [
@@ -457,7 +469,7 @@ describe("catalogueContentOf", () => {
   });
 
   it("reads a catalogue that holds only the record kinds every symptom takes", () => {
-    expect(catalogueContentOf({ document: EMPTY_DOCUMENT })).toEqual({
+    expect(catalogueContentOf({ ruleSet: "hone", document: EMPTY_DOCUMENT })).toEqual({
       outcome: "ok",
       value: {
         principles: [],
@@ -942,15 +954,18 @@ describe("catalogueContentOf", () => {
       refusal: "✖ Invalid input: expected 1\n  → at version",
     },
   ])("refuses $name", ({ document, refusal }) => {
-    expect(catalogueContentOf({ document })).toEqual({ outcome: "failed", error: refusal });
+    expect(catalogueContentOf({ ruleSet: "hone", document })).toEqual({
+      outcome: "failed",
+      error: refusal,
+    });
   });
 });
 
 describe("catalogueContentFromFile", () => {
   it("resolves a parsed file to the catalogue the document gives", () => {
-    expect(catalogueContentFromFile({ file: catalogueFileSchema.parse(DOCUMENT) })).toEqual(
-      catalogueContentOf({ document: DOCUMENT }),
-    );
+    expect(
+      catalogueContentFromFile({ ruleSet: "hone", file: catalogueFileSchema.parse(DOCUMENT) }),
+    ).toEqual(catalogueContentOf({ ruleSet: "hone", document: DOCUMENT }));
   });
 
   it("refuses a file that holds one name twice", () => {
@@ -958,7 +973,7 @@ describe("catalogueContentFromFile", () => {
       ...EMPTY_DOCUMENT,
       principles: [PRINCIPLES_DOCUMENT[0], PRINCIPLES_DOCUMENT[0]],
     });
-    expect(catalogueContentFromFile({ file })).toEqual({
+    expect(catalogueContentFromFile({ ruleSet: "hone", file })).toEqual({
       outcome: "failed",
       error: "✖ principles holds no-hidden-effects more than once",
     });
@@ -971,7 +986,7 @@ describe("catalogueContentFromFile", () => {
         { name: "guard-first", title: "Guard first", principle: "gone", standing: "accepted" },
       ],
     });
-    expect(catalogueContentFromFile({ file })).toEqual({
+    expect(catalogueContentFromFile({ ruleSet: "hone", file })).toEqual({
       outcome: "failed",
       error: expect.stringMatching(/^✖ .*gone/),
     });
