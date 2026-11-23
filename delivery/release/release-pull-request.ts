@@ -270,6 +270,7 @@ const fileUpdatesOf = (request: {
   const changelog = changelogWithFoldedSection({
     changelog: request.files.changelog.text,
     version: request.next.version,
+    channel: request.next.channel,
     entries: request.next.entries,
   });
   if (changelog.outcome === "failed") {

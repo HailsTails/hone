@@ -94,6 +94,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0-pre.3\n\n### Fixes\n\n- index once (#365)\n\n${PRE_RELEASES}\n## 1.0.0\n\nOld.\n`,
         version: "2.0.0",
+        channel: "stable",
         entries: [changeEntryOf({ message: "fix: last fix (#370)" })],
       }),
     ).toEqual({
@@ -110,6 +111,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n- three (#3)\n`,
         version: "2.0.0",
+        channel: "stable",
         entries: [
           changeEntryOf({ message: "fix: one, reworded (#1)" }),
           changeEntryOf({ message: "fix: two (#2)" }),
@@ -129,6 +131,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0-pre.2\n\n### Fixes\n\n- one again (#1)\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
         version: "2.0.0",
+        channel: "stable",
         entries: [changeEntryOf({ message: "fix: two (#2)" })],
       }),
     ).toEqual({
@@ -145,6 +148,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 1.0.0\n\nOld.\n`,
         version: "1.0.1",
+        channel: "stable",
         entries: [
           changeEntryOf({ message: "chore: same" }),
           changeEntryOf({ message: "chore: same" }),
@@ -159,18 +163,53 @@ describe("changelogWithFoldedSection", () => {
     });
   });
 
-  it("leaves the pre-release sections of another version alone", () => {
+  it("folds the pre-release sections of every version the line passed through", () => {
     expect(
       changelogWithFoldedSection({
-        changelog: `${INTRO}\n## 1.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n\n## 1.0.0\n\nOld.\n`,
-        version: "2.0.0",
+        changelog: `${INTRO}\n## 1.1.0-pre.1\n\n### Features\n\n- add (#2)\n\n## 1.0.1-pre.1\n\n### Fixes\n\n- mend (#1)\n\n## 1.0.0\n\nOld.\n`,
+        version: "1.1.0",
+        channel: "stable",
+        entries: [changeEntryOf({ message: "fix: last (#3)" })],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        text: `${INTRO}\n## 1.1.0\n\n### Features\n\n- add (#2)\n\n### Fixes\n\n- mend (#1)\n- last (#3)\n\n## 1.0.0\n\nOld.\n`,
+        folded: 2,
+      },
+    });
+  });
+
+  it("leaves the pre-release sections below the newest stable section alone", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 1.0.0\n\nOld.\n\n## 0.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n`,
+        version: "1.0.1",
+        channel: "stable",
         entries: [changeEntryOf({ message: "fix: new (#2)" })],
       }),
     ).toEqual({
       outcome: "ok",
       value: {
-        text: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- new (#2)\n\n## 1.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n\n## 1.0.0\n\nOld.\n`,
+        text: `${INTRO}\n## 1.0.1\n\n### Fixes\n\n- new (#2)\n\n## 1.0.0\n\nOld.\n\n## 0.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n`,
         folded: 0,
+      },
+    });
+  });
+
+  it("keeps every folded entry that names no pull request, repeated ones included", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.2\n\n### Other changes\n\n- same\n\n## 2.0.0-pre.1\n\n### Other changes\n\n- same\n`,
+        version: "2.0.0",
+        channel: "stable",
+        entries: [changeEntryOf({ message: "chore: same" })],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        text: `${INTRO}\n## 2.0.0\n\n### Other changes\n\n- same\n- same\n- same\n`,
+        folded: 2,
       },
     });
   });
@@ -180,6 +219,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
         version: "2.0.0-pre.2",
+        channel: "pre-release",
         entries: [changeEntryOf({ message: "fix: two (#2)" })],
       }),
     ).toEqual({
@@ -196,6 +236,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0\n\nOld.\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
         version: "2.0.0",
+        channel: "stable",
         entries: [],
       }),
     ).toEqual({ outcome: "failed", error: "CHANGELOG.md already has a section for 2.0.0" });
@@ -206,6 +247,7 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Notes\n\n- one (#1)\n`,
         version: "2.0.0",
+        channel: "stable",
         entries: [],
       }),
     ).toEqual({
@@ -219,11 +261,26 @@ describe("changelogWithFoldedSection", () => {
       changelogWithFoldedSection({
         changelog: `${INTRO}\n## 2.0.0-pre.1\n\nProse.\n`,
         version: "2.0.0",
+        channel: "stable",
         entries: [],
       }),
     ).toEqual({
       outcome: "failed",
       error: '## 2.0.0-pre.1 has a line, "Prose.", that cannot be folded',
+    });
+  });
+
+  it("refuses a pre-release section with an entry before any group heading", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.1\n\n- one (#1)\n`,
+        version: "2.0.0",
+        channel: "stable",
+        entries: [],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: '## 2.0.0-pre.1 has a line, "- one (#1)", that cannot be folded',
     });
   });
 });

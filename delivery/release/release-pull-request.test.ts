@@ -257,13 +257,13 @@ describe("runReleasePullRequest finishing the 0.1.0 pre-release line", () => {
     expect(run).toMatchObject({
       texts: {
         "/repo/CHANGELOG.md":
-          "# Changelog\n\n## 1.0.0\n\n### Other changes\n\n- release: size every release by plain semver (#120)\n\n## 0.1.0-pre.7\n\n### Fixes\n\n- an earlier fix\n",
+          "# Changelog\n\n## 1.0.0\n\n### Fixes\n\n- an earlier fix\n\n### Other changes\n\n- release: size every release by plain semver (#120)\n",
         "/repo/package.json": manifestAt({ version: "1.0.0" }),
       },
       writes: [
         [
           {
-            text: "release-pull-request: 0.1.0-pre.7 to 1.0.0, a major change on the stable channel, sized from 20 subjects since v0.1.0-pre.5, with 1 subject since v0.1.0-pre.7 in its section. CHANGELOG.md and package.json are updated in the working tree; no tag was made and nothing was published.\n",
+            text: "release-pull-request: 0.1.0-pre.7 to 1.0.0, a major change on the stable channel, sized from 20 subjects since v0.1.0-pre.5, with 1 subject since v0.1.0-pre.7 and 1 entry folded from its pre-releases in its section. CHANGELOG.md and package.json are updated in the working tree; no tag was made and nothing was published.\n",
           },
         ],
       ],

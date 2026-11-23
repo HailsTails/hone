@@ -1,5 +1,6 @@
 import type { Result } from "../../src/domain/result.ts";
 import type { ChangeEntry, ChangeType } from "../commit-subject/conventional-subject.ts";
+import { channelOf, type ReleaseChannel, versionOf } from "./release-version.ts";
 
 export const CHANGELOG_FILE = "CHANGELOG.md";
 
@@ -178,6 +179,21 @@ const changeLinesOfSection = (request: {
   return folded.outcome === "failed" ? folded : { outcome: "ok", value: folded.value.found };
 };
 
+const isPreReleaseHeading = (request: { readonly line: string }): boolean => {
+  const version = versionOf({ text: request.line.slice(SECTION_HEADING_PREFIX.length) });
+  return version.outcome === "ok" && channelOf({ version: version.value }) === "pre-release";
+};
+
+const sectionsSinceLastStable = (request: {
+  readonly lines: readonly string[];
+}): readonly SectionBounds[] => {
+  const sections = sectionBoundsOf(request);
+  const lastStable = sections.findIndex(
+    (bounds) => !isPreReleaseHeading({ line: request.lines[bounds.start] ?? "" }),
+  );
+  return lastStable === -1 ? sections : sections.slice(0, lastStable);
+};
+
 const PULL_REQUEST_PATTERN = /\(#(\d+)\)$/u;
 
 const pullRequestOf = (request: { readonly line: ChangeLine }): string | undefined =>
@@ -202,13 +218,12 @@ export type FoldedChangelog = { readonly text: string; readonly folded: number }
 export const changelogWithFoldedSection = (request: {
   readonly changelog: string;
   readonly version: string;
+  readonly channel: ReleaseChannel;
   readonly entries: readonly ChangeEntry[];
 }): Result<FoldedChangelog, string> => {
   const lines = request.changelog.split("\n");
-  const preReleasePrefix = `${headingOf(request)}-`;
-  const folded = sectionBoundsOf({ lines })
-    .filter((bounds) => lines[bounds.start]?.startsWith(preReleasePrefix) === true)
-    .toReversed();
+  const folded =
+    request.channel === "stable" ? sectionsSinceLastStable({ lines }).toReversed() : [];
   const carried = folded.reduce<Result<readonly ChangeLine[], string>>(
     (soFar, bounds) => {
       if (soFar.outcome === "failed") {
