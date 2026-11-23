@@ -49,7 +49,8 @@ describe("locatedPackageManifestOf", () => {
           '{\r\n  "devDependencies": {\r\n    "@scope/dev.tool": // check the next release\r\n      "^4.0.0"\r\n  }\r\n}',
       }),
     });
-    assert(manifest.outcome === "ok" && manifest.value !== undefined);
+    assert(manifest.outcome === "ok");
+    assert.isDefined(manifest.value);
     const dependencySection = manifest.value.get("devDependencies");
     assert(dependencySection !== undefined);
     expect(dependencySection.fields.get("@scope/dev.tool")).toMatchObject({
@@ -72,7 +73,8 @@ describe("locatedPackageManifestOf", () => {
         value: '{\n  "packageManager": "pnpm@1.2.3",\n  "packageManager": /* latest */ "pnpm@2"\n}',
       }),
     });
-    assert(manifest.outcome === "ok" && manifest.value !== undefined);
+    assert(manifest.outcome === "ok");
+    assert.isDefined(manifest.value);
     expect(manifest.value.get("packageManager")).toMatchObject({
       anchor: { line: 3, column: 2 },
       snippet: '"packageManager": "pnpm@2"',
