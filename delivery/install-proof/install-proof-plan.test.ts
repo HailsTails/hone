@@ -336,7 +336,7 @@ const AUDIT_ACTIONS: readonly ProofAction[] = [
       output: `findings (1)
 unit-without-a-running-test#companion-test-file walker src/kept.ts:1:0 missing co-located *.test.ts(x) sibling symptom: unit-without-a-running-test (node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test) may indicate: tested-where-its-owned
 symptoms (1)
-unit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test
+unit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Recipe: Companion test file. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test
 verdict: fail
 `,
     },
