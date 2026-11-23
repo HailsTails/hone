@@ -2426,18 +2426,14 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
       fileExceptionWhyChains: "required",
       baseline: NOTHING_AT_BASE,
     }).invalid;
-    expect(refused?.problem).toEqual({
-      kind: "evidence-refused",
-      detail: [
-        "✖ matches none of the evidence shapes:",
-        "  either:",
-        "    ✖ Invalid input",
-        "      → at whyChain",
-        "  or:",
-        "    ✖ Invalid input: expected object, received undefined",
-        "      → at provenance",
-      ].join("\n"),
-    });
+    const detail = refused?.problem.kind === "evidence-refused" ? refused.problem.detail : "";
+    expect(
+      detail
+        .split(/^\s*(?:either|or):$/m)
+        .slice(1)
+        .map((branch) => [...branch.matchAll(/→ at (\S+)/g)].map((match) => match[1])),
+    ).toEqual([["whyChain"], ["provenance"]]);
+    expect(detail).toMatch(/✖ [^\n]*whyChain[^\n]*\n\s*→ at whyChain/);
   });
 
   it("names the field each file carve-out evidence shape refused when a record matches none of them", () => {
@@ -2452,23 +2448,14 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
       fileExceptionWhyChains: "required",
       baseline: NOTHING_AT_BASE,
     }).invalid;
-    expect(refused?.problem).toEqual({
-      kind: "evidence-refused",
-      detail: [
-        "✖ matches none of the evidence shapes:",
-        "  either:",
-        "    ✖ Invalid input",
-        "      → at whyChain",
-        "    ✖ Invalid input: expected string, received undefined",
-        "      → at provenance.decision",
-        "  or:",
-        "    ✖ Invalid input: expected string, received undefined",
-        "      → at provenance.decision",
-        "  or:",
-        "    ✖ Invalid input: expected never, received object",
-        "      → at provenance",
-      ].join("\n"),
-    });
+    const detail = refused?.problem.kind === "evidence-refused" ? refused.problem.detail : "";
+    expect(
+      detail
+        .split(/^\s*(?:either|or):$/m)
+        .slice(1)
+        .map((branch) => [...branch.matchAll(/→ at (\S+)/g)].map((match) => match[1])),
+    ).toEqual([["whyChain", "provenance.decision"], ["provenance.decision"], ["provenance"]]);
+    expect(detail).toMatch(/✖ [^\n]*whyChain[^\n]*\n\s*→ at whyChain/);
   });
 });
 

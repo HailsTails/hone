@@ -157,7 +157,9 @@ type Unjudged<Entry> = Entry extends { readonly whyChain: RecordedWhyChain }
   ? Omit<Entry, "whyChain"> & { readonly whyChain: UnjudgedWhyChain }
   : Entry;
 
-const unjudgedWhyChainSchema = z.custom<UnjudgedWhyChain>((whyChain) => whyChain !== undefined);
+const unjudgedWhyChainSchema = z.custom<UnjudgedWhyChain>((whyChain) => whyChain !== undefined, {
+  error: "a whyChain is required",
+});
 
 const reasonOnlyFields = {
   reason: recordedTextSchema,
