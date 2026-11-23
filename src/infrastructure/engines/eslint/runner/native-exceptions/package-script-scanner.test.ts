@@ -89,6 +89,37 @@ describe("scriptCommandsOf", () => {
     });
   });
 
+  it.each([
+    {
+      script: "eslint -c $(dirname $(pwd))/eslint.config.mjs --rule 'no-console: off' .",
+      command: [
+        "eslint",
+        "-c",
+        "$(dirname $(pwd))/eslint.config.mjs",
+        "--rule",
+        "no-console: off",
+        ".",
+      ],
+    },
+    {
+      script: "eslint --max-warnings $((1+2)) .",
+      command: ["eslint", "--max-warnings", "$((1+2))", "."],
+    },
+    { script: 'eslint -c $(cat "a)b") .', command: ["eslint", "-c", '$(cat "a)b")', "."] },
+  ])("keeps the nested substitution in $script whole as one token", ({ script, command }) => {
+    expect(scriptCommandsOf({ script })).toEqual({ outcome: "ok", value: [command] });
+  });
+
+  it("reads a backtick with no partner as text", () => {
+    expect(scriptCommandsOf({ script: "eslint . && echo it`s" })).toEqual({
+      outcome: "ok",
+      value: [
+        ["eslint", "."],
+        ["echo", "it`s"],
+      ],
+    });
+  });
+
   it("does not split at an operator inside quotes", () => {
     expect(scriptCommandsOf({ script: `echo "a && b; c | d" 'e || f'` })).toEqual({
       outcome: "ok",
@@ -435,6 +466,10 @@ describe("scanPackageJson, whether the script's own folder settles an option's e
       settlement: shellSupplied("$(cat legacy.txt)"),
     },
     { script: 'eslint --config="$CONFIG" .', settlement: shellSupplied("$CONFIG") },
+    {
+      script: "eslint -c $(dirname $(pwd))/eslint.config.mjs .",
+      settlement: shellSupplied("$(dirname $(pwd))/eslint.config.mjs"),
+    },
     {
       script: 'tsc && eslint -c "$CONFIG" .',
       settlement: shellSupplied("$CONFIG"),

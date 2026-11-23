@@ -146,8 +146,12 @@ type SegmentWalk =
   | { readonly position: "inside"; readonly segments: readonly string[] }
   | { readonly position: "outside" };
 
-const SCRIPT_PIECES =
-  /(?<single>'[^']*')|(?<double>"[^"]*")|(?<substitution>`[^`]*`|\$\([^)]*\))|(?<operator>&&|\|\||[;|()])|(?<space>\s+)|(?<text>(?:[^'"\s;|&()`$]|\$(?!\([^)]*\)))+|&)|(?<stray>['"`])/g;
+const SCRIPT_PIECE =
+  /(?<single>'[^']*')|(?<double>"[^"]*")|(?<substitution>`[^`]*`)|(?<operator>&&|\|\||[;|()])|(?<space>\s+)|(?<text>(?:[^'"\s;|&()`$]|\$(?!\())+|[&`$])|(?<stray>['"])/y;
+
+const SUBSTITUTION_OPENER = "$(";
+
+const NO_SUBSTITUTION = -1;
 
 const ESLINT_TOKEN = "eslint";
 
@@ -215,6 +219,35 @@ const doubleQuotedExpansionOf = (request: { readonly text: string }): Expansion 
 const unquotedExpansionOf = (request: { readonly text: string }): Expansion => {
   const quoted = doubleQuotedExpansionOf(request);
   return quoted === "literal" && SHELL_PATTERN.test(request.text) ? "pattern-expanded" : quoted;
+};
+
+const pieceMatchAt = (request: {
+  readonly script: string;
+  readonly at: number;
+}): RegExpExecArray | null => {
+  const pattern = new RegExp(SCRIPT_PIECE);
+  pattern.lastIndex = request.at;
+  return pattern.exec(request.script);
+};
+
+const substitutionEndOf = (request: {
+  readonly script: string;
+  readonly start: number;
+}): number => {
+  let depth = 0;
+  let at = request.start + 1;
+  while (at < request.script.length) {
+    const match = pieceMatchAt({ script: request.script, at });
+    if (match === null || match.groups?.stray !== undefined) {
+      return NO_SUBSTITUTION;
+    }
+    depth += match[0] === "(" ? 1 : match[0] === ")" ? -1 : 0;
+    at += match[0].length;
+    if (depth === 0) {
+      return at;
+    }
+  }
+  return NO_SUBSTITUTION;
 };
 
 const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPiece => {
@@ -329,17 +362,41 @@ const nextTokenizerState = (request: {
   }
 };
 
+const scriptPiecesOf = (request: { readonly script: string }): readonly ScriptPiece[] => {
+  const pieces: ScriptPiece[] = [];
+  let at = 0;
+  while (at < request.script.length) {
+    const end = request.script.startsWith(SUBSTITUTION_OPENER, at)
+      ? substitutionEndOf({ script: request.script, start: at })
+      : NO_SUBSTITUTION;
+    if (end !== NO_SUBSTITUTION) {
+      const written = request.script.slice(at, end);
+      pieces.push({ kind: "text", token: { text: written, written, expansion: "shell-supplied" } });
+      at = end;
+      continue;
+    }
+    const match = pieceMatchAt({ script: request.script, at });
+    if (match === null) {
+      return pieces;
+    }
+    pieces.push(scriptPieceOf({ match }));
+    at += match[0].length;
+  }
+  return pieces;
+};
+
 const shellCommandsOf = (request: {
   readonly script: string;
 }): Result<readonly ShellCommand[], { readonly kind: "unterminated-quote" }> => {
-  const finalState = [...request.script.matchAll(SCRIPT_PIECES)]
-    .map((match) => scriptPieceOf({ match }))
-    .reduce<TokenizerState>((state, piece) => nextTokenizerState({ state, piece }), {
+  const finalState = scriptPiecesOf(request).reduce<TokenizerState>(
+    (state, piece) => nextTokenizerState({ state, piece }),
+    {
       status: "reading",
       commands: [],
       tokens: [],
       token: { presence: "none" },
-    });
+    },
+  );
   if (finalState.status === "unterminated") {
     return { outcome: "failed", error: { kind: "unterminated-quote" } };
   }
