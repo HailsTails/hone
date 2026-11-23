@@ -134,6 +134,7 @@ export type ProofRefusal =
   | ({
       readonly kind: "differences";
       readonly differences: readonly ProofDifference[];
+      readonly writtenReported: readonly RepoPath[];
       readonly unrestored: readonly Unrestored[];
     } & AfterVersionOneProject)
   | ({

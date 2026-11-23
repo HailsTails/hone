@@ -652,6 +652,29 @@ describe("upgradeProof", () => {
     ]);
   });
 
+  it("removes the declaration file beside a version 1 projection with the projection", async () => {
+    const doubles = doublesOver({
+      kindOf: kindsOfEveryPlannedFileNew(),
+      path: recordsFolderPath(),
+    });
+    doubles.ports.fileText.exists.mockImplementation(({ path }) =>
+      path === "/repo/disciplines.eslint.d.mts" ? "present" : "absent",
+    );
+    await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
+      outcome: "ok",
+      value: {
+        removed: {
+          files: [
+            "/repo/discipline-exceptions/cd-15.json",
+            "/repo/disciplines.eslint.mjs",
+            "/repo/disciplines.eslint.d.mts",
+            "/repo/disciplines.json",
+          ],
+        },
+      },
+    });
+  });
+
   it("refuses, before writing anything, a repository version 1 already reports uncovered", async () => {
     const doubles = doublesOver({
       kindOf: kindsOfEveryPlannedFileNew(),
@@ -802,6 +825,24 @@ describe("upgradeProof", () => {
     });
   });
 
+  it("names the written files version 2 reports when the two runs do not agree on them", async () => {
+    const doubles = doublesOver({
+      kindOf: kindsOfEveryPlannedFileNew(),
+      path: recordsFolderPath(),
+    });
+    doubles.runs.versionTwo.mockResolvedValue({
+      outcome: "ok",
+      value: {
+        ...EMPTY_AFTER,
+        findings: [{ ...LOOP_FINDING, file: repoPathOf("hone.eslint.mjs") }],
+      },
+    });
+    await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
+      outcome: "failed",
+      error: { kind: "differences", writtenReported: ["hone.eslint.mjs"] },
+    });
+  });
+
   it("restores what it wrote and names the difference when the two runs do not agree, removing nothing", async () => {
     const doubles = doublesOver({
       kindOf: kindsOfEveryPlannedFileNew(),
@@ -819,6 +860,7 @@ describe("upgradeProof", () => {
           { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
           { section: "verdict", onlyBefore: ["pass"], onlyAfter: ["fail"] },
         ],
+        writtenReported: [],
         unrestored: [],
         removedByVersionOne: [],
       },

@@ -4,11 +4,18 @@ import type { FileTextPort } from "../application/ports/file-system/file-text-po
 import type { GitPort } from "../application/ports/git-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
+import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { commandOf } from "./composed-command.ts";
 import type { VersionOneToolPorts } from "./tool-ports.ts";
-import { alreadyUpgradedCommand, UPGRADE, type UpgradeCommandPorts } from "./upgrade-command.ts";
+import {
+  alreadyUpgradedCommand,
+  foundTreeStagesOf,
+  UPGRADE,
+  type UpgradeCommandPorts,
+} from "./upgrade-command.ts";
 
 type UpgradeOnlyPorts = Omit<UpgradeCommandPorts, keyof VersionOneToolPorts>;
 
@@ -176,6 +183,33 @@ describe("alreadyUpgradedCommand", () => {
     expect({ writes: recorded.writes, exits: recorded.exits }).toEqual({
       writes: [[{ text: "already on version 2; nothing to upgrade\n" }]],
       exits: [[{ code: 0 }]],
+    });
+  });
+});
+
+describe("foundTreeStagesOf", () => {
+  it("builds the version 2 stages over git that counts the files the upgrade wrote as tracked", () => {
+    const tracked = repoPathOf("src/a.ts");
+    const written = repoPathOf("hone.eslint.d.mts");
+    const git: GitPort = {
+      ...gitFailing(),
+      trackedPaths: vi
+        .fn<GitPort["trackedPaths"]>()
+        .mockReturnValue({ outcome: "ok", value: [tracked] }),
+    };
+    const { command } = commandWith({ arguments: [], files: {}, git });
+    const stagesOver = vi.fn<UpgradeCommandPorts["stagesOver"]>();
+    const repoRoot = absoluteRootOf("/repo");
+    foundTreeStagesOf({
+      ports: { ...command, ...PORTS, stagesOver },
+      command,
+      located: { repoRoot, installRoot: absoluteRootOf("/install") },
+      written: [written],
+    });
+    const [[handed]] = stagesOver.mock.calls;
+    expect(handed.ports.git.trackedPaths({ repoRoot })).toEqual({
+      outcome: "ok",
+      value: [tracked, written],
     });
   });
 });

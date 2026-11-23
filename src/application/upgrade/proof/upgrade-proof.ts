@@ -24,6 +24,7 @@ import {
   restoredOriginalProjections,
 } from "../patching/projection-patching.ts";
 import { proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
+import { reportedWrittenFilesOf } from "../proof-comparison/reported-written-files.ts";
 import {
   type PlannedFile,
   type ProofWritePorts,
@@ -34,6 +35,7 @@ import {
 import {
   type RecordsRoot,
   filesStillPresentOf,
+  projectionDeclarationsOf,
   recordsOutsideRoot,
   removedVersionOneFiles,
   type VersionOneRemoval,
@@ -151,6 +153,10 @@ const removalOf = (
       recordsFolders: recordsFolders.value,
       recordsRoot: recordsRoot.value,
       projections: projections.value,
+      declarations: projectionDeclarationsOf({
+        projections: projections.value,
+        fileText: ports.fileText,
+      }),
       settings: settings.value,
     },
   };
@@ -227,9 +233,8 @@ const rolledBackWith = (request: UpgradeProofRequest & Written): readonly Unrest
 const comparedAfterWriting = async (
   request: UpgradeProofRequest & Written,
 ): Promise<Result<null, ProofRefusal>> => {
-  const after = await request.runs.versionTwo({
-    written: request.plan.files.map(({ file }) => file),
-  });
+  const written = request.plan.files.map(({ file }) => file);
+  const after = await request.runs.versionTwo({ written });
   if (after.outcome === "failed") {
     return {
       outcome: "failed",
@@ -264,6 +269,7 @@ const comparedAfterWriting = async (
         error: {
           kind: "differences",
           differences,
+          writtenReported: reportedWrittenFilesOf({ written, after: after.value }),
           unrestored: rolledBackWith(request),
           removedByVersionOne: [],
         },

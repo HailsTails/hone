@@ -41,7 +41,7 @@ type Placed = {
 
 type Upgraded = { readonly located: RepositoryLocated; readonly carried: UpgradeCarriedOver };
 
-const foundTreeStagesOf = (request: Placed & ProofWritten): VersionTwoStages => {
+export const foundTreeStagesOf = (request: Placed & ProofWritten): VersionTwoStages => {
   const { ports, command, located, written } = request;
   const found = foundTreeRunReachOf({
     written,

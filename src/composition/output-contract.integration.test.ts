@@ -1080,6 +1080,7 @@ const { UPGRADE_LINES, UPGRADE_SUCCESS_LINES } = (() => {
             onlyAfter: ["CD-15#loops src/a.ts 4:1"],
           },
         ],
+        writtenReported: [],
         unrestored: [],
         removedByVersionOne: [],
       },
@@ -1087,6 +1088,26 @@ const { UPGRADE_LINES, UPGRADE_SUCCESS_LINES } = (() => {
         section: "findings",
         before: "CD-15#loops src/a.ts 3:1",
         after: "CD-15#loops src/a.ts 4:1",
+      },
+    },
+    {
+      failure: {
+        kind: "differences",
+        differences: [
+          {
+            section: "unrecorded",
+            onlyBefore: [],
+            onlyAfter: ["eslint ignore CD-14#class-syntax hone.eslint.d.mts"],
+          },
+        ],
+        writtenReported: [repoPathOf("hone.eslint.d.mts")],
+        unrestored: [],
+        removedByVersionOne: [],
+      },
+      fills: {
+        section: "unrecorded",
+        after: "eslint ignore CD-14#class-syntax hone.eslint.d.mts",
+        written: "hone.eslint.d.mts",
       },
     },
     {

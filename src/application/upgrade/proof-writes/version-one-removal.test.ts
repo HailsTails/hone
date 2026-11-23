@@ -6,8 +6,11 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
 import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
 import {
+  filesStillPresentOf,
+  projectionDeclarationsOf,
   removedVersionOneFiles,
   type VersionOneRemoval,
   type VersionOneRemovalPorts,
@@ -63,8 +66,13 @@ const REMOVAL: VersionOneRemoval = {
   recordsFolders: [],
   recordsRoot: { kind: "folder", path: ROOT },
   projections: [PROJECTION],
+  declarations: [],
   settings: SETTINGS,
 };
+
+const DECLARATION = absoluteRootOf("/repo/disciplines.eslint.d.mts");
+
+const SLICE_DECLARATION = absoluteRootOf("/repo/packages/a/disciplines.eslint.d.mts");
 
 const SLICE = absoluteRootOf("/repo/packages/a/disciplines.eslint.mjs");
 
@@ -297,6 +305,24 @@ describe("removedVersionOneFiles", () => {
     ]);
   });
 
+  it("removes each projection's declaration file after the projections and before the settings file", () => {
+    const ports = portsOver();
+    expect(
+      removedVersionOneFiles({
+        ports,
+        removal: { ...REMOVAL, recordsFiles: [], declarations: [DECLARATION] },
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: { files: [PROJECTION, DECLARATION, SETTINGS], folders: [] },
+    });
+    expect(sequenceOf({ ports })).toEqual([
+      REMOVING_PROJECTION,
+      { port: "remove", arguments: [{ path: DECLARATION }] },
+      REMOVING_SETTINGS,
+    ]);
+  });
+
   it("removes no projection when none is given", () => {
     const ports = portsOver();
     expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, projections: [] } })).toEqual({
@@ -471,5 +497,50 @@ describe("removedVersionOneFiles", () => {
       },
     });
     expect(sequenceOf({ ports })).toEqual([...REMOVING_RECORDS, ...REMOVING_AUTHORISED_FOLDER]);
+  });
+});
+
+describe("projectionDeclarationsOf", () => {
+  it("names the declaration file beside each projection that has one, and skips those that do not", () => {
+    const exists = vi
+      .fn<FileTextPort["exists"]>()
+      .mockImplementation(({ path }) => (path === DECLARATION ? "present" : "absent"));
+    expect({
+      declarations: projectionDeclarationsOf({
+        projections: [PROJECTION, SLICE],
+        fileText: { exists },
+      }),
+      asked: exists.mock.calls,
+    }).toEqual({
+      declarations: [DECLARATION],
+      asked: [[{ path: DECLARATION }], [{ path: SLICE_DECLARATION }]],
+    });
+  });
+
+  it("looks for no declaration beside a projection that is not an .mjs module", () => {
+    const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("present");
+    expect(
+      projectionDeclarationsOf({
+        projections: [absoluteRootOf("/repo/disciplines.eslint.js")],
+        fileText: { exists },
+      }),
+    ).toEqual([]);
+    expect(exists).not.toHaveBeenCalled();
+  });
+});
+
+describe("filesStillPresentOf", () => {
+  it("names a declaration file the removal stopped before", () => {
+    expect(
+      filesStillPresentOf({
+        removal: { ...REMOVAL, recordsFiles: [], declarations: [DECLARATION] },
+        failure: {
+          kind: "unremovable",
+          path: DECLARATION,
+          detail: "EBUSY",
+          removed: { files: [PROJECTION], folders: [] },
+        },
+      }),
+    ).toEqual([DECLARATION, SETTINGS]);
   });
 });

@@ -652,13 +652,51 @@ describe("hone upgrade over a real repository, through the real ports", () => {
         writes: [
           [
             {
-              text: "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\n    only after: eslint ignore CD-14#static-only-class hone.eslint.d.mts\n  verdict:\n    only before: pass\n    only after: fail\nThis is a fault in hone, not in your repository. Report it at https://github.com/HailsTails/hone/issues, with this output.\nNothing was changed.\n",
+              text: "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\n    only after: eslint ignore CD-14#static-only-class hone.eslint.d.mts\n  verdict:\n    only before: pass\n    only after: fail\nversion 2 reports files the upgrade writes: hone.eslint.d.mts. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.\nNothing was changed.\n",
             },
           ],
         ],
         exits: [[{ code: 1 }]],
       },
       after: before,
+    });
+  });
+
+  it("removes the declaration file a 1.x install wrote beside the projection", async () => {
+    const repo = await versionOneRepository({
+      source: "export const kept = 1;\n",
+      exceptions: NO_RECORDS,
+    });
+    fileText.write({
+      path: absolutePathSchema.parse(`${repo}/disciplines.eslint.d.mts`),
+      text: "declare const projection: readonly unknown[];\nexport default projection;\n",
+    });
+    trackEverything({ repo });
+    const upgraded = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      modules: DEFAULT_MODULES,
+    });
+    expect({ upgraded, after: listedPathsOf({ repo }) }).toEqual({
+      upgraded: {
+        writes: [
+          [
+            {
+              text: "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.eslint.d.mts\nremoved disciplines.json\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+            },
+          ],
+        ],
+        exits: [[{ code: 0 }]],
+      },
+      after: [
+        "eslint.config.mjs",
+        "hone.config.json",
+        "hone.eslint.d.mts",
+        "hone.eslint.mjs",
+        "src/",
+        "src/kept.ts",
+      ],
     });
   });
 
