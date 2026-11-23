@@ -314,6 +314,8 @@ const eslintRunOf = (request: {
   projection: request.projection,
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 });
 
@@ -418,6 +420,50 @@ const EMPTY_REPORT: RunReport = {
 };
 
 describe("namedRunReportOf, findings and records", () => {
+  it.each(["not-included", "current", "out-of-date"] as const)(
+    "names the nested folder once when the %s projection measured nothing",
+    (projection) => {
+      const nested = repoPathOf("packages/web");
+      expect(
+        namedRunReportOf({
+          ...REQUEST,
+          runs: [{ ...eslintRunOf({ hits: [], projection }), nestedConfigurations: [nested] }],
+        }),
+      ).toMatchObject({
+        unmeasured: [
+          {
+            kind: "engine-not-run",
+            engine: { name: ESLINT },
+            projection: "not-included",
+            nestedConfigurations: [nested],
+          },
+        ],
+        assessment: [],
+      });
+    },
+  );
+
+  it("keeps a nested projection gap as a partial assessment beside parent findings", () => {
+    const nested = repoPathOf("packages/web");
+    expect(
+      namedRunReportOf({
+        ...REQUEST,
+        runs: [
+          {
+            ...eslintRunOf({ hits: [CAST_HIT], projection: "current" }),
+            measured: [{ check: CAST_HIT.check, file: FILE_A }],
+            nestedConfigurations: [nested],
+          },
+        ],
+      }),
+    ).toEqual({
+      ...EMPTY_REPORT,
+      findings: [CAST_FINDING],
+      symptoms: [CLAIMED_TYPE],
+      assessment: [{ concern: "nested-projection", engine: { name: ESLINT }, folders: [nested] }],
+    });
+  });
+
   it("reports a finding no record answers, naming its mechanism, with the note of its symptom", () => {
     expect(
       namedRunReportOf({

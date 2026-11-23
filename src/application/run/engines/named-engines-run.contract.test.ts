@@ -19,7 +19,7 @@ import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
-import type { NamedEngineFailure, NamedEnginePort } from "../../ports/engine/engine-port.ts";
+import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type {
   NamedEngineRun,
   NamedEngineRunRequest,
@@ -179,6 +179,8 @@ const AUDIT_RUN: NamedEngineRun = {
   projection: "current",
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 };
 
@@ -241,11 +243,6 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
 const RUNNER_INVALID: Result<ParsedNamedRunner, RunnerInvalid> = {
   outcome: "failed",
   error: { kind: "runner-invalid", mechanism: ESLINT, detail: "Cannot find module" },
-};
-
-const NOT_READY: NamedEngineFailure = {
-  kind: "not-ready-yet",
-  what: { thing: "eslint-config-roots", paths: ["packages/web"] },
 };
 
 describe("namedEngineRunsOf", () => {
@@ -377,27 +374,6 @@ describe("namedEngineRunsOf", () => {
         kind: "runner-failed",
         mechanism: ESLINT,
         failure: { kind: "tool-failed", detail: "ESLint stopped" },
-      },
-    });
-  });
-
-  it("fails as not ready yet when the ESLint runner says its config roots are not ready", async () => {
-    const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
-    engine.runChecks.mockResolvedValueOnce({ outcome: "failed", error: NOT_READY });
-    expect(
-      await namedEngineRunsOf(
-        enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
-          lookup: DETECTED,
-          engine: engine.port,
-        }),
-      ),
-    ).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "not-ready-yet",
-        what: { thing: "eslint-config-roots", paths: ["packages/web"] },
       },
     });
   });
@@ -537,27 +513,6 @@ describe("namedEngineProjectionsOf", () => {
         kind: "runner-failed",
         mechanism: ESLINT,
         failure: { kind: "tool-failed", detail: "disk full" },
-      },
-    });
-  });
-
-  it("fails as not ready yet when the checks runner says its config roots are not ready", async () => {
-    const engine = engineFake();
-    engine.load.mockResolvedValueOnce({ outcome: "ok", value: ESLINT_LOADED });
-    engine.projectChecks.mockResolvedValueOnce({ outcome: "failed", error: NOT_READY });
-    expect(
-      await namedEngineProjectionsOf(
-        enginesRequestOf({
-          bindings: [bindingOn({ mechanism: ESLINT })],
-          lookup: DETECTED,
-          engine: engine.port,
-        }),
-      ),
-    ).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "not-ready-yet",
-        what: { thing: "eslint-config-roots", paths: ["packages/web"] },
       },
     });
   });

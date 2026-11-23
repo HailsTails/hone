@@ -86,17 +86,23 @@ const notRunOf = (request: {
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
+  const { nestedConfigurations, measured } = request.run;
+  const notIncluded: EngineNotRun = {
+    kind: "engine-not-run",
+    engine,
+    projection: "not-included",
+    nestedConfigurations,
+  };
   switch (request.run.projection) {
     case "missing":
       return [{ kind: "engine-not-run", engine, projection: "missing" }];
     case "not-included":
-      return [
-        { kind: "engine-not-run", engine, projection: "not-included", nestedConfigurations: [] },
-      ];
+      return [notIncluded];
     case "none":
       return [];
     case "current":
     case "out-of-date":
+      if (measured.length === 0 && nestedConfigurations.length > 0) return [notIncluded];
       return measuredNothingOf({
         engine,
         measurement: runMeasurementOf(request),

@@ -106,10 +106,12 @@ const ENTRY_URL = new URL("../../src/hone.ts", import.meta.url).href;
 
 const fileText = createDefaultFileTextPort({});
 
+const scratch = createDefaultScratchFilesPort({});
+
 const repositories = scratchRepositoriesUnder({
   parent: `${INSTALL_ROOT}/artefacts`,
   fileText,
-  scratch: createDefaultScratchFilesPort({}),
+  scratch,
 });
 
 afterAll(() => {
@@ -189,6 +191,36 @@ const runCommandIn = async (request: {
   };
 };
 
+const nestedRepositoryWith = (request: {
+  readonly eslint: string;
+  readonly source: string;
+  readonly parentFiles?: Readonly<Record<string, string>>;
+}): string => {
+  const repo = trackedRepositoryWith({
+    repositories,
+    commands,
+    files: {
+      "hone.config.json": CONFIG,
+      "eslint.config.mjs": PROJECTION_IMPORT,
+      ...request.parentFiles,
+    },
+  });
+  assert(scratch.makeDirectory({ path: `${repo}/pkg` }).outcome === "ok");
+  assert(fileText.write({ path: `${repo}/pkg/hone.config.json`, text: CONFIG }).outcome === "ok");
+  assert(
+    fileText.write({
+      path: `${repo}/pkg/eslint.config.mjs`,
+      text: request.eslint,
+    }).outcome === "ok",
+  );
+  assert(fileText.write({ path: `${repo}/pkg/a.ts`, text: request.source }).outcome === "ok");
+  expect(commands.run({ command: "git", arguments: ["add", "."], directory: repo })).toMatchObject({
+    outcome: "exited",
+    exitCode: 0,
+  });
+  return repo;
+};
+
 describe("the tool's commands on a repository holding hone.config.json, through the real ports", () => {
   it("prints the version 2 report for a class the ESLint runner finds, naming the check and the symptom, and exits 1", async () => {
     const repo = trackedRepositoryWith({
@@ -206,6 +238,118 @@ describe("the tool's commands on a repository holding hone.config.json, through 
       writes: [[{ text: EXPECTED_REPORT }]],
       exits: [[{ code: 1 }]],
     });
+  });
+
+  it("projects the parent and reports the nested folder when its own ESLint config omits the projection", async () => {
+    const repo = nestedRepositoryWith({
+      eslint: 'export default [{ files: ["**/*.ts"] }];\n',
+      source: "export const a = 1;\n",
+    });
+
+    const projected = await runCommandIn({ repo, subcommand: "project", options: [] });
+    const checked = await runCommandIn({ repo, subcommand: "check", options: [] });
+    expect(projected.exits).toEqual([[{ code: 0 }]]);
+    expect(fileText.exists({ path: `${repo}/pkg/hone.eslint.mjs` })).toBe("absent");
+    expect(checked).toEqual({
+      writes: [
+        [
+          {
+            text: expect.stringMatching(
+              /engine-not-run eslint not-included:[^\n]*pkg hold their own hone.config.json[^\n]*\n[\s\S]*verdict: fail\n$/u,
+            ),
+          },
+        ],
+      ],
+      exits: [[{ code: 1 }]],
+    });
+  });
+
+  it("reports an ESLint finding in the parent when the nested config omits the projection", async () => {
+    const repo = nestedRepositoryWith({
+      eslint: 'export default [{ files: ["**/*.ts"] }];\n',
+      source: "export const a = 1;\n",
+      parentFiles: { "kept.ts": "export class Kept {}\n" },
+    });
+    const projected = await runCommandIn({ repo, subcommand: "project", options: [] });
+    expect(projected.exits).toEqual([[{ code: 0 }]]);
+    const checked = await runCommandIn({ repo, subcommand: "check", options: [] });
+    expect(checked).toEqual({
+      writes: [
+        [
+          {
+            text: expect.stringContaining(
+              "authored-class-or-this#class-keyword eslint kept.ts:1:7",
+            ),
+          },
+        ],
+      ],
+      exits: [[{ code: 1 }]],
+    });
+  });
+
+  it("passes a clean mixed run and names the nested config that omits the projection", async () => {
+    const repo = nestedRepositoryWith({
+      eslint: 'export default [{ files: ["**/*.ts"] }];\n',
+      source: "export const nested = 1;\n",
+      parentFiles: { "kept.ts": "export const kept = 1;\n" },
+    });
+    const projected = await runCommandIn({ repo, subcommand: "project", options: [] });
+    expect(projected.exits).toEqual([[{ code: 0 }]]);
+    expect(await runCommandIn({ repo, subcommand: "check", options: [] })).toEqual({
+      writes: [
+        [
+          {
+            text: expect.stringMatching(
+              /eslint not-included:[^\n]*pkg[^\n]*hone.config.json[^\n]*\n[\s\S]*verdict: pass \(partial assessment\)\n$/u,
+            ),
+          },
+        ],
+      ],
+      exits: [[{ code: 0 }]],
+    });
+  });
+
+  it("names an unprojected nested configuration instead of recording debt for its finding", async () => {
+    const repo = nestedRepositoryWith({
+      eslint: 'import hone from "../hone.eslint.mjs";\nexport default [...hone];\n',
+      source: "export class Nested {}\n",
+    });
+    const committed = commands.run({
+      command: "git",
+      arguments: [
+        "-c",
+        "user.name=proof",
+        "-c",
+        "user.email=proof@example.test",
+        "commit",
+        "-m",
+        "base",
+      ],
+      directory: repo,
+    });
+    expect(committed).toMatchObject({ outcome: "exited", exitCode: 0 });
+    expect((await runCommandIn({ repo, subcommand: "project", options: [] })).exits).toEqual([
+      [{ code: 0 }],
+    ]);
+
+    const recorded = await runCommandIn({
+      repo,
+      subcommand: "record-debt",
+      options: ["--base-revision", "HEAD"],
+    });
+    expect(recorded.exits).toEqual([[{ code: 0 }]]);
+    expect(recorded.writes).toMatchObject([
+      [
+        {
+          text: expect.stringContaining(
+            "authored-class-or-this#class-keyword nested-configuration pkg/a.ts",
+          ),
+        },
+      ],
+    ]);
+    expect(fileText.exists({ path: `${repo}/hone-records/debt/authored-class-or-this.json` })).toBe(
+      "absent",
+    );
   });
 
   it("records the class the base revision holds as debt through record-debt, printing the symptom and file and exiting 0", async () => {

@@ -4,7 +4,6 @@ import type { RecordsDocumentRefusal } from "../records/hone-records/hone-record
 import type { RecordsFolderFailure } from "../records/records-folder-failure.ts";
 import type { RepoPath } from "../repository/repo-path-types.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
-import type { NotReadyYetFailure } from "../runner/checks-run-report.ts";
 import type { RunnerFailure } from "../runner/runner-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "./load-failure.ts";
@@ -28,9 +27,7 @@ type KeptKind =
   | "config-root-untracked"
   | "unexpected-error";
 
-export type NotReadyYet =
-  | { readonly thing: "command"; readonly command: string }
-  | NotReadyYetFailure["what"];
+export type NotReadyYet = { readonly thing: "command"; readonly command: string };
 
 export type CatalogueUnread =
   | { readonly reason: "absent" }

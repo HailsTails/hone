@@ -38,14 +38,14 @@ const sitesOf = (
 ): NativeDebtSites => {
   const { exception, catalogue } = request;
   const run = request.runs.find((candidate) => candidate.mechanism === exception.mechanism);
-  const sites =
-    exception.kind === "config-override" || run === undefined
-      ? []
-      : nativeSitesOf({ exception, run, catalogue });
+  if (exception.kind === "config-override" || run === undefined) {
+    return { recordable: [], unrecordable: [unrecordableOf({ exception })] };
+  }
+  const sites = nativeSitesOf({ exception, run, catalogue });
   return sites.length === 0
     ? { recordable: [], unrecordable: [unrecordableOf({ exception })] }
     : {
-        recordable: sites.map((site) => debtSiteOf({ site, origin: "native-exception" })),
+        recordable: sites.map((site) => debtSiteOf({ site, origin: "native-exception", run })),
         unrecordable: [],
       };
 };

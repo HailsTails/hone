@@ -10,7 +10,7 @@ import {
   type RecordDebtRequest,
   recordDebtOf,
 } from "../../src/application/records/record-commands.ts";
-import type { CheckFinding } from "../../src/domain/finding/governance.ts";
+import type { CheckFinding, NamedGovernedRun } from "../../src/domain/finding/governance.ts";
 import {
   answerFindings,
   type RaisedFinding,
@@ -301,6 +301,14 @@ const RAISED: readonly RaisedFinding[] = [
   { finding: CAST_IN_ORDERS, party: { reported: "not-reported" } },
 ];
 
+const WALKER_RUN: NamedGovernedRun = {
+  mechanism: "walker",
+  nativeExceptions: [],
+  coverableKinds: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+};
+
 const NOTHING_CHANGED: TouchedSet = { measured: "yes", paths: new Set() };
 
 const recordDebt = (run: RecordDebtRequest) =>
@@ -340,7 +348,7 @@ describe("the version 2 record commands over a real hone-records folder, built i
       recordDebt({
         findings: [CAST_IN_ORDERS],
         unrecorded: [],
-        runs: [],
+        runs: [WALKER_RUN],
         touched: NOTHING_CHANGED,
         leave: [],
       }),
@@ -356,7 +364,7 @@ describe("the version 2 record commands over a real hone-records folder, built i
       recordDebt({
         findings: [CAST_IN_ORDERS],
         unrecorded: [],
-        runs: [],
+        runs: [WALKER_RUN],
         touched: NOTHING_CHANGED,
         leave: [],
       }),
@@ -376,7 +384,7 @@ describe("the version 2 record commands over a real hone-records folder, built i
     recordDebt({
       findings: [CAST_IN_ORDERS],
       unrecorded: [],
-      runs: [],
+      runs: [WALKER_RUN],
       touched: NOTHING_CHANGED,
       leave: [],
     });

@@ -281,6 +281,8 @@ const FILE = repoPathOf("src/a.ts");
 const OTHER_FILE = repoPathOf("src/b.ts");
 
 const ESLINT_RUN: NamedGovernedRun = {
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   mechanism: ESLINT,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
@@ -346,6 +348,28 @@ describe("nativeDebtSitesOf", () => {
           address: "claimed-type#cast-expressions",
           file: FILE,
           origin: "native-exception",
+        },
+      ],
+      unrecordable: [],
+    });
+  });
+
+  it("retains the projection boundary for a native exception in the nested folder", () => {
+    const folder = repoPathOf("src");
+    expect(
+      nativeDebtSitesOf({
+        catalogue: REPORT_CATALOGUE,
+        unrecorded: [INLINE_DISABLE],
+        runs: [{ ...ESLINT_RUN, unprojectedFolders: [{ folder, selectionFolder: folder }] }],
+      }),
+    ).toEqual({
+      recordable: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          address: INLINE_DISABLE.check,
+          file: FILE,
+          origin: "native-exception",
+          unprojected: { mechanism: ESLINT, folder, selectionFolder: folder },
         },
       ],
       unrecordable: [],

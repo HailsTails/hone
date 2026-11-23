@@ -121,24 +121,6 @@ const ROWS: readonly Row[] = [
     },
   },
   {
-    name: "version 2 cannot run a repository holding other version 2 repositories",
-    failure: {
-      kind: "plan-refused",
-      refusal: {
-        kind: "projection-failed",
-        failure: {
-          kind: "not-ready-yet",
-          what: { thing: "eslint-config-roots", paths: ["vendor/lib"] },
-        },
-      },
-      removedByVersionOne: [],
-    },
-    outcome: {
-      code: 1,
-      text: "upgrade refused:\nversion 2 cannot run this repository yet (load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: vendor/lib; move them out of this repository, and run each on its own with --repo). Do what it names, or stay on version 1 until version 2 runs it, then run the upgrade again.\nNothing was changed.\n",
-    },
-  },
-  {
     name: "a version 1 projection has no version 2 projection to take its place",
     failure: {
       kind: "plan-refused",

@@ -110,6 +110,8 @@ const OUT_OF_DATE_ESLINT_RUN: NamedEngineRun = {
   projection: "out-of-date",
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 };
 

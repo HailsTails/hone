@@ -31,7 +31,6 @@ import {
   namedChecksRunResultSchema,
   namedChecksRunnerModuleSchema,
 } from "../checks/checks-runner-module-schema.ts";
-import type { ChecksRunFailure } from "../checks/checks-runner-types.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 type NamedOutcome<Value> = Result<Value, NamedEngineFailure>;
 
@@ -75,14 +74,6 @@ const invalidChecksOutput = (request: {
     mechanism: request.mechanism,
     failure: runnerInvalidOutput({ detail: z.prettifyError(request.error) }).error,
   });
-
-const failedChecksCall = (request: {
-  readonly mechanism: EngineId;
-  readonly error: ChecksRunFailure;
-}): NamedOutcome<never> =>
-  request.error.kind === "not-ready-yet"
-    ? { outcome: "failed", error: request.error }
-    : runnerFailed({ mechanism: request.mechanism, failure: request.error });
 
 const NAMED_RUNNER_MODULE = z.object({ namedChecksRunner: namedChecksRunnerModuleSchema });
 
@@ -134,7 +125,7 @@ export const namedEngineRunOf = async (
     return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
   }
   if (parsed.data.outcome === "failed") {
-    return failedChecksCall({ mechanism: call.mechanism, error: parsed.data.error });
+    return runnerFailed({ mechanism: call.mechanism, failure: parsed.data.error });
   }
   return verifiedNamedRun({ call, requested, report: parsed.data.value });
 };
@@ -171,7 +162,7 @@ export const measureVersionOneProjection: MeasureVersionOneProjection = async ({
   if (!parsed.success)
     return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
   if (parsed.data.outcome === "failed") {
-    return failedChecksCall({ mechanism: call.mechanism, error: parsed.data.error });
+    return runnerFailed({ mechanism: call.mechanism, failure: parsed.data.error });
   }
   const allowedSlices = new Set(projection.packageFiles);
   const unrequested = parsed.data.value.unappliedSlices.find((slice) => !allowedSlices.has(slice));
@@ -202,6 +193,6 @@ export const namedEngineProjectionOf = async (
     return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
   }
   return parsed.data.outcome === "failed"
-    ? failedChecksCall({ mechanism: call.mechanism, error: parsed.data.error })
+    ? runnerFailed({ mechanism: call.mechanism, failure: parsed.data.error })
     : parsed.data;
 };

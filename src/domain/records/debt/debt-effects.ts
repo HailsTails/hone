@@ -11,6 +11,7 @@ import {
   type OwnedSitePlace,
   type SitePlace,
   siteAddressText,
+  type UnprojectedDebtSite,
 } from "./debt-sites.ts";
 import type { UnrecordableBecause, UnrecordableSite } from "./unrecordable-site.ts";
 
@@ -19,6 +20,7 @@ export type DebtEffect =
   | { readonly effect: "already-recorded"; readonly heldIn: RepoPath }
   | { readonly effect: "left"; readonly under: RepoPath }
   | { readonly effect: "touched"; readonly of: DebtOrigin }
+  | ({ readonly effect: "nested-configuration" } & UnprojectedDebtSite)
   | { readonly effect: "unrecordable"; readonly because: UnrecordableBecause };
 
 export type DecidedDebtEffect = Exclude<DebtEffect, { readonly effect: "unrecordable" }>;
@@ -90,9 +92,13 @@ const effectOf = (request: {
   if (under !== undefined) {
     return { effect: "left", under };
   }
-  return debtForfeitureAt({ touched: rest.touched, file: site.file }) === "forfeits"
-    ? { effect: "touched", of: site.origin }
-    : { effect: "recorded" };
+  if (site.unprojected !== undefined) {
+    return { effect: "nested-configuration", ...site.unprojected };
+  }
+  if (debtForfeitureAt({ touched: rest.touched, file: site.file }) === "forfeits") {
+    return { effect: "touched", of: site.origin };
+  }
+  return { effect: "recorded" };
 };
 
 export const debtOutcomesOf = (request: DebtEffectsRequest): readonly DebtOutcome[] => {

@@ -211,6 +211,8 @@ describe("createWalkerRunner run", () => {
       value: {
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         hits: [
           { check: FIRST, file: ALPHA, anchor: { line: 1, column: 0 }, snippet: "const a = 1;" },
@@ -250,6 +252,8 @@ describe("createWalkerRunner run", () => {
         measured: [],
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
       },
     });
@@ -446,6 +450,8 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
       value: {
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         hits: [],
         nativeExceptions: [
@@ -477,6 +483,8 @@ describe("createWalkerRunner run, type directives a clause declares as its escap
       value: {
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         hits: [],
         nativeExceptions: [
@@ -503,6 +511,8 @@ describe("createWalkerRunner run, type directives several bindings or conform me
       value: {
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         hits: [],
         nativeExceptions: [

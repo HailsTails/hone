@@ -333,7 +333,14 @@ export const createWalkerRunner = (ports: WalkerPorts): NamedChecksRunner => ({
       ? walked
       : {
           outcome: "ok",
-          value: { ...walked.value, projection: "none", slices: [], misnamedRuleIds: [] },
+          value: {
+            ...walked.value,
+            projection: "none",
+            slices: [],
+            misnamedRuleIds: [],
+            nestedConfigurations: [],
+            unprojectedFolders: [],
+          },
         };
   },
   conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),

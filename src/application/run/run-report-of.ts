@@ -17,7 +17,11 @@ import {
   carriedJudgementOf,
   recordsUnmeasuredOf,
 } from "../../domain/records/measurement/records-unmeasured.ts";
-import type { AssessmentLeftElsewhere, RunReport } from "../../domain/report/run-report.ts";
+import type {
+  AssessmentLeftElsewhere,
+  RunAssessment,
+  RunReport,
+} from "../../domain/report/run-report.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
 import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
@@ -84,9 +88,27 @@ const carriedStandingLeftElsewhereOf = (
     : [];
 };
 
-const assessmentOf = (request: ReportInputs): readonly AssessmentLeftElsewhere[] => [
+const nestedProjectionAssessments = (runs: readonly NamedEngineRun[]): readonly RunAssessment[] =>
+  runs.flatMap(({ mechanism, projection, measured, nestedConfigurations }) =>
+    (projection === "current" || projection === "out-of-date") &&
+    measured.length > 0 &&
+    nestedConfigurations.length > 0
+      ? [
+          {
+            concern: "nested-projection",
+            engine: { name: mechanism },
+            folders: nestedConfigurations,
+          },
+        ]
+      : [],
+  );
+
+const assessmentOf = (
+  request: ReportInputs & { readonly runs: readonly NamedEngineRun[] },
+): readonly RunAssessment[] => [
   ...forfeitureLeftElsewhereOf(request),
   ...carriedStandingLeftElsewhereOf(request),
+  ...nestedProjectionAssessments(request.runs),
 ];
 
 type ReportStatus = Pick<RunReport, "not-adopted" | "not-run" | "editions" | "projection-problems">;

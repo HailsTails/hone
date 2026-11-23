@@ -20,6 +20,7 @@ import type {
   NativeException,
   ProjectionWrite,
 } from "../../../../../domain/runner/runner-result-types.ts";
+import { VERSION_ONE_SETTINGS_FILE_NAME } from "../../../../../domain/settings/settings-file.ts";
 import type {
   EmbeddedRunReport,
   ReturnedEmbeddedRunReport,
@@ -762,6 +763,7 @@ const governedRun = (request: {
         lookup.kind === "repository-root"
           ? []
           : nestedConfigurationFoldersOf({
+              settingsFile: VERSION_ONE_SETTINGS_FILE_NAME,
               trackedPaths: request.run.trackedPaths,
               files: request.run.files,
             }),
@@ -837,6 +839,7 @@ const selectedRun = (request: {
     return Promise.resolve(status);
   }
   const unprojectedFolders = unprojectedFoldersOf({
+    settingsFile: VERSION_ONE_SETTINGS_FILE_NAME,
     trackedPaths: request.run.trackedPaths,
     files: request.run.files,
     lookup: lookup.value.kind,

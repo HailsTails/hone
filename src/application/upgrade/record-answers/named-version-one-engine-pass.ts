@@ -110,11 +110,7 @@ const findingsFor = async (
     },
   });
   if (ran.outcome === "failed") {
-    return refused(
-      ran.error.kind === "not-ready-yet"
-        ? ran.error.what.thing
-        : request.loadFailureDetail({ failure: ran.error }),
-    );
+    return refused(request.loadFailureDetail({ failure: ran.error }));
   }
   const problem = projectionProblemOf({
     measurements: ran.value,

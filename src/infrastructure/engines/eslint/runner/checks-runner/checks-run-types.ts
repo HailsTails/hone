@@ -10,12 +10,7 @@ export type VersionOneRuleId = { readonly ruleId: string; readonly replacedBy: r
 
 export type ChecksProjectionState = "current" | "out-of-date" | "missing" | "not-included";
 
-export type NotReadyYetFailure = {
-  readonly kind: "not-ready-yet";
-  readonly what: { readonly thing: "eslint-config-roots"; readonly paths: readonly string[] };
-};
-
-export type ChecksRunFailure = RunnerFailure | NotReadyYetFailure;
+export type ChecksRunFailure = RunnerFailure;
 
 export type SelectedNamedCheck = {
   readonly ruleSet: RuleSetIdentity;

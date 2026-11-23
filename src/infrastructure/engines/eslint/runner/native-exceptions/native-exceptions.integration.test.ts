@@ -1110,6 +1110,8 @@ describe.each(ESLINT_LINES)(
             })),
             projection: "none",
             slices: [],
+            nestedConfigurations: [],
+            unprojectedFolders: [],
             misnamedRuleIds: [],
           },
         },

@@ -145,6 +145,10 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
     "CD-99#nowhere unrecordable src/orders/charge-order.ts: the catalogue gives this finding no symptom or check to record debt against; fix the finding",
   ],
   [
+    { address: "clock#sources", file: FILE, effect: "unrecordable", because: { kind: "no-run" } },
+    "clock#sources unrecordable src/orders/charge-order.ts: the engine that reported this finding has no run result to record debt against",
+  ],
+  [
     { ...SITE, effect: "unrecordable", because: { kind: "ignore" } },
     "date-used-directly#clock-sources unrecordable src/orders/charge-order.ts: an ESLint ignore leaves the file out of the team's lint run, which no record can hold; Hone's run checked the file and recorded what it found there as debt, so what is left is the ignore: remove it, or, if the file is generated or vendored and not yours to hold to the checks, list it in exclude in hone.config.json so Hone's setting and the team's ignore agree",
   ],
@@ -219,6 +223,21 @@ const DEBT: Debt = {
 const PLACE = { file: RECORDS_FILE, index: 0 };
 
 describe("the lines hone record-debt prints", () => {
+  it("names the lint config folder and the nested Hone settings in a debt refusal", () => {
+    const line = debtOutcomeLine({
+      outcome: {
+        ...SITE,
+        effect: "nested-configuration",
+        mechanism: "eslint",
+        folder: repoPathOf("pkg/src"),
+        selectionFolder: repoPathOf("pkg"),
+      },
+    });
+    expect(line).toContain("nested-configuration");
+    expect(line).toContain("eslint configuration in pkg/src");
+    expect(line).toContain("pkg holds its own hone.config.json");
+  });
+
   it.each(OUTCOME_LINES)("prints %j as one line", (outcome, line) => {
     expect(debtOutcomeLine({ outcome })).toBe(line);
   });

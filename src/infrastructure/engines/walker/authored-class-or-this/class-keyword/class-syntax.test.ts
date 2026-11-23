@@ -99,6 +99,8 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
       value: {
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         hits: [
           {

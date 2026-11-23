@@ -2,9 +2,9 @@ import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import { RECORDS_FOLDER } from "../../domain/records/hone-records/records-layout.ts";
 import type { RecordsUnmeasured } from "../../domain/records/measurement/records-unmeasured.ts";
 import type {
-  AssessmentLeftElsewhere,
   EngineNotRun,
   MissingProjection,
+  RunAssessment,
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../domain/report/run-report.ts";
@@ -151,13 +151,15 @@ export const projectionProblemLine = (
   }
 };
 
-export const assessmentLine = (request: { readonly partial: AssessmentLeftElsewhere }): string => {
+export const assessmentLine = (request: { readonly partial: RunAssessment }): string => {
   const { partial } = request;
   switch (partial.concern) {
     case "forfeiture":
       return `forfeiture ${partial.assessedBy}: ${counted({ count: partial.debts, noun: "debt record" })} not checked for forfeiture in this run`;
     case "carried-standing":
       return `carried standing ${partial.assessedBy}: ${counted({ count: partial.carried, noun: "carried record" })} not checked against the base in this run`;
+    case "nested-projection":
+      return `${partial.engine.name} not-included: the parent projection is out of effect under ${partial.folders.join(", ")}, where this run found local ${SETTINGS_FILE_NAME} files`;
   }
 };
 

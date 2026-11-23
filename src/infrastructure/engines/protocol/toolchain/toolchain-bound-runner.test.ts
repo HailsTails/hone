@@ -208,6 +208,8 @@ const CHECKS_REPORT: NamedChecksRunReport = {
   measured: [],
   projection: "current",
   slices: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 };
 

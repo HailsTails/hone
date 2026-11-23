@@ -183,6 +183,14 @@ describe("projectionMissingLine", () => {
 });
 
 describe("assessmentLine", () => {
+  it("names nested folders where the parent projection does not apply", () => {
+    expect(
+      assessmentLine({
+        partial: { concern: "nested-projection", engine: ESLINT_ENGINE, folders: [LEGACY] },
+      }),
+    ).toContain("packages/legacy");
+  });
+
   it.each([
     {
       debts: 1,

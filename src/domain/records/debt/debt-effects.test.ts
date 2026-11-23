@@ -230,6 +230,33 @@ describe("what record-debt does with each symptom and file the check finds", () 
     ]);
   });
 
+  it("reports a nested configuration when a file eligible for debt lies beyond the projection", () => {
+    const folder = repoPathOf("src/orders");
+    const unprojected = { folder, selectionFolder: repoPathOf("src"), mechanism: WALKER.name };
+    expect(
+      debtOutcomesOf({
+        ...REQUEST,
+        sites: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            address: CLOCK_ADDRESS,
+            file: ORDER_FILE,
+            origin: "finding",
+            unprojected,
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: ORDER_FILE,
+        effect: "nested-configuration",
+        ...unprojected,
+      },
+    ]);
+  });
+
   it("writes nothing for debt already held on the same symptom, check and file, and says where it sits", () => {
     expect(debtOutcomesOf({ ...REQUEST, records: [HELD_CLOCK_DEBT] })).toEqual([
       {
@@ -251,6 +278,33 @@ describe("what record-debt does with each symptom and file the check finds", () 
         records: [HELD_CLOCK_DEBT],
       }),
     ).toEqual([{ ruleSet: acme, address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" }]);
+  });
+
+  it("reports nested configuration when a touched file is beyond the projection", () => {
+    const folder = repoPathOf("src");
+    const unprojected = { folder, selectionFolder: folder, mechanism: WALKER.name };
+    expect(
+      debtOutcomesOf({
+        ...REQUEST,
+        sites: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            address: CLOCK_ADDRESS,
+            file: TOUCHED_FILE,
+            origin: "finding",
+            unprojected,
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: TOUCHED_FILE,
+        effect: "nested-configuration",
+        ...unprojected,
+      },
+    ]);
   });
 
   it("says the debt sits in the first records file that holds it when two files hold it", () => {

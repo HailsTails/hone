@@ -326,6 +326,8 @@ const CLEAN_RUN: NamedEngineRun = {
   projection: "current",
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 };
 

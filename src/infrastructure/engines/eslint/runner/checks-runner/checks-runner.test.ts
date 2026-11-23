@@ -106,37 +106,20 @@ const REQUEST: NamedEngineRunRequest = {
   declaredConfigLookup: undefined,
 };
 
-const NOT_READY_NESTED = {
-  outcome: "failed",
-  error: { kind: "not-ready-yet", what: { thing: "eslint-config-roots", paths: ["vendor/lib"] } },
-};
+const NESTED_FOLDER = repoPathOf("vendor/lib");
+const NESTED_SOURCE = repoPathOf("vendor/lib/src/a.ts");
+const NESTED_SETTINGS = repoPathOf("vendor/lib/hone.config.json");
+const NESTED_ESLINT = repoPathOf("vendor/lib/eslint.config.mjs");
 
 describe("checksRunnerOver", () => {
-  it("is not ready for a repository holding a nested repository with files to check", async () => {
-    expect(
-      await runner.run({
+  it("continues when a nested repository holds files and no checks are selected", async () => {
+    await expect(
+      runner.run({
         ...REQUEST,
-        files: [repoPathOf("vendor/lib/src/a.ts")],
-        trackedPaths: [
-          repoPathOf("vendor/lib/hone.config.json"),
-          repoPathOf("vendor/lib/src/a.ts"),
-        ],
+        files: [NESTED_SOURCE],
+        trackedPaths: [NESTED_SETTINGS, NESTED_SOURCE],
       }),
-    ).toEqual(NOT_READY_NESTED);
-  });
-
-  it("names the nested repository, and not its own lint config as a package config of this one, when that repository holds one", async () => {
-    expect(
-      await runner.run({
-        ...REQUEST,
-        files: [repoPathOf("vendor/lib/src/a.ts")],
-        trackedPaths: [
-          repoPathOf("vendor/lib/hone.config.json"),
-          repoPathOf("vendor/lib/eslint.config.mjs"),
-          repoPathOf("vendor/lib/src/a.ts"),
-        ],
-      }),
-    ).toEqual(NOT_READY_NESTED);
+    ).resolves.toMatchObject({ outcome: "ok", value: { projection: "current", slices: [] } });
   });
 
   it("reports a current projection and no findings when no check runs on ESLint", async () => {
@@ -146,6 +129,8 @@ describe("checksRunnerOver", () => {
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],
@@ -276,15 +261,16 @@ type ProjectionStubs = {
   readonly governance: GovernanceInstance;
 };
 
-const runnerOverProjectionReading = (
-  stubs: ProjectionStubs & { readonly fileText: FileTextPort },
+const runnerOverQuery = (
+  stubs: Omit<ProjectionStubs, "ruleState"> & {
+    readonly fileText: FileTextPort;
+    readonly query: QueryInstance;
+  },
 ) => {
   const realModules = createDefaultModuleLoaderPort({});
   const stubbedEslint: EslintPort = {
     boundary: SILENT_BOUNDARY,
-    createQueryInstance: vi
-      .fn<EslintPort["createQueryInstance"]>()
-      .mockReturnValue(queryInstanceOver(stubs.ruleState)),
+    createQueryInstance: vi.fn<EslintPort["createQueryInstance"]>().mockReturnValue(stubs.query),
     createGovernanceInstance: vi
       .fn<EslintPort["createGovernanceInstance"]>()
       .mockReturnValue(stubs.governance),
@@ -314,6 +300,10 @@ const runnerOverProjectionReading = (
     },
   });
 };
+
+const runnerOverProjectionReading = (
+  stubs: ProjectionStubs & { readonly fileText: FileTextPort },
+) => runnerOverQuery({ ...stubs, query: queryInstanceOver(stubs.ruleState) });
 
 const runnerOverProjection = (stubs: ProjectionStubs) =>
   runnerOverProjectionReading({ ...stubs, fileText: createDefaultFileTextPort({}) });
@@ -350,6 +340,8 @@ describe("checksRunnerOver, measuring an inspected version one projection", () =
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "not-included",
           slices: [],
@@ -375,6 +367,8 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "missing",
           slices: [],
@@ -398,6 +392,8 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "out-of-date",
           slices: [],
@@ -421,6 +417,8 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [],
@@ -457,12 +455,35 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "out-of-date",
           slices: [],
         },
       },
       linted: [],
+    });
+  });
+
+  it("names the nested Hone folder when its nearest lint config leaves the projection out of effect", async () => {
+    const outcome = await runnerOverProjection({
+      currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
+      ruleState: RULE_ABSENT,
+      governance: lintingNothing(),
+    }).run({
+      ...SELECTING_THE_CLASS_CHECK,
+      files: [NESTED_SOURCE],
+      trackedPaths: [NESTED_SETTINGS, NESTED_ESLINT, NESTED_SOURCE],
+    });
+    expect(outcome).toMatchObject({
+      outcome: "ok",
+      value: {
+        projection: "not-included",
+        nestedConfigurations: [NESTED_FOLDER],
+        unprojectedFolders: [{ folder: NESTED_FOLDER, selectionFolder: NESTED_FOLDER }],
+        slices: [],
+      },
     });
   });
 
@@ -480,12 +501,83 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "not-included",
           slices: [],
         },
       },
       linted: [],
+    });
+  });
+
+  it("names nested reach and keeps the parent config-override when both configurations omit a rule", async () => {
+    const parent = repoPathOf("kept.ts");
+    const overridden = repoPathOf("overridden.ts");
+    const governance = lintingNothing();
+    const outcome = await runnerOverQuery({
+      currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
+      fileText: createDefaultFileTextPort({}),
+      query: {
+        ignoredState: vi.fn<QueryInstance["ignoredState"]>().mockResolvedValue({
+          outcome: "ok",
+          value: "checked",
+        }),
+        ruleState: vi
+          .fn<QueryInstance["ruleState"]>()
+          .mockResolvedValueOnce({ outcome: "ok", value: CONFIGURED_ON })
+          .mockResolvedValueOnce({ outcome: "ok", value: RULE_ABSENT })
+          .mockResolvedValueOnce({ outcome: "ok", value: RULE_ABSENT }),
+        configFileOf: vi.fn<QueryInstance["configFileOf"]>(),
+      },
+      governance,
+    }).run({
+      ...SELECTING_THE_CLASS_CHECK,
+      files: [parent, NESTED_SOURCE, overridden],
+      trackedPaths: [parent, NESTED_SETTINGS, NESTED_ESLINT, NESTED_SOURCE, overridden],
+    });
+    expect(outcome).toMatchObject({
+      outcome: "ok",
+      value: {
+        projection: "current",
+        nestedConfigurations: [NESTED_FOLDER],
+        unprojectedFolders: [{ folder: NESTED_FOLDER, selectionFolder: NESTED_FOLDER }],
+        nativeExceptions: [
+          {
+            kind: "config-override",
+            check: "authored-class-or-this#class-keyword",
+            file: overridden,
+          },
+        ],
+      },
+    });
+    expect(vi.mocked(governance.lintFiles).mock.calls).toEqual([
+      [{ files: [parent, NESTED_SOURCE, overridden] }],
+    ]);
+  });
+
+  it("reports no nested projection reach when ESLint uses the repository root config", async () => {
+    const rootConfig = path.join({ segments: [SCRATCH_REPO_ROOT, "eslint.config.mjs"] });
+    const fileText = createDefaultFileTextPort({});
+    const outcome = await runnerOverProjectionReading({
+      currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
+      ruleState: CONFIGURED_ON,
+      governance: lintingNothing(),
+      fileText: {
+        ...fileText,
+        exists: ({ path: candidate }) =>
+          candidate === rootConfig ? "present" : fileText.exists({ path: candidate }),
+      },
+    }).run({
+      ...SELECTING_THE_CLASS_CHECK,
+      declaredConfigLookup: "repository-root",
+      files: [NESTED_SOURCE],
+      trackedPaths: [NESTED_SETTINGS, NESTED_ESLINT, NESTED_SOURCE],
+    });
+    expect(outcome).toMatchObject({
+      outcome: "ok",
+      value: { projection: "current", nestedConfigurations: [], unprojectedFolders: [] },
     });
   });
 });
@@ -548,6 +640,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],
@@ -567,6 +661,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [{ slice: PACKAGE_SLICE_PATH, state: "out-of-date" }],
@@ -591,6 +687,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [{ slice: PACKAGE_SLICE_PATH, state: "out-of-date" }],
@@ -609,6 +707,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "out-of-date",
         slices: [{ slice: PACKAGE_SLICE_PATH, state: "missing" }],
@@ -625,6 +725,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "out-of-date",
         slices: [],
@@ -641,6 +743,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "missing",
         slices: [],
@@ -665,6 +769,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [{ slice: CHECKS_DECLARATION_PATH, state: "missing" }],
@@ -694,6 +800,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [{ slice: PACKAGE_DECLARATION_PATH, state: "out-of-date" }],
@@ -720,6 +828,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [{ slice: PACKAGE_SLICE_PATH, state: "missing" }],
@@ -746,6 +856,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [{ slice: PACKAGE_SLICE_PATH, state: "out-of-date" }],
@@ -774,6 +886,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [
@@ -805,6 +919,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
           hits: [],
           nativeExceptions: [],
           measured: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
           projection: "current",
           slices: [{ slice: PACKAGE_SLICE_PATH, state: "unconfigured" }],
@@ -838,6 +954,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],
@@ -856,6 +974,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],
@@ -905,6 +1025,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],
@@ -932,6 +1054,8 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],
@@ -1125,8 +1249,9 @@ describe("checksRunnerOver, giving the projection as project", () => {
     expect(
       await projectingRunner().runnerOver.project({
         ...SELECTING_THE_CLASS_CHECK,
-        declaredConfigRoots: [repoPathOf("vendor/lib")],
-        trackedPaths: [repoPathOf("kept.ts"), repoPathOf("vendor/lib/hone.config.json")],
+        declaredConfigRoots: [NESTED_FOLDER],
+        files: [NESTED_SOURCE],
+        trackedPaths: [NESTED_SETTINGS, NESTED_ESLINT, NESTED_SOURCE],
       }),
     ).toEqual({
       outcome: "ok",
@@ -1156,6 +1281,8 @@ describe("checksRunnerOver, giving the projection as project", () => {
         hits: [],
         nativeExceptions: [],
         measured: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         projection: "current",
         slices: [],

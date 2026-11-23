@@ -66,6 +66,14 @@ export type CarriedStandingElsewhere = {
 
 export type AssessmentLeftElsewhere = ForfeitureElsewhere | CarriedStandingElsewhere;
 
+export type RunAssessment =
+  | AssessmentLeftElsewhere
+  | {
+      readonly concern: "nested-projection";
+      readonly engine: Engine;
+      readonly folders: readonly RepoPath[];
+    };
+
 export type RunReport = {
   readonly excluded: readonly RepoPath[];
   readonly "not-adopted": readonly Check[];
@@ -83,7 +91,7 @@ export type RunReport = {
   readonly refused: readonly RefusedRecord[];
   readonly unmeasured: readonly RunUnmeasured[];
   readonly "projection-problems": readonly RunProjectionProblem[];
-  readonly assessment: readonly AssessmentLeftElsewhere[];
+  readonly assessment: readonly RunAssessment[];
   readonly "settings-notes": readonly SettingsNote[];
   readonly "record-notes": readonly RecordNote[];
   readonly carried: readonly CarriedListing[];

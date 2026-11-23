@@ -28,7 +28,7 @@ export type NamedEngineCall = {
 
 export type NamedEngineFailure = Extract<
   RunFailureSource,
-  { readonly kind: "runner-invalid" | "runner-failed" | "not-ready-yet" }
+  { readonly kind: "runner-invalid" | "runner-failed" }
 >;
 
 export type NamedEnginePort = {

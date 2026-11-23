@@ -6,7 +6,6 @@ import {
   namedChecksRunResultSchema,
   isChecksSliceProblemSchemaEqual,
   isMisnamedRuleIdSchemaEqual,
-  isNotReadyYetFailureSchemaEqual,
   isProjectedFileSchemaEqual,
   misnamedRuleIdSchema,
 } from "./checks-runner-module-schema.ts";
@@ -30,6 +29,8 @@ const REPORT = {
   measured: [{ check: "authored-class-or-this#class-keyword", file: "src/a.ts" }],
   projection: "current",
   slices: [{ slice: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [
     {
       kind: "version-1-id",
@@ -53,13 +54,12 @@ describe("the checks runner's ties to its module schema", () => {
     ]);
   });
 
-  it("holds the same slice problem, misnamed rule id, not-ready-yet failure and projected file as the types", () => {
+  it("holds the same slice problem, misnamed rule id and projected file as the types", () => {
     expect([
       isChecksSliceProblemSchemaEqual,
       isMisnamedRuleIdSchemaEqual,
-      isNotReadyYetFailureSchemaEqual,
       isProjectedFileSchemaEqual,
-    ]).toEqual([true, true, true, true]);
+    ]).toEqual([true, true, true]);
   });
 });
 
@@ -195,7 +195,7 @@ describe("checksProjectResultSchema", () => {
     expect(checksProjectResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
   });
 
-  it("accepts a not-ready-yet failure", () => {
+  it("rejects the retired configuration roots failure", () => {
     const notReady = {
       outcome: "failed",
       error: {
@@ -203,10 +203,7 @@ describe("checksProjectResultSchema", () => {
         what: { thing: "eslint-config-roots", paths: ["packages/web"] },
       },
     };
-    expect(checksProjectResultSchema.safeParse(notReady)).toEqual({
-      success: true,
-      data: notReady,
-    });
+    expect(checksProjectResultSchema.safeParse(notReady).success).toBe(false);
   });
 
   it("rejects a value that is not a list of files to write", () => {
@@ -229,21 +226,24 @@ describe("namedChecksRunResultSchema", () => {
     expect(namedChecksRunResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
   });
 
-  it("accepts the not-ready-yet failure the ESLint runner gives for config roots", () => {
+  it("requires both fields that describe where projection applies", () => {
+    const { nestedConfigurations: _nested, ...withoutNested } = REPORT;
+    const { unprojectedFolders: _folders, ...withoutFolders } = REPORT;
+    expect(
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: withoutNested }).success,
+    ).toBe(false);
+    expect(
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: withoutFolders }).success,
+    ).toBe(false);
+  });
+
+  it("rejects the retired configuration roots failure", () => {
     const failed = {
       outcome: "failed",
       error: {
         kind: "not-ready-yet",
         what: { thing: "eslint-config-roots", paths: ["packages/web"] },
       },
-    };
-    expect(namedChecksRunResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
-  });
-
-  it("rejects a not-ready-yet failure that names no path", () => {
-    const failed = {
-      outcome: "failed",
-      error: { kind: "not-ready-yet", what: { thing: "eslint-config-roots", paths: [] } },
     };
     expect(namedChecksRunResultSchema.safeParse(failed).success).toBe(false);
   });
@@ -280,6 +280,27 @@ describe("namedChecksRunResultSchema", () => {
     expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(
       false,
     );
+  });
+
+  it("preserves nested folder reach as report metadata and validates repository paths", () => {
+    const value = {
+      ...REPORT,
+      projection: "not-included",
+      nestedConfigurations: ["pkg"],
+      unprojectedFolders: [{ folder: "pkg/src", selectionFolder: "pkg" }],
+    };
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value })).toMatchObject({
+      success: true,
+      data: {
+        value: { nestedConfigurations: ["pkg"], unprojectedFolders: value.unprojectedFolders },
+      },
+    });
+    expect(
+      namedChecksRunResultSchema.safeParse({
+        outcome: "ok",
+        value: { ...value, nestedConfigurations: ["/pkg"] },
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects the slice states that only a version 1 runner reports", () => {

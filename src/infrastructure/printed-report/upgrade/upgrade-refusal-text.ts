@@ -157,10 +157,7 @@ const configLineOf = (request: { readonly refusal: ConfigImportRefusal }): strin
 
 const projectionFailureLineOf = (request: { readonly failure: RunLoadFailure }): string => {
   const line = runLoadFailureLine({ failure: request.failure, upgradeCommand: undefined });
-  return request.failure.kind === "not-ready-yet" &&
-    request.failure.what.thing === "eslint-config-roots"
-    ? `version 2 cannot run this repository yet (${line}). Do what it names, or stay on version 1 until version 2 runs it, then run the upgrade again.`
-    : `version 2's projection could not be made (${line}). Fix what it names, then run the upgrade again.`;
+  return `version 2's projection could not be made (${line}). Fix what it names, then run the upgrade again.`;
 };
 
 const pairingLineOf = (request: { readonly refusal: PairingRefusal }): string => {

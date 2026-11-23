@@ -126,6 +126,8 @@ const WALKER_MEASURED = {
     nativeExceptions: [],
     projection: "none",
     slices: [],
+    nestedConfigurations: [],
+    unprojectedFolders: [],
     misnamedRuleIds: [],
   },
   unappliedSlices: [],
