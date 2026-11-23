@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "many-spellings-of-one-concept#test-call-aliases",
+      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.test.ts"
+    }
+  ]
+}

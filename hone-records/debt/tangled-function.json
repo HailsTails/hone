@@ -4,6 +4,10 @@
     {
       "answers": "tangled-function#cognitive-complexity",
       "file": "src/infrastructure/engines/walker/shorthand-name/identifier-names/identifier-names.ts"
+    },
+    {
+      "answers": "tangled-function#cognitive-complexity",
+      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
     }
   ]
 }

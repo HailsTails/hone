@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "default-on-a-closed-union#default-arm",
+      "file": "src/infrastructure/engines/walker/default-on-a-closed-union/default-arm/switch-defaults.test.ts"
+    }
+  ]
+}

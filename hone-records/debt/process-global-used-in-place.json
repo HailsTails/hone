@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/install-proof/install-proof-ports.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/install-proof/install-proof-ports.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "delivery/self-check/self-check.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "src/composition/projection-pair.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "src/infrastructure/node/file-system/directory-tree-port.test.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "src/infrastructure/node/process/execution-port.ts"
+    },
+    {
+      "answers": "process-global-used-in-place#direct-global-use",
+      "file": "src/infrastructure/node/process/process-port.ts"
+    }
+  ]
+}

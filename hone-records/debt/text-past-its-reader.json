@@ -60,6 +60,30 @@
     {
       "answers": "text-past-its-reader#test-body",
       "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
+    },
+    {
+      "answers": "text-past-its-reader#test-body",
+      "file": "delivery/packaging/version-two-plugin-modules.test.ts"
+    },
+    {
+      "answers": "text-past-its-reader#test-body",
+      "file": "src/application/upgrade/team-layout/team-layout-plan.test.ts"
+    },
+    {
+      "answers": "text-past-its-reader#test-body",
+      "file": "src/composition/prune-debt-answered.integration.test.ts"
+    },
+    {
+      "answers": "text-past-its-reader#test-body",
+      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.test.ts"
+    },
+    {
+      "answers": "text-past-its-reader#test-body",
+      "file": "src/infrastructure/engines/named-piece.test.ts"
+    },
+    {
+      "answers": "text-past-its-reader#test-body",
+      "file": "src/infrastructure/hone-config-file/settings-sources.test.ts"
     }
   ]
 }

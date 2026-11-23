@@ -132,6 +132,54 @@
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/application/run/engines/named-engines-run.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/application/upgrade/patching/projection-patching.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#stub-implementation",
+      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#stub-implementation",
+      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/composition/commands.prune-debt.integration.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#stub-implementation",
+      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/piece-engines.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#stub-implementation",
+      "file": "src/infrastructure/engines/piece-engines.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/engines/walker/runner/pieces/syntax-node-check.test.ts"
+    },
+    {
+      "answers": "double-with-a-body#logic-in-a-passed-function",
+      "file": "src/infrastructure/upgrade/team-layout/version-one-team-layout.test.ts"
     }
   ]
 }

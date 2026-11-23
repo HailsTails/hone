@@ -188,6 +188,50 @@
     {
       "answers": "computed-value-in-a-test#test-body",
       "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "delivery/packaging/version-two-plugin-modules.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/run/engines/named-engines-run.contract.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/run/run-report-of.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/upgrade/patching/version-one-plugin-specifiers.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/application/upgrade/team-layout/team-layout-plan.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/projection-pair.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/composition/settings-pair.integration.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/eslint/runner/runner.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/protocol/checks/checks-runner-module-schema.test.ts"
+    },
+    {
+      "answers": "computed-value-in-a-test#test-body",
+      "file": "src/infrastructure/engines/walker/runner/pieces/node-built-in-import.test.ts"
     }
   ]
 }

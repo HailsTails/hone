@@ -1,0 +1,365 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/cd1-exemptible.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/hone-records-reader.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/record-commands.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/version-two-adopter.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/version-two-check.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/architecture/layer-directions.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/install-proof/consumer-proof.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/packaging/building/package-build.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/packaging/catalogue-pages/check-today.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/packaging/packing/package-commands.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/packaging/shipped-files/shipped-data.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/packaging/type-declarations/projection-type.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/packaging/type-declarations/public-type-declarations.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/release/release-pull-request.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/release/release-version.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/self-check/self-check.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "delivery/shipped-content/eslint-conformance.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/application/run/engines/named-engines-run.contract.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/application/upgrade/found-tree/found-tree-git.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/application/upgrade/team-layout/team-layout-proof.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/commands.split-records.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/commands.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/commands.version-two-project.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/composed-command.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/projection-pair.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/run-tool-command.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/upgrade-command.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/composition/version-chosen-command.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/finding/finding-check.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/gathered-outcomes.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/language-layer/check-address.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/language-layer/symptom-catalogue.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/report/run-load-failure.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/settings/check-choices.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/settings/clause-settings/check-settings.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/settings/every-ok.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/domain/settings/json-values/json-kind.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/command-line/installation/install-root.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/content-files/branded-schema.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/content-files/symptom-catalogues/symptom-catalogue.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-records.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/disciplines-file/consumer-selection.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/disciplines-file/version-one-reading.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-checks-conformance.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/conformance/eslint-conform.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/embedded-runner/eslint-repository.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/checks-queried-files.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/native-exceptions.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/native-exceptions/package-script-scanner.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/protocol/runner-module/runner-result-schema.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/protocol/toolchain/toolchain-bound-runner.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-logic.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/claimed-type/cast-to-any/any-cast.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/cast-expressions.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/outside-import-past-a-boundary/import-or-require/import-boundaries.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/runner/pieces/cast-shape.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends.integration.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/throw-or-catch-in-a-test/throw-statement/throws-in-tests.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/untracked-escape/directive-pointers/comments-directives.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/engines/walker/write-into-a-parameter/parameter-mutation/parameter-mutation.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/hone-config-file/conventions.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/hone-config-file/listed-address.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/hone-config-file/settings-file.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/printed-report/load-failures/load-failure-lines.test.ts"
+    },
+    {
+      "answers": "type-declared-in-a-test#test-type-declaration",
+      "file": "src/infrastructure/printed-report/upgrade/upgrade-refusal-text.test.ts"
+    }
+  ]
+}

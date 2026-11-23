@@ -76,6 +76,10 @@
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/eslint-runner/version-one-engine-pass.integration.test.ts"
+    },
+    {
+      "answers": "throw-or-catch-in-a-test#throw-statement",
+      "file": "src/composition/commands.prune-debt.integration.test.ts"
     }
   ]
 }

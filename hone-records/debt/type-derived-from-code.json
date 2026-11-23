@@ -4,6 +4,22 @@
     {
       "answers": "type-derived-from-code#factory-return-types",
       "file": "src/composition/version-chosen-command.test.ts"
+    },
+    {
+      "answers": "type-derived-from-code#factory-return-types",
+      "file": "src/composition/prune-debt-answered.integration.test.ts"
+    },
+    {
+      "answers": "type-derived-from-code#factory-return-types",
+      "file": "src/infrastructure/engines/protocol/upgrade/load-version-one-projection.ts"
+    },
+    {
+      "answers": "type-derived-from-code#factory-return-types",
+      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
+    },
+    {
+      "answers": "type-derived-from-code#factory-return-types",
+      "file": "src/infrastructure/engines/walker/type-derived-from-code/factory-return-types/factory-return-types.test.ts"
     }
   ]
 }
