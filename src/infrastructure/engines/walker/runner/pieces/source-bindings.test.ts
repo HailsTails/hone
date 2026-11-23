@@ -16,7 +16,7 @@ const loaded = await loadParsePort({
 assert(loaded.outcome === "ok");
 const { parse, syntaxApi } = loaded.value;
 
-describe("sourceBindingsOf", () => {
+describe("runtimeDeclarationsOf", () => {
   it("retains declarations that supply local values", () => {
     const sourceFile = parse({
       fileName: "src/a.ts",
@@ -33,7 +33,9 @@ describe("sourceBindingsOf", () => {
     assert.isDefined(local);
     expect(runtimeDeclarationsOf({ syntaxApi, declarations: [ambient, local] })).toEqual([local]);
   });
+});
 
+describe("sourceBindingsOf", () => {
   it("resolves an import in the parsed file and leaves an ambient call unbound", () => {
     const sourceFile = parse({
       fileName: "src/a.test.ts",
