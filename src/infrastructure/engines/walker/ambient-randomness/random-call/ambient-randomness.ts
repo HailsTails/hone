@@ -1,7 +1,8 @@
+import { type BuiltInImport, builtInImportOf } from "../../runner/pieces/node-built-in-import.ts";
 import { sourceValueLookupOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
-import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
+import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
@@ -11,13 +12,9 @@ type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode 
 type DeclarationsOf = (node: SyntaxNode) => readonly SyntaxNode[];
 type CryptoKind = "node-module" | "node-namespace" | "web-crypto" | "random-function";
 type CryptoReceiver = Exclude<CryptoKind, "random-function">;
-type CryptoBinding = { readonly declaration: SyntaxNode; readonly kind: CryptoKind };
-type CryptoEntry = readonly [name: string, binding: CryptoBinding];
-type CryptoBindings = ReadonlyMap<string, CryptoBinding>;
 type CallContext = {
   readonly syntaxApi: SyntaxApi;
   readonly declarationsOf: DeclarationsOf;
-  readonly cryptoBindings: CryptoBindings;
 };
 
 const memberOf = ({ syntaxApi, node }: SyntaxRequest) => {
@@ -33,73 +30,25 @@ const memberOf = ({ syntaxApi, node }: SyntaxRequest) => {
   return undefined;
 };
 
-const CRYPTO_MODULES: ReadonlySet<string> = new Set(["node:crypto", "crypto"]);
-
-const cryptoKindOf = (name: string): CryptoKind | undefined => {
-  if (name === "webcrypto") return "web-crypto";
-  if (name === "default") return "node-module";
-  return CRYPTO_RANDOM_METHODS.has(name) ? "random-function" : undefined;
+const cryptoKindOf = (imported: BuiltInImport): CryptoKind | undefined => {
+  if (imported.kind === "module") return "node-module";
+  if (imported.kind === "namespace") return "node-namespace";
+  if (imported.name === "webcrypto") return "web-crypto";
+  return CRYPTO_RANDOM_METHODS.has(imported.name) ? "random-function" : undefined;
 };
-
-const cryptoImportsOf = ({ syntaxApi, node }: SyntaxRequest): readonly CryptoEntry[] => {
-  if (syntaxApi.isImportEqualsDeclaration(node)) {
-    if (node.isTypeOnly || !syntaxApi.isExternalModuleReference(node.moduleReference)) return [];
-    const { expression } = node.moduleReference;
-    return expression !== undefined &&
-      syntaxApi.isStringLiteral(expression) &&
-      CRYPTO_MODULES.has(expression.text)
-      ? [[node.name.text, { declaration: node, kind: "node-module" }]]
-      : [];
-  }
-  if (!syntaxApi.isImportDeclaration(node)) return [];
-  const { importClause, moduleSpecifier } = node;
-  if (
-    importClause === undefined ||
-    importClause.isTypeOnly ||
-    !syntaxApi.isStringLiteral(moduleSpecifier) ||
-    !CRYPTO_MODULES.has(moduleSpecifier.text)
-  )
-    return [];
-
-  const defaultEntry: readonly CryptoEntry[] =
-    importClause.name === undefined
-      ? []
-      : [[importClause.name.text, { declaration: importClause, kind: "node-module" }]];
-  const { namedBindings } = importClause;
-  if (namedBindings === undefined) return defaultEntry;
-  if (syntaxApi.isNamespaceImport(namedBindings))
-    return [
-      ...defaultEntry,
-      [namedBindings.name.text, { declaration: namedBindings, kind: "node-namespace" }],
-    ];
-  return [
-    ...defaultEntry,
-    ...namedBindings.elements.flatMap<CryptoEntry>((declaration) => {
-      if (declaration.isTypeOnly) return [];
-      const kind = cryptoKindOf((declaration.propertyName ?? declaration.name).text);
-      return kind === undefined ? [] : [[declaration.name.text, { declaration, kind }]];
-    }),
-  ];
-};
-
-const cryptoBindingsOf = ({
-  syntaxApi,
-  sourceFile,
-}: {
-  readonly syntaxApi: SyntaxApi;
-  readonly sourceFile: SyntaxTree;
-}): CryptoBindings =>
-  new Map(sourceFile.statements.flatMap((node) => cryptoImportsOf({ syntaxApi, node })));
 
 const importedCryptoKindOf = (
   request: CallContext & { readonly node: SyntaxNode },
 ): CryptoKind | undefined => {
-  const { syntaxApi, node, declarationsOf, cryptoBindings } = request;
+  const { syntaxApi, node, declarationsOf } = request;
   if (!syntaxApi.isIdentifier(node)) return undefined;
-  const binding = cryptoBindings.get(node.text);
-  return binding !== undefined && declarationsOf(node).includes(binding.declaration)
-    ? binding.kind
-    : undefined;
+  const imported = builtInImportOf({
+    syntaxApi,
+    identifier: node,
+    declarationsOf,
+    builtIn: "crypto",
+  });
+  return imported === undefined ? undefined : cryptoKindOf(imported);
 };
 
 const qualifiedCryptoOf = (
@@ -170,11 +119,10 @@ export const check: WalkerPiece = {
             kind: "syntax",
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
-              const cryptoBindings = cryptoBindingsOf({ syntaxApi, sourceFile });
               const declarationsOf = sourceValueLookupOf({ syntaxApi, sourceFile });
               return {
                 enter: ({ node }) => {
-                  const callee = randomCall({ syntaxApi, node, declarationsOf, cryptoBindings });
+                  const callee = randomCall({ syntaxApi, node, declarationsOf });
                   if (callee === undefined) return;
                   const anchor = anchorAt({ position: callee.getStart(sourceFile) });
                   const snippet = callee.getText(sourceFile).replace(/\r?\n/g, " ");

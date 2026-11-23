@@ -269,6 +269,32 @@ describe("ambient randomness", () => {
     ]);
   });
 
+  it("finds a CommonJS require of Node crypto", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: 'const nodeCrypto = require("node:crypto");\nnodeCrypto.randomUUID();',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "nodeCrypto.randomUUID",
+      },
+    ]);
+  });
+
+  it("passes crypto from a locally supplied require", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'const require = injectedLoader;\nconst nodeCrypto = require("node:crypto");\nnodeCrypto.randomUUID();',
+      }),
+    ).toEqual([]);
+  });
+
   it("leaves an aliased random function outside the syntax check", () => {
     expect(
       findingsIn({ file: SOURCE_FILE, source: "const { random } = Math;\nrandom();" }),

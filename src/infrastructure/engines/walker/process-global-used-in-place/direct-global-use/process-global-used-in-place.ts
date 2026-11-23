@@ -1,3 +1,4 @@
+import { builtInImportOf } from "../../runner/pieces/node-built-in-import.ts";
 import { sourceValueLookupOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
@@ -13,37 +14,6 @@ const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
 const PROCESS_MEMBERS = new Set(["env", "argv", "exit", "on"]);
 
-const moduleSpecifierOf = ({
-  syntaxApi,
-  node,
-  declarationsOf,
-}: SyntaxRequest): SyntaxNode | undefined => {
-  if (syntaxApi.isVariableDeclaration(node)) {
-    const value = node.initializer;
-    if (value === undefined || !syntaxApi.isCallExpression(value)) return undefined;
-    const { expression, arguments: callArguments } = value;
-    return syntaxApi.isIdentifier(expression) &&
-      expression.text === "require" &&
-      declarationsOf(expression).length === 0
-      ? callArguments[0]
-      : undefined;
-  }
-  if (syntaxApi.isImportEqualsDeclaration(node))
-    return syntaxApi.isExternalModuleReference(node.moduleReference)
-      ? node.moduleReference.expression
-      : undefined;
-  if (syntaxApi.isImportSpecifier(node) && node.propertyName?.text !== "default") return undefined;
-  if (
-    syntaxApi.isImportSpecifier(node) ||
-    syntaxApi.isNamespaceImport(node) ||
-    syntaxApi.isImportClause(node)
-  )
-    return moduleSpecifierOf({ syntaxApi, node: node.parent, declarationsOf });
-  if (syntaxApi.isNamedImports(node))
-    return moduleSpecifierOf({ syntaxApi, node: node.parent, declarationsOf });
-  return syntaxApi.isImportDeclaration(node) ? node.moduleSpecifier : undefined;
-};
-
 const processOrConsole = ({
   syntaxApi,
   node,
@@ -57,19 +27,15 @@ const processOrConsole = ({
     (receiver.text !== "process" && receiver.text !== "console")
   )
     return undefined;
-  const declarations = declarationsOf(receiver);
-  if (
-    declarations.length > 0 &&
-    declarations.every((declaration) => {
-      const specifier = moduleSpecifierOf({ syntaxApi, node: declaration, declarationsOf });
-      return (
-        specifier === undefined ||
-        !syntaxApi.isStringLiteral(specifier) ||
-        (specifier.text !== receiver.text && specifier.text !== "node:" + receiver.text)
-      );
-    })
-  )
-    return undefined;
+  if (declarationsOf(receiver).length > 0) {
+    const imported = builtInImportOf({
+      syntaxApi,
+      identifier: receiver,
+      declarationsOf,
+      builtIn: receiver.text,
+    });
+    if (imported === undefined || imported.kind === "named") return undefined;
+  }
   if (receiver.text === "console") return node;
   if (syntaxApi.isPropertyAccessExpression(node))
     return PROCESS_MEMBERS.has(node.name.text) ? node : undefined;

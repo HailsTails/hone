@@ -109,16 +109,11 @@ const CATALOGUE: SymptomCatalogue = {
 
 describe("process globals", () => {
   it.each([
-    'import process = require("process");',
-    'import { default as process } from "node:process";',
-    'const process = require("node:process");',
-  ])("reports process under its canonical name through %s", (declaration) => {
-    expect(
-      findingsIn({
-        file: SOURCE_FILE,
-        source: `${declaration}\nprocess.env.MODE;`,
-      }),
-    ).toEqual([
+    'import process = require("process");\nprocess.env.MODE;',
+    'import { default as process } from "node:process";\nprocess.env.MODE;',
+    'const process = require("node:process");\nprocess.env.MODE;',
+  ])("reports process under its canonical name in %s", (source) => {
+    expect(findingsIn({ file: SOURCE_FILE, source })).toEqual([
       {
         file: SOURCE_FILE,
         check: BINDING.address,
