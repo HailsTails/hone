@@ -66,7 +66,7 @@ options:
   --base-revision <revision>
       the revision the change is measured from; without it no file carve-out can be forfeited
   --forfeiture <this-run|elsewhere>
-      assess file carve-out decay in this run or leave it to another, over assessment.forfeiture in disciplines.json; this-run when neither is set
+      assess file carve-out decay in this run or leave it to another, over forfeiture in hone.config.json; this-run when neither is set
   --help, -h
       print this help
 
@@ -81,7 +81,7 @@ move the exception records from discipline-exceptions.json into the discipline-e
 
 options:
   --repo <dir>
-      the folder that holds hone.config.json, usually the repository root
+      the folder that holds disciplines.json, usually the repository root
   --help, -h
       print this help
 

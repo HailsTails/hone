@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { COMMANDS, REPO_OPTION, UPGRADE_REPO_OPTION, subcommandOf } from "./command-line.ts";
+import { COMMANDS, REPO_OPTION, VERSION_ONE_REPO_OPTION, subcommandOf } from "./command-line.ts";
 
 describe("subcommandOf", () => {
   it.each([
@@ -31,12 +31,13 @@ describe("COMMANDS", () => {
     expect(COMMANDS.project.options).toMatchObject([{ name: "--repo", need: "required" }]);
   });
 
-  it("names hone.config.json for --repo, and disciplines.json only for the upgrade of a version 1 repository", () => {
+  it("names hone.config.json for --repo, and disciplines.json only for the commands that take a version 1 repository", () => {
     expect(REPO_OPTION.summary).toBe(
       "the folder that holds hone.config.json, usually the repository root",
     );
-    expect(COMMANDS.upgrade.options).toEqual([UPGRADE_REPO_OPTION]);
-    expect(UPGRADE_REPO_OPTION.summary).toBe(
+    expect(COMMANDS.upgrade.options).toEqual([VERSION_ONE_REPO_OPTION]);
+    expect(COMMANDS["split-records"].options).toEqual([VERSION_ONE_REPO_OPTION]);
+    expect(VERSION_ONE_REPO_OPTION.summary).toBe(
       "the folder that holds disciplines.json, usually the repository root",
     );
   });

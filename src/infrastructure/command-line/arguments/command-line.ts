@@ -75,7 +75,7 @@ export const REPO_OPTION: CommandOption = {
   summary: "the folder that holds hone.config.json, usually the repository root",
 };
 
-export const UPGRADE_REPO_OPTION: CommandOption = {
+export const VERSION_ONE_REPO_OPTION: CommandOption = {
   ...REPO_OPTION,
   summary: "the folder that holds disciplines.json, usually the repository root",
 };
@@ -95,7 +95,7 @@ export const REPORT_OUTPUT_OPTION: CommandOption = {
   need: "optional",
   occurrence: "once",
   summary:
-    "how much of the report to print, over reportOutput in disciplines.json; full when neither is set",
+    "how much of the report to print, over reportOutput in hone.config.json; full when neither is set",
 };
 
 export const FORFEITURE_OPTION: CommandOption = {
@@ -104,7 +104,7 @@ export const FORFEITURE_OPTION: CommandOption = {
   need: "optional",
   occurrence: "once",
   summary:
-    "assess file carve-out decay in this run or leave it to another, over assessment.forfeiture in disciplines.json; this-run when neither is set",
+    "assess file carve-out decay in this run or leave it to another, over forfeiture in hone.config.json; this-run when neither is set",
 };
 
 export const ADOPTION_BASE_REVISION_OPTION: CommandOption = {
@@ -267,7 +267,7 @@ export const COMMANDS: Readonly<Record<Subcommand, CommandSpec>> = {
   [SPLIT_RECORDS_SUBCOMMAND]: {
     summary:
       "move the exception records from discipline-exceptions.json into the discipline-exceptions folder, one file for each record kind and discipline, printing each file as written or removed",
-    options: [REPO_OPTION],
+    options: [VERSION_ONE_REPO_OPTION],
     exits: [
       { code: 0, meaning: "the records were split, or there was nothing to split" },
       {
@@ -280,7 +280,7 @@ export const COMMANDS: Readonly<Record<Subcommand, CommandSpec>> = {
   [UPGRADE_SUBCOMMAND]: {
     summary:
       "move a version 1 repository to version 2: write hone.config.json, the hone-records folder and the projection, check that version 2 reports what version 1 reported, then remove the version 1 files",
-    options: [UPGRADE_REPO_OPTION],
+    options: [VERSION_ONE_REPO_OPTION],
     exits: [
       { code: 0, meaning: "the repository was upgraded, or is already on version 2" },
       {
