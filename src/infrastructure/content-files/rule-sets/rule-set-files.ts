@@ -11,9 +11,9 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { runnerModuleSegmentsOf } from "../../node/modules/install-layout.ts";
-import { readHeldDiscipline } from "./held-discipline.ts";
+import { readHeldDiscipline } from "../../upgrade/version-one-rule-sets/held-discipline.ts";
+import { readLocatedPieceFile } from "../../upgrade/version-one-rule-sets/located-piece-file.ts";
 import { readInstallChecks } from "./install-checks.ts";
-import { readLocatedPieceFile } from "./located-piece-file.ts";
 import { pieceFilePath } from "./rule-set-reader.ts";
 
 export type RuleSetFiles = {

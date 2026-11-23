@@ -183,10 +183,7 @@ const formatGiving = (
 
 const SETTINGS_FORMAT = formatGiving({ outcome: "ok", value: SETTINGS_FILE });
 
-const sourcesHolding = (request: {
-  readonly document: unknown;
-  readonly piece: ReturnType<SettingsSources["pieceClause"]>;
-}): SettingsSources => ({
+const sourcesHolding = (request: { readonly document: unknown }): SettingsSources => ({
   settingsFile: vi
     .fn<SettingsSources["settingsFile"]>()
     .mockReturnValue({ outcome: "ok", value: { path: SETTINGS_PATH, document: request.document } }),
@@ -197,7 +194,6 @@ const sourcesHolding = (request: {
     outcome: "ok",
     value: { held: "catalogue", catalogue: SETTINGS_CATALOGUE },
   }),
-  pieceClause: vi.fn<SettingsSources["pieceClause"]>().mockReturnValue(request.piece),
 });
 
 const readSelectedSettings = (request: {
@@ -222,7 +218,6 @@ describe("readNamedSettings and the settings document", () => {
         settingsFormat: SETTINGS_FORMAT,
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
       }),
     ).toEqual<{ readonly outcome: "ok"; readonly value: NamedSettingsReading }>({
@@ -277,7 +272,7 @@ describe("readNamedSettings and the settings document", () => {
     const settingsFormat = formatGiving({ outcome: "ok", value: SETTINGS_FILE });
     readSelectedSettings({
       settingsFormat,
-      sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+      sources: sourcesHolding({ document: DOCUMENT }),
     });
     expect(vi.mocked(settingsFormat.fileOf).mock.calls).toEqual([[{ document: DOCUMENT }]]);
   });
@@ -285,7 +280,6 @@ describe("readNamedSettings and the settings document", () => {
   it("asks for each selected named piece at its rule-set root", () => {
     const sources = sourcesHolding({
       document: DOCUMENT,
-      piece: { outcome: "ok", value: LOOPS_PIECE },
     });
     const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
       outcome: "ok",
@@ -297,7 +291,6 @@ describe("readNamedSettings and the settings document", () => {
       names: { symptom: "loop-keyword", check: "loops" },
       mechanism: "walker",
     });
-    expect(sources.pieceClause).not.toHaveBeenCalled();
   });
 
   it("notes each declared convention no check reads yet", () => {
@@ -318,7 +311,6 @@ describe("readNamedSettings and the settings document", () => {
         }),
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
       }),
     ).toMatchObject({
@@ -345,7 +337,6 @@ describe("readNamedSettings and the settings document", () => {
         }),
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
       }),
     ).toEqual({
@@ -377,7 +368,6 @@ describe("readNamedSettings and the settings document", () => {
         }),
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
       }),
     ).toEqual({
@@ -398,7 +388,6 @@ describe("readNamedSettings and the settings document", () => {
         }),
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
       }),
     ).toEqual({
@@ -417,7 +406,6 @@ describe("readNamedSettings and the settings document", () => {
         settingsFormat: SETTINGS_FORMAT,
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
         readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
           outcome: "failed",
@@ -435,7 +423,6 @@ describe("readNamedSettings", () => {
   it("asks for each catalogue with the rule set it is read for", () => {
     const sources = sourcesHolding({
       document: DOCUMENT,
-      piece: { outcome: "ok", value: LOOPS_PIECE },
     });
     readSelectedSettings({ settingsFormat: SETTINGS_FORMAT, sources });
     expect(sources.catalogue).toHaveBeenCalledExactlyOnceWith({
@@ -449,7 +436,7 @@ describe("readNamedSettings", () => {
     const teamLoop: Symptom = { ...LOOP_KEYWORD, ruleSet: acme, name: "team-loop" };
     const address: ListedAddress = { ruleSet: acme, check: "team-loop#loops" };
     const sources = {
-      ...sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+      ...sourcesHolding({ document: DOCUMENT }),
       catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
         outcome: "ok",
         value: {
@@ -482,6 +469,61 @@ describe("readNamedSettings", () => {
     });
   });
 
+  it("binds a team's check under a symptom that shares its name with one of Hone's, beside Hone's own", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamLoopKeyword: Symptom = { ...LOOP_KEYWORD, ruleSet: acme };
+    const teamAddress: ListedAddress = { ruleSet: acme, check: "loop-keyword#team-loops" };
+    const sources = {
+      ...sourcesHolding({ document: DOCUMENT }),
+      catalogue: vi
+        .fn<SettingsSources["catalogue"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: SETTINGS_CATALOGUE },
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: {
+            held: "catalogue",
+            catalogue: {
+              ...SETTINGS_CATALOGUE,
+              symptoms: [teamLoopKeyword],
+              clauses: [],
+              checks: [
+                { name: "team-loops", symptom: teamLoopKeyword, engines: [WALKER], forms: [] },
+              ],
+            },
+          },
+        }),
+    };
+    const settingsFormat = formatGiving({
+      outcome: "ok",
+      value: {
+        ...SETTINGS_FILE,
+        ruleSets: [{ name: acme.name, location: { location: "repo-root" } }],
+        checks: [
+          { address: LOOPS_ADDRESS, state: { state: "run", engine: "walker" } },
+          { address: teamAddress, state: { state: "run", engine: "walker" } },
+        ],
+        checkSettings: [],
+      },
+    });
+    expect(readSelectedSettings({ sources, settingsFormat })).toMatchObject({
+      outcome: "ok",
+      value: {
+        selection: {
+          selected: [
+            { address: LOOPS_ADDRESS, binding: { address: "loop-keyword#loops", ruleSet: "hone" } },
+            {
+              address: teamAddress,
+              binding: { address: "loop-keyword#team-loops", ruleSet: acme },
+            },
+          ],
+        },
+      },
+    });
+  });
+
   it("resolves an opt-in check which has no version one clause", () => {
     const address: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#new-loop-check" };
     const catalogue: SymptomCatalogue = {
@@ -491,7 +533,7 @@ describe("readNamedSettings", () => {
       ],
     };
     const sources = {
-      ...sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+      ...sourcesHolding({ document: DOCUMENT }),
       catalogue: vi
         .fn<SettingsSources["catalogue"]>()
         .mockReturnValue({ outcome: "ok", value: { held: "catalogue", catalogue } }),
@@ -525,13 +567,11 @@ describe("readNamedSettings", () => {
       ruleSetRoot: INSTALL_ROOT,
       mechanism: "walker",
     });
-    expect(sources.pieceClause).not.toHaveBeenCalled();
   });
 
   it("loads the selected check's piece and keeps a sibling off even when both share a legacy clause", () => {
     const source = sourcesHolding({
       document: DOCUMENT,
-      piece: { outcome: "ok", value: LOOPS_PIECE },
     });
     const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
       outcome: "ok",
@@ -581,6 +621,5 @@ describe("readNamedSettings", () => {
       ruleSetRoot: INSTALL_ROOT,
       mechanism: "walker",
     });
-    expect(source.pieceClause).not.toHaveBeenCalled();
   });
 });

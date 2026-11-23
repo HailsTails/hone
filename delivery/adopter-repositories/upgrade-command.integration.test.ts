@@ -97,7 +97,9 @@ const scratchRepositoriesUnder = (request: {
       }
       made.push(folder);
       Object.entries(repository.files).forEach(([name, text]) => {
-        request.fileText.write({ path: `${folder}/${name}`, text });
+        const path = `${folder}/${name}`;
+        request.scratch.makeDirectory({ path: path.slice(0, path.lastIndexOf("/")) });
+        request.fileText.write({ path, text });
       });
       return folder;
     },
@@ -1319,6 +1321,178 @@ describe("hone check with no base revision on an upgraded repository holding car
         ],
       ],
       exits: [[{ code: 1 }]],
+    });
+  });
+});
+
+const TEAM_SELECTION =
+  '{ "version": 1, "ruleSets": { "acme": "tools/disciplines/acme" }, "clauses": { "acme/ACME-1#console-calls": "eslint", "acme/ACME-2#scratch-files": "audit" } }\n';
+
+const TEAM_EXCEPTIONS =
+  '{ "version": 1, "exceptions": [{ "kind": "file-carve-out", "clause": "acme/ACME-1#console-calls", "file": "src/legacy.ts", "reason": "legacy logging" }] }\n';
+
+const ACME_CONSOLE_DISCIPLINE =
+  '{ "version": 1, "id": "ACME-1", "clauses": [{ "kind": "mechanical", "id": "console-calls", "summary": "no direct console output in source", "mechanisms": ["eslint"], "anchor": { "kind": "keyword", "keyword": "console" }, "cases": { "flag": [{ "name": "console.log", "fileName": "src/a.ts", "source": "console.log(1);\\n", "expectedLines": [1] }], "allow": [{ "name": "no console", "fileName": "src/b.ts", "source": "export const b = 1;\\n", "expectedLines": [] }] } }, { "kind": "judgement", "id": "logger-port", "summary": "output goes through the logger port", "enforcedBy": "review" }] }\n';
+
+const ACME_SCRATCH_DISCIPLINE =
+  '{ "version": 1, "id": "ACME-2", "clauses": [{ "kind": "mechanical", "id": "scratch-files", "summary": "no scratch file is committed", "mechanisms": ["audit"], "anchor": { "kind": "file" }, "cases": { "flag": [{ "name": "scratch file", "fileName": "src/draft.scratch.ts", "source": "export const draft = 1;\\n", "expectedLines": [1] }], "allow": [{ "name": "ordinary file", "fileName": "src/kept.ts", "source": "export const kept = 1;\\n", "expectedLines": [] }] } }] }\n';
+
+const ACME_CONSOLE_PIECE =
+  '{ "version": 1, "discipline": "ACME-1", "mechanism": "eslint", "clauses": [{ "clause": "console-calls", "settings": { "pluginNamespace": "acme", "pluginModule": "acme.eslint-plugin.ts", "rule": "no-console-calls" } }] }\n';
+
+const ACME_SCRATCH_PIECE =
+  '{ "version": 1, "discipline": "ACME-2", "mechanism": "audit", "clauses": [{ "clause": "scratch-files", "settings": { "module": "scratch-files.ts" } }] }\n';
+
+const ACME_ESLINT_PLUGIN =
+  'const noConsoleCalls = {\n  meta: { type: "problem", schema: [], messages: { console: "Write through the logger port, not console." } },\n  create: (context) => ({\n    "MemberExpression[object.name=\'console\']": (node) => {\n      context.report({ node, messageId: "console" });\n    },\n  }),\n};\n\nexport default { rules: { "no-console-calls": noConsoleCalls } };\n';
+
+const ACME_WALKER_PIECE =
+  'import { isScratch } from "./helpers/scratch-pattern.ts";\n\nconst hitsOf = ({ bindings, file }) =>\n  isScratch(file)\n    ? bindings.map((binding) => ({ check: binding.address, anchor: { line: 1, column: 0 }, snippet: file }))\n    : [];\n\nexport const check = {\n  prepare: ({ bindings }) => ({\n    outcome: "ok",\n    value: {\n      prepareFile: ({ file }) => ({ outcome: "ok", value: { kind: "complete", hits: hitsOf({ bindings, file }) } }),\n      finish: () => ({ outcome: "ok", value: [] }),\n    },\n  }),\n};\n';
+
+const ACME_NAMES =
+  '{ "clauses": { "ACME-1#console-calls": { "check": "direct-console#console-calls", "title": "Console calls" }, "ACME-2#scratch-files": { "check": "scratch-file#scratch-files", "title": "Scratch files" } }, "symptoms": { "direct-console": { "title": "Direct console", "group": "Repository health", "mayIndicate": [{ "case": "changes-a-repository", "points": [{ "principle": "repository-ready" }] }], "breachUsuallySits": "in the source change", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }, "scratch-file": { "title": "Scratch file", "group": "Repository health", "mayIndicate": [{ "case": "changes-a-repository", "points": [{ "principle": "repository-ready" }] }], "breachUsuallySits": "in the commit that adds the file", "seenBy": ["files"], "recipes": [], "correctUses": [] } }, "cases": { "changes-a-repository": { "title": "Changes a repository", "standing": "accepted", "owes": [{ "principle": "repository-ready" }] } }, "principles": { "repository-ready": { "title": "Repository ready" } }, "rules": {} }\n';
+
+const ACME_SCRATCH_PATTERN = 'export const isScratch = (file) => file.includes(".scratch.");\n';
+
+const TEAM_SOURCES: Readonly<Record<string, string>> = {
+  "src/legacy.ts": "console.log(1);\n",
+  "src/draft.scratch.ts": "export const draft = 1;\n",
+  "src/kept.ts": "export const kept = 1;\n",
+};
+
+const ACME_VERSION_ONE_LAYOUT: Readonly<Record<string, string>> = {
+  "tools/disciplines/acme/rules/ACME-1/discipline.json": ACME_CONSOLE_DISCIPLINE,
+  "tools/disciplines/acme/rules/ACME-2/discipline.json": ACME_SCRATCH_DISCIPLINE,
+  "tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json": ACME_CONSOLE_PIECE,
+  "tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts": ACME_ESLINT_PLUGIN,
+  "tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json": ACME_SCRATCH_PIECE,
+  "tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts": ACME_WALKER_PIECE,
+  "tools/disciplines/acme/mechanisms/audit/ACME-2/helpers/scratch-pattern.ts": ACME_SCRATCH_PATTERN,
+};
+
+const teamRepositoryOf = async (request: {
+  readonly names: Readonly<Record<string, string>>;
+}): Promise<string> => {
+  const repo = repositories.repositoryWith({
+    files: {
+      "disciplines.json": TEAM_SELECTION,
+      "discipline-exceptions.json": TEAM_EXCEPTIONS,
+      "eslint.config.mjs": TEAM_CONFIG,
+      ...TEAM_SOURCES,
+      ...ACME_VERSION_ONE_LAYOUT,
+      ...request.names,
+    },
+  });
+  commands.run({ command: "git", arguments: ["init"], directory: repo });
+  trackEverything({ repo });
+  await prepareVersionOneProjection({ repo, modules: checkModulesOn({ line: "eslint-10" }) });
+  trackEverything({ repo });
+  return repo;
+};
+
+describe("hone upgrade over a real repository with a team rule set in the version 1 layout", () => {
+  it("converts the team's rule set to the named layout, carries its records, keeps its findings and verdict, and checks the same after", async () => {
+    const repo = await teamRepositoryOf({
+      names: { "tools/disciplines/acme/version-two-names.json": ACME_NAMES },
+    });
+    const upgraded = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      modules: DEFAULT_MODULES,
+    });
+    trackEverything({ repo });
+    const checked = await runCommandIn({
+      repo,
+      subcommand: "check",
+      options: ["--forfeiture", "elsewhere"],
+      modules: DEFAULT_MODULES,
+    });
+    expect({
+      upgraded,
+      checked,
+      team: listedPathsOf({ repo: `${repo}/tools/disciplines/acme` }),
+    }).toEqual({
+      upgraded: {
+        writes: [
+          [
+            {
+              text: "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/record-kinds/authorised-location.md\nwrote tools/disciplines/acme/rules/record-kinds/boundary-record.md\nwrote tools/disciplines/acme/rules/record-kinds/debt.md\nwrote tools/disciplines/acme/rules/record-kinds/dependency-record.md\nwrote tools/disciplines/acme/rules/record-kinds/deviation.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/helpers/scratch-pattern.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone-records/acme/debt/direct-console.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved discipline-exceptions.json\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/helpers/scratch-pattern.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/helpers\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nfile-carve-out acme/ACME-1#console-calls src/legacy.ts -> debt direct-console#console-calls\nupgrade: same findings (1) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+            },
+          ],
+        ],
+        exits: [[{ code: 0 }]],
+      },
+      checked: {
+        writes: [
+          [
+            {
+              text: "findings (1)\nacme/scratch-file#scratch-files walker src/draft.scratch.ts:1:0 src/draft.scratch.ts may indicate: repository-ready\nanswered (1)\nacme/direct-console#console-calls eslint src/legacy.ts:1:0 console.log(1); answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nsymptoms (1)\nscratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the commit that adds the file. Known debt: debt. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nverdict: fail (partial assessment)\n",
+            },
+          ],
+        ],
+        exits: [[{ code: 1 }]],
+      },
+      team: [
+        "engines/",
+        "engines/eslint/",
+        "engines/eslint/direct-console/",
+        "engines/eslint/direct-console/console-calls/",
+        "engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts",
+        "engines/eslint/direct-console/console-calls/console-calls.examples.json",
+        "engines/eslint/direct-console/console-calls/piece.json",
+        "engines/walker/",
+        "engines/walker/scratch-file/",
+        "engines/walker/scratch-file/scratch-files/",
+        "engines/walker/scratch-file/scratch-files/helpers/",
+        "engines/walker/scratch-file/scratch-files/helpers/scratch-pattern.ts",
+        "engines/walker/scratch-file/scratch-files/piece.json",
+        "engines/walker/scratch-file/scratch-files/scratch-files.examples.json",
+        "engines/walker/scratch-file/scratch-files/scratch-files.ts",
+        "rules/",
+        "rules/cases/",
+        "rules/cases/changes-a-repository.md",
+        "rules/principles/",
+        "rules/principles/repository-ready.md",
+        "rules/record-kinds/",
+        "rules/record-kinds/authorised-location.md",
+        "rules/record-kinds/boundary-record.md",
+        "rules/record-kinds/debt.md",
+        "rules/record-kinds/dependency-record.md",
+        "rules/record-kinds/deviation.md",
+        "rules/typescript/",
+        "rules/typescript/symptoms/",
+        "rules/typescript/symptoms/direct-console.md",
+        "rules/typescript/symptoms/direct-console/",
+        "rules/typescript/symptoms/direct-console/console-calls.md",
+        "rules/typescript/symptoms/scratch-file.md",
+        "rules/typescript/symptoms/scratch-file/",
+        "rules/typescript/symptoms/scratch-file/scratch-files.md",
+      ],
+    });
+  });
+
+  it("refuses a team rule set with no names file, listing every unnamed clause, and leaves every file of the repository byte for byte as it was", async () => {
+    const repo = await teamRepositoryOf({ names: {} });
+    const before = treeOf({ repo });
+    const refused = await runCommandIn({
+      repo,
+      subcommand: "upgrade",
+      options: [],
+      modules: DEFAULT_MODULES,
+    });
+    expect({ refused, after: treeOf({ repo }) }).toEqual({
+      refused: {
+        writes: [
+          [
+            {
+              text: 'upgrade refused:\nthe version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:\n  acme/ACME-1#console-calls has no version 2 name: add "ACME-1#console-calls": { "check": "<symptom>#<check>", "title": "<title>" } under "clauses" in tools/disciplines/acme/version-two-names.json\n  acme/ACME-2#scratch-files has no version 2 name: add "ACME-2#scratch-files": { "check": "<symptom>#<check>", "title": "<title>" } under "clauses" in tools/disciplines/acme/version-two-names.json\nWrite each in the names file, then run the upgrade again.\nNothing was changed.\n',
+            },
+          ],
+        ],
+        exits: [[{ code: 1 }]],
+      },
+      after: before,
     });
   });
 });

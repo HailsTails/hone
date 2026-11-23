@@ -53,11 +53,6 @@ export type SettingsSources = {
     readonly ruleSetRoot: AbsolutePath;
     readonly ruleSet: ClauseAddress["ruleSet"];
   }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
-  readonly pieceClause: (request: {
-    readonly ruleSetRoot: AbsolutePath;
-    readonly clause: ClauseAddress;
-    readonly mechanism: EngineId;
-  }) => Result<PieceClause, VersionTwoLoadFailure>;
 };
 
 export type SettingsSourceContext = {

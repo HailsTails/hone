@@ -4,22 +4,14 @@ import type { ModuleExtension } from "../../application/ports/host/module-extens
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type {
   CheckPieceSource,
-  PieceClause,
   SettingsDocument,
   SettingsSources,
 } from "../../application/ports/settings-sources.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
-import type { ClauseAddress } from "../../domain/rule-set/clause-address-types.ts";
-import { clauseAddressText } from "../../domain/rule-set/clause-address.ts";
-import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
-import type { DisciplineFile } from "../../domain/rule-set/rule-set-types.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
-import { readHeldDiscipline } from "../content-files/rule-sets/held-discipline.ts";
-import { readLocatedPieceFile } from "../content-files/rule-sets/located-piece-file.ts";
-import { pieceFilePath } from "../content-files/rule-sets/rule-set-reader.ts";
 import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
 import { checkPieceOf, readNamedPiece } from "../engines/named-piece.ts";
 import { runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
@@ -33,17 +25,6 @@ type SourcesOptions = {
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
 };
-
-type PieceRequest = SourcesOptions & {
-  readonly ruleSetRoot: AbsolutePath;
-  readonly clause: ClauseAddress;
-  readonly mechanism: EngineId;
-};
-
-type MechanicalDefinition = Extract<
-  DisciplineFile["clauses"][number],
-  { readonly kind: "mechanical" }
->;
 
 const failed = (
   error: VersionTwoLoadFailure,
@@ -69,94 +50,6 @@ const settingsDocumentOf = (
     : { outcome: "ok", value: { path, document: document.value } };
 };
 
-const mechanicalDefinitionOf = (
-  request: PieceRequest,
-): Result<
-  { readonly discipline: DisciplineFile; readonly definition: MechanicalDefinition },
-  VersionTwoLoadFailure
-> => {
-  const address = clauseAddressText({ address: request.clause });
-  const held = readHeldDiscipline({
-    fileText: request.fileText,
-    path: request.path,
-    ruleSetRoot: request.ruleSetRoot,
-    installRoot: request.installRoot,
-    discipline: request.clause.discipline,
-  });
-  if (held.outcome === "failed") {
-    return held;
-  }
-  if (held.value.held === "absent") {
-    return failed({ kind: "unknown-discipline", address });
-  }
-  const discipline = held.value.file;
-  const definition = discipline.clauses.find((clause) => clause.id === request.clause.clause);
-  if (definition === undefined) {
-    return failed({ kind: "unknown-clause", address });
-  }
-  if (definition.kind === "judgement") {
-    return failed({ kind: "judgement-clause-selected", address });
-  }
-  if (!definition.mechanisms.includes(request.mechanism)) {
-    return failed({ kind: "mechanism-not-allowed", address, mechanism: request.mechanism });
-  }
-  return { outcome: "ok", value: { discipline, definition } };
-};
-
-const pieceClauseOf = (request: PieceRequest): Result<PieceClause, VersionTwoLoadFailure> => {
-  const defined = mechanicalDefinitionOf(request);
-  if (defined.outcome === "failed") {
-    return defined;
-  }
-  const runnerPath = request.path.join({
-    segments: runnerModuleSegmentsOf({
-      installRoot: request.installRoot,
-      mechanism: request.mechanism,
-      moduleExtension: request.moduleExtension,
-    }),
-  });
-  if (request.fileText.exists({ path: runnerPath }) === "absent") {
-    return failed({ kind: "runner-missing", mechanism: request.mechanism });
-  }
-  const address = clauseAddressText({ address: request.clause });
-  const location = {
-    path: request.path,
-    ruleSetRoot: request.ruleSetRoot,
-    installRoot: request.installRoot,
-    discipline: request.clause.discipline,
-    mechanism: request.mechanism,
-  };
-  if (
-    request.ruleSetRoot !== request.installRoot &&
-    request.fileText.exists({ path: pieceFilePath(location) }) === "absent"
-  ) {
-    return failed({ kind: "piece-missing", address, mechanism: request.mechanism });
-  }
-  const piece = readLocatedPieceFile({
-    ...location,
-    fileText: request.fileText,
-    discipline: defined.value.discipline,
-  });
-  if (piece.outcome === "failed") {
-    return piece;
-  }
-  const entry = piece.value.clauses.find((candidate) => candidate.clause === request.clause.clause);
-  if (entry === undefined) {
-    return failed({ kind: "piece-missing", address, mechanism: request.mechanism });
-  }
-  return {
-    outcome: "ok",
-    value: {
-      exceptions: defined.value.definition.exceptions,
-      anchor: defined.value.definition.anchor,
-      pieceRoot: entry.pieceRoot,
-      settings: entry.settings,
-      declarations: entry.clauseSettings,
-      editions: entry.editions,
-    },
-  };
-};
-
 export const createSettingsSources = (options: SourcesOptions): SettingsSources => ({
   settingsFile: (_request) => settingsDocumentOf(options),
   ruleSetRoot: (request) =>
@@ -176,7 +69,6 @@ export const createSettingsSources = (options: SourcesOptions): SettingsSources 
       ruleSet: request.ruleSet,
       installRoot: options.installRoot,
     }),
-  pieceClause: (request) => pieceClauseOf({ ...options, ...request }),
 });
 
 export const createCheckPieceSource =

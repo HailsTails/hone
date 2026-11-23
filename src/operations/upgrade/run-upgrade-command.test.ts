@@ -15,6 +15,9 @@ import type { VersionTwoStages } from "../../application/run/version-two-run.ts"
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
+import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { type UpgradeInput, type UpgradePorts, upgradeOf } from "./run-upgrade-command.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
@@ -84,6 +87,8 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
   runSettingsOf: SETTINGS_READ,
   catalogues: () => ({ outcome: "ok", value: [] }),
   externalCataloguesOf: () => ({ outcome: "ok", value: [] }),
+  versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [] }),
+  itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>(),
   recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),
   versionOneReadOf: vi.fn<VersionOneReadOf>(),
   proofRunsOf: vi.fn(),
@@ -202,6 +207,80 @@ describe("upgradeOf", () => {
         failure: { kind: "version-one-unreadable", failure: SELECTION_ABSENT },
       },
     });
+  });
+
+  it("stops on a team rule set's load failure before the proof", async () => {
+    const proofOf = vi.fn<UpgradeInput["proofOf"]>();
+
+    expect(
+      await upgradeOf(
+        inputWith({
+          git: gitListing({ tracked: TRACKED }),
+          recordsOnDiskOf: RECORDS_ON_DISK,
+          versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          versionOneTeamLayoutsOf: () => ({ outcome: "failed", error: SELECTION_ABSENT }),
+          proofOf,
+        }),
+      ),
+    ).toEqual({ outcome: "failed", error: { stopped: "load-failed", failure: SELECTION_ABSENT } });
+    expect(proofOf).not.toHaveBeenCalled();
+  });
+
+  it("refuses a team rule set with an unnamed clause before the proof, naming the clause and its names file", async () => {
+    const proofOf = vi.fn<UpgradeInput["proofOf"]>();
+    const clause = {
+      ruleSet: { name: ruleSetNameOf("acme") },
+      discipline: disciplineIdOf("ACME-1"),
+      clause: clauseIdOf("console-calls"),
+    };
+
+    expect(
+      await upgradeOf(
+        inputWith({
+          git: gitListing({ tracked: TRACKED }),
+          recordsOnDiskOf: RECORDS_ON_DISK,
+          versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          versionOneTeamLayoutsOf: () => ({
+            outcome: "ok",
+            value: [
+              {
+                ruleSet: { name: ruleSetNameOf("acme") },
+                location: { location: "folder", path: repoPathOf("acme") },
+                namesFile: repoPathOf("acme/version-two-names.json"),
+                clauses: [
+                  {
+                    clause,
+                    naming: { naming: "unnamed" },
+                    summary: "no direct console output",
+                    anchor: { kind: "file" },
+                    exceptions: "allowed",
+                    cases: { flag: [], allow: [] },
+                    pieces: [],
+                  },
+                ],
+                definitions: [],
+                versionOneFiles: [],
+              },
+            ],
+          }),
+          proofOf,
+        }),
+      ),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        stopped: "refused",
+        failure: {
+          kind: "plan-refused",
+          refusal: {
+            kind: "team-names-missing",
+            missing: [{ missing: "clause", clause, namesFile: "acme/version-two-names.json" }],
+          },
+          removedByVersionOne: [],
+        },
+      },
+    });
+    expect(proofOf).not.toHaveBeenCalled();
   });
 
   describe("reading mentions once the proof is decided", () => {

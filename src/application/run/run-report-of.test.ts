@@ -25,6 +25,7 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
@@ -427,6 +428,30 @@ describe("namedRunReportOf, findings and records", () => {
       findings: [CAST_FINDING],
       symptoms: [CLAIMED_TYPE],
     });
+  });
+
+  it("keeps apart a team symptom that shares its name with one of Hone's", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamClaimedType: Symptom = { ...CLAIMED_TYPE, ruleSet: acme };
+    const teamCastCheck: Check = {
+      name: "team-casts",
+      symptom: teamClaimedType,
+      clause: { ...CAST_EXPRESSIONS, ruleSet: acme },
+      engines: [ESLINT_ENGINE],
+      forms: [],
+    };
+    const teamCastHit: CheckHit = { ...CAST_HIT, check: "claimed-type#team-casts" };
+    expect(
+      namedRunReportOf({
+        ...REQUEST,
+        catalogue: {
+          ...REPORT_CATALOGUE,
+          symptoms: [...REPORT_CATALOGUE.symptoms, teamClaimedType],
+          checks: [...REPORT_CATALOGUE.checks, teamCastCheck],
+        },
+        runs: [eslintRunOf({ hits: [CAST_HIT, teamCastHit], projection: "current" })],
+      }),
+    ).toMatchObject({ symptoms: [CLAIMED_TYPE, teamClaimedType] });
   });
 
   it("reports a Walker finding with the named check’s catalogue symptom", () => {

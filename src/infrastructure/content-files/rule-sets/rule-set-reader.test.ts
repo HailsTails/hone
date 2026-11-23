@@ -8,7 +8,12 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
-import { parsedJson, readDisciplineFile, readPieceFile } from "./rule-set-reader.ts";
+import {
+  parsedJson,
+  readDisciplineFile,
+  readPieceFile,
+  readSummarisedDisciplineFile,
+} from "./rule-set-reader.ts";
 
 const ROOT = absoluteRootOf("/install");
 const INSTALL_ROOT = absoluteRootOf("/running-install");
@@ -426,6 +431,37 @@ describe("readDisciplineFile", () => {
       outcome: "failed",
       error: { kind: "rule-set-invalid", path: DISCIPLINE_PATH },
     });
+  });
+});
+
+describe("readSummarisedDisciplineFile", () => {
+  it("reads a discipline file with each clause's summary beside it", () => {
+    expect(
+      readSummarisedDisciplineFile({
+        fileText: fileTextReading({ text: JSON.stringify(DISCIPLINE) }),
+        path: DISCIPLINE_PATH,
+        discipline: CD_14,
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        file: READ_DISCIPLINE,
+        summaries: new Map([
+          ["class-syntax", "no class syntax"],
+          ["library-construction", "wrap libraries in factories"],
+        ]),
+      },
+    });
+  });
+
+  it("refuses a discipline file that is not JSON", () => {
+    expect(
+      readSummarisedDisciplineFile({
+        fileText: fileTextReading({ text: "{" }),
+        path: DISCIPLINE_PATH,
+        discipline: CD_14,
+      }),
+    ).toMatchObject({ outcome: "failed", error: { path: DISCIPLINE_PATH } });
   });
 });
 

@@ -5,6 +5,7 @@ import type {
   PairingRefusal,
   PlanRefusal,
   TeamConfigRefusal,
+  TeamNameMissing,
 } from "../../../application/ports/upgrade/plan-refusal.ts";
 import type {
   ProofRefusal,
@@ -13,6 +14,7 @@ import type {
 } from "../../../application/ports/upgrade/proof-outcome.ts";
 import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
+import type { TeamDefinitionKind } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
@@ -169,6 +171,31 @@ const pairingLineOf = (request: { readonly refusal: PairingRefusal }): string =>
   }
 };
 
+const DEFINITION_SHAPES: Readonly<Record<TeamDefinitionKind, string>> = {
+  principle: '{ "title": "<title>" }',
+  rule: '{ "title": "<title>", "principle": "<principle>", "standing": "<accepted or proposed>" }',
+  case: '{ "title": "<title>", "standing": "<accepted or proposed>", "owes": [{ "principle": "<principle>" }] }',
+  symptom:
+    '{ "title": "<title>", "group": "<group>", "mayIndicate": [{ "case": "<case>", "points": [{ "principle": "<principle>" }] }], "breachUsuallySits": "<where the breach usually sits>", "seenBy": ["<syntax, types, graph, app, files, history or person>"], "recipes": [], "correctUses": [] }',
+};
+
+const DEFINITION_LISTINGS: Readonly<Record<TeamDefinitionKind, string>> = {
+  principle: "principles",
+  rule: "rules",
+  case: "cases",
+  symptom: "symptoms",
+};
+
+const teamNameMissingLineOf = (request: { readonly missing: TeamNameMissing }): string => {
+  const { missing } = request;
+  if (missing.missing === "clause") {
+    const { clause } = missing;
+    return `${clauseAddressText({ address: clause })} has no version 2 name: add "${clause.discipline}#${clause.clause}": { "check": "<symptom>#<check>", "title": "<title>" } under "clauses" in ${missing.namesFile}`;
+  }
+  const { kind, name } = missing.definition;
+  return `the ${kind} ${name} has no definition: add "${name}": ${DEFINITION_SHAPES[kind]} under "${DEFINITION_LISTINGS[kind]}" in ${missing.namesFile}`;
+};
+
 const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly string[] => {
   const { refusal } = request;
   switch (refusal.kind) {
@@ -191,6 +218,16 @@ const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly strin
         (file) =>
           `the version 1 projection ${file} belongs to no config root and is out of date. Delete it or restore its config root, commit, then run the upgrade again.`,
       );
+    case "team-names-missing":
+      return [
+        "the version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:",
+        ...refusal.missing.map((missing) => `  ${teamNameMissingLineOf({ missing })}`),
+        "Write each in the names file, then run the upgrade again.",
+      ];
+    case "rule-set-path-unplaceable":
+      return [
+        `the upgrade would write ${refusal.path}, which is not a path inside the repository. ${FAULT_IN_HONE}`,
+      ];
     case "mapping-refused":
       return refusal.refusals.map((each) => mappingLineOf({ refusal: each }));
     case "reach-beyond-entries":
@@ -387,6 +424,14 @@ const proofLinesOf = (request: {
         lines: [
           writeLineOf({ failure: failure.refusal.failure }),
           ...unrestoredLinesOf({ ...failure, placement, unrestored: failure.refusal.unrestored }),
+        ],
+      };
+    case "team-layout-unreadable":
+      return {
+        code: 1,
+        lines: [
+          `the rule set the upgrade wrote from your names file cannot be read (${loadFailureDetail({ failure: failure.failure })}). Correct what it names in the names file, then run the upgrade again.`,
+          ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
     case "version-two-run-failed":

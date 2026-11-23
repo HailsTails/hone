@@ -68,7 +68,17 @@ const REMOVAL: VersionOneRemoval = {
   projections: [PROJECTION],
   declarations: [],
   settings: SETTINGS,
+  ruleSetFiles: [],
+  ruleSetFolders: [],
 };
+
+const TEAM_RULE = absoluteRootOf("/repo/tools/acme/rules/ACME-1/discipline.json");
+
+const TEAM_MODULE = absoluteRootOf("/repo/tools/acme/mechanisms/audit/ACME-1/scratch.ts");
+
+const TEAM_RULE_FOLDER = absoluteRootOf("/repo/tools/acme/rules/ACME-1");
+
+const TEAM_MECHANISMS_FOLDER = absoluteRootOf("/repo/tools/acme/mechanisms");
 
 const DECLARATION = absoluteRootOf("/repo/disciplines.eslint.d.mts");
 
@@ -500,6 +510,38 @@ describe("removedVersionOneFiles", () => {
   });
 });
 
+describe("removedVersionOneFiles over a team rule set's version 1 files", () => {
+  it("removes the team's version 1 files after the settings file, then each listed folder it emptied, in the order given", () => {
+    const ports = portsOver();
+    ports.directory.list
+      .mockReturnValueOnce({ outcome: "ok", value: [] })
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "audit", kind: "directory" }] });
+    expect(
+      removedVersionOneFiles({
+        ports,
+        removal: {
+          ...REMOVAL,
+          recordsFiles: [],
+          ruleSetFiles: [TEAM_RULE, TEAM_MODULE],
+          ruleSetFolders: [TEAM_RULE_FOLDER, TEAM_MECHANISMS_FOLDER],
+        },
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: { files: [PROJECTION, SETTINGS, TEAM_RULE, TEAM_MODULE], folders: [TEAM_RULE_FOLDER] },
+    });
+    expect(sequenceOf({ ports })).toEqual([
+      REMOVING_PROJECTION,
+      REMOVING_SETTINGS,
+      { port: "remove", arguments: [{ path: TEAM_RULE }] },
+      { port: "remove", arguments: [{ path: TEAM_MODULE }] },
+      { port: "list", arguments: [{ path: TEAM_RULE_FOLDER }] },
+      { port: "removeEmpty", arguments: [{ path: TEAM_RULE_FOLDER }] },
+      { port: "list", arguments: [{ path: TEAM_MECHANISMS_FOLDER }] },
+    ]);
+  });
+});
+
 describe("projectionDeclarationsOf", () => {
   it("names the declaration file beside each projection that has one, and skips those that do not", () => {
     const exists = vi
@@ -542,5 +584,19 @@ describe("filesStillPresentOf", () => {
         },
       }),
     ).toEqual([DECLARATION, SETTINGS]);
+  });
+
+  it("names a team rule set file the removal stopped before", () => {
+    expect(
+      filesStillPresentOf({
+        removal: { ...REMOVAL, recordsFiles: [], ruleSetFiles: [TEAM_RULE, TEAM_MODULE] },
+        failure: {
+          kind: "unremovable",
+          path: TEAM_MODULE,
+          detail: "EBUSY",
+          removed: { files: [PROJECTION, SETTINGS, TEAM_RULE], folders: [] },
+        },
+      }),
+    ).toEqual([TEAM_MODULE]);
   });
 });

@@ -9,6 +9,7 @@ import type { Result } from "../result.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
+import { ownedNameText } from "../rule-set/rule-set-identity.ts";
 import { everyOk } from "./every-ok.ts";
 import { type ListedAddress, listedAddressText, sameListedAddress } from "./listed-address.ts";
 import type { GivenCheckSettings, ListedCheck } from "./settings-file.ts";
@@ -196,10 +197,12 @@ const duplicateRefusalOf = (request: {
 const availableOf = (
   request: CatalogueRequest & { readonly checks: readonly Check[] },
 ): readonly Check[] => {
-  const symptoms = new Set(request.checks.map((check) => check.symptom.name));
+  const symptoms = new Set(request.checks.map((check) => ownedNameText(check.symptom)));
   const listed = new Set(request.checks);
   return request.catalogues.flatMap((held) =>
-    held.catalogue.checks.filter((check) => symptoms.has(check.symptom.name) && !listed.has(check)),
+    held.catalogue.checks.filter(
+      (check) => symptoms.has(ownedNameText(check.symptom)) && !listed.has(check),
+    ),
   );
 };
 

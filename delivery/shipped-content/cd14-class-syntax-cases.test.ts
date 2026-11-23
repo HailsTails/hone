@@ -2,7 +2,6 @@ import { assert, describe, expect, it } from "vitest";
 
 import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { readHeldDiscipline } from "../../src/infrastructure/content-files/rule-sets/held-discipline.ts";
 import classAuthoringPlugin from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.ts";
 import { eslintPluginModuleSchema } from "../../src/infrastructure/engines/eslint/runner/pieces/eslint-plugin-schema.ts";
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
@@ -12,6 +11,7 @@ import {
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { readHeldDiscipline } from "../../src/infrastructure/upgrade/version-one-rule-sets/held-discipline.ts";
 
 const PIECE_ROOT = absolutePathSchema.parse(
   `${import.meta.dirname}/../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,

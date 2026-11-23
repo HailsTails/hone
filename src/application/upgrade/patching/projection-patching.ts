@@ -109,6 +109,7 @@ const withUnrestored = (request: {
 }): ProofRefusal => {
   const { refusal, unrestored } = request;
   switch (refusal.kind) {
+    case "team-layout-unreadable":
     case "version-two-run-failed":
     case "directives-name-no-check":
     case "differences":
@@ -126,19 +127,28 @@ const withUnrestored = (request: {
   }
 };
 
+export const restoredAfterRefusal = (request: {
+  readonly ports: ProofWritePorts;
+  readonly writes: ProofWrites;
+  readonly refusal: ProofRefusal;
+}): ProofRefusal => {
+  if (request.refusal.kind === "removal-failed") {
+    return request.refusal;
+  }
+  const unrestored = rolledBackProofWrites({ ports: request.ports, writes: request.writes });
+  return withUnrestored({ refusal: request.refusal, unrestored });
+};
+
 export const restoredOriginalProjections = (request: {
   readonly ports: ProofWritePorts;
   readonly repoRoot: AbsolutePath;
   readonly patches: ProofWrites;
   readonly refusal: ProofRefusal;
 }): ProofRefusal => {
-  if (request.refusal.kind === "removal-failed") {
-    return request.refusal;
-  }
   const kept = keptAsVersionOneLeftThem(request);
-  const unrestored = rolledBackProofWrites({
+  return restoredAfterRefusal({
     ports: request.ports,
     writes: request.patches.filter((write) => !kept.includes(write.path)),
+    refusal: request.refusal,
   });
-  return withUnrestored({ refusal: request.refusal, unrestored });
 };

@@ -25,6 +25,8 @@ export type VersionOneRemoval = {
   readonly projections: readonly AbsolutePath[];
   readonly declarations: readonly AbsolutePath[];
   readonly settings: AbsolutePath;
+  readonly ruleSetFiles: readonly AbsolutePath[];
+  readonly ruleSetFolders: readonly AbsolutePath[];
 };
 
 const PROJECTION_MODULE_SUFFIX = ".mjs";
@@ -194,6 +196,8 @@ const stepsOf = (request: {
   ...fileStepsOf({ paths: request.removal.projections }),
   ...fileStepsOf({ paths: request.removal.declarations }),
   ...fileStepsOf({ paths: [request.removal.settings] }),
+  ...fileStepsOf({ paths: request.removal.ruleSetFiles }),
+  ...request.removal.ruleSetFolders.map((path): RemovalStep => ({ kind: "folder-if-empty", path })),
 ];
 
 const attemptedStep = (request: {
@@ -240,6 +244,7 @@ export const filesStillPresentOf = (request: {
     ...removal.projections,
     ...removal.declarations,
     removal.settings,
+    ...removal.ruleSetFiles,
   ].filter((file) => !removedFiles.includes(file));
   return failure.kind === "unremovable" && !files.includes(failure.path)
     ? [...files, failure.path]

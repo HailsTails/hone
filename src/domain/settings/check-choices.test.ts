@@ -255,6 +255,34 @@ describe("namedCheckChoicesOf", () => {
     });
   });
 
+  it("offers no team check as available for a listed Hone symptom that shares its name", () => {
+    const teamLoopKeyword: Symptom = { ...LOOP_KEYWORD, ruleSet: TEAM };
+    const teamLoops: Check = {
+      ...LOOP_KEYWORD_LOOPS,
+      name: "team-loops",
+      symptom: teamLoopKeyword,
+      clause: { ...LOOPS_CLAUSE, ruleSet: TEAM },
+    };
+    expect(
+      namedCheckChoicesOf({
+        catalogues: [
+          ...CATALOGUES,
+          {
+            ruleSet: TEAM,
+            catalogue: {
+              ...SETTINGS_CATALOGUE,
+              symptoms: [teamLoopKeyword],
+              clauses: [],
+              checks: [teamLoops],
+            },
+          },
+        ],
+        checks: LISTED_TEST_BODY,
+        checkSettings: [],
+      }),
+    ).toMatchObject({ outcome: "ok", value: { available: [LOOP_KEYWORD_LOOPS] } });
+  });
+
   it("chooses only the listed checks when the catalogue gains a check under a listed symptom, and offers the new check as available", () => {
     const rebindingLayering: Check = {
       name: "layering",

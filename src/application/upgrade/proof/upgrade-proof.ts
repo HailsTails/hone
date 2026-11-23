@@ -62,6 +62,12 @@ export type UpgradeProofRequest = {
   readonly projectionFilesOf: ProjectionFilesOf;
   readonly settingsFormat: Pick<SettingsFileFormat, "textOf">;
   readonly versionOneProjectionsOf: VersionOneProjectionsOf;
+  readonly ruleSetLayout: RuleSetLayoutRemoval;
+};
+
+export type RuleSetLayoutRemoval = {
+  readonly removed: readonly RepoPath[];
+  readonly folders: readonly RepoPath[];
 };
 
 type Placed = {
@@ -113,6 +119,28 @@ const allOf = <Value>(request: {
   );
 };
 
+export const placedFilesOf = (request: {
+  readonly ports: ProofWritePorts;
+  readonly repoRoot: AbsolutePath;
+  readonly files: readonly PlannedRepoFile[];
+}): Result<readonly PlannedFile[], ProofRefusal> =>
+  allOf({
+    results: request.files.map((planned) =>
+      plannedFileOf({ ports: request.ports, repoRoot: request.repoRoot, planned }),
+    ),
+  });
+
+const absolutesOf = (request: {
+  readonly ports: ProofWritePorts;
+  readonly repoRoot: AbsolutePath;
+  readonly files: readonly RepoPath[];
+}): Result<readonly AbsolutePath[], ProofRefusal> =>
+  allOf({
+    results: request.files.map((file) =>
+      absoluteOf({ ports: request.ports, repoRoot: request.repoRoot, file }),
+    ),
+  });
+
 const recordsRootOf = (request: UpgradeProofRequest): Result<RecordsRoot, ProofRefusal> => {
   const { ports, repoRoot, versionOneFiles } = request;
   if (versionOneFiles.recordsRoot.kind === "repository") {
@@ -130,13 +158,11 @@ const removalOf = (
     readonly removed: readonly AbsolutePath[];
   },
 ): Result<VersionOneRemoval, ProofRefusal> => {
-  const { ports, repoRoot, versionOneFiles } = request;
-  const recordsFiles = allOf({
-    results: versionOneFiles.recordsFiles.map((file) => absoluteOf({ ports, repoRoot, file })),
-  });
-  const recordsFolders = allOf({
-    results: versionOneFiles.recordsFolders.map((file) => absoluteOf({ ports, repoRoot, file })),
-  });
+  const { ports, repoRoot, versionOneFiles, ruleSetLayout } = request;
+  const recordsFiles = absolutesOf({ ports, repoRoot, files: versionOneFiles.recordsFiles });
+  const recordsFolders = absolutesOf({ ports, repoRoot, files: versionOneFiles.recordsFolders });
+  const ruleSetFiles = absolutesOf({ ports, repoRoot, files: ruleSetLayout.removed });
+  const ruleSetFolders = absolutesOf({ ports, repoRoot, files: ruleSetLayout.folders });
   const recordsRoot = recordsRootOf(request);
   const projections = allOf({
     results: request.projections.map(({ projection }) =>
@@ -146,6 +172,8 @@ const removalOf = (
   const settings = absoluteOf({ ports, repoRoot, file: versionOneFiles.settings });
   if (recordsFiles.outcome === "failed") return recordsFiles;
   if (recordsFolders.outcome === "failed") return recordsFolders;
+  if (ruleSetFiles.outcome === "failed") return ruleSetFiles;
+  if (ruleSetFolders.outcome === "failed") return ruleSetFolders;
   if (recordsRoot.outcome === "failed") return recordsRoot;
   if (projections.outcome === "failed") return projections;
   if (settings.outcome === "failed") return settings;
@@ -161,6 +189,8 @@ const removalOf = (
         fileText: ports.fileText,
       }),
       settings: settings.value,
+      ruleSetFiles: ruleSetFiles.value,
+      ruleSetFolders: ruleSetFolders.value,
     },
   };
 };
@@ -174,12 +204,8 @@ type ToPlace = UpgradeProofRequest & {
 
 const placedOf = (request: ToPlace): Result<Placed, ProofRefusal> => {
   const { ports, repoRoot, plan } = request;
-  const files = allOf({
-    results: plan.files.map((planned) => plannedFileOf({ ports, repoRoot, planned })),
-  });
-  const replacements = allOf({
-    results: request.replacements.map((planned) => plannedFileOf({ ports, repoRoot, planned })),
-  });
+  const files = placedFilesOf({ ports, repoRoot, files: plan.files });
+  const replacements = placedFilesOf({ ports, repoRoot, files: request.replacements });
   const removal = removalOf(request);
   if (files.outcome === "failed") return files;
   if (replacements.outcome === "failed") return replacements;
@@ -200,11 +226,7 @@ const removedPlacedOf = (request: {
   readonly repoRoot: AbsolutePath;
   readonly removed: readonly RepoPath[];
 }): Result<readonly AbsolutePath[], ProofRefusal> =>
-  allOf({
-    results: request.removed.map((file) =>
-      absoluteOf({ ports: request.ports, repoRoot: request.repoRoot, file }),
-    ),
-  });
+  absolutesOf({ ports: request.ports, repoRoot: request.repoRoot, files: request.removed });
 
 const projectionsRefusalOf = (request: { readonly refusal: ProjectionsRefusal }): ProofRefusal => {
   const { refusal } = request;

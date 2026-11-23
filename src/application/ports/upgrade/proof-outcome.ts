@@ -1,4 +1,5 @@
 import type { RecordLine } from "../../../domain/records/upgrade/records-mapping.ts";
+import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
@@ -120,6 +121,11 @@ export type ProofRefusal =
   | ({
       readonly kind: "write-refused";
       readonly refusal: ProofWriteRefusal;
+    } & AfterVersionOneProject)
+  | ({
+      readonly kind: "team-layout-unreadable";
+      readonly failure: LoadFailure;
+      readonly unrestored: readonly Unrestored[];
     } & AfterVersionOneProject)
   | ({
       readonly kind: "version-two-run-failed";

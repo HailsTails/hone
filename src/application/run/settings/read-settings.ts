@@ -41,9 +41,7 @@ import type { SettingsFileFormat } from "../../ports/settings/settings-file-form
 
 export type SettingsFailure = VersionTwoLoadFailure | CheckChoiceRefusal;
 
-type SettingsInputs = Omit<SettingsSources, "pieceClause">;
-
-type SourcesRequest = { readonly sources: SettingsInputs; readonly file: SettingsFile };
+type SourcesRequest = { readonly sources: SettingsSources; readonly file: SettingsFile };
 
 const ruleSetsListed = (request: {
   readonly file: SettingsFile;
@@ -173,7 +171,7 @@ const withNamedSource = (request: {
 };
 
 type NamedSettingsRequest = {
-  readonly sources: SettingsInputs;
+  readonly sources: SettingsSources;
   readonly readPiece: CheckPieceSource;
   readonly settingsFormat: Pick<SettingsFileFormat, "fileOf">;
 };
@@ -253,22 +251,6 @@ export const readNamedSettingsFile = (
   const { file, path } = request;
   const catalogues = cataloguesHeld({ sources: request.sources, file });
   if (catalogues.outcome === "failed") return catalogues;
-  const symptoms = new Set<string>();
-  for (const { catalogue } of catalogues.value) {
-    for (const { name } of catalogue.symptoms) {
-      if (symptoms.has(name)) {
-        return {
-          outcome: "failed",
-          error: {
-            kind: "file-malformed",
-            path,
-            detail: `several rule sets declare the symptom ${name}`,
-          },
-        };
-      }
-      symptoms.add(name);
-    }
-  }
   const named = catalogues.value.map((held) => withNamedSource({ held, ruleSets: file.ruleSets }));
   const choices = namedCheckChoicesOf({
     catalogues: named,

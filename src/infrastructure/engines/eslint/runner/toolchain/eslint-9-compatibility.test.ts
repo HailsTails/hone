@@ -9,15 +9,15 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
 import { readInstalledNames } from "../../../../content-files/rule-sets/installed-pieces.ts";
-import { readLocatedPieceFile } from "../../../../content-files/rule-sets/located-piece-file.ts";
 import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
 import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import { readHeldDiscipline } from "../../../../upgrade/version-one-rule-sets/held-discipline.ts";
+import { readLocatedPieceFile } from "../../../../upgrade/version-one-rule-sets/located-piece-file.ts";
 import { checkConformance } from "../../../protocol/conformance.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import { runnerModuleSchema } from "../../../protocol/runner-module/runner-module-schema.ts";

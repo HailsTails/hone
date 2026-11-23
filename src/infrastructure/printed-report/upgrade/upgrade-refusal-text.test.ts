@@ -6,6 +6,7 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { type UpgradeFailureOutcome, upgradeFailureOutcomeOf } from "./upgrade-refusal-text.ts";
 
@@ -623,6 +624,74 @@ Nothing was changed.
     outcome: {
       code: 1,
       text: "upgrade refused:\nacme/CD-1#thing has no version 2 check to run it, and version 2 does not carry the clauses of a version 1 team rule set. Remove it from disciplines.json to upgrade without it, or stay on version 1.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "team clauses and definitions have not been written",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "team-names-missing",
+        missing: [
+          {
+            missing: "clause",
+            clause: {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-1"),
+              clause: clauseIdOf("console-calls"),
+            },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "symptom", name: "direct-console" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "case", name: "changes-a-repository" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "principle", name: "repository-ready" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "rule", name: "no-console" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+        ],
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: 'upgrade refused:\nthe version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:\n  acme/ACME-1#console-calls has no version 2 name: add "ACME-1#console-calls": { "check": "<symptom>#<check>", "title": "<title>" } under "clauses" in acme/version-two-names.json\n  the symptom direct-console has no definition: add "direct-console": { "title": "<title>", "group": "<group>", "mayIndicate": [{ "case": "<case>", "points": [{ "principle": "<principle>" }] }], "breachUsuallySits": "<where the breach usually sits>", "seenBy": ["<syntax, types, graph, app, files, history or person>"], "recipes": [], "correctUses": [] } under "symptoms" in acme/version-two-names.json\n  the case changes-a-repository has no definition: add "changes-a-repository": { "title": "<title>", "standing": "<accepted or proposed>", "owes": [{ "principle": "<principle>" }] } under "cases" in acme/version-two-names.json\n  the principle repository-ready has no definition: add "repository-ready": { "title": "<title>" } under "principles" in acme/version-two-names.json\n  the rule no-console has no definition: add "no-console": { "title": "<title>", "principle": "<principle>", "standing": "<accepted or proposed>" } under "rules" in acme/version-two-names.json\nWrite each in the names file, then run the upgrade again.\nNothing was changed.\n',
+    },
+  },
+  {
+    name: "the rule set written from the names file cannot be read",
+    failure: {
+      kind: "team-layout-unreadable",
+      failure: {
+        kind: "rule-set-invalid",
+        path: "/repo/acme/rules/typescript/symptoms/direct-console.md",
+        detail: "symptoms names gone, which the catalogue does not hold",
+      },
+      unrestored: [
+        {
+          written: "file-created",
+          path: absoluteRootOf("/repo/acme/rules/typescript/symptoms/direct-console.md"),
+          detail: "EBUSY",
+        },
+      ],
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nthe rule set the upgrade wrote from your names file cannot be read (rule-set-invalid /repo/acme/rules/typescript/symptoms/direct-console.md symptoms names gone, which the catalogue does not hold). Correct what it names in the names file, then run the upgrade again.\nThese files could not be put back; put them right by hand:\n  delete /repo/acme/rules/typescript/symptoms/direct-console.md (EBUSY)\n",
     },
   },
 ];

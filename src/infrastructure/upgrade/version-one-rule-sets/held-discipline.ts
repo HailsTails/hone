@@ -6,8 +6,11 @@ import type { AbsolutePath } from "../../../domain/repository/absolute-path-type
 import type { Result } from "../../../domain/result.ts";
 import type { DisciplineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
-import { readInstallDiscipline } from "./install-discipline.ts";
-import { disciplineFilePath, readDisciplineFile } from "./rule-set-reader.ts";
+import { readInstallDiscipline } from "../../content-files/rule-sets/install-discipline.ts";
+import {
+  disciplineFilePath,
+  readDisciplineFile,
+} from "../../content-files/rule-sets/rule-set-reader.ts";
 
 type DisciplineRequest = {
   readonly fileText: FileTextPort;

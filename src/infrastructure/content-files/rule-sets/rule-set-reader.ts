@@ -5,7 +5,11 @@ import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
+import type {
+  ClauseId,
+  DisciplineId,
+  EngineId,
+} from "../../../domain/rule-set/identifier-types.ts";
 import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
 import type {
   DisciplineFile,
@@ -263,17 +267,26 @@ export const pieceFilePath = (request: {
   readonly discipline: DisciplineId;
 }): string => request.path.join({ segments: [...pieceFolderSegmentsOf(request), "piece.json"] });
 
-export const readDisciplineFile = (request: {
+const clauseSummariesSchema = z.object({
+  clauses: z.array(z.object({ id: clauseIdSchema, summary: z.string() })),
+});
+
+export type SummarisedDiscipline = {
+  readonly file: DisciplineFile;
+  readonly summaries: ReadonlyMap<ClauseId, string>;
+};
+
+type DisciplineRequest = {
   readonly fileText: FileTextPort;
   readonly path: string;
   readonly discipline: DisciplineId;
-}): Result<DisciplineFile, VersionTwoLoadFailure> => {
+};
+
+const disciplineOfDocument = (
+  request: DisciplineRequest & { readonly document: unknown },
+): Result<DisciplineFile, VersionTwoLoadFailure> => {
   const { path } = request;
-  const document = readVersionOneJson({ fileText: request.fileText, path });
-  if (document.outcome === "failed") {
-    return document;
-  }
-  const parsed = disciplineFileSchema.safeParse(document.value);
+  const parsed = disciplineFileSchema.safeParse(request.document);
   if (!parsed.success) {
     return { outcome: "failed", error: schemaRefusal({ path, error: parsed.error }) };
   }
@@ -284,6 +297,38 @@ export const readDisciplineFile = (request: {
     });
   }
   return { outcome: "ok", value: parsed.data };
+};
+
+export const readSummarisedDisciplineFile = (
+  request: DisciplineRequest,
+): Result<SummarisedDiscipline, VersionTwoLoadFailure> => {
+  const document = readVersionOneJson(request);
+  if (document.outcome === "failed") {
+    return document;
+  }
+  const file = disciplineOfDocument({ ...request, document: document.value });
+  if (file.outcome === "failed") {
+    return file;
+  }
+  const summaries = clauseSummariesSchema.safeParse(document.value);
+  return summaries.success
+    ? {
+        outcome: "ok",
+        value: {
+          file: file.value,
+          summaries: new Map(summaries.data.clauses.map(({ id, summary }) => [id, summary])),
+        },
+      }
+    : { outcome: "failed", error: schemaRefusal({ path: request.path, error: summaries.error }) };
+};
+
+export const readDisciplineFile = (
+  request: DisciplineRequest,
+): Result<DisciplineFile, VersionTwoLoadFailure> => {
+  const document = readVersionOneJson(request);
+  return document.outcome === "failed"
+    ? document
+    : disciplineOfDocument({ ...request, document: document.value });
 };
 
 type MechanicalDefinition = Extract<

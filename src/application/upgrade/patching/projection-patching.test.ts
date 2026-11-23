@@ -10,7 +10,11 @@ import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { ProofWritePorts } from "../proof-writes/proof-writes.ts";
-import { patchedProjectionsOf, restoredOriginalProjections } from "./projection-patching.ts";
+import {
+  patchedProjectionsOf,
+  restoredAfterRefusal,
+  restoredOriginalProjections,
+} from "./projection-patching.ts";
 
 const REPO = absoluteRootOf("/repo");
 
@@ -138,5 +142,56 @@ describe("restoredOriginalProjections", () => {
       },
     });
     expect(files["/repo/disciplines.eslint.mjs"]).toBe("rewritten by project");
+  });
+});
+
+describe("restoredAfterRefusal", () => {
+  const CREATED = absoluteRootOf("/repo/acme/rules/principles/acme.md");
+
+  it("removes each file it is given and returns the refusal with what it could not restore", () => {
+    const ports = portsHolding({});
+    vi.mocked(ports.fileRemoval.remove).mockReturnValue({
+      outcome: "failed",
+      error: { kind: "unremovable", path: CREATED, detail: "EBUSY" },
+    });
+    expect(
+      restoredAfterRefusal({
+        ports,
+        writes: [{ kind: "file-created", path: CREATED }],
+        refusal: {
+          kind: "differences",
+          differences: [],
+          writtenReported: [],
+          unrestored: [],
+          removedByVersionOne: [],
+        },
+      }),
+    ).toEqual({
+      kind: "differences",
+      differences: [],
+      writtenReported: [],
+      unrestored: [{ written: "file-created", path: CREATED, detail: "EBUSY" }],
+      removedByVersionOne: [],
+    });
+  });
+
+  it("restores nothing after a removal failed, since the proof had already passed", () => {
+    const ports = portsHolding({});
+    const refusal = {
+      kind: "removal-failed",
+      failure: {
+        kind: "unremovable",
+        path: CREATED,
+        detail: "EBUSY",
+        removed: { files: [], folders: [] },
+      },
+      remaining: [],
+      written: [],
+      replaced: [],
+    } as const;
+    expect(
+      restoredAfterRefusal({ ports, writes: [{ kind: "file-created", path: CREATED }], refusal }),
+    ).toEqual(refusal);
+    expect(ports.fileRemoval.remove).not.toHaveBeenCalled();
   });
 });
