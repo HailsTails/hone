@@ -32,6 +32,11 @@ export type AnsweredFinding = {
   readonly by: readonly PlacedRecord[];
 };
 
+export type HeldException = {
+  readonly exception: AttributedCheckException;
+  readonly by: readonly PlacedRecord[];
+};
+
 export type PaidDebt = {
   readonly debt: PlacedRecord;
   readonly answeredBy: readonly PlacedRecord[];
@@ -55,6 +60,7 @@ export type AnsweringRequest = {
 export type Answering = {
   readonly findings: readonly CheckFinding[];
   readonly answered: readonly AnsweredFinding[];
+  readonly held: readonly HeldException[];
   readonly stale: readonly StaleRecord[];
   readonly forfeited: readonly PlacedRecord[];
   readonly paid: readonly PaidDebt[];
@@ -300,6 +306,11 @@ export const answerFindings = (request: AnsweringRequest): Answering => {
   return {
     findings: judged.flatMap((entry) => (entry.by.length === 0 ? [entry.finding] : [])),
     answered: judged.filter((entry) => entry.by.length > 0),
+    held: natives.flatMap((native) =>
+      native.holders.length === 0
+        ? []
+        : [{ exception: native.exception, by: answerersOf({ holders: native.holders }) }],
+    ),
     stale: staleRecords({
       inForce,
       credited,

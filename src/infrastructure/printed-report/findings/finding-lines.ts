@@ -11,7 +11,10 @@ import {
   indicatedNamesOf,
   type SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AnsweredFinding } from "../../../domain/records/answering/answering.ts";
+import type {
+  AnsweredFinding,
+  HeldException,
+} from "../../../domain/records/answering/answering.ts";
 import type { CheckEdition } from "../../../domain/report/run-report.ts";
 import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { onOneLine } from "../printed-text.ts";
@@ -104,4 +107,11 @@ export const unrecordedLines = (
 ): readonly string[] =>
   nativeSitesOf(request).map(
     (site) => `${checkSiteText({ site })} ${request.exception.kind} ${unrecordedDetail(request)}`,
+  );
+
+export const heldLines = (
+  request: CatalogueRequest & { readonly held: HeldException },
+): readonly string[] =>
+  unrecordedLines({ catalogue: request.catalogue, exception: request.held.exception }).map(
+    (line) => `${line}${referencesText({ lead: "held by", records: request.held.by })}`,
   );
