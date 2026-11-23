@@ -60,7 +60,7 @@ const detailOf = (request: { readonly outcome: DebtOutcome }): string => {
     case "already-recorded":
       return `${recordsFileText({ file: outcome.heldIn })} already holds debt on this symptom and file; the check says why it does not answer`;
     case "left":
-      return `under --leave ${outcome.under}; record it as an authorised location with its own reason, or fix it`;
+      return `under --leave ${outcome.under}; record it as an authorised location with a why chain, or fix it`;
     case "touched":
       return TOUCHED_DETAIL[outcome.of];
     case "unrecordable":

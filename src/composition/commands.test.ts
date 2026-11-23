@@ -775,7 +775,7 @@ describe("versionTwoRecordDebtCommandOf", () => {
     expect(ran.writes).toEqual([
       [
         {
-          text: "claimed-type#cast-expressions left src/a.ts: under --leave src/a.ts; record it as an authorised location with its own reason, or fix it\n",
+          text: "claimed-type#cast-expressions left src/a.ts: under --leave src/a.ts; record it as an authorised location with a why chain, or fix it\n",
         },
       ],
     ]);

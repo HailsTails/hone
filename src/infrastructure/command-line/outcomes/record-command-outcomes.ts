@@ -18,9 +18,9 @@ const inheritedDebtNote = (request: { readonly outcome: InheritedDebtOutcome }):
     case "already-recorded":
       return `: ${outcome.heldIn} already holds a record on this clause and file; the check says why it does not hold`;
     case "left":
-      return `: under ${LEAVE_OPTION.name} ${outcome.under}; record it as an authorised-location with its own reason, or fix it`;
+      return `: under ${LEAVE_OPTION.name} ${outcome.under}; record it as an authorised-location with a whyChain, or fix it`;
     case "new-file":
-      return ": the base revision does not hold this file, so its debt was not inherited; fix it, or record it with its own reason";
+      return ": the base revision does not hold this file, so its debt was not inherited, and a file carve-out on it would be forfeited at once; fix it";
     case "refused":
       return ": the clause's discipline refuses exceptions; fix it";
     case "nested-configuration":
