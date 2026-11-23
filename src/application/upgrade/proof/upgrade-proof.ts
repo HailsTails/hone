@@ -125,7 +125,10 @@ const recordsRootOf = (request: UpgradeProofRequest): Result<RecordsRoot, ProofR
 };
 
 const removalOf = (
-  request: UpgradeProofRequest & { readonly projections: readonly VersionOneProjection[] },
+  request: UpgradeProofRequest & {
+    readonly projections: readonly VersionOneProjection[];
+    readonly removed: readonly AbsolutePath[];
+  },
 ): Result<VersionOneRemoval, ProofRefusal> => {
   const { ports, repoRoot, versionOneFiles } = request;
   const recordsFiles = allOf({
@@ -154,7 +157,7 @@ const removalOf = (
       recordsRoot: recordsRoot.value,
       projections: projections.value,
       declarations: projectionDeclarationsOf({
-        projections: projections.value,
+        projections: [...projections.value, ...request.removed],
         fileText: ports.fileText,
       }),
       settings: settings.value,
@@ -165,6 +168,7 @@ const removalOf = (
 type ToPlace = UpgradeProofRequest & {
   readonly plan: UpgradePlan;
   readonly projections: readonly VersionOneProjection[];
+  readonly removed: readonly AbsolutePath[];
   readonly replacements: readonly PlannedRepoFile[];
 };
 

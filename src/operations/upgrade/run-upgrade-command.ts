@@ -60,7 +60,7 @@ export type UpgradeInput = {
   readonly proofOf: (
     request: UpgradeProofRequest,
   ) => Promise<Result<ProofCarriedOver, ProofRefusal>>;
-  readonly foundTreeStages: (written: ProofWritten) => VersionTwoStages;
+  readonly foundTreeStages: (request: ProofWritten) => VersionTwoStages;
 };
 
 type Prepared = {
@@ -183,9 +183,9 @@ const proofRequestOf = (
             loadFailureDetail: ports.loadFailureDetail,
           }),
         }),
-      versionTwo: (written) =>
+      versionTwo: (proofWritten) =>
         versionTwoRunOver({
-          stages: request.foundTreeStages(written),
+          stages: request.foundTreeStages(proofWritten),
           arguments: {
             forfeiture: undefined,
             reportOutput: undefined,

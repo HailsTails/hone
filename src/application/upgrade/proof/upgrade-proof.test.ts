@@ -1301,6 +1301,31 @@ describe("upgradeProof", () => {
     });
   });
 
+  it("removes the declaration file beside a slice projection version 1's own project removed", async () => {
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
+    doubles.projections.mockResolvedValue({
+      removed: [ORPHAN],
+      outcome: { outcome: "ok", value: [ROOT_PROJECTION] },
+    });
+    doubles.ports.fileText.exists.mockImplementation(({ path }) =>
+      path === "/repo/old/disciplines.eslint.d.mts" ? "present" : "absent",
+    );
+    await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
+      outcome: "ok",
+      value: {
+        removed: {
+          files: [
+            "/repo/old/disciplines.eslint.mjs",
+            "/repo/discipline-exceptions/cd-15.json",
+            "/repo/disciplines.eslint.mjs",
+            "/repo/old/disciplines.eslint.d.mts",
+            "/repo/disciplines.json",
+          ],
+        },
+      },
+    });
+  });
+
   it("reports what it wrote and what it had removed, and leaves the version 2 files, when removing a version 1 file throws", async () => {
     const doubles = doublesOver({
       kindOf: kindsOfEveryPlannedFileNew(),
