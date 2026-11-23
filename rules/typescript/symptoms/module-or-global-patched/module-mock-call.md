@@ -3,7 +3,7 @@
 ```json
 {
   "misses": "Both editions miss aliased receivers and module mocks such as vi.doMock or vi[\"mock\"]. Edition 1 leaves global patches to review. Edition 2 still misses indirect writes and global vi.spyOn calls.",
-  "settingsTracedTo": "Test files by name: Companion test file recipe."
+  "settingsTracedTo": "None."
 }
 ```
 

@@ -16,7 +16,6 @@ const loadedParse = await loadParsePort({
 assert(loadedParse.outcome === "ok");
 const { syntaxApi } = loadedParse.value;
 
-const FILE = repoPathOf("src/orders.spec.mts");
 const BINDING: CheckBinding = {
   address: "throw-or-catch-in-a-test#throw-statement",
   engine: "walker",
@@ -28,39 +27,72 @@ const BINDING: CheckBinding = {
 };
 
 describe("throwStatementCheck", () => {
-  it("observes a test throw at its keyword with a bounded snippet", () => {
-    const source =
-      'throw new Error(\r\n  "1234567890123456789012345678901234567890123456789012345678901234567890",\r\n);';
-    const prepared = throwStatementCheck("test").prepare({
+  it.each<{ readonly scope: "test" | "production"; readonly path: string }>([
+    { scope: "test", path: "src/orders.ts" },
+    { scope: "production", path: "src/orders.spec.mts" },
+  ])("skips $path when checking $scope scope", ({ scope, path }) => {
+    const file = repoPathOf(path);
+    const prepared = throwStatementCheck(scope).prepare({
       bindings: [BINDING],
       repository: {
-        files: [FILE],
+        files: [file],
         exists: () => "present",
         disk: textsDisk({ root: "/repo", texts: {} }),
       },
       syntaxApi,
     });
     assert(prepared.outcome === "ok");
-    const selected = prepared.value.prepareFile({
-      file: FILE,
-      readText: () => ({ outcome: "ok", value: source }),
+    expect(
+      prepared.value.prepareFile({
+        file,
+        readText: () => ({ outcome: "ok", value: "throw new Error('missing');" }),
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: { kind: "skipped" },
     });
-    assert(selected.outcome === "ok" && selected.value.kind === "syntax");
-    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
-    const [node] = tree.statements;
-    assert(node !== undefined);
-    const observations = selected.value.begin({
-      sourceFile: tree,
-      anchorAt: () => ({ line: 1, column: 0 }),
-    });
-    observations.enter?.({ node });
-    expect(observations.finish()).toEqual([
-      {
-        check: BINDING.address,
-        anchor: { line: 1, column: 0 },
-        snippet:
-          'throw new Error( "12345678901234567890123456789012345678901234567890123456789012…',
-      },
-    ]);
   });
+
+  it.each<{ readonly scope: "test" | "production"; readonly path: string }>([
+    { scope: "test", path: "src/orders.spec.mts" },
+    { scope: "production", path: "src/orders.ts" },
+  ])(
+    "observes a throw at its keyword with a bounded snippet in $scope scope",
+    ({ scope, path }) => {
+      const file = repoPathOf(path);
+      const source =
+        'throw new Error(\r\n  "1234567890123456789012345678901234567890123456789012345678901234567890",\r\n);';
+      const prepared = throwStatementCheck(scope).prepare({
+        bindings: [BINDING],
+        repository: {
+          files: [file],
+          exists: () => "present",
+          disk: textsDisk({ root: "/repo", texts: {} }),
+        },
+        syntaxApi,
+      });
+      assert(prepared.outcome === "ok");
+      const selected = prepared.value.prepareFile({
+        file,
+        readText: () => ({ outcome: "ok", value: source }),
+      });
+      assert(selected.outcome === "ok" && selected.value.kind === "syntax");
+      const tree = syntaxApi.createSourceFile(file, source, syntaxApi.ScriptTarget.Latest, true);
+      const [node] = tree.statements;
+      assert(node !== undefined);
+      const observations = selected.value.begin({
+        sourceFile: tree,
+        anchorAt: () => ({ line: 1, column: 0 }),
+      });
+      observations.enter?.({ node });
+      expect(observations.finish()).toEqual([
+        {
+          check: BINDING.address,
+          anchor: { line: 1, column: 0 },
+          snippet:
+            'throw new Error( "12345678901234567890123456789012345678901234567890123456789012…',
+        },
+      ]);
+    },
+  );
 });

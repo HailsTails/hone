@@ -130,6 +130,24 @@ describe("throws in production", () => {
     ).toEqual([]);
   });
 
+  it("flattens and bounds a multiline production throw", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'function readOrder() {\n  throw new Error(\n    "1234567890123456789012345678901234567890123456789012345678901234567890",\n  );\n}',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 2 },
+        snippet:
+          'throw new Error( "12345678901234567890123456789012345678901234567890123456789012…',
+      },
+    ]);
+  });
+
   it.each([
     "src/read-order.test.ts",
     "src/read-order.spec.ts",
