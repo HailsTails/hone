@@ -135,19 +135,20 @@ jobs:
             if (( SECONDS > deadline )); then status=timed-out; break; fi
             sleep 30
           done
-          events='{"data":[]}'
+          events="$RUNNER_TEMP/events.jsonl"
+          : > "$events"
           page=""
           while :; do
-            batch=$(anthropic_get "sessions/$SESSION_ID/events${page:+?page=$page}")
-            events=$(jq -c --argjson batch "$batch" '.data += $batch.data' <<<"$events")
-            page=$(jq -r '.next_page // empty' <<<"$batch")
+            anthropic_get "sessions/$SESSION_ID/events${page:+?page=$page}" > "$RUNNER_TEMP/page.json"
+            jq -c '.data[]' "$RUNNER_TEMP/page.json" >> "$events"
+            page=$(jq -r '.next_page // empty' "$RUNNER_TEMP/page.json")
             [ -n "$page" ] || break
           done
-          jq -r '[.data[] | select(.type == "agent.message")] | last // {} | [.content[]? | select(.type == "text") | .text] | join("\n")' <<<"$events" > "$RUNNER_TEMP/summary.md"
-          jq -r '[.data[] | select(.type == "session.error") | .error.message] | join("\n")' <<<"$events" > "$RUNNER_TEMP/errors.txt"
+          jq -rs '[.[] | select(.type == "agent.message")] | last // {} | [.content[]? | select(.type == "text") | .text] | join("\n")' "$events" > "$RUNNER_TEMP/summary.md"
+          jq -rs '[.[] | select(.type == "session.error") | .error.message] | join("\n")' "$events" > "$RUNNER_TEMP/errors.txt"
           {
             echo "status=$status"
-            echo "stop_reason=$(jq -r '[.data[] | select(.type == "session.status_idle")] | last // {} | .stop_reason.type // "none"' <<<"$events")"
+            echo "stop_reason=$(jq -rs '[.[] | select(.type == "session.status_idle")] | last // {} | .stop_reason.type // "none"' "$events")"
             echo "cost_cents=$(jq -r '.usage.list_cost.amount // "unknown"' <<<"$session")"
             echo "cache=$(jq -r '.usage | "\(.cache_read_input_tokens // 0) cache-read, \(.cache_creation_input_tokens // 0) cache-written, \(.input_tokens // 0) uncached input tokens"' <<<"$session")"
           } >> "$GITHUB_OUTPUT"
