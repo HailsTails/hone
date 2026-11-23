@@ -20,6 +20,7 @@ const WALKER_ENGINE: Engine = { name: "walker" };
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const TEST_SWITCHED_OFF: Symptom = {
+  ruleSet: "hone",
   name: "test-switched-off",
   title: "Test switched off",
   seen: "a site",
@@ -30,6 +31,7 @@ const TEST_SWITCHED_OFF: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "a site",
@@ -40,6 +42,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const POSITIONAL_PARAMETERS: Symptom = {
+  ruleSet: "hone",
   name: "positional-parameters",
   title: "Positional parameters",
   seen: "a site",
@@ -50,6 +53,7 @@ const POSITIONAL_PARAMETERS: Symptom = {
 };
 
 const REBINDING: Symptom = {
+  ruleSet: "hone",
   name: "rebinding",
   title: "Rebinding",
   seen: "a site",

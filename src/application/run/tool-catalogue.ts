@@ -4,6 +4,7 @@ import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts"
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { FileTextPort } from "../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../ports/host/path-port.ts";
 import type { BoundCatalogueOf } from "../ports/symptom-catalogue-repository.ts";
@@ -28,6 +29,7 @@ export const toolCatalogueOf = (request: {
     fileText: request.fileText,
     path: request.path,
     ruleSetRoot: request.installRoot,
+    ruleSet: TOOL_RULE_SET,
     installRoot: request.installRoot,
   });
   if (held.outcome === "failed") {

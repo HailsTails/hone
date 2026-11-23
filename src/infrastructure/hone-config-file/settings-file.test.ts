@@ -302,6 +302,11 @@ describe("settingsFileOf", () => {
       fault: { kind: "reserved-rule-set-name", name: "hone-team" },
     },
     {
+      name: "a rule set named as a records kind folder, which its records folder would sit beside",
+      document: { ...SMALLEST_DOCUMENT, ruleSets: { debt: "tools/debt" } },
+      fault: { kind: "reserved-rule-set-name", name: "debt" },
+    },
+    {
       name: "a rule set whose name another extends",
       document: { ...SMALLEST_DOCUMENT, ruleSets: { team: "tools/team", "team-web": "tools/web" } },
       fault: { kind: "rule-set-name-collision", name: "team", other: "team-web" },

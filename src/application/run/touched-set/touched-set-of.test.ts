@@ -25,6 +25,7 @@ const DECLARED_NOT_ASSERTED: Rule = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",

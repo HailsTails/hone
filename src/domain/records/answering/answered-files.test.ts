@@ -9,6 +9,7 @@ import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { answeredFilesOf } from "./answered-files.ts";
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "a value is given a type it was not checked for",

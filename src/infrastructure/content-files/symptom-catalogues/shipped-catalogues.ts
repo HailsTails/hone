@@ -20,6 +20,7 @@ export const shippedCataloguesOf = (request: {
     directory: request.directory,
     path: request.path,
     ruleSetRoot: request.installRoot,
+    ruleSet: TOOL_RULE_SET,
     installRoot: request.installRoot,
   });
   if (holding.outcome === "failed") {

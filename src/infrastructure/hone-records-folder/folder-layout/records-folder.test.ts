@@ -90,6 +90,67 @@ describe("createRecordsFolder, read", () => {
     });
   });
 
+  it("reads a team's records files inside its rule set's folder, listing its kind folders", () => {
+    const list = vi
+      .fn<DirectoryPort["list"]>()
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "acme", kind: "directory" }] })
+      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "debt", kind: "directory" }] })
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value: [{ name: "console-output.json", kind: "file" }],
+      });
+    const read = vi
+      .fn<FileTextPort["read"]>()
+      .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT });
+    const folder = createRecordsFolder({
+      ...portsWith({
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+        read,
+        list,
+        ...UNUSED_BASE,
+      }),
+      repoRoot: REPO,
+    });
+    expect({ read: folder.read(), listed: list.mock.calls }).toEqual({
+      read: {
+        outcome: "ok",
+        value: [
+          {
+            file: "hone-records/acme/debt/console-output.json",
+            document: { version: 2, records: [{ answers: "claimed-type", file: "src/a.ts" }] },
+          },
+        ],
+      },
+      listed: [
+        [{ path: "/repo/hone-records" }],
+        [{ path: "/repo/hone-records/acme" }],
+        [{ path: "/repo/hone-records/acme/debt" }],
+      ],
+    });
+  });
+
+  it("fails naming a file in a team's rule set folder, which holds only kind folders", () => {
+    const folder = createRecordsFolder({
+      ...portsWith({
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+        read: vi.fn<FileTextPort["read"]>(),
+        list: vi
+          .fn<DirectoryPort["list"]>()
+          .mockReturnValueOnce({ outcome: "ok", value: [{ name: "acme", kind: "directory" }] })
+          .mockReturnValueOnce({
+            outcome: "ok",
+            value: [{ name: "boundary-records.json", kind: "file" }],
+          }),
+        ...UNUSED_BASE,
+      }),
+      repoRoot: REPO,
+    });
+    expect(folder.read()).toEqual({
+      outcome: "failed",
+      error: { kind: "not-a-records-file", file: "hone-records/acme/boundary-records.json" },
+    });
+  });
+
   it("fails naming a file in the records folder that is not a records file", () => {
     const folder = createRecordsFolder({
       ...portsWith({
@@ -225,12 +286,13 @@ describe("createRecordsFolder, read", () => {
 });
 
 describe("createRecordsFolder, readAt", () => {
-  it("reads the records files the base revision holds, and nothing else it holds", () => {
+  it("reads the records files the base revision holds, a team's included, and nothing else it holds", () => {
     const pathsAt = vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({
       outcome: "ok",
       value: [
         repoPathOf("src/a.ts"),
         repoPathOf("hone-records/debt/claimed-type.json"),
+        repoPathOf("hone-records/acme/debt/console-output.json"),
         repoPathOf("hone-records/README.md"),
       ],
     });
@@ -255,12 +317,23 @@ describe("createRecordsFolder, readAt", () => {
         outcome: "ok",
         value: [
           {
+            file: "hone-records/acme/debt/console-output.json",
+            document: { version: 2, records: [{ answers: "claimed-type", file: "src/a.ts" }] },
+          },
+          {
             file: "hone-records/debt/claimed-type.json",
             document: { version: 2, records: [{ answers: "claimed-type", file: "src/a.ts" }] },
           },
         ],
       },
       asked: [
+        [
+          {
+            repoRoot: REPO,
+            baseRevision: "origin/main",
+            file: "hone-records/acme/debt/console-output.json",
+          },
+        ],
         [
           {
             repoRoot: REPO,

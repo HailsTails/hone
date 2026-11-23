@@ -148,7 +148,11 @@ const placedAt = (request: {
   readonly check: Check;
   readonly record: WrittenRecord;
 }): Result<PlacedRecord, UpgradeRefusal> => {
-  const file = namedRecordsFileOf({ kind: request.kind, name: request.check.symptom.name });
+  const file = namedRecordsFileOf({
+    ruleSet: request.check.symptom.ruleSet,
+    kind: request.kind,
+    name: request.check.symptom.name,
+  });
   return file.outcome === "ok"
     ? {
         outcome: "ok",

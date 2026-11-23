@@ -31,6 +31,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
+  ruleSet: "hone",
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of Date.",

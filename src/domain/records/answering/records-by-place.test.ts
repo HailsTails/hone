@@ -7,6 +7,7 @@ import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { HoneRecord, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { Site } from "./record-reach.ts";
 import {
@@ -25,6 +26,7 @@ const STUB_WITH_VIFN: Recipe = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "Seen.",
@@ -219,6 +221,87 @@ describe("recordsReachingSites", () => {
       recordsReachingSites({
         byPlace: BY_PLACE,
         sites: [castSiteAt({ file: repoPathOf("README.md") })],
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe("recordsReachingSites, a team's symptom sharing a name with one of Hone's", () => {
+  const TEAM_CLAIMED_TYPE: Symptom = { ...CLAIMED_TYPE, ruleSet: { name: ruleSetNameOf("acme") } };
+
+  const TEAM_CAST_CHECK: Check = { ...CAST_CHECK, symptom: TEAM_CLAIMED_TYPE };
+
+  const TEAM_DEBT = placedOf({
+    index: 0,
+    record: {
+      kind: "debt",
+      symptom: TEAM_CLAIMED_TYPE,
+      reach: WHOLE_SYMPTOM,
+      file: ADAPTER,
+      holding: { held: "stated" },
+    },
+  });
+
+  const TEAM_CAST_DEBT = placedOf({
+    index: 1,
+    record: {
+      kind: "debt",
+      symptom: TEAM_CLAIMED_TYPE,
+      reach: { reaches: "one-check", check: TEAM_CAST_CHECK },
+      file: ADAPTER,
+      holding: { held: "stated" },
+    },
+  });
+
+  const TEAM_BY_PLACE = recordsByPlaceOf({ records: [TEAM_DEBT, TEAM_CAST_DEBT] });
+
+  it("gives the team's records for a site of the team's symptom", () => {
+    expect(
+      recordsReachingSites({
+        byPlace: TEAM_BY_PLACE,
+        sites: [
+          siteAt({
+            file: ADAPTER,
+            symptom: TEAM_CLAIMED_TYPE,
+            check: { found: "check", check: TEAM_CAST_CHECK },
+          }),
+        ],
+      }),
+    ).toEqual([TEAM_DEBT, TEAM_CAST_DEBT]);
+  });
+
+  it("gives none of the team's records for a site of Hone's symptom of the same name", () => {
+    expect(
+      recordsReachingSites({ byPlace: TEAM_BY_PLACE, sites: [castSiteAt({ file: ADAPTER })] }),
+    ).toEqual([]);
+  });
+
+  it("gives none of Hone's records for a site of the team's symptom of the same name", () => {
+    expect(
+      recordsReachingSites({
+        byPlace: BY_PLACE,
+        sites: [
+          siteAt({
+            file: ADAPTER,
+            symptom: TEAM_CLAIMED_TYPE,
+            check: { found: "check", check: TEAM_CAST_CHECK },
+          }),
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it("gives no module record for a team's symptom named as one a boundary record reaches", () => {
+    expect(
+      recordsReachingSites({
+        byPlace: BY_PLACE,
+        sites: [
+          siteAt({
+            file: OTHER_ADAPTER,
+            symptom: { ...OUTSIDE_IMPORT, ruleSet: { name: ruleSetNameOf("acme") } },
+            check: { found: "none" },
+          }),
+        ],
       }),
     ).toEqual([]);
   });

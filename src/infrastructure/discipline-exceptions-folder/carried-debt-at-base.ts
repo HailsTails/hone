@@ -34,7 +34,11 @@ const debtAt = (request: {
   readonly entry: VersionOneEntry;
   readonly file: RepoPath;
 }): readonly PlacedDebt[] => {
-  const filed = namedRecordsFileOf({ kind: "debt", name: request.check.symptom.name });
+  const filed = namedRecordsFileOf({
+    ruleSet: request.check.symptom.ruleSet,
+    kind: "debt",
+    name: request.check.symptom.name,
+  });
   return filed.outcome === "ok"
     ? [
         {

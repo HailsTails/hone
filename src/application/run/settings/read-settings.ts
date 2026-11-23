@@ -69,7 +69,7 @@ const cataloguesHeld = (
       if (ruleSetRoot.outcome === "failed") {
         return ruleSetRoot;
       }
-      const catalogue = request.sources.catalogue({ ruleSetRoot: ruleSetRoot.value });
+      const catalogue = request.sources.catalogue({ ruleSetRoot: ruleSetRoot.value, ruleSet });
       if (catalogue.outcome === "failed") {
         return catalogue;
       }
@@ -152,11 +152,6 @@ export const catalogueWithExternalChecks = (request: {
       };
 };
 
-export const checksOfRuleSet = ({ ruleSet, catalogue }: RuleSetCatalogue): readonly Check[] =>
-  ruleSet === TOOL_RULE_SET
-    ? catalogue.checks
-    : catalogue.checks.map((check) => ({ ...check, ruleSet: ruleSet.name }));
-
 const withNamedSource = (request: {
   readonly held: RuleSetCatalogue;
   readonly ruleSets: SettingsFile["ruleSets"];
@@ -170,7 +165,7 @@ const withNamedSource = (request: {
       : symptom,
   );
   const byName = new Map(symptoms.map((symptom) => [symptom.name, symptom]));
-  const checks = checksOfRuleSet(request.held).map((check) => ({
+  const checks = catalogue.checks.map((check) => ({
     ...check,
     symptom: byName.get(check.symptom.name) ?? check.symptom,
   }));

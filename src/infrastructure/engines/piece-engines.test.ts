@@ -17,6 +17,7 @@ const TEAM = absoluteRootOf("/repo/team-rules");
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => INSTALL });
 
 const DATE_USED_DIRECTLY: Symptom = {
+  ruleSet: "hone",
   name: "date-used-directly",
   title: "Date used directly",
   seen: "A date read.",

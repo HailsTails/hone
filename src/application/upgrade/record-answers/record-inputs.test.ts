@@ -22,6 +22,7 @@ const LOOPS_CLAUSE = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: {
+    ruleSet: "hone",
     name: "loop-keyword",
     title: "Loop keyword",
     seen: "`for` or `while`.",

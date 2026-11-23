@@ -21,6 +21,7 @@ const LOOPS_CLAUSE: ClauseAddress = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: {
+    ruleSet: "hone",
     name: "loop-keyword",
     title: "Loop keyword",
     seen: "`for` or `while`.",

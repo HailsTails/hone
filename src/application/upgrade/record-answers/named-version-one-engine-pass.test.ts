@@ -58,6 +58,7 @@ const INPUT: NamedVersionOnePassRequest = {
 const LOOP: Check = {
   name: "loops",
   symptom: {
+    ruleSet: "hone",
     name: "loop-keyword",
     title: "Loop keyword",
     seen: "A loop.",

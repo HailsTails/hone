@@ -46,6 +46,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",

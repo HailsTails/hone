@@ -54,6 +54,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -429,6 +430,18 @@ describe("readNamedSettings and the settings document", () => {
 });
 
 describe("readNamedSettings", () => {
+  it("asks for each catalogue with the rule set it is read for", () => {
+    const sources = sourcesHolding({
+      document: DOCUMENT,
+      piece: { outcome: "ok", value: LOOPS_PIECE },
+    });
+    readSelectedSettings({ settingsFormat: SETTINGS_FORMAT, sources });
+    expect(sources.catalogue).toHaveBeenCalledExactlyOnceWith({
+      ruleSetRoot: INSTALL_ROOT,
+      ruleSet: TOOL_RULE_SET,
+    });
+  });
+
   it("resolves an opt-in check which has no version one clause", () => {
     const address: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#new-loop-check" };
     const catalogue: SymptomCatalogue = {

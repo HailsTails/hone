@@ -15,6 +15,7 @@ import {
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
 const DATE_USED_DIRECTLY: Symptom = {
+  ruleSet: "hone",
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",

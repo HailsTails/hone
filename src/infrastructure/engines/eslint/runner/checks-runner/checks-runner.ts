@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import type { NamedEngineRunRequest } from "../../../../../application/ports/engine/engine-run.ts";
+import type {
+  EngineCheck,
+  NamedEngineRunRequest,
+} from "../../../../../application/ports/engine/engine-run.ts";
 import type {
   CheckedVersionOneProjection,
   ProjectionMeasurement,
@@ -15,6 +18,7 @@ import {
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import type { ProjectedFile } from "../../../../../domain/runner/checks-run-report.ts";
 import type { ChecksSliceProblem } from "../../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
@@ -148,6 +152,11 @@ const projectionFailureOf = (request: { readonly failure: ProjectionFailure }): 
   }
 };
 
+const toolChecksOf = (request: {
+  readonly run: Pick<NamedEngineRunRequest, "checks">;
+}): readonly EngineCheck[] =>
+  (request.run.checks ?? []).filter(({ symptom }) => symptom.ruleSet === TOOL_RULE_SET);
+
 const versionOneRuleIdsOf = (
   request: Pick<NamedEngineRunRequest, "bindings">,
 ): readonly VersionOneRuleId[] => {
@@ -271,7 +280,7 @@ const builtPlugin = async (request: {
   readonly platform: EslintPlatformPorts;
 }): Promise<Result<LoadedEslintPlugin, RunnerFailure>> => {
   const plugin = await honePluginAt({
-    checks: (request.run.checks ?? []).filter(({ ruleSet }) => ruleSet === undefined),
+    checks: toolChecksOf({ run: request.run }),
     installRoot: request.run.installRoot,
     fileText: request.platform.fileText,
     path: request.platform.path,
@@ -785,7 +794,7 @@ const projectedRun = async (request: {
   }
   const checkRuleIds = [
     ...eslintRuleIdsOf({
-      checks: (request.run.checks ?? []).filter(({ ruleSet }) => ruleSet === undefined),
+      checks: toolChecksOf({ run: request.run }),
     }),
     ...selected.value.map(({ ruleId }) => ruleId),
   ];

@@ -5,7 +5,13 @@ import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
-import { checkAddressOf, checkAt, checkNamedAt, checksOf } from "./check-address.ts";
+import {
+  checkAddressOf,
+  checkAt,
+  checkNamedAt,
+  checksOf,
+  qualifiedCheckAddressOf,
+} from "./check-address.ts";
 import type {
   Check,
   Engine,
@@ -35,6 +41,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 const WALKER: Engine = { name: "walker" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -281,5 +288,22 @@ describe("checkNamedAt", () => {
       named: "not-of-the-clause",
       address,
     });
+  });
+});
+
+describe("qualifiedCheckAddressOf", () => {
+  it("gives a check of Hone's own rule set by its symptom and name alone", () => {
+    expect(qualifiedCheckAddressOf({ check: LOOP_KEYWORD_LOOPS })).toBe("loop-keyword#loops");
+  });
+
+  it("puts the team's rule set before a check of a team's symptom", () => {
+    expect(
+      qualifiedCheckAddressOf({
+        check: {
+          ...LOOP_KEYWORD_LOOPS,
+          symptom: { ...LOOP_KEYWORD, ruleSet: { name: ruleSetNameOf("acme") } },
+        },
+      }),
+    ).toBe("acme/loop-keyword#loops");
   });
 });

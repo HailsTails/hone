@@ -34,6 +34,8 @@ import {
 } from "../../../domain/records/hone-records/records-layout.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
+import { sameOwnedName } from "../../../domain/rule-set/rule-set-identity.ts";
 import {
   carriedAuthorisedLocationWireSchema,
   carriedBoundaryRecordWireSchema,
@@ -59,7 +61,9 @@ export type Resolving = {
   readonly entry: z.core.util.JSONType;
 };
 
-export type FiledUnder = { readonly kind: NamedFolderKind } | { readonly kind: SingleFileKind };
+export type FiledUnder =
+  | { readonly kind: NamedFolderKind; readonly ruleSet: RuleSetIdentity }
+  | { readonly kind: SingleFileKind };
 
 const RUNTIME_PREFIX = "runtime:";
 
@@ -94,9 +98,12 @@ const carriedForm = (request: { readonly entry: z.core.util.JSONType }): "carrie
 
 const symptomNamed = (request: {
   readonly catalogue: SymptomCatalogue;
+  readonly ruleSet: RuleSetIdentity;
   readonly name: string;
 }): Resolution<Symptom> => {
-  const symptom = request.catalogue.symptoms.find((candidate) => candidate.name === request.name);
+  const symptom = request.catalogue.symptoms.find(
+    (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
+  );
   return symptom === undefined
     ? refusedWith({ kind: "unknown-symptom", symptom: request.name })
     : resolved(symptom);
@@ -140,10 +147,11 @@ export const owedBy = (request: {
 
 const placedIn = (request: {
   readonly file: RepoPath;
+  readonly ruleSet: RuleSetIdentity;
   readonly kind: NamedFolderKind;
   readonly name: string;
 }): Resolution<RepoPath> => {
-  const belongsIn = namedRecordsFileOf({ kind: request.kind, name: request.name });
+  const belongsIn = namedRecordsFileOf(request);
   if (belongsIn.outcome === "failed") {
     return refusedWith(belongsIn.error);
   }
@@ -191,7 +199,8 @@ const checkReachOf = (request: {
 }): AuthorisedReach => {
   const check = request.catalogue.checks.find(
     (candidate) =>
-      candidate.symptom.name === request.symptom.name && candidate.name === request.check,
+      sameOwnedName({ left: candidate.symptom, right: request.symptom }) === "same" &&
+      candidate.name === request.check,
   );
   return check === undefined
     ? { reaches: "unknown-check", check: request.check }
@@ -235,11 +244,20 @@ const debtReachOf = (request: {
 };
 
 const symptomFiledAt = (
-  request: Resolving & { readonly kind: NamedFolderKind; readonly recorded: RecordedReach },
+  request: Resolving & {
+    readonly kind: NamedFolderKind;
+    readonly ruleSet: RuleSetIdentity;
+    readonly recorded: RecordedReach;
+  },
 ): Resolution<RecordedSymptom> => {
-  const symptom = symptomNamed({ catalogue: request.catalogue, name: request.recorded.symptom });
+  const symptom = symptomNamed({
+    catalogue: request.catalogue,
+    ruleSet: request.ruleSet,
+    name: request.recorded.symptom,
+  });
   const placed = placedIn({
     file: request.file,
+    ruleSet: request.ruleSet,
     kind: request.kind,
     name: request.recorded.symptom,
   });
@@ -257,7 +275,7 @@ const symptomFiledAt = (
 };
 
 const debtSymptomFiledAt = (
-  request: Resolving & { readonly recorded: RecordedReach },
+  request: Resolving & { readonly ruleSet: RuleSetIdentity; readonly recorded: RecordedReach },
 ): Resolution<DebtSymptom> => {
   const filed = symptomFiledAt({ ...request, kind: "debt" });
   if (filed.outcome === "failed") {
@@ -281,7 +299,7 @@ const debtHoldingOf = (
     : resolved({ held: "carried", entry: request.carried, lacks: [], standing: standing.value });
 };
 
-const debtOf = (request: Resolving): Resolution<Debt> => {
+const debtOf = (request: Resolving & { readonly ruleSet: RuleSetIdentity }): Resolution<Debt> => {
   const form = formOf({ schema: debtWireSchema, entry: request.entry });
   if (form.outcome === "failed") {
     return form;
@@ -301,7 +319,9 @@ const debtOf = (request: Resolving): Resolution<Debt> => {
   });
 };
 
-const statedAuthorisedLocationOf = (request: Resolving): Resolution<AuthorisedLocation> => {
+const statedAuthorisedLocationOf = (
+  request: Resolving & { readonly ruleSet: RuleSetIdentity },
+): Resolution<AuthorisedLocation> => {
   const form = formOf({ schema: statedAuthorisedLocationWireSchema, entry: request.entry });
   if (form.outcome === "failed") {
     return form;
@@ -326,7 +346,9 @@ const statedAuthorisedLocationOf = (request: Resolving): Resolution<AuthorisedLo
   });
 };
 
-const carriedAuthorisedLocationOf = (request: Resolving): Resolution<AuthorisedLocation> => {
+const carriedAuthorisedLocationOf = (
+  request: Resolving & { readonly ruleSet: RuleSetIdentity },
+): Resolution<AuthorisedLocation> => {
   const form = formOf({ schema: carriedAuthorisedLocationWireSchema, entry: request.entry });
   if (form.outcome === "failed") {
     return form;
@@ -353,7 +375,9 @@ const carriedAuthorisedLocationOf = (request: Resolving): Resolution<AuthorisedL
   });
 };
 
-const authorisedLocationOf = (request: Resolving): Resolution<AuthorisedLocation> =>
+const authorisedLocationOf = (
+  request: Resolving & { readonly ruleSet: RuleSetIdentity },
+): Resolution<AuthorisedLocation> =>
   carriedForm(request) === "carried"
     ? carriedAuthorisedLocationOf(request)
     : statedAuthorisedLocationOf(request);
@@ -411,7 +435,9 @@ const recipeReasonHeld = (request: {
     ? resolved(request.recipe)
     : refusedWith({ kind: "recipe-reason-not-the-catalogues", ...request });
 
-const deviationOf = (request: Resolving): Resolution<Deviation> => {
+const deviationOf = (
+  request: Resolving & { readonly ruleSet: RuleSetIdentity },
+): Resolution<Deviation> => {
   const form = formOf({ schema: deviationWireSchema, entry: request.entry });
   if (form.outcome === "failed") {
     return form;
@@ -420,7 +446,12 @@ const deviationOf = (request: Resolving): Resolution<Deviation> => {
   const found = recipeNamed({ catalogue: request.catalogue, name });
   const recipe =
     found.outcome === "failed" ? found : recipeReasonHeld({ recipe: found.value, recipeReason });
-  const placed = placedIn({ file: request.file, kind: "deviations", name });
+  const placed = placedIn({
+    file: request.file,
+    ruleSet: request.ruleSet,
+    kind: "deviations",
+    name,
+  });
   if (recipe.outcome === "failed" || placed.outcome === "failed") {
     return { outcome: "failed", error: [...refusalsOf(recipe), ...refusalsOf(placed)] };
   }
@@ -455,13 +486,14 @@ const dependencyRecordOf = (request: Resolving): Resolution<DependencyRecord> =>
 export const recordOf = (
   request: Resolving & { readonly filedUnder: FiledUnder },
 ): Resolution<HoneRecord> => {
-  switch (request.filedUnder.kind) {
+  const { filedUnder } = request;
+  switch (filedUnder.kind) {
     case "debt":
-      return debtOf(request);
+      return debtOf({ ...request, ruleSet: filedUnder.ruleSet });
     case "authorised-locations":
-      return authorisedLocationOf(request);
+      return authorisedLocationOf({ ...request, ruleSet: filedUnder.ruleSet });
     case "deviations":
-      return deviationOf(request);
+      return deviationOf({ ...request, ruleSet: filedUnder.ruleSet });
     case "boundary-records":
       return boundaryRecordOf(request);
     case "dependency-records":

@@ -3,12 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { createBoundCatalogueOf, readBoundCatalogue } from "./bound-catalogue.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
 const TEAM_ROOT = absoluteRootOf("/repo/team-rules");
+
+const TEAM = { name: ruleSetNameOf("team") };
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
@@ -97,6 +100,7 @@ describe("readBoundCatalogue", () => {
         directory,
         path: PATH,
         ruleSetRoot: INSTALL_ROOT,
+        ruleSet: "hone",
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({
@@ -132,6 +136,7 @@ describe("readBoundCatalogue", () => {
         directory,
         path: PATH,
         ruleSetRoot: TEAM_ROOT,
+        ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({
@@ -163,6 +168,7 @@ describe("readBoundCatalogue", () => {
         directory,
         path: PATH,
         ruleSetRoot: TEAM_ROOT,
+        ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });
@@ -188,6 +194,7 @@ describe("createBoundCatalogueOf", () => {
         fileText,
         path: PATH,
         ruleSetRoot: TEAM_ROOT,
+        ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });

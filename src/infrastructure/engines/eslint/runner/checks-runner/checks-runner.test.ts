@@ -1,19 +1,22 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
-import type { NamedEngineRunRequest } from "../../../../../application/ports/engine/engine-run.ts";
+import type {
+  EngineCheck,
+  NamedEngineRunRequest,
+} from "../../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import ESLINT_CD_14_PIECE from "../../authored-class-or-this/class-keyword/piece.json" with { type: "json" };
-import type { PluginCheck } from "../hone-plugin/check-rule-id.ts";
 import {
   CHECKS_DECLARATION_PATH,
   CHECKS_PROJECTION_PATH,
@@ -158,9 +161,9 @@ const INSTALLED_ESLINT_PACKAGE_JSON = path.join({
   segments: [SCRATCH_REPO_ROOT, "node_modules", "eslint", "package.json"],
 });
 
-const CLASS_KEYWORD_CHECK: PluginCheck = {
+const CLASS_KEYWORD_CHECK: EngineCheck = {
   name: "class-keyword",
-  symptom: { name: "authored-class-or-this", title: "Authored class or this" },
+  symptom: { ruleSet: "hone", name: "authored-class-or-this", title: "Authored class or this" },
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
@@ -418,6 +421,19 @@ describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repo
       },
       linted: [[{ files: SELECTING_THE_CLASS_CHECK.files }]],
     });
+  });
+
+  it("builds Hone's plugin from Hone's own checks only, leaving a team rule set's check out", async () => {
+    const teamCheck: EngineCheck = {
+      ...CLASS_KEYWORD_CHECK,
+      symptom: { ruleSet: { name: ruleSetNameOf("acme") }, name: "team-only", title: "Team only" },
+    };
+    const outcome = await runnerOverProjection({
+      currents: rootOnly(PROJECTION_WRITTEN_AS_PROJECT_WOULD),
+      ruleState: CONFIGURED_ON,
+      governance: lintingNothing(),
+    }).run({ ...SELECTING_THE_CLASS_CHECK, checks: [CLASS_KEYWORD_CHECK, teamCheck] });
+    expect(outcome).toMatchObject({ outcome: "ok", value: { projection: "current" } });
   });
 
   it("reports the projection out of date, and lints nothing, when it differs from what project would write and the team's config leaves the check's rule out of a checked file", async () => {

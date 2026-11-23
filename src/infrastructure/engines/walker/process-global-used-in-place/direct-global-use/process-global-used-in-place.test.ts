@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from "vitest";
 
 import type {
   RecordKind,
+  Symptom,
   SymptomCatalogue,
 } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { holdsAt } from "../../../../../domain/records/answering/record-reach.ts";
@@ -82,7 +83,8 @@ const LOCATION: RecordKind = {
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
-const SYMPTOM = {
+const SYMPTOM: Symptom = {
+  ruleSet: "hone",
   name: "process-global-used-in-place",
   title: "Process global used in place",
   seen: "A unit uses the process runtime directly.",

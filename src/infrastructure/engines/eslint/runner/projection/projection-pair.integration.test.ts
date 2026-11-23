@@ -79,6 +79,7 @@ const specifierOf: SpecifierOf = ({ modulePath }) => {
 
 const catalogue = () => {
   const reading = readBoundCatalogue({
+    ruleSet: "hone",
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

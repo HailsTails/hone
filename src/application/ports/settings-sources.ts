@@ -51,6 +51,7 @@ export type SettingsSources = {
   }) => Result<AbsolutePath, VersionTwoLoadFailure>;
   readonly catalogue: (request: {
     readonly ruleSetRoot: AbsolutePath;
+    readonly ruleSet: ClauseAddress["ruleSet"];
   }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
   readonly pieceClause: (request: {
     readonly ruleSetRoot: AbsolutePath;

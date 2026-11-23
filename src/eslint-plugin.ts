@@ -1,6 +1,7 @@
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "./domain/language-layer/symptom-catalogue-location.ts";
 import type { AbsolutePath } from "./domain/repository/absolute-path-types.ts";
 import type { Result } from "./domain/result.ts";
+import { TOOL_RULE_SET } from "./domain/rule-set/clause-address.ts";
 import { TOOL_IDENTITY } from "./domain/rule-set/tool-identity.ts";
 import { installRootOfApiEntry } from "./infrastructure/command-line/installation/install-root.ts";
 import { readBoundCatalogue } from "./infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
@@ -38,6 +39,7 @@ const pluginAt = async (request: {
     directory: createDefaultDirectoryPort({}),
     path,
     ruleSetRoot: request.installRoot,
+    ruleSet: TOOL_RULE_SET,
     installRoot: request.installRoot,
   });
   if (catalogue.outcome === "failed") {

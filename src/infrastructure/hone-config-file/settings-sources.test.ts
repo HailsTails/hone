@@ -233,7 +233,12 @@ describe("createSettingsSources", () => {
   });
 
   it("holds no symptom catalogue where a rule set has none", () => {
-    expect(sourcesOver({ files: INSTALL_FILES }).catalogue({ ruleSetRoot: INSTALL_ROOT })).toEqual({
+    expect(
+      sourcesOver({ files: INSTALL_FILES }).catalogue({
+        ruleSetRoot: INSTALL_ROOT,
+        ruleSet: "hone",
+      }),
+    ).toEqual({
       outcome: "ok",
       value: { held: "none" },
     });
@@ -262,7 +267,12 @@ describe("createSettingsSources", () => {
       },
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
     });
-    expect(sources.catalogue({ ruleSetRoot: absoluteRootOf("/repo/tools/hone-rules") })).toEqual({
+    expect(
+      sources.catalogue({
+        ruleSetRoot: absoluteRootOf("/repo/tools/hone-rules"),
+        ruleSet: { name: ruleSetNameOf("team") },
+      }),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "file-unreadable",

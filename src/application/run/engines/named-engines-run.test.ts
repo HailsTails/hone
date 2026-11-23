@@ -18,6 +18,7 @@ const MANIFEST = repoPathOf("package.json");
 const FIRST_EDITION = editionOf("1");
 
 const SYMPTOM: Symptom = {
+  ruleSet: "hone",
   name: "held-value",
   title: "Held value",
   seen: "A value is held.",

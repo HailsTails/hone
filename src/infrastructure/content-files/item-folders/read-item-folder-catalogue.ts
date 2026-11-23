@@ -6,6 +6,7 @@ import type { ContentHolding } from "../../../domain/language-layer/symptom-cata
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
 import { catalogueContentFromFile } from "../symptom-catalogues/symptom-catalogue-wire.ts";
 import { catalogueFileOf, type HeldBesideItems, type PlacedItem } from "./item-document.ts";
 import { itemFactsOf } from "./item-facts.ts";
@@ -18,6 +19,7 @@ type ItemFolder = {
   readonly directory: DirectoryPort;
   readonly path: Pick<PathPort, "join">;
   readonly root: AbsolutePath;
+  readonly ruleSet: RuleSetIdentity;
   readonly beside: HeldBesideItems;
   readonly symptomSourcePrefix?: string;
 };
@@ -84,11 +86,15 @@ const placedItemsOf = (
 
 const holdingOf = (request: {
   readonly root: AbsolutePath;
+  readonly ruleSet: RuleSetIdentity;
   readonly beside: HeldBesideItems;
   readonly items: readonly PlacedItem[];
 }): Result<ContentHolding, VersionTwoLoadFailure> => {
   const file = catalogueFileOf({ items: request.items, beside: request.beside });
-  const content = file.outcome === "failed" ? file : catalogueContentFromFile({ file: file.value });
+  const content =
+    file.outcome === "failed"
+      ? file
+      : catalogueContentFromFile({ file: file.value, ruleSet: request.ruleSet });
   if (content.outcome === "failed") {
     return { outcome: "failed", error: malformed({ path: request.root, detail: content.error }) };
   }
@@ -130,7 +136,7 @@ const readItemFolderCatalogue = (
   }
   return items.value.length === 0
     ? { outcome: "ok", value: { held: "none" } }
-    : holdingOf({ root: request.root, beside: request.beside, items: items.value });
+    : holdingOf({ ...request, items: items.value });
 };
 
 export const createItemFolderCatalogueRepository = (

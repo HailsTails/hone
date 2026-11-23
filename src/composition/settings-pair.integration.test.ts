@@ -43,6 +43,7 @@ const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "after
 
 const toolCatalogue = (): SymptomCatalogue => {
   const reading = readBoundCatalogue({
+    ruleSet: "hone",
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

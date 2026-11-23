@@ -3,6 +3,7 @@ import type { RecordsFolderPorts } from "../../../application/ports/records/reco
 import type { RecordsSource } from "../../../application/ports/records/records-source.ts";
 import type { RecordsDocument } from "../../../domain/records/hone-records/hone-record.ts";
 import {
+  NAMED_FOLDER_KINDS,
   RECORDS_FOLDER,
   recordsFileStandingOf,
 } from "../../../domain/records/hone-records/records-layout.ts";
@@ -98,6 +99,34 @@ const kindFolderFiles = (request: FolderRequest & { readonly folder: RepoPath })
       });
 };
 
+const ruleSetFolderEntryFiles = (
+  request: FolderRequest & { readonly folder: RepoPath; readonly entry: DirectoryEntry },
+): Listed => {
+  const child = childOf(request);
+  if (child.outcome === "failed") {
+    return child;
+  }
+  return request.entry.kind === "directory"
+    ? kindFolderFiles({ ...request, folder: child.value })
+    : { outcome: "ok", value: [child.value] };
+};
+
+const ruleSetFolderFiles = (request: FolderRequest & { readonly folder: RepoPath }): Listed => {
+  const entries = entriesIn(request);
+  return entries.outcome === "failed"
+    ? entries
+    : joined({
+        listings: entries.value.map((entry) => ruleSetFolderEntryFiles({ ...request, entry })),
+      });
+};
+
+const folderFiles = (
+  request: FolderRequest & { readonly folder: RepoPath; readonly entry: DirectoryEntry },
+): Listed =>
+  NAMED_FOLDER_KINDS.some((kind) => kind === request.entry.name)
+    ? kindFolderFiles(request)
+    : ruleSetFolderFiles(request);
+
 const recordsFolderEntryFiles = (
   request: FolderRequest & { readonly entry: DirectoryEntry },
 ): Listed => {
@@ -106,7 +135,7 @@ const recordsFolderEntryFiles = (
     return child;
   }
   return request.entry.kind === "directory"
-    ? kindFolderFiles({ ...request, folder: child.value })
+    ? folderFiles({ ...request, folder: child.value })
     : { outcome: "ok", value: [child.value] };
 };
 

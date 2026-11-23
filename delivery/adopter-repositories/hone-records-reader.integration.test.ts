@@ -189,6 +189,7 @@ const REPO_ROOT = absolutePathSchema.parse(
 const scratch = createDefaultScratchFilesPort({});
 
 const holding = readBoundCatalogue({
+  ruleSet: "hone",
   directory: createDefaultDirectoryPort({}),
   fileText,
   path,

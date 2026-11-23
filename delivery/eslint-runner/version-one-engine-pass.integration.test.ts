@@ -392,6 +392,7 @@ const CLASS_FINDING: Finding = {
 
 const catalogues = () => {
   const holding = readBoundCatalogue({
+    ruleSet: "hone",
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

@@ -173,6 +173,7 @@ export const createSettingsSources = (options: SourcesOptions): SettingsSources 
       directory: options.directory,
       path: options.path,
       ruleSetRoot: request.ruleSetRoot,
+      ruleSet: request.ruleSet,
       installRoot: options.installRoot,
     }),
   pieceClause: (request) => pieceClauseOf({ ...options, ...request }),

@@ -23,6 +23,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -33,6 +34,7 @@ const LOOP_KEYWORD: Symptom = {
 };
 
 const SETTINGS_REBINDING: Symptom = {
+  ruleSet: "hone",
   name: "rebinding",
   title: "Rebinding",
   seen: "`for` or `while`.",
@@ -85,6 +87,7 @@ const SETTINGS_CHECKS: readonly Check[] = [
 ];
 
 const TEST_SWITCHED_OFF: Symptom = {
+  ruleSet: "hone",
   name: "test-switched-off",
   title: "Test switched off",
   seen: "a site",
@@ -95,6 +98,7 @@ const TEST_SWITCHED_OFF: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "a site",
@@ -105,6 +109,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const POSITIONAL_PARAMETERS: Symptom = {
+  ruleSet: "hone",
   name: "positional-parameters",
   title: "Positional parameters",
   seen: "a site",
@@ -115,6 +120,7 @@ const POSITIONAL_PARAMETERS: Symptom = {
 };
 
 const PLUGIN_REBINDING: Symptom = {
+  ruleSet: "hone",
   name: "rebinding",
   title: "Rebinding",
   seen: "a site",

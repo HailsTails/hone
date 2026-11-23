@@ -27,6 +27,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 import type { RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
@@ -111,6 +112,7 @@ const additionOf = (request: {
   readonly outcome: DebtOutcome;
 }): Commanded<readonly RecordAddition[]> => {
   const file = namedRecordsFileOf({
+    ruleSet: TOOL_RULE_SET,
     kind: "debt",
     name: symptomNameOf({ address: request.outcome.address }),
   });

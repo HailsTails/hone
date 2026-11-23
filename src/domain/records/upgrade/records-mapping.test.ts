@@ -14,6 +14,7 @@ import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { InheritedDebtProvenance } from "../discipline-exceptions/exception-record.ts";
 import { clausesCarriedAsNotAdopted, mappedRecords } from "./records-mapping.ts";
@@ -40,6 +41,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
+  ruleSet: "hone",
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -200,6 +202,40 @@ describe("mappedRecords carrying a file carve-out as stated debt", () => {
           },
         ],
       },
+    });
+  });
+
+  it("writes a team check's debt in its rule set's records folder", () => {
+    const teamLoops: Check = {
+      ...LOOP_KEYWORD_LOOPS,
+      symptom: { ...LOOP_KEYWORD, ruleSet: { name: ruleSetNameOf("acme") } },
+    };
+    expect(
+      mappedRecords({
+        catalogues: CATALOGUES,
+        inputs: [
+          {
+            kind: "file-carve-out",
+            record: {
+              kind: "file-carve-out",
+              clause: LOOPS_CLAUSE,
+              mechanism: AUDIT,
+              file: SRC_A,
+              reason: "legacy loop",
+            },
+            entry: {
+              kind: "file-carve-out",
+              clause: "CD-15#loops",
+              file: "src/a.ts",
+              reason: "legacy loop",
+            },
+            answer: { credit: "findings", checks: [teamLoops] },
+          },
+        ],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: { documents: [{ file: "hone-records/acme/debt/loop-keyword.json" }] },
     });
   });
 

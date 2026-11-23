@@ -14,6 +14,7 @@ import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type {
   AuthorisedLocation,
   BoundaryRecord,
@@ -99,6 +100,7 @@ const symptomOf = (request: {
   readonly name: string;
   readonly recipes: readonly Recipe[];
 }): Symptom => ({
+  ruleSet: "hone",
   name: request.name,
   title: request.name,
   seen: "Seen.",
@@ -383,6 +385,51 @@ describe("holdsAt, debt and authorised locations", () => {
       ).toBe("does-not-hold");
     },
   );
+});
+
+describe("holdsAt, a team's symptom sharing a name with one of Hone's", () => {
+  const ACME = { name: ruleSetNameOf("acme") };
+
+  it("does not hold Hone's debt over the team's symptom of the same name", () => {
+    expect(
+      holdsAt({
+        record: DEBT,
+        site: {
+          check: UNCHECKED,
+          symptom: { ...CLAIMED_TYPE, ruleSet: ACME },
+          file: ADAPTER,
+          party: NOT_REPORTED,
+        },
+        catalogue: CATALOGUE,
+      }),
+    ).toBe("does-not-hold");
+  });
+
+  it("holds the team's debt over the team's own symptom", () => {
+    const symptom = { ...CLAIMED_TYPE, ruleSet: ACME };
+    expect(
+      holdsAt({
+        record: { ...DEBT, symptom },
+        site: { check: UNCHECKED, symptom, file: ADAPTER, party: NOT_REPORTED },
+        catalogue: CATALOGUE,
+      }),
+    ).toBe("holds");
+  });
+
+  it("does not hold a boundary record over the team's symptom named as one its outside party reaches", () => {
+    expect(
+      holdsAt({
+        record: UUID_BOUNDARY,
+        site: {
+          check: UNCHECKED,
+          symptom: { ...OUTSIDE_IMPORT, ruleSet: ACME },
+          file: IDS_FILE,
+          party: reportedAs("uuid"),
+        },
+        catalogue: CATALOGUE,
+      }),
+    ).toBe("does-not-hold");
+  });
 });
 
 describe("holdsAt, deviations", () => {

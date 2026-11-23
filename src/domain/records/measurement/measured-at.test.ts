@@ -16,6 +16,7 @@ const WALKER = "walker" as const;
 const ESLINT = "eslint" as const;
 
 const SYMPTOM: Symptom = {
+  ruleSet: "hone",
   name: "claimed-type",
   title: "Claimed type",
   seen: "Seen.",

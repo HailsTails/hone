@@ -4,6 +4,7 @@ import type { Engine } from "../../../domain/language-layer/symptom-catalogue.ts
 import type { RecordsDocumentRefusal } from "../../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { runLoadFailureLine } from "./load-failure-lines.ts";
 
 const WALKER: Engine = { name: "walker" };
@@ -229,6 +230,19 @@ describe("runLoadFailureLine, records that could not be read", () => {
     {
       failure: { kind: "records-refused", refusals: [DOCUMENT_REFUSED, MISPLACED_FILE] },
       line: 'load failure: records-refused hone-records/debt/claimed-type.json document-refused records.0.file: expected a repository path, document: expected version 2; "hone-records/debt/claimed type.json" not-a-records-file',
+    },
+    {
+      failure: {
+        kind: "records-refused",
+        refusals: [
+          {
+            kind: "unknown-rule-set",
+            file: repoPathOf("hone-records/acme/debt/console-output.json"),
+            ruleSet: ruleSetNameOf("acme"),
+          },
+        ],
+      },
+      line: "load failure: records-refused hone-records/acme/debt/console-output.json unknown-rule-set acme: no check this run reads comes from that rule set; declare it in hone.config.json and list its checks, or remove its records",
     },
   ])("prints $failure.kind", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: UPGRADE_COMMAND })).toBe(line);
