@@ -1,4 +1,5 @@
 import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetOf } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
@@ -65,7 +66,7 @@ export const check: WalkerPiece = {
                   )
                     return;
                   const anchor = anchorAt({ position: setter.getStart(sourceFile) });
-                  const snippet = setter.getText(sourceFile).replace(/\r?\n/g, " ");
+                  const snippet = sourceSnippetOf(setter.getText(sourceFile));
                   hits.push(
                     ...bindings.map(({ address }) => ({ check: address, anchor, snippet })),
                   );
