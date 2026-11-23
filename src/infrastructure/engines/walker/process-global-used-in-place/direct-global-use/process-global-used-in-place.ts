@@ -4,7 +4,11 @@ import {
 } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
-import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
+import type {
+  SyntaxApi,
+  SyntaxNode,
+  TypeChecker,
+} from "../../runner/toolchain/typescript-parse.ts";
 
 type SyntaxRequest = {
   readonly syntaxApi: SyntaxApi;
@@ -82,7 +86,7 @@ export const check: WalkerPiece = {
             kind: "syntax",
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
-              let bindingsInSource: ReturnType<typeof sourceBindingsOf> | undefined;
+              let bindingsInSource: TypeChecker | undefined;
               const locallyBound = (node: SyntaxNode): boolean => {
                 bindingsInSource ??= sourceBindingsOf({ syntaxApi, sourceFile });
                 return (

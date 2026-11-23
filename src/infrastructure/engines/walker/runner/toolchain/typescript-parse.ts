@@ -3,6 +3,7 @@ import type typescript from "typescript";
 export type SyntaxApi = typeof typescript;
 export type SyntaxTree = typescript.SourceFile;
 export type SyntaxNode = typescript.Node;
+export type TypeChecker = typescript.TypeChecker;
 export type CommentRange = typescript.CommentRange;
 export type Statement = typescript.Statement;
 export type ImportDeclaration = typescript.ImportDeclaration;
