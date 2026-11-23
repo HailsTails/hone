@@ -606,6 +606,7 @@ const EMPTY_RUN_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
+  held: [],
   available: [],
   stale: [],
   forfeited: [],
