@@ -124,4 +124,29 @@ describe("fetch-command", () => {
       },
     ]);
   });
+
+  it("reports pnpx on its line inside a workflow run block", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: "- run: |\n    pnpm run check\n    # pnpx skipped-tool\n    pnpx some-tool\n",
+      }),
+    ).toEqual([
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 4, column: 0 },
+        snippet: "pnpx some-tool",
+      },
+    ]);
+  });
+
+  it("passes a workflow run block using local tools", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: "- run: |\n    pnpm exec vitest run\n    pnpm run lint\n",
+      }),
+    ).toEqual([]);
+  });
 });

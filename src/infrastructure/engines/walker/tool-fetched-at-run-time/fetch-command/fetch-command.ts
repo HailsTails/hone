@@ -13,7 +13,7 @@ type Command = { readonly text: string; readonly anchor: Anchor; readonly snippe
 
 const SHELL = /\.(?:sh|bash|zsh|ps1|cmd|bat)$/;
 const COMMAND_START =
-  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\b/i;
+  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|pnpx|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\b/i;
 const DOWNLOAD_PIPE =
   /(?:^|[;&|])\s*(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^|\r\n]*\|\s*(?:sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\b/i;
 
