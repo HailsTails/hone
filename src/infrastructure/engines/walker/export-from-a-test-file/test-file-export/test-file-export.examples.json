@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "named and type exports from a test",
+      "fileName": "src/order.test.ts",
+      "source": "export const sample = 1;\nexport type { Example } from \"./order.ts\";",
+      "expectedLines": [1, 2]
+    },
+    {
+      "name": "test module exports its default",
+      "fileName": "src/order.integration.test.ts",
+      "source": "export default { sample: 1 };",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "export only appears as data",
+      "fileName": "src/order.test.tsx",
+      "source": "const input = \"export default 1\";",
+      "expectedLines": []
+    },
+    {
+      "name": "production module exports its unit",
+      "fileName": "src/order.ts",
+      "source": "export const order = 1;",
+      "expectedLines": []
+    }
+  ]
+}
