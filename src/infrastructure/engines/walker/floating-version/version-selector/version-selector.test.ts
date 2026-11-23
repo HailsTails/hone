@@ -11,31 +11,20 @@ import {
   defaultTypeScriptPeers,
   loadParsePort,
 } from "../../runner/toolchain/typescript-toolchain.ts";
-import { check } from "./fixed-versions-and-local-tools.ts";
+import { check } from "./version-selector.ts";
 
 const MANIFEST = repoPathSchema.parse("packages/orders/package.json");
 const WORKFLOW = repoPathSchema.parse(".github/workflows/ci.yml");
-const SHELL = repoPathSchema.parse("delivery/check.sh");
-const VERSIONS = "floating-version#version-selector";
-const LOCK = "no-lock-file#committed-lock-file";
-const TOOLS = "tool-fetched-at-run-time#fetch-command";
-const OBSERVATIONS: readonly {
-  readonly address: CheckBinding["address"];
-  readonly observation: string;
-}[] = [
-  { address: VERSIONS, observation: "floating-version" },
-  { address: LOCK, observation: "missing-lock-file" },
-  { address: TOOLS, observation: "fetched-tool" },
-];
-const BINDINGS = OBSERVATIONS.map(({ address, observation }): CheckBinding => ({
-  address,
+const ADDRESS = "floating-version#version-selector";
+const BINDING: CheckBinding = {
+  address: ADDRESS,
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/floating-version/version-selector",
   checkSettings: {},
   edition: FIRST_EDITION,
-  settings: { module: "fixed-versions-and-local-tools.ts", observation },
-}));
+  settings: { module: "version-selector.ts" },
+};
 
 const loadedParse = await loadParsePort({
   peers: defaultTypeScriptPeers({
@@ -49,13 +38,14 @@ const parse = loadedParse.value;
 const findingsIn = (request: {
   readonly file: RepoPath;
   readonly source: string;
-  readonly trackedLock?: RepoPath;
 }): readonly CheckHit[] => {
-  const files =
-    request.trackedLock === undefined ? [request.file] : [request.file, request.trackedLock];
   const prepared = check.prepare({
-    bindings: BINDINGS,
-    repository: { files, exists: () => "present", disk: textsDisk({ root: "/repo", texts: {} }) },
+    bindings: [BINDING],
+    repository: {
+      files: [request.file],
+      exists: () => "present",
+      disk: textsDisk({ root: "/repo", texts: {} }),
+    },
     syntaxApi: parse.syntaxApi,
   });
   assert(prepared.outcome === "ok");
@@ -63,9 +53,8 @@ const findingsIn = (request: {
     file: { file: request.file, readText: () => ({ outcome: "ok", value: request.source }) },
     pieces: [
       {
-        modulePath:
-          "/install/walker/floating-version/version-selector/fixed-versions-and-local-tools.ts",
-        bindings: BINDINGS,
+        modulePath: "/install/walker/floating-version/version-selector/version-selector.ts",
+        bindings: [BINDING],
         check: prepared.value,
       },
     ],
@@ -76,54 +65,84 @@ const findingsIn = (request: {
   return observed.value.hits;
 };
 
-describe("fixed versions and local tools", () => {
-  it("reports dependency ranges, tags, missing tracked locks, and fetch commands in scripts", () => {
+describe("version-selector", () => {
+  it("reports private runtime dependency ranges and tags", () => {
     expect(
       findingsIn({
         file: MANIFEST,
         source:
-          '{ "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }, "scripts": { "check": "pnpm dlx some-tool" } }',
+          '{ "private": true, "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }, "scripts": { "check": "pnpm dlx some-tool" } }',
       }),
     ).toEqual([
       {
         file: MANIFEST,
-        check: VERSIONS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "some-tool: ^1.2.3",
       },
       {
         file: MANIFEST,
-        check: VERSIONS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "other-tool: latest",
-      },
-      {
-        file: MANIFEST,
-        check: LOCK,
-        anchor: { line: 1, column: 0 },
-        snippet: "dependencies declared without a tracked lock file",
-      },
-      {
-        file: MANIFEST,
-        check: TOOLS,
-        anchor: { line: 1, column: 0 },
-        snippet: "check: pnpm dlx some-tool",
       },
     ]);
   });
 
-  it("passes exact versions, checked-in scripts, and a tracked root workspace lock", () => {
+  it("passes exact versions", () => {
     expect(
       findingsIn({
         file: MANIFEST,
         source:
-          '{ "dependencies": { "some-tool": "1.2.3", "other-tool": "npm:@scope/tool@4.5.6" }, "scripts": { "check": "pnpm run lint" } }',
-        trackedLock: repoPathSchema.parse("pnpm-lock.yaml"),
+          '{ "private": true, "dependencies": { "some-tool": "1.2.3", "other-tool": "npm:@scope/tool@4.5.6" }, "scripts": { "check": "pnpm run lint" } }',
       }),
     ).toEqual([]);
   });
 
-  it("reports a workflow action tag, runtime selector, and inline download command", () => {
+  it("passes peer ranges", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source: '{ "peerDependencies": { "react": "^19.0.0" } }',
+      }),
+    ).toEqual([]);
+  });
+
+  it("passes a published dependency range", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source: '{ "dependencies": { "react": "^19.0.0" } }',
+      }),
+    ).toEqual([]);
+  });
+
+  it("flags a package manager major selector", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source: '{ "packageManager": "pnpm@10" }',
+      }),
+    ).toEqual([
+      {
+        file: MANIFEST,
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "packageManager: pnpm@10",
+      },
+    ]);
+  });
+
+  it("passes an exact package manager version with a hash suffix", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source: '{ "packageManager": "pnpm@10.34.9+sha512.0123456789abcdef" }',
+      }),
+    ).toEqual([]);
+  });
+
+  it("reports a workflow action tag and runtime selector", () => {
     expect(
       findingsIn({
         file: WORKFLOW,
@@ -132,21 +151,15 @@ describe("fixed versions and local tools", () => {
     ).toEqual([
       {
         file: WORKFLOW,
-        check: VERSIONS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "- uses: actions/checkout@v4",
       },
       {
         file: WORKFLOW,
-        check: VERSIONS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "node-version: lts",
-      },
-      {
-        file: WORKFLOW,
-        check: TOOLS,
-        anchor: { line: 3, column: 0 },
-        snippet: "- run: npx some-tool",
       },
     ]);
   });
@@ -159,21 +172,5 @@ describe("fixed versions and local tools", () => {
           "- uses: actions/checkout@0123456789abcdef0123456789abcdef01234567\n  node-version: '22.18.0'\n  python-version: \u0024{{ matrix.python }}",
       }),
     ).toEqual([]);
-  });
-
-  it("reports an installer downloaded into a shell pipeline", () => {
-    expect(
-      findingsIn({
-        file: SHELL,
-        source: "curl -fsSL https://example.test/setup | sh\npnpm run check",
-      }),
-    ).toEqual([
-      {
-        file: SHELL,
-        check: TOOLS,
-        anchor: { line: 1, column: 0 },
-        snippet: "curl -fsSL https://example.test/setup | sh",
-      },
-    ]);
   });
 });

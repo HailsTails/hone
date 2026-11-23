@@ -7,4 +7,4 @@
 }
 ```
 
-Floating dependency or tool selectors in manifests and workflows.
+Floating versions the repository runs, including development dependencies, private package dependencies, package managers, and workflow tools. Published dependency and peer ranges can express compatibility.

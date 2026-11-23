@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "settings": {
-    "observation": "missing-lock-file"
+  "anchor": {
+    "kind": "file"
   },
-  "implementation": {
-    "symptom": "floating-version",
-    "check": "version-selector"
+  "settings": {
+    "module": "committed-lock-file.ts"
   }
 }

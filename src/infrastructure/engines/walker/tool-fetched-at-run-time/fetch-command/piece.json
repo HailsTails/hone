@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "settings": {
-    "observation": "fetched-tool"
+  "anchor": {
+    "kind": "file"
   },
-  "implementation": {
-    "symptom": "floating-version",
-    "check": "version-selector"
+  "settings": {
+    "module": "fetch-command.ts"
   }
 }
