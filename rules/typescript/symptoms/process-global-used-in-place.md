@@ -3,7 +3,7 @@
 ```json
 {
   "group": "The outside world reached directly",
-  "seen": "`process.env`, `process.argv`, `process.exit`, `process.on`, `console.*`, `globalThis` or a `debugger` statement outside an adapter.",
+  "seen": "`process.env`, `process.argv`, `process.exit`, `process.on`, `console.*`, `globalThis`, `alert`, `confirm`, `prompt` or a `debugger` statement outside an adapter.",
   "mayIndicate": [
     {
       "case": "reads-data-from-outside",

@@ -1,3 +1,4 @@
+import { sourceBindingsOf } from "../../runner/pieces/source-bindings.ts";
 import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
 import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
@@ -34,38 +35,13 @@ const testImportOrigin = ({ syntaxApi, node }: SyntaxRequest): "vitest" | "other
     : "other";
 };
 
-const checkerIn = ({
-  syntaxApi,
-  sourceFile,
-}: {
-  readonly syntaxApi: SyntaxApi;
-  readonly sourceFile: SyntaxTree;
-}) =>
-  syntaxApi
-    .createProgram(
-      [sourceFile.fileName],
-      { noLib: true, noResolve: true },
-      {
-        getSourceFile: (file) => (file === sourceFile.fileName ? sourceFile : undefined),
-        readFile: (file) => (file === sourceFile.fileName ? sourceFile.text : undefined),
-        fileExists: (file) => file === sourceFile.fileName,
-        getCanonicalFileName: (file) => file,
-        getCurrentDirectory: () => "/",
-        getDefaultLibFileName: () => "lib.d.ts",
-        getNewLine: () => "\n",
-        useCaseSensitiveFileNames: () => true,
-        writeFile: () => undefined,
-      },
-    )
-    .getTypeChecker();
-
 const testAliasSites = (request: {
   readonly syntaxApi: SyntaxApi;
   readonly sourceFile: SyntaxTree;
   readonly candidates: readonly SyntaxNode[];
 }): readonly SyntaxNode[] => {
   if (request.candidates.length === 0) return [];
-  const checker = checkerIn(request);
+  const checker = sourceBindingsOf(request);
   return request.candidates.filter((node) => {
     const symbol = checker.getSymbolAtLocation(node);
     return (
