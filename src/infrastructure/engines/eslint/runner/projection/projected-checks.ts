@@ -2,10 +2,12 @@ import { z } from "zod";
 
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import type { AddressedCheck } from "../../../../../domain/language-layer/check-address-text.ts";
 import {
-  type AddressedCheck,
-  checkAddressTextOf,
-} from "../../../../../domain/language-layer/check-address-text.ts";
+  type OwnedCheck,
+  qualifiedAddressOf,
+  qualifiedCheckAddressOf,
+} from "../../../../../domain/language-layer/check-address.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
@@ -47,13 +49,13 @@ const projectedRuleOf = (request: {
 });
 
 export const projectedNamedChecksOf = (request: {
-  readonly checks: readonly (AddressedCheck & Pick<RuledCheck, "engines">)[];
+  readonly checks: readonly (OwnedCheck & Pick<RuledCheck, "engines">)[];
   readonly bindings: readonly CheckBinding[];
 }): Result<readonly ProjectedCheck[], ProjectionFailure> => {
   const registered = new Map(
     request.checks
       .filter((check) => runsOnEslint({ check }) === "eslint")
-      .map((check) => [checkAddressTextOf({ check }), check]),
+      .map((check) => [qualifiedCheckAddressOf({ check }), check]),
   );
   return gatheredOutcomes({
     outcomes: request.bindings
@@ -70,7 +72,9 @@ export const projectedNamedChecksOf = (request: {
             },
           };
         }
-        const check = registered.get(binding.address);
+        const check = registered.get(
+          qualifiedAddressOf({ ruleSet: binding.ruleSet, address: binding.address }),
+        );
         if (check === undefined) {
           return { outcome: "failed", error: { kind: "check-unknown", address: binding.address } };
         }

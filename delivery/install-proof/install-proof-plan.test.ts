@@ -410,6 +410,20 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
     expectation: SILENT,
   },
   {
+    kind: "upgrade",
+    expectation: {
+      exitCode: 0,
+      output:
+        "upgraded to version 2\nwrote tools/disciplines/acme/rules/principles/repository-ready.md\nwrote tools/disciplines/acme/rules/cases/changes-a-repository.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/direct-console/console-calls.md\nwrote tools/disciplines/acme/rules/typescript/symptoms/scratch-file/scratch-files.md\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/piece.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/console-calls.examples.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/piece.json\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json\nwrote tools/disciplines/acme/engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts\nwrote tools/disciplines/acme/engines/walker/scratch-file/scratch-files/scratch-files.ts\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nremoved tools/disciplines/acme/rules/ACME-1/discipline.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/piece.json\nremoved tools/disciplines/acme/rules/ACME-2/discipline.json\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/piece.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1/acme.eslint-plugin.ts\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2/scratch-files.ts\nremoved tools/disciplines/acme/version-two-names.json\nremoved tools/disciplines/acme/mechanisms/eslint/ACME-1\nremoved tools/disciplines/acme/mechanisms/audit/ACME-2\nremoved tools/disciplines/acme/rules/ACME-1\nremoved tools/disciplines/acme/mechanisms/eslint\nremoved tools/disciplines/acme/rules/ACME-2\nremoved tools/disciplines/acme/mechanisms/audit\nremoved tools/disciplines/acme/mechanisms\nupgrade: same findings (2) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+    },
+  },
+  { kind: "commit", message: "upgrade" },
+  {
+    kind: "typecheck",
+    project: "tools/disciplines/acme/tsconfig.pieces.json",
+    expectation: SILENT,
+  },
+  {
     kind: "typecheck",
     project: "tools/disciplines/acme/tsconfig.bundler.json",
     expectation: SILENT,
@@ -417,15 +431,6 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
   { kind: "typecheck", project: "typing/tsconfig.commonjs.json", expectation: SILENT },
   WRONG_FIELDS_REJECTED,
   { kind: "run", script: "tools/disciplines/acme/proof/testing-proof.ts", expectation: SILENT },
-  {
-    kind: "upgrade",
-    expectation: {
-      exitCode: 0,
-      output:
-        "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (2) and verdict as this Hone's version 1 check, not your installed 1.x\n",
-    },
-  },
-  { kind: "commit", message: "upgrade" },
   {
     kind: "project",
     expectation: {

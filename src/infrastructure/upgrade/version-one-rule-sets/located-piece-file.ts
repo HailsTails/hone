@@ -9,8 +9,11 @@ import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
 import type { DisciplineFile } from "../../../domain/rule-set/rule-set-types.ts";
 import { everyOk } from "../../../domain/settings/every-ok.ts";
-import { firstInstalledPieceFor, readInstalledNames } from "./installed-pieces.ts";
-import { readPieceFile } from "./rule-set-reader.ts";
+import {
+  firstInstalledPieceFor,
+  readInstalledNames,
+} from "../../content-files/rule-sets/installed-pieces.ts";
+import { readPieceFile } from "../../content-files/rule-sets/rule-set-reader.ts";
 
 type PieceRequest = {
   readonly fileText: FileTextPort;

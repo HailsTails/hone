@@ -4,6 +4,7 @@ import type {
   CheckNames,
 } from "../../domain/language-layer/check-address-text.ts";
 import type { CatalogueHolding } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
@@ -53,11 +54,6 @@ export type SettingsSources = {
     readonly ruleSetRoot: AbsolutePath;
     readonly ruleSet: ClauseAddress["ruleSet"];
   }) => Result<CatalogueHolding, VersionTwoLoadFailure>;
-  readonly pieceClause: (request: {
-    readonly ruleSetRoot: AbsolutePath;
-    readonly clause: ClauseAddress;
-    readonly mechanism: EngineId;
-  }) => Result<PieceClause, VersionTwoLoadFailure>;
 };
 
 export type SettingsSourceContext = {
@@ -67,6 +63,7 @@ export type SettingsSourceContext = {
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
+  readonly toolRecordKinds: readonly RecordKind[];
 };
 
 export type SettingsSourcesOf = (request: SettingsSourceContext) => SettingsSources;

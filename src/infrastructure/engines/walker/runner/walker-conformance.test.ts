@@ -102,6 +102,7 @@ declare global {
 
 const catalogue = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   ...roots,
   fileText,
   path,

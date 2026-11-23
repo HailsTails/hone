@@ -275,6 +275,22 @@ describe("runLoadFailureLine, failures version 2 names first", () => {
       failure: { kind: "rule-set-not-upgraded", path: "/work/shop/tools/acme" },
       line: "load failure: rule-set-not-upgraded /work/shop/tools/acme: this rule set is in the version 1 layout; run node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop, which rewrites it as version 2, and commit what it writes",
     },
+    {
+      failure: {
+        kind: "rule-sets-share-a-check",
+        check: "loop-keyword#loops",
+        ruleSets: ["hone", "acme"],
+      },
+      line: "load failure: rule-sets-share-a-check loop-keyword#loops: rule sets hone and acme both hold this check, so its findings and records would be credited to the wrong one; rename the check in one of them",
+    },
+    {
+      failure: {
+        kind: "rule-set-half-upgraded",
+        path: "/work/shop/tools/acme",
+        files: ["/work/shop/tools/acme/rules/ACME-1/discipline.json"],
+      },
+      line: "load failure: rule-set-half-upgraded /work/shop/tools/acme: this rule set holds both version 1 discipline files and version 2 items, so an upgrade stopped part way; remove these version 1 files, or restore the rule set from version control and run the upgrade again: /work/shop/tools/acme/rules/ACME-1/discipline.json",
+    },
   ])("prints $failure.kind", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: UPGRADE_COMMAND })).toBe(line);
   });

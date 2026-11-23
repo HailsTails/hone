@@ -340,6 +340,7 @@ const source = {
 };
 const catalogue = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   ...source,
   directory: createDefaultDirectoryPort({}),
 });

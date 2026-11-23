@@ -71,6 +71,7 @@ const settingsStage = (
       repoRoot,
       installRoot,
       moduleExtension,
+      toolRecordKinds: request.catalogue.recordKinds,
     }),
     readPiece: createCheckPieceSource({ fileText, path, installRoot, moduleExtension }),
     settingsFormat: SETTINGS_FILE_FORMAT,

@@ -430,6 +430,7 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
 
 const reading = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   directory: createDefaultDirectoryPort({}),
   fileText: FILE_TEXT,
   path: PATH,

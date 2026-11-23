@@ -10,9 +10,7 @@ import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../src/domain/runner/runner-module-types.ts";
 import { defaultClauseSettings } from "../../src/domain/settings/clause-settings/default-clause-settings.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { readHeldDiscipline } from "../../src/infrastructure/content-files/rule-sets/held-discipline.ts";
 import { readInstalledNames } from "../../src/infrastructure/content-files/rule-sets/installed-pieces.ts";
-import { readLocatedPieceFile } from "../../src/infrastructure/content-files/rule-sets/located-piece-file.ts";
 import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import {
   createEslintRunner,
@@ -41,6 +39,8 @@ import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { readHeldDiscipline } from "../../src/infrastructure/upgrade/version-one-rule-sets/held-discipline.ts";
+import { readLocatedPieceFile } from "../../src/infrastructure/upgrade/version-one-rule-sets/located-piece-file.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 

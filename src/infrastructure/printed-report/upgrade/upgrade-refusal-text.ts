@@ -3,8 +3,10 @@ import type { VersionOneReadFailure } from "../../../application/ports/records/v
 import type {
   ConfigImportRefusal,
   PairingRefusal,
+  PieceFolderSplitFault,
   PlanRefusal,
   TeamConfigRefusal,
+  TeamNameMissing,
 } from "../../../application/ports/upgrade/plan-refusal.ts";
 import type {
   ProofRefusal,
@@ -13,6 +15,8 @@ import type {
 } from "../../../application/ports/upgrade/proof-outcome.ts";
 import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
+import type { TeamDefinitionKind } from "../../../application/ports/upgrade/version-one-team-layout.ts";
+import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
@@ -169,6 +173,40 @@ const pairingLineOf = (request: { readonly refusal: PairingRefusal }): string =>
   }
 };
 
+const DEFINITION_LISTINGS: Readonly<Record<TeamDefinitionKind, string>> = {
+  principle: "principles",
+  rule: "rules",
+  case: "cases",
+  symptom: "symptoms",
+};
+
+const teamNameMissingLineOf = (request: { readonly missing: TeamNameMissing }): string => {
+  const { missing } = request;
+  switch (missing.missing) {
+    case "clause":
+      return `${clauseAddressText({ address: missing.clause })} has no version 2 name: add ${missing.clause.discipline}#${missing.clause.clause} with its check and title under "clauses" in ${missing.namesFile}`;
+    case "own-check-name":
+      return `${clauseAddressText({ address: missing.clause })} is named ${checkAddressOfNames(missing.check)}, which is already one of Hone's checks: give it a check name of its own under "clauses" in ${missing.namesFile}`;
+    case "definition":
+      return `the ${missing.definition.kind} ${missing.definition.name} has no definition: add it under "${DEFINITION_LISTINGS[missing.definition.kind]}" in ${missing.namesFile}`;
+  }
+};
+
+const pieceFolderSplitLineOf = (request: {
+  readonly folder: RepoPath;
+  readonly split: PieceFolderSplitFault;
+}): string => {
+  const { folder, split } = request;
+  switch (split.fault) {
+    case "module-shared":
+      return `one module, ${folder}/${split.module}, serves ${split.clauses.map((address) => clauseAddressText({ address })).join(", ")}, which version 2 makes separate checks, and a module moves to one check only. Give each clause a module of its own, then run the upgrade again.`;
+    case "specifier-not-literal":
+      return `${split.file}:${split.line} names a module with an expression rather than a string, so the upgrade cannot point it at where the files of ${folder} move. Write the path as a string, then run the upgrade again.`;
+    case "target-not-moved":
+      return `${split.file}:${split.line} imports a file of ${folder} that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
+  }
+};
+
 const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly string[] => {
   const { refusal } = request;
   switch (refusal.kind) {
@@ -191,6 +229,18 @@ const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly strin
         (file) =>
           `the version 1 projection ${file} belongs to no config root and is out of date. Delete it or restore its config root, commit, then run the upgrade again.`,
       );
+    case "team-names-missing":
+      return [
+        "the version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:",
+        ...refusal.missing.map((missing) => `  ${teamNameMissingLineOf({ missing })}`),
+        `Write each in the names file, with the facts docs/extending.md gives each kind, then run the upgrade again.`,
+      ];
+    case "piece-folder-unsplittable":
+      return [pieceFolderSplitLineOf({ folder: refusal.folder, split: refusal.split })];
+    case "rule-set-path-unplaceable":
+      return [
+        `the upgrade would write ${refusal.path}, which is not a path inside the repository. ${FAULT_IN_HONE}`,
+      ];
     case "mapping-refused":
       return refusal.refusals.map((each) => mappingLineOf({ refusal: each }));
     case "reach-beyond-entries":
@@ -387,6 +437,14 @@ const proofLinesOf = (request: {
         lines: [
           writeLineOf({ failure: failure.refusal.failure }),
           ...unrestoredLinesOf({ ...failure, placement, unrestored: failure.refusal.unrestored }),
+        ],
+      };
+    case "team-layout-unreadable":
+      return {
+        code: 1,
+        lines: [
+          `the rule set the upgrade wrote from your names file cannot be read (${loadFailureDetail({ failure: failure.failure })}). Correct what it names in the names file, then run the upgrade again.`,
+          ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };
     case "version-two-run-failed":

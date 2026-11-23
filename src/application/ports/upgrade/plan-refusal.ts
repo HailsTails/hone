@@ -1,6 +1,9 @@
+import type { CheckNames } from "../../../domain/language-layer/check-address-text.ts";
 import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
+import type { SpecifierRefusal, TeamDefinitionAddress } from "./version-one-team-layout.ts";
 
 export type ConfigImportRefusal =
   | {
@@ -57,8 +60,41 @@ export type ProjectionFailure = {
   readonly failure: RunLoadFailure;
 };
 
+export type TeamNameMissing =
+  | { readonly missing: "clause"; readonly clause: ClauseAddress; readonly namesFile: RepoPath }
+  | {
+      readonly missing: "definition";
+      readonly definition: TeamDefinitionAddress;
+      readonly namesFile: RepoPath;
+    }
+  | {
+      readonly missing: "own-check-name";
+      readonly clause: ClauseAddress;
+      readonly check: CheckNames;
+      readonly namesFile: RepoPath;
+    };
+
+export type PieceFolderSplitFault =
+  | {
+      readonly fault: "module-shared";
+      readonly module: RepoPath;
+      readonly clauses: readonly ClauseAddress[];
+    }
+  | {
+      readonly fault: SpecifierRefusal["reason"];
+      readonly file: RepoPath;
+      readonly line: number;
+    };
+
 export type PlanRefusal =
   | Unanswered
+  | { readonly kind: "team-names-missing"; readonly missing: readonly TeamNameMissing[] }
+  | { readonly kind: "rule-set-path-unplaceable"; readonly path: string }
+  | {
+      readonly kind: "piece-folder-unsplittable";
+      readonly folder: RepoPath;
+      readonly split: PieceFolderSplitFault;
+    }
   | ProjectionFailure
   | ReplacementRefusal
   | { readonly kind: "mapping-refused"; readonly refusals: readonly UpgradeRefusal[] }

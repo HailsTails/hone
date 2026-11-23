@@ -158,6 +158,7 @@ describe("createSymptomCatalogueRepository", () => {
         ruleSetRoot: INSTALL_ROOT,
         ruleSet: "hone",
         installRoot: INSTALL_ROOT,
+        inheritedRecordKinds: [],
       }).read({}),
     ).toEqual({
       outcome: "ok",
@@ -190,77 +191,6 @@ describe("createSymptomCatalogueRepository", () => {
     expect(ITEM_FOLDER_DIRECTORY.list).toHaveBeenNthCalledWith(1, { path: "/install/rules" });
     expect(ITEM_FOLDER_FILE_TEXT.write).not.toHaveBeenCalled();
   });
-
-  it("holds no catalogue, reading nothing, when a team's rule set holds no rules folder, since version 1 names are Hone's own", () => {
-    const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-      read: vi.fn<FileTextPort["read"]>(),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    expect(
-      createSymptomCatalogueRepository({
-        fileText,
-        directory: UNLISTED,
-        path: PATH,
-        ruleSetRoot: TEAM_ROOT,
-        ruleSet: TEAM,
-        installRoot: INSTALL_ROOT,
-      }).read({}),
-    ).toEqual({
-      outcome: "ok",
-      value: { held: "none" },
-    });
-    expect(fileText.read).not.toHaveBeenCalled();
-  });
-
-  it("fails file-unreadable naming the version 1 names when Hone's own install is missing them", () => {
-    const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-      read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
-        outcome: "failed",
-        error: { kind: "unreadable", path: NAMES_PATH, detail: "ENOENT" },
-      }),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    expect(
-      createSymptomCatalogueRepository({
-        fileText,
-        directory: UNLISTED,
-        path: PATH,
-        ruleSetRoot: INSTALL_ROOT,
-        ruleSet: "hone",
-        installRoot: INSTALL_ROOT,
-      }).read({}),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "file-unreadable", path: NAMES_PATH, detail: "ENOENT" },
-    });
-  });
-
-  it("fails file-unreadable naming the version 1 names when they cannot be read", () => {
-    const fileText: FileTextPort = {
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
-      read: vi.fn<FileTextPort["read"]>().mockReturnValue({
-        outcome: "failed",
-        error: { kind: "unreadable", path: NAMES_PATH, detail: "EACCES" },
-      }),
-      write: vi.fn<FileTextPort["write"]>(),
-    };
-    expect(
-      createSymptomCatalogueRepository({
-        fileText,
-        directory: UNLISTED,
-        path: PATH,
-        ruleSetRoot: INSTALL_ROOT,
-        ruleSet: "hone",
-        installRoot: INSTALL_ROOT,
-      }).read({}),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "file-unreadable", path: NAMES_PATH, detail: "EACCES" },
-    });
-    expect(UNLISTED.list).not.toHaveBeenCalled();
-  });
 });
 
 const teamCatalogueOf = (request: {
@@ -273,18 +203,17 @@ const teamCatalogueOf = (request: {
     ruleSetRoot: TEAM_ROOT,
     ruleSet: TEAM,
     installRoot: INSTALL_ROOT,
+    inheritedRecordKinds: [AUTHORISED_LOCATION, DEBT],
   }).read({});
 
 describe("createSymptomCatalogueRepository over a team's rule set", () => {
-  it("reads a symptom kept under a language folder other than typescript as the team's, naming its page by where it sits", () => {
+  it("reads a symptom kept under a language folder other than typescript as the team's, naming its page by where it sits, with the record kinds it inherits as its own", () => {
     const fileText: FileTextPort = {
       exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
       read: vi
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({ outcome: "ok", value: MAKES_A_NEW_VALUE_TEXT })
         .mockReturnValueOnce({ outcome: "ok", value: NO_HIDDEN_EFFECTS_TEXT })
-        .mockReturnValueOnce({ outcome: "ok", value: AUTHORISED_LOCATION_TEXT })
-        .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT })
         .mockReturnValueOnce({ outcome: "ok", value: REBINDING_TEXT })
         .mockReturnValueOnce({ outcome: "ok", value: PARAMETER_REASSIGNMENT_TEXT }),
       write: vi.fn<FileTextPort["write"]>(),
@@ -297,7 +226,6 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
           value: [
             { name: "cases", kind: "directory" },
             { name: "principles", kind: "directory" },
-            { name: "record-kinds", kind: "directory" },
             { name: "sql", kind: "directory" },
           ],
         })
@@ -308,13 +236,6 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
         .mockReturnValueOnce({
           outcome: "ok",
           value: [{ name: "no-hidden-effects.md", kind: "file" }],
-        })
-        .mockReturnValueOnce({
-          outcome: "ok",
-          value: [
-            { name: "authorised-location.md", kind: "file" },
-            { name: "debt.md", kind: "file" },
-          ],
         })
         .mockReturnValueOnce({ outcome: "ok", value: [{ name: "symptoms", kind: "directory" }] })
         .mockReturnValueOnce({
@@ -336,6 +257,7 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
       value: {
         held: "catalogue",
         content: {
+          recordKinds: [AUTHORISED_LOCATION, DEBT],
           symptoms: [{ name: "rebinding", sourceFile: "rules/sql/symptoms/rebinding.md" }],
           checks: [
             {
@@ -346,7 +268,7 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
         },
       },
     });
-    expect(fileText.read).toHaveBeenNthCalledWith(5, {
+    expect(fileText.read).toHaveBeenNthCalledWith(3, {
       path: "/repo/team-rules/rules/sql/symptoms/rebinding.md",
     });
   });
@@ -373,10 +295,9 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
       outcome: "failed",
       error: { kind: "rule-set-not-upgraded", path: TEAM_ROOT },
     });
-    expect(fileText.exists).toHaveBeenNthCalledWith(2, {
+    expect(fileText.exists).toHaveBeenLastCalledWith({
       path: "/repo/team-rules/rules/ACME-1/discipline.json",
     });
-    expect(fileText.read).not.toHaveBeenCalled();
   });
 
   it("holds no catalogue when its rules folder holds neither items nor version 1 discipline files", () => {
@@ -401,7 +322,7 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
       outcome: "ok",
       value: { held: "none" },
     });
-    expect(fileText.exists).toHaveBeenNthCalledWith(2, {
+    expect(fileText.exists).toHaveBeenLastCalledWith({
       path: "/repo/team-rules/rules/drafts/discipline.json",
     });
   });

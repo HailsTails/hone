@@ -15,6 +15,11 @@ export type LoadFailure =
   | { readonly kind: "reserved-rule-set-name"; readonly name: string }
   | { readonly kind: "rule-set-name-collision"; readonly name: string; readonly other: string }
   | {
+      readonly kind: "rule-sets-share-a-check";
+      readonly check: string;
+      readonly ruleSets: readonly [string, string];
+    }
+  | {
       readonly kind: "duplicate-clause";
       readonly address: string;
       readonly prefixedAddress: string;
@@ -34,6 +39,11 @@ export type LoadFailure =
   | { readonly kind: "piece-missing"; readonly address: string; readonly mechanism: EngineId }
   | { readonly kind: "rule-set-invalid"; readonly path: string; readonly detail: string }
   | { readonly kind: "rule-set-not-upgraded"; readonly path: string }
+  | {
+      readonly kind: "rule-set-half-upgraded";
+      readonly path: string;
+      readonly files: readonly string[];
+    }
   | { readonly kind: "git-failed"; readonly detail: string }
   | { readonly kind: "config-root-untracked"; readonly root: RepoPath }
   | { readonly kind: "selection-absent"; readonly repo: string }

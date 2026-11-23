@@ -393,6 +393,7 @@ const CLASS_FINDING: Finding = {
 const catalogues = () => {
   const holding = readBoundCatalogue({
     ruleSet: "hone",
+    inheritedRecordKinds: [],
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,
@@ -436,7 +437,11 @@ const upgradeBeforeOver = (request: {
       selectionRepository: createSelectionRepository(ports),
     },
     engine: createNamedEnginePort({}),
-    sources: createSettingsSources({ ...ports, directory: createDefaultDirectoryPort({}) }),
+    sources: createSettingsSources({
+      ...ports,
+      directory: createDefaultDirectoryPort({}),
+      toolRecordKinds: [],
+    }),
     readPiece: createCheckPieceSource(ports),
     selection: selection.value,
     catalogues: catalogues(),

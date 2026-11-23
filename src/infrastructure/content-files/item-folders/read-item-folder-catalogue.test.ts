@@ -129,6 +129,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: { name: ruleSetNameOf("acme") },
         fileText,
         directory,
@@ -192,6 +193,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: "hone",
         fileText,
         directory,
@@ -216,6 +218,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: "hone",
         fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
         directory,
@@ -242,6 +245,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: "hone",
         fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
         directory,
@@ -272,6 +276,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: "hone",
         fileText: fileTextReading(
           vi
@@ -316,6 +321,7 @@ describe("createItemFolderCatalogueRepository", () => {
     );
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: "hone",
         fileText,
         directory,
@@ -346,6 +352,7 @@ describe("createItemFolderCatalogueRepository", () => {
     };
     expect(
       createItemFolderCatalogueRepository({
+        inheritedRecordKinds: [],
         ruleSet: "hone",
         fileText: fileTextReading(
           vi

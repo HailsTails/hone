@@ -179,6 +179,7 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 const toolCatalogue = (): SymptomCatalogue => {
   const reading = readBoundCatalogue({
     ruleSet: TOOL_RULE_SET,
+    inheritedRecordKinds: [],
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

@@ -77,3 +77,11 @@ export const itemTextOf = (request: { readonly text: string }): Result<ItemText,
     ? { outcome: "failed", error: `has facts that are not JSON: ${facts.error}` }
     : { outcome: "ok", value: { title: title.value, facts: facts.value, prose } };
 };
+
+const FACTS_INDENT = 2;
+
+export const itemTextFrom = (request: {
+  readonly title: string;
+  readonly facts: unknown;
+}): string =>
+  `# ${request.title}\n\n\`\`\`${FACTS_LANGUAGE}\n${JSON.stringify(request.facts, null, FACTS_INDENT)}\n\`\`\`\n`;

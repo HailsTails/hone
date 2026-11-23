@@ -203,6 +203,7 @@ const REPOSITORY_ROOT = absolutePathSchema.parse(
 
 const CATALOGUE_HOLDING = readBoundCatalogue({
   ruleSet: TOOL_RULE_SET,
+  inheritedRecordKinds: [],
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),

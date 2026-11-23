@@ -1,0 +1,31 @@
+{
+  "clauses": {
+    "ACME-1#console-calls": { "check": "direct-console#console-calls", "title": "Console calls" },
+    "ACME-2#scratch-files": { "check": "scratch-file#scratch-files", "title": "Scratch files" }
+  },
+  "symptoms": {
+    "direct-console": {
+      "title": "Direct console",
+      "group": "Repository health",
+      "mayIndicate": [{ "case": "changes-a-repository", "points": [{ "principle": "repository-ready" }] }],
+      "breachUsuallySits": "in the source change",
+      "seenBy": ["syntax"],
+      "recipes": [],
+      "correctUses": []
+    },
+    "scratch-file": {
+      "title": "Scratch file",
+      "group": "Repository health",
+      "mayIndicate": [{ "case": "changes-a-repository", "points": [{ "principle": "repository-ready" }] }],
+      "breachUsuallySits": "in the source change",
+      "seenBy": ["syntax"],
+      "recipes": [],
+      "correctUses": []
+    }
+  },
+  "cases": {
+    "changes-a-repository": { "title": "Changes a repository", "standing": "accepted", "owes": [{ "principle": "repository-ready" }] }
+  },
+  "principles": { "repository-ready": { "title": "Repository ready" } },
+  "rules": {}
+}

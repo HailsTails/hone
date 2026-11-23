@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
+import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { createPathPort } from "../../node/path-port.ts";
 import { type UpgradeFailureOutcome, upgradeFailureOutcomeOf } from "./upgrade-refusal-text.ts";
 
@@ -623,6 +625,155 @@ Nothing was changed.
     outcome: {
       code: 1,
       text: "upgrade refused:\nacme/CD-1#thing has no version 2 check to run it, and version 2 does not carry the clauses of a version 1 team rule set. Remove it from disciplines.json to upgrade without it, or stay on version 1.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "team clauses and definitions have not been written",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "team-names-missing",
+        missing: [
+          {
+            missing: "clause",
+            clause: {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-1"),
+              clause: clauseIdOf("console-calls"),
+            },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "own-check-name",
+            clause: {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-1"),
+              clause: clauseIdOf("loop-calls"),
+            },
+            check: { symptom: catalogueNameOf("loop-keyword"), check: catalogueNameOf("loops") },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "symptom", name: "direct-console" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "case", name: "changes-a-repository" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "principle", name: "repository-ready" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
+            missing: "definition",
+            definition: { kind: "rule", name: "no-console" },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+        ],
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: 'upgrade refused:\nthe version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:\n  acme/ACME-1#console-calls has no version 2 name: add ACME-1#console-calls with its check and title under "clauses" in acme/version-two-names.json\n  acme/ACME-1#loop-calls is named loop-keyword#loops, which is already one of Hone\'s checks: give it a check name of its own under "clauses" in acme/version-two-names.json\n  the symptom direct-console has no definition: add it under "symptoms" in acme/version-two-names.json\n  the case changes-a-repository has no definition: add it under "cases" in acme/version-two-names.json\n  the principle repository-ready has no definition: add it under "principles" in acme/version-two-names.json\n  the rule no-console has no definition: add it under "rules" in acme/version-two-names.json\nWrite each in the names file, with the facts docs/extending.md gives each kind, then run the upgrade again.\nNothing was changed.\n',
+    },
+  },
+  {
+    name: "one version 1 module serves clauses that become separate checks",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "piece-folder-unsplittable",
+        folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
+        split: {
+          fault: "module-shared",
+          module: repoPathOf("scratch.ts"),
+          clauses: [
+            {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-2"),
+              clause: clauseIdOf("draft-files"),
+            },
+            {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-2"),
+              clause: clauseIdOf("scratch-files"),
+            },
+          ],
+        },
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\none module, acme/mechanisms/audit/ACME-2/scratch.ts, serves acme/ACME-2#draft-files, acme/ACME-2#scratch-files, which version 2 makes separate checks, and a module moves to one check only. Give each clause a module of its own, then run the upgrade again.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "a moved file names a module with an expression",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "piece-folder-unsplittable",
+        folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
+        split: {
+          fault: "specifier-not-literal",
+          file: repoPathOf("acme/mechanisms/audit/ACME-2/drafts.ts"),
+          line: 4,
+        },
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nacme/mechanisms/audit/ACME-2/drafts.ts:4 names a module with an expression rather than a string, so the upgrade cannot point it at where the files of acme/mechanisms/audit/ACME-2 move. Write the path as a string, then run the upgrade again.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "a moved file imports a file of its folder that is not there",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "piece-folder-unsplittable",
+        folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
+        split: {
+          fault: "target-not-moved",
+          file: repoPathOf("acme/mechanisms/audit/ACME-2/drafts.ts"),
+          line: 2,
+        },
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nacme/mechanisms/audit/ACME-2/drafts.ts:2 imports a file of acme/mechanisms/audit/ACME-2 that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "the rule set written from the names file cannot be read",
+    failure: {
+      kind: "team-layout-unreadable",
+      failure: {
+        kind: "rule-set-invalid",
+        path: "/repo/acme/rules/typescript/symptoms/direct-console.md",
+        detail: "symptoms names gone, which the catalogue does not hold",
+      },
+      unrestored: [
+        {
+          written: "file-created",
+          path: absoluteRootOf("/repo/acme/rules/typescript/symptoms/direct-console.md"),
+          detail: "EBUSY",
+        },
+      ],
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nthe rule set the upgrade wrote from your names file cannot be read (rule-set-invalid /repo/acme/rules/typescript/symptoms/direct-console.md symptoms names gone, which the catalogue does not hold). Correct what it names in the names file, then run the upgrade again.\nThese files could not be put back; put them right by hand:\n  delete /repo/acme/rules/typescript/symptoms/direct-console.md (EBUSY)\n",
     },
   },
 ];

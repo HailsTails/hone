@@ -20,6 +20,7 @@ import {
 import type { AssessmentLeftElsewhere, RunReport } from "../../domain/report/run-report.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
+import { sameOwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import {
@@ -53,7 +54,9 @@ const symptomsOf = (request: {
     return site.sited === "check" ? [site.check.symptom] : [];
   });
   return named.filter(
-    (symptom, index) => named.findIndex((earlier) => earlier.name === symptom.name) === index,
+    (symptom, index) =>
+      named.findIndex((earlier) => sameOwnedName({ left: earlier, right: symptom }) === "same") ===
+      index,
   );
 };
 

@@ -21,6 +21,13 @@ import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
 import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPortOf } from "../../application/ports/upgrade/version-one-projection-port.ts";
+import type {
+  ImportsRewrittenOf,
+  ImportsRewriterOf,
+  ItemTextOf,
+  TeamRuleSetsRequest,
+  VersionOneTeamLayoutsOf,
+} from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import { type VersionTwoStages, versionTwoRunOver } from "../../application/run/version-two-run.ts";
 import {
@@ -29,13 +36,25 @@ import {
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
-import type { UpgradeProofRequest } from "../../application/upgrade/proof/upgrade-proof.ts";
+import type { ProofWritePorts } from "../../application/upgrade/proof-writes/proof-writes.ts";
+import type {
+  RuleSetLayoutRemoval,
+  UpgradeProofRequest,
+} from "../../application/upgrade/proof/upgrade-proof.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
 import { createUpgradeBefore } from "../../application/upgrade/record-answers/upgrade-before.ts";
 import type { VersionOneCheckInput } from "../../application/upgrade/record-answers/version-one-check-input.ts";
+import {
+  type TeamLayoutPlan,
+  teamLayoutPlanOf,
+} from "../../application/upgrade/team-layout/team-layout-plan.ts";
+import { provenWithTeamLayout } from "../../application/upgrade/team-layout/team-layout-proof.ts";
+import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
+import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
@@ -58,8 +77,11 @@ export type UpgradeInput = {
   readonly runSettingsOf: RunSettingsOf;
   readonly catalogues: () => Result<readonly RuleSetCatalogue[], LoadFailure>;
   readonly externalCataloguesOf: (
-    selection: ConsumerSelectionFile,
+    request: TeamRuleSetsRequest,
   ) => Result<readonly RuleSetCatalogue[], LoadFailure>;
+  readonly versionOneTeamLayoutsOf: VersionOneTeamLayoutsOf;
+  readonly itemTextOf: ItemTextOf;
+  readonly importsRewriterOf: ImportsRewriterOf;
   readonly recordsOnDiskOf: RecordsOnDiskOf;
   readonly versionOneReadOf: VersionOneReadOf;
   readonly proofRunsOf: ProofRunsOf;
@@ -75,6 +97,11 @@ type Prepared = {
   readonly catalogues: readonly RuleSetCatalogue[];
   readonly trackedPaths: readonly RepoPath[];
 };
+
+const toolRecordKindsOf = (prepared: Prepared): readonly RecordKind[] =>
+  prepared.catalogues.flatMap(({ ruleSet, catalogue }) =>
+    ruleSet === TOOL_RULE_SET ? catalogue.recordKinds : [],
+  );
 
 const stoppedByLoad = (request: { readonly failure: LoadFailure }): Result<never, UpgradeStop> => ({
   outcome: "failed",
@@ -147,22 +174,32 @@ const preparedOf = (request: UpgradeInput): Result<Prepared, UpgradeStop> => {
   if (read.outcome === "failed") {
     return { outcome: "failed", error: { stopped: "refused", failure: read.error } };
   }
-  const external = request.externalCataloguesOf(read.value.reading.selection);
-  return external.outcome === "failed"
-    ? stoppedByLoad({ failure: external.error })
-    : {
-        outcome: "ok",
-        value: {
-          check: check.value,
-          read: read.value,
-          catalogues: [...catalogues.value, ...external.value],
-          trackedPaths: tracked.value,
-        },
-      };
+  return {
+    outcome: "ok",
+    value: {
+      check: check.value,
+      read: read.value,
+      catalogues: catalogues.value,
+      trackedPaths: tracked.value,
+    },
+  };
 };
 
+const proofWritePortsOf = (request: UpgradeInput): ProofWritePorts => ({
+  fileText: request.command.fileText,
+  fileCreation: request.ports.fileCreation,
+  fileRemoval: request.ports.fileRemoval,
+  directory: request.ports.directory,
+  directoryRemoval: request.ports.directoryRemoval,
+  entryKind: request.ports.entryKind,
+  path: request.command.path,
+});
+
 const proofRequestOf = (
-  request: UpgradeInput & { readonly prepared: Prepared },
+  request: UpgradeInput & {
+    readonly prepared: Prepared;
+    readonly ruleSetLayout: RuleSetLayoutRemoval;
+  },
 ): UpgradeProofRequest => {
   const { ports, command, located, prepared } = request;
   const at = {
@@ -173,6 +210,7 @@ const proofRequestOf = (
     repoRoot: located.repoRoot,
     installRoot: located.installRoot,
     moduleExtension: prepared.check.moduleExtension,
+    toolRecordKinds: toolRecordKindsOf(prepared),
   };
   const before = createUpgradeBefore({
     measureVersionOne: request.measureVersionOne,
@@ -186,15 +224,7 @@ const proofRequestOf = (
     loadFailureDetail: ports.loadFailureDetail,
   });
   return {
-    ports: {
-      fileText: command.fileText,
-      fileCreation: ports.fileCreation,
-      fileRemoval: ports.fileRemoval,
-      directory: ports.directory,
-      directoryRemoval: ports.directoryRemoval,
-      entryKind: ports.entryKind,
-      path: command.path,
-    },
+    ports: proofWritePortsOf(request),
     oracle: createAnsweringOracle({
       enginePass: before.enginePass,
       catalogues: prepared.catalogues,
@@ -213,6 +243,7 @@ const proofRequestOf = (
     }),
     reading: prepared.read.reading,
     versionOneFiles: prepared.read.versionOneFiles,
+    ruleSetLayout: request.ruleSetLayout,
     catalogues: prepared.catalogues,
     repoRoot: located.repoRoot,
     trackedPaths: prepared.trackedPaths,
@@ -256,6 +287,45 @@ const withMentions = (request: {
   }),
 });
 
+const IMPORTS_KEPT: ImportsRewrittenOf = ({ text }) => ({ outcome: "ok", value: text });
+
+const teamLayoutPlanFor = async (
+  request: UpgradeInput & { readonly prepared: Prepared },
+): Promise<Result<TeamLayoutPlan, UpgradeStop>> => {
+  const layouts = request.versionOneTeamLayoutsOf({
+    selection: request.prepared.read.reading.selection,
+    toolRecordKinds: toolRecordKindsOf(request.prepared),
+  });
+  if (layouts.outcome === "failed") {
+    return stoppedByLoad({ failure: layouts.error });
+  }
+  const importsRewrittenOf: Result<ImportsRewrittenOf, LoadFailure> = layouts.value.some(
+    ({ clauses }) => clauses.some(({ pieces }) => pieces.length > 0),
+  )
+    ? await request.importsRewriterOf()
+    : { outcome: "ok", value: IMPORTS_KEPT };
+  if (importsRewrittenOf.outcome === "failed") {
+    return stoppedByLoad({ failure: importsRewrittenOf.error });
+  }
+  const plan = teamLayoutPlanOf({
+    layouts: layouts.value,
+    toolChecks: request.prepared.catalogues
+      .filter(({ ruleSet }) => ruleSet === TOOL_RULE_SET)
+      .flatMap(({ catalogue }) => catalogue.checks.map((check) => checkAddressOf({ check }))),
+    itemTextOf: request.itemTextOf,
+    importsRewrittenOf: importsRewrittenOf.value,
+  });
+  return plan.outcome === "failed"
+    ? {
+        outcome: "failed",
+        error: {
+          stopped: "refused",
+          failure: { kind: "plan-refused", refusal: plan.error, removedByVersionOne: [] },
+        },
+      }
+    : plan;
+};
+
 export const upgradeOf = async (
   request: UpgradeInput,
 ): Promise<Result<UpgradeCarriedOver, UpgradeStop>> => {
@@ -263,9 +333,35 @@ export const upgradeOf = async (
   if (prepared.outcome === "failed") {
     return prepared;
   }
-  const carried = await request.proofOf(proofRequestOf({ ...request, prepared: prepared.value }));
+  const plan = await teamLayoutPlanFor({ ...request, prepared: prepared.value });
+  if (plan.outcome === "failed") {
+    return plan;
+  }
+  const { selection } = prepared.value.read.reading;
+  const carried = await provenWithTeamLayout({
+    ports: proofWritePortsOf(request),
+    repoRoot: request.located.repoRoot,
+    plan: plan.value,
+    cataloguesAfterWriting: () => {
+      const external = request.externalCataloguesOf({
+        selection,
+        toolRecordKinds: toolRecordKindsOf(prepared.value),
+      });
+      return external.outcome === "failed"
+        ? external
+        : { outcome: "ok", value: [...prepared.value.catalogues, ...external.value] };
+    },
+    proofOf: (catalogues) =>
+      request.proofOf(
+        proofRequestOf({
+          ...request,
+          prepared: { ...prepared.value, catalogues },
+          ruleSetLayout: { removed: plan.value.removed, folders: plan.value.folders },
+        }),
+      ),
+  });
   return carried.outcome === "failed"
-    ? { outcome: "failed", error: { stopped: "refused", failure: carried.error } }
+    ? carried
     : {
         outcome: "ok",
         value: withMentions({ input: request, prepared: prepared.value, carried: carried.value }),

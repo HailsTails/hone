@@ -19,9 +19,11 @@ type KeptKind =
   | "unsupported-version"
   | "reserved-rule-set-name"
   | "rule-set-name-collision"
+  | "rule-sets-share-a-check"
   | "unknown-rule-set"
   | "rule-set-invalid"
   | "rule-set-not-upgraded"
+  | "rule-set-half-upgraded"
   | "git-failed"
   | "config-root-untracked"
   | "unexpected-error";
@@ -187,9 +189,11 @@ export const runLoadFailureOf = (
     case "unsupported-version":
     case "reserved-rule-set-name":
     case "rule-set-name-collision":
+    case "rule-sets-share-a-check":
     case "unknown-rule-set":
     case "rule-set-invalid":
     case "rule-set-not-upgraded":
+    case "rule-set-half-upgraded":
     case "git-failed":
     case "config-root-untracked":
     case "unexpected-error":

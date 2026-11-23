@@ -209,6 +209,32 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
       failure: { kind: "rule-set-not-upgraded", path: "/repo/tools/acme" },
     },
     {
+      name: "rule-sets-share-a-check",
+      source: {
+        kind: "rule-sets-share-a-check",
+        check: "loop-keyword#loops",
+        ruleSets: ["hone", "acme"],
+      },
+      failure: {
+        kind: "rule-sets-share-a-check",
+        check: "loop-keyword#loops",
+        ruleSets: ["hone", "acme"],
+      },
+    },
+    {
+      name: "rule-set-half-upgraded",
+      source: {
+        kind: "rule-set-half-upgraded",
+        path: "/repo/tools/acme",
+        files: ["/repo/tools/acme/rules/ACME-1/discipline.json"],
+      },
+      failure: {
+        kind: "rule-set-half-upgraded",
+        path: "/repo/tools/acme",
+        files: ["/repo/tools/acme/rules/ACME-1/discipline.json"],
+      },
+    },
+    {
       name: "git-failed",
       source: { kind: "git-failed", detail: "not a git repository" },
       failure: { kind: "git-failed", detail: "not a git repository" },

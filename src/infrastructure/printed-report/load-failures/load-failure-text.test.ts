@@ -348,6 +348,39 @@ describe("loadFailureText, a rule set left in the version 1 layout", () => {
   });
 });
 
+describe("loadFailureText, a check two rule sets hold", () => {
+  it("names the check and both rule sets", () => {
+    expect(
+      loadFailureText({
+        failure: {
+          kind: "rule-sets-share-a-check",
+          check: "loop-keyword#loops",
+          ruleSets: ["hone", "acme"],
+        },
+      }),
+    ).toBe("load failure: rule-sets-share-a-check loop-keyword#loops hone acme\n");
+  });
+});
+
+describe("loadFailureText, a rule set an upgrade stopped part way through", () => {
+  it("names the rule set's folder and each version 1 file left in it", () => {
+    expect(
+      loadFailureText({
+        failure: {
+          kind: "rule-set-half-upgraded",
+          path: "/repo/tools/acme",
+          files: [
+            "/repo/tools/acme/rules/ACME-1/discipline.json",
+            "/repo/tools/acme/rules/ACME-2/discipline.json",
+          ],
+        },
+      }),
+    ).toBe(
+      "load failure: rule-set-half-upgraded /repo/tools/acme /repo/tools/acme/rules/ACME-1/discipline.json /repo/tools/acme/rules/ACME-2/discipline.json\n",
+    );
+  });
+});
+
 describe("loadFailureDetail", () => {
   it("names the kind and its fields on one line, without the load failure prefix", () => {
     expect(

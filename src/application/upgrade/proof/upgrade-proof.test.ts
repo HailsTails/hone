@@ -352,6 +352,23 @@ const recordsFolderPath = () =>
     relative: vi.fn<PathPort["relative"]>().mockReturnValue(IN_RECORDS_FOLDER),
   });
 
+const teamRuleSetPath = () =>
+  pathOver({
+    join: vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce("/repo/hone.config.json")
+      .mockReturnValueOnce("/repo/hone-records/debt/loop-keyword.json")
+      .mockReturnValueOnce("/repo/hone.eslint.mjs")
+      .mockReturnValueOnce("/repo/eslint.config.mjs")
+      .mockReturnValueOnce("/repo/discipline-exceptions/cd-15.json")
+      .mockReturnValueOnce("/repo/acme/rules/ACME-1/discipline.json")
+      .mockReturnValueOnce("/repo/acme/rules/ACME-1")
+      .mockReturnValueOnce("/repo/discipline-exceptions")
+      .mockReturnValueOnce("/repo/disciplines.eslint.mjs")
+      .mockReturnValueOnce("/repo/disciplines.json"),
+    relative: vi.fn<PathPort["relative"]>().mockReturnValue(IN_RECORDS_FOLDER),
+  });
+
 const sliceFirstPath = () =>
   pathOver({
     join: vi
@@ -519,6 +536,7 @@ const requestOver = (request: { readonly doubles: Doubles }): UpgradeProofReques
   }),
   settingsFormat: SETTINGS_FORMAT,
   versionOneProjectionsOf: request.doubles.projections,
+  ruleSetLayout: { removed: [], folders: [] },
 });
 
 const sequenceOf = (request: { readonly doubles: Doubles }) =>
@@ -658,6 +676,32 @@ describe("upgradeProof", () => {
       ...RUNNING_VERSION_TWO,
       ...REMOVING_VERSION_ONE,
     ]);
+  });
+
+  it("removes a team rule set's version 1 files after the settings file, then the team folders it emptied", async () => {
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: teamRuleSetPath() });
+    await expect(
+      upgradeProof({
+        ...requestOver({ doubles }),
+        ruleSetLayout: {
+          removed: [repoPathOf("acme/rules/ACME-1/discipline.json")],
+          folders: [repoPathOf("acme/rules/ACME-1")],
+        },
+      }),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: {
+        removed: {
+          files: [
+            "/repo/discipline-exceptions/cd-15.json",
+            "/repo/disciplines.eslint.mjs",
+            "/repo/disciplines.json",
+            "/repo/acme/rules/ACME-1/discipline.json",
+          ],
+          folders: ["/repo/discipline-exceptions", "/repo/acme/rules/ACME-1"],
+        },
+      },
+    });
   });
 
   it("removes the declaration file beside a version 1 projection with the projection", async () => {

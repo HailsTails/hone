@@ -20,7 +20,6 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
-import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
 import {
   exceptionEntriesOfText,
   parseExceptionEntries,
@@ -33,6 +32,7 @@ import { createDefaultDirectoryPort } from "../../../../node/file-system/file-sy
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import { readHeldDiscipline } from "../../../../upgrade/version-one-rule-sets/held-discipline.ts";
 import { namedCheckConformance } from "../../../protocol/conformance.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
 import { loadedNamedRunnerOf } from "../../../protocol/engine-run/engine-run.ts";

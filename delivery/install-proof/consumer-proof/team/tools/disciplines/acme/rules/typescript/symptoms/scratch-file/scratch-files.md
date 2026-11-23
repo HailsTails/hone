@@ -1,5 +1,0 @@
-# scratch-files
-
-```json
-{}
-```

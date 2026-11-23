@@ -344,15 +344,29 @@ const pointableOf = (request: { readonly file: CatalogueFile }): Resolution<Poin
   });
 };
 
+const recordKindsOf = (request: {
+  readonly file: CatalogueFile;
+  readonly inheritedRecordKinds: readonly RecordKind[];
+}): readonly RecordKind[] => {
+  const own = request.file.recordKinds.map(recordKindOf);
+  return [
+    ...request.inheritedRecordKinds.filter(
+      (inherited) => !own.some((kind) => kind.name === inherited.name),
+    ),
+    ...own,
+  ];
+};
+
 const definitionsOf = (request: {
   readonly file: CatalogueFile;
   readonly ruleSet: RuleSetIdentity;
+  readonly inheritedRecordKinds: readonly RecordKind[];
 }): Resolution<Definitions> => {
   const pointable = pointableOf(request);
   if (pointable.outcome === "failed") {
     return pointable;
   }
-  const recordKinds = request.file.recordKinds.map(recordKindOf);
+  const recordKinds = recordKindsOf(request);
   const cases = allResolved(
     request.file.cases.map((wire) => caseOf({ wire, pointable: pointable.value })),
   );
@@ -632,6 +646,7 @@ const resolvedChecksOf = (
 const catalogueOf = (request: {
   readonly file: CatalogueFile;
   readonly ruleSet: RuleSetIdentity;
+  readonly inheritedRecordKinds: readonly RecordKind[];
 }): Resolution<CatalogueContent> => {
   const definitions = definitionsOf(request);
   if (definitions.outcome === "failed") {
@@ -752,12 +767,13 @@ const refusalText = (request: { readonly faults: readonly string[] }): string =>
 export const catalogueContentFromFile = (request: {
   readonly file: CatalogueFile;
   readonly ruleSet: RuleSetIdentity;
+  readonly inheritedRecordKinds: readonly RecordKind[];
 }): Result<CatalogueContent, string> => {
   const repeats = repeatedNamesOf({ file: request.file });
   if (repeats.length > 0) {
     return { outcome: "failed", error: refusalText({ faults: repeats }) };
   }
-  const catalogue = catalogueOf({ file: request.file, ruleSet: request.ruleSet });
+  const catalogue = catalogueOf(request);
   return catalogue.outcome === "failed"
     ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) }
     : catalogue;
@@ -771,7 +787,11 @@ export const catalogueContentOf = (request: {
   if (!parsed.success) {
     return { outcome: "failed", error: z.prettifyError(parsed.error) };
   }
-  const catalogue = catalogueOf({ file: parsed.data, ruleSet: request.ruleSet });
+  const catalogue = catalogueOf({
+    file: parsed.data,
+    ruleSet: request.ruleSet,
+    inheritedRecordKinds: [],
+  });
   return catalogue.outcome === "failed"
     ? { outcome: "failed", error: refusalText({ faults: catalogue.error }) }
     : catalogue;

@@ -3,5 +3,6 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler"
-  }
+  },
+  "exclude": []
 }

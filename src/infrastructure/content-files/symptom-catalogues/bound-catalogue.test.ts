@@ -102,6 +102,7 @@ describe("readBoundCatalogue", () => {
         ruleSetRoot: INSTALL_ROOT,
         ruleSet: "hone",
         installRoot: INSTALL_ROOT,
+        inheritedRecordKinds: [],
       }),
     ).toEqual({
       outcome: "failed",
@@ -138,6 +139,7 @@ describe("readBoundCatalogue", () => {
         ruleSetRoot: TEAM_ROOT,
         ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
+        inheritedRecordKinds: [],
       }),
     ).toEqual({
       outcome: "failed",
@@ -170,6 +172,7 @@ describe("readBoundCatalogue", () => {
         ruleSetRoot: TEAM_ROOT,
         ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
+        inheritedRecordKinds: [],
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });
     expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/rules" });
@@ -196,6 +199,7 @@ describe("createBoundCatalogueOf", () => {
         ruleSetRoot: TEAM_ROOT,
         ruleSet: TEAM,
         installRoot: INSTALL_ROOT,
+        inheritedRecordKinds: [],
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });
     expect(directory.list).toHaveBeenCalledWith({ path: "/repo/team-rules/rules" });

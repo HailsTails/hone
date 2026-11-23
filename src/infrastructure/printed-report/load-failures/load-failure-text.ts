@@ -87,6 +87,8 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
       return [request.failure.path, request.failure.detail];
     case "rule-set-not-upgraded":
       return [request.failure.path];
+    case "rule-set-half-upgraded":
+      return [request.failure.path, ...request.failure.files];
     case "records-in-both-layouts":
       return [request.failure.path, `${request.failure.folder}:`, BOTH_LAYOUTS_REPAIR];
     case "why-chains-required":
@@ -100,6 +102,8 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
       return [request.failure.address, request.failure.prefixedAddress];
     case "rule-set-name-collision":
       return [request.failure.name, request.failure.other];
+    case "rule-sets-share-a-check":
+      return [request.failure.check, ...request.failure.ruleSets];
     case "unknown-discipline":
     case "unknown-clause":
     case "judgement-clause-selected":

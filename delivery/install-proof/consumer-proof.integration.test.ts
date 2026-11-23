@@ -316,12 +316,17 @@ const upgradeBeforeOver = (request: {
     path,
     fileText,
     directory,
-  } satisfies Parameters<typeof createSettingsSources>[0];
+  } satisfies Omit<Parameters<typeof createSettingsSources>[0], "toolRecordKinds">;
   const selection = readSelectionFile({
     fileText,
     path: selectionFilePathOf({ path, repoRoot: request.repo }),
   });
-  const catalogue = readBoundCatalogue({ ...context, ruleSetRoot: INSTALL_ROOT, ruleSet: "hone" });
+  const catalogue = readBoundCatalogue({
+    ...context,
+    ruleSetRoot: INSTALL_ROOT,
+    ruleSet: "hone",
+    inheritedRecordKinds: [],
+  });
   assert(selection.outcome === "ok");
   assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
   return createUpgradeBefore({
@@ -332,7 +337,10 @@ const upgradeBeforeOver = (request: {
       assessment: DEFAULT_ASSESSMENT,
     },
     engine: namedEngine,
-    sources: createSettingsSources(context),
+    sources: createSettingsSources({
+      ...context,
+      toolRecordKinds: catalogue.value.catalogue.recordKinds,
+    }),
     readPiece: createCheckPieceSource(context),
     selection: selection.value,
     catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: catalogue.value.catalogue }],

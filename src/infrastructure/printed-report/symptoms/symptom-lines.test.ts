@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   Case,
   Check,
@@ -13,23 +12,16 @@ import type {
   Symptom,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { findingSymptomsOf, symptomLine } from "./symptom-lines.ts";
-
-const AUDIT = "walker" as const;
-
-const ESLINT = "eslint" as const;
+import { symptomLine } from "./symptom-lines.ts";
 
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
-
-const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
 
@@ -282,33 +274,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const FILE = repoPathOf("src/orders/charge-order.ts");
-
-const CLOCK_FINDING: CheckFinding = {
-  check: "date-used-directly#clock-sources",
-  mechanism: AUDIT,
-  file: FILE,
-  anchor: { line: 14, column: 0 },
-  snippet: "clock.now()",
-};
-
-const BRANCH_FINDING: CheckFinding = {
-  check: "branch-in-a-test#test-body",
-  mechanism: AUDIT,
-  file: FILE,
-  anchor: { line: 22, column: 2 },
-  snippet: "if (result.ok) {",
-  remedy: { fix: "write one test per case", page: CHECKS_PAGE, section: "branching-with-if" },
-};
-
-const TEAM_FINDING: CheckFinding = {
-  check: "outside-import-past-a-boundary#moment",
-  mechanism: ESLINT,
-  file: FILE,
-  anchor: { line: 1, column: 0 },
-  snippet: "moment()",
-};
-
 describe("symptomLine", () => {
   it("names a symptom's title, what it may indicate, where the breach sits, its recipe and its page", () => {
     expect(symptomLine({ symptom: DATE_USED_DIRECTLY, page: SYMPTOM_PAGE })).toBe(
@@ -325,23 +290,6 @@ describe("symptomLine", () => {
   it("names no recipe when the symptom has none, and an indication's situation after its case", () => {
     expect(symptomLine({ symptom: CLAIMED_TYPE, page: SYMPTOM_PAGE })).toBe(
       `claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. Read ${SYMPTOM_PAGE}#claimed-type`,
-    );
-  });
-});
-
-describe("findingSymptomsOf", () => {
-  it("names each symptom the findings were seen as, once, in the order the findings first name them", () => {
-    expect(
-      findingSymptomsOf({
-        catalogue: REPORT_CATALOGUE,
-        findings: [BRANCH_FINDING, CLOCK_FINDING, BRANCH_FINDING],
-      }),
-    ).toEqual([BRANCH_IN_A_TEST, DATE_USED_DIRECTLY]);
-  });
-
-  it("names no symptom for a finding the catalogue has no check for", () => {
-    expect(findingSymptomsOf({ catalogue: REPORT_CATALOGUE, findings: [TEAM_FINDING] })).toEqual(
-      [],
     );
   });
 });

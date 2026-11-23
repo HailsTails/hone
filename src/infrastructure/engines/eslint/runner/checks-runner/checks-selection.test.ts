@@ -8,8 +8,22 @@ const TEAM = { name: ruleSetNameOf("team") };
 
 const EXPLICIT_ANY: PluginCheck = {
   name: "explicit-any",
-  symptom: { name: "untyped-value", title: "Untyped value" },
+  symptom: { name: "untyped-value", title: "Untyped value", ruleSet: "hone" },
   engines: [{ name: "eslint" }],
+};
+
+const TEAM_EXPLICIT_ANY: PluginCheck = {
+  ...EXPLICIT_ANY,
+  symptom: { ...EXPLICIT_ANY.symptom, ruleSet: TEAM },
+};
+
+const TEAM_PROJECTED = {
+  ruleSet: TEAM,
+  symptom: "untyped-value",
+  check: "explicit-any",
+  ruleId: "team/no-any",
+  options: [],
+  plugin: { namespace: "team", module: "plugin.ts", pieceRoot: "/repo/tools/team" },
 };
 
 describe("selectedNamedChecksOf", () => {
@@ -65,10 +79,20 @@ describe("selectedNamedChecksOf", () => {
     });
   });
 
+  it("does not resolve a team's projected rule to Hone's check of the same address", () => {
+    expect(selectedNamedChecksOf({ checks: [EXPLICIT_ANY], projected: [TEAM_PROJECTED] })).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "tool-failed",
+        detail: "the rule team/no-any names no check of the catalogue that runs on ESLint",
+      },
+    });
+  });
+
   it("retains the team's projected rule id and rule set and resolves it to the named check", () => {
     expect(
       selectedNamedChecksOf({
-        checks: [EXPLICIT_ANY],
+        checks: [EXPLICIT_ANY, TEAM_EXPLICIT_ANY],
         projected: [
           {
             ruleSet: TEAM,

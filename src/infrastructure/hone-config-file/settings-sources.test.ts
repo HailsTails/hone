@@ -118,6 +118,7 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
+    toolRecordKinds: [],
     fileText: inMemoryFileText({ files: request.files }),
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   });
@@ -178,18 +179,6 @@ describe("createCheckPieceSource", () => {
     expect(read).not.toHaveBeenCalled();
   });
 });
-
-const pieceOf = (request: {
-  readonly files: Readonly<Record<string, string>>;
-  readonly ruleSetRoot: AbsolutePath;
-  readonly clause: string;
-  readonly mechanism: string;
-}) =>
-  sourcesOver({ files: request.files }).pieceClause({
-    ruleSetRoot: request.ruleSetRoot,
-    clause: clauseAddressSchema.parse(request.clause),
-    mechanism: engineIdSchema.parse(request.mechanism),
-  });
 
 describe("createSettingsSources", () => {
   it("reads hone.config.json at the repository root as a document, naming its path", () => {
@@ -260,6 +249,7 @@ describe("createSettingsSources", () => {
       repoRoot: REPO_ROOT,
       installRoot: INSTALL_ROOT,
       moduleExtension: ".ts",
+      toolRecordKinds: [],
       fileText: {
         read: vi.fn<FileTextPort["read"]>(),
         exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
@@ -278,150 +268,6 @@ describe("createSettingsSources", () => {
         kind: "file-unreadable",
         path: "/repo/tools/hone-rules/rules",
         detail: "EACCES",
-      },
-    });
-  });
-
-  it("reads the piece of a mechanical clause with its definition's anchor and exceptions", () => {
-    expect(
-      pieceOf({
-        files: INSTALL_FILES,
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-15#loops",
-        mechanism: "walker",
-      }),
-    ).toMatchObject({
-      outcome: "ok",
-      value: {
-        anchor: { kind: "file" },
-        pieceRoot: "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement",
-        settings: { module: "loops.ts" },
-        declarations: {},
-      },
-    });
-  });
-
-  it("refuses a discipline the rule set lacks", () => {
-    expect(
-      pieceOf({
-        files: INSTALL_FILES,
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-99#loops",
-        mechanism: "walker",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "unknown-discipline", address: "CD-99#loops" },
-    });
-  });
-
-  it("refuses a clause its discipline lacks", () => {
-    expect(
-      pieceOf({
-        files: INSTALL_FILES,
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-15#nothing",
-        mechanism: "walker",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "unknown-clause", address: "CD-15#nothing" },
-    });
-  });
-
-  it("refuses a judgement clause", () => {
-    expect(
-      pieceOf({
-        files: INSTALL_FILES,
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-15#loop-intent",
-        mechanism: "walker",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "judgement-clause-selected", address: "CD-15#loop-intent" },
-    });
-  });
-
-  it("refuses a mechanism the clause does not allow", () => {
-    expect(
-      pieceOf({
-        files: INSTALL_FILES,
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-15#loops",
-        mechanism: "eslint",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "mechanism-not-allowed", address: "CD-15#loops", mechanism: "eslint" },
-    });
-  });
-
-  it("refuses a mechanism whose runner is not installed", () => {
-    expect(
-      pieceOf({
-        files: {
-          "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
-          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/piece.json":
-            CD_15_PIECE,
-          "/install/src/infrastructure/engines/walker/loop-keyword/loop-statement/loop-statement.examples.json":
-            LOOPS_CASES,
-        },
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-15#loops",
-        mechanism: "walker",
-      }),
-    ).toEqual({ outcome: "failed", error: { kind: "runner-missing", mechanism: AUDIT } });
-  });
-
-  it("refuses a team clause whose discipline has no piece for the mechanism", () => {
-    expect(
-      pieceOf({
-        files: TEAM_FILES,
-        ruleSetRoot: TEAM_ROOT,
-        clause: "TM-1#loops",
-        mechanism: "walker",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "piece-missing", address: "TM-1#loops", mechanism: AUDIT },
-    });
-  });
-
-  it("refuses a team clause its discipline's piece has no entry for", () => {
-    expect(
-      pieceOf({
-        files: {
-          ...TEAM_FILES,
-          "/repo/tools/hone-rules/mechanisms/audit/TM-1/piece.json": TM_1_PIECE,
-        },
-        ruleSetRoot: TEAM_ROOT,
-        clause: "TM-1#labels",
-        mechanism: "walker",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "piece-missing", address: "TM-1#labels", mechanism: AUDIT },
-    });
-  });
-
-  it("refuses an install clause that no piece runs", () => {
-    expect(
-      pieceOf({
-        files: {
-          "/install/src/infrastructure/disciplines-file/version-one-names.json": NAMES,
-          "/install/src/infrastructure/engines/walker/runner/runner.ts": RUNNER_TEXT,
-        },
-        ruleSetRoot: INSTALL_ROOT,
-        clause: "CD-15#loops",
-        mechanism: "walker",
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "rule-set-invalid",
-        path: "/install/src/infrastructure/disciplines-file/version-one-names.json",
-        detail: "no piece runs CD-15#loops",
       },
     });
   });

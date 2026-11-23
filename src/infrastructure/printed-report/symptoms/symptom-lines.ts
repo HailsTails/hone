@@ -1,5 +1,3 @@
-import { findingSiteOf } from "../../../domain/finding/check-site.ts";
-import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   Indication,
   Pointed,
@@ -48,16 +46,4 @@ export const symptomLine = (request: {
     .map((indication) => indicationText({ indication }))
     .join("; ");
   return `${symptom.name}: ${symptom.title}. May indicate: ${indications}. The breach usually sits ${symptom.breachUsuallySits}.${recipeSentence(symptom)} Read ${symptomSourceOf(request)}`;
-};
-
-export const findingSymptomsOf = (
-  request: CatalogueRequest & { readonly findings: readonly CheckFinding[] },
-): readonly Symptom[] => {
-  const symptoms = request.findings.flatMap((finding) => {
-    const site = findingSiteOf({ catalogue: request.catalogue, finding });
-    return site.sited === "check" ? [site.check.symptom] : [];
-  });
-  return symptoms.filter(
-    (symptom, index) => symptoms.findIndex((earlier) => earlier.name === symptom.name) === index,
-  );
 };

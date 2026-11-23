@@ -1,5 +1,6 @@
 import type { UpgradeArguments } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
+import { moduleExtensionOf } from "../application/ports/host/module-extension.ts";
 import type { ProofWritten } from "../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeCarriedOver } from "../application/ports/upgrade/upgrade-carried-over.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
@@ -8,16 +9,19 @@ import { upgradeProof } from "../application/upgrade/proof/upgrade-proof.ts";
 import { parseUpgradeArguments } from "../infrastructure/command-line/arguments/command-arguments.ts";
 import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
 import { proofRunsOf } from "../infrastructure/command-line/proof-runs.ts";
+import { itemTextFrom } from "../infrastructure/content-files/item-folders/item-text.ts";
 import { shippedCataloguesOf } from "../infrastructure/content-files/symptom-catalogues/shipped-catalogues.ts";
 import { upgradeRuleSetCataloguesOf } from "../infrastructure/content-files/symptom-catalogues/upgrade-rule-set-catalogues.ts";
 import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/version-one-records-on-disk.ts";
 import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
 import { measureVersionOneProjection } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import { createImportsRewriterOf } from "../infrastructure/engines/protocol/upgrade/load-imports-rewriter.ts";
 import {
   ALREADY_ON_VERSION_TWO,
   upgradeSuccessOutcomeOf,
 } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
+import { versionOneTeamLayoutsOf } from "../infrastructure/upgrade/team-layout/version-one-team-layout.ts";
 import {
   type UpgradeInput,
   type UpgradePorts,
@@ -76,14 +80,29 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
         path,
         installRoot: located.installRoot,
       }),
-    externalCataloguesOf: (selection) =>
+    externalCataloguesOf: (teamRuleSets) =>
       upgradeRuleSetCataloguesOf({
         ...located,
+        ...teamRuleSets,
         fileText,
         directory: ports.directory,
         path,
-        selection,
       }),
+    versionOneTeamLayoutsOf: (teamRuleSets) =>
+      versionOneTeamLayoutsOf({
+        ...located,
+        ...teamRuleSets,
+        fileText,
+        directory: ports.directory,
+        path,
+      }),
+    itemTextOf: itemTextFrom,
+    importsRewriterOf: createImportsRewriterOf({
+      modules: ports.modules,
+      path,
+      installRoot: located.installRoot,
+      moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
+    }),
     recordsOnDiskOf: ({ repoRoot }) =>
       recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),

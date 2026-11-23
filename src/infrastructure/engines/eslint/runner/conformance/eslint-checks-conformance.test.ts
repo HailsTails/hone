@@ -129,6 +129,7 @@ const fileText = createDefaultFileTextPort({});
 const path = createDefaultPathPort({});
 const catalogue = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   fileText,
   path,
   directory: createDefaultDirectoryPort({}),

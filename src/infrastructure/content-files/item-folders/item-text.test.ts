@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { itemTextOf } from "./item-text.ts";
+import { itemTextFrom, itemTextOf } from "./item-text.ts";
 
 describe("itemTextOf", () => {
   it("gives the first heading as the title, the one fenced json block as the facts, and what follows the block as the prose", () => {
@@ -71,5 +71,13 @@ describe("itemTextOf", () => {
       outcome: "failed",
       error: expect.stringMatching(/^has facts that are not JSON: /),
     });
+  });
+});
+
+describe("itemTextFrom", () => {
+  it("writes the title as the heading and the facts as the one fenced json block", () => {
+    expect(itemTextFrom({ title: "Debt", facts: { phrase: "debt" } })).toBe(
+      '# Debt\n\n```json\n{\n  "phrase": "debt"\n}\n```\n',
+    );
   });
 });

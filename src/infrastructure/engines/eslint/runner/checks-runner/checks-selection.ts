@@ -1,8 +1,9 @@
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import {
-  type CheckAddressText,
-  checkAddressTextOf,
-} from "../../../../../domain/language-layer/check-address-text.ts";
+  qualifiedAddressOf,
+  qualifiedCheckAddressOf,
+} from "../../../../../domain/language-layer/check-address.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { checkRuleIdOf, type PluginCheck, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
@@ -16,13 +17,13 @@ export const selectedNamedChecksOf = (request: {
   const checks = new Map(
     request.checks
       .filter((check) => runsOnEslint({ check }) === "eslint")
-      .map((check) => [checkAddressTextOf({ check }), check]),
+      .map((check) => [qualifiedCheckAddressOf({ check }), check]),
   );
   return gatheredOutcomes({
     outcomes: request.projected.map(
       (projected): Result<readonly SelectedNamedCheck[], RunnerFailure> => {
         const address: CheckAddressText = `${projected.symptom}#${projected.check}`;
-        const check = checks.get(address);
+        const check = checks.get(qualifiedAddressOf({ ruleSet: projected.ruleSet, address }));
         return check !== undefined &&
           (projected.plugin !== undefined || checkRuleIdOf({ check }) === projected.ruleId)
           ? {

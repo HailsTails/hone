@@ -975,8 +975,37 @@ describe("catalogueContentFromFile", () => {
       catalogueContentFromFile({
         ruleSet: TOOL_RULE_SET,
         file: catalogueFileSchema.parse(DOCUMENT),
+        inheritedRecordKinds: [],
       }),
     ).toEqual(catalogueContentOf({ ruleSet: TOOL_RULE_SET, document: DOCUMENT }));
+  });
+
+  it("gives a team's catalogue the record kinds it inherits from Hone's, so it needs none of its own", () => {
+    expect(
+      catalogueContentFromFile({
+        ruleSet: { name: ruleSetNameOf("acme") },
+        file: catalogueFileSchema.parse({ ...EMPTY_DOCUMENT, recordKinds: [] }),
+        inheritedRecordKinds: [AUTHORISED_LOCATION, DEBT],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        recordKinds: [AUTHORISED_LOCATION, DEBT],
+      },
+    });
+  });
+
+  it("refuses a team's catalogue that inherits no debt record kind", () => {
+    expect(
+      catalogueContentFromFile({
+        ruleSet: { name: ruleSetNameOf("acme") },
+        file: catalogueFileSchema.parse({ ...EMPTY_DOCUMENT, recordKinds: [] }),
+        inheritedRecordKinds: [AUTHORISED_LOCATION],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: "✖ recordKinds holds no debt, which every symptom takes",
+    });
   });
 
   it("refuses a file that holds one name twice", () => {
@@ -984,7 +1013,9 @@ describe("catalogueContentFromFile", () => {
       ...EMPTY_DOCUMENT,
       principles: [PRINCIPLES_DOCUMENT[0], PRINCIPLES_DOCUMENT[0]],
     });
-    expect(catalogueContentFromFile({ ruleSet: TOOL_RULE_SET, file })).toEqual({
+    expect(
+      catalogueContentFromFile({ ruleSet: TOOL_RULE_SET, file, inheritedRecordKinds: [] }),
+    ).toEqual({
       outcome: "failed",
       error: "✖ principles holds no-hidden-effects more than once",
     });
@@ -997,7 +1028,9 @@ describe("catalogueContentFromFile", () => {
         { name: "guard-first", title: "Guard first", principle: "gone", standing: "accepted" },
       ],
     });
-    expect(catalogueContentFromFile({ ruleSet: TOOL_RULE_SET, file })).toEqual({
+    expect(
+      catalogueContentFromFile({ ruleSet: TOOL_RULE_SET, file, inheritedRecordKinds: [] }),
+    ).toEqual({
       outcome: "failed",
       error: expect.stringMatching(/^✖ .*gone/),
     });
