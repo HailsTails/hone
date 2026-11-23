@@ -61,6 +61,33 @@ const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWa
 };
 
 describe("CD-8 existing raw switch state", () => {
+  it("compacts and caps a long finding snippet", () => {
+    const prepared = preparedFor({ file: FILE });
+    expect(
+      prepared.prepareFile({
+        file: FILE,
+        readText: () => ({
+          outcome: "ok",
+          value:
+            "switch (selection) {\n  default:  process(customerReconciliationEntriesWaitingForTheNextScheduledBillingCycleAndManualReview);\n}",
+        }),
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        kind: "complete",
+        hits: [
+          {
+            check: ADDRESS,
+            anchor: { line: 2, column: 0 },
+            snippet:
+              "default: process(customerReconciliationEntriesWaitingForTheNextScheduledBillingC…",
+          },
+        ],
+      },
+    });
+  });
+
   it("completes every ordered CRLF finding through one read without requesting syntax", () => {
     const prepared = preparedFor({ file: FILE });
     const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({

@@ -58,6 +58,33 @@ const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWa
 };
 
 describe("CD-7a existing raw factory-type query check", () => {
+  it("compacts and caps a long finding snippet", () => {
+    const prepared = preparedFor({ file: FILE });
+    expect(
+      prepared.prepareFile({
+        file: FILE,
+        readText: () => ({
+          outcome: "ok",
+          value:
+            "  type Result =  ReturnType<typeof customerReconciliationEntriesWaitingForTheNextScheduledBillingCycleAndManualReview>;",
+        }),
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        kind: "complete",
+        hits: [
+          {
+            check: ADDRESS,
+            anchor: { line: 1, column: 0 },
+            snippet:
+              "type Result = ReturnType<typeof customerReconciliationEntriesWaitingForTheNextSc…",
+          },
+        ],
+      },
+    });
+  });
+
   it("completes ordered CRLF line findings with one read and no syntax request", () => {
     const prepared = preparedFor({ file: FILE });
     const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({

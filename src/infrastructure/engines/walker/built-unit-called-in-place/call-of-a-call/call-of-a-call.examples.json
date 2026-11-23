@@ -1,0 +1,24 @@
+{
+  "flag": [
+    {
+      "name": "configured unit called without a name",
+      "fileName": "src/checkout.ts",
+      "source": "checkoutOf({ clock })({ order });",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "configured unit named before its call",
+      "fileName": "src/checkout.ts",
+      "source": "const checkout = checkoutOf({ clock });\ncheckout({ order });",
+      "expectedLines": []
+    },
+    {
+      "name": "table argument is an array",
+      "fileName": "src/checkout.test.ts",
+      "source": "it.each([1])(\"order\", () => {});",
+      "expectedLines": []
+    }
+  ]
+}
