@@ -16,6 +16,7 @@ import {
   nestedConfigurationFoldersOf,
   sliceRecordsOf,
   slicePathOf,
+  nestedFilesOf,
   unprojectedFoldersOf,
 } from "./projection-slices.ts";
 
@@ -247,35 +248,35 @@ describe("nestedConfigurationFoldersOf", () => {
   });
 });
 
+describe("nestedFilesOf", () => {
+  it("keeps each file under check inside a folder holding its own disciplines.json", () => {
+    expect(
+      nestedFilesOf({
+        trackedPaths: tracked(["disciplines.json", "fixtures/deep/disciplines.json"]),
+        files: tracked(["fixtures/deep/tool/b.ts", "fixtures/deeper/c.ts", "src/e.ts"]),
+      }),
+    ).toEqual(["fixtures/deep/tool/b.ts"]);
+  });
+});
+
 describe("unprojectedFoldersOf", () => {
-  const OWN_CONFIG_TREE = tracked([
-    "eslint.config.mjs",
+  const SELECTIONS = tracked([
     "fixtures/linted/disciplines.json",
-    "fixtures/linted/eslint.config.mjs",
-    "fixtures/linted/inner/eslint.config.mjs",
     "fixtures/rooted/disciplines.json",
     "fixtures/deep/disciplines.json",
-    "fixtures/deep/tool/eslint.config.mjs",
-    "fixtures/idle/disciplines.json",
-    "fixtures/idle/eslint.config.mjs",
-    "packages/a/eslint.config.mjs",
   ]);
 
-  const FILES = tracked([
-    "fixtures/linted/inner/a.ts",
-    "fixtures/rooted/src/parse.ts",
-    "fixtures/deep/tool/b.ts",
-    "fixtures/deep/c.ts",
-    "packages/a/d.ts",
-    "src/e.ts",
-  ]);
-
-  it("names each outermost folder inside a folder holding its own disciplines.json whose own ESLint config its files load, holding a file under check, beside the folder holding that disciplines.json", () => {
+  it("names each outermost folder inside a folder holding its own disciplines.json whose ESLint config a file loads, beside the folder holding that disciplines.json", () => {
     expect(
       unprojectedFoldersOf({
-        trackedPaths: OWN_CONFIG_TREE,
-        files: FILES,
-        lookup: "nearest-to-file",
+        trackedPaths: SELECTIONS,
+        loadedConfigs: tracked([
+          "fixtures/linted/inner/eslint.config.mjs",
+          "fixtures/linted/eslint.config.mjs",
+          "fixtures/deep/tool/eslint.config.mjs",
+          "fixtures/deep/tool/eslint.config.mjs",
+          "packages/a/eslint.config.mjs",
+        ]),
       }),
     ).toEqual([
       { folder: "fixtures/deep/tool", selectionFolder: "fixtures/deep" },
@@ -283,37 +284,29 @@ describe("unprojectedFoldersOf", () => {
     ]);
   });
 
+  it("names a folder from the config its files load though no tracked path shows that config", () => {
+    expect(
+      unprojectedFoldersOf({
+        trackedPaths: tracked(["eslint.config.mjs", "fixtures/rooted/disciplines.json"]),
+        loadedConfigs: tracked(["fixtures/rooted/eslint.config.mjs"]),
+      }),
+    ).toEqual([{ folder: "fixtures/rooted", selectionFolder: "fixtures/rooted" }]);
+  });
+
   it("names the outermost folder holding its own disciplines.json as the one a person would govern from this repository", () => {
     expect(
       unprojectedFoldersOf({
-        trackedPaths: tracked([
-          "eslint.config.mjs",
-          "nested/disciplines.json",
-          "nested/inner/disciplines.json",
-          "nested/inner/src/eslint.config.mjs",
-        ]),
-        files: tracked(["nested/inner/src/n.ts"]),
-        lookup: "nearest-to-file",
+        trackedPaths: tracked(["nested/disciplines.json", "nested/inner/disciplines.json"]),
+        loadedConfigs: tracked(["nested/inner/src/eslint.config.mjs"]),
       }),
     ).toEqual([{ folder: "nested/inner/src", selectionFolder: "nested" }]);
   });
 
-  it("names no folder holding its own disciplines.json but no ESLint config, whose files load the config above it", () => {
+  it("names no folder whose files load a config above the folder holding its own disciplines.json", () => {
     expect(
       unprojectedFoldersOf({
-        trackedPaths: tracked(["eslint.config.mjs", "fixtures/rooted/disciplines.json"]),
-        files: tracked(["fixtures/rooted/src/parse.ts"]),
-        lookup: "nearest-to-file",
-      }),
-    ).toEqual([]);
-  });
-
-  it("names no folder when every file loads the repository root's config", () => {
-    expect(
-      unprojectedFoldersOf({
-        trackedPaths: OWN_CONFIG_TREE,
-        files: FILES,
-        lookup: "repository-root",
+        trackedPaths: SELECTIONS,
+        loadedConfigs: tracked(["eslint.config.mjs", "fixtures/eslint.config.mjs"]),
       }),
     ).toEqual([]);
   });

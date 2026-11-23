@@ -12,7 +12,10 @@ import {
   clauseAddressText,
   sameClauseAddress,
 } from "../../../../../domain/rule-set/clause-address.ts";
-import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
+import type {
+  SliceProblem,
+  UnprojectedFolderReport,
+} from "../../../../../domain/runner/mechanism-run.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type {
   Hit,
@@ -20,6 +23,7 @@ import type {
   NativeException,
   ProjectionWrite,
 } from "../../../../../domain/runner/runner-result-types.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type {
   EmbeddedRunReport,
   ReturnedEmbeddedRunReport,
@@ -38,6 +42,7 @@ import {
   governingPackageOf,
   packageFoldersOf,
   nestedConfigurationFoldersOf,
+  nestedFilesOf,
   unprojectedFoldersOf,
   slicePathOf,
 } from "../config-roots/projection-slices.ts";
@@ -93,6 +98,7 @@ import {
   projectionState,
 } from "../projection/projection.ts";
 import type {
+  ConfigFileSearch,
   EslintPort,
   GovernedRule,
   LintedFile,
@@ -729,6 +735,45 @@ const queriedReport = (request: {
   return lintedReport({ ...request, queried });
 };
 
+const loadedConfigOf = (request: {
+  readonly search: ConfigFileSearch;
+  readonly path: PathPort;
+  readonly repoRoot: AbsolutePath;
+}): readonly RepoPath[] => {
+  if (request.search.kind !== "found") {
+    return [];
+  }
+  const placed = request.path.relative({ from: request.repoRoot, to: request.search.path });
+  if (placed.relation === "different-root") {
+    return [];
+  }
+  const config = repoPathSchema.safeParse(placed.path);
+  return config.success ? [config.data] : [];
+};
+
+const unprojectedFoldersAsked = (request: {
+  readonly run: EmbeddedRunRequest;
+  readonly lookup: ConfigLookup;
+  readonly query: QueryInstance;
+  readonly path: PathPort;
+}): Promise<readonly UnprojectedFolderReport[]> => {
+  if (request.lookup.kind === "repository-root") {
+    return Promise.resolve([]);
+  }
+  return Promise.all(
+    nestedFilesOf({ trackedPaths: request.run.trackedPaths, files: request.run.files }).map(
+      (file) => request.query.configFileOf({ file }),
+    ),
+  ).then((searches) =>
+    unprojectedFoldersOf({
+      trackedPaths: request.run.trackedPaths,
+      loadedConfigs: searches.flatMap((search) =>
+        loadedConfigOf({ search, path: request.path, repoRoot: request.run.repoRoot }),
+      ),
+    }),
+  );
+};
+
 const governedRun = (request: {
   readonly run: EmbeddedRunRequest;
   readonly selected: readonly SelectedClause[];
@@ -754,21 +799,35 @@ const governedRun = (request: {
       governingIgnoreOf: cachedGoverningIgnores({ eslint: request.ports.eslint }),
       names: VERSION_ONE_NAMES,
     },
-  }).then((queried) =>
-    queriedReport({
-      ...request,
-      attributedRoots: lookup.kind === "repository-root" ? [] : request.roots,
-      nestedFolders:
-        lookup.kind === "repository-root"
-          ? []
-          : nestedConfigurationFoldersOf({
-              trackedPaths: request.run.trackedPaths,
-              files: request.run.files,
-            }),
-      query,
-      queried,
-    }),
-  );
+  })
+    .then((queried) =>
+      queriedReport({
+        ...request,
+        attributedRoots: lookup.kind === "repository-root" ? [] : request.roots,
+        nestedFolders:
+          lookup.kind === "repository-root"
+            ? []
+            : nestedConfigurationFoldersOf({
+                trackedPaths: request.run.trackedPaths,
+                files: request.run.files,
+              }),
+        query,
+        queried,
+      }),
+    )
+    .then((report) =>
+      report.outcome === "failed"
+        ? report
+        : unprojectedFoldersAsked({
+            run: request.run,
+            lookup,
+            query,
+            path: request.ports.path,
+          }).then((unprojectedFolders): Outcome<EslintRunReport> => ({
+            outcome: "ok",
+            value: { ...report.value, unprojectedFolders },
+          })),
+    );
 };
 
 const projectionStatusOf = (request: {
@@ -836,11 +895,6 @@ const selectedRun = (request: {
   if (status.outcome === "failed") {
     return Promise.resolve(status);
   }
-  const unprojectedFolders = unprojectedFoldersOf({
-    trackedPaths: request.run.trackedPaths,
-    files: request.run.files,
-    lookup: lookup.value.kind,
-  });
   return governedRun({
     ...request,
     repository,
@@ -857,11 +911,7 @@ const selectedRun = (request: {
     },
     roots,
     lookup: lookup.value,
-  }).then((report) =>
-    report.outcome === "failed"
-      ? report
-      : { outcome: "ok", value: { ...report.value, unprojectedFolders } },
-  );
+  });
 };
 
 const importOriginOf = (request: {

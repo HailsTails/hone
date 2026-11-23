@@ -140,32 +140,41 @@ export const nestedConfigurationFoldersOf = (request: {
     .sort(codeUnitOrder)
     .map((folder) => repoPathSchema.parse(folder));
 
-export const unprojectedFoldersOf = (request: {
+export const nestedFilesOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
   readonly files: readonly RepoPath[];
-  readonly lookup: EslintConfigLookup;
+}): readonly RepoPath[] => {
+  const nested = nestedRepositories(request);
+  return request.files.filter(
+    (file) =>
+      insideNestedRepository({ directory: directoryOf({ path: file }), nested }) === "nested",
+  );
+};
+
+export const unprojectedFoldersOf = (request: {
+  readonly trackedPaths: readonly RepoPath[];
+  readonly loadedConfigs: readonly RepoPath[];
 }): readonly UnprojectedFolderReport[] => {
   const nested = nestedRepositories(request);
   const outermostNested = outermostOf({ nested });
-  const ownConfigured = configuredDirectoriesOf(request).filter(
+  const ownConfigured = [
+    ...new Set(request.loadedConfigs.map((path) => directoryOf({ path }))),
+  ].filter(
     (directory) => directory !== "" && insideNestedRepository({ directory, nested }) === "nested",
   );
-  return outermostOf({ nested: ownConfigured })
-    .filter((folder) => holdingOf({ paths: request.files, folder }) === "holds")
-    .sort(codeUnitOrder)
-    .flatMap((folder) => {
-      const selectionFolder = outermostNested.find(
-        (candidate) => within({ path: folder, directory: candidate }) === "within",
-      );
-      return selectionFolder === undefined
-        ? []
-        : [
-            {
-              folder: repoPathSchema.parse(folder),
-              selectionFolder: repoPathSchema.parse(selectionFolder),
-            },
-          ];
-    });
+  return [...outermostOf({ nested: ownConfigured })].sort(codeUnitOrder).flatMap((folder) => {
+    const selectionFolder = outermostNested.find(
+      (candidate) => within({ path: folder, directory: candidate }) === "within",
+    );
+    return selectionFolder === undefined
+      ? []
+      : [
+          {
+            folder: repoPathSchema.parse(folder),
+            selectionFolder: repoPathSchema.parse(selectionFolder),
+          },
+        ];
+  });
 };
 
 export const orphanedSliceDirectoriesOf = (request: {

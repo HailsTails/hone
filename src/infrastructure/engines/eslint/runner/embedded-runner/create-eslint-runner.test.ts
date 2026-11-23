@@ -3301,15 +3301,27 @@ const NESTED_SKIPPED = {
 
 const NESTED_FOLDER = { folder: "packages/b", selectionFolder: "packages/b" };
 
-const nestedQuery = (request: { readonly old: RuleState }) =>
-  queryOver({
+const NESTED_CONFIG_FOUND: ConfigFileSearch = {
+  kind: "found",
+  path: "/repo/packages/b/eslint.config.mjs",
+};
+
+const nestedQuery = (request: {
+  readonly old: RuleState;
+  readonly config?: ConfigFileSearch;
+}): QueryInstance => ({
+  ...queryOver({
     ignored: { ...CHECKED, "packages/b/src/old.ts": "checked" },
     states: {
       [`src/a.ts ${RULE_ID}`]: ERROR,
       [`src/factory.ts ${RULE_ID}`]: ERROR,
       [`packages/b/src/old.ts ${RULE_ID}`]: request.old,
     },
-  });
+  }),
+  configFileOf: vi
+    .fn<QueryInstance["configFileOf"]>()
+    .mockResolvedValue(request.config ?? NESTED_CONFIG_FOUND),
+});
 
 describe("package projection slices, a folder holding its own disciplines.json", () => {
   it("names the folder beside a not-included projection when its own config loses the carve-out this repository records there", async () => {
@@ -3331,6 +3343,35 @@ describe("package projection slices, a folder holding its own disciplines.json",
     ).resolves.toMatchObject({
       outcome: "ok",
       value: { slices: [], unprojectedFolders: [NESTED_FOLDER] },
+    });
+  });
+
+  it("names the folder from the config its file loads, though that config is untracked or gitignored", async () => {
+    await expect(
+      runnerOver({ eslint: eslintOver({ query: nestedQuery({ old: OFF }) }) }).run({
+        ...NESTED_RUN,
+        trackedPaths: [...FILES, NESTED_FILE, NESTED_SELECTION],
+      }),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { slices: [], unprojectedFolders: [NESTED_FOLDER] },
+    });
+  });
+
+  it("asks ESLint which config loads only for the files under the folder holding its own disciplines.json", async () => {
+    const query = nestedQuery({ old: OFF });
+    await runnerOver({ eslint: eslintOver({ query }) }).run(NESTED_RUN);
+    expect(vi.mocked(query.configFileOf).mock.calls).toEqual([[{ file: NESTED_FILE }]]);
+  });
+
+  it("names nothing when the folder's files load the repository root's config, though it tracks a config of its own", async () => {
+    await expect(
+      runnerOver({
+        eslint: eslintOver({ query: nestedQuery({ old: OFF, config: ROOT_CONFIG }) }),
+      }).run(NESTED_RUN),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { slices: [], unprojectedFolders: [] },
     });
   });
 
