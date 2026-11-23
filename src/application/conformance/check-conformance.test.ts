@@ -204,6 +204,31 @@ describe("checkUnderTestOf on a team's rule set", () => {
     expect(examples.read).not.toHaveBeenCalled();
   });
 
+  it.each([
+    {
+      root: "../elsewhere",
+      detail: "the root ../elsewhere of rule set acme is not a path inside the repository",
+    },
+    {
+      root: "/abs/acme",
+      detail: "the root /abs/acme of rule set acme is not a path inside the repository",
+    },
+  ])("refuses the root $root outside the repository before resolving it", ({ root, detail }) => {
+    const resolve = vi.fn<PathPort["resolve"]>();
+    expect(
+      checkUnderTestOf({
+        ruleSet: { name: "acme", root },
+        check: "scratch-file#scratch-files",
+        engine: "walker",
+        installRoot: absoluteRootOf("/install"),
+        path: { resolve },
+        examples: { read: vi.fn<NamedCheckExamplesRepository["read"]>() },
+        loadFailureDetail: vi.fn<LoadFailureDetail>(),
+      }),
+    ).toEqual({ outcome: "failed", error: { kind: "rule-set-invalid", detail } });
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
   it("refuses a root that does not resolve", () => {
     expect(
       checkUnderTestOf({
@@ -224,7 +249,8 @@ describe("checkUnderTestOf on a team's rule set", () => {
       outcome: "failed",
       error: {
         kind: "rule-set-invalid",
-        detail: "the root tools/acme of rule set acme does not resolve: working-directory-unusable",
+        detail:
+          "the root tools/acme of rule set acme does not resolve, because the working directory cannot be used",
       },
     });
   });

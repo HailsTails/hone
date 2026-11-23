@@ -21,7 +21,7 @@ Two engines ship: `walker`, a standalone TypeScript syntax walker, and `eslint`,
 
 To adopt Hone in another repository, follow [ADOPTING.md](ADOPTING.md) step by step. A repository already using the older standalone route, or a copy of Hone's source, follows [MIGRATING.md](MIGRATING.md) instead.
 
-A team adds its own symptoms and checks as a rule set in its own repository, with ESLint and walker pieces, following [docs/extending.md](docs/extending.md). Adding a discipline or a mechanism to Hone itself, and the full list of ESLint native channels, are covered in [docs/adding-a-discipline-or-mechanism.md](docs/adding-a-discipline-or-mechanism.md).
+A team adds its own symptoms and checks as a rule set in its own repository, with ESLint and walker pieces, following [docs/extending.md](docs/extending.md). Adding a symptom, check or engine to Hone itself, and the full list of ESLint native channels, are covered in [docs/adding-a-discipline-or-mechanism.md](docs/adding-a-discipline-or-mechanism.md).
 
 ## Commands
 

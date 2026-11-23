@@ -228,10 +228,10 @@ To move:
 2. **Install the package** as [ADOPTING.md](ADOPTING.md#2-install-the-hone-package) step 2 says, including the two `hone:` scripts.
 3. **Repoint every command.** In scripts, CI and the pre-push hook, replace `node tools/discipline-core/core/check/check-command.ts --repo .` with `npm run --silent hone:check`, and `project-command.ts` with `npm run --silent hone:project`. Pass options after `--` with npm, as in `npm run --silent hone:check -- --base-revision origin/main`, and straight after the script name with pnpm, as in `pnpm run --silent hone:check --base-revision origin/main`. A hook or gate that reads the verdict line needs the warning in [ADOPTING.md](ADOPTING.md#5-run-the-check) step 5. Point agent instructions at `node_modules/@hailstails/hone/rules/`.
 4. **Repoint your own pieces and tests.** Nothing outside the package's public entries can be imported now:
-   - A piece that imported types or `folderScope` from the copy, such as from `walker-piece.ts` or `source-scope.ts`, imports them from `@hailstails/hone/audit`.
+   - A piece that imported types or `folderScope` from the copy, such as from `walker-piece.ts` or `source-scope.ts`, imports them from `@hailstails/hone/walker`.
    - A piece that read JSON with comments through the copy's `jsonc-parse.ts` calls TypeScript's own parser on the syntax API that `prepare` hands it: `syntaxApi.parseConfigFileTextToJson(file, text)` returns the parsed value as `config`, and sets `error` when it cannot parse the text. Do not import `jsonc-parser`: it is Hone's own dependency, not one the repository declares, so a strict package manager such as pnpm does not resolve it from a piece, and a piece imports only what [docs/extending.md](docs/extending.md#what-is-stable) lists.
    - For a file it cannot parse, a piece returns `{ outcome: "failed", error: { kind: "file-unparseable", file, detail } }`. The check then stops with `load failure: runner-failed audit file-unparseable <file> <detail>` and exit `2`.
-   - Case tests use `clauseConformanceOf` from `@hailstails/hone/testing`, as [docs/extending.md](docs/extending.md#test-a-piece) shows.
+   - Case tests use `checkConformanceOf` from `@hailstails/hone/testing`, naming the `ruleSet`, as [docs/extending.md](docs/extending.md) shows.
    - A test that called the copy's check or governance functions directly, such as `runCheck` or `applyGovernance`, has no entry to call: run the `hone check` command against a repository the test sets up, and assert on its report and exit code.
 5. **Remove the copy.** Delete `tools/discipline-core/`, its line in `.gitignore`, and its entry in `disciplines.json`'s `exclude`.
 6. **Re-project** if any clause is `eslint`: run `npm run --silent hone:project`. The projection now imports each piece by package name instead of by a path into `tools/discipline-core/`, so it changes once; commit it.
@@ -390,7 +390,7 @@ Nothing must be migrated. Selections, exception records and findings still use t
 1. **Refresh Hone** as [ADOPTING.md](ADOPTING.md#10-update-and-remove) section 10 says, and run the check. A record whose debt is paid on a file that still exists now brings the `prune-debt` line to the end of `readFirst`.
 2. **Run the command it names,** then `npm run --silent hone:project` when any clause is `eslint`, and commit what they change.
 3. **Runners written outside Hone** may return `measured`, a list of `{ clause, file }` pairs, beside what they return now; [the mechanism guide](docs/adding-a-discipline-or-mechanism.md) says what a pair means. A runner that returns none has measured nothing, and its records on files that still exist stay for a person, as before.
-4. **Audit pieces written outside Hone** must answer `skipped` from `prepareFile` for a file they do not judge. Any other answer now says the piece's clauses were measured on that file, so `prune-debt` may remove a record on it; [the audit piece guide](docs/extending.md#an-audit-piece) says so.
+4. **Audit pieces written outside Hone** must answer `skipped` from `prepareFile` for a file they do not judge. Any other answer now says the piece's clauses were measured on that file, so `prune-debt` may remove a record on it; [the audit piece guide](docs/extending.md) says so.
 
 ## 20. Moving from version 1 to version 2
 

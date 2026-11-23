@@ -55,10 +55,15 @@ const placedTeamRuleSet = (request: {
       detail: `${name} is not a team rule set name: use lower-case letters, digits and hyphens, and not ${TOOL_RULE_SET}`,
     });
   }
+  if (!isRepoPath(root)) {
+    return ruleSetInvalid({
+      detail: `the root ${root} of rule set ${name} is not a path inside the repository`,
+    });
+  }
   const resolved = request.path.resolve({ path: root });
   return resolved.outcome === "failed"
     ? ruleSetInvalid({
-        detail: `the root ${root} of rule set ${name} does not resolve: ${resolved.error.kind}`,
+        detail: `the root ${root} of rule set ${name} does not resolve, because the working directory cannot be used`,
       })
     : { outcome: "ok", value: { identity, root: resolved.value } };
 };
