@@ -57,7 +57,20 @@ const FILES: Readonly<Record<string, string>> = {
   "/repo/acme/mechanisms/audit/ACME-1/helpers/pattern.ts": HELPER,
 };
 
+const HONE_INSTALL: Readonly<Record<string, string>> = {
+  "/install/src/infrastructure/disciplines-file/version-one-names.json":
+    '{ "version": 1, "clauses": [], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }',
+  "/install/rules/record-kinds/authorised-location.md":
+    '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n',
+  "/install/rules/record-kinds/debt.md": '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n',
+};
+
 const LISTINGS: Readonly<Record<string, readonly DirectoryEntry[]>> = {
+  "/install/rules": [{ name: "record-kinds", kind: "directory" }],
+  "/install/rules/record-kinds": [
+    { name: "authorised-location.md", kind: "file" },
+    { name: "debt.md", kind: "file" },
+  ],
   "/repo/acme": [
     { name: "mechanisms", kind: "directory" },
     { name: "rules", kind: "directory" },
@@ -72,9 +85,14 @@ const LISTINGS: Readonly<Record<string, readonly DirectoryEntry[]>> = {
   "/repo/acme/mechanisms/audit/ACME-1/helpers": [{ name: "pattern.ts", kind: "file" }],
 };
 
-const sourcesHolding = (files: Readonly<Record<string, string>>) => {
+const sourcesListing = (request: {
+  readonly files: Readonly<Record<string, string>>;
+  readonly listings: Readonly<Record<string, readonly DirectoryEntry[]>>;
+}) => {
+  const files = { ...HONE_INSTALL, ...request.files };
+  const listings = { ...LISTINGS, ...request.listings };
   const fileText: FileTextPort = {
-    exists: ({ path }) => (path in files || path in LISTINGS ? "present" : "absent"),
+    exists: ({ path }) => (path in files || path in listings ? "present" : "absent"),
     read: ({ path }) => {
       const text = files[path];
       return text === undefined
@@ -84,11 +102,14 @@ const sourcesHolding = (files: Readonly<Record<string, string>>) => {
     write: vi.fn<FileTextPort["write"]>(),
   };
   const directory: DirectoryPort = {
-    list: ({ path }) => ({ outcome: "ok", value: LISTINGS[path] ?? [] }),
+    list: ({ path }) => ({ outcome: "ok", value: listings[path] ?? [] }),
     create: vi.fn<DirectoryPort["create"]>(),
   };
   return { fileText, directory, path: PATH, repoRoot: REPO, installRoot: INSTALL };
 };
+
+const sourcesHolding = (files: Readonly<Record<string, string>>) =>
+  sourcesListing({ files, listings: {} });
 
 const SCRATCH_CLAUSE = {
   ruleSet: { name: "acme" },
@@ -133,6 +154,7 @@ const SCRATCH = {
       checkSettings: {},
       editions: { declared: ["1"], default: "1", latest: "1" },
       folder: "acme/mechanisms/audit/ACME-1",
+      module: "scratch.ts",
       files: [
         { file: "scratch.ts", text: MODULE },
         { file: "helpers/pattern.ts", text: HELPER },
@@ -215,6 +237,58 @@ describe("readVersionOneTeamLayout", () => {
       },
     });
   });
+  it("reads a piece folder several clauses share as each clause's piece, with that clause's own module", () => {
+    const sharing =
+      '{ "version": 1, "id": "ACME-1", "clauses": [{ "kind": "mechanical", "id": "scratch-files", "summary": "no scratch file is committed", "mechanisms": ["audit"], "anchor": { "kind": "file" }, "cases": { "flag": [{ "name": "scratch", "fileName": "src/a.scratch.ts", "source": "x", "expectedLines": [1] }], "allow": [{ "name": "kept", "fileName": "src/a.ts", "source": "x", "expectedLines": [] }] } }, { "kind": "mechanical", "id": "draft-files", "summary": "no draft file is committed", "mechanisms": ["audit"], "anchor": { "kind": "file" }, "cases": { "flag": [{ "name": "scratch", "fileName": "src/a.scratch.ts", "source": "x", "expectedLines": [1] }], "allow": [{ "name": "kept", "fileName": "src/a.ts", "source": "x", "expectedLines": [] }] } }] }';
+    const sharedPiece =
+      '{ "version": 1, "discipline": "ACME-1", "mechanism": "audit", "clauses": [{ "clause": "scratch-files", "settings": { "module": "scratch.ts" } }, { "clause": "draft-files", "settings": { "module": "helpers/pattern.ts" } }] }';
+    expect(
+      readVersionOneTeamLayout({
+        ...sourcesHolding({
+          ...FILES,
+          "/repo/acme/rules/ACME-1/discipline.json": sharing,
+          "/repo/acme/mechanisms/audit/ACME-1/piece.json": sharedPiece,
+        }),
+        ruleSet: ACME,
+        root: ROOT,
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        clauses: [
+          {
+            clause: SCRATCH_CLAUSE,
+            pieces: [{ folder: "acme/mechanisms/audit/ACME-1", module: "scratch.ts" }],
+          },
+          {
+            clause: { ...SCRATCH_CLAUSE, clause: "draft-files" },
+            pieces: [{ folder: "acme/mechanisms/audit/ACME-1", module: "helpers/pattern.ts" }],
+          },
+        ],
+      },
+    });
+  });
+
+  it("refuses a piece whose settings name no module", () => {
+    expect(
+      readVersionOneTeamLayout({
+        ...sourcesHolding({
+          ...FILES,
+          "/repo/acme/mechanisms/audit/ACME-1/piece.json":
+            '{ "version": 1, "discipline": "ACME-1", "mechanism": "audit", "clauses": [{ "clause": "scratch-files", "settings": {} }] }',
+        }),
+        ruleSet: ACME,
+        root: ROOT,
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "rule-set-invalid",
+        path: "/repo/acme/mechanisms/audit/ACME-1/piece.json",
+        detail: "the settings of scratch-files name no piece module",
+      },
+    });
+  });
 });
 
 describe("teamUpgradeNamesOf", () => {
@@ -287,6 +361,38 @@ describe("versionOneTeamLayoutsOf", () => {
         },
       }),
     ).toEqual({ outcome: "ok", value: [LAYOUT] });
+  });
+
+  it("refuses a used team rule set whose version 1 discipline files sit beside version 2 items, naming the files a stopped upgrade left", () => {
+    expect(
+      versionOneTeamLayoutsOf({
+        ...sourcesListing({
+          files: {
+            ...FILES,
+            "/repo/acme/rules/principles/repository-ready.md":
+              "# Repository ready\n\n```json\n{}\n```\n",
+          },
+          listings: {
+            "/repo/acme/rules": [
+              { name: "ACME-1", kind: "directory" },
+              { name: "principles", kind: "directory" },
+            ],
+            "/repo/acme/rules/principles": [{ name: "repository-ready.md", kind: "file" }],
+          },
+        }),
+        selection: {
+          ...SELECTION,
+          clauses: [[SCRATCH_CLAUSE_ADDRESS, { state: "run", mechanism: "walker" }]],
+        },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "rule-set-half-upgraded",
+        path: "/repo/acme",
+        files: ["/repo/acme/rules/ACME-1/discipline.json"],
+      },
+    });
   });
 
   it("reads no team rule set the selection does not use", () => {

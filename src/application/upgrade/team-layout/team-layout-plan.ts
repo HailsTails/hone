@@ -1,11 +1,15 @@
-import type { CheckNames } from "../../../domain/language-layer/check-address-text.ts";
-import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
+import {
+  type CheckAddressText,
+  checkAddressOfNames,
+  type CheckNames,
+} from "../../../domain/language-layer/check-address-text.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { isRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetLocation } from "../../../domain/settings/selection/selection-file.ts";
 import type { PlanRefusal, TeamNameMissing } from "../../ports/upgrade/plan-refusal.ts";
 import type {
+  ImportsRewrittenOf,
   ItemTextOf,
   TeamDefinition,
   TeamDefinitionAddress,
@@ -15,6 +19,7 @@ import type {
   VersionOneTeamLayout,
 } from "../../ports/upgrade/version-one-team-layout.ts";
 import type { PlannedRepoFile } from "../proof/planned-repo-file.ts";
+import { pieceFolderFilesOf } from "./piece-folders.ts";
 
 export type TeamLayoutPlan = {
   readonly files: readonly PlannedRepoFile[];
@@ -24,8 +29,9 @@ export type TeamLayoutPlan = {
 
 export type TeamLayoutPlanRequest = {
   readonly layouts: readonly VersionOneTeamLayout[];
-  readonly recordKinds: readonly RecordKind[];
+  readonly toolChecks: readonly CheckAddressText[];
   readonly itemTextOf: ItemTextOf;
+  readonly importsRewrittenOf: ImportsRewrittenOf;
 };
 
 type NamedClause = VersionOneTeamClause & { readonly check: CheckNames; readonly title: string };
@@ -35,7 +41,6 @@ type PlannedText = { readonly segments: readonly string[]; readonly text: string
 type LayoutTexts = {
   readonly layout: VersionOneTeamLayout;
   readonly clauses: readonly NamedClause[];
-  readonly recordKinds: readonly RecordKind[];
   readonly itemTextOf: ItemTextOf;
 };
 
@@ -113,13 +118,25 @@ const neededDefinitionsOf = (request: {
   }).values(),
 ];
 
+const takenChecksOf = (request: {
+  readonly layout: VersionOneTeamLayout;
+  readonly toolChecks: readonly CheckAddressText[];
+}): readonly TeamNameMissing[] =>
+  namedClausesOf(request).flatMap(({ clause, check }): readonly TeamNameMissing[] =>
+    request.toolChecks.includes(checkAddressOfNames(check))
+      ? [{ missing: "own-check-name", clause, check, namesFile: request.layout.namesFile }]
+      : [],
+  );
+
 const missingNamesOf = (request: {
   readonly layouts: readonly VersionOneTeamLayout[];
+  readonly toolChecks: readonly CheckAddressText[];
 }): readonly TeamNameMissing[] =>
   request.layouts.flatMap((layout) => {
     const { namesFile } = layout;
     const held = new Set(layout.definitions.map(definitionKeyOf));
     return [
+      ...takenChecksOf({ layout, toolChecks: request.toolChecks }),
       ...layout.clauses.flatMap(({ clause, naming }): readonly TeamNameMissing[] =>
         naming.naming === "unnamed" ? [{ missing: "clause", clause, namesFile }] : [],
       ),
@@ -171,10 +188,6 @@ const definitionTextsOf = (request: LayoutTexts): readonly PlannedText[] => [
           : definition.facts,
     }),
   })),
-  ...request.recordKinds.map((kind): PlannedText => ({
-    segments: [RULES_FOLDER, "record-kinds", `${kind.name}${ITEM_EXTENSION}`],
-    text: request.itemTextOf({ title: kind.title, facts: { phrase: kind.phrase } }),
-  })),
 ];
 
 const checkTextsOf = (request: LayoutTexts): readonly PlannedText[] =>
@@ -214,10 +227,6 @@ const pieceTextsOf = (request: { readonly clause: NamedClause }): readonly Plann
         segments: [...folder, `${check.check}.examples.json`],
         text: documentTextOf(request.clause.cases),
       },
-      ...piece.files.map(({ file, text }) => ({
-        segments: [...folder, ...file.split(PATH_SEPARATOR)],
-        text,
-      })),
     ];
   });
 
@@ -250,25 +259,6 @@ const placedTextOf = (request: {
     : { outcome: "ok", value: { file: placed.value, text: request.planned.text } };
 };
 
-const pieceFileRemovedOf = (request: {
-  readonly folder: RepoPath;
-  readonly file: RepoPath;
-}): Result<RepoPath, PlanRefusal> => {
-  const path = `${request.folder}${PATH_SEPARATOR}${request.file}`;
-  return isRepoPath(path)
-    ? { outcome: "ok", value: path }
-    : { outcome: "failed", error: { kind: "rule-set-path-unplaceable", path } };
-};
-
-const pieceFilesRemovedOf = (request: {
-  readonly layout: VersionOneTeamLayout;
-}): readonly Result<RepoPath, PlanRefusal>[] =>
-  request.layout.clauses.flatMap(({ pieces }) =>
-    pieces.flatMap(({ folder, files }) =>
-      files.map(({ file }) => pieceFileRemovedOf({ folder, file })),
-    ),
-  );
-
 const foldersOf = (request: {
   readonly layout: VersionOneTeamLayout;
   readonly removed: readonly RepoPath[];
@@ -295,29 +285,46 @@ const firstRefusalOf = <Value>(
       };
 };
 
-const plannedLayoutOf = (request: {
+const pieceFilesRemovedOf = (request: {
   readonly layout: VersionOneTeamLayout;
-  readonly recordKinds: readonly RecordKind[];
-  readonly itemTextOf: ItemTextOf;
-}): Result<TeamLayoutPlan, PlanRefusal> => {
-  const { location } = request.layout;
-  const files = firstRefusalOf(
-    layoutTextsOf({ ...request, clauses: namedClausesOf(request) }).map((planned) =>
-      placedTextOf({ location, planned }),
+}): readonly RepoPath[] =>
+  request.layout.clauses.flatMap(({ pieces }) =>
+    pieces.flatMap(({ folder, files }) =>
+      files.flatMap(({ file }) => {
+        const path = `${folder}${PATH_SEPARATOR}${file}`;
+        return isRepoPath(path) ? [path] : [];
+      }),
     ),
   );
-  if (files.outcome === "failed") return files;
-  const pieceFiles = firstRefusalOf(pieceFilesRemovedOf(request));
-  if (pieceFiles.outcome === "failed") return pieceFiles;
+
+const plannedLayoutOf = (request: {
+  readonly layout: VersionOneTeamLayout;
+  readonly itemTextOf: ItemTextOf;
+  readonly importsRewrittenOf: ImportsRewrittenOf;
+}): Result<TeamLayoutPlan, PlanRefusal> => {
+  const { location } = request.layout;
+  const clauses = namedClausesOf(request);
+  const texts = firstRefusalOf(
+    layoutTextsOf({ ...request, clauses }).map((planned) => placedTextOf({ location, planned })),
+  );
+  if (texts.outcome === "failed") return texts;
+  const folderFiles = pieceFolderFilesOf({
+    rootSegments: rootSegmentsOf(request.layout),
+    members: clauses.flatMap(({ clause, check, pieces }) =>
+      pieces.map((piece) => ({ clause: clause.clause, check, piece })),
+    ),
+    importsRewrittenOf: request.importsRewrittenOf,
+  });
+  if (folderFiles.outcome === "failed") return folderFiles;
   const removed = [
     ...request.layout.versionOneFiles,
-    ...pieceFiles.value,
+    ...pieceFilesRemovedOf(request),
     request.layout.namesFile,
   ];
   return {
     outcome: "ok",
     value: {
-      files: files.value,
+      files: [...texts.value, ...folderFiles.value],
       removed,
       folders: foldersOf({ layout: request.layout, removed }).filter(isRepoPath),
     },

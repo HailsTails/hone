@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
+import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
@@ -643,6 +644,16 @@ Nothing was changed.
             namesFile: repoPathOf("acme/version-two-names.json"),
           },
           {
+            missing: "own-check-name",
+            clause: {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-1"),
+              clause: clauseIdOf("loop-calls"),
+            },
+            check: { symptom: catalogueNameOf("loop-keyword"), check: catalogueNameOf("loops") },
+            namesFile: repoPathOf("acme/version-two-names.json"),
+          },
+          {
             missing: "definition",
             definition: { kind: "symptom", name: "direct-console" },
             namesFile: repoPathOf("acme/version-two-names.json"),
@@ -668,7 +679,23 @@ Nothing was changed.
     },
     outcome: {
       code: 1,
-      text: 'upgrade refused:\nthe version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:\n  acme/ACME-1#console-calls has no version 2 name: add "ACME-1#console-calls": { "check": "<symptom>#<check>", "title": "<title>" } under "clauses" in acme/version-two-names.json\n  the symptom direct-console has no definition: add "direct-console": { "title": "<title>", "group": "<group>", "mayIndicate": [{ "case": "<case>", "points": [{ "principle": "<principle>" }] }], "breachUsuallySits": "<where the breach usually sits>", "seenBy": ["<syntax, types, graph, app, files, history or person>"], "recipes": [], "correctUses": [] } under "symptoms" in acme/version-two-names.json\n  the case changes-a-repository has no definition: add "changes-a-repository": { "title": "<title>", "standing": "<accepted or proposed>", "owes": [{ "principle": "<principle>" }] } under "cases" in acme/version-two-names.json\n  the principle repository-ready has no definition: add "repository-ready": { "title": "<title>" } under "principles" in acme/version-two-names.json\n  the rule no-console has no definition: add "no-console": { "title": "<title>", "principle": "<principle>", "standing": "<accepted or proposed>" } under "rules" in acme/version-two-names.json\nWrite each in the names file, then run the upgrade again.\nNothing was changed.\n',
+      text: 'upgrade refused:\nthe version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:\n  acme/ACME-1#console-calls has no version 2 name: add ACME-1#console-calls with its check and title under "clauses" in acme/version-two-names.json\n  acme/ACME-1#loop-calls is named loop-keyword#loops, which is already one of Hone\'s checks: give it a check name of its own under "clauses" in acme/version-two-names.json\n  the symptom direct-console has no definition: add it under "symptoms" in acme/version-two-names.json\n  the case changes-a-repository has no definition: add it under "cases" in acme/version-two-names.json\n  the principle repository-ready has no definition: add it under "principles" in acme/version-two-names.json\n  the rule no-console has no definition: add it under "rules" in acme/version-two-names.json\nWrite each in the names file, with the facts docs/extending.md gives each kind, then run the upgrade again.\nNothing was changed.\n',
+    },
+  },
+  {
+    name: "a version 1 piece folder shared by several clauses cannot be split by its import specifiers alone",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "piece-folder-unsplittable",
+        folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
+        file: repoPathOf("acme/mechanisms/audit/ACME-2/drafts.ts"),
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nthe version 1 piece folder acme/mechanisms/audit/ACME-2 is shared by several clauses, and splitting it between their checks would mean editing more of acme/mechanisms/audit/ACME-2/drafts.ts than its import specifiers. Give each clause a piece folder of its own, then run the upgrade again.\nNothing was changed.\n",
     },
   },
   {

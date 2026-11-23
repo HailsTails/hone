@@ -2,12 +2,19 @@ import {
   type AddressedCheck,
   checkAddressTextOf,
 } from "../../../../../domain/language-layer/check-address-text.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
+import type {
+  ClauseAddress,
+  RuleSetIdentity,
+} from "../../../../../domain/rule-set/clause-address-types.ts";
 import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 
 export type PluginCheck = AddressedCheck & {
-  readonly symptom: { readonly name: string; readonly title: string };
+  readonly symptom: {
+    readonly name: string;
+    readonly title: string;
+    readonly ruleSet: RuleSetIdentity;
+  };
   readonly engines: readonly { readonly name: EngineId }[];
 };
 

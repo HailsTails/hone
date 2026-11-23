@@ -215,7 +215,8 @@ type RecordsFailure = Extract<
       | "records-refused"
       | "catalogue-not-read"
       | "upgrade-needed"
-      | "rule-set-not-upgraded";
+      | "rule-set-not-upgraded"
+      | "rule-set-half-upgraded";
   }
 >;
 
@@ -347,6 +348,12 @@ const recordsFields = (request: {
         `${failure.path}:`,
         `this rule set is in the version 1 layout; run ${upgradeCommandText(request)}, which rewrites it as version 2, and commit what it writes`,
       ];
+    case "rule-set-half-upgraded":
+      return [
+        `${failure.path}:`,
+        "this rule set holds both version 1 discipline files and version 2 items, so an upgrade stopped part way; remove these version 1 files, or restore the rule set from version control and run the upgrade again:",
+        ...failure.files,
+      ];
   }
 };
 
@@ -395,6 +402,7 @@ const failureFields = (request: {
     case "catalogue-not-read":
     case "upgrade-needed":
     case "rule-set-not-upgraded":
+    case "rule-set-half-upgraded":
       return recordsFields({ failure, upgradeCommand: request.upgradeCommand });
   }
 };

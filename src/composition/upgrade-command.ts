@@ -15,10 +15,12 @@ import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/
 import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
 import { measureVersionOneProjection } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
+import { createPathPort } from "../infrastructure/node/path-port.ts";
 import {
   ALREADY_ON_VERSION_TWO,
   upgradeSuccessOutcomeOf,
 } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
+import { createImportsRewrittenOf } from "../infrastructure/upgrade/team-layout/moved-imports.ts";
 import { versionOneTeamLayoutsOf } from "../infrastructure/upgrade/team-layout/version-one-team-layout.ts";
 import {
   type UpgradeInput,
@@ -95,6 +97,9 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
         selection,
       }),
     itemTextOf: itemTextFrom,
+    importsRewrittenOf: createImportsRewrittenOf({
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
+    }),
     recordsOnDiskOf: ({ repoRoot }) =>
       recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),
     versionOneReadOf: (read) => versionOneReadOf({ ...read, fileText, path }),

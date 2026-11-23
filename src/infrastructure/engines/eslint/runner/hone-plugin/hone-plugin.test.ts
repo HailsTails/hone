@@ -23,6 +23,7 @@ const SKIPPED_TESTS_CHECK: PluginCheck = {
   symptom: {
     name: "test-switched-off",
     title: "Test switched off",
+    ruleSet: "hone",
   },
   engines: [{ name: "eslint" }],
 };

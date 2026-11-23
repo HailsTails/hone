@@ -15,6 +15,7 @@ import type {
 import type { OracleFailure } from "../../../application/ports/upgrade/record-answer-oracle.ts";
 import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-stop.ts";
 import type { TeamDefinitionKind } from "../../../application/ports/upgrade/version-one-team-layout.ts";
+import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
@@ -171,14 +172,6 @@ const pairingLineOf = (request: { readonly refusal: PairingRefusal }): string =>
   }
 };
 
-const DEFINITION_SHAPES: Readonly<Record<TeamDefinitionKind, string>> = {
-  principle: '{ "title": "<title>" }',
-  rule: '{ "title": "<title>", "principle": "<principle>", "standing": "<accepted or proposed>" }',
-  case: '{ "title": "<title>", "standing": "<accepted or proposed>", "owes": [{ "principle": "<principle>" }] }',
-  symptom:
-    '{ "title": "<title>", "group": "<group>", "mayIndicate": [{ "case": "<case>", "points": [{ "principle": "<principle>" }] }], "breachUsuallySits": "<where the breach usually sits>", "seenBy": ["<syntax, types, graph, app, files, history or person>"], "recipes": [], "correctUses": [] }',
-};
-
 const DEFINITION_LISTINGS: Readonly<Record<TeamDefinitionKind, string>> = {
   principle: "principles",
   rule: "rules",
@@ -188,12 +181,14 @@ const DEFINITION_LISTINGS: Readonly<Record<TeamDefinitionKind, string>> = {
 
 const teamNameMissingLineOf = (request: { readonly missing: TeamNameMissing }): string => {
   const { missing } = request;
-  if (missing.missing === "clause") {
-    const { clause } = missing;
-    return `${clauseAddressText({ address: clause })} has no version 2 name: add "${clause.discipline}#${clause.clause}": { "check": "<symptom>#<check>", "title": "<title>" } under "clauses" in ${missing.namesFile}`;
+  switch (missing.missing) {
+    case "clause":
+      return `${clauseAddressText({ address: missing.clause })} has no version 2 name: add ${missing.clause.discipline}#${missing.clause.clause} with its check and title under "clauses" in ${missing.namesFile}`;
+    case "own-check-name":
+      return `${clauseAddressText({ address: missing.clause })} is named ${checkAddressOfNames(missing.check)}, which is already one of Hone's checks: give it a check name of its own under "clauses" in ${missing.namesFile}`;
+    case "definition":
+      return `the ${missing.definition.kind} ${missing.definition.name} has no definition: add it under "${DEFINITION_LISTINGS[missing.definition.kind]}" in ${missing.namesFile}`;
   }
-  const { kind, name } = missing.definition;
-  return `the ${kind} ${name} has no definition: add "${name}": ${DEFINITION_SHAPES[kind]} under "${DEFINITION_LISTINGS[kind]}" in ${missing.namesFile}`;
 };
 
 const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly string[] => {
@@ -222,7 +217,11 @@ const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly strin
       return [
         "the version 2 layout needs names and definitions your team has not written, and these are judgements your team makes, so the upgrade does not write them:",
         ...refusal.missing.map((missing) => `  ${teamNameMissingLineOf({ missing })}`),
-        "Write each in the names file, then run the upgrade again.",
+        `Write each in the names file, with the facts docs/extending.md gives each kind, then run the upgrade again.`,
+      ];
+    case "piece-folder-unsplittable":
+      return [
+        `the version 1 piece folder ${refusal.folder} is shared by several clauses, and splitting it between their checks would mean editing more of ${refusal.file} than its import specifiers. Give each clause a piece folder of its own, then run the upgrade again.`,
       ];
     case "rule-set-path-unplaceable":
       return [

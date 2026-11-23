@@ -16,6 +16,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { afterSectionsOf } from "./after-sections.ts";
 
@@ -201,6 +202,33 @@ describe("afterSectionsOf", () => {
       },
     }).editions;
     expect(editions).toEqual(["CD-15#loops walker 1 2"]);
+  });
+
+  it("keys a team check by its own clause where Hone holds a check of the same address", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamLoops = {
+      ...LOOP_KEYWORD_LOOPS,
+      symptom: { ...LOOP_KEYWORD_LOOPS.symptom, ruleSet: acme },
+      clause: { ruleSet: acme, discipline: disciplineIdOf("TM-1"), clause: clauseIdOf("loops") },
+    };
+    const editions = afterSectionsOf({
+      report: {
+        ...EMPTY_AFTER,
+        editions: [
+          {
+            check: { ...teamLoops, clause: undefined },
+            engine: WALKER,
+            edition: editionOf("1"),
+            latest: editionOf("2"),
+          },
+        ],
+      },
+      catalogues: [
+        ...CATALOGUES,
+        { ruleSet: acme, catalogue: { ...SETTINGS_CATALOGUE, checks: [teamLoops] } },
+      ],
+    }).editions;
+    expect(editions).toEqual(["acme/TM-1#loops walker 1 2"]);
   });
 
   it("holds nothing but a passing verdict for a report that holds nothing", () => {

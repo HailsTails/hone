@@ -153,6 +153,18 @@ const SKIPPED_TESTS_BINDING: CheckBinding = {
   edition: editionOf("1"),
 };
 
+const TEAM = { name: ruleSetNameOf("team") };
+
+const TEAM_SKIPPED_TESTS_CHECK: Check = {
+  ...SKIPPED_TESTS_CHECK,
+  symptom: { ...TEST_SWITCHED_OFF, ruleSet: TEAM },
+  clause: {
+    ruleSet: TEAM,
+    discipline: disciplineIdOf("CD-27"),
+    clause: clauseIdOf("skipped-tests"),
+  },
+};
+
 const WALKER_BINDING: CheckBinding = {
   address: "rebinding#test-body",
   ruleSet: TOOL_RULE_SET,
@@ -221,11 +233,11 @@ describe("projectedNamedChecksOf", () => {
   it("refuses a team’s attempt to occupy Hone’s reserved plugin namespace", () => {
     expect(
       projectedNamedChecksOf({
-        checks: [SKIPPED_TESTS_CHECK],
+        checks: [TEAM_SKIPPED_TESTS_CHECK],
         bindings: [
           {
             ...SKIPPED_TESTS_BINDING,
-            ruleSet: { name: ruleSetNameOf("team") },
+            ruleSet: TEAM,
             settings: { pluginNamespace: "hone", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
@@ -236,10 +248,51 @@ describe("projectedNamedChecksOf", () => {
     });
   });
 
-  it("keeps a team's ESLint namespace and plugin module when projecting its named check", () => {
+  it("projects a team's check and Hone's check that share an address, each from its own rule set", () => {
+    expect(
+      projectedNamedChecksOf({
+        checks: [SKIPPED_TESTS_CHECK, TEAM_SKIPPED_TESTS_CHECK],
+        bindings: [
+          SKIPPED_TESTS_BINDING,
+          {
+            ...SKIPPED_TESTS_BINDING,
+            ruleSet: TEAM,
+            pieceRoot: "/repo/team",
+            settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
+          },
+        ],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: [
+        { ruleSet: TOOL_RULE_SET, ruleId: "hone/test-switched-off#skipped-tests" },
+        { ruleSet: TEAM, ruleId: "team/no-skips" },
+      ],
+    });
+  });
+
+  it("refuses a team binding at an address only Hone's catalogue holds", () => {
     expect(
       projectedNamedChecksOf({
         checks: [SKIPPED_TESTS_CHECK],
+        bindings: [
+          {
+            ...SKIPPED_TESTS_BINDING,
+            ruleSet: TEAM,
+            settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
+          },
+        ],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "check-unknown", address: "test-switched-off#skipped-tests" },
+    });
+  });
+
+  it("keeps a team's ESLint namespace and plugin module when projecting its named check", () => {
+    expect(
+      projectedNamedChecksOf({
+        checks: [TEAM_SKIPPED_TESTS_CHECK],
         bindings: [
           {
             address: "test-switched-off#skipped-tests",
@@ -272,10 +325,14 @@ describe("projectedNamedChecksOf", () => {
     expect(
       projectedNamedChecksOf({
         checks: [
-          { name: "debug-call", symptom: { name: "leftover-debugging" }, engines: [ESLINT_ENGINE] },
+          {
+            name: "debug-call",
+            symptom: { name: "leftover-debugging", ruleSet: TOOL_RULE_SET },
+            engines: [ESLINT_ENGINE],
+          },
           {
             name: "debug-statement",
-            symptom: { name: "leftover-debugging" },
+            symptom: { name: "leftover-debugging", ruleSet: TOOL_RULE_SET },
             engines: [ESLINT_ENGINE],
           },
         ],

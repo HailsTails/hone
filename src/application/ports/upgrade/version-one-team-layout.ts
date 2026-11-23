@@ -24,8 +24,17 @@ export type VersionOnePiece = {
   readonly checkSettings: ClauseSettingDeclarations;
   readonly editions: ClauseEditions;
   readonly folder: RepoPath;
+  readonly module: RepoPath;
   readonly files: readonly PieceFolderFile[];
 };
+
+export type ImportsRewrittenOf = (request: {
+  readonly text: string;
+  readonly file: RepoPath;
+  readonly movedTo: RepoPath;
+  readonly folder: RepoPath;
+  readonly moved: ReadonlyMap<RepoPath, RepoPath>;
+}) => Result<string, "beyond-import-specifiers">;
 
 export type ClauseNaming =
   | { readonly naming: "named"; readonly check: CheckNames; readonly title: string }

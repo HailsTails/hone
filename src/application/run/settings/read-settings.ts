@@ -1,4 +1,5 @@
 import {
+  checkAddressTextOf,
   checkNamesOf,
   type AddressedCheck,
 } from "../../../domain/language-layer/check-address-text.ts";
@@ -242,6 +243,28 @@ const selectedCheckOf = (
   };
 };
 
+type SharedCheck = { readonly address: string; readonly ruleSets: readonly [string, string] };
+
+const checkSharedAcrossRuleSetsOf = (request: {
+  readonly catalogues: readonly RuleSetCatalogue[];
+}): SharedCheck | undefined => {
+  const held = request.catalogues.flatMap(({ ruleSet, catalogue }) =>
+    catalogue.checks.map((check) => ({
+      address: checkAddressTextOf({ check }),
+      owner: ruleSet === TOOL_RULE_SET ? TOOL_RULE_SET : ruleSet.name,
+    })),
+  );
+  const [shared] = held.flatMap((each) =>
+    held
+      .filter((other) => other.address === each.address && other.owner !== each.owner)
+      .map((other): SharedCheck => ({
+        address: each.address,
+        ruleSets: [each.owner, other.owner],
+      })),
+  );
+  return shared;
+};
+
 export const readNamedSettingsFile = (
   request: SourcesRequest & {
     readonly readPiece: CheckPieceSource;
@@ -251,6 +274,17 @@ export const readNamedSettingsFile = (
   const { file, path } = request;
   const catalogues = cataloguesHeld({ sources: request.sources, file });
   if (catalogues.outcome === "failed") return catalogues;
+  const shared = checkSharedAcrossRuleSetsOf({ catalogues: catalogues.value });
+  if (shared !== undefined) {
+    return {
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path,
+        detail: `rule sets ${shared.ruleSets.join(" and ")} both hold the check ${shared.address}, and a check address names one check across rule sets; rename the check in one of them`,
+      },
+    };
+  }
   const named = catalogues.value.map((held) => withNamedSource({ held, ruleSets: file.ruleSets }));
   const choices = namedCheckChoicesOf({
     catalogues: named,

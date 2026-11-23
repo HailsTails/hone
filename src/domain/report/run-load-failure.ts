@@ -22,6 +22,7 @@ type KeptKind =
   | "unknown-rule-set"
   | "rule-set-invalid"
   | "rule-set-not-upgraded"
+  | "rule-set-half-upgraded"
   | "git-failed"
   | "config-root-untracked"
   | "unexpected-error";
@@ -190,6 +191,7 @@ export const runLoadFailureOf = (
     case "unknown-rule-set":
     case "rule-set-invalid":
     case "rule-set-not-upgraded":
+    case "rule-set-half-upgraded":
     case "git-failed":
     case "config-root-untracked":
     case "unexpected-error":

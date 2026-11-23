@@ -18,6 +18,9 @@ const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" 
 const NAMES_TEXT =
   '{ "version": 1, "clauses": [{ "clause": "CD-44#parameter-reassignment", "sight": { "kind": "one-symptom", "symptom": "rebinding" }, "checks": ["rebinding#parameter-reassignment"], "anchor": { "kind": "file" } }], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }';
 
+const RECORD_KINDS_NAMES_TEXT =
+  '{ "version": 1, "clauses": [], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }';
+
 const MAKES_A_NEW_VALUE_TEXT =
   '# Makes a new value from what it has\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "no-hidden-effects" }] }\n```\n';
 
@@ -39,8 +42,7 @@ describe("readBoundCatalogue", () => {
       exists: vi
         .fn<FileTextPort["exists"]>()
         .mockReturnValueOnce("present")
-        .mockReturnValueOnce("absent")
-        .mockReturnValueOnce("absent"),
+        .mockReturnValue("absent"),
       read: vi
         .fn<FileTextPort["read"]>()
         .mockReturnValueOnce({ outcome: "ok", value: NAMES_TEXT })
@@ -114,19 +116,39 @@ describe("readBoundCatalogue", () => {
   });
   it("reports an unreadable catalogue in the team's own rules folder", () => {
     const fileText: FileTextPort = {
-      read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: RECORD_KINDS_NAMES_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: AUTHORISED_LOCATION_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT }),
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({
-        outcome: "failed",
-        error: {
-          kind: "directory-unreadable",
-          path: absoluteRootOf("/repo/team-rules/rules"),
-          detail: "EACCES",
-        },
-      }),
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "record-kinds", kind: "directory" }],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "authorised-location.md", kind: "file" },
+            { name: "debt.md", kind: "file" },
+          ],
+        })
+        .mockReturnValueOnce({
+          outcome: "failed",
+          error: {
+            kind: "directory-unreadable",
+            path: absoluteRootOf("/repo/team-rules/rules"),
+            detail: "EACCES",
+          },
+        }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
 
@@ -147,8 +169,7 @@ describe("readBoundCatalogue", () => {
         detail: "EACCES",
       },
     });
-    expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/rules" });
-    expect(fileText.read).not.toHaveBeenCalled();
+    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/rules" });
   });
 
   it("holds no catalogue when a team's rule set holds neither content nor pieces", () => {
@@ -180,8 +201,13 @@ describe("readBoundCatalogue", () => {
 describe("createBoundCatalogueOf", () => {
   it("reads through the directory it was built with", () => {
     const fileText: FileTextPort = {
-      read: vi.fn<FileTextPort["read"]>(),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: RECORD_KINDS_NAMES_TEXT }),
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {

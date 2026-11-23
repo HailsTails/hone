@@ -8,6 +8,7 @@ import type {
   VersionOneTeamLayout,
 } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
+import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
@@ -34,10 +35,13 @@ import {
   type SummarisedDiscipline,
 } from "../../content-files/rule-sets/rule-set-reader.ts";
 import { readBoundCatalogue } from "../../content-files/symptom-catalogues/bound-catalogue.ts";
+import { versionOneRuleFilesOf } from "../../content-files/symptom-catalogues/read-symptom-catalogue.ts";
 import {
   versionOneNamesOf,
   type VersionOneNames,
 } from "../../disciplines-file/version-one-names.ts";
+import { eslintPieceSettingsSchema } from "../../engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
+import { walkerPieceSettingsSchema } from "../../engines/walker/runner/pieces/walker-check-schema.ts";
 import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { ruleSetRootOf } from "../../hone-config-file/rule-set-root.ts";
 import { readVersionTwoNames, VERSION_TWO_NAMES_FILE } from "./version-two-names.ts";
@@ -201,6 +205,17 @@ const folderFilesOf = (
   return files.outcome === "failed" ? files : { outcome: "ok", value: files.value.flat() };
 };
 
+const moduleOf = (request: {
+  readonly mechanism: EngineId;
+  readonly settings: unknown;
+}): RepoPath | undefined => {
+  const module =
+    request.mechanism === "walker"
+      ? walkerPieceSettingsSchema.safeParse(request.settings).data?.module
+      : eslintPieceSettingsSchema.safeParse(request.settings).data?.pluginModule;
+  return module !== undefined && isRepoPath(module) ? module : undefined;
+};
+
 const versionOnePieceOf = (
   request: PlacedTeamRuleSet & {
     readonly discipline: DisciplineId;
@@ -220,6 +235,13 @@ const versionOnePieceOf = (
   if (!isAbsolutePath(absolute)) {
     return invalid({ path: absolute, detail: `${absolute} is not an absolute path` });
   }
+  const module = moduleOf({ mechanism: held.mechanism, settings: entry.settings });
+  if (module === undefined) {
+    return invalid({
+      path: request.path.join({ segments: [absolute, PIECE_FILE] }),
+      detail: `the settings of ${entry.clause} name no piece module`,
+    });
+  }
   const files = folderFilesOf({ ...request, folder: absolute, within: [] });
   return files.outcome === "failed"
     ? files
@@ -231,6 +253,7 @@ const versionOnePieceOf = (
           checkSettings: entry.clauseSettings,
           editions: entry.editions,
           folder: folder.value,
+          module,
           files: files.value,
         },
       };
@@ -424,6 +447,28 @@ const placedOf = (
     : { outcome: "ok", value: { ...request, root: root.value } };
 };
 
+const refusedWhenHalfUpgraded = (
+  request: PlacedTeamRuleSet,
+): Read<readonly VersionOneTeamLayout[]> => {
+  const itemRoot = request.path.join({ segments: [request.root, ...SYMPTOM_CATALOGUE_SEGMENTS] });
+  if (!isAbsolutePath(itemRoot)) {
+    return {
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: itemRoot, detail: "is not an absolute path" },
+    };
+  }
+  const files = versionOneRuleFilesOf({ ...request, itemRoot });
+  if (files.outcome === "failed") {
+    return files;
+  }
+  return files.value.length > 0
+    ? {
+        outcome: "failed",
+        error: { kind: "rule-set-half-upgraded", path: request.root, files: files.value },
+      }
+    : { outcome: "ok", value: [] };
+};
+
 const layoutsNeededOf = (request: PlacedTeamRuleSet): Read<readonly VersionOneTeamLayout[]> => {
   const held = readBoundCatalogue({
     ...request,
@@ -431,7 +476,9 @@ const layoutsNeededOf = (request: PlacedTeamRuleSet): Read<readonly VersionOneTe
     ruleSet: { name: request.ruleSet.name },
   });
   if (held.outcome === "ok") {
-    return { outcome: "ok", value: [] };
+    return held.value.held === "catalogue"
+      ? refusedWhenHalfUpgraded(request)
+      : { outcome: "ok", value: [] };
   }
   if (held.error.kind !== "rule-set-not-upgraded") {
     return held;

@@ -87,6 +87,8 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
       return [request.failure.path, request.failure.detail];
     case "rule-set-not-upgraded":
       return [request.failure.path];
+    case "rule-set-half-upgraded":
+      return [request.failure.path, ...request.failure.files];
     case "records-in-both-layouts":
       return [request.failure.path, `${request.failure.folder}:`, BOTH_LAYOUTS_REPAIR];
     case "why-chains-required":

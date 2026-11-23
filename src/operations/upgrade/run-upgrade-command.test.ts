@@ -89,6 +89,7 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
   externalCataloguesOf: () => ({ outcome: "ok", value: [] }),
   versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [] }),
   itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>(),
+  importsRewrittenOf: vi.fn<UpgradeInput["importsRewrittenOf"]>(),
   recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),
   versionOneReadOf: vi.fn<VersionOneReadOf>(),
   proofRunsOf: vi.fn(),

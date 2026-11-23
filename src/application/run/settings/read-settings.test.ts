@@ -524,6 +524,56 @@ describe("readNamedSettings", () => {
     });
   });
 
+  it("refuses a team check whose address is also one of Hone's checks, naming both rule sets", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamLoopKeyword: Symptom = { ...LOOP_KEYWORD, ruleSet: acme };
+    const sources = {
+      ...sourcesHolding({ document: DOCUMENT }),
+      catalogue: vi
+        .fn<SettingsSources["catalogue"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: SETTINGS_CATALOGUE },
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: {
+            held: "catalogue",
+            catalogue: {
+              ...SETTINGS_CATALOGUE,
+              symptoms: [teamLoopKeyword],
+              clauses: [],
+              checks: [{ name: "loops", symptom: teamLoopKeyword, engines: [WALKER], forms: [] }],
+            },
+          },
+        }),
+    };
+    const settingsFormat = formatGiving({
+      outcome: "ok",
+      value: {
+        ...SETTINGS_FILE,
+        ruleSets: [{ name: acme.name, location: { location: "repo-root" } }],
+        checks: [
+          { address: LOOPS_ADDRESS, state: { state: "run", engine: "walker" } },
+          {
+            address: { ruleSet: acme, check: "loop-keyword#loops" },
+            state: { state: "run", engine: "walker" },
+          },
+        ],
+        checkSettings: [],
+      },
+    });
+    expect(readSelectedSettings({ sources, settingsFormat })).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path: SETTINGS_PATH,
+        detail:
+          "rule sets hone and acme both hold the check loop-keyword#loops, and a check address names one check across rule sets; rename the check in one of them",
+      },
+    });
+  });
+
   it("resolves an opt-in check which has no version one clause", () => {
     const address: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#new-loop-check" };
     const catalogue: SymptomCatalogue = {

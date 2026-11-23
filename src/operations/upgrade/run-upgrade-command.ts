@@ -22,6 +22,7 @@ import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.t
 import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPortOf } from "../../application/ports/upgrade/version-one-projection-port.ts";
 import type {
+  ImportsRewrittenOf,
   ItemTextOf,
   VersionOneTeamLayoutsOf,
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
@@ -46,12 +47,13 @@ import {
   teamLayoutPlanOf,
 } from "../../application/upgrade/team-layout/team-layout-plan.ts";
 import { provenWithTeamLayout } from "../../application/upgrade/team-layout/team-layout-proof.ts";
+import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
-import { catalogueOf, type RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
+import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
 
 export type UpgradePorts = PlannedProjectionPorts & {
@@ -76,6 +78,7 @@ export type UpgradeInput = {
   ) => Result<readonly RuleSetCatalogue[], LoadFailure>;
   readonly versionOneTeamLayoutsOf: VersionOneTeamLayoutsOf;
   readonly itemTextOf: ItemTextOf;
+  readonly importsRewrittenOf: ImportsRewrittenOf;
   readonly recordsOnDiskOf: RecordsOnDiskOf;
   readonly versionOneReadOf: VersionOneReadOf;
   readonly proofRunsOf: ProofRunsOf;
@@ -284,10 +287,11 @@ const teamLayoutPlanFor = (
   }
   const plan = teamLayoutPlanOf({
     layouts: layouts.value,
-    recordKinds:
-      catalogueOf({ catalogues: request.prepared.catalogues, ruleSet: TOOL_RULE_SET })
-        ?.recordKinds ?? [],
+    toolChecks: request.prepared.catalogues
+      .filter(({ ruleSet }) => ruleSet === TOOL_RULE_SET)
+      .flatMap(({ catalogue }) => catalogue.checks.map((check) => checkAddressOf({ check }))),
     itemTextOf: request.itemTextOf,
+    importsRewrittenOf: request.importsRewrittenOf,
   });
   return plan.outcome === "failed"
     ? {

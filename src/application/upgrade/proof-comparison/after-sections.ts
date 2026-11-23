@@ -1,9 +1,8 @@
 import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import {
-  type CheckAddressText,
-  checkAddressTextOf,
-} from "../../../domain/language-layer/check-address-text.ts";
-import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
+  checkAddressOf,
+  qualifiedCheckAddressOf,
+} from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import { runVerdictOf } from "../../../domain/report/report-sections.ts";
@@ -31,9 +30,9 @@ const clauseTextOfFinding = (request: {
 
 const clauseTextOfCheck = (request: {
   readonly check: Check;
-  readonly clauses: ReadonlyMap<CheckAddressText, ClauseAddress>;
+  readonly clauses: ReadonlyMap<string, ClauseAddress>;
 }): string => {
-  const mapped = request.check.clause ?? request.clauses.get(checkAddressTextOf(request));
+  const mapped = request.check.clause ?? request.clauses.get(qualifiedCheckAddressOf(request));
   return mapped === undefined ? checkAddressOf(request) : clauseAddressText({ address: mapped });
 };
 
@@ -45,10 +44,10 @@ export const afterSectionsOf = (request: {
   readonly catalogues: readonly RuleSetCatalogue[];
 }): SectionKeys => {
   const { report, catalogues } = request;
-  const clauses = new Map<CheckAddressText, ClauseAddress>();
+  const clauses = new Map<string, ClauseAddress>();
   for (const { catalogue } of catalogues) {
     for (const check of catalogue.checks) {
-      if (check.clause !== undefined) clauses.set(checkAddressTextOf({ check }), check.clause);
+      if (check.clause !== undefined) clauses.set(qualifiedCheckAddressOf({ check }), check.clause);
     }
   }
   return {

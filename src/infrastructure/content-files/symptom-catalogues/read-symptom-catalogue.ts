@@ -3,11 +3,15 @@ import type { FileTextPort } from "../../../application/ports/file-system/file-t
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { SymptomCatalogueRepository } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
-import type { ContentHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type {
+  ContentHolding,
+  RecordKind,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import {
   NO_VERSION_ONE_NAMES,
   readVersionOneNames,
@@ -41,13 +45,14 @@ const namesOfRuleSet = (request: CatalogueSource): Result<VersionOneNames, Versi
         })
       : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
 
-type RulesLayout = "version-one" | "not-version-one";
-
 const VERSION_ONE_RULE_FILE = "discipline.json";
 
-const rulesLayoutOf = (
-  request: CatalogueSource & { readonly itemRoot: AbsolutePath },
-): Result<RulesLayout, VersionTwoLoadFailure> => {
+export const versionOneRuleFilesOf = (request: {
+  readonly fileText: FileTextPort;
+  readonly directory: DirectoryPort;
+  readonly path: Pick<PathPort, "join">;
+  readonly itemRoot: AbsolutePath;
+}): Result<readonly string[], VersionTwoLoadFailure> => {
   const entries = request.directory.list({ path: request.itemRoot });
   if (entries.outcome === "failed") {
     return {
@@ -55,16 +60,17 @@ const rulesLayoutOf = (
       error: { kind: "file-unreadable", path: entries.error.path, detail: entries.error.detail },
     };
   }
-  const holdsRuleFile = entries.value.some(
-    (entry) =>
-      entry.kind === "directory" &&
-      request.fileText.exists({
-        path: request.path.join({
-          segments: [request.itemRoot, entry.name, VERSION_ONE_RULE_FILE],
-        }),
-      }) === "present",
-  );
-  return { outcome: "ok", value: holdsRuleFile ? "version-one" : "not-version-one" };
+  return {
+    outcome: "ok",
+    value: entries.value.flatMap((entry) => {
+      const path = request.path.join({
+        segments: [request.itemRoot, entry.name, VERSION_ONE_RULE_FILE],
+      });
+      return entry.kind === "directory" && request.fileText.exists({ path }) === "present"
+        ? [path]
+        : [];
+    }),
+  };
 };
 
 const refusedWhenVersionOne = (
@@ -76,13 +82,36 @@ const refusedWhenVersionOne = (
   if (request.holding.held === "catalogue") {
     return { outcome: "ok", value: request.holding };
   }
-  const layout = rulesLayoutOf(request);
-  if (layout.outcome === "failed") {
-    return layout;
+  const files = versionOneRuleFilesOf(request);
+  if (files.outcome === "failed") {
+    return files;
   }
-  return layout.value === "version-one"
+  return files.value.length > 0
     ? { outcome: "failed", error: { kind: "rule-set-not-upgraded", path: request.ruleSetRoot } }
     : { outcome: "ok", value: request.holding };
+};
+
+const inheritedRecordKindsOf = (
+  request: CatalogueSource,
+): Result<readonly RecordKind[], VersionTwoLoadFailure> => {
+  if (request.ruleSetRoot === request.installRoot) {
+    return { outcome: "ok", value: [] };
+  }
+  const tool = readSymptomCatalogue({
+    fileText: request.fileText,
+    directory: request.directory,
+    path: request.path,
+    ruleSetRoot: request.installRoot,
+    ruleSet: TOOL_RULE_SET,
+    installRoot: request.installRoot,
+  });
+  if (tool.outcome === "failed") {
+    return tool;
+  }
+  return {
+    outcome: "ok",
+    value: tool.value.held === "catalogue" ? tool.value.content.recordKinds : [],
+  };
 };
 
 const readSymptomCatalogue = (
@@ -113,6 +142,10 @@ const readSymptomCatalogue = (
   if (request.fileText.exists({ path: root.data }) === "absent") {
     return { outcome: "ok", value: { held: "none" } };
   }
+  const inherited = inheritedRecordKindsOf(request);
+  if (inherited.outcome === "failed") {
+    return inherited;
+  }
   const beside = {
     engines: ENGINE_REGISTRY,
     clauses: clauses.value,
@@ -126,6 +159,7 @@ const readSymptomCatalogue = (
     root: root.data,
     ruleSet: request.ruleSet,
     beside,
+    inheritedRecordKinds: inherited.value,
     symptomSourcePrefix:
       request.ruleSetRoot === request.installRoot
         ? undefined

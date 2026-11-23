@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -7,6 +7,7 @@ import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import type {
+  ImportsRewrittenOf,
   TeamDefinition,
   VersionOneTeamClause,
   VersionOneTeamLayout,
@@ -17,6 +18,8 @@ const itemTextOf = (request: { readonly title: string; readonly facts: unknown }
   `${request.title} ${JSON.stringify(request.facts)}`;
 
 const FIRST = editionOf("1");
+
+const importsUnchanged = vi.fn<ImportsRewrittenOf>();
 
 const CONSOLE_CLAUSE = {
   ruleSet: { name: ruleSetNameOf("acme") },
@@ -58,6 +61,7 @@ const CONSOLE: VersionOneTeamClause = {
       checkSettings: {},
       editions: { declared: [FIRST], default: FIRST, latest: FIRST },
       folder: repoPathOf("acme/mechanisms/eslint/ACME-1"),
+      module: repoPathOf("plugin.ts"),
       files: [
         { file: repoPathOf("plugin.ts"), text: "export default {};\n" },
         { file: repoPathOf("helpers/names.ts"), text: "export const names = [];\n" },
@@ -119,11 +123,64 @@ const LAYOUT: VersionOneTeamLayout = {
   ],
 };
 
-const DEBT = { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "none-yet" } as const;
+const planOf = (layouts: readonly VersionOneTeamLayout[]) =>
+  teamLayoutPlanOf({ layouts, toolChecks: [], itemTextOf, importsRewrittenOf: importsUnchanged });
+
+const SHARED_FOLDER = repoPathOf("acme/mechanisms/eslint/ACME-1");
+
+const SHARED_FILES = [
+  { file: repoPathOf("plugin.ts"), text: 'import { names } from "./helpers/names.ts";\n' },
+  { file: repoPathOf("plugin.test.ts"), text: 'import plugin from "./plugin.ts";\n' },
+  { file: repoPathOf("draft.ts"), text: 'import { names } from "./helpers/names.ts";\n' },
+  { file: repoPathOf("helpers/names.ts"), text: "export const names = [];\n" },
+];
+
+const SHARING_LAYOUT: VersionOneTeamLayout = {
+  ...LAYOUT,
+  clauses: [
+    {
+      ...DRAFT,
+      pieces: [
+        {
+          mechanism: "eslint",
+          settings: { pluginNamespace: "acme", pluginModule: "draft.ts", rule: "no-draft" },
+          checkSettings: {},
+          editions: { declared: [FIRST], default: FIRST, latest: FIRST },
+          folder: SHARED_FOLDER,
+          module: repoPathOf("draft.ts"),
+          files: SHARED_FILES,
+        },
+      ],
+    },
+    {
+      ...CONSOLE,
+      pieces: CONSOLE.pieces.map((piece) => ({ ...piece, files: SHARED_FILES })),
+    },
+  ],
+};
+
+const MOVED = new Map([
+  [
+    "acme/mechanisms/eslint/ACME-1/plugin.ts",
+    "acme/engines/eslint/direct-console/console-calls/plugin.ts",
+  ],
+  [
+    "acme/mechanisms/eslint/ACME-1/plugin.test.ts",
+    "acme/engines/eslint/direct-console/console-calls/plugin.test.ts",
+  ],
+  [
+    "acme/mechanisms/eslint/ACME-1/draft.ts",
+    "acme/engines/eslint/direct-console/draft-calls/draft.ts",
+  ],
+  [
+    "acme/mechanisms/eslint/ACME-1/helpers/names.ts",
+    "acme/engines/eslint/direct-console/console-calls/helpers/names.ts",
+  ],
+]);
 
 describe("teamLayoutPlanOf", () => {
   it("writes the team's definitions, the symptom seen as its clauses' summaries, a check per clause, and each piece's whole folder with its examples, and removes the version 1 files and the folders they leave deepest first", () => {
-    expect(teamLayoutPlanOf({ layouts: [LAYOUT], recordKinds: [DEBT], itemTextOf })).toEqual({
+    expect(planOf([LAYOUT])).toEqual({
       outcome: "ok",
       value: {
         files: [
@@ -136,7 +193,6 @@ describe("teamLayoutPlanOf", () => {
             file: "acme/rules/typescript/symptoms/direct-console.md",
             text: 'Direct console {"group":"Repository health","seen":"no direct console output; no draft output"}',
           },
-          { file: "acme/rules/record-kinds/debt.md", text: 'Debt {"phrase":"debt"}' },
           {
             file: "acme/rules/typescript/symptoms/direct-console/console-calls.md",
             text: "Console calls {}",
@@ -185,8 +241,9 @@ describe("teamLayoutPlanOf", () => {
     expect(
       teamLayoutPlanOf({
         layouts: [{ ...LAYOUT, location: { location: "repo-root" }, clauses: [] }],
-        recordKinds: [],
+        toolChecks: [],
         itemTextOf,
+        importsRewrittenOf: importsUnchanged,
       }),
     ).toMatchObject({
       outcome: "ok",
@@ -217,8 +274,9 @@ describe("teamLayoutPlanOf", () => {
             definitions: [],
           },
         ],
-        recordKinds: [],
+        toolChecks: [],
         itemTextOf,
+        importsRewrittenOf: importsUnchanged,
       }),
     ).toEqual({
       outcome: "failed",
@@ -246,8 +304,9 @@ describe("teamLayoutPlanOf", () => {
     expect(
       teamLayoutPlanOf({
         layouts: [{ ...LAYOUT, definitions: [PRINCIPLE, CASE] }],
-        recordKinds: [],
+        toolChecks: [],
         itemTextOf,
+        importsRewrittenOf: importsUnchanged,
       }),
     ).toEqual({
       outcome: "failed",
@@ -264,8 +323,95 @@ describe("teamLayoutPlanOf", () => {
     });
   });
 
+  it("moves each clause's module and its test to the clause's own check, the rest of a shared piece folder once to the first clause by name, and rewrites the moved files' imports", () => {
+    const importsRewrittenOf = vi
+      .fn<ImportsRewrittenOf>()
+      .mockReturnValue({ outcome: "ok", value: "rewritten\n" });
+    expect(
+      teamLayoutPlanOf({
+        layouts: [SHARING_LAYOUT],
+        toolChecks: [],
+        itemTextOf,
+        importsRewrittenOf,
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        files: expect.arrayContaining([
+          {
+            file: "acme/engines/eslint/direct-console/console-calls/plugin.ts",
+            text: "rewritten\n",
+          },
+          {
+            file: "acme/engines/eslint/direct-console/console-calls/plugin.test.ts",
+            text: "rewritten\n",
+          },
+          {
+            file: "acme/engines/eslint/direct-console/draft-calls/draft.ts",
+            text: "rewritten\n",
+          },
+          {
+            file: "acme/engines/eslint/direct-console/console-calls/helpers/names.ts",
+            text: "rewritten\n",
+          },
+        ]),
+      },
+    });
+    expect(importsRewrittenOf).toHaveBeenCalledWith({
+      text: 'import { names } from "./helpers/names.ts";\n',
+      file: "acme/mechanisms/eslint/ACME-1/draft.ts",
+      movedTo: "acme/engines/eslint/direct-console/draft-calls/draft.ts",
+      folder: "acme/mechanisms/eslint/ACME-1",
+      moved: MOVED,
+    });
+  });
+
+  it("refuses a shared piece folder whose files cannot be split by rewriting import specifiers alone, naming the folder and the file", () => {
+    expect(
+      teamLayoutPlanOf({
+        layouts: [SHARING_LAYOUT],
+        toolChecks: [],
+        itemTextOf,
+        importsRewrittenOf: vi
+          .fn<ImportsRewrittenOf>()
+          .mockReturnValue({ outcome: "failed", error: "beyond-import-specifiers" }),
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "piece-folder-unsplittable",
+        folder: "acme/mechanisms/eslint/ACME-1",
+        file: "acme/mechanisms/eslint/ACME-1/plugin.ts",
+      },
+    });
+  });
+
+  it("refuses a team check named with an address Hone's catalogue already holds", () => {
+    expect(
+      teamLayoutPlanOf({
+        layouts: [LAYOUT],
+        toolChecks: ["direct-console#console-calls"],
+        itemTextOf,
+        importsRewrittenOf: importsUnchanged,
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "team-names-missing",
+        missing: [
+          {
+            missing: "own-check-name",
+            clause: CONSOLE_CLAUSE,
+            check: { symptom: "direct-console", check: "console-calls" },
+            namesFile: "acme/version-two-names.json",
+          },
+        ],
+      },
+    });
+  });
+
   it("writes nothing and removes nothing when no rule set needs converting", () => {
-    expect(teamLayoutPlanOf({ layouts: [], recordKinds: [DEBT], itemTextOf })).toEqual({
+    expect(planOf([])).toEqual({
       outcome: "ok",
       value: { files: [], removed: [], folders: [] },
     });
