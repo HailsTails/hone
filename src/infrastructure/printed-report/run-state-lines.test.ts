@@ -7,6 +7,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import type { ConventionKey } from "../../domain/settings/conventions.ts";
 import {
   assessmentLine,
+  projectionMissingLine,
   projectionProblemLine,
   settingsNoteLine,
   settingsNoteText,
@@ -165,6 +166,19 @@ describe("projectionProblemLine", () => {
     ],
   )("prints $name", ({ problem, line }) => {
     expect(projectionProblemLine({ projectCommand: PROJECT_COMMAND, problem })).toBe(line);
+  });
+});
+
+describe("projectionMissingLine", () => {
+  it("names the engine whose projection is not written and the project command", () => {
+    expect(
+      projectionMissingLine({
+        unmeasured: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+        projectCommand: "node /tool/hone.js project --repo /repo",
+      }),
+    ).toBe(
+      "engine-not-run eslint missing: hone.eslint.mjs is not written; run node /tool/hone.js project --repo /repo and commit every file it writes",
+    );
   });
 });
 
