@@ -178,19 +178,32 @@ const changeLinesOfSection = (request: {
   return folded.outcome === "failed" ? folded : { outcome: "ok", value: folded.value.found };
 };
 
-const withoutRepeats = (request: {
-  readonly lines: readonly ChangeLine[];
+const PULL_REQUEST_PATTERN = /\(#(\d+)\)$/u;
+
+const pullRequestOf = (request: { readonly line: ChangeLine }): string | undefined =>
+  PULL_REQUEST_PATTERN.exec(request.line.line)?.[1];
+
+const foldedOnce = (request: {
+  readonly carried: readonly ChangeLine[];
+  readonly fresh: readonly ChangeLine[];
 }): readonly ChangeLine[] =>
-  request.lines.filter(
-    (candidate, index) =>
-      request.lines.findIndex((other) => other.line === candidate.line) === index,
-  );
+  request.carried.filter((line, index) => {
+    const pullRequest = pullRequestOf({ line });
+    return (
+      pullRequest === undefined ||
+      ![...request.carried.slice(index + 1), ...request.fresh].some(
+        (later) => pullRequestOf({ line: later }) === pullRequest,
+      )
+    );
+  });
+
+export type FoldedChangelog = { readonly text: string; readonly folded: number };
 
 export const changelogWithFoldedSection = (request: {
   readonly changelog: string;
   readonly version: string;
   readonly entries: readonly ChangeEntry[];
-}): Result<string, string> => {
+}): Result<FoldedChangelog, string> => {
   const lines = request.changelog.split("\n");
   const preReleasePrefix = `${headingOf(request)}-`;
   const folded = sectionBoundsOf({ lines })
@@ -211,18 +224,18 @@ export const changelogWithFoldedSection = (request: {
   if (carried.outcome === "failed") {
     return carried;
   }
-  return changelogWithSection({
+  const fresh = request.entries.map((entry) => changeLineOf({ entry }));
+  const kept = foldedOnce({ carried: carried.value, fresh });
+  const written = changelogWithSection({
     changelog: lines
       .filter(
         (_line, index) => !folded.some((bounds) => index >= bounds.start && index < bounds.end),
       )
       .join("\n"),
     version: request.version,
-    section: sectionOfLines({
-      version: request.version,
-      lines: withoutRepeats({
-        lines: [...carried.value, ...request.entries.map((entry) => changeLineOf({ entry }))],
-      }),
-    }),
+    section: sectionOfLines({ version: request.version, lines: [...kept, ...fresh] }),
   });
+  return written.outcome === "failed"
+    ? written
+    : { outcome: "ok", value: { text: written.value, folded: kept.length } };
 };

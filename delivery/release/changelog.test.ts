@@ -98,23 +98,64 @@ describe("changelogWithFoldedSection", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: `${INTRO}\n## 2.0.0\n\n### Breaking changes\n\n- move into layers (#318)\n\n### Features\n\n- one address (#206)\n\n### Fixes\n\n- an older fix (#300)\n- carry a carve-out (#352)\n- point imports (#353)\n- index once (#365)\n- last fix (#370)\n\n### Other changes\n\n- trim pages (#347)\n\n## 1.0.0\n\nOld.\n`,
+      value: {
+        text: `${INTRO}\n## 2.0.0\n\n### Breaking changes\n\n- move into layers (#318)\n\n### Features\n\n- one address (#206)\n\n### Fixes\n\n- an older fix (#300)\n- carry a carve-out (#352)\n- point imports (#353)\n- index once (#365)\n- last fix (#370)\n\n### Other changes\n\n- trim pages (#347)\n\n## 1.0.0\n\nOld.\n`,
+        folded: 7,
+      },
     });
   });
 
-  it("lists a pull request once when a pre-release section and the new entries both hold it", () => {
+  it("lists a pull request once, by its number, when a pre-release section and the new entries both hold it", () => {
     expect(
       changelogWithFoldedSection({
-        changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+        changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n- three (#3)\n`,
         version: "2.0.0",
         entries: [
-          changeEntryOf({ message: "fix: one (#1)" }),
+          changeEntryOf({ message: "fix: one, reworded (#1)" }),
           changeEntryOf({ message: "fix: two (#2)" }),
         ],
       }),
     ).toEqual({
       outcome: "ok",
-      value: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- one (#1)\n- two (#2)\n`,
+      value: {
+        text: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- three (#3)\n- one, reworded (#1)\n- two (#2)\n`,
+        folded: 1,
+      },
+    });
+  });
+
+  it("lists a pull request once when two pre-release sections both hold it", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.2\n\n### Fixes\n\n- one again (#1)\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+        version: "2.0.0",
+        entries: [changeEntryOf({ message: "fix: two (#2)" })],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        text: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- one again (#1)\n- two (#2)\n`,
+        folded: 1,
+      },
+    });
+  });
+
+  it("keeps every new entry, repeated subjects included", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 1.0.0\n\nOld.\n`,
+        version: "1.0.1",
+        entries: [
+          changeEntryOf({ message: "chore: same" }),
+          changeEntryOf({ message: "chore: same" }),
+        ],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        text: `${INTRO}\n## 1.0.1\n\n### Other changes\n\n- same\n- same\n\n## 1.0.0\n\nOld.\n`,
+        folded: 0,
+      },
     });
   });
 
@@ -127,7 +168,10 @@ describe("changelogWithFoldedSection", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- new (#2)\n\n## 1.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n\n## 1.0.0\n\nOld.\n`,
+      value: {
+        text: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- new (#2)\n\n## 1.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n\n## 1.0.0\n\nOld.\n`,
+        folded: 0,
+      },
     });
   });
 
@@ -140,7 +184,10 @@ describe("changelogWithFoldedSection", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: `${INTRO}\n## 2.0.0-pre.2\n\n### Fixes\n\n- two (#2)\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+      value: {
+        text: `${INTRO}\n## 2.0.0-pre.2\n\n### Fixes\n\n- two (#2)\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+        folded: 0,
+      },
     });
   });
 
