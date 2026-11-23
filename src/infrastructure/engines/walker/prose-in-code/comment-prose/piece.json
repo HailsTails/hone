@@ -5,5 +5,10 @@
   },
   "settings": {
     "module": "prose-in-code.ts"
+  },
+  "checkSettings": {
+    "trackerPatterns": {
+      "default": ["^\\((?:#[1-9]\\d*|[A-Za-z][\\w-]*-[1-9]\\d*|[Hh][Tt][Tt][Pp][Ss]?://\\S+)\\)$"]
+    }
   }
 }

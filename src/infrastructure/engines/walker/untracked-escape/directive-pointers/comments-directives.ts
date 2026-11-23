@@ -1,10 +1,12 @@
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
-import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
-import type { Result } from "../../../../../domain/result.ts";
-import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
-import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import { stringListCheckSettings } from "../../runner/pieces/piece-check-settings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import {
+  type TrackedCheck,
+  type Tracking,
+  trackedChecksOf,
+  trackingAnywhere,
+  trackingAtStart,
+} from "../../runner/pieces/tracker-patterns.ts";
 import { typeDirectiveReaderFor } from "../../runner/pieces/type-directives.ts";
 import type { PieceHit, SourceObservers, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
@@ -18,83 +20,6 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
 const TODO_PATTERN = /\/\/\s*TODO\b/;
 const LINTER_DIRECTIVE_PATTERN =
   /^(?:\/\/|\/\*)\s*((?:biome-ignore(?:-all|-start|-end)?|(?:eslint|oxlint)-(?:disable(?:-line|-next-line)?|enable)|eslint(?=\s)))\b/;
-const TRACKED_REFERENCE_PATTERN = /\([^()\s]*\d[^()\s]*\)/g;
-const LEADING_TRACKED_REFERENCE_PATTERN = /^\s*(\([^()\s]*\d[^()\s]*\))/;
-
-type TrackedCheck = {
-  readonly binding: CheckBinding;
-  readonly trackers: readonly RegExp[];
-};
-
-type Tracking = "tracked" | "untracked";
-
-const compiledTracker = (request: {
-  readonly binding: CheckBinding;
-  readonly source: string;
-}): Result<readonly RegExp[], PieceFailure> => {
-  try {
-    return { outcome: "ok", value: [new RegExp(request.source)] };
-  } catch (thrown) {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "piece-invalid",
-        pieceRoot: request.binding.pieceRoot,
-        detail: `the checkSettings of ${request.binding.address} are malformed: trackerPatterns entry ${JSON.stringify(request.source)} is not a regular expression: ${thrown instanceof Error ? thrown.message : String(thrown)}`,
-      },
-    };
-  }
-};
-
-const trackedCheckOf = (request: {
-  readonly binding: CheckBinding;
-}): Result<readonly TrackedCheck[], PieceFailure> => {
-  const settings = stringListCheckSettings({ binding: request.binding, keys: ["trackerPatterns"] });
-  if (settings.outcome === "failed") return settings;
-  const trackers = gatheredOutcomes({
-    outcomes: settings.value.trackerPatterns.map((source) =>
-      compiledTracker({ binding: request.binding, source }),
-    ),
-  });
-  if (trackers.outcome === "failed") return trackers;
-  return { outcome: "ok", value: [{ binding: request.binding, trackers: trackers.value }] };
-};
-
-const trackedChecksOf = (request: {
-  readonly bindings: readonly CheckBinding[];
-}): Result<readonly TrackedCheck[], PieceFailure> =>
-  gatheredOutcomes({ outcomes: request.bindings.map((binding) => trackedCheckOf({ binding })) });
-
-const chosenReference = (request: {
-  readonly references: readonly string[];
-  readonly tracked: TrackedCheck;
-}): Tracking =>
-  request.references.some((reference) =>
-    request.tracked.trackers.some((tracker) => tracker.test(reference)),
-  )
-    ? "tracked"
-    : "untracked";
-
-const trackingAnywhere = (request: {
-  readonly text: string;
-  readonly tracked: TrackedCheck;
-}): Tracking =>
-  chosenReference({
-    references: Array.from(request.text.matchAll(TRACKED_REFERENCE_PATTERN), (match) => match[0]),
-    tracked: request.tracked,
-  });
-
-const trackingAtStart = (request: {
-  readonly text: string;
-  readonly tracked: TrackedCheck;
-}): Tracking => {
-  const reference = LEADING_TRACKED_REFERENCE_PATTERN.exec(request.text)?.[1];
-  return chosenReference({
-    references: reference === undefined ? [] : [reference],
-    tracked: request.tracked,
-  });
-};
-
 const textAfter = (request: {
   readonly pattern: RegExp;
   readonly text: string;
