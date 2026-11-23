@@ -9,10 +9,20 @@ describe("source snippets", () => {
     );
   });
 
-  it("ends anchored snippets with an ellipsis even at exactly eighty characters", () => {
+  it("keeps an anchored snippet of exactly eighty characters whole", () => {
     expect(
       sourceSnippetAt({
         source: "x12345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        position: 1,
+      }),
+    ).toBe("12345678901234567890123456789012345678901234567890123456789012345678901234567890");
+  });
+
+  it("ends an anchored snippet with an ellipsis when the source runs past eighty characters", () => {
+    expect(
+      sourceSnippetAt({
+        source:
+          "x123456789012345678901234567890123456789012345678901234567890123456789012345678901",
         position: 1,
       }),
     ).toBe("12345678901234567890123456789012345678901234567890123456789012345678901234567890…");

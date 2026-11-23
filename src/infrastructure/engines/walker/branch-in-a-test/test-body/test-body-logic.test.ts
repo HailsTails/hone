@@ -258,7 +258,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
     ]);
   });
 
-  it("adds the original ellipsis at exactly eighty source characters without collapsing whitespace", () => {
+  it("keeps exactly eighty source characters whole without collapsing whitespace", () => {
     const observed = sourceObservations({
       source: "r.map(f);\nabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
       bindings: [CLAUSE],
@@ -275,8 +275,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
       {
         check: ADDRESS,
         anchor: { line: 1, column: 0 },
-        snippet:
-          "r.map(f); abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr…",
+        snippet: "r.map(f); abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
         remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
       },
     ]);
