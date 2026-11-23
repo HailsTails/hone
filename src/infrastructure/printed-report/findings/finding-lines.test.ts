@@ -388,6 +388,7 @@ describe("findingLine", () => {
   it("uses the team symptom's own page in its finding", () => {
     const symptom: Symptom = {
       name: "outside-import-past-a-boundary",
+      ruleSet: { name: ruleSetNameOf("acme") },
       sourceFile: "rules/team/symptoms/outside-import-past-a-boundary.md",
       title: "Outside import past a boundary",
       seen: "A domain unit imports an outside dependency.",
@@ -398,7 +399,6 @@ describe("findingLine", () => {
     };
     const check: Check = {
       name: "no-moment",
-      ruleSet: ruleSetNameOf("acme"),
       symptom,
       engines: [ESLINT_ENGINE],
       forms: [],
