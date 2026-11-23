@@ -102,23 +102,8 @@ describe("fetch-command", () => {
     expect(
       findingsIn({
         file,
-        source: [
-          "build:",
-          "  before_script: npx setup",
-          "  needs:",
-          "    - npx-cache",
-          "  script:",
-          "  - npx-cache local",
-          "  - pnpx some-tool",
-          "  variables:",
-          "    PNPX: 1",
-          "  after_script:",
-          "    - |",
-          "      npx cleanup",
-          "  hooks:",
-          "    pre_get_sources_script:",
-          "      - npx prepare",
-        ].join("\n"),
+        source:
+          "build:\n  before_script: npx setup\n  needs:\n    - npx-cache\n  script:\n  - npx-cache local\n  - pnpx some-tool\n  variables:\n    PNPX: 1\n  after_script:\n    - |\n      npx cleanup\n  hooks:\n    pre_get_sources_script:\n      - npx prepare",
       }),
     ).toEqual([
       { file, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "before_script: npx setup" },
@@ -175,6 +160,19 @@ describe("fetch-command", () => {
         anchor: { line: 4, column: 0 },
         snippet: "- run: 'npx inline-tool'",
       },
+    ]);
+  });
+
+  it("follows GitLab script aliases and keeps anchored metadata outside command scanning", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          ".install: &install\n  - npx setup-tool\n.unused: &unused\n  - pnpx unrelated\nbuild:\n  variables:\n    script: bunx a-variable\n  script:\n    - *install",
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "- npx setup-tool" },
     ]);
   });
 

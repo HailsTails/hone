@@ -19,6 +19,9 @@ const DOWNLOAD_PIPE =
   /(?:^|[;&|])\s*(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^|\r\n]*\|\s*(?:sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\b/i;
 const GITLAB_SCRIPT =
   /^(?:-\s+)?(?:before_script|script|after_script|pre_get_sources_script)\s*:\s*/;
+const GITLAB_VARIABLES = /^variables\s*:/;
+const YAML_ANCHOR = /^[.\w-]+\s*:\s*&(?<anchor>[\w.-]+)(?:\s+(?<command>.*))?$/;
+const YAML_ALIAS = /^\*(?<name>[\w.-]+)(?:\s+#.*)?$/;
 const SEQUENCE_ITEM = /^-\s+/;
 const WORKFLOW_COMMAND = /^(?:-\s+)?(?:run|script)\s*:\s*/;
 const YAML_BLOCK = /^(?:&\S+\s*)?(?:[|>][+\d-]*)?(?:\s*#.*)?$/;
@@ -31,33 +34,89 @@ const yamlCommandOf = (source: string): string => {
   return source;
 };
 
-type ScriptScan = { readonly scriptIndent: number | undefined; readonly commands: Command[] };
+type YamlLine = { readonly snippet: string; readonly indent: number; readonly anchor: Anchor };
+type ScriptScan = {
+  readonly scriptIndent: number | undefined;
+  readonly variablesIndent: number | undefined;
+  readonly commands: Command[];
+};
 
-const gitlabCommandsOf = (source: string): readonly Command[] =>
-  source.split(/\r?\n/).reduce<ScriptScan>(
-    (scan, line, index) => {
-      const snippet = line.trim();
-      if (snippet.length === 0 || snippet.startsWith("#")) return scan;
-      const indent = line.length - line.trimStart().length;
-      const { scriptIndent, commands } = scan;
-      const anchor = { line: index + 1, column: 0 };
-      if (GITLAB_SCRIPT.test(snippet)) {
-        const command = snippet.replace(GITLAB_SCRIPT, "");
-        commands.push({ text: yamlCommandOf(command), anchor, snippet });
-        return { scriptIndent: YAML_BLOCK.test(command) ? indent : undefined, commands };
-      }
-      if (scriptIndent === undefined) return scan;
-      if (indent < scriptIndent || (indent === scriptIndent && !SEQUENCE_ITEM.test(snippet))) {
-        return { scriptIndent: undefined, commands };
-      }
-      const text = SEQUENCE_ITEM.test(snippet)
-        ? yamlCommandOf(snippet.replace(SEQUENCE_ITEM, ""))
-        : snippet;
-      commands.push({ text, anchor, snippet });
-      return scan;
-    },
-    { scriptIndent: undefined, commands: [] },
+const isolatedYamlLines = (source: string): readonly YamlLine[] =>
+  source.split(/\r?\n/).flatMap((line, index) => {
+    const snippet = line.trim();
+    if (snippet.length === 0 || snippet.startsWith("#")) return [];
+    return [
+      {
+        snippet,
+        indent: line.length - line.trimStart().length,
+        anchor: { line: index + 1, column: 0 },
+      },
+    ];
+  });
+
+const scanCommandLine = (request: {
+  readonly scan: ScriptScan;
+  readonly line: YamlLine;
+  readonly headerValueOf: (snippet: string) => string | undefined;
+}): ScriptScan => {
+  const { scan, line, headerValueOf } = request;
+  const { snippet, indent, anchor } = line;
+  if (scan.variablesIndent !== undefined && indent > scan.variablesIndent) return scan;
+  const current = { ...scan, variablesIndent: undefined };
+  if (GITLAB_VARIABLES.test(snippet))
+    return { ...current, scriptIndent: undefined, variablesIndent: indent };
+  const command = headerValueOf(snippet);
+  if (command !== undefined) {
+    current.commands.push({ text: yamlCommandOf(command), anchor, snippet });
+    return { ...current, scriptIndent: YAML_BLOCK.test(command) ? indent : undefined };
+  }
+  const { scriptIndent } = current;
+  if (scriptIndent === undefined) return current;
+  if (indent < scriptIndent || (indent === scriptIndent && !SEQUENCE_ITEM.test(snippet)))
+    return { ...current, scriptIndent: undefined };
+  const text = SEQUENCE_ITEM.test(snippet)
+    ? yamlCommandOf(snippet.replace(SEQUENCE_ITEM, ""))
+    : snippet;
+  current.commands.push({ text, anchor, snippet });
+  return current;
+};
+
+const commandsUnder = (request: {
+  readonly lines: readonly YamlLine[];
+  readonly headerValueOf: (snippet: string) => string | undefined;
+}): readonly Command[] =>
+  request.lines.reduce<ScriptScan>(
+    (scan, line) => scanCommandLine({ scan, line, headerValueOf: request.headerValueOf }),
+    { scriptIndent: undefined, variablesIndent: undefined, commands: [] },
   ).commands;
+
+const gitlabCommandsOf = (source: string): readonly Command[] => {
+  const lines = isolatedYamlLines(source);
+  const scripts = commandsUnder({
+    lines,
+    headerValueOf: (snippet) =>
+      GITLAB_SCRIPT.test(snippet) ? snippet.replace(GITLAB_SCRIPT, "") : undefined,
+  });
+  const aliases = new Set(
+    scripts.flatMap(({ text }) => {
+      const name = YAML_ALIAS.exec(text)?.groups?.name;
+      return name === undefined ? [] : [name];
+    }),
+  );
+  if (aliases.size === 0) return scripts;
+  const anchors = commandsUnder({
+    lines,
+    headerValueOf: (snippet) => {
+      const definition = YAML_ANCHOR.exec(snippet)?.groups;
+      return definition?.anchor !== undefined && aliases.has(definition.anchor)
+        ? (definition.command ?? "")
+        : undefined;
+    },
+  });
+  return [
+    ...new Map([...scripts, ...anchors].map((command) => [command.anchor.line, command])).values(),
+  ].toSorted((left, right) => left.anchor.line - right.anchor.line);
+};
 
 const sourceCommandsOf = (request: {
   readonly source: string;
