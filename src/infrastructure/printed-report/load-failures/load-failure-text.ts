@@ -20,7 +20,7 @@ const CONFIG_ROOT_REPAIR =
 const SELECTION_ABSENT_REPAIR =
   "holds no disciplines.json; give the folder that holds it, usually the repository root";
 
-const WHY_CHAINS_REQUIRED_REPAIR = `${TOOL_IDENTITY.command} record-debt writes records that give only a reason, and this file requires a whyChain on every record; set "fileExceptionWhyChains": "optional" in it to accept them`;
+const WHY_CHAINS_REQUIRED_REPAIR = `a file carve-out is debt and needs no whyChain, so ${TOOL_IDENTITY.command} record-debt writes its records whatever this file sets; run it again`;
 
 const BOTH_LAYOUTS_REPAIR = `${TOOL_IDENTITY.name} reads exception records from one layout; keep each record in one of them and remove the other`;
 

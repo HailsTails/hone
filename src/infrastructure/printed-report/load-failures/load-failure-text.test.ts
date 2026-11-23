@@ -22,6 +22,14 @@ describe("loadFailureText", () => {
     );
   });
 
+  it("prints why-chains-required with the file and that record-debt needs no setting changed", () => {
+    expect(
+      loadFailureText({ failure: { kind: "why-chains-required", path: "disciplines.json" } }),
+    ).toBe(
+      "load failure: why-chains-required disciplines.json: a file carve-out is debt and needs no whyChain, so hone record-debt writes its records whatever this file sets; run it again\n",
+    );
+  });
+
   it("prints records-unsplittable with the file and why", () => {
     expect(
       loadFailureText({
