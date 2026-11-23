@@ -1,5 +1,6 @@
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
+import { sourceSnippetOf } from "./source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "./walker-piece.ts";
 
 export type SyntaxVisit = {
@@ -35,7 +36,7 @@ export const syntaxNodeCheck = (request: {
                         ...bindings.map(({ address }) => ({
                           check: address,
                           anchor,
-                          snippet: sight.snippet,
+                          snippet: sourceSnippetOf(sight.snippet),
                         })),
                       );
                     },

@@ -1,5 +1,6 @@
 import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
 import { sourceSnippetAt } from "./source-snippet.ts";
+import { withoutParentheses } from "./syntax-parentheses.ts";
 
 export type Assertion = {
   readonly node: SyntaxNode;
@@ -65,8 +66,7 @@ const wrappedOperand = (request: {
   readonly syntaxApi: SyntaxApi;
 }): SyntaxNode | undefined => {
   const { node, syntaxApi } = request;
-  if (syntaxApi.isParenthesizedExpression(node) || syntaxApi.isNonNullExpression(node))
-    return node.expression;
+  if (syntaxApi.isNonNullExpression(node)) return node.expression;
   return satisfiesOperand({ node, syntaxApi });
 };
 
@@ -74,9 +74,10 @@ const unwrappedExpression = (request: {
   readonly node: SyntaxNode;
   readonly syntaxApi: SyntaxApi;
 }): SyntaxNode => {
-  const operand = wrappedOperand(request);
+  const node = withoutParentheses(request);
+  const operand = wrappedOperand({ ...request, node });
   return operand === undefined
-    ? request.node
+    ? node
     : unwrappedExpression({ node: operand, syntaxApi: request.syntaxApi });
 };
 

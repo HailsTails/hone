@@ -63,6 +63,33 @@ const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWa
 };
 
 describe("CD-15 existing raw loop observations and counted-for redirect", () => {
+  it("compacts and caps a long finding snippet", () => {
+    const prepared = preparedFor({ file: FILE });
+    expect(
+      prepared.prepareFile({
+        file: FILE,
+        readText: () => ({
+          outcome: "ok",
+          value:
+            "  for  (const entry of customerReconciliationEntriesWaitingForTheNextScheduledBillingCycleAndManualReview) visit(entry);",
+        }),
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        kind: "complete",
+        hits: [
+          {
+            check: ADDRESS,
+            anchor: { line: 1, column: 0 },
+            snippet:
+              "for (const entry of customerReconciliationEntriesWaitingForTheNextScheduledBilli…",
+          },
+        ],
+      },
+    });
+  });
+
   it("completes all ordered CRLF findings under selected CD15 through one read without syntax", () => {
     const prepared = preparedFor({ file: FILE });
     const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({

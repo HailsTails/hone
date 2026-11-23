@@ -45,11 +45,11 @@ const parse = loadedParse.value;
 
 const observeWalkerPiece = async (request: {
   readonly piece: WalkerPiece;
-  readonly binding: CheckBinding;
+  readonly bindings: readonly CheckBinding[];
   readonly file: RepoPath;
   readonly source: string;
 }): Promise<Result<readonly CheckHit[], RunnerFailure>> => {
-  const bindings = [request.binding];
+  const { bindings } = request;
   const prepared = request.piece.prepare({
     bindings,
     repository: {
@@ -62,7 +62,7 @@ const observeWalkerPiece = async (request: {
   assert(prepared.outcome === "ok");
   const observed = observeWalkerFile({
     file: { file: request.file, readText: () => ({ outcome: "ok", value: request.source }) },
-    pieces: [{ modulePath: request.binding.pieceRoot, bindings, check: prepared.value }],
+    pieces: [{ modulePath: BINDING.pieceRoot, bindings, check: prepared.value }],
     parse,
     escapes: [],
   });
@@ -72,7 +72,12 @@ const observeWalkerPiece = async (request: {
 describe("syntaxNodeCheck", () => {
   it("attaches the visited anchor and check to matching nodes in eligible files", async () => {
     await expect(
-      observeWalkerPiece({ piece, binding: BINDING, file: TEST_FILE, source: "const sample = 1;" }),
+      observeWalkerPiece({
+        piece,
+        bindings: [BINDING],
+        file: TEST_FILE,
+        source: "const sample = 1;",
+      }),
     ).resolves.toEqual({
       outcome: "ok",
       value: [
@@ -90,10 +95,87 @@ describe("syntaxNodeCheck", () => {
     await expect(
       observeWalkerPiece({
         piece,
-        binding: BINDING,
+        bindings: [BINDING],
         file: repoPathOf("src/example.ts"),
         source: "const sample = 1;",
       }),
     ).resolves.toEqual({ outcome: "ok", value: [] });
+  });
+
+  it("flattens and caps a long multiline snippet at the original anchor", async () => {
+    const piece = syntaxNodeCheck({
+      eligibility: testFileEligibility,
+      found: ({ syntaxApi, node, sourceFile }) =>
+        syntaxApi.isVariableStatement(node)
+          ? { at: node, snippet: node.getText(sourceFile) }
+          : undefined,
+    });
+    await expect(
+      observeWalkerPiece({
+        piece,
+        bindings: [BINDING],
+        file: TEST_FILE,
+        source:
+          "  const answer = consume(\n    customerReconciliationEntriesWaitingForTheNextScheduledBillingCycleAndManualReview,\n    report,\n  );",
+      }),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 1, column: 2 },
+          snippet:
+            "const answer = consume( customerReconciliationEntriesWaitingForTheNextScheduledB…",
+        },
+      ],
+    });
+  });
+
+  it("reports a matching node once per check binding", async () => {
+    const other: CheckBinding = { ...BINDING, address: "example-symptom#other-check" };
+    await expect(
+      observeWalkerPiece({
+        piece,
+        bindings: [BINDING, other],
+        file: TEST_FILE,
+        source: "const sample = 1;",
+      }),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 1, column: 6 },
+          snippet: "sample",
+        },
+        {
+          file: TEST_FILE,
+          check: other.address,
+          anchor: { line: 1, column: 6 },
+          snippet: "sample",
+        },
+      ],
+    });
+  });
+
+  it("skips an eligible file when no check binds to the piece", () => {
+    const prepared = piece.prepare({
+      bindings: [],
+      repository: {
+        files: [TEST_FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+      },
+      syntaxApi: parse.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    expect(
+      prepared.value.prepareFile({
+        file: TEST_FILE,
+        readText: () => ({ outcome: "ok", value: "const sample = 1;" }),
+      }),
+    ).toEqual({ outcome: "ok", value: { kind: "skipped" } });
   });
 });

@@ -136,6 +136,13 @@ describe("cast shapes", () => {
       shape: "type-assertion",
     },
     {
+      name: "a cast over a parenthesised non-null assertion",
+      source: "((x!) as T);\n",
+      nodeAt: (tree) => firstExpression(tree).getChildAt(1, tree),
+      text: "(x!) as T",
+      shape: "type-assertion",
+    },
+    {
       name: "an angle-bracket cast to a named type",
       source: "<Profile>candidate;\n",
       text: "<Profile>candidate",
