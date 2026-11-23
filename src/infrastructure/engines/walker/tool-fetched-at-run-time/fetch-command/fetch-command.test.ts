@@ -71,15 +71,14 @@ describe("fetch-command", () => {
     expect(
       findingsIn({
         file: MANIFEST,
-        source:
-          '{ "private": true, "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }, "scripts": { "check": "pnpm dlx some-tool" } }',
+        source: '{\n  "private": true,\n  "scripts": {\n    "check": "pnpm dlx some-tool"\n  }\n}',
       }),
     ).toEqual([
       {
         file: MANIFEST,
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "check: pnpm dlx some-tool",
+        anchor: { line: 4, column: 4 },
+        snippet: '"check": "pnpm dlx some-tool"',
       },
     ]);
   });

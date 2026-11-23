@@ -3,9 +3,7 @@ import { assert, describe, expect, it, vi } from "vitest";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
   dependencySourceOf,
-  fieldsOf,
   locatedPackageManifestOf,
-  packageManifestOf,
   PACKAGE_MANIFEST,
 } from "./dependency-files.ts";
 import type { WalkerFile } from "./walker-piece.ts";
@@ -27,19 +25,16 @@ describe("dependencySourceOf", () => {
   );
 });
 
-describe("packageManifestOf", () => {
+describe("locatedPackageManifestOf", () => {
   it("reports a manifest with a trailing comma as unparseable", () => {
     const file = repoPathSchema.parse("packages/example/package.json");
     expect(
-      packageManifestOf({
+      locatedPackageManifestOf({
         file,
         readText: () => ({ outcome: "ok", value: '{"name": "example",}' }),
       }),
     ).toMatchObject({ outcome: "failed", error: { kind: "file-unparseable", file } });
   });
-});
-
-describe("locatedPackageManifestOf", () => {
   it("locates a namespaced dependency across CRLF lines and omits intervening comments", () => {
     const manifest = locatedPackageManifestOf({
       file: repoPathSchema.parse("package.json"),
@@ -81,10 +76,12 @@ describe("locatedPackageManifestOf", () => {
       value: "pnpm@2",
     });
   });
-});
-
-describe("fieldsOf", () => {
-  it.each([null, "name", 7, ["name"]])("returns no fields for %j", (value: unknown) => {
-    expect(fieldsOf(value)).toEqual([]);
+  it.each(["null", '"name"', "7", '["name"]'])("returns no fields for %s", (source) => {
+    expect(
+      locatedPackageManifestOf({
+        file: repoPathSchema.parse("package.json"),
+        readText: () => ({ outcome: "ok", value: source }),
+      }),
+    ).toEqual({ outcome: "ok", value: new Map() });
   });
 });
