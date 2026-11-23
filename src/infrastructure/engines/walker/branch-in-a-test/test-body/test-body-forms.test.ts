@@ -283,7 +283,7 @@ describe("testBodyFormOf", () => {
     ).toEqual({
       introducedIn: "2",
       remedy: {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Optional access hides whether the expected element exists. Assert that the collection contains the required element and its relevant contents.",
         page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-after-an-index",
       },
@@ -319,105 +319,105 @@ describe("TEST_BODY_SECTIONS", () => {
 });
 
 describe("TEST_BODY_REMEDIES", () => {
-  it("gives each section non-empty advice and its check item", () => {
+  it("gives each section its written-out remedy and check item", () => {
     expect(TEST_BODY_REMEDIES).toEqual([
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "The test branches because the unit can return more than one shape. Give each outcome its own test or make the return type express the one outcome callers can rely on.",
         page: "branch-in-a-test/test-body.md",
         section: "branching-with-if",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Catching inside the test can let it pass when no error occurs. Assert the failure the caller should observe, whether it is returned or thrown.",
         page: "throw-or-catch-in-a-test/try-block.md",
         section: "a-try-block",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "The test chooses between values at runtime. State the expected value for each case so the assertion cannot adapt to the result.",
         page: "branch-in-a-test/test-body.md",
         section: "a-ternary",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "A reassigned local makes the test depend on hidden state. Keep the expected values fixed and assert the interaction you need to observe.",
         page: "rebinding/test-body.md",
         section: "a-let",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Selecting an element can discard data the caller should see. Assert the relevant membership or structure of the returned collection directly.",
         page: "computed-value-in-a-test/test-body.md",
         section: "a-method-that-picks-or-tests-an-element",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value or the relevant properties explicitly.",
         page: "computed-value-in-a-test/test-body.md",
         section: "a-method-that-computes-a-value",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Mutating the expected collection obscures its final state. State the finished collection so the reader can see what should be returned.",
         page: "computed-value-in-a-test/test-body.md",
         section: "a-method-that-mutates",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Short-circuiting lets the test skip a case when the unit returns an optional or falsy value. Make required output explicit in the unit's type or test each outcome separately.",
         page: "branch-in-a-test/test-body.md",
         section: "a-short-circuit",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Optional access hides whether the expected element exists. Assert that the collection contains the required element and its relevant contents.",
         page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-after-an-index",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Optional access hides whether the dependency was called. Assert the expected call and its arguments.",
         page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-on-a-mock-call",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Optional access hides whether the dependency returned a value. Assert the return from the expected call.",
         page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-on-a-mock-result",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "The returned object can omit a property the caller needs. Make that property required in the unit's return type or test its absence as a separate outcome.",
         page: "branch-in-a-test/test-body.md",
         section: "an-optional-chain-on-a-property",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "The unit's output makes the function optional, so callers cannot count on being able to call it. Make the function required in the return type or test the absent case separately.",
         page: "branch-in-a-test/test-body.md",
         section: "an-optional-call",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "The test branches on a value and can omit assertions for unexpected cases. State the expected outcome for each case separately.",
         page: "branch-in-a-test/test-body.md",
         section: "a-switch",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Serializing or parsing inside the test can obscure the returned structure. Assert the object the caller needs and leave its wire format to the boundary adapter.",
         page: "text-past-its-reader/test-body.md",
         section: "serialising-or-parsing-json",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Building the expected object by mutation obscures its final shape. State the fields the caller should see and make any copied fields explicit.",
         page: "computed-value-in-a-test/test-body.md",
         section: "merging-objects",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Building the expected object from entries hides the shape the assertion promises. Write out the relevant fields and values.",
         page: "computed-value-in-a-test/test-body.md",
         section: "building-an-object-from-entries",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Generating the expected array hides the sequence being asserted. State the relevant elements, length, or ordering directly.",
         page: "computed-value-in-a-test/test-body.md",
         section: "building-an-array-from-a-length",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "Calculating the expected number can reproduce the implementation's error. State the expected number directly.",
         page: "computed-value-in-a-test/test-body.md",
         section: "a-math-call",
       },
       {
-        fix: expect.stringMatching(/\S/u),
+        fix: "A callback with its own logic makes the test depend on a second implementation. Give the collaborator a fixed answer and assert how it was used.",
         page: "double-with-a-body/logic-in-a-passed-function.md",
         section: "logic-inside-a-function-the-test-passes-on",
       },

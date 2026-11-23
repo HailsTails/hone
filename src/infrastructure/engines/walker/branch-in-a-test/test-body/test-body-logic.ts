@@ -49,7 +49,7 @@ const firstEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: editionO
 const secondEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: SECOND_EDITION, remedy });
 
 const BRANCHING = firstEdition({
-  fix: "A conditional can skip the assertion for an unexpected result. Give each case its own assertion and require any value that must be present.",
+  fix: "The test branches because the unit can return more than one shape. Give each outcome its own test or make the return type express the one outcome callers can rely on.",
   page: BRANCH_IN_A_TEST,
   section: "branching-with-if",
 });
@@ -84,7 +84,7 @@ const MUTATING_METHOD = firstEdition({
   section: "a-method-that-mutates",
 });
 const SHORT_CIRCUIT = secondEdition({
-  fix: "Short-circuiting can skip behavior or hide that a required value is missing. State the expected outcome directly and assert any required presence.",
+  fix: "Short-circuiting lets the test skip a case when the unit returns an optional or falsy value. Make required output explicit in the unit's type or test each outcome separately.",
   page: BRANCH_IN_A_TEST,
   section: "a-short-circuit",
 });
@@ -104,12 +104,12 @@ const MOCK_RESULT_OPTIONAL_CHAIN = secondEdition({
   section: "an-optional-chain-on-a-mock-result",
 });
 const PROPERTY_OPTIONAL_CHAIN = secondEdition({
-  fix: "Optional access hides which part of the returned value is missing. Assert the required structure or explicitly require the nested object before reading it.",
+  fix: "The returned object can omit a property the caller needs. Make that property required in the unit's return type or test its absence as a separate outcome.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-chain-on-a-property",
 });
 const OPTIONAL_CALL = secondEdition({
-  fix: "The test can skip a required call when the function is absent. Assert that the function is present before exercising its behavior.",
+  fix: "The unit's output makes the function optional, so callers cannot count on being able to call it. Make the function required in the return type or test the absent case separately.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-call",
 });
