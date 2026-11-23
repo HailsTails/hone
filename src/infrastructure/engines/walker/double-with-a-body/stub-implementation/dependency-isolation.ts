@@ -1,4 +1,5 @@
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
@@ -6,11 +7,6 @@ const testFileEligibility = (request: { readonly file: string }): "eligible" | "
   return request.file.endsWith(".test.ts") || request.file.endsWith(".test.tsx")
     ? "eligible"
     : "skipped";
-};
-
-const snippetAt = (request: { readonly source: string; readonly position: number }): string => {
-  const snippet = request.source.slice(request.position, request.position + 80).replace(/\n/g, " ");
-  return snippet.length === 80 ? `${snippet}…` : snippet;
 };
 
 export const check: WalkerPiece = {
@@ -41,7 +37,7 @@ export const check: WalkerPiece = {
                     return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
-                  const snippet = snippetAt({ source: sourceFile.text, position });
+                  const snippet = sourceSnippetAt({ source: sourceFile.text, position });
                   hits.push(
                     ...bindings.map((binding) => ({ check: binding.address, anchor, snippet })),
                   );

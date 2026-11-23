@@ -1,4 +1,5 @@
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
@@ -7,7 +8,6 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
   return "eligible";
 };
 
-const SNIPPET_MAX_LENGTH = 80;
 const BANNED_SHORTHAND_NAMES: readonly string[] = [
   "c",
   "op",
@@ -90,9 +90,10 @@ export const check: WalkerPiece = {
               }): void => {
                 if (request.name.startsWith("_")) return;
                 if (classifyName(request) === "ok") return;
-                const snippet = sourceFile.text
-                  .slice(request.position, request.position + SNIPPET_MAX_LENGTH)
-                  .replace(/\n/g, " ");
+                const snippet = sourceSnippetAt({
+                  source: sourceFile.text,
+                  position: request.position,
+                });
                 const anchor = anchorAt({ position: request.position });
                 hits.push(
                   ...bindings.map((binding) => ({
@@ -100,7 +101,7 @@ export const check: WalkerPiece = {
                     hit: {
                       check: binding.address,
                       anchor,
-                      snippet: snippet.length === SNIPPET_MAX_LENGTH ? `${snippet}…` : snippet,
+                      snippet,
                     },
                   })),
                 );

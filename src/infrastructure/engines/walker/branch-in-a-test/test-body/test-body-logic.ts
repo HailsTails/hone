@@ -2,6 +2,7 @@ import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { editionReaches } from "../../../../../domain/rule-set/edition-reach.ts";
 import type { Edition } from "../../../../../domain/rule-set/edition-types.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type {
   CallExpression,
@@ -802,11 +803,6 @@ export const testBodyFormOf = (request: BodyRequest): TestBodyForm | undefined =
     : form;
 };
 
-const snippetAt = (request: { readonly source: string; readonly position: number }): string => {
-  const snippet = request.source.slice(request.position, request.position + 80).replace(/\n/g, " ");
-  return snippet.length === 80 ? `${snippet}…` : snippet;
-};
-
 export const check: WalkerPiece = {
   prepare: ({ bindings, syntaxApi }) => ({
     outcome: "ok",
@@ -834,7 +830,7 @@ export const check: WalkerPiece = {
                   if (binding === undefined) return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
-                  const snippet = snippetAt({ source: sourceFile.text, position });
+                  const snippet = sourceSnippetAt({ source: sourceFile.text, position });
                   hits.push({ check: binding.address, anchor, snippet, remedy: form.remedy });
                 },
                 finish: () => hits,

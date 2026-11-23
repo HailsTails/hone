@@ -1,6 +1,7 @@
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { editionReaches } from "../../../../../domain/rule-set/edition-reach.ts";
 import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
@@ -8,11 +9,6 @@ type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode 
 
 const GLOBAL_PATCH_EDITION = editionOf("2");
 const VITEST_GLOBAL_STUBS = new Set(["stubGlobal", "stubEnv"]);
-
-const snippetAt = (request: { readonly source: string; readonly position: number }): string => {
-  const snippet = request.source.slice(request.position, request.position + 80).replace(/\n/g, " ");
-  return snippet.length === 80 ? `${snippet}…` : snippet;
-};
 
 const memberOf = ({
   syntaxApi,
@@ -117,7 +113,7 @@ export const check: WalkerPiece = {
                   if (findingBindings.length === 0) return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
-                  const snippet = snippetAt({ source: sourceFile.text, position });
+                  const snippet = sourceSnippetAt({ source: sourceFile.text, position });
                   hits.push(
                     ...findingBindings.map(({ address }) => ({ check: address, anchor, snippet })),
                   );

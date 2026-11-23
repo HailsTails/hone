@@ -1,4 +1,5 @@
 import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
+import { sourceSnippetAt } from "./source-snippet.ts";
 
 export type Assertion = {
   readonly node: SyntaxNode;
@@ -15,17 +16,10 @@ export type CastShape =
   | "through-unknown"
   | "type-assertion";
 
-const SNIPPET_MAX_LENGTH = 80;
-
 export const castSnippetAt = (request: {
   readonly sourceFile: SyntaxTree;
   readonly position: number;
-}): string => {
-  const snippet = request.sourceFile.text
-    .slice(request.position, request.position + SNIPPET_MAX_LENGTH)
-    .replace(/\n/g, " ");
-  return snippet.length === SNIPPET_MAX_LENGTH ? `${snippet}…` : snippet;
-};
+}): string => sourceSnippetAt({ source: request.sourceFile.text, position: request.position });
 
 export const assertionOf = (request: {
   readonly node: SyntaxNode;
