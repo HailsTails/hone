@@ -924,6 +924,31 @@ CD-2#cast-expressions unrecordable src/a.ts: an entry in the suppressions file h
     });
   });
 
+  it("refuses naming the project command, and writes no debt, when the projection is out of date", async () => {
+    const ran = await ranWith({
+      handler: versionTwoRecordDebtCommandOf,
+      arguments: RECORD_ARGUMENTS,
+      stages: stagesGiving({
+        engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+          outcome: "ok",
+          value: [{ ...runOf({ hits: [CAST] }), projection: "out-of-date" }],
+        }),
+      }),
+      files: {},
+    });
+    expect({ writes: ran.writes, exits: ran.exits, held: ran.repository.filesHeld() }).toEqual({
+      writes: [
+        [
+          {
+            text: "load failure: projection-stale eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run node /install/src/hone.ts project --repo /repo and commit every file it writes\n",
+          },
+        ],
+      ],
+      exits: [[{ code: 2 }]],
+      held: [],
+    });
+  });
+
   it("prints an arguments-invalid line and builds no stages when the arguments are not readable", async () => {
     const ran = await ranWith({
       handler: versionTwoRecordDebtCommandOf,

@@ -262,6 +262,45 @@ describe("runLoadFailureLine, failures version 2 names first", () => {
   });
 });
 
+describe("runLoadFailureLine, a stale projection", () => {
+  const PROJECT_COMMAND =
+    "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
+
+  it.each<LineRow>([
+    {
+      failure: {
+        kind: "projection-stale",
+        problem: { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" },
+        projectCommand: PROJECT_COMMAND,
+      },
+      line: `load failure: projection-stale eslint out-of-date: hone.eslint.mjs differs from what hone project writes now; run ${PROJECT_COMMAND} and commit every file it writes`,
+    },
+    {
+      failure: {
+        kind: "projection-stale",
+        problem: {
+          scope: "slice",
+          engine: ESLINT_ENGINE,
+          state: "missing",
+          slice: repoPathOf("packages/ui/hone.eslint.mjs"),
+        },
+        projectCommand: PROJECT_COMMAND,
+      },
+      line: `load failure: projection-stale eslint missing packages/ui/hone.eslint.mjs: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
+    },
+    {
+      failure: {
+        kind: "projection-stale",
+        problem: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+        projectCommand: PROJECT_COMMAND,
+      },
+      line: `load failure: projection-stale engine-not-run eslint missing: hone.eslint.mjs is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
+    },
+  ])("prints the stale projection", ({ failure, line }) => {
+    expect(runLoadFailureLine({ failure, upgradeCommand: undefined })).toBe(line);
+  });
+});
+
 describe("runLoadFailureLine, not-ready-yet eslint-config-roots", () => {
   const lineOf = (what: { readonly paths: readonly string[] }) =>
     runLoadFailureLine({
