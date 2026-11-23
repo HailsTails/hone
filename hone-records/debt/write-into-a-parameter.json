@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "write-into-a-parameter#parameter-mutation",
+      "file": "src/application/upgrade/patching/projection-patching.test.ts"
+    }
+  ]
+}

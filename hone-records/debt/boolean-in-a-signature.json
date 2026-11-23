@@ -16,6 +16,46 @@
     {
       "answers": "boolean-in-a-signature#boolean-annotation",
       "file": "src/composition/upgrade-command.test.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "delivery/release/changelog.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/domain/records/answering/records-by-place.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-logic.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/walker/code-or-prose-read-as-text/raw-read/raw-read.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/walker/failure-shaped-as-success/empty-catch/empty-catch.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/walker/floating-version/version-selector/version-selector.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/engines/walker/runner/pieces/vitest-import.ts"
+    },
+    {
+      "answers": "boolean-in-a-signature#boolean-annotation",
+      "file": "src/infrastructure/upgrade/team-layout/version-two-names.ts"
     }
   ]
 }

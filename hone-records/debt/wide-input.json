@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "delivery/install-proof/install-proof-ports.test.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "delivery/install-proof/install-proof-ports.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "delivery/packaging/type-declarations/typescript-declaration-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/content-files/item-folders/read-item-folder-catalogue.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/disciplines-file/consumer-selection.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/engines/protocol/engine-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/git/git-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/hone-config-file/settings-sources.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/file-system/directory-removal-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/file-system/directory-tree-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/file-system/file-creation-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/file-system/file-system-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/modules/module-loader-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/path-port.ts"
+    },
+    {
+      "answers": "wide-input#unread-parameter",
+      "file": "src/infrastructure/node/process/process-port.ts"
+    }
+  ]
+}

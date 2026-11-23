@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "records": [
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/repository/absolute-root-of.ts"
+    },
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/repository/absolute-within.ts"
+    },
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/repository/repo-path-of.ts"
+    },
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/rule-set/clause-id-of.ts"
+    },
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/rule-set/discipline-id-of.ts"
+    },
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/rule-set/edition-of.ts"
+    },
+    {
+      "answers": "claimed-type#unlisted-cast-site",
+      "file": "src/domain/rule-set/rule-set-name-of.ts"
+    }
+  ]
+}

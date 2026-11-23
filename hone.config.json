@@ -2,27 +2,35 @@
   "version": 2,
   "ruleSets": {},
   "checks": {
+    "assertion-outside-a-test#assertion-site": "walker",
     "authored-class-or-this#class-keyword": "walker",
     "authored-class-or-this#static-members-only": "eslint",
     "boolean-in-a-signature#boolean-annotation": "walker",
     "branch-in-a-test#test-body": "walker",
+    "built-unit-called-in-place#call-of-a-call": "walker",
     "claimed-type#cast-to-any": "walker",
     "claimed-type#non-null-assertions": "eslint",
     "claimed-type#unlisted-cast-site": "walker",
+    "code-or-prose-read-as-text#raw-read": "walker",
     "computed-value-in-a-test#test-body": "walker",
     "date-used-directly#clock-sources": "walker",
     "default-on-a-closed-union#default-arm": "walker",
     "double-with-a-body#logic-in-a-passed-function": "walker",
     "double-with-a-body#stub-implementation": "walker",
     "drawer-path#drawer-names": "walker",
+    "export-from-a-test-file#test-file-export": "walker",
+    "failure-shaped-as-success#empty-catch": "walker",
     "inherited-environment-in-a-subprocess#git-spawn-environment": "walker",
     "long-function#function-length": "eslint",
     "loop-keyword#loop-statement": "walker",
+    "many-spellings-of-one-concept#test-call-aliases": "walker",
     "module-or-global-patched#module-mock-call": "walker",
     "name-off-its-casing#filename-case": "eslint",
     "name-off-its-casing#naming-convention": "eslint",
     "outside-import-past-a-boundary#import-or-require": "walker",
     "positional-parameters#parameter-count": "eslint",
+    "process-global-used-in-place#debugger-statement": "walker",
+    "process-global-used-in-place#direct-global-use": "walker",
     "rebinding#parameter-reassignment": "eslint",
     "rebinding#test-body": "walker",
     "shorthand-name#identifier-names": "walker",
@@ -40,11 +48,13 @@
     "throw-or-catch-in-a-test#throw-statement": "walker",
     "throw-or-catch-in-a-test#try-block": "walker",
     "thrown-non-error#throw-only-error": "eslint",
+    "type-declared-in-a-test#test-type-declaration": "walker",
     "type-derived-from-code#factory-return-types": "walker",
     "unit-without-a-running-test#companion-test-file": "walker",
     "untracked-escape#directive-pointers": "walker",
     "untyped-value#explicit-any": "eslint",
     "untyped-value#implicit-any-let": "eslint",
+    "wide-input#unread-parameter": "eslint",
     "work-inside-a-condition#else-after-an-exit": "eslint",
     "write-into-a-parameter#parameter-mutation": "walker"
   },
@@ -60,6 +70,9 @@
     },
     "outside-import-past-a-boundary#import-or-require": {
       "confinedOutsideDependencies": ["eslint"]
+    },
+    "process-global-used-in-place#direct-global-use": {
+      "edition": "2"
     },
     "rebinding#test-body": {
       "edition": "2"
@@ -83,6 +96,9 @@
       "edition": "2"
     },
     "strictness-weakened#use-unknown-in-catch-variables": {
+      "edition": "2"
+    },
+    "test-switched-off#skipped-tests": {
       "edition": "2"
     },
     "text-past-its-reader#test-body": {
