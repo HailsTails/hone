@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "file read with an embedded path",
+      "fileName": "src/order.test.ts",
+      "source": "readFileSync(join(dir, \"README.md\"), \"utf8\");",
+      "expectedLines": [1]
+    },
+    {
+      "name": "raw imports and globs",
+      "fileName": "src/order.test.ts",
+      "source": "import body from \"./order.ts?raw\";\nawait import(\"./guide.mdx?raw\");\nimport.meta.glob(\"./**/*.{ts,md}\", { query: \"?raw\" });",
+      "expectedLines": [1, 2, 3]
+    }
+  ],
+  "allow": [
+    {
+      "name": "ordinary file or module data",
+      "fileName": "src/order.test.ts",
+      "source": "readFileSync(\"./order.json\", \"utf8\");\nawait import(\"./order.ts\");\nimport.meta.glob(\"./*.ts\", { eager: true });",
+      "expectedLines": []
+    },
+    {
+      "name": "file reading in a production module",
+      "fileName": "src/order.ts",
+      "source": "readFileSync(\"./README.md\", \"utf8\");",
+      "expectedLines": []
+    }
+  ]
+}
