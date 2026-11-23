@@ -245,7 +245,6 @@ describe("catalogueContentOf", () => {
         cases: [MAKES_A_NEW_VALUE, COORDINATES_OTHER_UNITS],
         recipes: [FUNCTIONAL_ITERATION],
         recordKinds: [AUTHORISED_LOCATION, DEBT],
-        alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
         engines: [WALKER, ESLINT],
         symptoms: [LOOP_KEYWORD],
         clauses: [
@@ -466,7 +465,6 @@ describe("catalogueContentOf", () => {
         cases: [],
         recipes: [],
         recordKinds: [AUTHORISED_LOCATION, DEBT],
-        alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
         engines: [],
         symptoms: [],
         clauses: [],

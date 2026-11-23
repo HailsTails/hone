@@ -91,7 +91,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [],
   recipes: [],
   recordKinds: [DEBT, AUTHORISED],
-  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED },
   engines: LOOP.engines,
   symptoms: [LOOP.symptom],
   clauses: [{ clause: CLAUSE, sight: { kind: "one-symptom", symptom: LOOP.symptom } }],

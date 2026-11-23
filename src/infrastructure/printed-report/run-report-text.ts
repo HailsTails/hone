@@ -43,7 +43,7 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
   editions: (request) => request.report.editions.map((reading) => editionLine({ reading })),
   findings: (request) =>
     request.report.findings.map((finding) =>
-      findingLine({ catalogue: request.catalogue, finding }),
+      findingLine({ catalogue: request.catalogue, finding, symptomPage: request.symptomPage }),
     ),
   answered: (request) =>
     request.report.answered.map((answered) =>
@@ -83,9 +83,7 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
     request.report["record-notes"].map((recordNote) => recordNoteLine({ recordNote })),
   carried: (request) => request.report.carried.map((listing) => carriedLine({ listing })),
   symptoms: (request) =>
-    request.report.symptoms.map((symptom) =>
-      symptomLine({ catalogue: request.catalogue, symptom, page: request.symptomPage }),
-    ),
+    request.report.symptoms.map((symptom) => symptomLine({ symptom, page: request.symptomPage })),
 };
 
 type PrintedSection = { readonly name: RunSectionName; readonly lines: readonly string[] };

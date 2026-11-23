@@ -151,7 +151,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [GIVES_A_VALUE_ITS_TYPE],
   recipes: [ADAPTER_PER_OUTSIDE_PARTY, STUB_WITH_VIFN],
   recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [],
   symptoms: [
     DATE_USED_DIRECTLY,

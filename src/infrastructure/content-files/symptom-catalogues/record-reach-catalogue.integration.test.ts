@@ -56,15 +56,6 @@ describe("symptomsNamedByRecordReachButNotCatalogued over a written-out catalogu
             },
             { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" },
           ],
-          alwaysRecordable: {
-            debt: { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" },
-            authorisedLocation: {
-              name: "authorised-location",
-              title: "Authorised location",
-              phrase: "an authorised location",
-              todaysFormat: "authorised-location",
-            },
-          },
           engines: [],
           symptoms: [],
           clauses: [],

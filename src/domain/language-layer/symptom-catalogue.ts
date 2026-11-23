@@ -84,11 +84,6 @@ export type ClauseSight =
 
 export type CataloguedClause = { readonly clause: ClauseAddress; readonly sight: ClauseSight };
 
-export type AlwaysRecordable = {
-  readonly debt: RecordKind;
-  readonly authorisedLocation: RecordKind;
-};
-
 export type Engine = { readonly name: EngineId };
 
 export type CheckContent = {
@@ -111,7 +106,6 @@ type CatalogueBody = {
   readonly cases: readonly Case[];
   readonly recipes: readonly Recipe[];
   readonly recordKinds: readonly RecordKind[];
-  readonly alwaysRecordable: AlwaysRecordable;
   readonly engines: readonly Engine[];
   readonly symptoms: readonly Symptom[];
   readonly clauses: readonly CataloguedClause[];

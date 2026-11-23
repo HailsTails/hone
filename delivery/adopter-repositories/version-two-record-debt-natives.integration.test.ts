@@ -248,11 +248,11 @@ const NOT_ADOPTED =
   "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#cast-to-any\nclaimed-type#non-null-assertions\n";
 
 const CLASS_SYMPTOM =
-  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
+  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
 
 const INHERITED_TEXT = `${NOT_ADOPTED}findings (2)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-authored-class-or-this#class-keyword eslint src/legacy-class.ts:1:7 export class Legacy {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+authored-class-or-this#class-keyword eslint src/legacy-class.ts:1:7 export class Legacy {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 unrecorded (4)
 authored-class-or-this#class-keyword eslint config-override src/legacy-class.ts
 authored-class-or-this#class-keyword eslint config-override src/legacy-clean.ts
@@ -367,8 +367,8 @@ const hidingRepository = (): string => {
   return repo;
 };
 
-const HIDDEN_FINDINGS = `authored-class-or-this#class-keyword eslint src/ignored.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-authored-class-or-this#class-keyword eslint src/suppressed.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+const HIDDEN_FINDINGS = `authored-class-or-this#class-keyword eslint src/ignored.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+authored-class-or-this#class-keyword eslint src/suppressed.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 `;
 
 const HIDDEN_UNRECORDED = `authored-class-or-this#class-keyword eslint ignore src/ignored.ts
@@ -461,7 +461,7 @@ authored-class-or-this#static-members-only
 claimed-type#cast-to-any
 claimed-type#non-null-assertions
 findings (1)
-authored-class-or-this#class-keyword eslint src/vendor-b.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+authored-class-or-this#class-keyword eslint src/vendor-b.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 unrecorded (1)
 authored-class-or-this#class-keyword eslint ignore src/vendor-b.ts
 symptoms (1)

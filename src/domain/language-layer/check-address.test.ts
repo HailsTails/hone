@@ -117,7 +117,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [],
   recipes: [FAILURES_AS_VALUES],
   recordKinds: [AUTHORISED_LOCATION, DEBT],
-  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
   engines: [WALKER],
   symptoms: [LOOP_KEYWORD, REBINDING],
   clauses: [
