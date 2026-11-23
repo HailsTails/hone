@@ -3,8 +3,8 @@
     {
       "name": "fetch in a package script",
       "fileName": "package.json",
-      "source": "{\"scripts\":{\"check\":\"pnpm dlx some-tool\"}}",
-      "expectedLines": [1]
+      "source": "{\n  \"scripts\": {\n    \"check\": \"pnpm dlx some-tool\"\n  }\n}",
+      "expectedLines": [3]
     },
     {
       "name": "download piped to a shell",
