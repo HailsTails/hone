@@ -113,10 +113,13 @@ const printedLines = (request: {
   }
 };
 
+export type AssessmentScope = "" | " (partial assessment)";
+
+export const assessmentScopeOf = (request: { readonly report: RunReport }): AssessmentScope =>
+  request.report.assessment.length === 0 ? "" : " (partial assessment)";
+
 const verdictLine = (request: { readonly report: RunReport }): string =>
-  request.report.assessment.length === 0
-    ? `verdict: ${runVerdictOf(request)}`
-    : `verdict: ${runVerdictOf(request)} (partial assessment)`;
+  `verdict: ${runVerdictOf(request)}${assessmentScopeOf(request)}`;
 
 export const renderRunSectionsText = (request: RunReportRequest): string =>
   RUN_SECTION_NAMES.map((name) => ({

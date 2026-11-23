@@ -18,7 +18,11 @@ import {
   runSectionRoleOf,
 } from "../../src/domain/report/report-sections.ts";
 import type { CommandOutcome } from "../../src/infrastructure/command-line/outcomes/command-outcome.ts";
-import { renderRunSectionsText } from "../../src/infrastructure/printed-report/run-report-text.ts";
+import {
+  type AssessmentScope,
+  assessmentScopeOf,
+  renderRunSectionsText,
+} from "../../src/infrastructure/printed-report/run-report-text.ts";
 
 const REPORTED_NOT_GATED: readonly RunSectionName[] = ["findings", "unrecorded"];
 
@@ -29,14 +33,12 @@ export const VERSION_TWO_GATED_SECTIONS: readonly RunSectionName[] = RUN_SECTION
 const gateLineOf = (request: {
   readonly findings: number;
   readonly unrecorded: number;
-  readonly partial: number;
+  readonly scope: AssessmentScope;
   readonly failing: readonly string[];
-}): string => {
-  const scope = request.partial === 0 ? "" : " (partial assessment)";
-  return request.failing.length > 0
-    ? `self-check: fail${scope}, gated sections hold entries: ${request.failing.join(", ")}\n`
-    : `self-check: pass${scope}, the selection, records and projection are sound; findings (${request.findings}) and unrecorded (${request.unrecorded}) are reported above and not gated\n`;
-};
+}): string =>
+  request.failing.length > 0
+    ? `self-check: fail${request.scope}, gated sections hold entries: ${request.failing.join(", ")}\n`
+    : `self-check: pass${request.scope}, the selection, records and projection are sound; findings (${request.findings}) and unrecorded (${request.unrecorded}) are reported above and not gated\n`;
 
 export const versionTwoSelfCheckOutcomeOf = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
@@ -48,7 +50,7 @@ export const versionTwoSelfCheckOutcomeOf = (request: {
   );
   return {
     code: failing.length > 0 ? 1 : 0,
-    text: `${renderRunSectionsText(versionTwoReportRequestOf(request))}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, partial: report.assessment.length, failing })}`,
+    text: `${renderRunSectionsText(versionTwoReportRequestOf(request))}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, scope: assessmentScopeOf({ report }), failing })}`,
   };
 };
 
