@@ -1,15 +1,16 @@
+import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import {
   dependencySourceOf,
   fieldsOf,
-  packageManifestOf,
+  locatedPackageManifestOf,
   PACKAGE_MANIFEST,
   WORKFLOW,
 } from "../../runner/pieces/dependency-files.ts";
 import type { WalkerFile, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
-type Version = { readonly line: number; readonly snippet: string };
+type Version = { readonly anchor: Anchor; readonly snippet: string };
 type Versions = Result<readonly Version[] | undefined, PieceFailure>;
 
 const EXACT_VERSION =
@@ -40,26 +41,28 @@ const floatingWorkflowVersion = (line: string): boolean => {
 };
 
 const manifestVersionsOf = (file: WalkerFile): Versions => {
-  const manifest = packageManifestOf(file);
+  const manifest = locatedPackageManifestOf(file);
   if (manifest.outcome === "failed") return manifest;
   const { value } = manifest;
   if (value === undefined) return { outcome: "ok", value: undefined };
   const sections =
-    value.get("private") === true
+    value.fields.get("private") === true
       ? ["dependencies", "devDependencies", "optionalDependencies"]
       : ["devDependencies"];
-  const dependencies = sections.flatMap((section) => fieldsOf(value.get(section)));
-  const floating = dependencies.flatMap(([name, version]) =>
-    typeof version === "string" && floatingSpecifier(version)
-      ? [{ line: 1, snippet: `${name}: ${version}` }]
-      : [],
+  const floating = sections.flatMap((section) =>
+    fieldsOf(value.fields.get(section)).flatMap(([name, version]) => {
+      if (typeof version !== "string" || !floatingSpecifier(version)) return [];
+      const site = value.fieldAt([section, name]);
+      return site === undefined ? [] : [site];
+    }),
   );
-  const packageManager = value.get("packageManager");
+  const packageManager = value.fields.get("packageManager");
   if (
     typeof packageManager === "string" &&
     floatingSpecifier(packageManager.slice(packageManager.lastIndexOf("@") + 1))
   ) {
-    floating.push({ line: 1, snippet: `packageManager: ${packageManager}` });
+    const site = value.fieldAt(["packageManager"]);
+    if (site !== undefined) floating.push(site);
   }
   return { outcome: "ok", value: floating };
 };
@@ -73,7 +76,9 @@ const workflowVersionsOf = (file: WalkerFile): Versions => {
         value: source.value
           ?.split(/\r?\n/)
           .flatMap((line, index) =>
-            floatingWorkflowVersion(line) ? [{ line: index + 1, snippet: line.trim() }] : [],
+            floatingWorkflowVersion(line)
+              ? [{ anchor: { line: index + 1, column: 0 }, snippet: line.trim() }]
+              : [],
           ),
       };
 };
@@ -88,8 +93,8 @@ export const check: WalkerPiece = {
           : workflowVersionsOf(file);
         if (versions.outcome === "failed") return versions;
         if (versions.value === undefined) return { outcome: "ok", value: { kind: "skipped" } };
-        const hits = versions.value.flatMap(({ line, snippet }) =>
-          bindings.map(({ address }) => ({ check: address, anchor: { line, column: 0 }, snippet })),
+        const hits = versions.value.flatMap(({ anchor, snippet }) =>
+          bindings.map(({ address }) => ({ check: address, anchor, snippet })),
         );
         return { outcome: "ok", value: { kind: "complete", hits } };
       },
