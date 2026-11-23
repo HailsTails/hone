@@ -5,6 +5,12 @@
       "fileName": "src/worker.ts",
       "source": "process.env.MODE;\nprocess.argv;\nprocess.exit(0);\nprocess.on('exit', done);\nconsole.log('ready');\nconst host = globalThis;",
       "expectedLines": [1, 2, 3, 4, 5, 6]
+    },
+    {
+      "name": "a direct environment write in a test",
+      "fileName": "src/worker.test.ts",
+      "source": "process.env.MODE = 'test';",
+      "expectedLines": [1]
     }
   ],
   "allow": [
@@ -12,6 +18,12 @@
       "name": "injected receiver",
       "fileName": "src/worker.ts",
       "source": "const run = (process: ProcessPort) => process.env.MODE;",
+      "expectedLines": []
+    },
+    {
+      "name": "local process and imported console",
+      "fileName": "src/worker.ts",
+      "source": "import { console } from './ports.ts';\nconsole.log('ready');\nconst process = ports.process;\nprocess.env.MODE;",
       "expectedLines": []
     },
     {

@@ -172,6 +172,29 @@ describe("process globals", () => {
     ).toEqual([]);
   });
 
+  it("leaves locally declared and imported receivers alone", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { console } from "./ports.ts";\nconsole.log("ready");\nfunction run() { const process = ports.process; return process.env.MODE; }\nfunction read() { const globalThis = ports.global; return { globalThis }; }',
+      }),
+    ).toEqual([]);
+  });
+
+  it("keeps bare global reads and test writes when the name has no local binding", () => {
+    const file = repoPathSchema.parse("src/worker.test.ts");
+    expect(
+      findingsIn({
+        file,
+        source: "const roots = { globalThis };\nprocess.env.MODE = 'test';",
+      }),
+    ).toEqual([
+      { file, check: BINDING.address, anchor: { line: 1, column: 16 }, snippet: "globalThis" },
+      { file, check: BINDING.address, anchor: { line: 2, column: 0 }, snippet: "process.env" },
+    ]);
+  });
+
   it("lets a runtime process boundary record answer the finding in its adapter", () => {
     expect(findingsIn({ file: ADAPTER_FILE, source: "process.env.MODE;" })).toEqual([
       {
