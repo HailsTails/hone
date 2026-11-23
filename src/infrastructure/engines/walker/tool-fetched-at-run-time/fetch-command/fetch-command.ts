@@ -1,3 +1,5 @@
+import type { Result } from "../../../../../domain/result.ts";
+import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import {
   dependencySourceOf,
   fieldsOf,
@@ -85,5 +87,3 @@ export const check: WalkerPiece = {
     },
   }),
 };
-import type { Result } from "../../../../../domain/result.ts";
-import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
