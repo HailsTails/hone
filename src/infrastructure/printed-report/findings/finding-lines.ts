@@ -109,9 +109,7 @@ export const unrecordedLines = (
     (site) => `${checkSiteText({ site })} ${request.exception.kind} ${unrecordedDetail(request)}`,
   );
 
-export const heldLines = (
-  request: CatalogueRequest & { readonly held: HeldException },
-): readonly string[] =>
-  unrecordedLines({ catalogue: request.catalogue, exception: request.held.exception }).map(
-    (line) => `${line}${referencesText({ lead: "held by", records: request.held.by })}`,
-  );
+export const heldLine = (request: CatalogueRequest & { readonly held: HeldException }): string => {
+  const { exception, by } = request.held;
+  return `${checkSiteText({ site: findingSiteOf({ catalogue: request.catalogue, finding: exception }) })} ${exception.kind} ${inlineDetail({ exception })}${referencesText({ lead: "held by", records: by })}`;
+};

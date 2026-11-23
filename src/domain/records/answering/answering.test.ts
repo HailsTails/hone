@@ -1175,6 +1175,31 @@ describe("answerFindings, natives held", () => {
     });
   });
 
+  it("does not list as held a config override that debt on its check's symptom at its file holds", () => {
+    expect(
+      answerFindings({
+        catalogue: CATALOGUE,
+        records: [DEBT_ON_CLASS_IN_A],
+        findings: [],
+        touched: NOTHING_TOUCHED,
+        measurements: { runs: [], tracked: [], excluded: [] },
+        runs: [
+          {
+            mechanism: AUDIT,
+            nativeExceptions: [
+              {
+                kind: "config-override",
+                check: "authored-class-or-this#class-syntax",
+                file: FILE_A,
+              },
+            ],
+            coverableKinds: ["config-override"],
+          },
+        ],
+      }),
+    ).toEqual(NOTHING_ANSWERED);
+  });
+
   it("lists, attributed to its engine, an inline disable no record holds", () => {
     expect(
       answerFindings({

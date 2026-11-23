@@ -28,7 +28,7 @@ import {
   checkLine,
   editionLine,
   findingLine,
-  heldLines,
+  heldLine,
   notRunLine,
   unrecordedLines,
 } from "./finding-lines.ts";
@@ -497,10 +497,10 @@ describe("answeredLine", () => {
   });
 });
 
-describe("heldLines", () => {
-  it("prints a held suppression as an unrecorded one would be, then names each record that holds it, by its kind", () => {
+describe("heldLine", () => {
+  it("prints a held inline disable by its check, place and text without fix advice, then names each record that holds it, by its kind", () => {
     expect(
-      heldLines({
+      heldLine({
         catalogue: REPORT_CATALOGUE,
         held: {
           exception: {
@@ -515,9 +515,9 @@ describe("heldLines", () => {
           by: [DEBT, CLOCK_BOUNDARY],
         },
       }),
-    ).toEqual([
-      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check: naming the rule is the cheap fix held by debt held by boundary-record runtime:clock",
-    ]);
+    ).toBe(
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line held by debt held by boundary-record runtime:clock",
+    );
   });
 });
 
