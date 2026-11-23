@@ -7,6 +7,7 @@ import type { CheckPiece } from "../settings-sources.ts";
 
 type ExamplesLookup = {
   readonly installRoot: AbsolutePath;
+  readonly ruleSetRoot: AbsolutePath;
   readonly check: string;
   readonly engine: EngineId;
 };

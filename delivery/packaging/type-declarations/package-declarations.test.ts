@@ -43,12 +43,12 @@ const EMITTED: DeclarationEmit = {
 };
 
 describe("PUBLIC_TYPE_ENTRIES", () => {
-  it("names the audit, eslint-plugin, rule-set and testing entries and their hand-written sources", () => {
+  it("names the eslint-plugin, rule-set, testing and walker entries and their hand-written sources", () => {
     expect(PUBLIC_TYPE_ENTRIES).toEqual([
-      { subpath: "audit", source: "src/audit.ts" },
       { subpath: "eslint-plugin", source: "src/eslint-plugin.ts" },
       { subpath: "rule-set", source: "src/rule-set.ts" },
       { subpath: "testing", source: "src/testing.ts" },
+      { subpath: "walker", source: "src/walker.ts" },
     ]);
   });
 });

@@ -1,40 +1,93 @@
 import { gatheredOutcomes } from "../../domain/gathered-outcomes.ts";
 import { checkNamesOf } from "../../domain/language-layer/check-address-text.ts";
+import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { isRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
+import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
+import { teamRuleSetOf } from "../../domain/rule-set/rule-set-identity.ts";
 import type { CheckBinding } from "../../domain/runner/check-binding.ts";
 import { casesByEdition } from "../../domain/runner/edition-runs.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
 import type { NamedConformancePort } from "../ports/engine/engine-port.ts";
 import type { RunnerLocation } from "../ports/engine/runner-location.ts";
+import type { PathPort } from "../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type {
   NamedCheckExamples,
   NamedCheckExamplesRepository,
 } from "../ports/rule-set/named-check-examples.ts";
-import type { RepoPathOf } from "./conformance-testing-types.ts";
 import type {
   CheckConformanceFailure,
   CheckRequest,
   CheckUnderTest,
   ConformanceSetupFailure,
+  RepoPathOf,
+  TeamRuleSetUnderTest,
 } from "./conformance-testing-types.ts";
 
 type ExamplesRequest = CheckRequest & {
   readonly installRoot: RunnerLocation["installRoot"];
+  readonly path: Pick<PathPort, "resolve">;
   readonly examples: NamedCheckExamplesRepository;
   readonly loadFailureDetail: LoadFailureDetail;
 };
 
-const examplesOf = (
-  request: ExamplesRequest,
-): Result<NamedCheckExamples, ConformanceSetupFailure> => {
+type PlacedRuleSet = { readonly identity: RuleSetIdentity; readonly root: AbsolutePath };
+
+type ExamplesRead = NamedCheckExamples & { readonly ruleSet: RuleSetIdentity };
+
+const ruleSetInvalid = (request: {
+  readonly detail: string;
+}): Result<never, ConformanceSetupFailure> => ({
+  outcome: "failed",
+  error: { kind: "rule-set-invalid", detail: request.detail },
+});
+
+const placedTeamRuleSet = (request: {
+  readonly ruleSet: TeamRuleSetUnderTest;
+  readonly path: Pick<PathPort, "resolve">;
+}): Result<PlacedRuleSet, ConformanceSetupFailure> => {
+  const { name, root } = request.ruleSet;
+  const identity = teamRuleSetOf({ name });
+  if (identity === undefined) {
+    return ruleSetInvalid({
+      detail: `${name} is not a team rule set name: use lower-case letters, digits and hyphens, and not ${TOOL_RULE_SET}`,
+    });
+  }
+  if (!isRepoPath(root)) {
+    return ruleSetInvalid({
+      detail: `the root ${root} of rule set ${name} is not a path inside the repository`,
+    });
+  }
+  const resolved = request.path.resolve({ path: root });
+  return resolved.outcome === "failed"
+    ? ruleSetInvalid({
+        detail: `the root ${root} of rule set ${name} does not resolve, because the working directory cannot be used`,
+      })
+    : { outcome: "ok", value: { identity, root: resolved.value } };
+};
+
+const placedRuleSet = (request: ExamplesRequest): Result<PlacedRuleSet, ConformanceSetupFailure> =>
+  request.ruleSet === TOOL_RULE_SET
+    ? { outcome: "ok", value: { identity: TOOL_RULE_SET, root: request.installRoot } }
+    : placedTeamRuleSet({ ruleSet: request.ruleSet, path: request.path });
+
+const examplesOf = (request: ExamplesRequest): Result<ExamplesRead, ConformanceSetupFailure> => {
   if (checkNamesOf({ text: request.check }) === undefined) {
     return { outcome: "failed", error: { kind: "address-invalid", detail: request.check } };
   }
-  const read = request.examples.read(request);
-  if (read.outcome === "ok") return read;
+  const placed = placedRuleSet(request);
+  if (placed.outcome === "failed") return placed;
+  const read = request.examples.read({
+    installRoot: request.installRoot,
+    ruleSetRoot: placed.value.root,
+    check: request.check,
+    engine: request.engine,
+  });
+  if (read.outcome === "ok") {
+    return { outcome: "ok", value: { ...read.value, ruleSet: placed.value.identity } };
+  }
   return {
     outcome: "failed",
     error: {
@@ -51,11 +104,12 @@ export const checkUnderTestOf = (
   if (read.outcome === "failed") {
     return read;
   }
-  const { check, engine } = request;
+  const { ruleSet, check, engine } = request;
   const { piece, examples } = read.value;
   return {
     outcome: "ok",
     value: {
+      ruleSet,
       check,
       engine,
       examples: examples.map((example) => ({
@@ -70,7 +124,10 @@ export const checkUnderTestOf = (
 
 export const checkConformanceOf = async (
   request: ExamplesRequest &
-    Omit<RunnerLocation, "mechanism"> & { readonly enginePort: NamedConformancePort },
+    Omit<RunnerLocation, "mechanism" | "path"> & {
+      readonly path: Pick<PathPort, "join" | "resolve">;
+      readonly enginePort: NamedConformancePort;
+    },
 ): Promise<Result<readonly CheckConformanceFailure[], ConformanceSetupFailure>> => {
   const read = examplesOf(request);
   if (read.outcome === "failed") return read;
@@ -86,10 +143,10 @@ export const checkConformanceOf = async (
       },
     };
   }
-  const { piece, examples } = read.value;
+  const { piece, examples, ruleSet } = read.value;
   const binding: CheckBinding = {
     address: request.check,
-    ruleSet: TOOL_RULE_SET,
+    ruleSet,
     engine: mechanism,
     anchor: piece.anchor,
     pieceRoot: piece.pieceRoot,

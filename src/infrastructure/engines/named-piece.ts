@@ -10,10 +10,12 @@ import {
 } from "../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { Result } from "../../domain/result.ts";
+import type { AuthoredPieceDeclaration } from "../../domain/rule-set/authored-rule-set-types.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
 import { namedPieceFolderSegmentsOf } from "../../domain/rule-set/piece-folder.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import { anchorKindSchema, pieceFileSchema } from "../content-files/rule-sets/rule-set-reader.ts";
+import type { DeepReadonly, Equal } from "./protocol/runner-module/type-equality.ts";
 
 const legacyPieceEntry = pieceFileSchema.shape.clauses.element.shape;
 
@@ -65,6 +67,11 @@ const pointerSchema = z.strictObject({
 });
 
 const namedPieceSchema = z.union([implementationSchema, pointerSchema]);
+
+export const isAuthoredPieceDeclarationSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof namedPieceSchema>>,
+  AuthoredPieceDeclaration
+> = true;
 
 type NamedPieceRequest = {
   readonly fileText: Pick<FileTextPort, "exists" | "read">;

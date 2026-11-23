@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { folderScope, isRuleSetName } from "./audit.ts";
+import { folderScope, isRuleSetName } from "./walker.ts";
 
-describe("the audit entry's folderScope", () => {
+describe("the walker entry's folderScope", () => {
   it("calls a file under a generated folder generated", () => {
     expect(folderScope({ file: "packages/web/node_modules/astro/styles.css" })).toBe("generated");
   });
@@ -16,7 +16,7 @@ describe("the audit entry's folderScope", () => {
   });
 });
 
-describe("the audit entry's isRuleSetName", () => {
+describe("the walker entry's isRuleSetName", () => {
   it("accepts a lowercase name a team gives its rule set", () => {
     expect(isRuleSetName("acme-web")).toBe(true);
   });

@@ -46,7 +46,7 @@ const rowsOf = (address: CheckAddressText): readonly ConformanceRow[] => {
   assert.isDefined(names);
   const piece = readNamedPiece({ ...roots, ...names, mechanism: "walker", fileText, path });
   assert(piece.outcome === "ok");
-  const read = examples.read({ installRoot: RULE_SET_ROOT, check: address, engine: "walker" });
+  const read = examples.read({ ...roots, check: address, engine: "walker" });
   assert(read.outcome === "ok");
   const { editions, anchor, pieceRoot, settings, declarations, forms } = piece.value;
   return editions.declared.flatMap((edition) => {

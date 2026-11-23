@@ -1,4 +1,4 @@
-import { editionReaches, isEdition, type PieceHit, type CheckBinding, type WalkerPiece } from "@hailstails/hone/audit";
+import { editionReaches, isEdition, type PieceHit, type CheckBinding, type WalkerPiece } from "@hailstails/hone/walker";
 
 const SCRATCH_MARKER = ".scratch.";
 const DRAFT_MARKER = ".draft.";

@@ -434,7 +434,7 @@ const coreSources = import.meta.glob(
   [
     "./src/**/*.{ts,mts,cts,tsx,js,mjs,cjs}",
     "!./src/**/*.test.*",
-    "!./src/audit.ts",
+    "!./src/walker.ts",
     "!./src/eslint-plugin.ts",
     "!./src/rule-set.ts",
     "!./src/testing.ts",
@@ -550,7 +550,7 @@ const relativeImportUnderCoreFrom = ({ importingFolder }: { readonly importingFo
   relativeImportReaching({
     importingFolder,
     reach:
-      /^src\/(?!(?:audit|eslint-plugin|rule-set|testing)\.ts$|infrastructure\/engines\/(?:walker|eslint\/[^/]+)\/)/,
+      /^src\/(?!(?:eslint-plugin|rule-set|testing|walker)\.ts$|infrastructure\/engines\/(?:walker|eslint\/[^/]+)\/)/,
   }),
   packageOrComputedImport,
 ];

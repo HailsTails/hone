@@ -3,15 +3,7 @@ import type { ClauseAddress, RuleSetIdentity } from "../rule-set/clause-address-
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
 import type { Remedy } from "../runner/runner-result-types.ts";
-
-export type Standing = "accepted" | "proposed";
-
-export type RecordKindName =
-  | "authorised-location"
-  | "deviation"
-  | "debt"
-  | "boundary-record"
-  | "dependency-record";
+import type { RecordKindName, Standing } from "./authored-item-types.ts";
 
 export type TodaysRecordFormat = "authorised-location" | "file-carve-out" | "none-yet";
 

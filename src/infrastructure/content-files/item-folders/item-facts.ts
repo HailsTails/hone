@@ -1,6 +1,15 @@
 import { z } from "zod";
 
+import type {
+  CaseItem,
+  CheckItem,
+  RecipeItem,
+  RecordKindItem,
+  SymptomItem,
+} from "../../../domain/language-layer/authored-item-types.ts";
+import type { PrincipleItem, RuleItem } from "../../../domain/language-layer/lensed-item-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { DeepReadonly, Equal } from "../../engines/protocol/runner-module/type-equality.ts";
 import {
   caseWireSchema,
   catalogueFileSchema,
@@ -46,6 +55,41 @@ const recordKindFactsSchema = recordKindWireSchema.omit({
 const symptomFactsSchema = symptomWireSchema.omit(OMITTED_NAME_AND_TITLE);
 
 const checkFactsSchema = checkWireSchema.omit({ symptom: true, name: true, clause: true });
+
+export const isPrincipleItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof principleFactsSchema>>,
+  PrincipleItem
+> = true;
+
+export const isRuleItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof ruleFactsSchema>>,
+  RuleItem
+> = true;
+
+export const isCaseItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof caseFactsSchema>>,
+  CaseItem
+> = true;
+
+export const isRecipeItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof recipeFactsSchema>>,
+  RecipeItem
+> = true;
+
+export const isRecordKindItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof recordKindFactsSchema>>,
+  RecordKindItem
+> = true;
+
+export const isSymptomItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof symptomFactsSchema>>,
+  SymptomItem
+> = true;
+
+export const isCheckItemSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof checkFactsSchema>>,
+  CheckItem
+> = true;
 
 export type ItemFacts =
   | { readonly kind: "principle"; readonly facts: z.output<typeof principleFactsSchema> }

@@ -17,9 +17,16 @@ export const sameOwnedName = (request: {
 }): "same" | "different" =>
   ownedNameText(request.left) === ownedNameText(request.right) ? "same" : "different";
 
+export const teamRuleSetOf = (request: {
+  readonly name: string;
+}): Exclude<RuleSetIdentity, typeof TOOL_RULE_SET> | undefined =>
+  isRuleSetName(request.name) && request.name !== TOOL_RULE_SET
+    ? { name: request.name }
+    : undefined;
+
 const ownerOf = (request: { readonly text: string }): RuleSetIdentity | undefined => {
   if (request.text === TOOL_RULE_SET) return TOOL_RULE_SET;
-  return isRuleSetName(request.text) ? { name: request.text } : undefined;
+  return teamRuleSetOf({ name: request.text });
 };
 
 const isOwnerAndName = (parts: readonly string[]): parts is readonly [string, string] =>

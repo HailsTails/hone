@@ -247,7 +247,12 @@ const publicTypeReachOf = (request: {
         requiredPeers: request.requiredPeers,
       });
 
-const ENTRY_SOURCES = ["src/audit.ts", "src/eslint-plugin.ts", "src/rule-set.ts", "src/testing.ts"];
+const ENTRY_SOURCES = [
+  "src/eslint-plugin.ts",
+  "src/rule-set.ts",
+  "src/testing.ts",
+  "src/walker.ts",
+];
 
 const loadedParsePort = await loadParsePort({
   peers: defaultTypeScriptPeers({
@@ -371,9 +376,9 @@ describe("the declarations the public type entries ship, emitted in memory by th
     expect(reach.problems).toEqual([]);
   });
 
-  it("import no package but typescript from the audit entry, and none at all from the eslint-plugin, rule-set and testing entries", () => {
+  it("import no package but typescript from the walker entry, and none at all from the eslint-plugin, rule-set and testing entries", () => {
     expect(reach.entries).toMatchObject({
-      audit: { packageImports: ["typescript"] },
+      walker: { packageImports: ["typescript"] },
       "eslint-plugin": { packageImports: [] },
       "rule-set": { packageImports: [] },
       testing: { packageImports: [] },
@@ -386,9 +391,9 @@ describe("the declarations the public type entries ship, emitted in memory by th
     });
   });
 
-  it("reach no internal port, toolchain or tool identity from the audit entry", () => {
+  it("reach no internal port, toolchain or tool identity from the walker entry", () => {
     expect(reach.entries).toMatchObject({
-      audit: {
+      walker: {
         reached: expect.not.arrayContaining([
           expect.stringMatching(
             /^src\/(?:infrastructure\/engines\/protocol\/toolchain\/toolchain-requirement|domain\/runner\/runner-failure(?:-types)?|infrastructure\/node\/modules\/package-location-port|infrastructure\/node\/modules\/install-layout|domain\/rule-set\/tool-identity)\.d\.ts$/,
@@ -402,9 +407,9 @@ describe("the declarations the public type entries ship, emitted in memory by th
     expect(reach.valueDeclaring).toEqual([]);
   });
 
-  it("declare folderScope, editionReaches, isEdition and isRuleSetName from the audit entry, the three testing functions from the testing entry, only the default export from the eslint-plugin entry, and no named value from the rule-set entry", () => {
+  it("declare folderScope, editionReaches, isEdition and isRuleSetName from the walker entry, the three testing functions from the testing entry, only the default export from the eslint-plugin entry, and no named value from the rule-set entry", () => {
     expect(reach.entryValues).toEqual({
-      audit: ["folderScope", "editionReaches", "isEdition", "isRuleSetName"],
+      walker: ["folderScope", "editionReaches", "isEdition", "isRuleSetName"],
       "eslint-plugin": ["export default plugin;"],
       "rule-set": [],
       testing: ["repoPathOf", "checkUnderTestOf", "checkConformanceOf"],

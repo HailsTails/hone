@@ -2,15 +2,15 @@ import * as editionReach from "./domain/rule-set/edition-reach.ts";
 import * as ruleSetIdentifiers from "./domain/rule-set/identifiers.ts";
 import * as sourceScope from "./infrastructure/engines/walker/runner/pieces/source-scope.ts";
 
-export type { CheckBinding } from "./domain/runner/check-binding.ts";
+export type { CheckBinding, CheckSettingValues } from "./domain/runner/check-binding.ts";
+export type { CheckAddressText } from "./domain/language-layer/check-address-text.ts";
 export type { PieceFailure } from "./domain/runner/piece-failure-types.ts";
-export type { ClauseSettingValues, RunnerClause } from "./domain/runner/runner-module-types.ts";
 export type { ReadonlyJsonValue } from "./domain/settings/json-values/json-value.ts";
 export type { Edition, EditionReach } from "./domain/rule-set/edition-types.ts";
-export type { Hit, Remedy } from "./domain/runner/runner-result-types.ts";
+export type { Remedy } from "./domain/runner/runner-result-types.ts";
 export type { Anchor, AnchorKind } from "./domain/finding/anchor.ts";
-export type { ClauseAddress, ToolRuleSet } from "./domain/rule-set/clause-address-types.ts";
-export type { ClauseId, DisciplineId, RuleSetName } from "./domain/rule-set/identifier-types.ts";
+export type { RuleSetIdentity } from "./domain/rule-set/clause-address-types.ts";
+export type { RuleSetName } from "./domain/rule-set/identifier-types.ts";
 export type { RepoPath } from "./domain/repository/repo-path-types.ts";
 export type { Result } from "./domain/result.ts";
 export type {

@@ -53,7 +53,12 @@ describe("createNamedCheckExamplesRepository", () => {
     const examples = createNamedCheckExamplesRepository({ fileText, path });
 
     expect(
-      examples.read({ installRoot: INSTALL_ROOT, check: "rebinding#test-body", engine: "walker" }),
+      examples.read({
+        installRoot: INSTALL_ROOT,
+        ruleSetRoot: INSTALL_ROOT,
+        check: "rebinding#test-body",
+        engine: "walker",
+      }),
     ).toMatchObject({
       outcome: "ok",
       value: {
@@ -112,12 +117,52 @@ describe("createNamedCheckExamplesRepository", () => {
     expect(
       examples.read({
         installRoot: INSTALL_ROOT,
+        ruleSetRoot: INSTALL_ROOT,
         check: "branch-in-a-test#test-body",
         engine: "walker",
       }),
     ).toEqual({
       outcome: "failed",
       error: { kind: "file-malformed", path: EXAMPLES_PATH, detail },
+    });
+  });
+
+  it("reads a team's check from the engines folder under its rule set root", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"scratch-files.ts"}}',
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value:
+            '{"flag":[{"name":"scratch","fileName":"src/a.scratch.ts","source":"","expectedLines":[1]}],"allow":[{"name":"kept","fileName":"src/a.ts","source":"","expectedLines":[]}]}',
+        }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const path = {
+      join: vi
+        .fn<PathPort["join"]>()
+        .mockReturnValueOnce("/repo/acme/engines/walker/scratch-file/scratch-files/piece.json")
+        .mockReturnValueOnce(
+          "/repo/acme/engines/walker/scratch-file/scratch-files/scratch-files.examples.json",
+        )
+        .mockReturnValueOnce("/repo/acme/engines/walker/scratch-file/scratch-files"),
+    };
+    const examples = createNamedCheckExamplesRepository({ fileText, path });
+
+    examples.read({
+      installRoot: INSTALL_ROOT,
+      ruleSetRoot: absoluteRootOf("/repo/acme"),
+      check: "scratch-file#scratch-files",
+      engine: "walker",
+    });
+
+    expect(path.join).toHaveBeenNthCalledWith(1, {
+      segments: ["/repo/acme", "engines", "walker", "scratch-file", "scratch-files", "piece.json"],
     });
   });
 
@@ -135,6 +180,7 @@ describe("createNamedCheckExamplesRepository", () => {
     expect(
       examples.read({
         installRoot: INSTALL_ROOT,
+        ruleSetRoot: INSTALL_ROOT,
         check: "../rebinding#test-body",
         engine: "walker",
       }),

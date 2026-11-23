@@ -27,7 +27,7 @@ const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/"
 
 const ENTRY_DECLARATIONS: readonly EmittedDeclaration[] = [
   {
-    path: "src/audit.d.ts",
+    path: "src/walker.d.ts",
     text: 'export type { Result } from "./domain/result.js";\n',
     specifiers: ["./domain/result.js"],
     refusals: [],
@@ -231,7 +231,7 @@ const SOURCE_WITHOUT_LOCK: Readonly<Record<string, string>> = {
   "/package/tsconfig.json": '{ "extends": "./tsconfig.base.json" }',
   "/package/tsconfig.base.json": '{ "compilerOptions": { "strict": true } }',
   "/package/README.md": "# Discipline core\n",
-  "/package/src/audit.ts": "export {};\n",
+  "/package/src/walker.ts": "export {};\n",
   "/package/src/eslint-plugin.ts": "export {};\n",
   "/package/src/rule-set.ts": "export {};\n",
   "/package/src/testing.ts": "export {};\n",
@@ -271,7 +271,7 @@ const RUNNER_OUTPUT = entryOutput({
 });
 
 const API_OUTPUTS = [
-  entryOutput({ source: "src/audit.ts", path: "src/audit.js", text: "export {};\n" }),
+  entryOutput({ source: "src/walker.ts", path: "src/walker.js", text: "export {};\n" }),
   entryOutput({
     source: "src/eslint-plugin.ts",
     path: "src/eslint-plugin.js",
