@@ -465,6 +465,7 @@ const creditedNothing = (placed: PlacedRecord): StaleRecord =>
 const NOTHING_ANSWERED = {
   findings: [],
   answered: [],
+  held: [],
   stale: [],
   forfeited: [],
   paid: [],
@@ -1141,7 +1142,7 @@ describe("answerFindings, stale", () => {
 });
 
 describe("answerFindings, natives held", () => {
-  it("does not list an inline disable that debt on its check's symptom at its file holds, and the debt is not stale", () => {
+  it("lists as held by debt, not unrecorded, an inline disable that debt on its check's symptom at its file holds, and the debt is not stale", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -1151,10 +1152,13 @@ describe("answerFindings, natives held", () => {
         runs: [inlineRun({ nativeExceptions: [DISABLE_IN_A] })],
         measurements: { runs: [], tracked: [], excluded: [] },
       }),
-    ).toEqual(NOTHING_ANSWERED);
+    ).toEqual({
+      ...NOTHING_ANSWERED,
+      held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [DEBT_ON_CLASS_IN_A] }],
+    });
   });
 
-  it("does not list an inline disable that the record answering in paid debt's place holds, and that record is not stale", () => {
+  it("lists as held by the record answering in paid debt's place an inline disable that record holds, and that record is not stale", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -1166,6 +1170,7 @@ describe("answerFindings, natives held", () => {
       }),
     ).toEqual({
       ...NOTHING_ANSWERED,
+      held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [LOCATED_CLASS_IN_A] }],
       paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
     });
   });
@@ -1442,7 +1447,15 @@ describe("answerFindings, a finding or exception that names its check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
         runs: [inlineRun({ nativeExceptions: [HERITAGE_DISABLE_IN_A] })],
       }),
-    ).toEqual(NOTHING_ANSWERED);
+    ).toEqual({
+      ...NOTHING_ANSWERED,
+      held: [
+        {
+          exception: { ...HERITAGE_DISABLE_IN_A, mechanism: AUDIT },
+          by: [LOCATED_CLASS_HERITAGE_IN_A],
+        },
+      ],
+    });
   });
 
   it("lists an inline disable naming a check when only a record naming the other check of its clause exists", () => {
@@ -1472,7 +1485,10 @@ describe("answerFindings, a finding or exception that names its check", () => {
         measurements: { runs: [], tracked: [], excluded: [] },
         runs: [inlineRun({ nativeExceptions: [DISABLE_IN_A] })],
       }),
-    ).toEqual(NOTHING_ANSWERED);
+    ).toEqual({
+      ...NOTHING_ANSWERED,
+      held: [{ exception: { ...DISABLE_IN_A, mechanism: AUDIT }, by: [LOCATED_CLASS_SYNTAX_IN_A] }],
+    });
   });
 });
 

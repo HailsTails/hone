@@ -259,6 +259,7 @@ const EMPTY_AFTER: RunReport = {
   editions: [],
   findings: [],
   answered: [],
+  held: [],
   available: [],
   stale: [],
   forfeited: [],

@@ -12,6 +12,7 @@ import {
   checkLine,
   editionLine,
   findingLine,
+  heldLines,
   notRunLine,
   unrecordedLines,
 } from "./findings/finding-lines.ts";
@@ -49,6 +50,8 @@ const SECTION_LINES: Readonly<Record<RunSectionName, SectionLines>> = {
     request.report.answered.map((answered) =>
       answeredLine({ catalogue: request.catalogue, answered }),
     ),
+  held: (request) =>
+    request.report.held.flatMap((held) => heldLines({ catalogue: request.catalogue, held })),
   available: (request) => request.report.available.map((check) => checkLine({ check })),
   stale: (request) =>
     request.report.stale.map((stale) => staleLine({ stale, pruneCommand: request.pruneCommand })),

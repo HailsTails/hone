@@ -26,7 +26,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
-import type { CheckHit } from "../../domain/runner/check-observations.ts";
+import type { CheckHit, CheckNativeException } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import { type RunReportRequest, namedRunReportOf } from "./run-report-of.ts";
@@ -400,6 +400,7 @@ const EMPTY_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
+  held: [],
   available: [],
   stale: [],
   forfeited: [],
@@ -484,6 +485,34 @@ describe("namedRunReportOf, findings and records", () => {
     ).toEqual({
       ...EMPTY_REPORT,
       answered: [{ finding: CAST_FINDING, by: [debt] }],
+    });
+  });
+
+  it("reports an inline disable a record holds as held by that record, and the record as not stale", () => {
+    const location = carriedLocationAt({ file: FILE_A, index: 0 });
+    const disable: CheckNativeException = {
+      kind: "inline-disable",
+      check: "claimed-type#cast-expressions",
+      file: FILE_A,
+      line: 3,
+      text: "// eslint-disable-next-line",
+      reach: "one-check",
+    };
+    expect(
+      namedRunReportOf({
+        ...REQUEST,
+        records: { ...NO_RECORDS, records: [location] },
+        runs: [
+          {
+            ...eslintRunOf({ hits: [], projection: "current" }),
+            nativeExceptions: [disable],
+          },
+        ],
+      }),
+    ).toEqual({
+      ...EMPTY_REPORT,
+      held: [{ exception: { ...disable, mechanism: ESLINT }, by: [location] }],
+      carried: [{ place: location.place, lacks: [], standing: "unjudged" }],
     });
   });
 

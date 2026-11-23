@@ -28,6 +28,7 @@ import {
   checkLine,
   editionLine,
   findingLine,
+  heldLines,
   notRunLine,
   unrecordedLines,
 } from "./finding-lines.ts";
@@ -493,6 +494,30 @@ describe("answeredLine", () => {
     ).toBe(
       'branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test',
     );
+  });
+});
+
+describe("heldLines", () => {
+  it("prints a held suppression as an unrecorded one would be, then names each record that holds it, by its kind", () => {
+    expect(
+      heldLines({
+        catalogue: REPORT_CATALOGUE,
+        held: {
+          exception: {
+            kind: "inline-disable",
+            check: "claimed-type#cast-expressions",
+            file: WEBHOOK_FILE,
+            line: 8,
+            text: "// eslint-disable-next-line",
+            reach: "every-selected-check",
+            mechanism: ESLINT,
+          },
+          by: [DEBT, CLOCK_BOUNDARY],
+        },
+      }),
+    ).toEqual([
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check: naming the rule is the cheap fix held by debt held by boundary-record runtime:clock",
+    ]);
   });
 });
 
