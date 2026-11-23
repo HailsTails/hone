@@ -1,0 +1,182 @@
+name: Agent
+
+on:
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: agent-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+env:
+  ANTHROPIC_API: https://api.anthropic.com/v1
+  ANTHROPIC_VERSION: 2026-10-21
+  ANTHROPIC_BETA: managed-agents-2026-04-01
+  AGENT_MODEL: claude-sonnet-5-5
+  BUDGET_CENTS: '500'
+  ISSUE_NUMBER: ${{ github.event.issue.number }}
+  AGENT_BRANCH: agent/issue-${{ github.event.issue.number }}
+
+jobs:
+  agent:
+    name: Managed agent works the issue
+    if: github.event.label.name == 'claude' && github.event.sender.login == github.repository_owner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions: {}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Mint the push token
+        id: push-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23liOdEzeYFi4AjZwp
+          private-key: ${{ secrets.RIN_AUTHOR_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Start the session
+        id: session
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PUSH_TOKEN: ${{ steps.push-token.outputs.token }}
+          REPOSITORY_URL: ${{ github.event.repository.html_url }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          anthropic() {
+            local response
+            response=$(curl -sS --fail-with-body "$ANTHROPIC_API/$1" \
+              -H "x-api-key: $ANTHROPIC_API_KEY" \
+              -H "anthropic-version: $ANTHROPIC_VERSION" \
+              -H "anthropic-beta: $ANTHROPIC_BETA" \
+              -H "content-type: application/json" \
+              --data-binary @-) || { echo "POST $1 failed: $response" >&2; return 1; }
+            echo "$response"
+          }
+          workspace="/workspace/$REPOSITORY_NAME"
+          system=$(cat <<EOF
+          You work on one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main.
+          Read AGENTS.md there and follow it, with these exceptions for this run:
+          - Work on a new branch named $AGENT_BRANCH and push it to origin yourself. Do not open a pull request.
+          - Set up with: corepack enable, then pnpm install --frozen-lockfile.
+          Build exactly what the issue asks, no more. Before pushing, run pnpm run check and leave it green.
+          Commit with a conventional commit subject, using the bot identity AGENTS.md names.
+          If you cannot finish with a green check, push nothing and say why in your last message.
+          Your last message is the pull request description: what changed and why, in a few short lines.
+          EOF
+          )
+          agent_id=$(jq -n --arg name "hone-issue-$ISSUE_NUMBER" --arg model "$AGENT_MODEL" --arg system "$system" \
+            '{name: $name, model: $model, system: $system, tools: [{type: "agent_toolset_20260401"}]}' \
+            | anthropic agents | jq -r .id)
+          echo "agent_id=$agent_id" >> "$GITHUB_OUTPUT"
+          environment_id=$(jq -n --arg name "hone-issue-$ISSUE_NUMBER" \
+            '{name: $name, config: {type: "cloud", networking: {type: "limited", allow_package_managers: true}}}' \
+            | anthropic environments | jq -r .id)
+          echo "environment_id=$environment_id" >> "$GITHUB_OUTPUT"
+          session_id=$(jq -n \
+            --arg agent "$agent_id" --arg environment "$environment_id" \
+            --arg url "$REPOSITORY_URL" --arg mount "$workspace" --arg token "$PUSH_TOKEN" \
+            --arg budget "$BUDGET_CENTS" --arg number "$ISSUE_NUMBER" \
+            --arg title "$ISSUE_TITLE" --arg body "$ISSUE_BODY" \
+            '{
+              agent: $agent,
+              environment_id: $environment,
+              resources: [{type: "github_repository", url: $url, mount_path: $mount, authorization_token: $token, checkout: {type: "branch", name: "main"}}],
+              budget: {type: "limit", max_list_cost: {amount: $budget, currency: "USD"}},
+              initial_events: [{type: "user.message", content: [{type: "text", text: ("Issue #" + $number + ": " + $title + "\n\n" + $body)}]}]
+            }' \
+            | anthropic sessions | jq -r .id)
+          echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the session to finish
+        id: outcome
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SESSION_ID: ${{ steps.session.outputs.session_id }}
+        run: |
+          set -euo pipefail
+          anthropic_get() {
+            local response
+            response=$(curl -sS --fail-with-body "$ANTHROPIC_API/$1" \
+              -H "x-api-key: $ANTHROPIC_API_KEY" \
+              -H "anthropic-version: $ANTHROPIC_VERSION" \
+              -H "anthropic-beta: $ANTHROPIC_BETA") || { echo "GET $1 failed: $response" >&2; return 1; }
+            echo "$response"
+          }
+          deadline=$((SECONDS + 50 * 60))
+          while :; do
+            session=$(anthropic_get "sessions/$SESSION_ID")
+            status=$(jq -r .status <<<"$session")
+            case "$status" in
+              running|rescheduling) ;;
+              *) break ;;
+            esac
+            if (( SECONDS > deadline )); then status=timed-out; break; fi
+            sleep 30
+          done
+          events=$(anthropic_get "sessions/$SESSION_ID/events")
+          jq -r '[.data[] | select(.type == "agent.message")] | last // {} | [.content[]? | select(.type == "text") | .text] | join("\n")' <<<"$events" > "$RUNNER_TEMP/summary.md"
+          jq -r '[.data[] | select(.type == "session.error") | .error.message] | join("\n")' <<<"$events" > "$RUNNER_TEMP/errors.txt"
+          {
+            echo "status=$status"
+            echo "stop_reason=$(jq -r '[.data[] | select(.type == "session.status_idle")] | last // {} | .stop_reason.type // "none"' <<<"$events")"
+            echo "cost_cents=$(jq -r '.usage.list_cost // "unknown"' <<<"$session")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Mint the pull request token
+        id: review-token
+        if: always() && steps.session.outputs.session_id != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23liOdEzeYFi4AjZwp
+          private-key: ${{ secrets.RIN_AUTHOR_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: read
+          permission-pull-requests: write
+          permission-issues: write
+
+      - name: Open the pull request and report on the issue
+        if: always() && steps.review-token.outputs.token != ''
+        env:
+          GH_TOKEN: ${{ steps.review-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          STATUS: ${{ steps.outcome.outputs.status }}
+          STOP_REASON: ${{ steps.outcome.outputs.stop_reason }}
+          COST_CENTS: ${{ steps.outcome.outputs.cost_cents }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          touch "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/errors.txt"
+          outcome="Agent session ${STATUS:-not started}, stop reason ${STOP_REASON:-none}, list cost ${COST_CENTS:-unknown} US cents. [Run]($RUN_URL)"
+          if head_message=$(gh api "repos/$GH_REPO/commits/$AGENT_BRANCH" --jq .commit.message 2>/dev/null); then
+            body_file="$RUNNER_TEMP/pull-request.md"
+            { echo "Closes #$ISSUE_NUMBER"; echo; cat "$RUNNER_TEMP/summary.md"; echo; echo "$outcome"; } > "$body_file"
+            pull_request=$(gh pr create --draft --base main --head "$AGENT_BRANCH" \
+              --title "$(head -n1 <<<"$head_message")" --body-file "$body_file")
+            gh issue comment "$ISSUE_NUMBER" --body "Draft pull request: $pull_request"$'\n\n'"$outcome"
+          else
+            comment_file="$RUNNER_TEMP/comment.md"
+            { echo "The agent pushed no branch."; echo; cat "$RUNNER_TEMP/summary.md"; echo; cat "$RUNNER_TEMP/errors.txt"; echo; echo "$outcome"; } > "$comment_file"
+            gh issue comment "$ISSUE_NUMBER" --body-file "$comment_file"
+          fi
+          gh issue edit "$ISSUE_NUMBER" --remove-label claude
+
+      - name: Clean up the agent and environment
+        if: always() && steps.session.outputs.agent_id != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AGENT_ID: ${{ steps.session.outputs.agent_id }}
+          ENVIRONMENT_ID: ${{ steps.session.outputs.environment_id }}
+        run: |
+          headers=(-H "x-api-key: $ANTHROPIC_API_KEY" -H "anthropic-version: $ANTHROPIC_VERSION" -H "anthropic-beta: $ANTHROPIC_BETA")
+          curl -sS -X POST "${headers[@]}" "$ANTHROPIC_API/agents/$AGENT_ID/archive" > /dev/null || true
+          if [ -n "$ENVIRONMENT_ID" ]; then
+            curl -sS -X DELETE "${headers[@]}" "$ANTHROPIC_API/environments/$ENVIRONMENT_ID" > /dev/null || true
+          fi
