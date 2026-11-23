@@ -162,7 +162,7 @@ describe("checksPluginOf", () => {
           "test-switched-off#skipped-tests": {
             meta: {
               type: "problem",
-              schema: [],
+              schema: [{ enum: ["conditional-and-todo"] }],
               messages: {
                 modifiedTest:
                   "Test switched off: remove the skip so the test runs, or delete the test.",

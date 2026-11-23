@@ -233,6 +233,44 @@ describe("pluginOf", () => {
 });
 
 describe("conformedCases", () => {
+  it("uses the edition two options when linting a legacy clause's examples", async () => {
+    const lintSourceCases = vi
+      .fn<EslintPort["lintSourceCases"]>()
+      .mockResolvedValue(CLASS_VERDICTS);
+    const settings = {
+      pluginNamespace: "hone",
+      pluginModule: "cd14/cd14.eslint-plugin.ts",
+      rule: "no-class-authoring",
+      options: ["first"],
+      optionsByEdition: { "2": ["second"] },
+    };
+    const loadedPlugin = vi.fn<LoadsPlugin>().mockImplementation(async ({ configured }) => ({
+      outcome: "ok",
+      value: { ...configured, plugin: PLUGIN },
+    }));
+    await expect(
+      conformedCases({
+        clause: { ...CLASS_CLAUSE, edition: editionOf("2"), settings },
+        cases: [CLASS_CASE],
+        path: POSIX_PATH,
+        eslint: eslintLinting(lintSourceCases),
+        loadedPlugin,
+      }),
+    ).resolves.toEqual(CLASS_VERDICTS);
+    expect(lintSourceCases.mock.calls).toEqual([
+      [
+        {
+          cwd: PIECE_ROOT,
+          plugin: PLUGIN,
+          pluginNamespace: "hone",
+          rule: "no-class-authoring",
+          options: ["second"],
+          cases: [CLASS_CASE],
+        },
+      ],
+    ]);
+  });
+
   it("lints the cases in the piece root with the plugin the caller loaded, and returns their verdicts", async () => {
     const lintSourceCases = vi
       .fn<EslintPort["lintSourceCases"]>()
@@ -313,7 +351,7 @@ describe("conformedCases", () => {
 });
 
 describe("conformedNamedCases", () => {
-  it("loads the named piece’s plugin and passes its rule, options and cases to the linter", async () => {
+  it("loads the named piece’s plugin and passes its rule, edition options and cases to the linter", async () => {
     const load = vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({
       outcome: "ok",
       value: { default: PLUGIN },
@@ -330,8 +368,12 @@ describe("conformedNamedCases", () => {
           anchor: CLASS_CLAUSE.anchor,
           pieceRoot: PIECE_ROOT,
           checkSettings: {},
-          edition: CLASS_CLAUSE.edition,
-          settings: { ...CONFIGURED.settings, options: [{ allowed: true }] },
+          edition: editionOf("2"),
+          settings: {
+            ...CONFIGURED.settings,
+            options: [{ allowed: true }],
+            optionsByEdition: { "2": [{ allowed: false }] },
+          },
         },
         cases: [CLASS_CASE],
         path: POSIX_PATH,
@@ -349,7 +391,7 @@ describe("conformedNamedCases", () => {
       },
       pluginNamespace: "hone",
       rule: "no-class-authoring",
-      options: [{ allowed: true }],
+      options: [{ allowed: false }],
       cases: [CLASS_CASE],
     });
   });

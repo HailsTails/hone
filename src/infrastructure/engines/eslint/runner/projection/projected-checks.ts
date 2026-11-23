@@ -40,12 +40,13 @@ const projectedRuleOf = (request: {
   readonly check: AddressedCheck;
   readonly ruleSet: CheckBinding["ruleSet"];
   readonly settings: z.output<typeof eslintPieceSettingsSchema>;
+  readonly edition: CheckBinding["edition"];
 }): ProjectedCheck => ({
   ruleSet: request.ruleSet,
   symptom: request.check.symptom.name,
   check: request.check.name,
   ruleId: checkRuleIdOf({ check: request.check }),
-  options: ruleOptionsOf({ settings: request.settings }),
+  options: ruleOptionsOf(request),
 });
 
 export const projectedNamedChecksOf = (request: {
@@ -82,6 +83,7 @@ export const projectedNamedChecksOf = (request: {
           check,
           ruleSet: binding.ruleSet,
           settings: settings.data,
+          edition: binding.edition,
         });
         if (binding.ruleSet === TOOL_RULE_SET) return { outcome: "ok", value: [projected] };
         const { pluginNamespace, pluginModule, rule } = settings.data;

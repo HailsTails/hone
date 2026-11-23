@@ -6,7 +6,10 @@ import { z } from "zod";
 import type { ModuleLoaderPort } from "../../../../../../application/ports/host/module-loader-port.ts";
 import type { SourceCase } from "../../../../../../domain/rule-set/rule-set-types.ts";
 import type { RunnerClause } from "../../../../../../domain/runner/runner-module-types.ts";
-import { eslintPieceSettingsSchema } from "../../pieces/eslint-piece-settings-schema.ts";
+import {
+  eslintPieceSettingsSchema,
+  ruleOptionsOf,
+} from "../../pieces/eslint-piece-settings-schema.ts";
 import {
   type LoadedEslintPlugin,
   eslintPluginModuleSchema,
@@ -91,12 +94,9 @@ const sameLines = (left: readonly number[], right: readonly number[]): boolean =
 export const eslint9CaseMismatches = async (request: {
   readonly row: ConformanceRow;
 }): Promise<readonly CaseMismatch[]> => {
-  const {
-    pluginNamespace,
-    pluginModule,
-    rule,
-    options = [],
-  } = eslintPieceSettingsSchema.parse(request.row.clause.settings);
+  const settings = eslintPieceSettingsSchema.parse(request.row.clause.settings);
+  const { pluginNamespace, pluginModule, rule } = settings;
+  const options = ruleOptionsOf({ settings, edition: request.row.clause.edition });
   const eslint = new ESLint({
     overrideConfigFile: true,
     overrideConfig: [

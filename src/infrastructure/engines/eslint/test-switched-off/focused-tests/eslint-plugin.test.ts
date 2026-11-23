@@ -178,3 +178,33 @@ describe("CD-27 skipped-tests rule through the ESLint runner's lintSourceCases",
     },
   );
 });
+
+describe("the skipped-tests conditional and todo option", () => {
+  it.each([
+    { edition: "1", options: [], expectedLines: [6, 7, 8] },
+    { edition: "2", options: ["conditional-and-todo"], expectedLines: [1, 2, 3, 6, 7, 8] },
+  ])("reports the expected skip forms in edition $edition", async ({ options, expectedLines }) => {
+    const sourceCase: SourceCase = {
+      name: "conditionally skipped and deferred tests",
+      fileName: repoPathOf("conditional.test.ts"),
+      source:
+        'it.todo("later");\nit.skipIf(isWindows)("elsewhere", () => {});\nsuite.runIf(hasDatabase)("live", () => {});\nit.each([1])("x", () => {});\nit.concurrent("parallel", () => {});\nit.skip("disabled", () => {});\nit.fixme("broken", () => {});\nxit("disabled", () => {});',
+      expectedLines,
+    };
+    expect(
+      await eslint.lintSourceCases({
+        cwd: PIECE_ROOT,
+        plugin: loadedPlugin,
+        pluginNamespace: "hone-cd27",
+        rule: "skipped-tests",
+        options,
+        cases: [sourceCase],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        { caseName: "conditionally skipped and deferred tests", flaggedLines: expectedLines },
+      ],
+    });
+  });
+});

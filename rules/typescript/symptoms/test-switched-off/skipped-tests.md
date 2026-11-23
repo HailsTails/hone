@@ -2,14 +2,11 @@
 
 ```json
 {
-  "misses": "`.todo`.",
-  "settingsTracedTo": "`.todo` not flagged: a miss."
+  "misses": "Test calls made through aliased names.",
+  "settingsTracedTo": "The edition preserves the published edition 1 behaviour for adopters."
 }
 ```
 
-`.skip` or `.fixme` on a test or suite, or `xdescribe`, `xit`, `xtest`, `xsuite`.
+Edition 1 flags `.skip`, `.fixme`, `xdescribe`, `xit`, `xtest` and `xsuite`. Edition 2 also flags `.todo`, `.skipIf` and `.runIf`. A test should run wherever the suite runs.
 
-## Flags
 Needs ESLint adopted through the projection.
-- Under ESLint, this check flags `.skip` and `.fixme` on those chains, and the bare names `xdescribe`, `xit`, `xtest` and `xsuite`.
-- Not flagged: `.todo`, `.concurrent` and `.each`.

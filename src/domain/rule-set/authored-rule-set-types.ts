@@ -45,5 +45,6 @@ export type AuthoredPieceDeclaration =
       readonly anchor?: AnchorKind | undefined;
       readonly settings?: PieceSettings;
       readonly implementation: ImplementingCheck;
+      readonly editions?: readonly string[] | undefined;
       readonly examples?: "with-implementation" | undefined;
     };

@@ -63,6 +63,7 @@ const pointerSchema = z.strictObject({
     })
     .default({}),
   implementation: namedPieceImplementationSchema,
+  editions: z.union([z.undefined(), legacyPieceEntry.editions]),
   examples: z.literal("with-implementation").optional(),
 });
 
@@ -197,7 +198,7 @@ export const readNamedPiece = (
       exceptions: piece.exceptions,
       settings: { ...owner.settings, ...piece.settings },
       declarations: piece.checkSettings,
-      editions: owner.editions,
+      editions: piece.editions ?? owner.editions,
       forms: owner.forms,
       declarationPath,
       exampleOwner,

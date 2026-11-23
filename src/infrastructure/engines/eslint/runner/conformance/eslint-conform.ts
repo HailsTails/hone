@@ -121,6 +121,7 @@ const lintedSourceCases = (request: {
   }>;
   readonly cwd: AbsolutePath;
   readonly cases: readonly SourceCase[];
+  readonly edition: CheckBinding["edition"];
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   if (request.selected.outcome === "failed") {
@@ -131,7 +132,7 @@ const lintedSourceCases = (request: {
     plugin: request.selected.value.plugin,
     pluginNamespace: request.selected.value.settings.pluginNamespace,
     rule: request.selected.value.settings.rule,
-    options: ruleOptionsOf({ settings: request.selected.value.settings }),
+    options: ruleOptionsOf({ settings: request.selected.value.settings, edition: request.edition }),
     cases: request.cases,
   });
 };
@@ -155,11 +156,15 @@ export const conformedCases = (request: {
       pieceInvalid({ pieceRoot: request.clause.pieceRoot, detail: z.prettifyError(cwd.error) }),
     );
   }
-  return request
-    .loadedPlugin({ configured: configured.value })
-    .then((selected) =>
-      lintedSourceCases({ selected, cwd: cwd.data, cases: request.cases, eslint: request.eslint }),
-    );
+  return request.loadedPlugin({ configured: configured.value }).then((selected) =>
+    lintedSourceCases({
+      selected,
+      cwd: cwd.data,
+      edition: request.clause.edition,
+      cases: request.cases,
+      eslint: request.eslint,
+    }),
+  );
 };
 
 export const conformedNamedCases = async (request: {
@@ -192,6 +197,7 @@ export const conformedNamedCases = async (request: {
   return lintedSourceCases({
     selected: { outcome: "ok", value: { plugin: parsed.value, settings: settings.data } },
     cwd: cwd.data,
+    edition: binding.edition,
     cases: request.cases,
     eslint: request.eslint,
   });
