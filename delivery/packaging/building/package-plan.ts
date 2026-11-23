@@ -52,7 +52,6 @@ const SHIPPED_DOCUMENTS = new Set([
   "docs/why-chain-contract.md",
   "docs/adding-a-discipline-or-mechanism.md",
   "docs/extending.md",
-  "docs/output-contract.md",
 ]);
 
 const RELEASE_WRITTEN_DOCUMENTS: ReadonlySet<string> = new Set([CHANGELOG_FILE]);

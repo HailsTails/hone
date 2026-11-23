@@ -187,7 +187,7 @@ Commit the projection, every slice and the configs. Hone's check reads this conf
 npm run --silent hone:check
 ```
 
-It exits `0` on `verdict: pass`, `1` on `verdict: fail` and `2` when an input cannot be loaded; [docs/output-contract.md](docs/output-contract.md) has every exit code and line. `npm run` passes the exit code through. `sh: hone: not found` or `'hone' is not recognized` means step 2's install is missing. A load failure that names a toolchain package says what to install or delete.
+It exits `0` on `verdict: pass`, `1` on `verdict: fail` and `2` when an input cannot be loaded. `npm run` passes the exit code through. `sh: hone: not found` or `'hone' is not recognized` means step 2's install is missing. A load failure that names a toolchain package says what to install or delete.
 
 Add the check to the repository's existing validation script, and run that script in CI and in any pre-push hook the repository already has, so the check runs wherever the other checks run.
 
@@ -205,7 +205,7 @@ With pnpm:
 pnpm run --silent hone:check --forfeiture this-run --base-revision origin/main
 ```
 
-A run that leaves forfeiture to another run marks its verdict line as a partial assessment. Act on the exit code, or match every verdict line [docs/output-contract.md](docs/output-contract.md#the-version-2-report) lists.
+A run that leaves forfeiture to another run marks its verdict line as a partial assessment. Act on the exit code.
 
 CI leaves forfeiture to the hook, and with `elsewhere` in effect it can run the check with no base revision:
 
@@ -280,7 +280,7 @@ A finished section reads like this, for the check `claimed-type#unlisted-cast-si
 
 ## 6. Read the report
 
-The report prints only the sections that have entries, each with its count, then the verdict. A finding names the check, the engine, the place and the snippet, what the check may indicate and, where it has one, the fix. Each other line says what to do about it. [docs/output-contract.md](docs/output-contract.md#the-version-2-report) lists every section in the order it prints, which sections fail the run, and every line. The `symptoms` section, printed last, explains each symptom the findings name.
+The report prints only the sections that have entries, each with its count, then the verdict. A finding names the check, the engine, the place and the snippet, what the check may indicate and, where it has one, the fix. Each other line says what to do about it. The `symptoms` section, printed last, explains each symptom the findings name.
 
 To print less, set `"reportOutput"` in `hone.config.json`, or pass `--report-output` for one run. The verdict and exit code are the same whichever output you choose.
 

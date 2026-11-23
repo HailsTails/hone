@@ -51,10 +51,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "src/composition/output-contract.integration.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {

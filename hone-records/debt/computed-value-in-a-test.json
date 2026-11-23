@@ -131,10 +131,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "src/composition/output-contract.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
     },
     {

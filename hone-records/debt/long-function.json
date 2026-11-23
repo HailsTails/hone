@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "long-function#function-length",
-      "file": "src/composition/output-contract.integration.test.ts"
-    },
-    {
-      "answers": "long-function#function-length",
       "file": "src/infrastructure/engines/eslint/name-off-its-casing/naming-convention/eslint-plugin.test.ts"
     },
     {
