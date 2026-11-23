@@ -92,6 +92,22 @@ describe("committed-lock-file", () => {
     ).toEqual([]);
   });
 
+  it("anchors a missing lock to non-empty dev dependencies when dependencies is empty", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source: '{\n  "dependencies": {},\n  "devDependencies": { "some-tool": "1.2.3" }\n}',
+      }),
+    ).toEqual([
+      {
+        file: MANIFEST,
+        check: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: '"devDependencies"',
+      },
+    ]);
+  });
+
   it("passes peer ranges without requiring a lock", () => {
     expect(
       findingsIn({

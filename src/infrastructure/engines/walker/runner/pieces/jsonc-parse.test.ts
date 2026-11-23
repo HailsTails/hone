@@ -107,14 +107,20 @@ describe("createDefaultJsoncTreePort", () => {
     });
   });
 
-  it("refuses recovered trees with diagnostics", () => {
-    expect(
-      createDefaultJsoncTreePort({ trailingCommas: "refused" }).parse({
-        source: '{"tool": "1.2",}',
-      }),
-    ).toMatchObject({
-      outcome: "failed",
-      error: { detail: expect.stringContaining("JSONC parse error") },
+  it("refuses a recovered tree unless its trailing comma is allowed", () => {
+    const source = '{"tool": "1.2",}';
+    expect({
+      refused: createDefaultJsoncTreePort({ trailingCommas: "refused" }).parse({ source }),
+      allowed: createDefaultJsoncTreePort({ trailingCommas: "allowed" }).parse({ source }),
+    }).toMatchObject({
+      refused: {
+        outcome: "failed",
+        error: { detail: expect.stringContaining("JSONC parse error") },
+      },
+      allowed: {
+        outcome: "ok",
+        value: { type: "object", children: [{ type: "property", offset: 1 }] },
+      },
     });
   });
 });

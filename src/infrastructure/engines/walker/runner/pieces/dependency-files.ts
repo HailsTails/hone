@@ -72,18 +72,21 @@ const locatedFieldsOf = (request: {
   const { source } = locations;
   return new Map(
     node.children?.flatMap((property): readonly (readonly [string, ManifestField])[] => {
-      const [key, value] = property.children ?? [];
-      if (key === undefined || typeof key.value !== "string" || value === undefined) return [];
+      const [key, propertyValue] = property.children ?? [];
+      if (key === undefined || typeof key.value !== "string" || propertyValue === undefined)
+        return [];
       const keyToken = sourceToken(source, key);
       return [
         [
           key.value,
           {
-            value: value.value,
+            value: propertyValue.value,
             anchor: propertyAnchor(key.offset, locations),
             snippet:
-              value.type === "string" ? `${keyToken}: ${sourceToken(source, value)}` : keyToken,
-            fields: locatedFieldsOf({ node: value, locations }),
+              propertyValue.type === "string"
+                ? `${keyToken}: ${sourceToken(source, propertyValue)}`
+                : keyToken,
+            fields: locatedFieldsOf({ node: propertyValue, locations }),
           },
         ],
       ];

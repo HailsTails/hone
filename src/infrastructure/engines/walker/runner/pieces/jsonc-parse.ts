@@ -41,10 +41,13 @@ export const createJsoncParsePort = <Value>(options: {
 export type TrailingCommas = "allowed" | "refused";
 
 const defaultProviderCallOf =
-  (options: { readonly trailingCommas: TrailingCommas }): JsoncProviderCall =>
+  <Value>(options: {
+    readonly trailingCommas: TrailingCommas;
+    readonly read: (...arguments_: Parameters<typeof parseTree>) => Value;
+  }): JsoncProviderCall<Value> =>
   (request) => {
     const errors: ParseError[] = [];
-    const parsedValue: unknown = parse(request.source, errors, {
+    const parsedValue = options.read(request.source, errors, {
       allowTrailingComma: options.trailingCommas === "allowed",
     });
     return { value: parsedValue, errors };
@@ -54,7 +57,7 @@ export const createDefaultJsoncParsePort = (options: {
   readonly trailingCommas: TrailingCommas;
 }): JsoncParsePort =>
   createJsoncParsePort({
-    parseProvider: defaultProviderCallOf(options),
+    parseProvider: defaultProviderCallOf<unknown>({ ...options, read: parse }),
   });
 
 export type JsoncNode = Node;
@@ -63,11 +66,5 @@ export const createDefaultJsoncTreePort = (options: {
   readonly trailingCommas: TrailingCommas;
 }): JsoncParsePort<JsoncNode | undefined> =>
   createJsoncParsePort({
-    parseProvider: ({ source }) => {
-      const errors: ParseError[] = [];
-      const value = parseTree(source, errors, {
-        allowTrailingComma: options.trailingCommas === "allowed",
-      });
-      return { value, errors };
-    },
+    parseProvider: defaultProviderCallOf({ ...options, read: parseTree }),
   });
