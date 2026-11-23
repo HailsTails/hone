@@ -1,4 +1,9 @@
-import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
+import type {
+  SyntaxApi,
+  SyntaxNode,
+  SyntaxTree,
+  TypeChecker,
+} from "../toolchain/typescript-parse.ts";
 
 export const sourceBindingsOf = ({
   syntaxApi,
@@ -6,7 +11,7 @@ export const sourceBindingsOf = ({
 }: {
   readonly syntaxApi: SyntaxApi;
   readonly sourceFile: SyntaxTree;
-}) =>
+}): TypeChecker =>
   syntaxApi
     .createProgram(
       [sourceFile.fileName],
@@ -25,9 +30,43 @@ export const sourceBindingsOf = ({
     )
     .getTypeChecker();
 
+const ambientDeclaration = ({
+  syntaxApi,
+  node,
+}: {
+  readonly syntaxApi: SyntaxApi;
+  readonly node: SyntaxNode;
+}): boolean => {
+  if (syntaxApi.isSourceFile(node)) return node.isDeclarationFile;
+  if (syntaxApi.isInterfaceDeclaration(node) || syntaxApi.isTypeAliasDeclaration(node)) return true;
+  if (
+    (syntaxApi.isImportSpecifier(node) ||
+      syntaxApi.isImportClause(node) ||
+      syntaxApi.isImportEqualsDeclaration(node)) &&
+    node.isTypeOnly
+  )
+    return true;
+  if (
+    syntaxApi.canHaveModifiers(node) &&
+    syntaxApi
+      .getModifiers(node)
+      ?.some((modifier) => modifier.kind === syntaxApi.SyntaxKind.DeclareKeyword)
+  )
+    return true;
+  return node.parent !== undefined && ambientDeclaration({ syntaxApi, node: node.parent });
+};
+
+export const runtimeDeclarationsOf = (request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly declarations: readonly SyntaxNode[];
+}): readonly SyntaxNode[] =>
+  request.declarations.filter(
+    (node) => !ambientDeclaration({ syntaxApi: request.syntaxApi, node }),
+  );
+
 export const sourceValueDeclarationsOf = (request: {
   readonly syntaxApi: SyntaxApi;
-  readonly bindings: ReturnType<typeof sourceBindingsOf>;
+  readonly bindings: TypeChecker;
   readonly node: SyntaxNode;
 }) => {
   const { syntaxApi, bindings, node } = request;
@@ -36,9 +75,5 @@ export const sourceValueDeclarationsOf = (request: {
     parent !== undefined && syntaxApi.isShorthandPropertyAssignment(parent) && parent.name === node
       ? bindings.getShorthandAssignmentValueSymbol(parent)
       : bindings.getSymbolAtLocation(node);
-  return (
-    symbol?.declarations?.filter(
-      (declaration) => declaration.getSourceFile() === node.getSourceFile(),
-    ) ?? []
-  );
+  return runtimeDeclarationsOf({ syntaxApi, declarations: symbol?.declarations ?? [] });
 };

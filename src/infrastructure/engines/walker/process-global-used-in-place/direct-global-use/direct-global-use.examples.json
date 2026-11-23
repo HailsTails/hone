@@ -11,6 +11,12 @@
       "fileName": "src/worker.test.ts",
       "source": "process.env.MODE = 'test';",
       "expectedLines": [1]
+    },
+    {
+      "name": "a declaration of an ambient value still reports",
+      "fileName": "src/worker.ts",
+      "source": "declare const process: ProcessPort;\nprocess.env.MODE;",
+      "expectedLines": [2]
     }
   ],
   "allow": [
