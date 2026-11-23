@@ -93,8 +93,8 @@ describe("CD-10 existing test throw observation", () => {
     observed.observers.enter?.({ node: second });
 
     expect(observed.observers.finish()).toEqual([
-      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "throw first; throw second; " },
-      { check: ADDRESS, anchor: { line: 6, column: 0 }, snippet: "throw second; " },
+      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "throw first;" },
+      { check: ADDRESS, anchor: { line: 6, column: 0 }, snippet: "throw second;" },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 0 }], [{ position: 13 }]]);
   });
@@ -113,8 +113,23 @@ describe("CD-10 existing test throw observation", () => {
   });
 
   it.each([
-    "src/example.ts",
     "src/example.spec.ts",
+    "src/example.spec.tsx",
+    "src/example.test.mts",
+    "src/example.test.cts",
+  ])("observes a throw in %s", (file) => {
+    const observed = sourceObservations({ file, source: "throw failure;\n" });
+    const statement = observed.tree.getChildAt(0, observed.tree).getChildAt(0, observed.tree);
+
+    observed.observers.enter?.({ node: statement });
+
+    expect(observed.observers.finish()).toEqual([
+      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "throw failure;" },
+    ]);
+  });
+
+  it.each([
+    "src/example.ts",
     "src/example.test.js",
     "src/node_modules/example.test.ts",
     "vendor/example.test.ts",

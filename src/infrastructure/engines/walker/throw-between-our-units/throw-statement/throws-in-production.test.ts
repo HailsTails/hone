@@ -121,16 +121,24 @@ describe("throws in production", () => {
     ]);
   });
 
-  it("passes returned failures and throws in test files", () => {
+  it("passes returned failures", () => {
     expect(
       findingsIn({
         file: SOURCE_FILE,
         source: "function readOrder() { return { outcome: 'failed' }; }",
       }),
     ).toEqual([]);
+  });
+
+  it.each([
+    "src/read-order.test.ts",
+    "src/read-order.spec.ts",
+    "src/read-order.test.mts",
+    "src/read-order.test.cts",
+  ])("leaves throws in %s to the test detector", (file) => {
     expect(
       findingsIn({
-        file: repoPathSchema.parse("src/read-order.test.ts"),
+        file: repoPathSchema.parse(file),
         source: "throw new Error('test setup');",
       }),
     ).toEqual([]);

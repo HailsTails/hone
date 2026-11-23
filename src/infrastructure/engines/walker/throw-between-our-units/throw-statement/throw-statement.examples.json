@@ -21,6 +21,12 @@
       "expectedLines": []
     },
     {
+      "name": "a TypeScript spec is covered by the test throw check",
+      "fileName": "src/order.spec.ts",
+      "source": "throw new Error('test failure');",
+      "expectedLines": []
+    },
+    {
       "name": "callee body is outside the syntax check",
       "fileName": "src/order.ts",
       "source": "externalLookup();",
