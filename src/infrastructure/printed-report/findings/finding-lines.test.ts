@@ -498,7 +498,29 @@ describe("answeredLine", () => {
 });
 
 describe("heldLine", () => {
-  it("prints a held inline disable by its check, place and text without fix advice, then names each record that holds it, by its kind", () => {
+  it("prints a held inline disable that names its rule by its check, place and text without fix advice, then names each record that holds it, by its kind", () => {
+    expect(
+      heldLine({
+        catalogue: REPORT_CATALOGUE,
+        held: {
+          exception: {
+            kind: "inline-disable",
+            check: "claimed-type#cast-expressions",
+            file: WEBHOOK_FILE,
+            line: 8,
+            text: "// eslint-disable-next-line @typescript-eslint/consistent-type-assertions",
+            reach: "one-check",
+            mechanism: ESLINT,
+          },
+          by: [DEBT, CLOCK_BOUNDARY],
+        },
+      }),
+    ).toBe(
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by debt held by boundary-record runtime:clock",
+    );
+  });
+
+  it("notes that a held inline disable naming no rule escapes every selected check", () => {
     expect(
       heldLine({
         catalogue: REPORT_CATALOGUE,
@@ -516,7 +538,7 @@ describe("heldLine", () => {
         },
       }),
     ).toBe(
-      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line held by debt held by boundary-record runtime:clock",
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check held by debt held by boundary-record runtime:clock",
     );
   });
 });
