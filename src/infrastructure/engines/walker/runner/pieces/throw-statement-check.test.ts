@@ -1,8 +1,8 @@
 import { assert, describe, expect, it } from "vitest";
 
-import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../toolchain/typescript-toolchain.ts";
 import { throwStatementCheck } from "./throw-statement-check.ts";
 import { textsDisk } from "./walker-disk.ts";
@@ -31,7 +31,7 @@ describe("throwStatementCheck", () => {
     { scope: "test", path: "src/orders.ts" },
     { scope: "production", path: "src/orders.spec.mts" },
   ])("skips $path when checking $scope scope", ({ scope, path }) => {
-    const file = repoPathOf(path);
+    const file = repoPathSchema.parse(path);
     const prepared = throwStatementCheck(scope).prepare({
       bindings: [BINDING],
       repository: {
@@ -59,7 +59,7 @@ describe("throwStatementCheck", () => {
   ])(
     "observes a throw at its keyword with a bounded snippet in $scope scope",
     ({ scope, path }) => {
-      const file = repoPathOf(path);
+      const file = repoPathSchema.parse(path);
       const source =
         'throw new Error(\r\n  "1234567890123456789012345678901234567890123456789012345678901234567890",\r\n);';
       const prepared = throwStatementCheck(scope).prepare({
