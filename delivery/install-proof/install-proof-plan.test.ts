@@ -422,7 +422,7 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
     expectation: {
       exitCode: 0,
       output:
-        "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (2), same verdict\n",
+        "upgraded to version 2\nwrote hone.config.json\nwrote hone.eslint.mjs\nwrote hone.eslint.d.mts\nrewrote eslint.config.mjs\nremoved disciplines.eslint.mjs\nremoved disciplines.json\nupgrade: same findings (2) and verdict as this Hone's version 1 check, not your installed 1.x\n",
     },
   },
   { kind: "commit", message: "upgrade" },
