@@ -127,7 +127,7 @@ jobs:
           {
             echo "status=$status"
             echo "stop_reason=$(jq -r '[.data[] | select(.type == "session.status_idle")] | last // {} | .stop_reason.type // "none"' <<<"$events")"
-            echo "cost_cents=$(jq -r '.usage.list_cost // "unknown"' <<<"$session")"
+            echo "cost_cents=$(jq -r '.usage.list_cost.amount // "unknown"' <<<"$session")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Mint the pull request token
