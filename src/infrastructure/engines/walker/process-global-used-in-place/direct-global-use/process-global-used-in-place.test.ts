@@ -108,6 +108,54 @@ const CATALOGUE: SymptomCatalogue = {
 };
 
 describe("process globals", () => {
+  it.each([
+    'import process = require("process");\nprocess.env.MODE;',
+    'import { default as process } from "node:process";\nprocess.env.MODE;',
+    'const process = require("node:process");\nprocess.env.MODE;',
+  ])("reports process under its canonical name in %s", (source) => {
+    expect(findingsIn({ file: SOURCE_FILE, source })).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "process.env",
+      },
+    ]);
+  });
+
+  it("passes a local require substitute that returns an injected process port", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'const require = injectedLoader;\nconst process = require("node:process");\nprocess.env.MODE;',
+      }),
+    ).toEqual([]);
+  });
+
+  it("reports Node built-in imports that name the original process and console", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import process from "node:process";\nimport * as console from "console";\nprocess.env.MODE;\nconsole.log("ready");',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 3, column: 0 },
+        snippet: "process.env",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: "console.log",
+      },
+    ]);
+  });
+
   it("reports each direct global use at the expression", () => {
     expect(
       findingsIn({
@@ -172,6 +220,52 @@ describe("process globals", () => {
         source: "const { env: environment } = process;\nenvironment.MODE;",
       }),
     ).toEqual([]);
+  });
+
+  it("leaves locally declared and imported receivers alone", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { console } from "./ports.ts";\nconsole.log("ready");\nfunction run() { const process = ports.process; return process.env.MODE; }\nfunction read() { const globalThis = ports.global; return { globalThis }; }',
+      }),
+    ).toEqual([]);
+  });
+
+  it("keeps bare global reads and test writes when the name has no local binding", () => {
+    const file = repoPathSchema.parse("src/worker.test.ts");
+    expect(
+      findingsIn({
+        file,
+        source: "const roots = { globalThis };\nprocess.env.MODE = 'test';",
+      }),
+    ).toEqual([
+      { file, check: BINDING.address, anchor: { line: 1, column: 16 }, snippet: "globalThis" },
+      { file, check: BINDING.address, anchor: { line: 2, column: 0 }, snippet: "process.env" },
+    ]);
+  });
+
+  it("still reports globals described by ambient declarations", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'export {};\ndeclare const process: Runtime;\ndeclare global { var console: Console; }\nprocess.env.MODE;\nconsole.log("ready");',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: "process.env",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: "console.log",
+      },
+    ]);
   });
 
   it("lets a runtime process boundary record answer the finding in its adapter", () => {

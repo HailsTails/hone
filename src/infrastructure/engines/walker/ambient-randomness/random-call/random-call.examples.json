@@ -5,6 +5,18 @@
       "fileName": "src/order.ts",
       "source": "Math.random();\ncrypto.randomUUID();\ncrypto.getRandomValues(bytes);",
       "expectedLines": [1, 2, 3]
+    },
+    {
+      "name": "browser and imported crypto",
+      "fileName": "src/order.ts",
+      "source": "import { randomUUID as uuid } from 'node:crypto';\nglobalThis.crypto.randomUUID();\nwindow.crypto.getRandomValues(bytes);\nuuid();",
+      "expectedLines": [2, 3, 4]
+    },
+    {
+      "name": "static CommonJS import and qualified Web Crypto",
+      "fileName": "src/order.cts",
+      "source": "import nodeCrypto = require('crypto');\nnodeCrypto.webcrypto.getRandomValues(bytes);\nnodeCrypto.randomUUID();",
+      "expectedLines": [2, 3]
     }
   ],
   "allow": [
@@ -18,6 +30,12 @@
       "name": "injected crypto receiver",
       "fileName": "src/order.ts",
       "source": "const newId = (crypto: Pick<Crypto, \"randomUUID\">) => crypto.randomUUID();",
+      "expectedLines": []
+    },
+    {
+      "name": "locally bound crypto and browser receivers",
+      "fileName": "src/order.ts",
+      "source": "const crypto = ports.crypto;\ncrypto.randomUUID();\nconst draw = (window: Runtime) => window.crypto.getRandomValues(bytes);",
       "expectedLines": []
     },
     {

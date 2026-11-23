@@ -1,15 +1,24 @@
-import { parameterBinding } from "../../runner/pieces/parameter-binding.ts";
+import { builtInImportOf } from "../../runner/pieces/node-built-in-import.ts";
+import { sourceValueLookupOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
-type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
+type SyntaxRequest = {
+  readonly syntaxApi: SyntaxApi;
+  readonly node: SyntaxNode;
+  readonly declarationsOf: (node: SyntaxNode) => readonly SyntaxNode[];
+};
 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
 const PROCESS_MEMBERS = new Set(["env", "argv", "exit", "on"]);
 
-const processOrConsole = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | undefined => {
+const processOrConsole = ({
+  syntaxApi,
+  node,
+  declarationsOf,
+}: SyntaxRequest): SyntaxNode | undefined => {
   if (!syntaxApi.isPropertyAccessExpression(node) && !syntaxApi.isElementAccessExpression(node))
     return undefined;
   const receiver = node.expression;
@@ -18,7 +27,15 @@ const processOrConsole = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | unde
     (receiver.text !== "process" && receiver.text !== "console")
   )
     return undefined;
-  if (parameterBinding({ syntaxApi, node, name: receiver.text }) === "local") return undefined;
+  if (declarationsOf(receiver).length > 0) {
+    const imported = builtInImportOf({
+      syntaxApi,
+      identifier: receiver,
+      declarationsOf,
+      builtIn: receiver.text,
+    });
+    if (imported === undefined || imported.kind === "named") return undefined;
+  }
   if (receiver.text === "console") return node;
   if (syntaxApi.isPropertyAccessExpression(node))
     return PROCESS_MEMBERS.has(node.name.text) ? node : undefined;
@@ -28,7 +45,11 @@ const processOrConsole = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | unde
     : undefined;
 };
 
-const globalThisRead = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | undefined => {
+const globalThisRead = ({
+  syntaxApi,
+  node,
+  declarationsOf,
+}: SyntaxRequest): SyntaxNode | undefined => {
   if (!syntaxApi.isIdentifier(node) || node.text !== "globalThis") return undefined;
   const parent = node.parent;
   if (
@@ -47,9 +68,7 @@ const globalThisRead = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | undefi
   if ("label" in parent && parent.label === node) return undefined;
   if ("name" in parent && parent.name === node && !syntaxApi.isShorthandPropertyAssignment(parent))
     return undefined;
-  return parameterBinding({ syntaxApi, node: parent, name: node.text }) === "local"
-    ? undefined
-    : node;
+  return declarationsOf(node).length > 0 ? undefined : node;
 };
 
 export const check: WalkerPiece = {
@@ -69,10 +88,12 @@ export const check: WalkerPiece = {
             kind: "syntax",
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
+              const declarationsOf = sourceValueLookupOf({ syntaxApi, sourceFile });
               return {
                 enter: ({ node }) => {
                   const use =
-                    processOrConsole({ syntaxApi, node }) ?? globalThisRead({ syntaxApi, node });
+                    processOrConsole({ syntaxApi, node, declarationsOf }) ??
+                    globalThisRead({ syntaxApi, node, declarationsOf });
                   if (use === undefined) return;
                   const anchor = anchorAt({ position: use.getStart(sourceFile) });
                   const snippet = use.getText(sourceFile).replace(/\r?\n/g, " ");
