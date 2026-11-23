@@ -13,6 +13,25 @@ const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
 const PROCESS_MEMBERS = new Set(["env", "argv", "exit", "on"]);
 
+const moduleSpecifierOf = ({
+  syntaxApi,
+  node,
+}: Pick<SyntaxRequest, "syntaxApi" | "node">): SyntaxNode | undefined => {
+  if (syntaxApi.isImportEqualsDeclaration(node))
+    return syntaxApi.isExternalModuleReference(node.moduleReference)
+      ? node.moduleReference.expression
+      : undefined;
+  if (syntaxApi.isImportSpecifier(node) && node.propertyName?.text !== "default") return undefined;
+  if (
+    syntaxApi.isImportSpecifier(node) ||
+    syntaxApi.isNamespaceImport(node) ||
+    syntaxApi.isImportClause(node)
+  )
+    return moduleSpecifierOf({ syntaxApi, node: node.parent });
+  if (syntaxApi.isNamedImports(node)) return moduleSpecifierOf({ syntaxApi, node: node.parent });
+  return syntaxApi.isImportDeclaration(node) ? node.moduleSpecifier : undefined;
+};
+
 const processOrConsole = ({
   syntaxApi,
   node,
@@ -26,7 +45,19 @@ const processOrConsole = ({
     (receiver.text !== "process" && receiver.text !== "console")
   )
     return undefined;
-  if (declarationsOf(receiver).length > 0) return undefined;
+  const declarations = declarationsOf(receiver);
+  if (
+    declarations.length > 0 &&
+    declarations.every((declaration) => {
+      const specifier = moduleSpecifierOf({ syntaxApi, node: declaration });
+      return (
+        specifier === undefined ||
+        !syntaxApi.isStringLiteral(specifier) ||
+        (specifier.text !== receiver.text && specifier.text !== "node:" + receiver.text)
+      );
+    })
+  )
+    return undefined;
   if (receiver.text === "console") return node;
   if (syntaxApi.isPropertyAccessExpression(node))
     return PROCESS_MEMBERS.has(node.name.text) ? node : undefined;

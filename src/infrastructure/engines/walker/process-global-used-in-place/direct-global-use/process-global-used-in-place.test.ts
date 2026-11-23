@@ -108,6 +108,29 @@ const CATALOGUE: SymptomCatalogue = {
 };
 
 describe("process globals", () => {
+  it("reports Node built-in imports that name the original process and console", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import process from "node:process";\nimport * as console from "console";\nprocess.env.MODE;\nconsole.log("ready");',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 3, column: 0 },
+        snippet: "process.env",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: "console.log",
+      },
+    ]);
+  });
+
   it("reports each direct global use at the expression", () => {
     expect(
       findingsIn({
