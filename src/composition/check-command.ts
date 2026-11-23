@@ -34,7 +34,7 @@ const SYMPTOM_PAGE_SEGMENTS: readonly string[] = ["rules", "typescript", "sympto
 
 type CheckCommands = { readonly projectCommand: string; readonly pruneCommand: string };
 
-type VersionTwoCheckRun = {
+export type VersionTwoCheckRun = {
   readonly located: RepositoryLocated;
   readonly commands: CheckCommands;
   readonly run: VersionTwoRun;

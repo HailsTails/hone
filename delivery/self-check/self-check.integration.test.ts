@@ -144,7 +144,7 @@ claimed-type#cast-to-any walker src/cast.ts:1:22 JSON.parse(text) as any;  sympt
 assessment (1)
 forfeiture elsewhere: 0 debt records not checked for forfeiture in this run
 symptoms (2)
-${CLASS_SYMPTOM}${CAST_SYMPTOM}self-check: pass, the selection, records and projection are sound; findings (2) and unrecorded (0) are reported above and not gated
+${CLASS_SYMPTOM}${CAST_SYMPTOM}self-check: pass (partial assessment), the selection, records and projection are sound; findings (2) and unrecorded (0) are reported above and not gated
 `;
 
 const ANSWERED_BY_DEBT = `answered (2)
