@@ -107,10 +107,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/output-contract.integration.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
     },
     {

@@ -403,7 +403,7 @@ Version 2 keeps its settings in `hone.config.json`, its records in the `hone-rec
    node_modules/.bin/hone upgrade --repo .
    ```
 
-   It runs version 1 over your repository, plans the version 2 files, writes them, runs version 2 and compares the two runs. A version 1 `reportOutput` of `failures-only` is written as `actionable`, its version 2 name, and `--report-output failures-only` is refused on a version 2 repository. Only when they agree does it remove the version 1 files. If they do not, it changes nothing. Each refusal states whether anything was changed, and lists any file it could not put back; [the output contract](docs/output-contract.md#hone-upgrade) lists every refusal.
+   It runs version 1 over your repository, plans the version 2 files, writes them, runs version 2 and compares the two runs. A version 1 `reportOutput` of `failures-only` is written as `actionable`, its version 2 name, and `--report-output failures-only` is refused on a version 2 repository. Only when they agree does it remove the version 1 files. If they do not, it changes nothing. Each refusal states whether anything was changed, and lists any file it could not put back.
 3. **Commit** what the upgrade wrote and removed, as its own commit after the install: the version 2 files together with the removal of the version 1 files, `git add .`, then your commit. That includes each `hone.eslint.d.mts`, which the check compares with what `hone project` writes and reports under `projection-problems` when it is missing or out of date.
 
    After the upgrade, `hone split-records` does not run on version 2 files, and the records stay in `hone-records`. Before it, version 1's `hone authorise` stops and sends you here.
@@ -411,7 +411,7 @@ Version 2 keeps its settings in `hone.config.json`, its records in the `hone-rec
 
 ### What the upgrade prints
 
-It exits `0` on success, listing each file it wrote, rewrote or removed: commit them all. It exits `1` on a refusal, and each refusal line says what to do: do it, then run the upgrade again. A refusal says whether anything was changed, and lists any file it could not put back. A line that asks you to report a fault at the issues page is the tool's fault, not your repository's: send the output. It exits `3` when version 2 is in place but some version 1 files could not be removed: delete the files it lists by hand, then commit. [docs/output-contract.md](docs/output-contract.md) lists every line.
+It exits `0` on success, listing each file it wrote, rewrote or removed: commit them all. It exits `1` on a refusal, and each refusal line says what to do: do it, then run the upgrade again. A refusal says whether anything was changed, and lists any file it could not put back. A line that asks you to report a fault at the issues page is the tool's fault, not your repository's: send the output. It exits `3` when version 2 is in place but some version 1 files could not be removed: delete the files it lists by hand, then commit.
 
 ### Your records, and what the check judges
 

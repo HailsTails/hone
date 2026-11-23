@@ -29,7 +29,6 @@ describe("dataShippingOf", () => {
       path: "src/infrastructure/engines/typescript-compiler/CD-14/piece.json",
       shipping: "not-shipped",
     },
-    { path: "docs/output-contract.md", shipping: "not-shipped" },
     { path: "README.md", shipping: "not-shipped" },
   ])("$path is $shipping as data", ({ path, shipping }) => {
     expect(dataShippingOf({ path })).toBe(shipping);

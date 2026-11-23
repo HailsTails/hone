@@ -28,10 +28,6 @@
     {
       "answers": "name-off-its-casing#naming-convention",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts"
-    },
-    {
-      "answers": "name-off-its-casing#naming-convention",
-      "file": "src/composition/output-contract.integration.test.ts"
     }
   ]
 }
