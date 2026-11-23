@@ -1,0 +1,48 @@
+{
+  "flag": [
+    {
+      "name": "floating lock-independent version",
+      "fileName": "package.json",
+      "source": "{\"devDependencies\":{\"some-tool\":\"^1.2.3\"}}",
+      "expectedLines": [1]
+    },
+    {
+      "name": "unpinned action and runtime",
+      "fileName": ".github/workflows/ci.yml",
+      "source": "- uses: actions/checkout@v4\n  node-version: lts",
+      "expectedLines": [1, 2]
+    },
+    {
+      "name": "package manager major selector",
+      "fileName": "package.json",
+      "source": "{\"packageManager\":\"pnpm@10\"}",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "exact version",
+      "fileName": "package.json",
+      "source": "{\"devDependencies\":{\"some-tool\":\"1.2.3\"}}",
+      "expectedLines": []
+    },
+    {
+      "name": "pinned action and runtime",
+      "fileName": ".github/workflows/ci.yml",
+      "source": "- uses: actions/checkout@0123456789abcdef0123456789abcdef01234567\n  node-version: '22.18.0'",
+      "expectedLines": []
+    },
+    {
+      "name": "exact package manager with a hash suffix",
+      "fileName": "package.json",
+      "source": "{\"packageManager\":\"pnpm@10.34.9+sha512.0123456789abcdef\"}",
+      "expectedLines": []
+    },
+    {
+      "name": "compatibility ranges offered by a published package",
+      "fileName": "package.json",
+      "source": "{\"dependencies\":{\"react\":\"^19.0.0\"},\"peerDependencies\":{\"react-dom\":\"^19.0.0\"}}",
+      "expectedLines": []
+    }
+  ]
+}
