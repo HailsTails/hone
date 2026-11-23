@@ -1,31 +1,114 @@
-import { parameterBinding } from "../../runner/pieces/parameter-binding.ts";
+import {
+  sourceBindingsOf,
+  sourceValueDeclarationsOf,
+} from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
-const RANDOM_CALLS = new Set(["Math.random", "crypto.randomUUID", "crypto.getRandomValues"]);
+const CRYPTO_RANDOM_METHODS = new Set(["randomUUID", "getRandomValues"]);
 
-const randomCall = (request: {
+type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
+type DeclarationsOf = (node: SyntaxNode) => readonly SyntaxNode[];
+type CallContext = {
   readonly syntaxApi: SyntaxApi;
-  readonly node: SyntaxNode;
-}): SyntaxNode | undefined => {
+  readonly declarationsOf: DeclarationsOf;
+  readonly hasCryptoImport: boolean;
+};
+
+const memberOf = ({ syntaxApi, node }: SyntaxRequest) => {
+  if (syntaxApi.isPropertyAccessExpression(node)) {
+    return { receiver: node.expression, name: node.name.text };
+  }
+  if (
+    syntaxApi.isElementAccessExpression(node) &&
+    syntaxApi.isStringLiteralLike(node.argumentExpression)
+  ) {
+    return { receiver: node.expression, name: node.argumentExpression.text };
+  }
+  return undefined;
+};
+
+const nodeCryptoImport = ({ syntaxApi, node }: SyntaxRequest): boolean =>
+  syntaxApi.isImportDeclaration(node) &&
+  syntaxApi.isStringLiteral(node.moduleSpecifier) &&
+  (node.moduleSpecifier.text === "node:crypto" || node.moduleSpecifier.text === "crypto") &&
+  node.importClause?.isTypeOnly !== true;
+
+const comesFromNodeCrypto = ({ syntaxApi, node }: SyntaxRequest): boolean => {
+  if (syntaxApi.isImportDeclaration(node)) return nodeCryptoImport({ syntaxApi, node });
+  return (
+    node.parent !== undefined &&
+    !syntaxApi.isSourceFile(node) &&
+    comesFromNodeCrypto({ syntaxApi, node: node.parent })
+  );
+};
+
+const nodeCryptoBindingOf = (request: SyntaxRequest): "module" | "random-function" | "other" => {
   const { syntaxApi, node } = request;
+  if (syntaxApi.isImportSpecifier(node)) {
+    if (node.isTypeOnly || !comesFromNodeCrypto(request)) return "other";
+    const importedName = (node.propertyName ?? node.name).text;
+    if (importedName === "webcrypto") return "module";
+    return CRYPTO_RANDOM_METHODS.has(importedName) ? "random-function" : "other";
+  }
+  if (
+    (syntaxApi.isNamespaceImport(node) || syntaxApi.isImportClause(node)) &&
+    comesFromNodeCrypto(request)
+  ) {
+    return "module";
+  }
+  return "other";
+};
+
+const qualifiedCrypto = (request: CallContext & { readonly receiver: SyntaxNode }): boolean => {
+  const { syntaxApi, declarationsOf, receiver } = request;
+  const member = memberOf({ syntaxApi, node: receiver });
+  return (
+    member?.name === "crypto" &&
+    syntaxApi.isIdentifier(member.receiver) &&
+    (member.receiver.text === "globalThis" || member.receiver.text === "window") &&
+    declarationsOf(member.receiver).length === 0
+  );
+};
+
+const cryptoReceiver = (request: CallContext & { readonly receiver: SyntaxNode }): boolean => {
+  const { syntaxApi, declarationsOf, receiver, hasCryptoImport } = request;
+  if (!syntaxApi.isIdentifier(receiver)) return qualifiedCrypto(request);
+  if (receiver.text !== "crypto" && !hasCryptoImport) return false;
+  const declarations = declarationsOf(receiver);
+  return (
+    (receiver.text === "crypto" && declarations.length === 0) ||
+    declarations.some((node) => nodeCryptoBindingOf({ syntaxApi, node }) === "module")
+  );
+};
+
+const randomCall = (
+  request: CallContext & { readonly node: SyntaxNode },
+): SyntaxNode | undefined => {
+  const { syntaxApi, declarationsOf, node, hasCryptoImport } = request;
   if (!syntaxApi.isCallExpression(node)) return undefined;
   const callee = node.expression;
-  if (!syntaxApi.isPropertyAccessExpression(callee) && !syntaxApi.isElementAccessExpression(callee))
-    return undefined;
-  const receiver = callee.expression;
-  if (!syntaxApi.isIdentifier(receiver)) return undefined;
-  if (parameterBinding({ syntaxApi, node, name: receiver.text }) === "local") return undefined;
-  const member = syntaxApi.isPropertyAccessExpression(callee)
-    ? callee.name
-    : callee.argumentExpression;
-  if (!syntaxApi.isIdentifier(member) && !syntaxApi.isStringLiteralLike(member)) return undefined;
-  if (syntaxApi.isElementAccessExpression(callee) && !syntaxApi.isStringLiteralLike(member))
-    return undefined;
-  return RANDOM_CALLS.has(`${receiver.text}.${member.text}`) ? callee : undefined;
+  if (syntaxApi.isIdentifier(callee)) {
+    return hasCryptoImport &&
+      declarationsOf(callee).some(
+        (node) => nodeCryptoBindingOf({ syntaxApi, node }) === "random-function",
+      )
+      ? callee
+      : undefined;
+  }
+  const member = memberOf({ syntaxApi, node: callee });
+  if (member === undefined) return undefined;
+  const { receiver, name } = member;
+  if (name === "random" && syntaxApi.isIdentifier(receiver) && receiver.text === "Math") {
+    return declarationsOf(receiver).length === 0 ? callee : undefined;
+  }
+  return CRYPTO_RANDOM_METHODS.has(name) &&
+    cryptoReceiver({ syntaxApi, declarationsOf, receiver, hasCryptoImport })
+    ? callee
+    : undefined;
 };
 
 export const check: WalkerPiece = {
@@ -45,9 +128,17 @@ export const check: WalkerPiece = {
             kind: "syntax",
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
+              const hasCryptoImport = sourceFile.statements.some((node) =>
+                nodeCryptoImport({ syntaxApi, node }),
+              );
+              let bindingsInSource: ReturnType<typeof sourceBindingsOf> | undefined;
+              const declarationsOf: DeclarationsOf = (node) => {
+                bindingsInSource ??= sourceBindingsOf({ syntaxApi, sourceFile });
+                return sourceValueDeclarationsOf({ syntaxApi, bindings: bindingsInSource, node });
+              };
               return {
                 enter: ({ node }) => {
-                  const callee = randomCall({ syntaxApi, node });
+                  const callee = randomCall({ syntaxApi, node, declarationsOf, hasCryptoImport });
                   if (callee === undefined) return;
                   const anchor = anchorAt({ position: callee.getStart(sourceFile) });
                   const snippet = callee.getText(sourceFile).replace(/\r?\n/g, " ");

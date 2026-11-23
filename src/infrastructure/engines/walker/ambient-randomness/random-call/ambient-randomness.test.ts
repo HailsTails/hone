@@ -152,6 +152,57 @@ describe("ambient randomness", () => {
     ).toEqual([]);
   });
 
+  it("finds browser-qualified crypto and aliases of Node crypto imports", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { randomUUID as uuid, webcrypto as web } from "node:crypto";\nimport * as nodeCrypto from "crypto";\nglobalThis.crypto.randomUUID();\nwindow["crypto"].getRandomValues(bytes);\nuuid();\nnodeCrypto.randomUUID();\nweb.getRandomValues(bytes);',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 3, column: 0 },
+        snippet: "globalThis.crypto.randomUUID",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: 'window["crypto"].getRandomValues',
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: "uuid",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 6, column: 0 },
+        snippet: "nodeCrypto.randomUUID",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 7, column: 0 },
+        snippet: "web.getRandomValues",
+      },
+    ]);
+  });
+
+  it("passes locally bound globals and a shadowed Node import alias", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { randomUUID as uuid } from "node:crypto";\nfunction run(uuid: () => string) { return uuid(); }\nconst crypto = ports.crypto;\nconst Math = ports.math;\ncrypto.randomUUID();\nMath.random();\nconst fromPort = (window: Runtime) => window.crypto.getRandomValues(bytes);',
+      }),
+    ).toEqual([]);
+  });
+
   it("leaves an aliased random function outside the syntax check", () => {
     expect(
       findingsIn({ file: SOURCE_FILE, source: "const { random } = Math;\nrandom();" }),
