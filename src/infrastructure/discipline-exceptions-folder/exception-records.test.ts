@@ -2416,12 +2416,31 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
           problem: {
             kind: "evidence-refused",
             detail: expect.stringMatching(
-              /whyChain[\s\S]*fileExceptionWhyChains[\s\S]*docs\/why-chain-contract\.md/,
+              /whyChain[\s\S]*fileExceptionWhyChains[\s\S]*docs\/why-chain-contract\.md[\s\S]*"fileExceptionWhyChains": "optional"/,
             ),
           },
         },
       ],
     });
+  });
+
+  it("refuses a malformed authorised location while file exception why-chains are required with the validation message, not the missing whyChain", () => {
+    expect(
+      parseExceptionEntries({
+        entries: [{ place: AT_0, entry: { ...REASONED_LOCATION, provenance: "hand-written" } }],
+        selection: SELECTION,
+        fileExceptionWhyChains: "required",
+        baseline: NOTHING_AT_BASE,
+      }).invalid,
+    ).toEqual([
+      {
+        place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
+        problem: {
+          kind: "evidence-refused",
+          detail: expect.not.stringContaining("missing whyChain"),
+        },
+      },
+    ]);
   });
 });
 

@@ -432,7 +432,7 @@ const recordedFile = (request: { readonly file: string }): Result<RepoPath, Entr
 
 const LEGACY_CHAIN_NEW_OR_EDITED = `a new or edited entry's whyChain follows the causal contract (docs/why-chain-contract.md in the ${TOOL_IDENTITY.packageName} package); a chain without rootCheck and readback is accepted only while --base-revision holds its entry unchanged`;
 
-const WHY_CHAIN_REQUIRED = `missing whyChain: this repository's disciplines.json has fileExceptionWhyChains "required", the default, so an authorised-location needs a whyChain beside its reason; write one to the why-chain contract (docs/why-chain-contract.md in the ${TOOL_IDENTITY.packageName} package)`;
+const WHY_CHAIN_REQUIRED = `missing whyChain: fileExceptionWhyChains is "required" for this repository, set so in disciplines.json or left out of it, so an authorised-location needs a whyChain beside its reason; write one to the why-chain contract (docs/why-chain-contract.md in the ${TOOL_IDENTITY.packageName} package), or set "fileExceptionWhyChains": "optional" in disciplines.json to accept a reason alone`;
 
 const chainRefused = (request: { readonly detail: string }): Result<never, EntryProblem> => ({
   outcome: "failed",
