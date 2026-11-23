@@ -130,7 +130,7 @@ const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
   ],
   [
     { ...SITE, effect: "left", under: repoPathOf("src/orders") },
-    "date-used-directly#clock-sources left src/orders/charge-order.ts: under --leave src/orders; record it as an authorised location with its own reason, or fix it",
+    "date-used-directly#clock-sources left src/orders/charge-order.ts: under --leave src/orders; record it as an authorised location with a why chain, or fix it",
   ],
   [
     { ...SITE, effect: "touched", of: "finding" },
