@@ -268,14 +268,19 @@ export const queriedFilesOf = (request: {
 }): Promise<Outcome<QueriedFiles>> =>
   queriedFiles({ ...request, location: { ...request.location, names: VERSION_TWO_NAMES } });
 
-const answeredHolds = (request: {
+type AnsweredByFile = ReadonlyMap<RepoPath, readonly AnsweredFile[]>;
+
+const answeredByFileOf = (request: {
   readonly answered: readonly AnsweredFile[];
+}): AnsweredByFile => Map.groupBy(request.answered, (answer) => answer.file);
+
+const answeredHolds = (request: {
+  readonly answeredByFile: AnsweredByFile;
   readonly entry: SelectedCheck;
   readonly file: RepoPath;
 }): Holding =>
-  request.answered.some(
+  (request.answeredByFile.get(request.file) ?? []).some(
     (answer) =>
-      answer.file === request.file &&
       answer.symptom === request.entry.symptom &&
       (answer.check === undefined || `${answer.symptom}#${answer.check}` === request.entry.address),
   )
@@ -296,45 +301,49 @@ export const queryExceptionsOf = (request: {
   readonly selected: readonly SelectedCheck[];
   readonly answered: readonly AnsweredFile[];
   readonly queried: QueriedFiles;
-}): readonly NativeException[] => [
-  ...request.queried.ignored.flatMap((file) =>
-    ignoreExceptionsOf({ targets: targetsOf(request), file }),
-  ),
-  ...request.queried.checked.flatMap((checked) =>
-    overrideExceptionsOf({
-      targets: targetsOf(request),
-      checked,
-      holding: (target) =>
-        request.selected.some(
-          (entry) =>
-            entry.address === target.check &&
-            answeredHolds({ answered: request.answered, entry, file: checked.file }) === "holds",
-        )
-          ? "holds"
-          : "does-not-hold",
-    }),
-  ),
-];
+}): readonly NativeException[] => {
+  const answeredByFile = answeredByFileOf(request);
+  return [
+    ...request.queried.ignored.flatMap((file) =>
+      ignoreExceptionsOf({ targets: targetsOf(request), file }),
+    ),
+    ...request.queried.checked.flatMap((checked) =>
+      overrideExceptionsOf({
+        targets: targetsOf(request),
+        checked,
+        holding: (target) =>
+          request.selected.some(
+            (entry) =>
+              entry.address === target.check &&
+              answeredHolds({ answeredByFile, entry, file: checked.file }) === "holds",
+          )
+            ? "holds"
+            : "does-not-hold",
+      }),
+    ),
+  ];
+};
 
 const answeredOff = (request: {
   readonly selected: readonly SelectedCheck[];
   readonly answered: readonly AnsweredFile[];
   readonly queried: QueriedFiles;
-}): ProjectionEffect =>
-  request.queried.checked.every(
+}): ProjectionEffect => {
+  const answeredByFile = answeredByFileOf(request);
+  return request.queried.checked.every(
     (checked) =>
       allOffIn({
         checked,
         ruleIds: request.selected
           .filter(
-            (entry) =>
-              answeredHolds({ answered: request.answered, entry, file: checked.file }) === "holds",
+            (entry) => answeredHolds({ answeredByFile, entry, file: checked.file }) === "holds",
           )
           .map((entry) => entry.ruleId),
       }) === "in-effect",
   )
     ? "in-effect"
     : "not-in-effect";
+};
 
 export const projectionEffectOf = (request: {
   readonly selected: readonly SelectedCheck[];

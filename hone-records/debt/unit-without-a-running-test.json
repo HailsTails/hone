@@ -23,10 +23,6 @@
     },
     {
       "answers": "unit-without-a-running-test#companion-test-file",
-      "file": "src/domain/records/hone-records/record-identity.ts"
-    },
-    {
-      "answers": "unit-without-a-running-test#companion-test-file",
       "file": "src/domain/records/hone-records/record-listings.ts"
     },
     {

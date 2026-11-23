@@ -6,10 +6,7 @@ import type {
 } from "../../../../application/ports/engine/runner-module.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import {
-  clauseAddressText,
-  sameClauseAddress,
-} from "../../../../domain/rule-set/clause-address.ts";
+import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import type { MechanismRun } from "../../../../domain/runner/mechanism-run.ts";
 import {
@@ -18,33 +15,18 @@ import {
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
 import type {
-  Hit,
   MeasuredPair,
   NativeException,
 } from "../../../../domain/runner/runner-result-types.ts";
 import { runnerResultSchema } from "../runner-module/runner-result-schema.ts";
 import { standaloneRunReportSchema } from "../runner-module/standalone-run-report-schema.ts";
+import { type FiledClause, requestHeldOf, unrequestedDetailOf } from "./unrequested-entries.ts";
 
 const STANDALONE_COVERABLE_KINDS: readonly NativeException["kind"][] = ["inline-disable"];
 
 export const NOTHING_MEASURED: readonly MeasuredPair[] = [];
 
 const standaloneResultSchema = runnerResultSchema({ value: standaloneRunReportSchema });
-
-type FiledClause = Pick<Hit, "clause" | "file">;
-
-const unrequestedEntry = <Filed extends FiledClause>(request: {
-  readonly entries: readonly Filed[];
-  readonly run: RunRequest;
-  readonly checkedFiles: readonly RepoPath[];
-}): Filed | undefined =>
-  request.entries.find(
-    (entry) =>
-      !request.checkedFiles.includes(entry.file) ||
-      !request.run.clauses.some(
-        (clause) => sameClauseAddress({ left: clause.address, right: entry.clause }) === "same",
-      ),
-  );
 
 type FiledGroup = {
   readonly noun: string;
@@ -55,19 +37,15 @@ export const firstUnrequestedDetail = (request: {
   readonly groups: readonly FiledGroup[];
   readonly run: RunRequest;
   readonly checkedFiles: readonly RepoPath[];
-}): string | undefined =>
-  request.groups.flatMap((group) => {
-    const unrequested = unrequestedEntry({
-      entries: group.entries,
-      run: request.run,
-      checkedFiles: request.checkedFiles,
-    });
-    return unrequested === undefined
-      ? []
-      : [
-          `${group.noun} names ${clauseAddressText({ address: unrequested.clause })} in ${unrequested.file}, which the request did not hold`,
-        ];
-  })[0];
+}): string | undefined => {
+  const held = requestHeldOf({
+    files: request.checkedFiles,
+    clauses: request.run.clauses.map((clause) => clause.address),
+  });
+  return request.groups.flatMap((group) =>
+    unrequestedDetailOf({ noun: group.noun, entries: group.entries, held }),
+  )[0];
+};
 
 const okOutcomeSchema = z.object({ outcome: z.literal("ok") });
 

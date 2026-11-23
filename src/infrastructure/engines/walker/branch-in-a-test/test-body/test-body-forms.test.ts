@@ -5,7 +5,13 @@ import {
   defaultTypeScriptPeers,
   loadParsePort,
 } from "../../runner/toolchain/typescript-toolchain.ts";
-import { TEST_BODY_REMEDIES, TEST_BODY_SECTIONS, testBodyFormOf } from "./test-body-logic.ts";
+import {
+  declarationsOf,
+  TEST_BODY_REMEDIES,
+  TEST_BODY_SECTIONS,
+  type TestBodyForm,
+  testBodyFormOf,
+} from "./test-body-logic.ts";
 
 const loadedParsePort = await loadParsePort({
   peers: defaultTypeScriptPeers({
@@ -19,6 +25,18 @@ assert(
   `the typescript line runs TypeScript ${loadedParsePort.value.syntaxApi.version}`,
 );
 const SYNTAX_API = loadedParsePort.value.syntaxApi;
+
+const formOf = (request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly node: SyntaxNode;
+}): TestBodyForm | undefined =>
+  testBodyFormOf({
+    ...request,
+    declarations: declarationsOf({
+      syntaxApi: request.syntaxApi,
+      sourceFile: request.node.getSourceFile(),
+    }),
+  });
 
 type NodeSearch = {
   readonly syntaxApi: SyntaxApi;
@@ -226,9 +244,7 @@ describe("testBodyFormOf", () => {
   it.each(STATEMENT_FORMS)(
     "names $name as introduced in edition $edition with the $section fix",
     ({ source, edition, section }) => {
-      expect(
-        testBodyFormOf({ syntaxApi: SYNTAX_API, node: firstStatementOf({ source }) }),
-      ).toMatchObject({
+      expect(formOf({ syntaxApi: SYNTAX_API, node: firstStatementOf({ source }) })).toMatchObject({
         introducedIn: edition,
         remedy: { section },
       });
@@ -238,9 +254,7 @@ describe("testBodyFormOf", () => {
   it.each(EXPRESSION_FORMS)(
     "names $name as introduced in edition $edition with the $section fix",
     ({ source, edition, section }) => {
-      expect(
-        testBodyFormOf({ syntaxApi: SYNTAX_API, node: firstExpressionOf({ source }) }),
-      ).toMatchObject({
+      expect(formOf({ syntaxApi: SYNTAX_API, node: firstExpressionOf({ source }) })).toMatchObject({
         introducedIn: edition,
         remedy: { section },
       });
@@ -248,14 +262,12 @@ describe("testBodyFormOf", () => {
   );
 
   it.each(PLAIN_EXPRESSIONS)("names no form for $name", ({ source }) => {
-    expect(
-      testBodyFormOf({ syntaxApi: SYNTAX_API, node: firstExpressionOf({ source }) }),
-    ).toBeUndefined();
+    expect(formOf({ syntaxApi: SYNTAX_API, node: firstExpressionOf({ source }) })).toBeUndefined();
   });
 
   it("names no form for a const statement", () => {
     expect(
-      testBodyFormOf({
+      formOf({
         syntaxApi: SYNTAX_API,
         node: firstStatementOf({ source: "const total = 1;" }),
       }),
@@ -264,7 +276,7 @@ describe("testBodyFormOf", () => {
 
   it("names the replacement for an optional chain after an index in its fix", () => {
     expect(
-      testBodyFormOf({
+      formOf({
         syntaxApi: SYNTAX_API,
         node: firstExpressionOf({ source: "tasks[0]?.id;" }),
       }),
@@ -536,7 +548,7 @@ describe("testBodyFormOf inside a function the test passes on", () => {
       const node = syntaxNodeOf({ syntaxApi: SYNTAX_API, source, text, kind });
       assert.isDefined(node);
 
-      expect(testBodyFormOf({ syntaxApi: SYNTAX_API, node })).toMatchObject({
+      expect(formOf({ syntaxApi: SYNTAX_API, node })).toMatchObject({
         introducedIn: edition,
         remedy: { section: "logic-inside-a-function-the-test-passes-on" },
       });
@@ -549,7 +561,7 @@ describe("testBodyFormOf inside a function the test passes on", () => {
       const node = syntaxNodeOf({ syntaxApi: SYNTAX_API, source, text, kind: CALL });
       assert.isDefined(node);
 
-      expect(testBodyFormOf({ syntaxApi: SYNTAX_API, node })).toMatchObject({
+      expect(formOf({ syntaxApi: SYNTAX_API, node })).toMatchObject({
         remedy: { section },
       });
     },
@@ -744,13 +756,37 @@ describe("testBodyFormOf on a listed method name that is the adopter's own API",
     const node = syntaxNodeOf({ syntaxApi: SYNTAX_API, source, text, kind: CALL });
     assert.isDefined(node);
 
-    expect(testBodyFormOf({ syntaxApi: SYNTAX_API, node })).toBeUndefined();
+    expect(formOf({ syntaxApi: SYNTAX_API, node })).toBeUndefined();
   });
 
   it.each(FLAGGED_LOOK_ALIKES)("still names a first-edition form for $name", ({ source, text }) => {
     const node = syntaxNodeOf({ syntaxApi: SYNTAX_API, source, text, kind: CALL });
     assert.isDefined(node);
 
-    expect(testBodyFormOf({ syntaxApi: SYNTAX_API, node })).toMatchObject({ introducedIn: "1" });
+    expect(formOf({ syntaxApi: SYNTAX_API, node })).toMatchObject({ introducedIn: "1" });
+  });
+});
+
+const declaredTextsOf = (request: { readonly source: string }): readonly (readonly string[])[] =>
+  [
+    ...declarationsOf({
+      syntaxApi: SYNTAX_API,
+      sourceFile: firstStatementOf(request).getSourceFile(),
+    }),
+  ].map(([name, nodes]) => [name, ...nodes.map((node) => node.getText())]);
+
+describe("declarationsOf", () => {
+  it("names each declaration of each bound name in source order, destructured and nested ones included", () => {
+    expect(
+      declaredTextsOf({
+        source:
+          'const a = 1; const { b, c: [d] } = x; import e = require("e"); function f() { const a = 2; }',
+      }),
+    ).toEqual([
+      ["a", "a = 1", "a = 2"],
+      ["b", "{ b, c: [d] } = x"],
+      ["d", "{ b, c: [d] } = x"],
+      ["e", 'import e = require("e");'],
+    ]);
   });
 });

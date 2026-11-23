@@ -135,21 +135,18 @@ const additionOf = (request: {
 
 const additionsOf = (request: {
   readonly outcomes: readonly DebtOutcome[];
-}): Commanded<readonly RecordAddition[]> =>
-  request.outcomes
+}): Commanded<readonly RecordAddition[]> => {
+  const additions = request.outcomes
     .filter((outcome) => outcome.effect === "recorded")
-    .reduce<Commanded<readonly RecordAddition[]>>(
-      (sofar, outcome) => {
-        if (sofar.outcome === "failed") {
-          return sofar;
-        }
-        const addition = additionOf({ outcome });
-        return addition.outcome === "failed"
-          ? addition
-          : { outcome: "ok", value: [...sofar.value, ...addition.value] };
-      },
-      { outcome: "ok", value: [] },
-    );
+    .map((outcome) => additionOf({ outcome }));
+  const failed = additions.find((addition) => addition.outcome === "failed");
+  return (
+    failed ?? {
+      outcome: "ok",
+      value: additions.flatMap((addition) => (addition.outcome === "ok" ? addition.value : [])),
+    }
+  );
+};
 
 const storedAdditions = (request: {
   readonly ports: Pick<RecordDebtPorts, "store" | "recordsEditor">;

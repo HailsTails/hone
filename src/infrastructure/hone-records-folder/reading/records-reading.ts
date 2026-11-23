@@ -13,7 +13,10 @@ import type {
   RecordsReading,
   RefusedRecord,
 } from "../../../domain/records/hone-records/hone-record.ts";
-import { sameRecordIdentity } from "../../../domain/records/hone-records/record-identity.ts";
+import {
+  identityPlaceOf,
+  sameRecordIdentity,
+} from "../../../domain/records/hone-records/record-identity.ts";
 import { catalogueNotesOf } from "../../../domain/records/hone-records/record-listings.ts";
 import { recordsFileStandingOf } from "../../../domain/records/hone-records/records-layout.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -97,10 +100,37 @@ const duplicateJudged = (request: {
       };
 };
 
-const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): readonly Judged[] =>
-  request.judged.map((judged, index) =>
-    duplicateJudged({ judged, earlier: request.judged.slice(0, index) }),
+type Positioned = { readonly judged: Judged; readonly position: number };
+
+const recordsByIdentityPlace = (request: {
+  readonly judged: readonly Judged[];
+}): ReadonlyMap<string, readonly Positioned[]> =>
+  Map.groupBy(
+    request.judged.flatMap((judged, position) =>
+      judged.placed === "record"
+        ? [{ judged, position, place: identityPlaceOf({ record: judged.record.record }) }]
+        : [],
+    ),
+    ({ place }) => place,
   );
+
+const earlierAtPlace = (request: {
+  readonly byPlace: ReadonlyMap<string, readonly Positioned[]>;
+  readonly judged: Judged;
+  readonly position: number;
+}): readonly Judged[] =>
+  request.judged.placed === "refused"
+    ? []
+    : (request.byPlace.get(identityPlaceOf({ record: request.judged.record.record })) ?? [])
+        .filter(({ position }) => position < request.position)
+        .map(({ judged }) => judged);
+
+const withoutDuplicates = (request: { readonly judged: readonly Judged[] }): readonly Judged[] => {
+  const byPlace = recordsByIdentityPlace(request);
+  return request.judged.map((judged, position) =>
+    duplicateJudged({ judged, earlier: earlierAtPlace({ byPlace, judged, position }) }),
+  );
+};
 
 const baseMeasurementOf = (request: { readonly base: RecordsAtBase }): BaseMeasurement =>
   request.base.measured === "yes"

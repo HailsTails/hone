@@ -82,7 +82,7 @@ const clearOfOutsideParties = (request: { readonly symptom: Symptom }): Holding 
     ? "does-not-hold"
     : "holds";
 
-const reachOf = (request: { readonly party: OutsideParty }): readonly string[] => {
+export const reachOf = (request: { readonly party: OutsideParty }): readonly string[] => {
   switch (request.party.kind) {
     case "package":
     case "scheme-module":
@@ -170,18 +170,6 @@ export type RecordPlace =
   | { readonly at: "module"; readonly module: RepoPath };
 
 export type ReachedPlace = { readonly check: Check; readonly place: RecordPlace };
-
-export const placeCovers = (request: {
-  readonly place: RecordPlace;
-  readonly file: RepoPath;
-}): Holding => {
-  switch (request.place.at) {
-    case "file":
-      return sameName({ left: request.place.file, right: request.file });
-    case "module":
-      return moduleCovers({ module: request.place.module, file: request.file });
-  }
-};
 
 const checksReachedBy = (request: {
   readonly record: HoneRecord;

@@ -8,8 +8,19 @@ import type { EngineId } from "../../rule-set/identifier-types.ts";
 import type { NativeException } from "../../runner/runner-result-types.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
-import { measurementOf, type RunMeasurements } from "../measurement/measured-at.ts";
+import {
+  type MeasurementIndex,
+  measurementIndexOf,
+  measurementOf,
+  type RunMeasurements,
+} from "../measurement/measured-at.ts";
 import { holdsAt, type PartyReport, placesReachedBy, type Site } from "./record-reach.ts";
+import {
+  placedInRecordOrder,
+  type RecordsByPlace,
+  recordsByPlaceOf,
+  recordsReachingSites,
+} from "./records-by-place.ts";
 
 export type RaisedFinding = { readonly finding: Finding; readonly party: PartyReport };
 
@@ -47,11 +58,11 @@ export type Answering = {
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
 
 const holdersAt = (request: {
-  readonly records: readonly PlacedRecord[];
+  readonly byPlace: RecordsByPlace;
   readonly sites: readonly Site[];
   readonly catalogue: SymptomCatalogue;
 }): readonly PlacedRecord[] =>
-  request.records.filter((placed) =>
+  recordsReachingSites({ byPlace: request.byPlace, sites: request.sites }).filter((placed) =>
     request.sites.some(
       (site) => holdsAt({ record: placed.record, site, catalogue: request.catalogue }) === "holds",
     ),
@@ -87,31 +98,37 @@ const answerersOf = (request: {
     ? request.holders
     : request.holders.filter((placed) => placed.record.kind !== "debt");
 
-const answeredInPlaceOf = (request: {
-  readonly debt: PlacedRecord;
-  readonly inForce: readonly PlacedRecord[];
+const answerersByDebt = (request: {
   readonly holdings: readonly (readonly PlacedRecord[])[];
-}): readonly PlacedRecord[] => {
-  const answering = new Set(
-    request.holdings
-      .filter((holders) => holders.includes(request.debt))
-      .flatMap((holders) => answerersOf({ holders })),
+}): ReadonlyMap<PlacedRecord, readonly { readonly answerers: readonly PlacedRecord[] }[]> =>
+  Map.groupBy(
+    request.holdings.flatMap((holders) => {
+      const answerers = answerersOf({ holders });
+      return holders
+        .filter((placed) => placed.record.kind === "debt")
+        .map((debt) => ({ debt, answerers }));
+    }),
+    ({ debt }) => debt,
   );
-  return request.inForce.filter((placed) => answering.has(placed));
-};
 
 const paidDebts = (request: {
   readonly inForce: readonly PlacedRecord[];
+  readonly byPlace: RecordsByPlace;
   readonly holdings: readonly (readonly PlacedRecord[])[];
   readonly credited: ReadonlySet<PlacedRecord>;
-}): readonly PaidDebt[] =>
-  request.inForce.flatMap((debt) => {
+}): readonly PaidDebt[] => {
+  const answering = answerersByDebt(request);
+  return request.inForce.flatMap((debt) => {
     if (debt.record.kind !== "debt" || request.credited.has(debt)) {
       return [];
     }
-    const answeredBy = answeredInPlaceOf({ ...request, debt });
+    const answeredBy = placedInRecordOrder({
+      byPlace: request.byPlace,
+      records: new Set((answering.get(debt) ?? []).flatMap(({ answerers }) => answerers)),
+    });
     return answeredBy.length === 0 ? [] : [{ debt, answeredBy }];
   });
+};
 
 const forfeitedRecords = (request: {
   readonly records: readonly PlacedRecord[];
@@ -206,7 +223,7 @@ const attributed = (request: {
 
 const nativeHoldings = (request: {
   readonly runs: readonly GovernedRun[];
-  readonly inForce: readonly PlacedRecord[];
+  readonly byPlace: RecordsByPlace;
   readonly catalogue: SymptomCatalogue;
 }): readonly {
   readonly exception: AttributedNativeException;
@@ -216,7 +233,7 @@ const nativeHoldings = (request: {
     run.nativeExceptions.map((exception) => ({
       exception: attributed({ exception, mechanism: run.mechanism }),
       holders: holdersAt({
-        records: request.inForce,
+        byPlace: request.byPlace,
         sites: nativeSitesOf({ exception, run, catalogue: request.catalogue }),
         catalogue: request.catalogue,
       }),
@@ -226,7 +243,7 @@ const nativeHoldings = (request: {
 const staleReasonOf = (request: {
   readonly record: HoneRecord;
   readonly catalogue: SymptomCatalogue;
-  readonly measurements: RunMeasurements;
+  readonly measurements: MeasurementIndex;
 }): StaleReason | "unjudged" => {
   const measurements = placesReachedBy(request).map((reached) =>
     measurementOf({ measurements: request.measurements, reached }),
@@ -245,7 +262,7 @@ const staleRecords = (request: {
   readonly credited: ReadonlySet<PlacedRecord>;
   readonly paidDebt: ReadonlySet<PlacedRecord>;
   readonly catalogue: SymptomCatalogue;
-  readonly measurements: RunMeasurements;
+  readonly measurements: MeasurementIndex;
 }): readonly StaleRecord[] =>
   request.inForce
     .filter(
@@ -266,11 +283,13 @@ const staleRecords = (request: {
 export const answerFindings = (request: AnsweringRequest): Answering => {
   const { catalogue } = request;
   const forfeited = forfeitedRecords(request);
-  const inForce = request.records.filter((placed) => !forfeited.includes(placed));
+  const forfeit = new Set(forfeited);
+  const inForce = request.records.filter((placed) => !forfeit.has(placed));
+  const byPlace = recordsByPlaceOf({ records: inForce });
   const held = request.findings.map((raised) => ({
     finding: raised.finding,
     holders: holdersAt({
-      records: inForce,
+      byPlace,
       sites: findingSitesOf({ raised, catalogue }),
       catalogue,
     }),
@@ -279,13 +298,14 @@ export const answerFindings = (request: AnsweringRequest): Answering => {
     finding: entry.finding,
     by: answerersOf({ holders: entry.holders }),
   }));
-  const natives = nativeHoldings({ runs: request.runs, inForce, catalogue });
+  const natives = nativeHoldings({ runs: request.runs, byPlace, catalogue });
   const credited = new Set([
     ...judged.flatMap((entry) => entry.by),
     ...natives.flatMap((native) => answerersOf({ holders: native.holders })),
   ]);
   const paid = paidDebts({
     inForce,
+    byPlace,
     holdings: [...held.map((entry) => entry.holders), ...natives.map((native) => native.holders)],
     credited,
   });
@@ -297,7 +317,7 @@ export const answerFindings = (request: AnsweringRequest): Answering => {
       credited,
       paidDebt: new Set(paid.map((entry) => entry.debt)),
       catalogue,
-      measurements: request.measurements,
+      measurements: measurementIndexOf({ measurements: request.measurements }),
     }),
     forfeited,
     paid,
