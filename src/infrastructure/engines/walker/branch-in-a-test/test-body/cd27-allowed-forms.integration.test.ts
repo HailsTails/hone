@@ -417,6 +417,15 @@ const BLOCKS = allowedBlocksOf({ sections: SECTIONS });
 
 const ALLOW_CASES = allowCasesOf({ blocks: BLOCKS });
 
+const ASSERTION_ALLOW_CASES = allowCasesOf({
+  blocks: BLOCKS.map(({ name, source }) => ({
+    name,
+    source: `it("allowed form", () => {\n${source}\n});`,
+  })),
+});
+
+const ASSERTION_SITE_CHECK = "assertion-outside-a-test#assertion-site";
+
 const TYPE_ERRORS = typeErrorsOf({
   syntaxApi: defaultParsePort.syntaxApi,
   repoRoot: REPO_ROOT,
@@ -510,7 +519,7 @@ describe("the check items' Allowed forms in a test", () => {
     expect(TYPE_ERRORS.unattributed).toEqual([]);
   });
 
-  it.each(WALKER_ROWS)(
+  it.each(WALKER_ROWS.filter(({ binding }) => binding.address !== ASSERTION_SITE_CHECK))(
     "has no form to write instead that the audit runner flags under $name",
     async (row) => {
       expect(
@@ -522,6 +531,26 @@ describe("the check items' Allowed forms in a test", () => {
       ).toEqual({ outcome: "ok", value: [] });
     },
   );
+
+  it("allows the documented forms inside test cases under the assertion-site check", async () => {
+    const row = WALKER_ROWS.find(({ binding }) => binding.address === ASSERTION_SITE_CHECK);
+    assert.isDefined(row);
+    expect(
+      await namedCheckConformance({
+        binding: row.binding,
+        cases: [
+          ...ASSERTION_ALLOW_CASES,
+          {
+            name: "an assertion inside a test",
+            fileName: FORM_FILE,
+            source: 'it("returns the amount", () => { expect(4).toBe(4); });',
+            expectedLines: [],
+          },
+        ],
+        runner: walkerRunner,
+      }),
+    ).toEqual({ outcome: "ok", value: [] });
+  });
 
   it.each(ESLINT_ROWS)(
     "has no form to write instead that the ESLint runner flags under $name",

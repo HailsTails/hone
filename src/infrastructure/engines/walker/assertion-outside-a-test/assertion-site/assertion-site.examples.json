@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "assertions in a hook or suite body",
+      "fileName": "src/order.test.ts",
+      "source": "beforeEach(() => expect(order).toBeDefined());\ndescribe(\"suite\", () => { assert.ok(order); });",
+      "expectedLines": [1, 2]
+    },
+    {
+      "name": "Vitest assertion imported into a helper",
+      "fileName": "src/helper.ts",
+      "source": "import { expect as verify } from \"vitest\";\nverify(order).toBeDefined();",
+      "expectedLines": [2]
+    }
+  ],
+  "allow": [
+    {
+      "name": "assertions within each test case",
+      "fileName": "src/order.test.ts",
+      "source": "it.each([1])(\"case\", () => { const result = () => expect(order).toBeDefined(); result(); });\nconst type = expect.any(String);",
+      "expectedLines": []
+    },
+    {
+      "name": "production assertion unrelated to Vitest",
+      "fileName": "src/order.ts",
+      "source": "import assert from \"node:assert/strict\";\nassert.ok(order);",
+      "expectedLines": []
+    }
+  ]
+}
