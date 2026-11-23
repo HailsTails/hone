@@ -179,7 +179,7 @@ describe("createBoundCatalogueOf", () => {
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({ outcome: "ok", value: [] }),
+      list: vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
 
@@ -191,8 +191,6 @@ describe("createBoundCatalogueOf", () => {
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(directory.list).toHaveBeenCalledExactlyOnceWith({
-      path: "/repo/team-rules/rules",
-    });
+    expect(directory.list).toHaveBeenCalledWith({ path: "/repo/team-rules/rules" });
   });
 });

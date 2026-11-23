@@ -257,6 +257,10 @@ describe("runLoadFailureLine, failures version 2 names first", () => {
       failure: { kind: "upgrade-needed", path: "disciplines.json" },
       line: "load failure: upgrade-needed disciplines.json: this is a version 1 file; run node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop, which rewrites every version 1 file as version 2, and commit what it writes",
     },
+    {
+      failure: { kind: "rule-set-not-upgraded", path: "/work/shop/tools/acme" },
+      line: "load failure: rule-set-not-upgraded /work/shop/tools/acme: this rule set is in the version 1 layout; run node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop, which rewrites it as version 2, and commit what it writes",
+    },
   ])("prints $failure.kind", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: UPGRADE_COMMAND })).toBe(line);
   });
@@ -342,6 +346,17 @@ describe("runLoadFailureLine, a version 1 file found while no command rewrites i
       }),
     ).toBe(
       "load failure: upgrade-needed disciplines.json: this is a version 1 file; run hone upgrade, which rewrites every version 1 file as version 2, and commit what it writes",
+    );
+  });
+
+  it("prints rule-set-not-upgraded naming plain hone upgrade when no invocation could be built", () => {
+    expect(
+      runLoadFailureLine({
+        failure: { kind: "rule-set-not-upgraded", path: "/work/shop/tools/acme" },
+        upgradeCommand: undefined,
+      }),
+    ).toBe(
+      "load failure: rule-set-not-upgraded /work/shop/tools/acme: this rule set is in the version 1 layout; run hone upgrade, which rewrites it as version 2, and commit what it writes",
     );
   });
 });

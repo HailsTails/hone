@@ -33,6 +33,7 @@ export type LoadFailure =
   | { readonly kind: "runner-invalid"; readonly mechanism: EngineId; readonly detail: string }
   | { readonly kind: "piece-missing"; readonly address: string; readonly mechanism: EngineId }
   | { readonly kind: "rule-set-invalid"; readonly path: string; readonly detail: string }
+  | { readonly kind: "rule-set-not-upgraded"; readonly path: string }
   | { readonly kind: "git-failed"; readonly detail: string }
   | { readonly kind: "config-root-untracked"; readonly root: RepoPath }
   | { readonly kind: "selection-absent"; readonly repo: string }

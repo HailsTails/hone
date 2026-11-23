@@ -8,6 +8,7 @@ import {
   enginesFolderSegmentsOf,
   namedPieceFolderSegmentsOf,
   pieceFolderSegmentsOf,
+  versionOneEnginesFolderSegmentsOf,
 } from "../../../domain/rule-set/piece-folder.ts";
 import { engineIdSchema, versionOneEngineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { parsedJson } from "../rule-sets/rule-set-reader.ts";
@@ -80,60 +81,72 @@ const folderPrefixOf = (request: { readonly root: string }): string => {
 
 const RUNNER_FOLDER = "runner";
 
-const pieceLocationOf = (request: {
+type PieceLocations = Result<readonly PieceLocation[], PieceImportFindingsFailure>;
+
+const NO_PIECES: PieceLocations = { outcome: "ok", value: [] };
+
+const pieceSegmentsUnder = (request: {
+  readonly file: string;
+  readonly ruleSetRoot: string;
+  readonly folder: readonly string[];
+}): readonly string[] | undefined => {
+  const prefix = `${folderPrefixOf({ root: request.ruleSetRoot })}${request.folder.join("/")}/`;
+  return request.file.startsWith(prefix) &&
+    !request.file.endsWith(".test.ts") &&
+    request.file.endsWith(".ts")
+    ? request.file.slice(prefix.length).split("/")
+    : undefined;
+};
+
+const namedLocationOf = (request: {
+  readonly file: string;
+  readonly ruleSetRoot: string;
+  readonly segments: readonly string[];
+}): PieceLocation | undefined => {
+  const [engineText, symptom, check, ...sources] = request.segments;
+  const engine = engineIdSchema.safeParse(engineText);
+  return engine.success &&
+    symptom !== undefined &&
+    symptom !== RUNNER_FOLDER &&
+    isCatalogueName(symptom) &&
+    check !== undefined &&
+    isCatalogueName(check) &&
+    sources.length > 0
+    ? {
+        file: request.file,
+        ruleSetRoot: request.ruleSetRoot,
+        mechanism: engine.data,
+        symptom,
+        check,
+      }
+    : undefined;
+};
+
+const versionOneLocationOf = (request: {
   readonly file: string;
   readonly ruleSetRoot: string;
   readonly installRoot: string;
-}): Result<readonly PieceLocation[], PieceImportFindingsFailure> => {
-  const enginesFolder = enginesFolderSegmentsOf({
-    ruleSetRoot: normalisedOf({ text: request.ruleSetRoot }),
-    installRoot: normalisedOf({ text: request.installRoot }),
-  }).join("/");
-  const prefix = `${folderPrefixOf({ root: request.ruleSetRoot })}${enginesFolder}/`;
-  const file = normalisedOf({ text: request.file });
-  if (!file.startsWith(prefix) || file.endsWith(".test.ts") || !file.endsWith(".ts")) {
-    return { outcome: "ok", value: [] };
-  }
-  const [mechanismText, discipline, ...rest] = file.slice(prefix.length).split("/");
+  readonly segments: readonly string[];
+}): PieceLocations => {
+  const [mechanismText, discipline, ...rest] = request.segments;
   if (
     mechanismText === undefined ||
     discipline === undefined ||
     rest.length === 0 ||
     discipline === RUNNER_FOLDER
   ) {
-    return { outcome: "ok", value: [] };
+    return NO_PIECES;
   }
   const engineSchema =
     request.ruleSetRoot === request.installRoot ? engineIdSchema : versionOneEngineIdSchema;
   const mechanism = engineSchema.safeParse(mechanismText);
-  const [check, ...sources] = rest;
-  if (
-    mechanism.success &&
-    isCatalogueName(discipline) &&
-    check !== undefined &&
-    isCatalogueName(check) &&
-    sources.length > 0
-  ) {
-    return {
-      outcome: "ok",
-      value: [
-        {
-          file: request.file,
-          ruleSetRoot: request.ruleSetRoot,
-          mechanism: mechanism.data,
-          symptom: discipline,
-          check,
-        },
-      ],
-    };
-  }
   if (!isDisciplineId(discipline)) {
     return mechanism.success
       ? {
           outcome: "failed",
           error: { kind: "not-a-discipline", file: request.file, folder: discipline },
         }
-      : { outcome: "ok", value: [] };
+      : NO_PIECES;
   }
   return mechanism.success
     ? {
@@ -151,6 +164,38 @@ const pieceLocationOf = (request: {
         outcome: "failed",
         error: { kind: "unknown-mechanism", file: request.file, mechanism: mechanismText },
       };
+};
+
+const pieceLocationOf = (request: {
+  readonly file: string;
+  readonly ruleSetRoot: string;
+  readonly installRoot: string;
+}): PieceLocations => {
+  const file = normalisedOf({ text: request.file });
+  const place = {
+    ruleSetRoot: normalisedOf({ text: request.ruleSetRoot }),
+    installRoot: normalisedOf({ text: request.installRoot }),
+  };
+  const namedSegments = pieceSegmentsUnder({
+    file,
+    ruleSetRoot: request.ruleSetRoot,
+    folder: enginesFolderSegmentsOf(place),
+  });
+  const named =
+    namedSegments === undefined
+      ? undefined
+      : namedLocationOf({ ...request, segments: namedSegments });
+  if (named !== undefined) {
+    return { outcome: "ok", value: [named] };
+  }
+  const versionOneSegments = pieceSegmentsUnder({
+    file,
+    ruleSetRoot: request.ruleSetRoot,
+    folder: versionOneEnginesFolderSegmentsOf(place),
+  });
+  return versionOneSegments === undefined
+    ? NO_PIECES
+    : versionOneLocationOf({ ...request, segments: versionOneSegments });
 };
 
 export const pieceFilesOf = (request: {
@@ -203,10 +248,7 @@ const relativeRefusal = (request: {
   const location = { ...request.piece, installRoot: request.installRoot };
   const localReach =
     "symptom" in location
-      ? [
-          namedPieceFolderSegmentsOf(location),
-          [location.ruleSetRoot, "rules", "typescript", "symptoms", location.symptom],
-        ]
+      ? [namedPieceFolderSegmentsOf(location)]
       : [pieceFolderSegmentsOf(location), [location.ruleSetRoot, "rules", location.discipline]];
   const reach = [
     ...localReach,

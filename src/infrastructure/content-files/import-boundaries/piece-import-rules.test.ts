@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import {
   type PieceLocation,
@@ -20,6 +21,8 @@ const requiredEntry = <Entry>(request: {
 
 const INSTALL_ROOT = "packages/hone";
 const PROBE_ROOT = "packages/hone/tests/probe-rule-set";
+const TEAM_ROOT = "tools/acme";
+const TEAM_PIECE_FOLDER = "tools/acme/engines/walker/scratch-file/scratch-files";
 
 const PIECE_FOLDER = "packages/hone/src/infrastructure/engines/walker/CD-14";
 const CLASS_SYNTAX_KEY = "../../src/infrastructure/engines/walker/CD-14/class-syntax.ts";
@@ -66,10 +69,14 @@ const JOINED_REPOSITORY_PATHS: Readonly<Record<string, string>> = {
     "../../src/infrastructure/discipline-exceptions-folder",
   [`["${PROBE_FOLDER}","../../../../../src/infrastructure/engines/walker/runner/walker-piece.ts"]`]:
     "../../src/infrastructure/engines/walker/runner/walker-piece.ts",
+  '["tools/acme","engines","walker","scratch-file","scratch-files"]': TEAM_PIECE_FOLDER,
+  [`["${TEAM_PIECE_FOLDER}","../../../../rules/markdown/symptoms/scratch-file.md"]`]:
+    "tools/acme/rules/markdown/symptoms/scratch-file.md",
 };
 
 const REPOSITORY_DIRECTORIES: Readonly<Record<string, string>> = {
   "packages/hone/src/infrastructure/engines/walker/CD-14/class-syntax.ts": PIECE_FOLDER,
+  [`${TEAM_PIECE_FOLDER}/scratch-files.ts`]: TEAM_PIECE_FOLDER,
   [PROBE_KEY]: PROBE_FOLDER,
 };
 
@@ -90,6 +97,14 @@ const WALKER_PIECE: PieceLocation = {
   ruleSetRoot: INSTALL_ROOT,
   mechanism: "walker",
   discipline: disciplineIdOf("CD-14"),
+};
+
+const TEAM_PIECE: PieceLocation = {
+  file: `${TEAM_PIECE_FOLDER}/scratch-files.ts`,
+  ruleSetRoot: TEAM_ROOT,
+  mechanism: "walker",
+  symptom: catalogueNameOf("scratch-file"),
+  check: catalogueNameOf("scratch-files"),
 };
 
 const refusalsOf = (request: { readonly piece: PieceLocation; readonly source: string }) =>
@@ -114,6 +129,27 @@ describe("pieceFilesOf", () => {
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({ outcome: "ok", value: [WALKER_PIECE] });
+  });
+
+  it("lists a team's piece file under its engines folder with its engine, symptom and check", () => {
+    expect(
+      pieceFilesOf({
+        trackedPaths: [`${TEAM_PIECE_FOLDER}/scratch-files.ts`],
+        ruleSetRoots: [INSTALL_ROOT, TEAM_ROOT],
+        installRoot: INSTALL_ROOT,
+      }),
+    ).toEqual({ outcome: "ok", value: [TEAM_PIECE] });
+  });
+
+  it("refuses a team's named piece left in the version 1 mechanisms folder, which holds discipline pieces only", () => {
+    const file = "tools/acme/mechanisms/walker/scratch-file/scratch-files/scratch-files.ts";
+
+    expect(
+      pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [TEAM_ROOT], installRoot: INSTALL_ROOT }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "not-a-discipline", file, folder: "scratch-file" },
+    });
   });
 
   it.each([
@@ -254,6 +290,21 @@ describe("pieceImportRefusals refuses", () => {
   it("a value import of a package its runner lists", () => {
     expect(refusalsOf({ piece: WALKER_PIECE, source: 'import ts from "typescript";\n' })).toEqual([
       { specifier: "typescript", reason: "value-import-of-package" },
+    ]);
+  });
+
+  it("a named piece's relative import of its symptom's page, which is no part of its reach", () => {
+    expect(
+      refusalsOf({
+        piece: TEAM_PIECE,
+        source:
+          'import page from "../../../../rules/markdown/symptoms/scratch-file.md" with { type: "text" };\n',
+      }),
+    ).toEqual([
+      {
+        specifier: "../../../../rules/markdown/symptoms/scratch-file.md",
+        reason: "outside-piece-reach",
+      },
     ]);
   });
 

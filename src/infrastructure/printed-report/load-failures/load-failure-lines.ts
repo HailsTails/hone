@@ -212,7 +212,8 @@ type RecordsFailure = Extract<
       | "not-a-records-name"
       | "records-refused"
       | "catalogue-not-read"
-      | "upgrade-needed";
+      | "upgrade-needed"
+      | "rule-set-not-upgraded";
   }
 >;
 
@@ -305,6 +306,9 @@ const checkFields = (request: { readonly failure: CheckFailure }): readonly stri
   }
 };
 
+const upgradeCommandText = (request: { readonly upgradeCommand: string | undefined }): string =>
+  request.upgradeCommand ?? "hone upgrade";
+
 const recordsFields = (request: {
   readonly failure: RecordsFailure;
   readonly upgradeCommand: string | undefined;
@@ -334,7 +338,12 @@ const recordsFields = (request: {
     case "upgrade-needed":
       return [
         `${failure.path}:`,
-        `this is a version 1 file; run ${request.upgradeCommand ?? "hone upgrade"}, which rewrites every version 1 file as version 2, and commit what it writes`,
+        `this is a version 1 file; run ${upgradeCommandText(request)}, which rewrites every version 1 file as version 2, and commit what it writes`,
+      ];
+    case "rule-set-not-upgraded":
+      return [
+        `${failure.path}:`,
+        `this rule set is in the version 1 layout; run ${upgradeCommandText(request)}, which rewrites it as version 2, and commit what it writes`,
       ];
   }
 };
@@ -383,6 +392,7 @@ const failureFields = (request: {
     case "records-refused":
     case "catalogue-not-read":
     case "upgrade-needed":
+    case "rule-set-not-upgraded":
       return recordsFields({ failure, upgradeCommand: request.upgradeCommand });
   }
 };

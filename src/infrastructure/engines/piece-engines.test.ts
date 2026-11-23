@@ -49,11 +49,9 @@ const TEAM_CHECKS: readonly CheckContent[] = [
   },
 ];
 
-const CLOCK_WALKER =
-  "/repo/team-rules/mechanisms/walker/date-used-directly/clock-sources/piece.json";
-const TIMERS_WALKER = "/repo/team-rules/mechanisms/walker/date-used-directly/timers/piece.json";
-const CLOCK_ESLINT =
-  "/repo/team-rules/mechanisms/eslint/date-used-directly/clock-sources/piece.json";
+const CLOCK_WALKER = "/repo/team-rules/engines/walker/date-used-directly/clock-sources/piece.json";
+const TIMERS_WALKER = "/repo/team-rules/engines/walker/date-used-directly/timers/piece.json";
+const CLOCK_ESLINT = "/repo/team-rules/engines/eslint/date-used-directly/clock-sources/piece.json";
 const PIECE = '{ "version": 2, "anchor": { "kind": "file" }, "settings": {} }';
 
 const readBindings = (request: {

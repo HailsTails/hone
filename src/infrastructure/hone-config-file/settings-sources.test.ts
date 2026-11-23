@@ -134,7 +134,7 @@ describe("createCheckPieceSource", () => {
       fileText: inMemoryFileText({
         files: {
           ...TEAM_FILES,
-          "/repo/tools/hone-rules/mechanisms/walker/loop-keyword/loop-statement/piece.json":
+          "/repo/tools/hone-rules/engines/walker/loop-keyword/loop-statement/piece.json":
             JSON.stringify({
               version: 2,
               anchor: { kind: "file" },
@@ -149,7 +149,7 @@ describe("createCheckPieceSource", () => {
     expect(source({ names, ruleSetRoot: TEAM_ROOT, mechanism: "walker" })).toMatchObject({
       outcome: "ok",
       value: {
-        pieceRoot: "/repo/tools/hone-rules/mechanisms/walker/loop-keyword/loop-statement",
+        pieceRoot: "/repo/tools/hone-rules/engines/walker/loop-keyword/loop-statement",
         forms: { for: "loop-keyword#loop-statement" },
         settings: { module: "check.ts" },
       },
