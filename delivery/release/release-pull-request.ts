@@ -9,12 +9,7 @@ import type { GitFailure } from "../../src/domain/repository/git-failure.ts";
 import type { Result } from "../../src/domain/result.ts";
 import { type ChangeEntry, changeEntryOf } from "../commit-subject/conventional-subject.ts";
 import { packageVersionOf } from "../packaging/published-manifest/published-manifest.ts";
-import {
-  CHANGELOG_FILE,
-  changelogGroupOf,
-  changelogSectionOf,
-  changelogWithSection,
-} from "./changelog.ts";
+import { CHANGELOG_FILE, changelogGroupOf, changelogWithFoldedSection } from "./changelog.ts";
 import {
   changeSizeOf,
   channelOf,
@@ -270,10 +265,10 @@ const fileUpdatesOf = (request: {
   if (releasedVersion.outcome === "failed") {
     return releasedVersion;
   }
-  const changelog = changelogWithSection({
+  const changelog = changelogWithFoldedSection({
     changelog: request.files.changelog.text,
     version: request.next.version,
-    section: changelogSectionOf({ version: request.next.version, entries: request.next.entries }),
+    entries: request.next.entries,
   });
   if (changelog.outcome === "failed") {
     return changelog;

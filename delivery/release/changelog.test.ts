@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { changeEntryOf } from "../commit-subject/conventional-subject.ts";
-import { changelogSectionOf, changelogWithSection } from "./changelog.ts";
+import {
+  changelogSectionOf,
+  changelogWithFoldedSection,
+  changelogWithSection,
+} from "./changelog.ts";
 
 describe("changelogSectionOf", () => {
   it("groups the changes under fixed headings in a fixed order, keeping their order within each", () => {
@@ -75,6 +79,104 @@ describe("changelogWithSection", () => {
     ).toEqual({
       outcome: "failed",
       error: "CHANGELOG.md already has a section for 0.1.1",
+    });
+  });
+});
+
+describe("changelogWithFoldedSection", () => {
+  const INTRO = "# Changelog\n\nIntro.\n";
+
+  const PRE_RELEASES =
+    "## 2.0.0-pre.2\n\n### Fixes\n\n- carry a carve-out (#352)\n- point imports (#353)\n\n### Other changes\n\n- trim pages (#347)\n\n## 2.0.0-pre.1\n\n### Breaking changes\n\n- move into layers (#318)\n\n### Features\n\n- one address (#206)\n\n### Fixes\n\n- an older fix (#300)\n";
+
+  it("folds every pre-release section of the version into its one section, in the fixed group order, oldest first within a group", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.3\n\n### Fixes\n\n- index once (#365)\n\n${PRE_RELEASES}\n## 1.0.0\n\nOld.\n`,
+        version: "2.0.0",
+        entries: [changeEntryOf({ message: "fix: last fix (#370)" })],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: `${INTRO}\n## 2.0.0\n\n### Breaking changes\n\n- move into layers (#318)\n\n### Features\n\n- one address (#206)\n\n### Fixes\n\n- an older fix (#300)\n- carry a carve-out (#352)\n- point imports (#353)\n- index once (#365)\n- last fix (#370)\n\n### Other changes\n\n- trim pages (#347)\n\n## 1.0.0\n\nOld.\n`,
+    });
+  });
+
+  it("lists a pull request once when a pre-release section and the new entries both hold it", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+        version: "2.0.0",
+        entries: [
+          changeEntryOf({ message: "fix: one (#1)" }),
+          changeEntryOf({ message: "fix: two (#2)" }),
+        ],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- one (#1)\n- two (#2)\n`,
+    });
+  });
+
+  it("leaves the pre-release sections of another version alone", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 1.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n\n## 1.0.0\n\nOld.\n`,
+        version: "2.0.0",
+        entries: [changeEntryOf({ message: "fix: new (#2)" })],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: `${INTRO}\n## 2.0.0\n\n### Fixes\n\n- new (#2)\n\n## 1.1.0-pre.1\n\n### Fixes\n\n- kept (#1)\n\n## 1.0.0\n\nOld.\n`,
+    });
+  });
+
+  it("folds nothing into a pre-release", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+        version: "2.0.0-pre.2",
+        entries: [changeEntryOf({ message: "fix: two (#2)" })],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: `${INTRO}\n## 2.0.0-pre.2\n\n### Fixes\n\n- two (#2)\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+    });
+  });
+
+  it("refuses a version the changelog already has", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0\n\nOld.\n\n## 2.0.0-pre.1\n\n### Fixes\n\n- one (#1)\n`,
+        version: "2.0.0",
+        entries: [],
+      }),
+    ).toEqual({ outcome: "failed", error: "CHANGELOG.md already has a section for 2.0.0" });
+  });
+
+  it("refuses a pre-release section with a group it cannot place", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.1\n\n### Notes\n\n- one (#1)\n`,
+        version: "2.0.0",
+        entries: [],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: "## 2.0.0-pre.1 has a group, Notes, that cannot be folded",
+    });
+  });
+
+  it("refuses a pre-release section with a line that is neither a group nor an entry", () => {
+    expect(
+      changelogWithFoldedSection({
+        changelog: `${INTRO}\n## 2.0.0-pre.1\n\nProse.\n`,
+        version: "2.0.0",
+        entries: [],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: '## 2.0.0-pre.1 has a line, "Prose.", that cannot be folded',
     });
   });
 });

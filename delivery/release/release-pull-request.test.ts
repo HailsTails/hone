@@ -282,6 +282,34 @@ describe("runReleasePullRequest finishing the 0.1.0 pre-release line", () => {
   });
 });
 
+describe("runReleasePullRequest finishing a pre-release line with sections in the changelog", () => {
+  it("folds the line's pre-release sections into the stable section and leaves no pre-release heading", () => {
+    const run = runWith({
+      arguments: ["stable"],
+      files: {
+        "/repo/CHANGELOG.md":
+          "# Changelog\n\n## 2.0.0-pre.2\n\n### Fixes\n\n- second (#2)\n\n## 2.0.0-pre.1\n\n### Features\n\n- first (#1)\n\n## 1.0.0\n\nOld.\n",
+        "/repo/package.json": manifestAt({ version: "2.0.0-pre.2" }),
+      },
+      tags: { outcome: "ok", value: ["v1.0.0", "v2.0.0-pre.1", "v2.0.0-pre.2"] },
+      commits: { outcome: "ok", value: [squashed("fix: third (#3)")] },
+      lineCommits: {
+        outcome: "ok",
+        value: [
+          squashed("feat!: first (#1)"),
+          squashed("fix: second (#2)"),
+          squashed("fix: third (#3)"),
+        ],
+      },
+    });
+
+    expect(run.texts["/repo/CHANGELOG.md"]).toBe(
+      "# Changelog\n\n## 2.0.0\n\n### Features\n\n- first (#1)\n\n### Fixes\n\n- second (#2)\n- third (#3)\n\n## 1.0.0\n\nOld.\n",
+    );
+    expect(run.texts["/repo/package.json"]).toBe(manifestAt({ version: "2.0.0" }));
+  });
+});
+
 describe("runReleasePullRequest from the stable 1.0.0", () => {
   const runFrom100 = (request: {
     readonly arguments?: readonly string[];
