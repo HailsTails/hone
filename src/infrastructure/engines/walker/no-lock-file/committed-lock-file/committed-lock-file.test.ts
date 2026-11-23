@@ -101,6 +101,21 @@ describe("committed-lock-file", () => {
     ).toEqual([]);
   });
 
+  it.each([
+    { path: "packages/pnpm-lock.yaml", checks: [] },
+    { path: "packages/orders/package-lock.json", checks: [] },
+    { path: "packages/order/pnpm-lock.yaml", checks: [ADDRESS] },
+    { path: "packages/orders/tools/pnpm-lock.yaml", checks: [ADDRESS] },
+  ])("applies ancestry for a lock at $path", ({ path, checks }) => {
+    const findings = findingsIn({
+      file: MANIFEST,
+      source: '{ "dependencies": { "some-tool": "1.2.3" } }',
+      trackedLock: repoPathSchema.parse(path),
+    });
+
+    expect(findings.map(({ check }) => check)).toEqual(checks);
+  });
+
   it("passes a published dependency range when a lock is tracked", () => {
     expect(
       findingsIn({
