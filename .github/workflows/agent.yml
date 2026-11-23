@@ -4,7 +4,7 @@ on:
   issues:
     types: [labeled]
   pull_request:
-    types: [opened, ready_for_review, labeled]
+    types: [opened, ready_for_review, synchronize, labeled]
 
 permissions: {}
 
@@ -21,6 +21,7 @@ env:
   NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
   AGENT_BRANCH: agent/issue-${{ github.event.issue.number }}
   CHECKOUT_BRANCH: ${{ github.event.pull_request.head.ref || 'main' }}
+  HANDBACK_LIMIT: '2'
   STARTED_BY_LABEL: ${{ github.event.action == 'labeled' }}
 
 jobs:
@@ -29,12 +30,13 @@ jobs:
     if: >-
       (github.event_name == 'issues' &&
         contains(fromJSON('["claude", "claude-triage"]'), github.event.label.name) &&
-        github.event.sender.login == github.repository_owner) ||
+        (github.event.sender.login == github.repository_owner || github.event.sender.login == 'rin-author[bot]')) ||
       (github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
-        !github.event.pull_request.draft &&
-        (github.event.action != 'labeled' ||
-          (github.event.label.name == 'claude-review' && github.event.sender.login == github.repository_owner)))
+        (github.event.action == 'opened' ||
+          github.event.action == 'ready_for_review' ||
+          (github.event.action == 'synchronize' && startsWith(github.event.pull_request.head.ref, 'agent/issue-')) ||
+          (github.event.action == 'labeled' && github.event.label.name == 'claude-review' && github.event.sender.login == github.repository_owner)))
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions: {}
@@ -50,12 +52,15 @@ jobs:
           private-key: ${{ secrets.RIN_AUTHOR_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: ${{ github.event.label.name == 'claude' && github.event_name == 'issues' && 'write' || 'read' }}
+          permission-pull-requests: read
+          permission-issues: read
 
       - name: Start the session
         id: session
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PUSH_TOKEN: ${{ steps.push-token.outputs.token }}
+          GH_TOKEN: ${{ steps.push-token.outputs.token }}
           REPOSITORY_URL: ${{ github.event.repository.html_url }}
           REPOSITORY_NAME: ${{ github.event.repository.name }}
           TITLE: ${{ github.event.issue.title || github.event.pull_request.title }}
@@ -87,8 +92,22 @@ jobs:
             echo "$id"
           }
           workspace="/workspace/$REPOSITORY_NAME"
+          checkout="$CHECKOUT_BRANCH"
+          follow_up_pr=""
+          if [ "$MODE" = claude ] && gh api "repos/$GITHUB_REPOSITORY/branches/$AGENT_BRANCH" > /dev/null 2>&1; then
+            checkout="$AGENT_BRANCH"
+            follow_up_pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$AGENT_BRANCH" --state open --json number --jq '.[0].number // empty')
+          fi
+          echo "follow_up_pr=$follow_up_pr" >> "$GITHUB_OUTPUT"
           case "$MODE" in
-            claude) agent_name="Hone builder"; kind=Issue; run_note="Push your work to the branch $AGENT_BRANCH." ;;
+            claude)
+              agent_name="Hone builder"; kind=Issue
+              if [ -n "$follow_up_pr" ]; then
+                review=$(gh api "repos/$GITHUB_REPOSITORY/issues/$follow_up_pr/comments" --jq '[.[] | select(.body | startswith("**Agent review**"))] | last | .body // ""')
+                run_note="This is follow-up work. The branch $AGENT_BRANCH, open as pull request #$follow_up_pr, is checked out instead of main. Continue on it: address the review below, keep pnpm run check green, and push to the same branch."$'\n\n'"$review"
+              else
+                run_note="Push your work to the branch $AGENT_BRANCH."
+              fi ;;
             claude-triage) agent_name="Hone triager"; kind=Issue; run_note="" ;;
             claude-review) agent_name="Hone reviewer"; kind="Pull request"; run_note="Its branch $CHECKOUT_BRANCH is checked out." ;;
           esac
@@ -97,7 +116,7 @@ jobs:
           session_id=$(jq -n \
             --arg agent "$agent_id" --arg environment "$environment_id" \
             --arg url "$REPOSITORY_URL" --arg mount "$workspace" --arg token "$PUSH_TOKEN" \
-            --arg branch "$CHECKOUT_BRANCH" --arg budget "$BUDGET_CENTS" \
+            --arg branch "$checkout" --arg budget "$BUDGET_CENTS" \
             --arg kind "$kind" --arg number "$NUMBER" --arg title "$TITLE" --arg body "$BODY" --arg note "$run_note" \
             '{
               agent: $agent,
@@ -175,11 +194,16 @@ jobs:
           COST_CENTS: ${{ steps.outcome.outputs.cost_cents }}
           CACHE: ${{ steps.outcome.outputs.cache }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FOLLOW_UP_PR: ${{ steps.session.outputs.follow_up_pr }}
         run: |
           set -euo pipefail
           touch "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/errors.txt"
           outcome="Agent session ${STATUS:-not started}, stop reason ${STOP_REASON:-none}, list cost ${COST_CENTS:-unknown} US cents, ${CACHE:-cache unknown}. [Run]($RUN_URL)"
-          if [ "$MODE" = claude ] && head_message=$(gh api "repos/$GH_REPO/commits/$AGENT_BRANCH" --jq .commit.message 2>/dev/null); then
+          if [ "$MODE" = claude ] && [ -n "$FOLLOW_UP_PR" ]; then
+            comment_file="$RUNNER_TEMP/comment.md"
+            { echo "**Builder follow-up**"; echo; cat "$RUNNER_TEMP/summary.md"; echo; cat "$RUNNER_TEMP/errors.txt"; echo; echo "$outcome"; } > "$comment_file"
+            gh pr comment "$FOLLOW_UP_PR" --body-file "$comment_file"
+          elif [ "$MODE" = claude ] && head_message=$(gh api "repos/$GH_REPO/commits/$AGENT_BRANCH" --jq .commit.message 2>/dev/null); then
             body_file="$RUNNER_TEMP/pull-request.md"
             { echo "Closes #$NUMBER"; echo; cat "$RUNNER_TEMP/summary.md"; echo; echo "$outcome"; } > "$body_file"
             pull_request=$(gh pr create --draft --base main --head "$AGENT_BRANCH" \
@@ -197,5 +221,14 @@ jobs:
           fi
           if [ "$STARTED_BY_LABEL" = true ]; then
             gh issue edit "$NUMBER" --remove-label "$MODE"
+          fi
+          if [ "$MODE" = claude-review ] && [[ "$CHECKOUT_BRANCH" =~ ^agent/issue-([0-9]+)$ ]]; then
+            issue="${BASH_REMATCH[1]}"
+            verdict=$(grep -m1 -v '^[[:space:]]*$' "$RUNNER_TEMP/summary.md" || true)
+            handbacks=$(gh api "repos/$GH_REPO/issues/$NUMBER/comments" --jq '[.[] | select(.body | startswith("**Builder follow-up**"))] | length')
+            if [ -n "$verdict" ] && [[ "$verdict" != *"No findings"* ]] && (( handbacks < HANDBACK_LIMIT )); then
+              gh issue edit "$issue" --add-label claude
+              gh pr comment "$NUMBER" --body "Handed back to the builder on #$issue to address this review (follow-up $((handbacks + 1)) of $HANDBACK_LIMIT)."
+            fi
           fi
 
