@@ -195,6 +195,29 @@ describe("process globals", () => {
     ]);
   });
 
+  it("still reports globals described by ambient declarations", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'export {};\ndeclare const process: Runtime;\ndeclare global { var console: Console; }\nprocess.env.MODE;\nconsole.log("ready");',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: "process.env",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: "console.log",
+      },
+    ]);
+  });
+
   it("lets a runtime process boundary record answer the finding in its adapter", () => {
     expect(findingsIn({ file: ADAPTER_FILE, source: "process.env.MODE;" })).toEqual([
       {
