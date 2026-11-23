@@ -41,7 +41,12 @@ const fileCheckOf = (request: { readonly file: string }) => {
   const file = repoPathSchema.parse(request.file);
   const prepared = check.prepare({
     bindings: [CLAUSE],
-    repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+    repository: {
+      files: [file],
+      exists: vi.fn().mockReturnValue("present"),
+      disk: EMPTY_DISK,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    },
     syntaxApi: SYNTAX_API,
   });
   assert(prepared.outcome === "ok");

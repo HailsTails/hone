@@ -64,6 +64,7 @@ const sourceObservations = (request: { readonly source: string }): ObservationFi
     files: [FILE],
     exists: vi.fn().mockReturnValue("present"),
     disk: EMPTY_DISK,
+    testFiles: { suffixes: ["test", "spec"], folders: [] },
   };
   const prepared = check.prepare({ bindings: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
@@ -103,7 +104,12 @@ describe("CD-2 existing cast capability", () => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [CLAUSE],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");

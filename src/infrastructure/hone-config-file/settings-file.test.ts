@@ -139,6 +139,25 @@ describe("settingsFileOf", () => {
     });
   });
 
+  it("reads a top-level testFiles key into the conventions it declares", () => {
+    expect(
+      settingsFileOf({
+        document: {
+          ...SMALLEST_DOCUMENT,
+          testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+        },
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        conventions: {
+          conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
+          declared: ["testFiles"],
+        },
+      },
+    });
+  });
+
   it("keeps tracker patterns on their check, as version 1 does", () => {
     expect(
       settingsFileOf({
@@ -359,8 +378,9 @@ const FULL_FILE: SettingsFile = {
     conventions: {
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
       layers: [{ layer: "domain", folders: [repoPathOf("src/domain")] }],
+      testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
     },
-    declared: ["generated", "layers"],
+    declared: ["generated", "layers", "testFiles"],
   },
 };
 
@@ -431,6 +451,7 @@ describe("settingsWireOf", () => {
       eslintConfigLookup: "nearest-to-file",
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
       layers: { domain: ["src/domain"] },
+      testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
     });
   });
 

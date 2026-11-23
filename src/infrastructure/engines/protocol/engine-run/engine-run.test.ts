@@ -116,6 +116,7 @@ describe("namedEngineRunOf", () => {
     answered: [],
     declaredConfigRoots: [],
     declaredConfigLookup: undefined,
+    testFiles: { suffixes: ["test", "spec"], folders: [] },
   };
 
   it("passes only the engine's named bindings and accepts a walker measurement on a tracked config file", async () => {

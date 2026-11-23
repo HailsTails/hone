@@ -5,6 +5,7 @@ import type { Result } from "../../../../../domain/result.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { CheckHit } from "../../../../../domain/runner/check-observations.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { observeWalkerFile } from "../../runner/observe-walker-file.ts";
@@ -50,6 +51,7 @@ const observeWalkerPiece = async (request: {
       files: [request.file],
       exists: () => "present",
       disk: textsDisk({ root: "/repo", texts: {} }),
+      testFiles: DEFAULT_TEST_FILES,
     },
     syntaxApi: parse.syntaxApi,
   });
@@ -119,7 +121,7 @@ describe("test-file exports", () => {
     });
   });
 
-  it.each(["src/order.spec.ts", "src/order.test.mts", "src/order.test.cts"])(
+  it.each(["src/order.test.mts", "src/order.test.cts"])(
     "leaves %s outside the existing test-file scope",
     async (name) => {
       const file = repoPathSchema.parse(name);

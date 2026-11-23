@@ -144,6 +144,7 @@ const prepareCheck = (request: {
     files: [request.file ?? FILE],
     exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"),
     disk: EMPTY_DISK,
+    testFiles: { suffixes: ["test", "spec"], folders: [] },
   };
   const prepared = createCompilerOverridesCheck({
     jsonc: request.jsonc,

@@ -33,6 +33,7 @@ const REPOSITORY: WalkerRepository = {
   files: [ALPHA, BETA],
   exists: () => "present",
   disk: textsDisk({ root: "/repo", texts: {} }),
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
 const FIRST_CLAUSE: CheckBinding = {

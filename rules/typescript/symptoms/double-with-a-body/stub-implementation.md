@@ -3,7 +3,7 @@
 ```json
 {
   "misses": "hand-written doubles.",
-  "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
+  "settingsTracedTo": "test files are what `testFiles` declares: the adopter's convention."
 }
 ```
 
@@ -11,7 +11,7 @@
 
 ## Flags
 
-- Test files only: `*.test.ts` and `*.test.tsx`. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
+- Test files only: the `.ts` and `.tsx` files `testFiles` names. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
 - A `vi.fn(...)` call with any argument, and any call to a method named `mockImplementation` (on any receiver, with or without arguments).
 - Allowed: `vi.fn()`, `.mockReturnValue(...)`, `.mockResolvedValue(...)`, `.mockReturnValueOnce(...)` and `.mockImplementationOnce(...)`.
 - `.mockImplementationOnce(...)` is not flagged even though it takes an implementation; whether that implementation gives the double behaviour is left to review.

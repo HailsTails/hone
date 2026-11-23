@@ -101,6 +101,7 @@ const preparedFor = (request: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
       disk: EMPTY_DISK,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     },
     syntaxApi: SYNTAX_API,
   });
@@ -591,7 +592,12 @@ describe("CD-19 confined package settings", () => {
   ])("refuses to prepare with $name, naming the clause", ({ clause }) => {
     const prepared = check.prepare({
       bindings: [clause],
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
 

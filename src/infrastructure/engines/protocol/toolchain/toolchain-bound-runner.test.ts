@@ -189,6 +189,7 @@ const CHECKS_RUN: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
 const BINDING: CheckBinding = {

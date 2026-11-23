@@ -145,7 +145,11 @@ export const check: WalkerPiece = {
         const { root, method } = target;
         const { syntaxApi, sourceFile } = visit;
         const bindingsOf = (): TypeChecker => fileBindingsOf({ syntaxApi, sourceFile });
-        const test = testFileEligibility({ file: sourceFile.fileName }) === "eligible";
+        const test =
+          testFileEligibility({
+            file: sourceFile.fileName,
+            testFiles: request.repository.testFiles,
+          }) === "eligible";
         if (
           test &&
           assertsAt({ name: root.text, method }) &&

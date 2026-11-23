@@ -45,11 +45,11 @@ const answerSetter = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | undefine
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => ({
+  prepare: ({ bindings, repository, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        if (testFileEligibility({ file }) === "skipped")
+        if (testFileEligibility({ file, testFiles: repository.testFiles }) === "skipped")
           return { outcome: "ok", value: { kind: "skipped" } };
         return {
           outcome: "ok",

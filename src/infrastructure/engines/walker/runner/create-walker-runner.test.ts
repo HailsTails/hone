@@ -59,6 +59,7 @@ const RUN: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
   bindings: [FIRST_CLAUSE, SECOND_CLAUSE],
 };
 
@@ -306,6 +307,33 @@ describe("createWalkerRunner run", () => {
     expect(prepare).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         repository: expect.objectContaining({ disk: expect.objectContaining({ root: "/repo" }) }),
+      }),
+    );
+  });
+
+  it("prepares each piece with the test files the run declares", async () => {
+    const prepare = skippingPrepare();
+
+    await runnerWith({
+      fileText: fileTextOf({ read: vi.fn() }),
+      modules: modulesOf({ check: { prepare } }),
+    }).run({
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: absoluteRootOf("/install"),
+      files: [ALPHA],
+      trackedPaths: [ALPHA],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+      bindings: [FIRST_CLAUSE],
+    });
+
+    expect(prepare).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        repository: expect.objectContaining({
+          testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+        }),
       }),
     );
   });
@@ -594,6 +622,26 @@ describe("createWalkerRunner conform", () => {
     expect(prepare).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         repository: expect.objectContaining({ disk: expect.objectContaining({ root: CASE_ROOT }) }),
+      }),
+    );
+  });
+
+  it("prepares each case with the default test files, which count only .test files", async () => {
+    const prepare = skippingPrepare();
+
+    await runnerWith({
+      fileText: fileTextOf({ read: vi.fn() }),
+      modules: modulesOf({ check: { prepare } }),
+    }).conform({
+      binding: FIRST_CLAUSE,
+      cases: [{ name: "config", fileName: CONFIG, source: "{}", expectedLines: [] }],
+    });
+
+    expect(prepare).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        repository: expect.objectContaining({
+          testFiles: { suffixes: ["test", "spec"], folders: [] },
+        }),
       }),
     );
   });

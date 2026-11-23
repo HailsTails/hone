@@ -3,7 +3,7 @@
 ```json
 {
   "misses": "hand-written doubles.",
-  "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
+  "settingsTracedTo": "test files are what `testFiles` declares: the adopter's convention."
 }
 ```
 

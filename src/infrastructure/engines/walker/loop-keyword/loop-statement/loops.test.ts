@@ -55,6 +55,7 @@ const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWa
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
       disk: EMPTY_DISK,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     },
     syntaxApi: SYNTAX_API,
   });

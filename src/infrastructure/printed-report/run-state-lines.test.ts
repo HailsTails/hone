@@ -4,7 +4,7 @@ import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RunProjectionProblem, RunUnmeasured } from "../../domain/report/run-report.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
-import type { ConventionKey } from "../../domain/settings/conventions.ts";
+import type { UnreadConventionKey } from "../../domain/settings/settings-note.ts";
 import {
   assessmentLine,
   projectionMissingLine,
@@ -225,7 +225,7 @@ describe("assessmentLine", () => {
 });
 
 describe("settingsNoteLine", () => {
-  it.each<{ readonly key: ConventionKey; readonly line: string }>([
+  it.each<{ readonly key: UnreadConventionKey; readonly line: string }>([
     { key: "generated", line: "generated is declared; no check reads it yet" },
     { key: "layers", line: "layers is declared; no check reads it yet" },
   ])("says $key is declared and read by no check yet", ({ key, line }) => {

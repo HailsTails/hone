@@ -1,6 +1,7 @@
 import { assert, describe, expect, it } from "vitest";
 
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "../toolchain/typescript-toolchain.ts";
@@ -31,8 +32,8 @@ describe("throwStatementCheck", () => {
   it.each<{ readonly scope: "test" | "production"; readonly path: string }>([
     { scope: "test", path: "src/orders.ts" },
     { scope: "production", path: "src/orders.test.ts" },
+    { scope: "production", path: "src/orders.spec.ts" },
     { scope: "production", path: "src/orders.spec.mts" },
-    { scope: "production", path: "src/orders.d.tsx" },
   ])("skips $path when checking $scope scope", ({ scope, path }) => {
     const file = repoPathSchema.parse(path);
     const piece = throwStatementCheck(scope);
@@ -42,6 +43,7 @@ describe("throwStatementCheck", () => {
         files: [file],
         exists: () => "present",
         disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: DEFAULT_TEST_FILES,
       },
       syntaxApi,
     });
@@ -74,6 +76,7 @@ describe("throwStatementCheck", () => {
           files: [file],
           exists: () => "present",
           disk: textsDisk({ root: "/repo", texts: {} }),
+          testFiles: DEFAULT_TEST_FILES,
         },
         syntaxApi,
       });
@@ -99,6 +102,35 @@ describe("throwStatementCheck", () => {
             'throw new Error( "12345678901234567890123456789012345678901234567890123456789012…',
         },
       ]);
+    },
+  );
+
+  it.each<{ readonly scope: "test" | "production"; readonly path: string; readonly kind: string }>([
+    { scope: "test", path: "src/orders.check.ts", kind: "syntax" },
+    { scope: "test", path: "src/__tests__/orders.ts", kind: "syntax" },
+    { scope: "test", path: "src/orders.test.ts", kind: "skipped" },
+    { scope: "production", path: "src/orders.check.mts", kind: "skipped" },
+    { scope: "production", path: "src/__tests__/orders.ts", kind: "skipped" },
+    { scope: "production", path: "src/orders.spec.ts", kind: "syntax" },
+  ])(
+    "prepares $path as $kind in $scope scope under the declared test files",
+    ({ scope, path, kind }) => {
+      const file = repoPathSchema.parse(path);
+      const prepared = throwStatementCheck(scope).prepare({
+        bindings: [BINDING],
+        repository: {
+          files: [file],
+          exists: () => "present",
+          disk: textsDisk({ root: "/repo", texts: {} }),
+          testFiles: { suffixes: ["check"], folders: ["__tests__"] },
+        },
+        syntaxApi,
+      });
+      assert(prepared.outcome === "ok");
+
+      expect(
+        prepared.value.prepareFile({ file, readText: () => ({ outcome: "ok", value: "" }) }),
+      ).toMatchObject({ outcome: "ok", value: { kind } });
     },
   );
 });

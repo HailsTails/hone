@@ -84,11 +84,14 @@ const moduleMockOf = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | undefine
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => ({
+  prepare: ({ bindings, repository, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        if (testFileEligibility({ file }) === "skipped" || bindings.length === 0) {
+        if (
+          testFileEligibility({ file, testFiles: repository.testFiles }) === "skipped" ||
+          bindings.length === 0
+        ) {
           return { outcome: "ok", value: { kind: "skipped" } };
         }
         const globalPatchBindings = bindings.filter(

@@ -238,6 +238,7 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
 const RUNNER_INVALID: Result<ParsedNamedRunner, RunnerInvalid> = {

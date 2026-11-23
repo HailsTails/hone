@@ -27,6 +27,7 @@ describe("conventionsOf", () => {
             application: ["src/application"],
             adapters: ["src/adapters", "web/adapters"],
           },
+          testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
         },
       }),
     ).toEqual<{ readonly outcome: "ok"; readonly value: ConventionsReading }>({
@@ -47,8 +48,9 @@ describe("conventionsOf", () => {
               folders: [repoPathOf("src/adapters"), repoPathOf("web/adapters")],
             },
           ],
+          testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
         },
-        declared: ["generated", "layers"],
+        declared: ["generated", "layers", "testFiles"],
       },
     });
   });
@@ -138,6 +140,27 @@ describe("conventionsOf", () => {
       refusal: '✖ Unrecognized key: "infrastructure"\n  → at layers',
     },
     {
+      name: "test files with no suffix",
+      document: { layers: {}, testFiles: { suffixes: [], folders: ["__tests__"] } },
+      refusal: "✖ testFiles names at least one suffix\n  → at testFiles.suffixes[0]",
+    },
+    {
+      name: "a test-file suffix written with its dot",
+      document: { layers: {}, testFiles: { suffixes: [".spec"], folders: [] } },
+      refusal:
+        "✖ a test-file suffix is the name part before the extension\n  → at testFiles.suffixes[0]",
+    },
+    {
+      name: "a test folder written as a path",
+      document: { layers: {}, testFiles: { suffixes: ["test"], folders: ["src/__tests__"] } },
+      refusal: "✖ a test folder is one folder name, not a path\n  → at testFiles.folders[0]",
+    },
+    {
+      name: "test files with no folders key",
+      document: { layers: {}, testFiles: { suffixes: ["test"] } },
+      refusal: "✖ Invalid input: expected array, received undefined\n  → at testFiles.folders",
+    },
+    {
       name: "a conventions key, which is not a category in version 2",
       document: { conventions: { generated: [] }, layers: {} },
       refusal: '✖ Unrecognized key: "conventions"',
@@ -154,20 +177,22 @@ describe("conventionsWireOf", () => {
     ).toEqual({});
   });
 
-  it("writes the generated files and the layers that were declared, each under its own key", () => {
+  it("writes the generated files, the layers and the test files that were declared, each under its own key", () => {
     expect(
       conventionsWireOf({
         reading: {
           conventions: {
             generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
             layers: [{ layer: "domain", folders: [repoPathOf("src/domain")] }],
+            testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
           },
-          declared: ["generated", "layers"],
+          declared: ["generated", "layers", "testFiles"],
         },
       }),
     ).toEqual({
       generated: [{ files: ["generated/*.ts"], outsideParty: "codegen" }],
       layers: { domain: ["src/domain"] },
+      testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
     });
   });
 });

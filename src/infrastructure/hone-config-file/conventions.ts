@@ -10,9 +10,10 @@ import {
   type LayerFolders,
   type LayerName,
 } from "../../domain/settings/conventions.ts";
+import type { TestFiles } from "../../domain/settings/test-files.ts";
 import { brandedRepoPathSchema, repoPathTextSchema } from "../hone-records-folder/repo-path.ts";
 
-const CONVENTION_KEYS: readonly ConventionKey[] = ["generated", "layers"];
+const CONVENTION_KEYS: readonly ConventionKey[] = ["generated", "layers", "testFiles"];
 
 const UNDER_A_NAMED_FOLDER = /^(?!\.\.?\/)[^*?[\]{}!/]+\//;
 
@@ -26,6 +27,26 @@ const generatedGlobsSchema = z
 
 const generatedWireSchema = z
   .array(z.strictObject({ files: generatedGlobsSchema, outsideParty: z.string().min(1) }))
+  .optional();
+
+const NAME_PART = /^[\w-]+$/;
+
+const namePartSchema = (request: { readonly refusal: string }) =>
+  z.string().regex(NAME_PART, { error: request.refusal });
+
+const SUFFIX_REFUSAL = "a test-file suffix is the name part before the extension";
+
+const testFileSuffixSchema = namePartSchema({ refusal: SUFFIX_REFUSAL });
+
+const firstTestFileSuffixSchema = z
+  .string({ error: "testFiles names at least one suffix" })
+  .regex(NAME_PART, { error: SUFFIX_REFUSAL });
+
+const testFilesWireSchema = z
+  .strictObject({
+    suffixes: z.tuple([firstTestFileSuffixSchema], testFileSuffixSchema),
+    folders: z.array(namePartSchema({ refusal: "a test folder is one folder name, not a path" })),
+  })
   .optional();
 
 const layerFolderSchema = brandedRepoPathSchema({
@@ -75,6 +96,7 @@ const layersWireSchema = z
 const conventionsDocumentSchema = z.strictObject({
   generated: generatedWireSchema,
   layers: layersWireSchema,
+  testFiles: testFilesWireSchema,
 });
 
 type ConventionsDocument = z.infer<typeof conventionsDocumentSchema>;
@@ -92,9 +114,11 @@ const conventionsReadingOf = (request: {
 }): ConventionsReading => {
   const generated = request.document.generated;
   const layers = layersOf({ layers: request.document.layers });
+  const testFiles = request.document.testFiles;
   const presence: Readonly<Record<ConventionKey, "declared" | "absent">> = {
     generated: generated === undefined ? "absent" : "declared",
     layers: layers.length === 0 ? "absent" : "declared",
+    testFiles: testFiles === undefined ? "absent" : "declared",
   };
   const declared = CONVENTION_KEYS.filter((key) => presence[key] === "declared");
   return {
@@ -104,6 +128,7 @@ const conventionsReadingOf = (request: {
           ? DEFAULT_CONVENTIONS.generated
           : generated.map((entry) => ({ files: entry.files, outsideParty: entry.outsideParty })),
       layers,
+      testFiles: testFiles ?? DEFAULT_CONVENTIONS.testFiles,
     },
     declared,
   };
@@ -112,6 +137,7 @@ const conventionsReadingOf = (request: {
 export type ConventionsWire = {
   readonly generated?: readonly GeneratedFiles[];
   readonly layers?: Readonly<Partial<Record<LayerName, readonly string[]>>>;
+  readonly testFiles?: TestFiles;
 };
 
 export const conventionsWireOf = (request: {
@@ -129,6 +155,7 @@ export const conventionsWireOf = (request: {
           ),
         }
       : {}),
+    ...(declared.includes("testFiles") ? { testFiles: conventions.testFiles } : {}),
   };
 };
 

@@ -6,7 +6,6 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
-import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type { NamedEngineRun, ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
 import { namedEngineRunsOf } from "./named-engines-run.ts";
@@ -45,7 +44,7 @@ const BINDING: CheckBinding = {
 };
 
 describe("namedEngineRunsOf", () => {
-  it("dispatches a selected check without a version one address and passes non-TypeScript files as tracked context", async () => {
+  it("dispatches a selected check without a version one address and passes non-TypeScript files as tracked context and the declared test files", async () => {
     const runner: ParsedNamedRunner = {
       fileScope: "tracked",
       run: vi.fn(),
@@ -93,7 +92,11 @@ describe("namedEngineRunsOf", () => {
         },
         runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
         eslintConfigLookup: { lookup: "detected" },
-        conventions: DEFAULT_CONVENTIONS,
+        conventions: {
+          generated: [],
+          layers: [],
+          testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+        },
         available: [],
         notes: [],
       },
@@ -124,6 +127,7 @@ describe("namedEngineRunsOf", () => {
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: undefined,
+        testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
       },
     });
     expect(report).toEqual({ outcome: "ok", value: [measured] });

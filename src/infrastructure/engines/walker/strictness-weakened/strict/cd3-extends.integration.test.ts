@@ -325,6 +325,7 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: undefined,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
 
       expect(report).toEqual({

@@ -1,7 +1,7 @@
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { editionReaches } from "../../../../../domain/rule-set/edition-reach.ts";
 import type { Edition } from "../../../../../domain/rule-set/edition-types.ts";
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
 import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type {
@@ -11,13 +11,6 @@ import type {
   SyntaxNode,
 } from "../../runner/toolchain/typescript-parse.ts";
 import { type OwnPackageNames, moduleOriginOf, ownPackageNamesOf } from "./own-modules.ts";
-
-const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
-  if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return request.file.endsWith(".test.ts") || request.file.endsWith(".test.tsx")
-    ? "eligible"
-    : "skipped";
-};
 
 type Remedy = NonNullable<PieceHit["remedy"]>;
 
@@ -860,7 +853,7 @@ export const check: WalkerPiece = {
       outcome: "ok",
       value: {
         prepareFile: ({ file }) => {
-          if (testFileEligibility({ file }) === "skipped") {
+          if (testFileEligibility({ file, testFiles: repository.testFiles }) === "skipped") {
             return { outcome: "ok", value: { kind: "skipped" } };
           }
           return {

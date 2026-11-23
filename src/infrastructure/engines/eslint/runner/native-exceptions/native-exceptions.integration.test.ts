@@ -1081,6 +1081,7 @@ describe.each(ESLINT_LINES)(
         bindings: [WALKER_BINDING],
         answered: [],
         declaredConfigLookup: undefined,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
       expect({ eslint: eslintRun, audit: walkerRun }).toEqual({
         eslint: {

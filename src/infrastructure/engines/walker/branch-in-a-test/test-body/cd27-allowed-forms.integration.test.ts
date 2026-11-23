@@ -275,6 +275,7 @@ const remedySectionsOf = async (request: {
     answered: [],
     declaredConfigRoots: [],
     declaredConfigLookup: undefined,
+    testFiles: { suffixes: ["test", "spec"], folders: [] },
   });
   if (report.outcome === "failed") return [`run failed: ${report.error.kind}`];
   return report.value.hits.flatMap((hit) => (hit.remedy === undefined ? [] : [hit.remedy.section]));

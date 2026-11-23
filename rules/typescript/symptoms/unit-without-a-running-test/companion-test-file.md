@@ -11,8 +11,8 @@ A production file with a runtime export and no `.test` sibling.
 
 ## Flags
 
-- Production `.ts` and `.tsx` files. Skipped: `*.test.ts(x)`, `.d.ts` and anything under `__tests__`. Generated folders (`node_modules`, `dist`, `build`, `coverage`, `.git`, root `vendor`) are skipped; any other folder or file can be left out with `exclude` in disciplines.json.
-- A file with a runtime export (`export const`, `function`, `class`, `enum`, `export default`, or `export { name }`) and no `<name>.test.ts` beside it (`<name>.test.tsx` for `.tsx`). The sibling must be in the repository's file list.
+- Production `.ts` and `.tsx` files. Skipped: the test files `testFiles` names, `.d.ts` and anything under `__tests__`. Generated folders (`node_modules`, `dist`, `build`, `coverage`, `.git`, root `vendor`) are skipped; any other folder or file can be left out with `exclude` in disciplines.json.
+- A file with a runtime export (`export const`, `function`, `class`, `enum`, `export default`, or `export { name }`) and no `<name>.<suffix>.ts` beside it (`.tsx` for `.tsx`), for any suffix `testFiles` lists. The sibling must be in the repository's file list.
 - Allowed: files with only `export type`, `export interface`, `export declare`, type-only named exports or `export * from`, and files with no exports.
 - The source rule asks for a test beside every source file; files without runtime exports are left to review.
 

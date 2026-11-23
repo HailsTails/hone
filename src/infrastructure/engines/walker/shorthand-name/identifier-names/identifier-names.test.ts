@@ -53,7 +53,12 @@ const sourceObservations = (request: {
 } => {
   const prepared = check.prepare({
     bindings: [CLAUSE],
-    repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+    repository: {
+      files: [FILE],
+      exists: vi.fn().mockReturnValue("present"),
+      disk: EMPTY_DISK,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    },
     syntaxApi: SYNTAX_API,
   });
   assert(prepared.outcome === "ok");
@@ -98,7 +103,12 @@ describe("CD-6 existing binding-name capability", () => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [CLAUSE],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");

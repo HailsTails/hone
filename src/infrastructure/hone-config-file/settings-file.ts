@@ -130,6 +130,7 @@ const settingsFileWireSchema = z.strictObject({
   }),
   generated: z.unknown().optional(),
   layers: z.unknown().optional(),
+  testFiles: z.unknown().optional(),
   clauses: retiredKeySchema({
     refusal: 'renamed: "clauses" is "checks" in version 2, addressed <symptom>#<check>',
   }),
@@ -305,7 +306,11 @@ export const settingsFileOf = (request: {
     };
   }
   const conventions = conventionsOf({
-    document: { generated: parsed.data.generated, layers: parsed.data.layers ?? {} },
+    document: {
+      generated: parsed.data.generated,
+      layers: parsed.data.layers ?? {},
+      testFiles: parsed.data.testFiles,
+    },
   });
   if (conventions.outcome === "failed") {
     return { outcome: "failed", error: { kind: "malformed", detail: conventions.error } };

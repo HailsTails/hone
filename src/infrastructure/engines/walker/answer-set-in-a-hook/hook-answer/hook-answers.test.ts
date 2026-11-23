@@ -44,6 +44,7 @@ const findingsIn = (request: {
       files: [request.file],
       exists: () => "present",
       disk: textsDisk({ root: "/repo", texts: {} }),
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     },
     syntaxApi: parse.syntaxApi,
   });
@@ -141,10 +142,10 @@ describe("answers set in a hook", () => {
     ]);
   });
 
-  it("skips a spec suffix outside the test-file scope", () => {
+  it("skips a suffix outside the test-file scope", () => {
     expect(
       findingsIn({
-        file: repoPathSchema.parse("src/order.spec.ts"),
+        file: repoPathSchema.parse("src/order.check.ts"),
         source: "beforeEach(() => stub.mockReturnValue('order'));",
       }),
     ).toEqual([]);
@@ -157,5 +158,30 @@ describe("answers set in a hook", () => {
         source: "const prepare = () => stub.mockReturnValue('order');\nbeforeEach(prepare);",
       }),
     ).toEqual([]);
+  });
+});
+
+describe("the repository's declared test files", () => {
+  it.each([
+    { fileName: "src/order.spec.ts", kind: "syntax" },
+    { fileName: "src/__tests__/order.ts", kind: "syntax" },
+    { fileName: "src/order.test.ts", kind: "skipped" },
+  ])("prepares $fileName as $kind under spec and __tests__", ({ fileName, kind }) => {
+    const file = repoPathSchema.parse(fileName);
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [file],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+      },
+      syntaxApi: parse.syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({ file, readText: () => ({ outcome: "ok", value: "" }) }),
+    ).toMatchObject({ outcome: "ok", value: { kind } });
   });
 });

@@ -16,6 +16,7 @@ import type {
 import type { UnprojectedFolderReport } from "../../../domain/runner/mechanism-run.ts";
 import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
+import type { TestFiles } from "../../../domain/settings/test-files.ts";
 import type { RunnerCall } from "./runner-module.ts";
 
 export type RunnerFileScope = "tracked" | "typescript";
@@ -42,6 +43,7 @@ export type NamedEngineRunRequest = {
   readonly answered: readonly AnsweredFile[];
   readonly declaredConfigRoots: readonly RepoPath[];
   readonly declaredConfigLookup: EslintConfigLookup | undefined;
+  readonly testFiles: TestFiles;
   readonly bindings: readonly CheckBinding[];
   readonly checks?: readonly EngineCheck[];
 };

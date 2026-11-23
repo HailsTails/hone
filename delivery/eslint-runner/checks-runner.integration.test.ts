@@ -336,6 +336,7 @@ const runOver = async (request: {
     answered: request.answered,
     declaredConfigRoots: request.declaredConfigRoots,
     declaredConfigLookup: request.declaredConfigLookup,
+    testFiles: { suffixes: ["test", "spec"], folders: [] },
   });
 };
 
@@ -690,6 +691,7 @@ describe.each(ESLINT_LINES)(
         queried: [SUB_FILE],
         tracked: [SUB_FILE],
         declaredConfigLookup: REPOSITORY_ROOT_LOOKUP,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       };
       expect(await runOver({ ...run, files: ADOPTED, sub: SUB_FILES })).toEqual({
         outcome: "ok",
@@ -847,6 +849,7 @@ const PACKAGE_CONFIG = `import hone from "./${CHECKS_PROJECTION_PATH}";\nexport 
 const PACKAGE_RUN = {
   ...ROOT_FILE_RUN,
   declaredConfigLookup: "nearest-to-file" as const,
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
   queried: [SUB_FILE],
   tracked: [repoPathOf("eslint.config.mjs"), repoPathOf("sub/eslint.config.mjs"), SUB_FILE],
   files: {
@@ -876,6 +879,7 @@ describe.each(ESLINT_LINES)(
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: PACKAGE_RUN.declaredConfigLookup,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
       const run = await runner.run({
         repoRoot,
@@ -887,6 +891,7 @@ describe.each(ESLINT_LINES)(
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: PACKAGE_RUN.declaredConfigLookup,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
       expect({ projected, run }).toEqual({
         projected: {
@@ -1063,6 +1068,7 @@ describe.each(ESLINT_LINES)(
         answered: ANSWERED_IN_SUB,
         declaredConfigRoots: DECLARED_RUN.declaredConfigRoots,
         declaredConfigLookup: DECLARED_RUN.declaredConfigLookup,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       });
       expect(projected).toEqual({
         outcome: "ok",
@@ -1093,6 +1099,7 @@ describe.each(ESLINT_LINES)(
         ...UNCONFIGURED_RUN,
         line,
         declaredConfigLookup: REPOSITORY_ROOT_LOOKUP,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
         files: {
           "eslint.config.mjs": ROOT_CONFIG_IMPORTING_THE_SUB_SLICE,
           [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT,
@@ -1114,6 +1121,7 @@ describe.each(ESLINT_LINES)(
         ...UNCONFIGURED_RUN,
         line,
         declaredConfigLookup: "nearest-to-file" as const,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
         files: ADOPTED,
       };
       expect(await runOver(run)).toEqual({

@@ -1,21 +1,18 @@
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import type { TestFiles } from "../../../../../domain/settings/test-files.ts";
+import { fileRoleOf, folderScope } from "../../runner/pieces/source-scope.ts";
 import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
-const TEST_FILE_SUFFIXES: readonly string[] = [
-  ".test.ts",
-  ".test.tsx",
-  ".test.mjs",
-  ".test.js",
-  ".spec.ts",
-  ".spec.mjs",
-];
+const TEST_EXTENSION = /\.(?:tsx?|mjs|js)$/;
 
-const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
-  if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return TEST_FILE_SUFFIXES.some((suffix) => request.file.endsWith(suffix))
+const testFileEligibility = (request: {
+  readonly file: string;
+  readonly testFiles: TestFiles;
+}): "eligible" | "skipped" =>
+  folderScope(request) === "authored" &&
+  TEST_EXTENSION.test(request.file) &&
+  fileRoleOf(request) === "test"
     ? "eligible"
     : "skipped";
-};
 
 const GIT_SPAWN_PATTERN =
   /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exec|execa|execaSync)\s*\(\s*(?:"git"|'git'|`git`)/;
@@ -24,11 +21,11 @@ const HERMETIC_ENVIRONMENT_PATTERN =
 const AMBIENT_ENVIRONMENT_PATTERN = /\benv\s*:\s*[^,\n]*\bprocess\.env\b/;
 
 export const check: WalkerPiece = {
-  prepare: ({ bindings }) => ({
+  prepare: ({ bindings, repository }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
-        if (testFileEligibility({ file }) === "skipped") {
+        if (testFileEligibility({ file, testFiles: repository.testFiles }) === "skipped") {
           return { outcome: "ok", value: { kind: "skipped" } };
         }
         const text = readText();

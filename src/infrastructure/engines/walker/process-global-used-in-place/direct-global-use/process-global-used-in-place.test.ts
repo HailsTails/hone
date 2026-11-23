@@ -53,6 +53,7 @@ const findingsFor = (request: {
       files: [request.file],
       exists: () => "present",
       disk: textsDisk({ root: "/repo", texts: {} }),
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     },
     syntaxApi: parse.syntaxApi,
   });

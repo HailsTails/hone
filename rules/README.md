@@ -263,7 +263,7 @@ Until a check can name the breach, a finding names the rules the symptom points 
 
 Six checks run together on `CD-27#test-body-logic`: [branch-in-a-test#test-body](typescript/symptoms/branch-in-a-test/test-body.md), [throw-or-catch-in-a-test#try-block](typescript/symptoms/throw-or-catch-in-a-test/try-block.md), [rebinding#test-body](typescript/symptoms/rebinding/test-body.md), [computed-value-in-a-test#test-body](typescript/symptoms/computed-value-in-a-test/test-body.md), [text-past-its-reader#test-body](typescript/symptoms/text-past-its-reader/test-body.md) and [double-with-a-body#logic-in-a-passed-function](typescript/symptoms/double-with-a-body/logic-in-a-passed-function.md). Each check's page lists what it flags.
 
-- They read test files only: `*.test.ts` and `*.test.tsx`. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped. Helper files that tests import are not checked.
+- They read test files only: `.ts` and `.tsx` files that `testFiles` in `hone.config.json` names. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped. Helper files that tests import are not checked.
 - None flags loops, which [loop-statement](typescript/symptoms/loop-keyword/loop-statement.md) covers, or `throw`, which [throw-statement](typescript/symptoms/throw-or-catch-in-a-test/throw-statement.md) covers.
 - None flags element access such as `calls[0]`, calls to free functions, a method called through a computed key, such as `rows["map"]`, or text built with a template literal.
 
@@ -305,7 +305,7 @@ A default that quietly narrows a rule, which no codebase chose, still fails.
 | Edition defaults | "Edition defaults would be for backwards compatability since we went npm." An existing adopter keeps the behaviour it installed. |
 | `confinedPackages` empty by default | "packages is empty because we can't define the universe and if we just said imports at all we would catch internal packages." Seeing every outside dependency needs a way to tell it from an internal package; until then the list is the adopter's to fill. |
 | `__tests__` skipped by default | "probably because of noise level and the fact I don't adopt that folder practice deliberately at all." |
-| `.spec.ts` not treated as a test file by most checks | "Spec is also just not a naming practice I use." Then: "It honestly should be config for user to declare file naming structure so we can match their conventions." Hone has no such config yet; the Companion test file and Integration test suffix recipes are the convention it reads. |
+| Which files are test files | "Spec is also just not a naming practice I use." Then: "It honestly should be config for user to declare file naming structure so we can match their conventions." `testFiles` in `hone.config.json` declares it. |
 | Generated folders skipped (`node_modules`, `dist` and the like) | not code of ours |
 | Reading `.test.js` and `.test.mjs` in the subprocess-environment check | it widens one check, not narrows a rule |
 | Suite-body exemption | "A test suite's body is a list of cases, not a coordinator." |
