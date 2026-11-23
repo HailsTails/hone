@@ -25,10 +25,10 @@
     "./agents/hone-triager.md": {
       "kind": "agent",
       "id": "agent_01Cx8XWLuQBAHiqGqh8qLvBo",
-      "version": "1",
-      "hash": "6fcd41325a7612f0439ecb9741e5729d",
-      "remote_hash": "ad416b2285b4c83bb629f0dc40b9f14c",
-      "stamp": "1"
+      "version": "2",
+      "hash": "92d93c2e502aecc41989922528749357",
+      "remote_hash": "1a47296dfa5b49f715cebaf82ab6970a",
+      "stamp": "2"
     },
     "./environments/hone.yaml": {
       "kind": "environment",
