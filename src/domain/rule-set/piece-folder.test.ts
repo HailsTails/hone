@@ -6,6 +6,7 @@ import {
   enginesFolderSegmentsOf,
   namedPieceFolderSegmentsOf,
   pieceFolderSegmentsOf,
+  versionOneEnginesFolderSegmentsOf,
 } from "./piece-folder.ts";
 
 describe("enginesFolderSegmentsOf", () => {
@@ -17,10 +18,24 @@ describe("enginesFolderSegmentsOf", () => {
     ]);
   });
 
-  it("is the mechanisms folder for a rule set outside the install", () => {
+  it("is the engines folder for a rule set outside the install", () => {
     expect(enginesFolderSegmentsOf({ ruleSetRoot: "/team", installRoot: "/install" })).toEqual([
-      "mechanisms",
+      "engines",
     ]);
+  });
+});
+
+describe("versionOneEnginesFolderSegmentsOf", () => {
+  it("is the install's engines source folder for the install's own rule set", () => {
+    expect(
+      versionOneEnginesFolderSegmentsOf({ ruleSetRoot: "/install", installRoot: "/install" }),
+    ).toEqual(["src", "infrastructure", "engines"]);
+  });
+
+  it("is the version 1 mechanisms folder for a rule set outside the install", () => {
+    expect(
+      versionOneEnginesFolderSegmentsOf({ ruleSetRoot: "/team", installRoot: "/install" }),
+    ).toEqual(["mechanisms"]);
   });
 });
 
@@ -67,5 +82,17 @@ describe("namedPieceFolderSegmentsOf", () => {
       "ambient-randomness",
       "direct-call",
     ]);
+  });
+
+  it("locates a team's check under its engines folder by its symptom and name", () => {
+    expect(
+      namedPieceFolderSegmentsOf({
+        ruleSetRoot: "/team",
+        installRoot: "/install",
+        mechanism: "walker",
+        symptom: catalogueNameOf("scratch-file"),
+        check: catalogueNameOf("scratch-files"),
+      }),
+    ).toEqual(["/team", "engines", "walker", "scratch-file", "scratch-files"]);
   });
 });

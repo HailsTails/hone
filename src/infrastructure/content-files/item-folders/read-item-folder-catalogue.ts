@@ -117,9 +117,6 @@ const holdingOf = (request: {
 const readItemFolderCatalogue = (
   request: ItemFolder,
 ): Result<ContentHolding, VersionTwoLoadFailure> => {
-  if (request.fileText.exists({ path: request.root }) === "absent") {
-    return { outcome: "ok", value: { held: "none" } };
-  }
   const files = filesUnder(request);
   if (files.outcome === "failed") {
     return {

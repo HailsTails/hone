@@ -254,3 +254,173 @@ describe("createSymptomCatalogueRepository", () => {
     expect(UNLISTED.list).not.toHaveBeenCalled();
   });
 });
+
+const teamCatalogueOf = (request: {
+  readonly fileText: FileTextPort;
+  readonly directory: DirectoryPort;
+}) =>
+  createSymptomCatalogueRepository({
+    ...request,
+    path: PATH,
+    ruleSetRoot: TEAM_ROOT,
+    installRoot: INSTALL_ROOT,
+  }).read({});
+
+describe("createSymptomCatalogueRepository over a team's rule set", () => {
+  it("reads a symptom kept under a language folder other than typescript, naming its page by where it sits", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      read: vi
+        .fn<FileTextPort["read"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: MAKES_A_NEW_VALUE_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: NO_HIDDEN_EFFECTS_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: AUTHORISED_LOCATION_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: DEBT_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: REBINDING_TEXT })
+        .mockReturnValueOnce({ outcome: "ok", value: PARAMETER_REASSIGNMENT_TEXT }),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "cases", kind: "directory" },
+            { name: "principles", kind: "directory" },
+            { name: "record-kinds", kind: "directory" },
+            { name: "sql", kind: "directory" },
+          ],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "makes-a-new-value-from-what-it-has.md", kind: "file" }],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "no-hidden-effects.md", kind: "file" }],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "authorised-location.md", kind: "file" },
+            { name: "debt.md", kind: "file" },
+          ],
+        })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "symptoms", kind: "directory" }] })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [
+            { name: "rebinding", kind: "directory" },
+            { name: "rebinding.md", kind: "file" },
+          ],
+        })
+        .mockReturnValueOnce({
+          outcome: "ok",
+          value: [{ name: "parameter-reassignment.md", kind: "file" }],
+        }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+
+    expect(teamCatalogueOf({ fileText, directory })).toMatchObject({
+      outcome: "ok",
+      value: {
+        held: "catalogue",
+        content: {
+          symptoms: [{ name: "rebinding", sourceFile: "rules/sql/symptoms/rebinding.md" }],
+          checks: [
+            {
+              name: "parameter-reassignment",
+              symptom: { name: "rebinding", sourceFile: "rules/sql/symptoms/rebinding.md" },
+            },
+          ],
+        },
+      },
+    });
+    expect(fileText.read).toHaveBeenNthCalledWith(5, {
+      path: "/repo/team-rules/rules/sql/symptoms/rebinding.md",
+    });
+  });
+
+  it("fails rule-set-not-upgraded naming the rule set when its rules folder still holds version 1 discipline files and no items", () => {
+    const fileText: FileTextPort = {
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("present"),
+      read: vi.fn<FileTextPort["read"]>(),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "ACME-1", kind: "directory" }] })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "discipline.json", kind: "file" }] })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "ACME-1", kind: "directory" }] }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+
+    expect(teamCatalogueOf({ fileText, directory })).toEqual({
+      outcome: "failed",
+      error: { kind: "rule-set-not-upgraded", path: TEAM_ROOT },
+    });
+    expect(fileText.exists).toHaveBeenNthCalledWith(2, {
+      path: "/repo/team-rules/rules/ACME-1/discipline.json",
+    });
+    expect(fileText.read).not.toHaveBeenCalled();
+  });
+
+  it("holds no catalogue when its rules folder holds neither items nor version 1 discipline files", () => {
+    const fileText: FileTextPort = {
+      exists: vi
+        .fn<FileTextPort["exists"]>()
+        .mockReturnValueOnce("present")
+        .mockReturnValueOnce("absent"),
+      read: vi.fn<FileTextPort["read"]>(),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "drafts", kind: "directory" }] })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "notes.txt", kind: "file" }] })
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "drafts", kind: "directory" }] }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+
+    expect(teamCatalogueOf({ fileText, directory })).toEqual({
+      outcome: "ok",
+      value: { held: "none" },
+    });
+    expect(fileText.exists).toHaveBeenNthCalledWith(2, {
+      path: "/repo/team-rules/rules/drafts/discipline.json",
+    });
+  });
+
+  it("fails file-unreadable naming the rules folder when it cannot list it to look for version 1 discipline files", () => {
+    const fileText: FileTextPort = {
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
+      read: vi.fn<FileTextPort["read"]>(),
+      write: vi.fn<FileTextPort["write"]>(),
+    };
+    const directory: DirectoryPort = {
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: [] })
+        .mockReturnValueOnce({
+          outcome: "failed",
+          error: {
+            kind: "directory-unreadable",
+            path: absoluteRootOf("/repo/team-rules/rules"),
+            detail: "EACCES",
+          },
+        }),
+      create: vi.fn<DirectoryPort["create"]>(),
+    };
+
+    expect(teamCatalogueOf({ fileText, directory })).toEqual({
+      outcome: "failed",
+      error: { kind: "file-unreadable", path: "/repo/team-rules/rules", detail: "EACCES" },
+    });
+  });
+});

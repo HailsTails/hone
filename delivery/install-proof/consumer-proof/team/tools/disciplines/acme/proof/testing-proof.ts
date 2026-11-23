@@ -1,9 +1,9 @@
 import { folderScope, isEdition, type PieceFailure, type CheckBinding, type WalkerDisk } from "@hailstails/hone/audit";
 import { type CaseUnderTest, checkConformanceOf, checkUnderTestOf, repoPathOf } from "@hailstails/hone/testing";
 import typescript from "typescript";
-import { check } from "../mechanisms/walker/scratch-file/scratch-files/scratch-files.ts";
+import { check } from "../engines/walker/scratch-file/scratch-files/scratch-files.ts";
 
-import scratchCases from "../mechanisms/walker/scratch-file/scratch-files/scratch-files.examples.json" with { type: "json" };
+import scratchCases from "../engines/walker/scratch-file/scratch-files/scratch-files.examples.json" with { type: "json" };
 
 const NO_DISK: WalkerDisk = {
   root: "/repository",
@@ -47,7 +47,7 @@ const binding: CheckBinding = {
   address: "scratch-file#scratch-files",
   engine: "walker",
   anchor: { kind: "file" },
-  pieceRoot: "tools/disciplines/acme/mechanisms/walker/scratch-file/scratch-files",
+  pieceRoot: "tools/disciplines/acme/engines/walker/scratch-file/scratch-files",
   settings: { module: "scratch-files.ts" },
   checkSettings: {},
   edition: FIRST_EDITION,

@@ -204,6 +204,11 @@ describe("runLoadFailureOf, a failure the version 1 settings path names in versi
       failure: { kind: "rule-set-invalid", path: "team/rules", detail: "no clauses" },
     },
     {
+      name: "rule-set-not-upgraded",
+      source: { kind: "rule-set-not-upgraded", path: "/repo/tools/acme" },
+      failure: { kind: "rule-set-not-upgraded", path: "/repo/tools/acme" },
+    },
+    {
       name: "git-failed",
       source: { kind: "git-failed", detail: "not a git repository" },
       failure: { kind: "git-failed", detail: "not a git repository" },

@@ -340,6 +340,14 @@ describe("loadFailureText for a run that cannot start", () => {
   });
 });
 
+describe("loadFailureText, a rule set left in the version 1 layout", () => {
+  it("names the rule set's folder", () => {
+    expect(
+      loadFailureText({ failure: { kind: "rule-set-not-upgraded", path: "/repo/tools/acme" } }),
+    ).toBe("load failure: rule-set-not-upgraded /repo/tools/acme\n");
+  });
+});
+
 describe("loadFailureDetail", () => {
   it("names the kind and its fields on one line, without the load failure prefix", () => {
     expect(

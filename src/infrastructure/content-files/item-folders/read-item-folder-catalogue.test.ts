@@ -179,13 +179,12 @@ describe("createItemFolderCatalogueRepository", () => {
     expect(fileText.read).toHaveBeenCalledTimes(8);
   });
 
-  it("holds none, listing nothing, when the root is absent", () => {
-    const fileText: FileTextPort = {
-      ...fileTextReading(vi.fn<FileTextPort["read"]>()),
-      exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
-    };
+  it("holds none when the root holds no item, leaving whether the root is there to its caller", () => {
+    const fileText = fileTextReading(vi.fn<FileTextPort["read"]>());
     const directory: DirectoryPort = {
-      list: vi.fn<DirectoryPort["list"]>(),
+      list: vi
+        .fn<DirectoryPort["list"]>()
+        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "SPIRIT.md", kind: "file" }] }),
       create: vi.fn<DirectoryPort["create"]>(),
     };
     expect(
@@ -196,29 +195,11 @@ describe("createItemFolderCatalogueRepository", () => {
         root: ROOT,
         beside: NOTHING_BESIDE,
       }).read({}),
-    ).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(directory.list).not.toHaveBeenCalled();
-  });
-
-  it("holds none when the root holds no item", () => {
-    const directory: DirectoryPort = {
-      list: vi
-        .fn<DirectoryPort["list"]>()
-        .mockReturnValueOnce({ outcome: "ok", value: [{ name: "SPIRIT.md", kind: "file" }] }),
-      create: vi.fn<DirectoryPort["create"]>(),
-    };
-    expect(
-      createItemFolderCatalogueRepository({
-        fileText: fileTextReading(vi.fn<FileTextPort["read"]>()),
-        directory,
-        path: PATH,
-        root: ROOT,
-        beside: NOTHING_BESIDE,
-      }).read({}),
     ).toEqual({
       outcome: "ok",
       value: { held: "none" },
     });
+    expect(fileText.exists).not.toHaveBeenCalled();
   });
 
   it("fails naming the folder it could not list", () => {

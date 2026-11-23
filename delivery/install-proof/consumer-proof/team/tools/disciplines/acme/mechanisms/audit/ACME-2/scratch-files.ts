@@ -1,1 +1,1 @@
-export { check } from "../../walker/scratch-file/scratch-files/scratch-files.ts";
+export { check } from "../../../engines/walker/scratch-file/scratch-files/scratch-files.ts";
