@@ -40,6 +40,14 @@ describe("scriptOptionAdviceOf", () => {
       },
     },
     {
+      name: "a value the shell supplies",
+      cause: { kind: "shell-supplied", command: "eslint", value: "$CONFIG" },
+      advice: {
+        problem: `the script gives eslint "$CONFIG", whose value is not known until the shell runs, ${UNJUDGED}`,
+        fix: "write the value literally in the script",
+      },
+    },
+    {
       name: "a script holding a quote with no partner",
       cause: { kind: "unreadable", command: "eslint" },
       advice: {

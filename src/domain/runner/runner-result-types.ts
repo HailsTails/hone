@@ -33,6 +33,7 @@ export type ScriptOptionCause =
       readonly invocation: string;
     }
   | { readonly kind: "wrapped"; readonly command: string; readonly wrapper: string }
+  | { readonly kind: "shell-supplied"; readonly command: string; readonly value: string }
   | { readonly kind: "unreadable"; readonly command: string };
 
 export type NativeException =

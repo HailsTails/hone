@@ -25,6 +25,11 @@ export const scriptOptionAdviceOf = (request: {
         problem: `${quoted({ text: cause.wrapper })} comes before ${cause.command} and is neither a package runner nor a NAME=value setting, ${UNJUDGED_OPTION}`,
         fix: `put only package runners and NAME=value settings before ${cause.command}`,
       };
+    case "shell-supplied":
+      return {
+        problem: `the script gives ${cause.command} ${quoted({ text: cause.value })}, whose value is not known until the shell runs, ${UNJUDGED_OPTION}`,
+        fix: "write the value literally in the script",
+      };
     case "unreadable":
       return {
         problem: `a quote in the script has no partner, so Hone cannot read what the script passes to ${cause.command} or tell what that does to the files under check`,

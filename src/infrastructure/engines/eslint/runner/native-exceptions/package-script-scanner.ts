@@ -30,7 +30,8 @@ export type EslintInvocation = {
 
 export type NotPlainReason =
   | { readonly kind: "after-another-command"; readonly invocation: string }
-  | { readonly kind: "wrapped"; readonly wrapper: string };
+  | { readonly kind: "wrapped"; readonly wrapper: string }
+  | { readonly kind: "shell-supplied"; readonly value: string };
 
 export type Settlement =
   | { readonly kind: "settled" }
@@ -52,6 +53,7 @@ type Expansion = "literal" | "shell-expanded";
 
 type ShellToken = {
   readonly text: string;
+  readonly written: string;
   readonly expansion: Expansion;
 };
 
@@ -204,14 +206,22 @@ const expansionOf = (request: { readonly text: string; readonly expanding: RegEx
 
 const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPiece => {
   const groups = request.match.groups ?? {};
+  const written = request.match[0];
   if (groups.single !== undefined) {
-    return { kind: "quoted", token: { text: groups.single.slice(1, -1), expansion: "literal" } };
+    return {
+      kind: "quoted",
+      token: { text: groups.single.slice(1, -1), written, expansion: "literal" },
+    };
   }
   if (groups.double !== undefined) {
     const text = groups.double.slice(1, -1);
     return {
       kind: "quoted",
-      token: { text, expansion: expansionOf({ text, expanding: SHELL_EXPANDED_DOUBLE_QUOTED }) },
+      token: {
+        text,
+        written,
+        expansion: expansionOf({ text, expanding: SHELL_EXPANDED_DOUBLE_QUOTED }),
+      },
     };
   }
   if (groups.operator !== undefined) {
@@ -225,6 +235,7 @@ const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPie
       kind: "text",
       token: {
         text: groups.text,
+        written,
         expansion: expansionOf({ text: groups.text, expanding: SHELL_EXPANDED_UNQUOTED }),
       },
     };
@@ -253,6 +264,7 @@ const extendedToken = (request: {
     request.token.presence === "started"
       ? {
           text: `${request.token.token.text}${request.piece.text}`,
+          written: `${request.token.token.written}${request.piece.written}`,
           expansion: joinedExpansion({
             left: request.token.token.expansion,
             right: request.piece.expansion,
@@ -378,15 +390,12 @@ const prefixRoleOf = (request: {
   return request.token.text === ENVIRONMENT_SETTER && settingsOnlyFollow ? "setting" : "wrapper";
 };
 
-const reachSettlementOf = (request: { readonly token: ShellToken }): Settlement =>
-  request.token.expansion === "shell-expanded" || UNSETTLED_TEXT.test(request.token.text)
-    ? UNRESOLVED
-    : SETTLED;
-
-const SHELL_PLAIN_TOKEN = /^[\w./:=@+,-]+$/;
-
-const shellWritten = (request: { readonly token: ShellToken }): string =>
-  SHELL_PLAIN_TOKEN.test(request.token.text) ? request.token.text : `'${request.token.text}'`;
+const reachSettlementOf = (request: { readonly token: ShellToken }): Settlement => {
+  if (request.token.expansion === "shell-expanded") {
+    return { kind: "not-plain", reason: { kind: "shell-supplied", value: request.token.text } };
+  }
+  return UNSETTLED_TEXT.test(request.token.text) ? UNRESOLVED : SETTLED;
+};
 
 const prefixSettlementOf = (request: { readonly prefix: readonly ShellToken[] }): Settlement => {
   const wrapper = request.prefix.find(
@@ -408,7 +417,7 @@ const orderSettlementOf = (request: {
         kind: "not-plain",
         reason: {
           kind: "after-another-command",
-          invocation: request.command.map((token) => shellWritten({ token })).join(" "),
+          invocation: request.command.map((token) => token.written).join(" "),
         },
       };
 

@@ -322,6 +322,11 @@ const afterAnotherCommand = (invocation: string): Settlement => ({
   reason: { kind: "after-another-command", invocation },
 });
 
+const shellSupplied = (value: string): Settlement => ({
+  kind: "not-plain",
+  reason: { kind: "shell-supplied", value },
+});
+
 const wrappedBy = (wrapper: string): Settlement => ({
   kind: "not-plain",
   reason: { kind: "wrapped", wrapper },
@@ -359,7 +364,7 @@ describe("scanPackageJson, whether the script's own folder settles an option's e
     },
     {
       script: "(cd src && eslint --ignore-pattern 'legacy/**' .)",
-      settlement: afterAnotherCommand("eslint --ignore-pattern 'legacy/**' '.)'"),
+      settlement: afterAnotherCommand("eslint --ignore-pattern 'legacy/**' .)"),
     },
     {
       script: "pushd src; eslint --ignore-pattern 'legacy/**' .",
@@ -392,14 +397,24 @@ describe("scanPackageJson, whether the script's own folder settles an option's e
       settlement: wrappedBy("cross-env"),
     },
     { script: "tsc && env eslint -c eslint.config.mjs .", settlement: wrappedBy("env") },
-    { script: 'eslint --ignore-pattern "$LEGACY" .', settlement: UNRESOLVED },
-    { script: "eslint --ignore-pattern `cat legacy.txt` .", settlement: UNRESOLVED },
+    {
+      script: 'tsc && eslint --ignore-pattern "legacy/**" .',
+      settlement: afterAnotherCommand('eslint --ignore-pattern "legacy/**" .'),
+    },
+    {
+      script: "tsc && eslint --ignore-pattern legacy/'**' .",
+      settlement: afterAnotherCommand("eslint --ignore-pattern legacy/'**' ."),
+    },
+    { script: 'eslint -c "$CONFIG" .', settlement: shellSupplied("$CONFIG") },
+    { script: 'eslint --ignore-pattern "$LEGACY" .', settlement: shellSupplied("$LEGACY") },
+    { script: "eslint --ignore-pattern `cat legacy.txt` .", settlement: shellSupplied("`cat") },
+    { script: "eslint -c eslint.config.mjs $SRC", settlement: shellSupplied("$SRC") },
     { script: "eslint --ignore-pattern '$LEGACY' .", settlement: UNRESOLVED },
-    { script: "eslint --ignore-pattern legacy/** .", settlement: UNRESOLVED },
+    { script: "eslint --ignore-pattern legacy/** .", settlement: shellSupplied("legacy/**") },
     { script: "eslint --ignore-pattern 'legacy/**' ..", settlement: UNRESOLVED },
     { script: "eslint --ignore-pattern '../legacy/**' .", settlement: UNRESOLVED },
     { script: "eslint --ignore-pattern 'legacy/**' /repo/src", settlement: UNRESOLVED },
-    { script: "eslint --ignore-pattern 'legacy/**' ~/src", settlement: UNRESOLVED },
+    { script: "eslint --ignore-pattern 'legacy/**' ~/src", settlement: shellSupplied("~/src") },
   ])("marks the option in $script as $settlement.kind", ({ script, settlement }) => {
     expect(
       scanPackageJson({

@@ -2323,7 +2323,7 @@ describe("native exceptions: why a lint-script option is reported", () => {
     {
       script: 'eslint --ignore-pattern "$LEGACY" .',
       option: "--ignore-pattern $LEGACY",
-      cause: { kind: "weakens-run" },
+      cause: { kind: "shell-supplied", command: "eslint", value: "$LEGACY" },
     },
   ])(
     "reports $option in $script with the cause the report names",

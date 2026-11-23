@@ -45,6 +45,9 @@ const scriptOptionCauseSchema = z.discriminatedUnion("kind", [
     })
     .readonly(),
   z.object({ kind: z.literal("wrapped"), command: z.string(), wrapper: z.string() }).readonly(),
+  z
+    .object({ kind: z.literal("shell-supplied"), command: z.string(), value: z.string() })
+    .readonly(),
   z.object({ kind: z.literal("unreadable"), command: z.string() }).readonly(),
 ]);
 

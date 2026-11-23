@@ -43,6 +43,14 @@ const EVERY_NATIVE_KIND = [
     option: "--suppress-all",
     cause: { kind: "weakens-run" },
   },
+  {
+    kind: "command-line-option",
+    clause: CLASS_SYNTAX,
+    location: "package.json",
+    script: "lint",
+    option: "-c $CONFIG",
+    cause: { kind: "shell-supplied", command: "eslint", value: "$CONFIG" },
+  },
 ];
 
 const CHECK = "authored-class-or-this#class-keyword";

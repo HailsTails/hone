@@ -63,4 +63,20 @@ describe("named runner messages", () => {
       }),
     ).toMatchObject({ success: true, data: { check: "rebinding#test-body", reach: "one-check" } });
   });
+
+  it("holds a lint-script option whose value the shell supplies", () => {
+    expect(
+      checkNativeExceptionSchema.safeParse({
+        kind: "command-line-option",
+        check: "rebinding#test-body",
+        location: "package.json",
+        script: "lint",
+        option: "-c $CONFIG",
+        cause: { kind: "shell-supplied", command: "eslint", value: "$CONFIG" },
+      }),
+    ).toMatchObject({
+      success: true,
+      data: { cause: { kind: "shell-supplied", command: "eslint", value: "$CONFIG" } },
+    });
+  });
 });
