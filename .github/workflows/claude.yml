@@ -48,5 +48,5 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 30
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(corepack pnpm run:*),Bash(pnpm run:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*)"
-            --append-system-prompt "You run inside GitHub Actions for one issue. AGENTS.md holds for you, except that this action makes the commits and pushes the branch for you, and the orchestrator opens the pull request from that branch. Build exactly what the issue's brief asks. Before you finish, run corepack pnpm run check and leave it green; if you cannot, say what fails on the issue and stop."
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(corepack pnpm run:*),Bash(pnpm run:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(gh pr create:*)"
+            --append-system-prompt "You run inside GitHub Actions for one issue. AGENTS.md holds for you, except that this action makes the commits and pushes the branch for you, and you open the pull request yourself. Build exactly what the issue's brief asks. Before you finish, run corepack pnpm run check and leave it green; if you cannot, say what fails on the issue and stop. Once it is green and pushed, open a draft pull request against main with gh pr create --draft, a conventional commit title, and a body that starts with Closes #<issue number>."
