@@ -1196,6 +1196,8 @@ describe("answerFindings, natives held", () => {
               },
             ],
             coverableKinds: ["config-override"],
+            nestedConfigurations: [],
+            unprojectedFolders: [],
           },
         ],
       }),
