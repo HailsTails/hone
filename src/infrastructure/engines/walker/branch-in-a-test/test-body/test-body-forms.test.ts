@@ -32,6 +32,7 @@ const formOf = (request: {
 }): TestBodyForm | undefined =>
   testBodyFormOf({
     ...request,
+    ownPackageNames: ["@app/paths"],
     declarations: declarationsOf({
       syntaxApi: request.syntaxApi,
       sourceFile: request.node.getSourceFile(),
@@ -604,6 +605,21 @@ const RELEASED_OWN_API_CALLS = [
   {
     name: "a port imported from a relative module",
     source: 'import { paths } from "./paths.ts";\npaths.join({ segments: ["a"] });',
+    text: "paths.join",
+  },
+  {
+    name: "a port imported through a subpath import",
+    source: 'import { paths } from "#src/paths.ts";\npaths.join({ segments: ["a"] });',
+    text: "paths.join",
+  },
+  {
+    name: "a port imported from a workspace package",
+    source: 'import { paths } from "@app/paths";\npaths.join({ segments: ["a"] });',
+    text: "paths.join",
+  },
+  {
+    name: "a port loaded from a workspace package",
+    source: 'const { paths } = await import("@app/paths");\npaths.join({ segments: ["a"] });',
     text: "paths.join",
   },
   {
