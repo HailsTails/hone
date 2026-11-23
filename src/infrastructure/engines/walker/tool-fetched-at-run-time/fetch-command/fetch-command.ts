@@ -25,13 +25,23 @@ const YAML_ALIAS = /^\*(?<name>[\w.-]+)(?:\s+#.*)?$/;
 const SEQUENCE_ITEM = /^-\s+/;
 const WORKFLOW_COMMAND = /^(?:-\s+)?(?:run|script)\s*:\s*/;
 const YAML_BLOCK = /^(?:&\S+\s*)?(?:[|>][+\d-]*)?(?:\s*#.*)?$/;
-const YAML_STRING = /^(?:"(?<double>(?:[^"\\]|\\.)*)"|'(?<single>(?:[^']|'')*)')$/;
+const YAML_STRING = /^(?:"(?<double>(?:[^"\\]|\\.)*)"|'(?<single>(?:[^']|'')*)')(?:\s+#.*)?$/;
+const YAML_FLOW_LIST = /^\[(?<items>.*)\](?:\s+#.*)?$/;
+const YAML_FLOW_ITEM = /(?:^|,)\s*(?<item>"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,]+?)\s*(?=,|$)/g;
 
-const yamlCommandOf = (source: string): string => {
+const yamlScalarOf = (source: string): string => {
   const quoted = YAML_STRING.exec(source)?.groups;
   if (quoted?.double !== undefined) return quoted.double.replaceAll('\\"', '"');
   if (quoted?.single !== undefined) return quoted.single.replaceAll("''", "'");
   return source;
+};
+
+const yamlCommandOf = (source: string): string => {
+  const flowItems = YAML_FLOW_LIST.exec(source)?.groups?.items;
+  if (flowItems === undefined) return yamlScalarOf(source);
+  return Array.from(flowItems.matchAll(YAML_FLOW_ITEM), (match) =>
+    yamlScalarOf(match.groups?.item ?? ""),
+  ).join("; ");
 };
 
 type YamlLine = { readonly snippet: string; readonly indent: number; readonly anchor: Anchor };

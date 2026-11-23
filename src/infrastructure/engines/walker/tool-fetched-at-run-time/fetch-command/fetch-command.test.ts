@@ -176,6 +176,53 @@ describe("fetch-command", () => {
     ]);
   });
 
+  it("reports quoted scalar commands before an inline workflow comment", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: "- run: \"npx double-quoted\" # note\n- run: 'pnpx single-quoted' # note",
+      }),
+    ).toEqual([
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: '- run: "npx double-quoted" # note',
+      },
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: "- run: 'pnpx single-quoted' # note",
+      },
+    ]);
+  });
+
+  it("reports GitLab flow scripts and quoted list commands with an inline comment", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          'build:\n  before_script: [echo setup, pnpx prepare]\n  script:\n    - "npx quoted" # note\n  after_script: ["echo a,b", "bunx cleanup"] # note',
+      }),
+    ).toEqual([
+      {
+        file,
+        check: ADDRESS,
+        anchor: { line: 2, column: 0 },
+        snippet: "before_script: [echo setup, pnpx prepare]",
+      },
+      { file, check: ADDRESS, anchor: { line: 4, column: 0 }, snippet: '- "npx quoted" # note' },
+      {
+        file,
+        check: ADDRESS,
+        anchor: { line: 5, column: 0 },
+        snippet: 'after_script: ["echo a,b", "bunx cleanup"] # note',
+      },
+    ]);
+  });
+
   it("passes a local script", () => {
     expect(
       findingsIn({
