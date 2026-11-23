@@ -257,13 +257,13 @@ describe("runReleasePullRequest finishing the 0.1.0 pre-release line", () => {
     expect(run).toMatchObject({
       texts: {
         "/repo/CHANGELOG.md":
-          "# Changelog\n\n## 1.0.0\n\n### Other changes\n\n- release: size every release by plain semver (#120)\n\n## 0.1.0-pre.7\n\n### Fixes\n\n- an earlier fix\n",
+          "# Changelog\n\n## 1.0.0\n\n### Fixes\n\n- an earlier fix\n\n### Other changes\n\n- release: size every release by plain semver (#120)\n",
         "/repo/package.json": manifestAt({ version: "1.0.0" }),
       },
       writes: [
         [
           {
-            text: "release-pull-request: 0.1.0-pre.7 to 1.0.0, a major change on the stable channel, sized from 20 subjects since v0.1.0-pre.5, with 1 subject since v0.1.0-pre.7 in its section. CHANGELOG.md and package.json are updated in the working tree; no tag was made and nothing was published.\n",
+            text: "release-pull-request: 0.1.0-pre.7 to 1.0.0, a major change on the stable channel, sized from 20 subjects since v0.1.0-pre.5, with 1 subject since v0.1.0-pre.7 and 1 entry folded from its pre-releases in its section. CHANGELOG.md and package.json are updated in the working tree; no tag was made and nothing was published.\n",
           },
         ],
       ],
@@ -279,6 +279,41 @@ describe("runReleasePullRequest finishing the 0.1.0 pre-release line", () => {
     expect(runFromPre7({ arguments: [] }).texts["/repo/package.json"]).toBe(
       manifestAt({ version: "1.0.0-pre.1" }),
     );
+  });
+});
+
+describe("runReleasePullRequest finishing a pre-release line with sections in the changelog", () => {
+  it("folds the line's pre-release sections into the stable section, leaves no pre-release heading, and counts the folded entries", () => {
+    const run = runWith({
+      arguments: ["stable"],
+      files: {
+        "/repo/CHANGELOG.md":
+          "# Changelog\n\n## 2.0.0-pre.2\n\n### Fixes\n\n- second (#2)\n\n## 2.0.0-pre.1\n\n### Breaking changes\n\n- first (#1)\n\n## 1.0.0\n\nOld.\n",
+        "/repo/package.json": manifestAt({ version: "2.0.0-pre.2" }),
+      },
+      tags: { outcome: "ok", value: ["v1.0.0", "v2.0.0-pre.1", "v2.0.0-pre.2"] },
+      commits: { outcome: "ok", value: [squashed("fix: third (#3)")] },
+      lineCommits: {
+        outcome: "ok",
+        value: [
+          squashed("feat!: first (#1)"),
+          squashed("fix: second (#2)"),
+          squashed("fix: third (#3)"),
+        ],
+      },
+    });
+
+    expect(run.texts["/repo/CHANGELOG.md"]).toBe(
+      "# Changelog\n\n## 2.0.0\n\n### Breaking changes\n\n- first (#1)\n\n### Fixes\n\n- second (#2)\n- third (#3)\n\n## 1.0.0\n\nOld.\n",
+    );
+    expect(run.texts["/repo/package.json"]).toBe(manifestAt({ version: "2.0.0" }));
+    expect(run.writes).toEqual([
+      [
+        {
+          text: "release-pull-request: 2.0.0-pre.2 to 2.0.0, a major change on the stable channel, sized from 3 subjects since v1.0.0, with 1 subject since v2.0.0-pre.2 and 2 entries folded from its pre-releases in its section. CHANGELOG.md and package.json are updated in the working tree; no tag was made and nothing was published.\n",
+        },
+      ],
+    ]);
   });
 });
 

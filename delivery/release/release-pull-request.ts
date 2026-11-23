@@ -9,12 +9,7 @@ import type { GitFailure } from "../../src/domain/repository/git-failure.ts";
 import type { Result } from "../../src/domain/result.ts";
 import { type ChangeEntry, changeEntryOf } from "../commit-subject/conventional-subject.ts";
 import { packageVersionOf } from "../packaging/published-manifest/published-manifest.ts";
-import {
-  CHANGELOG_FILE,
-  changelogGroupOf,
-  changelogSectionOf,
-  changelogWithSection,
-} from "./changelog.ts";
+import { CHANGELOG_FILE, changelogGroupOf, changelogWithFoldedSection } from "./changelog.ts";
 import {
   changeSizeOf,
   channelOf,
@@ -64,7 +59,9 @@ type NextRelease = {
 
 type FileUpdate = { readonly path: string; readonly original: string; readonly updated: string };
 
-type PreparedRelease = NextRelease & { readonly updates: readonly FileUpdate[] };
+type PreparedUpdates = { readonly updates: readonly FileUpdate[]; readonly folded: number };
+
+type PreparedRelease = NextRelease & PreparedUpdates;
 
 type WriteFailure = { readonly detail: string; readonly written: readonly FileUpdate[] };
 
@@ -262,7 +259,7 @@ const manifestWithVersion = (request: {
 const fileUpdatesOf = (request: {
   readonly next: NextRelease;
   readonly files: RepositoryFiles;
-}): Prepared<readonly FileUpdate[]> => {
+}): Prepared<PreparedUpdates> => {
   const releasedVersion = releasedManifestVersionOf({
     manifest: request.files.manifest.text,
     release: request.next.from,
@@ -270,10 +267,11 @@ const fileUpdatesOf = (request: {
   if (releasedVersion.outcome === "failed") {
     return releasedVersion;
   }
-  const changelog = changelogWithSection({
+  const changelog = changelogWithFoldedSection({
     changelog: request.files.changelog.text,
     version: request.next.version,
-    section: changelogSectionOf({ version: request.next.version, entries: request.next.entries }),
+    channel: request.next.channel,
+    entries: request.next.entries,
   });
   if (changelog.outcome === "failed") {
     return changelog;
@@ -287,18 +285,21 @@ const fileUpdatesOf = (request: {
     ? manifest
     : {
         outcome: "ok",
-        value: [
-          {
-            path: request.files.changelog.path,
-            original: request.files.changelog.text,
-            updated: changelog.value,
-          },
-          {
-            path: request.files.manifest.path,
-            original: request.files.manifest.text,
-            updated: manifest.value,
-          },
-        ],
+        value: {
+          updates: [
+            {
+              path: request.files.changelog.path,
+              original: request.files.changelog.text,
+              updated: changelog.value.text,
+            },
+            {
+              path: request.files.manifest.path,
+              original: request.files.manifest.text,
+              updated: manifest.value,
+            },
+          ],
+          folded: changelog.value.folded,
+        },
       };
 };
 
@@ -327,7 +328,7 @@ const preparedRelease = (
   const updates = fileUpdatesOf({ next: next.value, files: files.value });
   return updates.outcome === "failed"
     ? updates
-    : { outcome: "ok", value: { ...next.value, updates: updates.value } };
+    : { outcome: "ok", value: { ...next.value, ...updates.value } };
 };
 
 const updatesWritten = (request: {
@@ -386,8 +387,13 @@ const writtenUpdates = (request: {
 const subjectCountText = (request: { readonly count: number }): string =>
   `${request.count} ${request.count === 1 ? "subject" : "subjects"}`;
 
+const foldedText = (request: { readonly folded: number }): string =>
+  request.folded === 0
+    ? ""
+    : ` and ${request.folded} ${request.folded === 1 ? "entry" : "entries"} folded from its pre-releases`;
+
 const summaryOf = (request: { readonly prepared: PreparedRelease }): string =>
-  `${COMMAND}: ${versionText({ version: request.prepared.from.version })} to ${request.prepared.version}, a ${request.prepared.size} change on the ${request.prepared.channel} channel, sized from ${subjectCountText({ count: request.prepared.lineEntries.length })} since ${request.prepared.sizedFrom.tag}, with ${subjectCountText({ count: request.prepared.entries.length })} since ${request.prepared.from.tag} in its section. ${CHANGELOG_FILE} and ${MANIFEST_FILE} are updated in the working tree; no tag was made and nothing was published.\n`;
+  `${COMMAND}: ${versionText({ version: request.prepared.from.version })} to ${request.prepared.version}, a ${request.prepared.size} change on the ${request.prepared.channel} channel, sized from ${subjectCountText({ count: request.prepared.lineEntries.length })} since ${request.prepared.sizedFrom.tag}, with ${subjectCountText({ count: request.prepared.entries.length })} since ${request.prepared.from.tag}${foldedText({ folded: request.prepared.folded })} in its section. ${CHANGELOG_FILE} and ${MANIFEST_FILE} are updated in the working tree; no tag was made and nothing was published.\n`;
 
 const unclassifiedWarningsOf = (request: {
   readonly entries: readonly ChangeEntry[];
