@@ -38,7 +38,16 @@ export type Settlement =
   | { readonly kind: "unresolved" }
   | { readonly kind: "not-plain"; readonly reason: NotPlainReason };
 
+type Expansion = "literal" | "pattern-expanded" | "shell-supplied";
+
+type ShellToken = {
+  readonly text: string;
+  readonly written: string;
+  readonly expansion: Expansion;
+};
+
 type SettledInvocation = EslintInvocation & {
+  readonly arguments: readonly ShellToken[];
   readonly settlement: Settlement;
   readonly command: string;
 };
@@ -48,14 +57,6 @@ export type ScriptOptionException<Subject extends RuleSubject = ClauseSubject> =
   "cause" | "clause" | "check"
 > &
   Subject;
-
-type Expansion = "literal" | "shell-expanded";
-
-type ShellToken = {
-  readonly text: string;
-  readonly written: string;
-  readonly expansion: Expansion;
-};
 
 type ShellCommand = readonly ShellToken[];
 
@@ -130,6 +131,13 @@ type WeakeningSpec = {
 type OptionOccurrence = {
   readonly option: string;
   readonly optionValue: string;
+  readonly valueOffset: number;
+};
+
+type LocatedWeakening = {
+  readonly weakening: WeakeningOption;
+  readonly valueAt: number;
+  readonly optionValue: string;
 };
 
 type EslintNaming = "names-eslint" | "names-other";
@@ -139,7 +147,7 @@ type SegmentWalk =
   | { readonly position: "outside" };
 
 const SCRIPT_PIECES =
-  /(?<single>'[^']*')|(?<double>"[^"]*")|(?<operator>&&|\|\||[;|])|(?<space>\s+)|(?<text>[^'"\s;|&]+|&)|(?<stray>['"])/g;
+  /(?<single>'[^']*')|(?<double>"[^"]*")|(?<substitution>`[^`]*`|\$\([^)]*\))|(?<operator>&&|\|\||[;|()])|(?<space>\s+)|(?<text>(?:[^'"\s;|&()`$]|\$(?!\([^)]*\)))+|&)|(?<stray>['"`])/g;
 
 const ESLINT_TOKEN = "eslint";
 
@@ -151,9 +159,9 @@ const ESLINT_PATH_SUFFIXES: readonly string[] = ["/eslint", "/eslint.js"];
 
 const FORWARDED_OPTIONS_SEPARATOR = "--";
 
-const SHELL_EXPANDED_UNQUOTED = /[*?[\]{}~$`]/;
+const SHELL_SUPPLIED = /[$`]/;
 
-const SHELL_EXPANDED_DOUBLE_QUOTED = /[$`]/;
+const SHELL_PATTERN = /[*?[\]{}~]/;
 
 const UNSETTLED_TEXT = /\.\.|[$`]|^[/~]|^[A-Za-z]:[\\/]/;
 
@@ -201,8 +209,13 @@ const effectOf = (request: {
   }
 };
 
-const expansionOf = (request: { readonly text: string; readonly expanding: RegExp }): Expansion =>
-  request.expanding.test(request.text) ? "shell-expanded" : "literal";
+const doubleQuotedExpansionOf = (request: { readonly text: string }): Expansion =>
+  SHELL_SUPPLIED.test(request.text) ? "shell-supplied" : "literal";
+
+const unquotedExpansionOf = (request: { readonly text: string }): Expansion => {
+  const quoted = doubleQuotedExpansionOf(request);
+  return quoted === "literal" && SHELL_PATTERN.test(request.text) ? "pattern-expanded" : quoted;
+};
 
 const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPiece => {
   const groups = request.match.groups ?? {};
@@ -220,8 +233,14 @@ const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPie
       token: {
         text,
         written,
-        expansion: expansionOf({ text, expanding: SHELL_EXPANDED_DOUBLE_QUOTED }),
+        expansion: doubleQuotedExpansionOf({ text }),
       },
+    };
+  }
+  if (groups.substitution !== undefined) {
+    return {
+      kind: "text",
+      token: { text: groups.substitution, written, expansion: "shell-supplied" },
     };
   }
   if (groups.operator !== undefined) {
@@ -236,7 +255,7 @@ const scriptPieceOf = (request: { readonly match: RegExpMatchArray }): ScriptPie
       token: {
         text: groups.text,
         written,
-        expansion: expansionOf({ text: groups.text, expanding: SHELL_EXPANDED_UNQUOTED }),
+        expansion: unquotedExpansionOf({ text: groups.text }),
       },
     };
   }
@@ -252,8 +271,12 @@ const tokensWithCurrent = (request: {
 const joinedExpansion = (request: {
   readonly left: Expansion;
   readonly right: Expansion;
-}): Expansion =>
-  request.left === "literal" && request.right === "literal" ? "literal" : "shell-expanded";
+}): Expansion => {
+  if (request.left === "shell-supplied" || request.right === "shell-supplied") {
+    return "shell-supplied";
+  }
+  return request.left === "literal" ? request.right : request.left;
+};
 
 const extendedToken = (request: {
   readonly token: TokenInProgress;
@@ -390,12 +413,10 @@ const prefixRoleOf = (request: {
   return request.token.text === ENVIRONMENT_SETTER && settingsOnlyFollow ? "setting" : "wrapper";
 };
 
-const reachSettlementOf = (request: { readonly token: ShellToken }): Settlement => {
-  if (request.token.expansion === "shell-expanded") {
-    return { kind: "not-plain", reason: { kind: "shell-supplied", value: request.token.text } };
-  }
-  return UNSETTLED_TEXT.test(request.token.text) ? UNRESOLVED : SETTLED;
-};
+const reachSettlementOf = (request: { readonly token: ShellToken }): Settlement =>
+  request.token.expansion !== "literal" || UNSETTLED_TEXT.test(request.token.text)
+    ? UNRESOLVED
+    : SETTLED;
 
 const prefixSettlementOf = (request: { readonly prefix: readonly ShellToken[] }): Settlement => {
   const wrapper = request.prefix.find(
@@ -443,6 +464,9 @@ const settledInvocationOf = (request: {
   );
   return invocationOf({ command: textsOf({ command: request.command }) }).map((invocation) => ({
     ...invocation,
+    arguments: request.command
+      .slice(eslintIndex + 1)
+      .filter((token) => token.text !== FORWARDED_OPTIONS_SEPARATOR),
     settlement: settlementOf({ index: request.index, command: request.command, eslintIndex }),
     command: request.command[eslintIndex]?.text ?? "",
   }));
@@ -475,13 +499,20 @@ const occurrenceAt = (request: {
     return [];
   }
   if (form === "joined-value") {
-    return [{ option: request.token, optionValue: request.token.slice(request.name.length + 1) }];
+    return [
+      {
+        option: request.token,
+        optionValue: request.token.slice(request.name.length + 1),
+        valueOffset: 0,
+      },
+    ];
   }
   const optionValue = request.arity === "takes-value" ? request.next : "";
   return [
     {
       option: optionValue === "" ? request.token : `${request.token} ${optionValue}`,
       optionValue,
+      valueOffset: request.arity === "takes-value" ? 1 : 0,
     },
   ];
 };
@@ -510,43 +541,55 @@ const specWeakenings = (request: {
   readonly spec: WeakeningSpec;
   readonly token: string;
   readonly next: string;
+  readonly index: number;
   readonly selectedRuleIds: readonly string[];
-}): readonly WeakeningOption[] =>
+}): readonly LocatedWeakening[] =>
   occurrenceAt({
     token: request.token,
     next: request.next,
     name: request.spec.name,
     arity: request.spec.arity,
   }).map((occurrence) => ({
-    option: occurrence.option,
-    ruleIds: reachedRuleIds({
-      spec: request.spec,
-      optionValue: occurrence.optionValue,
-      selectedRuleIds: request.selectedRuleIds,
-    }),
-    effect: effectOf({ judgement: request.spec.judgement, optionValue: occurrence.optionValue }),
+    weakening: {
+      option: occurrence.option,
+      ruleIds: reachedRuleIds({
+        spec: request.spec,
+        optionValue: occurrence.optionValue,
+        selectedRuleIds: request.selectedRuleIds,
+      }),
+      effect: effectOf({ judgement: request.spec.judgement, optionValue: occurrence.optionValue }),
+    },
+    valueAt: request.index + occurrence.valueOffset,
+    optionValue: occurrence.optionValue,
   }));
 
 const tokenWeakenings = (request: {
   readonly token: string;
   readonly next: string;
+  readonly index: number;
   readonly selectedRuleIds: readonly string[];
-}): readonly WeakeningOption[] =>
+}): readonly LocatedWeakening[] =>
   WEAKENING_OPTIONS.flatMap((spec) => specWeakenings({ ...request, spec }));
 
-export const commandLineOptionsOf = (request: {
+const locatedWeakeningsOf = (request: {
   readonly invocation: EslintInvocation;
   readonly selectedRuleIds: readonly string[];
-}): readonly WeakeningOption[] =>
+}): readonly LocatedWeakening[] =>
   request.invocation.options
     .flatMap((token, index) =>
       tokenWeakenings({
         token,
         next: request.invocation.options[index + 1] ?? "",
+        index,
         selectedRuleIds: request.selectedRuleIds,
       }),
     )
-    .filter((weakening) => weakening.ruleIds.length > 0);
+    .filter((located) => located.weakening.ruleIds.length > 0);
+
+export const commandLineOptionsOf = (request: {
+  readonly invocation: EslintInvocation;
+  readonly selectedRuleIds: readonly string[];
+}): readonly WeakeningOption[] => locatedWeakeningsOf(request).map((located) => located.weakening);
 
 const suppressionsLocationsAt = (request: {
   readonly token: string;
@@ -614,25 +657,33 @@ export const repoPathResolved = (request: {
   return { outcome: "ok", value: parsed.data };
 };
 
+const optionSettlementOf = (request: {
+  readonly located: LocatedWeakening;
+  readonly invocation: SettledInvocation;
+}): Settlement =>
+  request.invocation.arguments[request.located.valueAt]?.expansion === "shell-supplied"
+    ? { kind: "not-plain", reason: { kind: "shell-supplied", value: request.located.optionValue } }
+    : request.invocation.settlement;
+
 const scriptOptionOf = <Subject extends RuleSubject>(request: {
-  readonly weakening: WeakeningOption;
+  readonly located: LocatedWeakening;
   readonly invocation: SettledInvocation;
   readonly path: RepoPath;
   readonly script: string;
   readonly selectedRules: readonly ScannedRule<Subject>[];
 }): ScriptOption<Subject> => ({
   location: request.path,
-  effect: request.weakening.effect,
-  settlement: request.invocation.settlement,
+  effect: request.located.weakening.effect,
+  settlement: optionSettlementOf(request),
   command: request.invocation.command,
   exceptions: request.selectedRules
-    .filter((rule) => request.weakening.ruleIds.includes(rule.ruleId))
+    .filter((rule) => request.located.weakening.ruleIds.includes(rule.ruleId))
     .map((rule): ScriptOptionException<Subject> => ({
       ...rule.subject,
       kind: "command-line-option",
       location: request.path,
       script: request.script,
-      option: request.weakening.option,
+      option: request.located.weakening.option,
     })),
 });
 
@@ -644,8 +695,8 @@ const scriptOptionsOf = <Subject extends RuleSubject>(request: {
 }): readonly ScriptOption<Subject>[] => {
   const selectedRuleIds = request.selectedRules.map((rule) => rule.ruleId);
   return request.invocations.flatMap((invocation) =>
-    commandLineOptionsOf({ invocation, selectedRuleIds }).map((weakening) =>
-      scriptOptionOf({ ...request, weakening, invocation }),
+    locatedWeakeningsOf({ invocation, selectedRuleIds }).map((located) =>
+      scriptOptionOf({ ...request, located, invocation }),
     ),
   );
 };

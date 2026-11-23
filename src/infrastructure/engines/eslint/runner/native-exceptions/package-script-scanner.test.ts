@@ -70,6 +70,25 @@ describe("scriptCommandsOf", () => {
     });
   });
 
+  it("splits commands at parentheses standing alone", () => {
+    expect(scriptCommandsOf({ script: "(cd src && eslint .)" })).toEqual({
+      outcome: "ok",
+      value: [
+        ["cd", "src"],
+        ["eslint", "."],
+      ],
+    });
+  });
+
+  it("keeps a command substitution whole as one token", () => {
+    expect(
+      scriptCommandsOf({ script: "eslint --ignore-pattern `cat a.txt` -c $(cat b.txt) ." }),
+    ).toEqual({
+      outcome: "ok",
+      value: [["eslint", "--ignore-pattern", "`cat a.txt`", "-c", "$(cat b.txt)", "."]],
+    });
+  });
+
   it("does not split at an operator inside quotes", () => {
     expect(scriptCommandsOf({ script: `echo "a && b; c | d" 'e || f'` })).toEqual({
       outcome: "ok",
@@ -364,7 +383,7 @@ describe("scanPackageJson, whether the script's own folder settles an option's e
     },
     {
       script: "(cd src && eslint --ignore-pattern 'legacy/**' .)",
-      settlement: afterAnotherCommand("eslint --ignore-pattern 'legacy/**' .)"),
+      settlement: afterAnotherCommand("eslint --ignore-pattern 'legacy/**' ."),
     },
     {
       script: "pushd src; eslint --ignore-pattern 'legacy/**' .",
@@ -407,14 +426,26 @@ describe("scanPackageJson, whether the script's own folder settles an option's e
     },
     { script: 'eslint -c "$CONFIG" .', settlement: shellSupplied("$CONFIG") },
     { script: 'eslint --ignore-pattern "$LEGACY" .', settlement: shellSupplied("$LEGACY") },
-    { script: "eslint --ignore-pattern `cat legacy.txt` .", settlement: shellSupplied("`cat") },
-    { script: "eslint -c eslint.config.mjs $SRC", settlement: shellSupplied("$SRC") },
+    {
+      script: "eslint --ignore-pattern `cat legacy.txt` .",
+      settlement: shellSupplied("`cat legacy.txt`"),
+    },
+    {
+      script: "eslint --ignore-pattern $(cat legacy.txt) .",
+      settlement: shellSupplied("$(cat legacy.txt)"),
+    },
+    { script: 'eslint --config="$CONFIG" .', settlement: shellSupplied("$CONFIG") },
+    {
+      script: 'tsc && eslint -c "$CONFIG" .',
+      settlement: shellSupplied("$CONFIG"),
+    },
+    { script: "eslint -c eslint.config.mjs $SRC", settlement: UNRESOLVED },
     { script: "eslint --ignore-pattern '$LEGACY' .", settlement: UNRESOLVED },
-    { script: "eslint --ignore-pattern legacy/** .", settlement: shellSupplied("legacy/**") },
+    { script: "eslint --ignore-pattern legacy/** .", settlement: UNRESOLVED },
     { script: "eslint --ignore-pattern 'legacy/**' ..", settlement: UNRESOLVED },
     { script: "eslint --ignore-pattern '../legacy/**' .", settlement: UNRESOLVED },
     { script: "eslint --ignore-pattern 'legacy/**' /repo/src", settlement: UNRESOLVED },
-    { script: "eslint --ignore-pattern 'legacy/**' ~/src", settlement: shellSupplied("~/src") },
+    { script: "eslint --ignore-pattern 'legacy/**' ~/src", settlement: UNRESOLVED },
   ])("marks the option in $script as $settlement.kind", ({ script, settlement }) => {
     expect(
       scanPackageJson({
