@@ -54,7 +54,7 @@ export const answeredLine = (
   request: CatalogueRequest & { readonly answered: AnsweredFinding },
 ): string => {
   const { finding, by } = request.answered;
-  return `${locatedText({ site: findingSiteOf({ catalogue: request.catalogue, finding }), finding })}${referencesText({ lead: "answered by", records: by })}`;
+  return `${locatedText({ site: findingSiteOf({ catalogue: request.catalogue, finding }), finding })}${referencesText({ lead: "answered by", records: by })}${fixNote({ finding })}`;
 };
 
 export const editionLine = (request: { readonly reading: CheckEdition }): string =>

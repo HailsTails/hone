@@ -446,14 +446,14 @@ describe("answeredLine", () => {
     );
   });
 
-  it("names neither the symptom's indications nor the fix", () => {
+  it("ends with the fix and the page that shows it when the check names one, and names no indications", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
         answered: { finding: BRANCH_FINDING, by: [DEBT] },
       }),
     ).toBe(
-      "branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; answered by debt",
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; answered by debt fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
     );
   });
 });
