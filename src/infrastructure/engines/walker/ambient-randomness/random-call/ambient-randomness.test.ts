@@ -154,10 +154,140 @@ describe("ambient randomness", () => {
     ).toEqual([]);
   });
 
+  it("finds browser-qualified crypto and aliases of Node crypto imports", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { randomUUID as uuid, webcrypto as web } from "node:crypto";\nimport * as nodeCrypto from "crypto";\nglobalThis.crypto.randomUUID();\nwindow["crypto"].getRandomValues(bytes);\nuuid();\nnodeCrypto.randomUUID();\nweb.getRandomValues(bytes);',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 3, column: 0 },
+        snippet: "globalThis.crypto.randomUUID",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: 'window["crypto"].getRandomValues',
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: "uuid",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 6, column: 0 },
+        snippet: "nodeCrypto.randomUUID",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 7, column: 0 },
+        snippet: "web.getRandomValues",
+      },
+    ]);
+  });
+
+  it("passes locally bound globals and a shadowed Node import alias", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { randomUUID as uuid } from "node:crypto";\nfunction run(uuid: () => string) { return uuid(); }\nconst crypto = ports.crypto;\nconst Math = ports.math;\ncrypto.randomUUID();\nMath.random();\nconst fromPort = (window: Runtime) => window.crypto.getRandomValues(bytes);',
+      }),
+    ).toEqual([]);
+  });
+
+  it("finds Web Crypto through a namespace and either spelling of a default import", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import * as nodeCrypto from "node:crypto";\nimport moduleCrypto from "node:crypto";\nimport { default as legacyCrypto } from "crypto";\nnodeCrypto.webcrypto.getRandomValues(bytes);\nmoduleCrypto["webcrypto"].getRandomValues(bytes);\nlegacyCrypto.randomUUID();',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: "nodeCrypto.webcrypto.getRandomValues",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: 'moduleCrypto["webcrypto"].getRandomValues',
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 6, column: 0 },
+        snippet: "legacyCrypto.randomUUID",
+      },
+    ]);
+  });
+
+  it("finds a static require import in a TypeScript CommonJS file", () => {
+    const file = repoPathSchema.parse("src/order.cts");
+    expect(
+      findingsIn({
+        file,
+        source: 'import nodeCrypto = require("crypto");\nnodeCrypto.randomUUID();',
+      }),
+    ).toEqual([
+      {
+        file,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "nodeCrypto.randomUUID",
+      },
+    ]);
+  });
+
   it("leaves an aliased random function outside the syntax check", () => {
     expect(
       findingsIn({ file: SOURCE_FILE, source: "const { random } = Math;\nrandom();" }),
     ).toEqual([]);
+  });
+
+  it("only follows runtime bindings imported from Node crypto", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { type randomUUID as typeUUID, randomUUID as nodeUUID } from "node:crypto";\nimport { randomUUID as adapterUUID } from "./runtime";\ntypeUUID();\nadapterUUID();\nnodeUUID();',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: "nodeUUID",
+      },
+    ]);
+  });
+
+  it("does not treat a declare statement as a locally supplied crypto value", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: "declare const crypto: Crypto;\ncrypto.randomUUID();",
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "crypto.randomUUID",
+      },
+    ]);
   });
 
   it("lets a runtime random boundary record answer the finding in its adapter", () => {
