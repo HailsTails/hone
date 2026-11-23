@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import {
   type ListedAddress,
@@ -10,7 +11,10 @@ import {
 
 describe("listedAddressText", () => {
   it.each<{ readonly address: ListedAddress; readonly text: string }>([
-    { address: { ruleSet: "hone", check: "loop-keyword#loops" }, text: "loop-keyword#loops" },
+    {
+      address: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#loops" },
+      text: "loop-keyword#loops",
+    },
     {
       address: { ruleSet: { name: ruleSetNameOf("team") }, check: "no-tmp-file#tmp-paths" },
       text: "team/no-tmp-file#tmp-paths",
@@ -36,7 +40,7 @@ describe("listedAddressOf", () => {
 describe("listedAddressOf for Hone's own check", () => {
   it("reads an unprefixed address as Hone's own", () => {
     expect(listedAddressOf({ text: "loop-keyword#loops" })).toEqual({
-      ruleSet: "hone",
+      ruleSet: TOOL_RULE_SET,
       check: "loop-keyword#loops",
     });
   });
@@ -50,7 +54,7 @@ describe("sameListedAddress", () => {
   it("holds one check in Hone's rule set and a team's different", () => {
     expect(
       sameListedAddress({
-        left: { ruleSet: "hone", check: "loop-keyword#loops" },
+        left: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#loops" },
         right: { ruleSet: { name: ruleSetNameOf("team") }, check: "loop-keyword#loops" },
       }),
     ).toBe("different");

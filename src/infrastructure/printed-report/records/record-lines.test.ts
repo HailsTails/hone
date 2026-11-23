@@ -481,7 +481,7 @@ describe("refusedLines", () => {
         folder: repoPathOf("hone-records/authorised-locations"),
         name: "../x",
       },
-      line: 'hone-records/authorised-locations/claimed-type.json records[2] not-a-records-name "../x"',
+      line: 'hone-records/authorised-locations/claimed-type.json records[2] not-a-records-name hone-records/authorised-locations "../x"',
     },
     {
       name: "a carried record changed since the base",

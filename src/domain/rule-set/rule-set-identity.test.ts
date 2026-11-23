@@ -43,6 +43,8 @@ describe("ownedNameOf", () => {
     ["Acme/claimed-type", "not-an-owned-name"],
     ["acme/", "not-an-owned-name"],
     ["acme/claimed-type/casts", "not-an-owned-name"],
+    ["a/b/c", "not-an-owned-name"],
+    ["/x", "not-an-owned-name"],
   ])("reads %s", (text, owned) => {
     expect(ownedNameOf({ text })).toEqual(owned);
   });

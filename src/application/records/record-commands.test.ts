@@ -445,6 +445,32 @@ describe("hone record-debt over a run's unanswered findings", () => {
     expect(apply).toHaveBeenCalledWith({ edit: { write: [DEBT_DOCUMENT], remove: [] } });
   });
 
+  it("fails with the records-folder failure when the symptom's name cannot name a records file", () => {
+    const unnameable: Symptom = { ...DATE_USED_DIRECTLY, name: "Not A Name" };
+    const recordsEditor = editorAdding({ added: [] });
+    const recorded = recordDebtOf({
+      ports: {
+        catalogue: {
+          ...REPORT_CATALOGUE,
+          symptoms: [unnameable, CLAIMED_TYPE],
+          checks: [{ ...CLOCK_CHECK, symptom: unnameable }, CAST_CHECK],
+        },
+        recordsReader: READER_HOLDING_NOTHING,
+        recordsEditor,
+        source: sourceOf({ documents: [] }),
+        store: storeOf().store,
+      },
+      run: { ...request, findings: [{ ...CLOCK_FINDING, check: "Not A Name#clock-sources" }] },
+    });
+    expect(recorded).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "records-folder",
+        failure: { kind: "not-a-records-name", folder: "hone-records/debt", name: "Not A Name" },
+      },
+    });
+  });
+
   it("writes a team check's debt under its rule set's debt folder", () => {
     const acme = { name: ruleSetNameOf("acme") };
     const teamSymptom: Symptom = { ...DATE_USED_DIRECTLY, ruleSet: acme };

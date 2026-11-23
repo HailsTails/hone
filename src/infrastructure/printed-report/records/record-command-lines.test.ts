@@ -301,7 +301,7 @@ describe("the lines hone authorise prints", () => {
       }),
     ).toEqual([
       'claimed-type#cast-expressions refused src/orders/charge-order.ts: unknown-symptom "no-such-symptom"',
-      'claimed-type#cast-expressions refused src/orders/charge-order.ts: not-a-records-name "Not A Name"',
+      'claimed-type#cast-expressions refused src/orders/charge-order.ts: not-a-records-name hone-records/authorised-locations "Not A Name"',
     ]);
   });
 });

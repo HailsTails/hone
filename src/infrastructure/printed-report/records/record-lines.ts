@@ -155,7 +155,7 @@ const refusalDetail = (request: { readonly refusal: RecordRefusal }): string => 
     case "misplaced":
       return ` ${refusal.belongsIn}`;
     case "not-a-records-name":
-      return ` ${quoted({ text: refusal.name })}`;
+      return ` ${refusal.folder} ${quoted({ text: refusal.name })}`;
     case "carried-changed-since-base":
       return "";
     case "duplicate":
