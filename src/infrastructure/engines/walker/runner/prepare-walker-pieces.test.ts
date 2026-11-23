@@ -37,6 +37,7 @@ const REPOSITORY: WalkerRepository = {
 
 const FIRST_CLAUSE: CheckBinding = {
   address: "example#first-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
@@ -47,6 +48,7 @@ const FIRST_CLAUSE: CheckBinding = {
 
 const SECOND_CLAUSE: CheckBinding = {
   address: "example#second-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
@@ -57,6 +59,7 @@ const SECOND_CLAUSE: CheckBinding = {
 
 const THIRD_CLAUSE: CheckBinding = {
   address: "example#third-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,

@@ -12,6 +12,7 @@ import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import type { Result } from "../domain/result.ts";
+import { ownedNameText } from "../domain/rule-set/rule-set-identity.ts";
 import type { ProjectionWrite } from "../domain/runner/runner-result-types.ts";
 import { VERSION_ONE_SETTINGS_FILE_NAME } from "../domain/settings/settings-file.ts";
 import { authoriseRequestOf } from "../infrastructure/command-line/arguments/authorise-options.ts";
@@ -322,7 +323,7 @@ export const AUTHORISE: ToolCommand<AuthoriseParsed, Authorising, VersionTwoReco
   print: ({ parsed, produced }) =>
     linesOutcome({
       lines: authorisingLines({
-        address: parsed.authorising.answers,
+        address: ownedNameText(parsed.authorising.answers),
         file: parsed.authorising.file,
         authorising: produced,
       }),

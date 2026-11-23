@@ -5,6 +5,7 @@ import type { Symptom } from "../../../domain/language-layer/symptom-catalogue.t
 import type { DebtOutcome } from "../../../domain/records/debt/debt-effects.ts";
 import type { Debt, SymptomReach } from "../../../domain/records/hone-records/hone-record.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import {
   authorisingLines,
   debtOutcomeLine,
@@ -87,6 +88,7 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [
     {
+      ruleSet: "hone",
       name: "world-values-through-a-port",
       title: "World values through a port",
       standing: "accepted",
@@ -111,12 +113,16 @@ const FILE = repoPathOf("src/orders/charge-order.ts");
 
 const RECORDS_FILE = repoPathOf("hone-records/debt/date-used-directly.json");
 
-const SITE = { address: "date-used-directly#clock-sources", file: FILE } as const;
+const SITE = { ruleSet: "hone", address: "date-used-directly#clock-sources", file: FILE } as const;
 
 const OUTCOME_LINES: readonly (readonly [DebtOutcome, string])[] = [
   [
     { ...SITE, effect: "recorded" },
     "date-used-directly#clock-sources recorded src/orders/charge-order.ts",
+  ],
+  [
+    { ...SITE, ruleSet: { name: ruleSetNameOf("acme") }, effect: "recorded" },
+    "acme/date-used-directly#clock-sources recorded src/orders/charge-order.ts",
   ],
   [
     { ...SITE, effect: "already-recorded", heldIn: RECORDS_FILE },
@@ -244,6 +250,16 @@ describe("the lines hone prune-debt prints", () => {
       "date-used-directly removed src/orders/charge-order.ts: forfeited",
     );
   });
+
+  it("names a team's pruned debt after its rule set", () => {
+    const teamDebt = {
+      ...DEBT,
+      symptom: { ...DEBT.symptom, ruleSet: { name: ruleSetNameOf("acme") } },
+    };
+    expect(prunedDebtLine({ pruned: { place: PLACE, debt: teamDebt, reason: "paid" } })).toBe(
+      "acme/date-used-directly removed src/orders/charge-order.ts: paid",
+    );
+  });
 });
 
 describe("the lines hone authorise prints", () => {
@@ -275,13 +291,17 @@ describe("the lines hone authorise prints", () => {
           judged: "refused",
           refusals: [
             { kind: "unknown-symptom", symptom: "no-such-symptom" },
-            { kind: "not-a-records-name", name: "Not A Name" },
+            {
+              kind: "not-a-records-name",
+              folder: repoPathOf("hone-records/authorised-locations"),
+              name: "Not A Name",
+            },
           ],
         },
       }),
     ).toEqual([
       'claimed-type#cast-expressions refused src/orders/charge-order.ts: unknown-symptom "no-such-symptom"',
-      'claimed-type#cast-expressions refused src/orders/charge-order.ts: not-a-records-name "Not A Name"',
+      'claimed-type#cast-expressions refused src/orders/charge-order.ts: not-a-records-name hone-records/authorised-locations "Not A Name"',
     ]);
   });
 });

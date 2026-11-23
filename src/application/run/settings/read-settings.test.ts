@@ -16,6 +16,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
 import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
@@ -54,7 +55,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -237,6 +238,7 @@ describe("readNamedSettings and the settings document", () => {
               editions: { declared: [FIRST, SECOND], default: FIRST, latest: SECOND },
               binding: {
                 address: "loop-keyword#loops",
+                ruleSet: TOOL_RULE_SET,
                 engine: "walker",
                 anchor: { kind: "file" },
                 pieceRoot: "/install/mechanisms/audit/CD-15",
@@ -439,6 +441,44 @@ describe("readNamedSettings", () => {
     expect(sources.catalogue).toHaveBeenCalledExactlyOnceWith({
       ruleSetRoot: INSTALL_ROOT,
       ruleSet: TOOL_RULE_SET,
+    });
+  });
+
+  it("binds a team's selected check to the team's rule set", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamLoop: Symptom = { ...LOOP_KEYWORD, ruleSet: acme, name: "team-loop" };
+    const address: ListedAddress = { ruleSet: acme, check: "team-loop#loops" };
+    const sources = {
+      ...sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+      catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
+        outcome: "ok",
+        value: {
+          held: "catalogue",
+          catalogue: {
+            ...SETTINGS_CATALOGUE,
+            symptoms: [teamLoop],
+            clauses: [],
+            checks: [{ name: "loops", symptom: teamLoop, engines: [WALKER], forms: [] }],
+          },
+        },
+      }),
+    };
+    const settingsFormat = formatGiving({
+      outcome: "ok",
+      value: {
+        ...SETTINGS_FILE,
+        ruleSets: [{ name: acme.name, location: { location: "repo-root" } }],
+        checks: [{ address, state: { state: "run", engine: "walker" } }],
+        checkSettings: [],
+      },
+    });
+    expect(readSelectedSettings({ sources, settingsFormat })).toMatchObject({
+      outcome: "ok",
+      value: {
+        selection: {
+          selected: [{ address, binding: { address: "team-loop#loops", ruleSet: acme } }],
+        },
+      },
     });
   });
 

@@ -34,6 +34,7 @@ const SYNTAX_API = defaultParsePort.syntaxApi;
 const TYPE_QUERY = "Return" + "Type";
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-7a",

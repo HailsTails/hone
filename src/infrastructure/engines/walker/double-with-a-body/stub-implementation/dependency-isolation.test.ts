@@ -34,6 +34,7 @@ const ADDRESS: CheckAddressText = "double-with-a-body#stub-implementation";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-25",

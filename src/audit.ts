@@ -1,4 +1,5 @@
 import * as editionReach from "./domain/rule-set/edition-reach.ts";
+import * as ruleSetIdentifiers from "./domain/rule-set/identifiers.ts";
 import * as sourceScope from "./infrastructure/engines/walker/runner/pieces/source-scope.ts";
 
 export type { CheckBinding } from "./domain/runner/check-binding.ts";
@@ -34,3 +35,5 @@ export const folderScope = sourceScope.folderScope;
 export const editionReaches = editionReach.editionReaches;
 
 export const isEdition = editionReach.isEdition;
+
+export const isRuleSetName = ruleSetIdentifiers.isRuleSetName;

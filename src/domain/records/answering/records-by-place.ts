@@ -1,8 +1,9 @@
 import { checkAddressTextOf } from "../../language-layer/check-address-text.ts";
 import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
-import { ownedNameText } from "../../rule-set/rule-set-identity.ts";
+import { type OwnedName, ownedNameText } from "../../rule-set/rule-set-identity.ts";
 import type { AnsweredFile } from "../../runner/checks-run-report.ts";
 import type { AuthorisedReach, HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import { reachOf, type Site } from "./record-reach.ts";
@@ -28,16 +29,16 @@ type OwnedSymptom = Pick<Symptom, "ruleSet" | "name">;
 const symptomKey = (request: { readonly symptom: OwnedSymptom }): ReachKey =>
   `symptom:${ownedNameText(request.symptom)}`;
 
-const checkKey = (request: { readonly symptom: OwnedSymptom; readonly check: string }): ReachKey =>
-  `check:${ownedNameText({
-    ruleSet: request.symptom.ruleSet,
-    name: checkAddressTextOf({ check: { name: request.check, symptom: request.symptom } }),
-  })}`;
+const addressKey = (request: { readonly address: OwnedName }): ReachKey =>
+  `check:${ownedNameText(request.address)}`;
 
-const answeredSymptom = (request: { readonly symptom: string }): OwnedSymptom => ({
-  ruleSet: TOOL_RULE_SET,
-  name: request.symptom,
-});
+const checkKey = (request: { readonly symptom: OwnedSymptom; readonly check: string }): ReachKey =>
+  addressKey({
+    address: {
+      ruleSet: request.symptom.ruleSet,
+      name: checkAddressTextOf({ check: { name: request.check, symptom: request.symptom } }),
+    },
+  });
 
 export type AnsweredByPlace = ReadonlyMap<RepoPath, ReadonlySet<ReachKey>>;
 
@@ -48,10 +49,10 @@ export const answeredByPlaceOf = (request: {
     [...Map.groupBy(request.answered, ({ file }) => file)].map(([file, answers]) => [
       file,
       new Set(
-        answers.map(({ symptom, check }) =>
+        answers.map(({ ruleSet, symptom, check }) =>
           check === undefined
-            ? symptomKey({ symptom: answeredSymptom({ symptom }) })
-            : checkKey({ symptom: answeredSymptom({ symptom }), check }),
+            ? symptomKey({ symptom: { ruleSet, name: symptom } })
+            : checkKey({ symptom: { ruleSet, name: symptom }, check }),
         ),
       ),
     ]),
@@ -60,18 +61,21 @@ export const answeredByPlaceOf = (request: {
 export const answeredAt = (request: {
   readonly byPlace: AnsweredByPlace;
   readonly file: RepoPath;
+  readonly ruleSet: RuleSetIdentity;
   readonly symptom: string;
   readonly address: string;
 }): boolean => {
   const answers = request.byPlace.get(request.file);
+  const { ruleSet } = request;
   return (
     answers !== undefined &&
-    (answers.has(symptomKey({ symptom: answeredSymptom(request) })) ||
-      answers.has(`check:${request.address}`))
+    (answers.has(symptomKey({ symptom: { ruleSet, name: request.symptom } })) ||
+      answers.has(addressKey({ address: { ruleSet, name: request.address } })))
   );
 };
 
-const recipeKey = (request: { readonly recipe: string }): ReachKey => `recipe:${request.recipe}`;
+const recipeKey = (request: { readonly recipe: OwnedName }): ReachKey =>
+  `recipe:${ownedNameText(request.recipe)}`;
 
 const symptomReachKeysOf = (request: {
   readonly symptom: OwnedSymptom;
@@ -95,7 +99,7 @@ const reachKeysOf = (request: { readonly record: HoneRecord }): readonly ReachKe
     case "authorised-location":
       return symptomReachKeysOf({ symptom: record.symptom, reach: record.reach });
     case "deviation":
-      return [recipeKey({ recipe: record.recipe.name })];
+      return [recipeKey({ recipe: record.recipe })];
     case "boundary-record":
       return reachOf({ party: record.outsideParty }).map((name) =>
         symptomKey({ symptom: { ruleSet: TOOL_RULE_SET, name } }),
@@ -178,7 +182,7 @@ const siteKeysOf = (request: { readonly site: Site }): readonly ReachKey[] => {
   return [
     symptomKey({ symptom }),
     ...(check.found === "check" ? [checkKey({ symptom, check: check.check.name })] : []),
-    ...symptom.recipes.map((recipe) => recipeKey({ recipe: recipe.name })),
+    ...symptom.recipes.map((recipe) => recipeKey({ recipe })),
   ];
 };
 

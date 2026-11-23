@@ -64,6 +64,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: "hone",
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",

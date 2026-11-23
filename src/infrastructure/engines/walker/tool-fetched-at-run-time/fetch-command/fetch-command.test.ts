@@ -19,6 +19,7 @@ const SHELL = repoPathSchema.parse("delivery/check.sh");
 const ADDRESS = "tool-fetched-at-run-time#fetch-command";
 const BINDING: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/tool-fetched-at-run-time/fetch-command",

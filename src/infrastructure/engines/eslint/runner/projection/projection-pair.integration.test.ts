@@ -7,6 +7,7 @@ import {
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import { readBoundCatalogue } from "../../../../content-files/symptom-catalogues/bound-catalogue.ts";
 import { createCheckPieceSource } from "../../../../hone-config-file/settings-sources.ts";
 import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
@@ -20,7 +21,7 @@ import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
 } from "../toolchain/eslint-toolchain.ts";
-import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts";
+import { checksProjectionText } from "./checks-projection.ts";
 import { projectedNamedChecksOf } from "./projected-checks.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
@@ -65,10 +66,10 @@ const WIDE = repoPathOf("src/wide.ts");
 const SKIPPING = repoPathOf("src/skipping.test.ts");
 
 const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [
-  { symptom: "claimed-type", file: LEGACY },
-  { symptom: "rebinding", file: LEGACY },
-  { symptom: "positional-parameters", file: WIDE },
-  { symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
+  { ruleSet: "hone", symptom: "claimed-type", file: LEGACY },
+  { ruleSet: "hone", symptom: "rebinding", file: LEGACY },
+  { ruleSet: "hone", symptom: "positional-parameters", file: WIDE },
+  { ruleSet: "hone", symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
 ];
 
 const specifierOf: SpecifierOf = ({ modulePath }) => {
@@ -104,6 +105,7 @@ const bindingOf = (request: { readonly address: CheckAddressText }): CheckBindin
   assert(piece.outcome === "ok", `${request.address} resolves its eslint piece`);
   return {
     address: request.address,
+    ruleSet: "hone",
     engine: ESLINT,
     anchor: piece.value.anchor,
     pieceRoot: piece.value.pieceRoot,

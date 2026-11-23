@@ -47,6 +47,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -54,7 +55,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -475,8 +476,12 @@ describe("refusedLines", () => {
     },
     {
       name: "a name that names no records file",
-      refusal: { kind: "not-a-records-name", name: "../x" },
-      line: 'hone-records/authorised-locations/claimed-type.json records[2] not-a-records-name "../x"',
+      refusal: {
+        kind: "not-a-records-name",
+        folder: repoPathOf("hone-records/authorised-locations"),
+        name: "../x",
+      },
+      line: 'hone-records/authorised-locations/claimed-type.json records[2] not-a-records-name hone-records/authorised-locations "../x"',
     },
     {
       name: "a carried record changed since the base",

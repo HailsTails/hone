@@ -37,6 +37,7 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit, CheckNativeException } from "../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem } from "../domain/runner/checks-run-report.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
@@ -174,12 +175,13 @@ const gitTreeStub = (): GitTreePort => ({ pathsAt: () => ({ outcome: "ok", value
 
 const authoriseArgumentsFor = (request: {
   readonly repo: string;
+  readonly answers: string;
   readonly rootCause: string;
 }): readonly string[] => [
   "--repo",
   request.repo,
   "--answers",
-  "claimed-type",
+  request.answers,
   "--file",
   "src/a.ts",
   "--case",
@@ -311,6 +313,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -318,6 +321,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -325,6 +329,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const ITEACH_OVER_TYPED_ROWS: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "iteach-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
@@ -353,7 +358,7 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -375,7 +380,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -395,7 +400,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -1009,6 +1014,7 @@ describe("versionTwoPruneDebtCommandOf", () => {
             exceptions: "allowed",
             binding: {
               address: "claimed-type#cast-expressions",
+              ruleSet: TOOL_RULE_SET,
               engine: ESLINT,
               pieceRoot: "/install/cast",
               settings: {},
@@ -1210,18 +1216,25 @@ describe("versionTwoPruneDebtCommandOf", () => {
   });
 });
 
+const ACCEPTED_ROOT_CAUSE =
+  "Older tools still carry patterns written before the monorepo move gave them shared value types.";
+
 const ACCEPTED_ARGUMENTS = authoriseArgumentsFor({
   repo: "/repo",
-  rootCause:
-    "Older tools still carry patterns written before the monorepo move gave them shared value types.",
+  answers: "claimed-type",
+  rootCause: ACCEPTED_ROOT_CAUSE,
 });
 
-const REFUSED_ARGUMENTS = authoriseArgumentsFor({ repo: "/repo", rootCause: "no" });
+const REFUSED_ARGUMENTS = authoriseArgumentsFor({
+  repo: "/repo",
+  answers: "claimed-type",
+  rootCause: "no",
+});
 
 const AUTHORISED_FILE = "hone-records/authorised-locations/claimed-type.json";
 
 describe("versionTwoAuthoriseCommandOf", () => {
-  it("reads only the catalogue, never running the engines", async () => {
+  it("reads the catalogue and the settings, never running the engines", async () => {
     const stages = stagesGiving({});
     await ranWith({
       handler: versionTwoAuthoriseCommandOf,
@@ -1230,7 +1243,43 @@ describe("versionTwoAuthoriseCommandOf", () => {
       files: {},
     });
     expect(stages.catalogue).toHaveBeenCalled();
+    expect(stages.settings).toHaveBeenCalled();
     expect(stages.engines).not.toHaveBeenCalled();
+  });
+
+  it("writes a team's location under the team's records folder and prints its address after the rule set", async () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamCast: Symptom = { ...CLAIMED_TYPE, ruleSet: acme, name: "team-cast" };
+    const ran = await ranWith({
+      handler: versionTwoAuthoriseCommandOf,
+      arguments: authoriseArgumentsFor({
+        repo: "/repo",
+        answers: "acme/team-cast",
+        rootCause: ACCEPTED_ROOT_CAUSE,
+      }),
+      stages: stagesGiving({
+        settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+          outcome: "ok",
+          value: {
+            ...settingsWith({ forfeiture: "this-run" }),
+            externalCatalogues: [
+              {
+                ruleSet: acme,
+                catalogue: { ...REPORT_CATALOGUE, symptoms: [teamCast], checks: [] },
+              },
+            ],
+          },
+        }),
+      }),
+      files: {},
+    });
+    expect({ writes: ran.writes, exits: ran.exits }).toEqual({
+      writes: [[{ text: "acme/team-cast authorised src/a.ts\n" }]],
+      exits: [[{ code: 0 }]],
+    });
+    expect(ran.repository.filesHeld()).toEqual([
+      "hone-records/acme/authorised-locations/team-cast.json",
+    ]);
   });
 
   it("writes the location for the symptom and file given, and prints it authorised, exit 0", async () => {

@@ -28,6 +28,7 @@ const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 const ADDRESS = "temporary-file#no-tmp-files";
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/probe/mechanisms/audit/PD-1",

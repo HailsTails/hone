@@ -292,7 +292,7 @@ Hone loads piece modules with Node, which strips the types from a `.ts` file as 
 
 ## Type-check the rule set
 
-`@hailstails/hone/rule-set` holds types only. `@hailstails/hone/audit` holds the walker piece types and three values: `folderScope`, `isEdition` and `editionReaches`. Import types with `import type`. A `tsconfig` for the rule set that matches how Node runs it, `tools/disciplines/acme/tsconfig.pieces.json`:
+`@hailstails/hone/rule-set` holds types only. `@hailstails/hone/audit` holds the walker piece types and four values: `folderScope`, `isEdition`, `editionReaches` and `isRuleSetName`. Import types with `import type`. A `tsconfig` for the rule set that matches how Node runs it, `tools/disciplines/acme/tsconfig.pieces.json`:
 
 ```json
 {

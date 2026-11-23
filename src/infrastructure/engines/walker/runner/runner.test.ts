@@ -18,6 +18,7 @@ describe("runner", () => {
       await namedChecksRunner.conform({
         binding: {
           address: "example#first-check",
+          ruleSet: "hone",
           engine: "walker",
           anchor: { kind: "file" },
           pieceRoot: "/install/mechanisms/audit/XX-1",

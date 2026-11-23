@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { answeredWithin, slicesOf } from "./checks-slices.ts";
 
 const TRACKED = [
@@ -101,12 +102,17 @@ describe("slicesOf, declared folders and nested repositories", () => {
 
 const ANSWERED = [
   {
+    ruleSet: TOOL_RULE_SET,
     symptom: "authored-class-or-this",
     check: "class-keyword",
     file: repoPathOf("packages/a/src/a.ts"),
   },
-  { symptom: "authored-class-or-this", file: repoPathOf("packages/ab/src/a.ts") },
-  { symptom: "authored-class-or-this", file: repoPathOf("kept.ts") },
+  {
+    ruleSet: TOOL_RULE_SET,
+    symptom: "authored-class-or-this",
+    file: repoPathOf("packages/ab/src/a.ts"),
+  },
+  { ruleSet: TOOL_RULE_SET, symptom: "authored-class-or-this", file: repoPathOf("kept.ts") },
 ];
 
 describe("answeredWithin", () => {
@@ -116,7 +122,12 @@ describe("answeredWithin", () => {
 
   it("keeps only the answers under a package folder, relative to that folder, and not those of a folder sharing its prefix", () => {
     expect(answeredWithin({ answered: ANSWERED, slice: PACKAGE_A_SLICE })).toEqual([
-      { symptom: "authored-class-or-this", check: "class-keyword", file: "src/a.ts" },
+      {
+        ruleSet: TOOL_RULE_SET,
+        symptom: "authored-class-or-this",
+        check: "class-keyword",
+        file: "src/a.ts",
+      },
     ]);
   });
 });

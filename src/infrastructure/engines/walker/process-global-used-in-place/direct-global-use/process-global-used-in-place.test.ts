@@ -23,6 +23,7 @@ const SOURCE_FILE = repoPathSchema.parse("src/read-settings.ts");
 const ADAPTER_FILE = repoPathSchema.parse("src/adapters/process.ts");
 const BINDING: CheckBinding = {
   address: "process-global-used-in-place#direct-global-use",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/process-global-used-in-place/direct-global-use",

@@ -193,6 +193,7 @@ const CHECKS_RUN: NamedEngineRunRequest = {
 
 const BINDING: CheckBinding = {
   address: "authored-class-or-this#class-syntax",
+  ruleSet: TOOL_RULE_SET,
   engine: "eslint",
   anchor: CLAUSE.anchor,
   pieceRoot: "/install/eslint/authored-class-or-this/class-syntax",

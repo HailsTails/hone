@@ -9,6 +9,7 @@ import { namedCheckConformance } from "./conformance.ts";
 
 const CLASS_BINDING: CheckBinding = {
   address: "authored-class-or-this#class-keyword",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/walker/authored-class-or-this/class-keyword",

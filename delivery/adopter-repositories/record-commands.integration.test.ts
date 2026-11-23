@@ -231,7 +231,7 @@ const holding = readBoundCatalogue({
   fileText,
   path,
   ruleSetRoot: SHIPPED_ROOT,
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   installRoot: SHIPPED_ROOT,
 });
 assert(holding.outcome === "ok", "the shipped symptom catalogue reads");
@@ -380,7 +380,7 @@ describe("the version 2 record commands over a real hone-records folder, built i
       leave: [],
     });
     const authorised = authorise({
-      answers: "claimed-type",
+      answers: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
       file: ORDER_FILE,
       case: "gives-a-value-its-type",
       owes: "declared-not-asserted",

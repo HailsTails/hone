@@ -26,6 +26,8 @@ import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
+import type { AuthoriseRequest } from "../ports/authorising.ts";
 import type { RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
 import type { RecordsSource } from "../ports/records/records-source.ts";
@@ -160,6 +162,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -188,7 +191,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -208,7 +211,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -425,7 +428,12 @@ describe("hone record-debt over a run's unanswered findings", () => {
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
-        { address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" },
+        {
+          ruleSet: TOOL_RULE_SET,
+          address: "date-used-directly#clock-sources",
+          file: ORDER_FILE,
+          effect: "recorded",
+        },
       ],
     });
     expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(
@@ -435,6 +443,70 @@ describe("hone record-debt over a run's unanswered findings", () => {
       }),
     );
     expect(apply).toHaveBeenCalledWith({ edit: { write: [DEBT_DOCUMENT], remove: [] } });
+  });
+
+  it("fails with the records-folder failure when the symptom's name cannot name a records file", () => {
+    const unnameable: Symptom = { ...DATE_USED_DIRECTLY, name: "Not A Name" };
+    const recordsEditor = editorAdding({ added: [] });
+    const recorded = recordDebtOf({
+      ports: {
+        catalogue: {
+          ...REPORT_CATALOGUE,
+          symptoms: [unnameable, CLAIMED_TYPE],
+          checks: [{ ...CLOCK_CHECK, symptom: unnameable }, CAST_CHECK],
+        },
+        recordsReader: READER_HOLDING_NOTHING,
+        recordsEditor,
+        source: sourceOf({ documents: [] }),
+        store: storeOf().store,
+      },
+      run: { ...request, findings: [{ ...CLOCK_FINDING, check: "Not A Name#clock-sources" }] },
+    });
+    expect(recorded).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "records-folder",
+        failure: { kind: "not-a-records-name", folder: "hone-records/debt", name: "Not A Name" },
+      },
+    });
+  });
+
+  it("writes a team check's debt under its rule set's debt folder", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamSymptom: Symptom = { ...DATE_USED_DIRECTLY, ruleSet: acme };
+    const recordsEditor = editorAdding({ added: [] });
+    const recorded = recordDebtOf({
+      ports: {
+        catalogue: {
+          ...REPORT_CATALOGUE,
+          symptoms: [teamSymptom, CLAIMED_TYPE],
+          checks: [{ ...CLOCK_CHECK, symptom: teamSymptom }, CAST_CHECK],
+        },
+        recordsReader: READER_HOLDING_NOTHING,
+        recordsEditor,
+        source: sourceOf({ documents: [] }),
+        store: storeOf().store,
+      },
+      run: request,
+    });
+    expect(recorded).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          ruleSet: acme,
+          address: "date-used-directly#clock-sources",
+          file: ORDER_FILE,
+          effect: "recorded",
+        },
+      ],
+    });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(
+      expect.objectContaining({
+        additions: [
+          { file: "hone-records/acme/debt/date-used-directly.json", entry: CLOCK_DEBT_ENTRY },
+        ],
+      }),
+    );
   });
 
   it("reads the held records from the source's documents, against the catalogue and no base", () => {
@@ -473,6 +545,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: TOOL_RULE_SET,
           address: "date-used-directly#clock-sources",
           file: ORDER_FILE,
           effect: "already-recorded",
@@ -503,12 +576,14 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: TOOL_RULE_SET,
           address: "claimed-type#cast-expressions",
           file: TOUCHED_FILE,
           effect: "touched",
           of: "finding",
         },
         {
+          ruleSet: TOOL_RULE_SET,
           address: "date-used-directly#clock-sources",
           file: NEW_FILE,
           effect: "touched",
@@ -534,7 +609,14 @@ describe("hone record-debt over a run's unanswered findings", () => {
     });
     expect(recorded).toEqual({
       outcome: "ok",
-      value: [{ address: "claimed-type#cast-expressions", file: TOUCHED_FILE, effect: "recorded" }],
+      value: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          address: "claimed-type#cast-expressions",
+          file: TOUCHED_FILE,
+          effect: "recorded",
+        },
+      ],
     });
     expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -561,7 +643,12 @@ describe("hone record-debt over a run's unanswered findings", () => {
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
-        { address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" },
+        {
+          ruleSet: TOOL_RULE_SET,
+          address: "date-used-directly#clock-sources",
+          file: ORDER_FILE,
+          effect: "recorded",
+        },
         {
           address: "unknown-symptom#nowhere",
           file: ORDER_FILE,
@@ -746,8 +833,8 @@ describe("hone prune-debt over a run's paid, stale and forfeited debt", () => {
   });
 });
 
-const AUTHORISE = {
-  answers: "claimed-type",
+const AUTHORISE: AuthoriseRequest = {
+  answers: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   file: TOUCHED_FILE,
   case: "gives-a-value-its-type",
   owes: "declared-not-asserted",

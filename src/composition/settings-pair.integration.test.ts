@@ -43,7 +43,7 @@ const AFTER_ROOT = resolvedPath({ path: path.join({ segments: [PAIR_ROOT, "after
 
 const toolCatalogue = (): SymptomCatalogue => {
   const reading = readBoundCatalogue({
-    ruleSet: "hone",
+    ruleSet: TOOL_RULE_SET,
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,
@@ -114,6 +114,7 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
       assert.isDefined(root);
       return root.checks.map((check) => ({
         address: checkAddressTextOf({ check }),
+        ruleSet: TOOL_RULE_SET,
         engine: mechanism,
         anchor: clause.anchor,
         pieceRoot: clause.pieceRoot,
@@ -124,6 +125,7 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
     });
     const bindings = readAfter().selection.selected.map(({ binding }) => ({
       address: binding.address,
+      ruleSet: TOOL_RULE_SET,
       engine: binding.engine,
       anchor: binding.anchor,
       pieceRoot: binding.pieceRoot,

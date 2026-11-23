@@ -28,6 +28,7 @@ describe("runner", () => {
       await namedChecksRunner.conform({
         binding: {
           address: "first-symptom#first-check",
+          ruleSet: "hone",
           engine: "eslint",
           anchor: { kind: "file" },
           pieceRoot: "/install/checks/eslint/first-symptom/first-check",

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import { namedRecordsFileOf, recordsFileStandingOf } from "./records-layout.ts";
 
@@ -10,20 +12,30 @@ describe("recordsFileStandingOf", () => {
   it.each([
     {
       file: repoPathOf("hone-records/debt/text-past-its-reader.json"),
-      standing: { standing: "named", ruleSet: "hone", kind: "debt", name: "text-past-its-reader" },
+      standing: {
+        standing: "named",
+        ruleSet: TOOL_RULE_SET,
+        kind: "debt",
+        name: "text-past-its-reader",
+      },
     },
     {
       file: repoPathOf("hone-records/authorised-locations/claimed-type.json"),
       standing: {
         standing: "named",
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         kind: "authorised-locations",
         name: "claimed-type",
       },
     },
     {
       file: repoPathOf("hone-records/deviations/stub-with-vifn.json"),
-      standing: { standing: "named", ruleSet: "hone", kind: "deviations", name: "stub-with-vifn" },
+      standing: {
+        standing: "named",
+        ruleSet: TOOL_RULE_SET,
+        kind: "deviations",
+        name: "stub-with-vifn",
+      },
     },
     {
       file: repoPathOf("hone-records/acme/debt/console-output.json"),
@@ -101,7 +113,11 @@ describe("recordsFileStandingOf", () => {
 describe("the records file a record belongs in", () => {
   it("names a kind folder's file after the symptom or recipe it holds", () => {
     expect(
-      namedRecordsFileOf({ ruleSet: "hone", kind: "authorised-locations", name: "claimed-type" }),
+      namedRecordsFileOf({
+        ruleSet: TOOL_RULE_SET,
+        kind: "authorised-locations",
+        name: "claimed-type",
+      }),
     ).toEqual({
       outcome: "ok",
       value: "hone-records/authorised-locations/claimed-type.json",
@@ -118,10 +134,17 @@ describe("the records file a record belongs in", () => {
   it.each([{ name: "/x" }, { name: "../claimed-type" }, { name: "claimed-type\n" }, { name: "" }])(
     "names no file for a name written $name, without throwing",
     ({ name }) => {
-      expect(namedRecordsFileOf({ ruleSet: "hone", kind: "debt", name })).toEqual({
+      expect(namedRecordsFileOf({ ruleSet: TOOL_RULE_SET, kind: "debt", name })).toEqual({
         outcome: "failed",
-        error: { kind: "not-a-records-name", name },
+        error: { kind: "not-a-records-name", folder: "hone-records/debt", name },
       });
     },
   );
+
+  it("carries a team's folder in the failure for a name it cannot hold", () => {
+    expect(namedRecordsFileOf({ ruleSet: ACME, kind: "debt", name: "../x" })).toEqual({
+      outcome: "failed",
+      error: { kind: "not-a-records-name", folder: "hone-records/acme/debt", name: "../x" },
+    });
+  });
 });

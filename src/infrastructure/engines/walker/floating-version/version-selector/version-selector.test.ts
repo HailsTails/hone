@@ -18,6 +18,7 @@ const WORKFLOW = repoPathSchema.parse(".github/workflows/ci.yml");
 const ADDRESS = "floating-version#version-selector";
 const BINDING: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/floating-version/version-selector",

@@ -27,6 +27,7 @@ export type Rule = {
 export type RecipeReason = { readonly text: string; readonly standing: Standing };
 
 export type Recipe = {
+  readonly ruleSet: RuleSetIdentity;
   readonly name: string;
   readonly title: string;
   readonly standing: Standing;

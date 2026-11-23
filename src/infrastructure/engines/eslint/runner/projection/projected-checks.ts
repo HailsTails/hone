@@ -8,6 +8,7 @@ import {
 } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import {
@@ -35,8 +36,10 @@ const PLUGIN_SOURCE = "src/eslint-plugin.ts";
 
 const projectedRuleOf = (request: {
   readonly check: AddressedCheck;
+  readonly ruleSet: CheckBinding["ruleSet"];
   readonly settings: z.output<typeof eslintPieceSettingsSchema>;
 }): ProjectedCheck => ({
+  ruleSet: request.ruleSet,
   symptom: request.check.symptom.name,
   check: request.check.name,
   ruleId: checkRuleIdOf({ check: request.check }),
@@ -71,8 +74,12 @@ export const projectedNamedChecksOf = (request: {
         if (check === undefined) {
           return { outcome: "failed", error: { kind: "check-unknown", address: binding.address } };
         }
-        const projected = projectedRuleOf({ check, settings: settings.data });
-        if (binding.ruleSet === undefined) return { outcome: "ok", value: [projected] };
+        const projected = projectedRuleOf({
+          check,
+          ruleSet: binding.ruleSet,
+          settings: settings.data,
+        });
+        if (binding.ruleSet === TOOL_RULE_SET) return { outcome: "ok", value: [projected] };
         const { pluginNamespace, pluginModule, rule } = settings.data;
         if (pluginNamespace === CHECKS_PLUGIN_NAMESPACE) {
           return {

@@ -1,4 +1,5 @@
 import { isCatalogueName } from "../../language-layer/catalogue-name.ts";
+import { repoPathBeneath, repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { isRepoPath } from "../../repository/repo-path.ts";
 import type { Result } from "../../result.ts";
@@ -6,6 +7,7 @@ import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { isRuleSetName } from "../../rule-set/identifiers.ts";
 import type { RecordsFolderKind } from "./hone-record.ts";
+import type { NamedFolderKind } from "./named-folder-kind.ts";
 
 export const RECORDS_VERSION = 2;
 
@@ -13,10 +15,7 @@ export const RECORDS_FOLDER = "hone-records";
 
 export const RECORDS_FILE_EXTENSION = ".json";
 
-export type NamedFolderKind = Extract<
-  RecordsFolderKind,
-  "authorised-locations" | "debt" | "deviations"
->;
+const RECORDS_ROOT = repoPathOf(RECORDS_FOLDER);
 
 export type SingleFileKind = Extract<RecordsFolderKind, "boundary-records" | "dependency-records">;
 
@@ -41,7 +40,11 @@ export type RecordsFileStanding =
   | { readonly standing: "single"; readonly kind: SingleFileKind }
   | { readonly standing: "not-a-records-file" };
 
-export type NotARecordsName = { readonly kind: "not-a-records-name"; readonly name: string };
+export type NotARecordsName = {
+  readonly kind: "not-a-records-name";
+  readonly folder: RepoPath;
+  readonly name: string;
+};
 
 const NOT_A_RECORDS_FILE: RecordsFileStanding = { standing: "not-a-records-file" };
 
@@ -66,7 +69,7 @@ const namedFileOf = (request: {
       };
 };
 
-const ruleSetFolderOf = (request: { readonly folder: string }): RuleSetIdentity | undefined =>
+const ruleSetOfFolder = (request: { readonly folder: string }): RuleSetIdentity | undefined =>
   isRuleSetName(request.folder) &&
   request.folder !== TOOL_RULE_SET &&
   namedKindOf(request) === undefined
@@ -78,7 +81,7 @@ const ruleSetFileOf = (request: {
   readonly kindFolder: string;
   readonly name: string;
 }): RecordsFileStanding => {
-  const ruleSet = ruleSetFolderOf(request);
+  const ruleSet = ruleSetOfFolder(request);
   return ruleSet === undefined
     ? NOT_A_RECORDS_FILE
     : namedFileOf({ ruleSet, folder: request.kindFolder, name: request.name });
@@ -106,20 +109,25 @@ export const recordsFileStandingOf = (request: {
     : ruleSetFileOf({ folder: first, kindFolder: second, name: third });
 };
 
-const ruleSetFoldersOf = (request: { readonly ruleSet: RuleSetIdentity }): readonly string[] =>
-  request.ruleSet === TOOL_RULE_SET ? [RECORDS_FOLDER] : [RECORDS_FOLDER, request.ruleSet.name];
+const ruleSetFolderOf = (request: { readonly ruleSet: RuleSetIdentity }): RepoPath =>
+  request.ruleSet === TOOL_RULE_SET
+    ? RECORDS_ROOT
+    : repoPathBeneath({ parent: RECORDS_ROOT, segment: request.ruleSet.name });
 
 export const namedRecordsFileOf = (request: {
   readonly ruleSet: RuleSetIdentity;
   readonly kind: NamedFolderKind;
   readonly name: string;
 }): Result<RepoPath, NotARecordsName> => {
-  const file = [
-    ...ruleSetFoldersOf(request),
-    request.kind,
-    `${request.name}${RECORDS_FILE_EXTENSION}`,
-  ].join("/");
+  const folder = repoPathBeneath({
+    parent: ruleSetFolderOf(request),
+    segment: request.kind,
+  });
+  const file = `${folder}/${request.name}${RECORDS_FILE_EXTENSION}`;
   return isCatalogueName(request.name) && isRepoPath(file)
     ? { outcome: "ok", value: file }
-    : { outcome: "failed", error: { kind: "not-a-records-name", name: request.name } };
+    : {
+        outcome: "failed",
+        error: { kind: "not-a-records-name", folder, name: request.name },
+      };
 };

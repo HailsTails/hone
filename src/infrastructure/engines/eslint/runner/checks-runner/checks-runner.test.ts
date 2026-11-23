@@ -9,6 +9,7 @@ import type { ModuleLoaderPort } from "../../../../../application/ports/host/mod
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
+import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
@@ -163,11 +164,16 @@ const INSTALLED_ESLINT_PACKAGE_JSON = path.join({
 
 const CLASS_KEYWORD_CHECK: EngineCheck = {
   name: "class-keyword",
-  symptom: { ruleSet: "hone", name: "authored-class-or-this", title: "Authored class or this" },
+  symptom: {
+    ruleSet: TOOL_RULE_SET,
+    name: "authored-class-or-this",
+    title: "Authored class or this",
+  },
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
 const CLASS_PROJECTED = {
+  ruleSet: TOOL_RULE_SET,
   symptom: "authored-class-or-this",
   check: "class-keyword",
   ruleId: "hone/authored-class-or-this#class-keyword",
@@ -183,6 +189,7 @@ const CURRENT_PROJECTION_TEXT = checksProjectionText({
 const CLASS_BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
     address: "authored-class-or-this#class-keyword",
+    ruleSet: TOOL_RULE_SET,
     engine: "eslint",
     pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
     settings: ESLINT_CD_14_PIECE.settings,
@@ -976,7 +983,12 @@ describe("checksRunnerOver, giving the projection as project", () => {
   it("gives the answered files as off blocks, so records change the projection", async () => {
     const { runnerOver } = projectingRunner();
     const answered = [
-      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("kept.ts") },
+      {
+        ruleSet: TOOL_RULE_SET,
+        symptom: "authored-class-or-this",
+        check: "class-keyword",
+        file: repoPathOf("kept.ts"),
+      },
     ];
     expect(await runnerOver.project({ ...SELECTING_THE_CLASS_CHECK, answered })).toEqual({
       outcome: "ok",
@@ -1008,15 +1020,26 @@ describe("checksRunnerOver, giving the projection as project", () => {
 
   it("gives each package's file only the answers under that package, relative to it, and the root file all of them", async () => {
     const answered = [
-      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("kept.ts") },
       {
+        ruleSet: TOOL_RULE_SET,
+        symptom: "authored-class-or-this",
+        check: "class-keyword",
+        file: repoPathOf("kept.ts"),
+      },
+      {
+        ruleSet: TOOL_RULE_SET,
         symptom: "authored-class-or-this",
         check: "class-keyword",
         file: repoPathOf("packages/web/src/a.ts"),
       },
     ];
     const rooted = [
-      { symptom: "authored-class-or-this", check: "class-keyword", file: repoPathOf("src/a.ts") },
+      {
+        ruleSet: TOOL_RULE_SET,
+        symptom: "authored-class-or-this",
+        check: "class-keyword",
+        file: repoPathOf("src/a.ts"),
+      },
     ];
     expect(
       await projectingRunner().runnerOver.project({ ...WITH_A_PACKAGE_CONFIG, answered }),

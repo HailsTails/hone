@@ -38,6 +38,7 @@ const ADDRESS: CheckAddressText = "test-body-forms#all";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   forms: {
     "branching-with-if": ADDRESS,

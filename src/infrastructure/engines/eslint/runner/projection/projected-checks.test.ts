@@ -20,7 +20,7 @@ const WALKER_ENGINE: Engine = { name: "walker" };
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const TEST_SWITCHED_OFF: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "test-switched-off",
   title: "Test switched off",
   seen: "a site",
@@ -31,7 +31,7 @@ const TEST_SWITCHED_OFF: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "a site",
@@ -42,7 +42,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const POSITIONAL_PARAMETERS: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "positional-parameters",
   title: "Positional parameters",
   seen: "a site",
@@ -53,7 +53,7 @@ const POSITIONAL_PARAMETERS: Symptom = {
 };
 
 const REBINDING: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "rebinding",
   title: "Rebinding",
   seen: "a site",
@@ -124,6 +124,7 @@ const AUDIT = "walker" as const;
 
 const PARAMETER_COUNT_BINDING: CheckBinding = {
   address: "positional-parameters#parameter-count",
+  ruleSet: TOOL_RULE_SET,
   engine: ESLINT,
   anchor: { kind: "file" },
   pieceRoot: "/install/eslint/positional-parameters/parameter-count",
@@ -139,6 +140,7 @@ const PARAMETER_COUNT_BINDING: CheckBinding = {
 
 const SKIPPED_TESTS_BINDING: CheckBinding = {
   address: "test-switched-off#skipped-tests",
+  ruleSet: TOOL_RULE_SET,
   engine: ESLINT,
   anchor: { kind: "file" },
   pieceRoot: "/install/eslint/test-switched-off/skipped-tests",
@@ -153,6 +155,7 @@ const SKIPPED_TESTS_BINDING: CheckBinding = {
 
 const WALKER_BINDING: CheckBinding = {
   address: "rebinding#test-body",
+  ruleSet: TOOL_RULE_SET,
   engine: AUDIT,
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/rebinding/test-body",
@@ -174,12 +177,14 @@ describe("projectedNamedChecksOf", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: TOOL_RULE_SET,
           symptom: "test-switched-off",
           check: "skipped-tests",
           ruleId: "hone/test-switched-off#skipped-tests",
           options: [],
         },
         {
+          ruleSet: TOOL_RULE_SET,
           symptom: "positional-parameters",
           check: "parameter-count",
           ruleId: "hone/positional-parameters#parameter-count",
@@ -220,7 +225,7 @@ describe("projectedNamedChecksOf", () => {
         bindings: [
           {
             ...SKIPPED_TESTS_BINDING,
-            ruleSet: ruleSetNameOf("team"),
+            ruleSet: { name: ruleSetNameOf("team") },
             settings: { pluginNamespace: "hone", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
@@ -239,7 +244,7 @@ describe("projectedNamedChecksOf", () => {
           {
             address: "test-switched-off#skipped-tests",
             engine: "eslint",
-            ruleSet: ruleSetNameOf("team"),
+            ruleSet: { name: ruleSetNameOf("team") },
             anchor: { kind: "file" },
             pieceRoot: "/repo/team",
             settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
@@ -252,6 +257,7 @@ describe("projectedNamedChecksOf", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: { name: ruleSetNameOf("team") },
           symptom: "test-switched-off",
           check: "skipped-tests",
           ruleId: "team/no-skips",
@@ -276,6 +282,7 @@ describe("projectedNamedChecksOf", () => {
         bindings: [
           {
             address: "leftover-debugging#debug-call",
+            ruleSet: TOOL_RULE_SET,
             engine: "eslint",
             anchor: { kind: "file" },
             pieceRoot: "/install/pieces/leftover-debugging",
@@ -294,6 +301,7 @@ describe("projectedNamedChecksOf", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: TOOL_RULE_SET,
           symptom: "leftover-debugging",
           check: "debug-call",
           ruleId: "hone/leftover-debugging#debug-call",

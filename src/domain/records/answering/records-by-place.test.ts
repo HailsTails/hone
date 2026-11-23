@@ -19,6 +19,7 @@ import {
 } from "./records-by-place.ts";
 
 const STUB_WITH_VIFN: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "stub-with-vifn",
   title: "Stub with vi.fn",
   standing: "accepted",
@@ -26,7 +27,7 @@ const STUB_WITH_VIFN: Recipe = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "Seen.",
@@ -291,6 +292,20 @@ describe("recordsReachingSites, a team's symptom sharing a name with one of Hone
     ).toEqual([]);
   });
 
+  it("gives no deviation from Hone's recipe for a site whose symptom lists a team's recipe of the same name", () => {
+    const teamMocked: Symptom = {
+      ...MOCKED,
+      ruleSet: TEAM_CLAIMED_TYPE.ruleSet,
+      recipes: [{ ...STUB_WITH_VIFN, ruleSet: TEAM_CLAIMED_TYPE.ruleSet }],
+    };
+    expect(
+      recordsReachingSites({
+        byPlace: BY_PLACE,
+        sites: [siteAt({ file: DOMAIN, symptom: teamMocked, check: { found: "none" } })],
+      }),
+    ).toEqual([]);
+  });
+
   it("gives no module record for a team's symptom named as one a boundary record reaches", () => {
     expect(
       recordsReachingSites({
@@ -321,19 +336,63 @@ describe("placedInRecordOrder", () => {
 describe("answeredAt", () => {
   const file = repoPathOf("src/a.ts");
   const other = repoPathOf("src/b.ts");
+  const acme = { name: ruleSetNameOf("acme") };
   const byPlace = answeredByPlaceOf({
     answered: [
-      { file, symptom: "claimed-type", check: "cast-expressions" },
-      { file: other, symptom: "claimed-type" },
+      { ruleSet: TOOL_RULE_SET, file, symptom: "claimed-type", check: "cast-expressions" },
+      { ruleSet: TOOL_RULE_SET, file: other, symptom: "claimed-type" },
+      { ruleSet: acme, file, symptom: "loop-keyword" },
     ],
   });
 
   it.each([
-    { file, address: "claimed-type#cast-expressions", expected: true },
-    { file, address: "claimed-type#assertion", expected: false },
-    { file: other, address: "claimed-type#assertion", expected: true },
-    { file: repoPathOf("src/c.ts"), address: "claimed-type#cast-expressions", expected: false },
-  ])("checks the answer for $address in $file", ({ file, address, expected }) => {
-    expect(answeredAt({ byPlace, file, address, symptom: "claimed-type" })).toBe(expected);
-  });
+    {
+      file,
+      ruleSet: TOOL_RULE_SET,
+      symptom: "claimed-type",
+      address: "claimed-type#cast-expressions",
+      expected: true,
+    },
+    {
+      file,
+      ruleSet: TOOL_RULE_SET,
+      symptom: "claimed-type",
+      address: "claimed-type#assertion",
+      expected: false,
+    },
+    {
+      file: other,
+      ruleSet: TOOL_RULE_SET,
+      symptom: "claimed-type",
+      address: "claimed-type#assertion",
+      expected: true,
+    },
+    {
+      file: repoPathOf("src/c.ts"),
+      ruleSet: TOOL_RULE_SET,
+      symptom: "claimed-type",
+      address: "claimed-type#cast-expressions",
+      expected: false,
+    },
+    {
+      file,
+      ruleSet: acme,
+      symptom: "claimed-type",
+      address: "claimed-type#cast-expressions",
+      expected: false,
+    },
+    { file, ruleSet: acme, symptom: "loop-keyword", address: "loop-keyword#loops", expected: true },
+    {
+      file,
+      ruleSet: TOOL_RULE_SET,
+      symptom: "loop-keyword",
+      address: "loop-keyword#loops",
+      expected: false,
+    },
+  ])(
+    "checks the answer for $address of $ruleSet in $file",
+    ({ file, ruleSet, symptom, address, expected }) => {
+      expect(answeredAt({ byPlace, file, ruleSet, symptom, address })).toBe(expected);
+    },
+  );
 });

@@ -10,7 +10,11 @@ import {
   recordDebtOf,
 } from "../application/records/record-commands.ts";
 import { refreshableProjectionOf } from "../application/run/engines/engine-states.ts";
-import { type VersionTwoStages, versionTwoRunOver } from "../application/run/version-two-run.ts";
+import {
+  settledCatalogueOf,
+  type VersionTwoStages,
+  versionTwoRunOver,
+} from "../application/run/version-two-run.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
@@ -114,15 +118,16 @@ export const versionTwoPruneDebtOf = async (
 export const versionTwoAuthoriseOf = (
   request: VersionTwoRecordInput & { readonly authorising: AuthoriseRequest },
 ): Result<Authorising, RunLoadFailure> => {
-  const catalogue = request.stages.catalogue();
-  if (catalogue.outcome === "failed") {
-    return catalogue;
+  const settled = settledCatalogueOf(request);
+  if (settled.outcome === "failed") {
+    return settled;
   }
+  const { catalogue } = settled.value;
   return recordFailureOf({
     recorded: authoriseOf({
       ports: {
-        catalogue: catalogue.value,
-        source: request.recordsSourceFor({ catalogue: catalogue.value }),
+        catalogue,
+        source: request.recordsSourceFor({ catalogue }),
         store: request.recordsStoreOf({ repoRoot: request.repoRoot }),
         recordsReader: request.recordsReader,
         recordsEditor: request.recordsEditor,

@@ -246,11 +246,15 @@ type Definitions = Pointable & {
 
 const principleOf = (wire: PrincipleWire): Principle => ({ name: wire.name, title: wire.title });
 
-const recipeOf = (wire: RecipeWire): Recipe => ({
-  name: wire.name,
-  title: wire.title,
-  standing: wire.standing,
-  reason: { text: wire.reason.text, standing: wire.reason.standing },
+const recipeOf = (request: {
+  readonly wire: RecipeWire;
+  readonly ruleSet: RuleSetIdentity;
+}): Recipe => ({
+  ruleSet: request.ruleSet,
+  name: request.wire.name,
+  title: request.wire.title,
+  standing: request.wire.standing,
+  reason: { text: request.wire.reason.text, standing: request.wire.reason.standing },
 });
 
 const recordKindOf = (wire: RecordKindWire): RecordKind => ({
@@ -340,7 +344,10 @@ const pointableOf = (request: { readonly file: CatalogueFile }): Resolution<Poin
   });
 };
 
-const definitionsOf = (request: { readonly file: CatalogueFile }): Resolution<Definitions> => {
+const definitionsOf = (request: {
+  readonly file: CatalogueFile;
+  readonly ruleSet: RuleSetIdentity;
+}): Resolution<Definitions> => {
   const pointable = pointableOf(request);
   if (pointable.outcome === "failed") {
     return pointable;
@@ -363,7 +370,7 @@ const definitionsOf = (request: { readonly file: CatalogueFile }): Resolution<De
     : resolved({
         ...pointable.value,
         cases: cases.value,
-        recipes: request.file.recipes.map(recipeOf),
+        recipes: request.file.recipes.map((wire) => recipeOf({ wire, ruleSet: request.ruleSet })),
         recordKinds,
         engines: request.file.engines.map(engineOf),
       });

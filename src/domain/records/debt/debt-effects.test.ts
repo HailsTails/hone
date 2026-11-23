@@ -15,6 +15,7 @@ import { repoPathOf } from "../../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import { type DebtEffectsRequest, debtOutcomesOf } from "./debt-effects.ts";
 
@@ -85,6 +86,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -106,7 +108,7 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -126,7 +128,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -214,7 +216,7 @@ const HELD_CAST_DEBT: PlacedRecord = {
 };
 
 const REQUEST: DebtEffectsRequest = {
-  sites: [{ address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
+  sites: [{ ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
   unrecordable: [],
   records: [],
   leave: [],
@@ -224,14 +226,31 @@ const REQUEST: DebtEffectsRequest = {
 describe("what record-debt does with each symptom and file the check finds", () => {
   it("records debt on a file this change left alone", () => {
     expect(debtOutcomesOf(REQUEST)).toEqual([
-      { address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
+      { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
     ]);
   });
 
   it("writes nothing for debt already held on the same symptom, check and file, and says where it sits", () => {
     expect(debtOutcomesOf({ ...REQUEST, records: [HELD_CLOCK_DEBT] })).toEqual([
-      { address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "already-recorded", heldIn: DEBT_FILE },
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: ORDER_FILE,
+        effect: "already-recorded",
+        heldIn: DEBT_FILE,
+      },
     ]);
+  });
+
+  it("does not take Hone's debt on a symptom of the same name for a team's site", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    expect(
+      debtOutcomesOf({
+        ...REQUEST,
+        sites: [{ ruleSet: acme, address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
+        records: [HELD_CLOCK_DEBT],
+      }),
+    ).toEqual([{ ruleSet: acme, address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" }]);
   });
 
   it("says the debt sits in the first records file that holds it when two files hold it", () => {
@@ -240,7 +259,13 @@ describe("what record-debt does with each symptom and file the check finds", () 
       place: { file: repoPathOf("hone-records/debt/claimed-type.json"), index: 0 },
     };
     expect(debtOutcomesOf({ ...REQUEST, records: [HELD_CLOCK_DEBT, heldAgain] })).toEqual([
-      { address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "already-recorded", heldIn: DEBT_FILE },
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: ORDER_FILE,
+        effect: "already-recorded",
+        heldIn: DEBT_FILE,
+      },
     ]);
   });
 
@@ -249,14 +274,30 @@ describe("what record-debt does with each symptom and file the check finds", () 
       debtOutcomesOf({
         ...REQUEST,
         sites: [
-          { address: "claimed-type", file: ORDER_FILE, origin: "finding" },
-          { address: "claimed-type#cast-expressions", file: ORDER_FILE, origin: "finding" },
+          { ruleSet: TOOL_RULE_SET, address: "claimed-type", file: ORDER_FILE, origin: "finding" },
+          {
+            ruleSet: TOOL_RULE_SET,
+            address: "claimed-type#cast-expressions",
+            file: ORDER_FILE,
+            origin: "finding",
+          },
         ],
         records: [HELD_WHOLE_SYMPTOM_DEBT],
       }),
     ).toEqual([
-      { address: "claimed-type", file: ORDER_FILE, effect: "already-recorded", heldIn: DEBT_FILE },
-      { address: "claimed-type#cast-expressions", file: ORDER_FILE, effect: "recorded" },
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: "claimed-type",
+        file: ORDER_FILE,
+        effect: "already-recorded",
+        heldIn: DEBT_FILE,
+      },
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: "claimed-type#cast-expressions",
+        file: ORDER_FILE,
+        effect: "recorded",
+      },
     ]);
   });
 
@@ -264,58 +305,125 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: "claimed-type#cast-expressions", file: LEFT_FILE, origin: "finding" }],
+        sites: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            address: "claimed-type#cast-expressions",
+            file: LEFT_FILE,
+            origin: "finding",
+          },
+        ],
         records: [HELD_CAST_DEBT],
       }),
-    ).toEqual([{ address: "claimed-type#cast-expressions", file: LEFT_FILE, effect: "recorded" }]);
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: "claimed-type#cast-expressions",
+        file: LEFT_FILE,
+        effect: "recorded",
+      },
+    ]);
   });
 
   it("leaves a file under a --leave path, naming the path", () => {
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: CLOCK_ADDRESS, file: LEFT_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: LEFT_FILE, origin: "finding" },
+        ],
         leave: [LEFT_FOLDER],
       }),
-    ).toEqual([{ address: CLOCK_ADDRESS, file: LEFT_FILE, effect: "left", under: LEFT_FOLDER }]);
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: LEFT_FILE,
+        effect: "left",
+        under: LEFT_FOLDER,
+      },
+    ]);
   });
 
   it("leaves a file that is exactly a --leave path", () => {
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" },
+        ],
         leave: [ORDER_FILE],
       }),
-    ).toEqual([{ address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "left", under: ORDER_FILE }]);
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: ORDER_FILE,
+        effect: "left",
+        under: ORDER_FILE,
+      },
+    ]);
   });
 
   it("does not record debt on a file this change changed, since the run would forfeit it", () => {
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" },
+        ],
       }),
-    ).toEqual([{ address: CLOCK_ADDRESS, file: TOUCHED_FILE, effect: "touched", of: "finding" }]);
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: TOUCHED_FILE,
+        effect: "touched",
+        of: "finding",
+      },
+    ]);
   });
 
   it("does not record debt on a file this change created, since the run would forfeit it", () => {
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: CLOCK_ADDRESS, file: NEW_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: NEW_FILE, origin: "finding" },
+        ],
       }),
-    ).toEqual([{ address: CLOCK_ADDRESS, file: NEW_FILE, effect: "touched", of: "finding" }]);
+    ).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: NEW_FILE,
+        effect: "touched",
+        of: "finding",
+      },
+    ]);
   });
 
   it("says a touched file's debt came from a native exception when no finding stands there", () => {
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "native-exception" }],
+        sites: [
+          {
+            ruleSet: TOOL_RULE_SET,
+            address: CLOCK_ADDRESS,
+            file: TOUCHED_FILE,
+            origin: "native-exception",
+          },
+        ],
       }),
     ).toEqual([
-      { address: CLOCK_ADDRESS, file: TOUCHED_FILE, effect: "touched", of: "native-exception" },
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: TOUCHED_FILE,
+        effect: "touched",
+        of: "native-exception",
+      },
     ]);
   });
 
@@ -323,10 +431,14 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" },
+        ],
         touched: { measured: "elsewhere" },
       }),
-    ).toEqual([{ address: CLOCK_ADDRESS, file: TOUCHED_FILE, effect: "recorded" }]);
+    ).toEqual([
+      { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: TOUCHED_FILE, effect: "recorded" },
+    ]);
   });
 
   it("gives a finding no debt can be written for its own line, ordered by file with the rest", () => {
@@ -351,7 +463,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
         effect: "unrecordable",
         because: { kind: "no-check" },
       },
-      { address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
+      { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
     ]);
   });
 });

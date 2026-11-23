@@ -2,9 +2,10 @@ import type { RecordRefusal } from "../../domain/records/hone-records/hone-recor
 import type { RecordsEdit } from "../../domain/records/hone-records/records-edit.ts";
 import type { Why } from "../../domain/records/why-chain.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
+import type { OwnedName } from "../../domain/rule-set/rule-set-identity.ts";
 
 export type AuthoriseRequest = {
-  readonly answers: string;
+  readonly answers: OwnedName;
   readonly file: RepoPath;
   readonly case: string;
   readonly owes: string;

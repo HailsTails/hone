@@ -36,6 +36,7 @@ const SPAWN = "spawn" + "Sync";
 const LINE_COMMENT = "/" + "/";
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-47",

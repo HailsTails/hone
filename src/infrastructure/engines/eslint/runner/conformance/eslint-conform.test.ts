@@ -325,6 +325,7 @@ describe("conformedNamedCases", () => {
       conformedNamedCases({
         binding: {
           address: "authored-class-or-this#class-keyword",
+          ruleSet: TOOL_RULE_SET,
           engine: "eslint",
           anchor: CLASS_CLAUSE.anchor,
           pieceRoot: PIECE_ROOT,

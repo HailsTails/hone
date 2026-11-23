@@ -59,7 +59,7 @@ const INPUT: NamedVersionOnePassRequest = {
 const LOOP: Check = {
   name: "loops",
   symptom: {
-    ruleSet: "hone",
+    ruleSet: TOOL_RULE_SET,
     name: "loop-keyword",
     title: "Loop keyword",
     seen: "A loop.",
@@ -247,6 +247,7 @@ describe("createNamedVersionOneEnginePass", () => {
           bindings: [
             {
               address: "loop-keyword#loops",
+              ruleSet: TOOL_RULE_SET,
               engine: "walker",
               anchor: { kind: "file" },
               pieceRoot: "/install/walker/loop-keyword/loops",

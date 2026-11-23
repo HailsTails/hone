@@ -83,6 +83,7 @@ const DEBT_KIND: RecordKind = {
 };
 
 const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "adapter-per-outside-party",
   title: "Adapter per outside party",
   standing: "accepted",
@@ -90,6 +91,7 @@ const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
 };
 
 const STUB_WITH_VIFN: Recipe = {
+  ruleSet: TOOL_RULE_SET,
   name: "stub-with-vifn",
   title: "Stub with vi.fn",
   standing: "accepted",
@@ -100,7 +102,7 @@ const symptomOf = (request: {
   readonly name: string;
   readonly recipes: readonly Recipe[];
 }): Symptom => ({
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: request.name,
   title: request.name,
   seen: "Seen.",
@@ -448,6 +450,26 @@ describe("holdsAt, deviations", () => {
       holdsAt({
         record: DEVIATION,
         site: { check: UNCHECKED, symptom: CLAIMED_TYPE, file: ADAPTER, party: NOT_REPORTED },
+        catalogue: CATALOGUE,
+      }),
+    ).toBe("does-not-hold");
+  });
+
+  it("does not hold Hone's deviation on a symptom whose recipes include only a team's recipe of the same name", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    expect(
+      holdsAt({
+        record: DEVIATION,
+        site: {
+          check: UNCHECKED,
+          symptom: {
+            ...DOUBLE_WITH_A_BODY,
+            ruleSet: acme,
+            recipes: [{ ...STUB_WITH_VIFN, ruleSet: acme }],
+          },
+          file: ADAPTER,
+          party: NOT_REPORTED,
+        },
         catalogue: CATALOGUE,
       }),
     ).toBe("does-not-hold");

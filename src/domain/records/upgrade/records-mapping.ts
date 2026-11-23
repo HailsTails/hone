@@ -9,11 +9,8 @@ import type { RuleSetCatalogue } from "../../settings/check-choices.ts";
 import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
 import { codePointOrder } from "../code-point-order.ts";
 import type { ExceptionRecord } from "../discipline-exceptions/exception-record.ts";
-import {
-  type NamedFolderKind,
-  RECORDS_VERSION,
-  namedRecordsFileOf,
-} from "../hone-records/records-layout.ts";
+import type { NamedFolderKind } from "../hone-records/named-folder-kind.ts";
+import { RECORDS_VERSION, namedRecordsFileOf } from "../hone-records/records-layout.ts";
 import type { UnansweredCredit, UpgradeRefusal } from "./upgrade-refusal.ts";
 
 export type CarriedEntry = { readonly [key: string]: ReadonlyJsonValue };

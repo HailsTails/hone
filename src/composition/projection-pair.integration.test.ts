@@ -10,13 +10,11 @@ import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import type { AnsweredFile } from "../domain/runner/checks-run-report.ts";
 import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { createEslintRunner } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import {
-  type AnsweredFile,
-  checksProjectionText,
-} from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
+import { checksProjectionText } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { projectedNamedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
 import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
@@ -137,10 +135,10 @@ const VERSION_ONE_RECORDS: readonly ExceptionRecord[] = [
 ];
 
 const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [
-  { symptom: "claimed-type", file: LEGACY },
-  { symptom: "rebinding", file: LEGACY },
-  { symptom: "positional-parameters", file: WIDE },
-  { symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
+  { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: LEGACY },
+  { ruleSet: TOOL_RULE_SET, symptom: "rebinding", file: LEGACY },
+  { ruleSet: TOOL_RULE_SET, symptom: "positional-parameters", file: WIDE },
+  { ruleSet: TOOL_RULE_SET, symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
 ];
 
 const PROBED_FILES: readonly string[] = [
@@ -180,7 +178,7 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 
 const toolCatalogue = (): SymptomCatalogue => {
   const reading = readBoundCatalogue({
-    ruleSet: "hone",
+    ruleSet: TOOL_RULE_SET,
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

@@ -10,6 +10,7 @@ import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { RuleSetName } from "../../rule-set/identifier-types.ts";
 import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts";
 import type { WhyChain } from "../why-chain.ts";
+import type { NamedFolderKind } from "./named-folder-kind.ts";
 
 export type RecordIssue = { readonly path: readonly PropertyKey[]; readonly message: string };
 
@@ -101,12 +102,7 @@ export type DependencyRecord = {
 
 export type HoneRecord = Debt | AuthorisedLocation | Deviation | BoundaryRecord | DependencyRecord;
 
-export type RecordsFolderKind =
-  | "authorised-locations"
-  | "debt"
-  | "deviations"
-  | "boundary-records"
-  | "dependency-records";
+export type RecordsFolderKind = NamedFolderKind | "boundary-records" | "dependency-records";
 
 export type RecordPlace = { readonly file: RepoPath; readonly index: number };
 
@@ -125,7 +121,7 @@ export type RecordRefusal =
   | { readonly kind: "named-ban"; readonly dependency: string }
   | { readonly kind: "unknown-runtime-facility"; readonly outsideParty: string }
   | { readonly kind: "misplaced"; readonly belongsIn: RepoPath }
-  | { readonly kind: "not-a-records-name"; readonly name: string }
+  | { readonly kind: "not-a-records-name"; readonly folder: RepoPath; readonly name: string }
   | { readonly kind: "carried-changed-since-base" }
   | { readonly kind: "duplicate"; readonly of: RecordPlace };
 

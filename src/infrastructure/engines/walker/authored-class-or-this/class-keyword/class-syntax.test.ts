@@ -34,6 +34,7 @@ const ADDRESS: CheckAddressText = "authored-class-or-this#class-keyword";
 
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",

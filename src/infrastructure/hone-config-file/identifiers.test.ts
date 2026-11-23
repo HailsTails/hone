@@ -4,6 +4,7 @@ import {
   clauseIdSchema,
   disciplineIdSchema,
   engineIdSchema,
+  ruleSetIdentitySchema,
   ruleSetNameSchema,
 } from "./identifiers.ts";
 
@@ -16,6 +17,19 @@ describe("ruleSetNameSchema", () => {
     "refuses %j",
     (text) => {
       expect(ruleSetNameSchema.safeParse(text).success).toBe(false);
+    },
+  );
+});
+
+describe("ruleSetIdentitySchema", () => {
+  it.each<unknown>(["hone", { name: "acme" }])("accepts %j", (identity) => {
+    expect(ruleSetIdentitySchema.safeParse(identity).success).toBe(true);
+  });
+
+  it.each<unknown>(["acme", { name: "hone" }, { name: "Acme" }, { name: "acme", extra: 1 }])(
+    "refuses %j",
+    (identity) => {
+      expect(ruleSetIdentitySchema.safeParse(identity).success).toBe(false);
     },
   );
 });

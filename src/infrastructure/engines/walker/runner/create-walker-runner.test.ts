@@ -39,6 +39,7 @@ const clauseFor = (request: {
   readonly module: string;
 }): CheckBinding => ({
   address: request.address,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,

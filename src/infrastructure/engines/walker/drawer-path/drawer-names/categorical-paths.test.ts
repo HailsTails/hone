@@ -31,6 +31,7 @@ const ADDRESS: CheckAddressText = "drawer-path#drawer-names";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-7",

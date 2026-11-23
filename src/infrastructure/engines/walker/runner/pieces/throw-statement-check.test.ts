@@ -18,6 +18,7 @@ const { syntaxApi } = loadedParse.value;
 
 const BINDING: CheckBinding = {
   address: "throw-or-catch-in-a-test#throw-statement",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/repo/pieces/throw-statement",

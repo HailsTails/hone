@@ -26,16 +26,16 @@ import type {
   RuntimeFacility,
   SymptomReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
+import type { NamedFolderKind } from "../../../domain/records/hone-records/named-folder-kind.ts";
 import type { RecordedReach } from "../../../domain/records/hone-records/recorded-reach.ts";
 import {
-  type NamedFolderKind,
   namedRecordsFileOf,
   type SingleFileKind,
 } from "../../../domain/records/hone-records/records-layout.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
-import { sameOwnedName } from "../../../domain/rule-set/rule-set-identity.ts";
+import { ownedNameText, sameOwnedName } from "../../../domain/rule-set/rule-set-identity.ts";
 import {
   carriedAuthorisedLocationWireSchema,
   carriedBoundaryRecordWireSchema,
@@ -111,11 +111,14 @@ const symptomNamed = (request: {
 
 const recipeNamed = (request: {
   readonly catalogue: SymptomCatalogue;
+  readonly ruleSet: RuleSetIdentity;
   readonly name: string;
 }): Resolution<Recipe> => {
-  const recipe = request.catalogue.recipes.find((candidate) => candidate.name === request.name);
+  const recipe = request.catalogue.recipes.find(
+    (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
+  );
   return recipe === undefined
-    ? refusedWith({ kind: "unknown-recipe", recipe: request.name })
+    ? refusedWith({ kind: "unknown-recipe", recipe: ownedNameText(request) })
     : resolved(recipe);
 };
 
@@ -443,7 +446,7 @@ const deviationOf = (
     return form;
   }
   const { recipe: name, file, recipeReason, reasonFails, evidence, ruleHolds } = form.value;
-  const found = recipeNamed({ catalogue: request.catalogue, name });
+  const found = recipeNamed({ catalogue: request.catalogue, ruleSet: request.ruleSet, name });
   const recipe =
     found.outcome === "failed" ? found : recipeReasonHeld({ recipe: found.value, recipeReason });
   const placed = placedIn({

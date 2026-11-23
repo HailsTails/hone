@@ -1,8 +1,10 @@
 import type { RepoPath } from "../repository/repo-path-types.ts";
+import type { RuleSetIdentity } from "../rule-set/clause-address-types.ts";
 
 export type ProjectedFile = { readonly file: RepoPath; readonly text: string };
 
 export type AnsweredFile = {
+  readonly ruleSet: RuleSetIdentity;
   readonly symptom: string;
   readonly check?: string;
   readonly file: RepoPath;

@@ -23,11 +23,9 @@ import { namedRecordsFileOf } from "../../domain/records/hone-records/records-la
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
-import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { TouchedSet } from "../../domain/repository/touched-set.ts";
 import type { Result } from "../../domain/result.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 import type { RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
@@ -72,8 +70,6 @@ type Commanded<Value> = Result<Value, RecordCommandFailure>;
 
 const UNMEASURED_BASE: RecordsAtBase = { measured: "no", base: { state: "not-given" } };
 
-const DEBT_FOLDER = repoPathOf("hone-records/debt");
-
 const documentsOf = (request: {
   readonly source: Pick<RecordsSource, "read">;
 }): Commanded<readonly RecordsDocument[]> => {
@@ -109,20 +105,18 @@ const heldDebtOf = (request: {
 };
 
 const additionOf = (request: {
-  readonly outcome: DebtOutcome;
+  readonly outcome: Extract<DebtOutcome, { readonly effect: "recorded" }>;
 }): Commanded<readonly RecordAddition[]> => {
+  const { ruleSet } = request.outcome;
   const file = namedRecordsFileOf({
-    ruleSet: TOOL_RULE_SET,
+    ruleSet,
     kind: "debt",
     name: symptomNameOf({ address: request.outcome.address }),
   });
   return file.outcome === "failed"
     ? {
         outcome: "failed",
-        error: {
-          kind: "records-folder",
-          failure: { kind: "not-a-records-name", folder: DEBT_FOLDER, name: file.error.name },
-        },
+        error: { kind: "records-folder", failure: file.error },
       }
     : {
         outcome: "ok",
@@ -138,9 +132,9 @@ const additionOf = (request: {
 const additionsOf = (request: {
   readonly outcomes: readonly DebtOutcome[];
 }): Commanded<readonly RecordAddition[]> => {
-  const additions = request.outcomes
-    .filter((outcome) => outcome.effect === "recorded")
-    .map((outcome) => additionOf({ outcome }));
+  const additions = request.outcomes.flatMap((outcome) =>
+    outcome.effect === "recorded" ? [additionOf({ outcome })] : [],
+  );
   const failed = additions.find((addition) => addition.outcome === "failed");
   return (
     failed ?? {

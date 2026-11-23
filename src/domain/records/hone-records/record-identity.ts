@@ -70,7 +70,7 @@ export const sameRecordIdentity = (request: {
       return sameSymptomSite({ left, right });
     case "deviation":
       return right.kind === "deviation" &&
-        right.recipe.name === left.recipe.name &&
+        sameOwnedName({ left: left.recipe, right: right.recipe }) === "same" &&
         right.file === left.file
         ? "same"
         : "different";

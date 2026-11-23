@@ -202,7 +202,7 @@ const REPOSITORY_ROOT = absolutePathSchema.parse(
 );
 
 const CATALOGUE_HOLDING = readBoundCatalogue({
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
@@ -235,6 +235,7 @@ const PIECE_ROOT = `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-c
 const BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
     address: CLASS_CHECK,
+    ruleSet: TOOL_RULE_SET,
     engine: "eslint",
     anchor: { kind: "keyword", keyword: "class" },
     pieceRoot: PIECE_ROOT,
@@ -245,6 +246,7 @@ const BINDINGS: NamedEngineRunRequest["bindings"] = [
 ];
 
 const CLASS_PROJECTED = {
+  ruleSet: TOOL_RULE_SET,
   symptom: "authored-class-or-this",
   check: "class-keyword",
   ruleId: CLASS_RULE,
@@ -649,7 +651,12 @@ describe.each(ESLINT_LINES)(
 
     it("does not report the projection's own off block over an answered file as an override", async () => {
       const answered = [
-        { symptom: "authored-class-or-this", check: "class-keyword", file: SOURCE_FILE },
+        {
+          ruleSet: TOOL_RULE_SET,
+          symptom: "authored-class-or-this",
+          check: "class-keyword",
+          file: SOURCE_FILE,
+        },
       ];
       const projection = checksProjectionText({
         pluginImport: "../../src/eslint-plugin.ts",
@@ -901,10 +908,20 @@ describe.each(ESLINT_LINES)(
 
     it("matches an answer for a package file in that package's own file, written relative to the package, without reporting its off block as an override", async () => {
       const answered = [
-        { symptom: "authored-class-or-this", check: "class-keyword", file: SUB_FILE },
+        {
+          ruleSet: TOOL_RULE_SET,
+          symptom: "authored-class-or-this",
+          check: "class-keyword",
+          file: SUB_FILE,
+        },
       ];
       const answeredWithinSub = [
-        { symptom: "authored-class-or-this", check: "class-keyword", file: SOURCE_FILE },
+        {
+          ruleSet: TOOL_RULE_SET,
+          symptom: "authored-class-or-this",
+          check: "class-keyword",
+          file: SOURCE_FILE,
+        },
       ];
       const rootText = checksProjectionText({
         pluginImport: "../../src/eslint-plugin.ts",
@@ -945,7 +962,12 @@ export default [...hone, ...sub];
 const SUB_MEASURED = [{ check: CLASS_CHECK, file: "sub/kept.ts" }];
 
 const ANSWERED_IN_SUB = [
-  { symptom: "authored-class-or-this", check: "class-keyword", file: SUB_FILE },
+  {
+    ruleSet: TOOL_RULE_SET,
+    symptom: "authored-class-or-this",
+    check: "class-keyword",
+    file: SUB_FILE,
+  },
 ];
 
 const ROOT_TEXT_ANSWERING_SUB = checksProjectionText({
@@ -957,7 +979,14 @@ const ROOT_TEXT_ANSWERING_SUB = checksProjectionText({
 const SUB_TEXT_ANSWERING_ITS_FILE = checksProjectionText({
   pluginImport: "../../../src/eslint-plugin.ts",
   checks: [CLASS_PROJECTED],
-  answered: [{ symptom: "authored-class-or-this", check: "class-keyword", file: SOURCE_FILE }],
+  answered: [
+    {
+      ruleSet: TOOL_RULE_SET,
+      symptom: "authored-class-or-this",
+      check: "class-keyword",
+      file: SOURCE_FILE,
+    },
+  ],
 });
 
 const DECLARED_RUN = {
