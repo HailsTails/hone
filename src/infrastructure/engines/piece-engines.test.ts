@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { CheckContent, Symptom } from "../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
@@ -72,19 +71,13 @@ const readBindings = (request: {
     ),
     write: vi.fn<FileTextPort["write"]>(),
   };
-  const directory: DirectoryPort = {
-    list: vi.fn<DirectoryPort["list"]>(),
-    create: vi.fn<DirectoryPort["create"]>(),
-  };
   const result = createEngineBindingsRepository({
     fileText,
-    directory,
     path: PATH,
     ruleSetRoot: TEAM,
     installRoot: INSTALL,
   }).read({ checks: TEAM_CHECKS });
   request.checkFiles?.(fileText);
-  expect(directory.list).not.toHaveBeenCalled();
   return result;
 };
 

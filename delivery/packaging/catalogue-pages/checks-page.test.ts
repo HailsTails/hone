@@ -69,6 +69,7 @@ describe("checksPageOf", () => {
   it("renders each check under its symptom with its prose, leaving out a symptom with no checks", () => {
     expect(
       checksPageOf({
+        bindings: new Map(),
         file: FILE,
         path: PATH,
         prose: new Map([
@@ -104,6 +105,7 @@ describe("checksPageOf", () => {
     };
     expect(
       checksPageOf({
+        bindings: new Map(),
         file,
         path: PATH,
         prose: new Map([
@@ -113,6 +115,20 @@ describe("checksPageOf", () => {
     ).toEqual({
       path: "rules/typescript/checks.md",
       text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Flags beyond the symptom:** `as const`.\n- **Misses:** casts in strings.\n- **Settings traced to:** none.\n\n## Fix\n\nDeclare it.\n",
+    });
+  });
+
+  it("lists the engines bound to each check, leaving out the line for a check no engine runs", () => {
+    expect(
+      checksPageOf({
+        bindings: new Map([["claimed-type#cast-to-any", [{ name: "walker" }, { name: "eslint" }]]]),
+        file: FILE,
+        path: PATH,
+        prose: new Map(),
+      }),
+    ).toEqual({
+      path: "rules/typescript/checks.md",
+      text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Engines:** `walker`, `eslint`\n\n### non-null-assertions\n",
     });
   });
 });

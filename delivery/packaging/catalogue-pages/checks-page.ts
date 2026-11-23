@@ -1,3 +1,5 @@
+import type { EngineBindings } from "../../../src/domain/language-layer/catalogue-binding.ts";
+import { checkAddressTextOf } from "../../../src/domain/language-layer/check-address-text.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import {
   blocksOf,
@@ -16,17 +18,29 @@ type Symptom = CatalogueFile["symptoms"][number];
 
 type Check = CatalogueFile["checks"][number];
 
-const MARGIN_LABELS: readonly FactLabel<"flagsBeyondTheSymptom" | "misses" | "settingsTracedTo">[] =
-  [
-    { key: "flagsBeyondTheSymptom", label: "Flags beyond the symptom" },
-    { key: "misses", label: "Misses" },
-    { key: "settingsTracedTo", label: "Settings traced to" },
-  ];
+export type ChecksSource = PageSource & { readonly bindings: EngineBindings };
 
-const marginLinesOf = (request: { readonly check: Check }): string =>
-  factLines({ facts: request.check, labels: MARGIN_LABELS });
+const MARGIN_LABELS: readonly FactLabel<
+  "engines" | "flagsBeyondTheSymptom" | "misses" | "settingsTracedTo"
+>[] = [
+  { key: "engines", label: "Engines" },
+  { key: "flagsBeyondTheSymptom", label: "Flags beyond the symptom" },
+  { key: "misses", label: "Misses" },
+  { key: "settingsTracedTo", label: "Settings traced to" },
+];
 
-const checkBlockOf = (request: PageSource & { readonly check: Check }): string =>
+const enginesOf = (request: ChecksSource & { readonly check: Check }): string | undefined => {
+  const address = checkAddressTextOf({
+    check: { name: request.check.name, symptom: { name: request.check.symptom } },
+  });
+  const engines = request.bindings.get(address) ?? [];
+  return engines.length === 0 ? undefined : engines.map(({ name }) => `\`${name}\``).join(", ");
+};
+
+const marginLinesOf = (request: ChecksSource & { readonly check: Check }): string =>
+  factLines({ facts: { ...request.check, engines: enginesOf(request) }, labels: MARGIN_LABELS });
+
+const checkBlockOf = (request: ChecksSource & { readonly check: Check }): string =>
   blocksOf({
     blocks: [
       `### ${request.check.name}`,
@@ -40,7 +54,7 @@ const checkBlockOf = (request: PageSource & { readonly check: Check }): string =
     ],
   });
 
-const symptomBlockOf = (request: PageSource & { readonly symptom: Symptom }): string => {
+const symptomBlockOf = (request: ChecksSource & { readonly symptom: Symptom }): string => {
   const checks = request.file.checks.filter((check) => check.symptom === request.symptom.name);
   return checks.length === 0
     ? ""
@@ -52,7 +66,7 @@ const symptomBlockOf = (request: PageSource & { readonly symptom: Symptom }): st
       });
 };
 
-export const checksPageOf = (request: PageSource): CataloguePage =>
+export const checksPageOf = (request: ChecksSource): CataloguePage =>
   pageOf({
     path: `rules/${PAGE}`,
     blocks: [

@@ -2,6 +2,7 @@ import type { FileTextPort } from "../../../src/application/ports/file-system/fi
 import type { PathPort } from "../../../src/application/ports/host/path-port.ts";
 import type { Result } from "../../../src/domain/result.ts";
 import { packageFileStemOf, TOOL_IDENTITY } from "../../../src/domain/rule-set/tool-identity.ts";
+import { createEngineBindingsRepository } from "../../../src/infrastructure/engines/piece-engines.ts";
 import type { EntryDisposition } from "../../install-proof/install-proof-plan.ts";
 import type { CopiedEntry, ScratchFilesPort } from "../../install-proof/install-proof-ports.ts";
 import { CHANGELOG_FILE } from "../../release/changelog.ts";
@@ -409,7 +410,20 @@ const contentFilesOf = (request: {
   if (copied.outcome === "failed") {
     return copied;
   }
-  const pages = cataloguePagesOf({ files: copied.value, path: request.context.path });
+  const sourceRoot = request.context.path.resolve({ path: request.context.packageRoot });
+  if (sourceRoot.outcome === "failed") {
+    return failedWith({ label: "resolve the package root", detail: sourceRoot.error.path });
+  }
+  const pages = cataloguePagesOf({
+    files: copied.value,
+    engineBindings: createEngineBindingsRepository({
+      fileText: request.context.fileText,
+      path: request.context.path,
+      ruleSetRoot: sourceRoot.value,
+      installRoot: sourceRoot.value,
+    }),
+    path: request.context.path,
+  });
   if (pages.outcome === "failed") {
     return failedWith({ label: "render the catalogue pages", detail: pages.error });
   }
