@@ -1,10 +1,9 @@
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
-const TEST_FILE = /\.(?:test|spec)\.(?:ts|tsx|mts|cts)$/;
 const HOOKS = new Set(["beforeAll", "beforeEach", "afterEach", "afterAll"]);
 const ANSWER_SETTERS = new Set([
   "mockReturnValue",
@@ -49,7 +48,7 @@ export const check: WalkerPiece = {
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        if (!TEST_FILE.test(file) || folderScope({ file }) === "generated")
+        if (testFileEligibility({ file }) === "skipped")
           return { outcome: "ok", value: { kind: "skipped" } };
         return {
           outcome: "ok",

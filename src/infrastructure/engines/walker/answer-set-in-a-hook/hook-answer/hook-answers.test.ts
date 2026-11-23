@@ -97,6 +97,40 @@ describe("answers set in a hook", () => {
     ).toEqual([]);
   });
 
+  it("reports a stub created with an implementation inside a hook", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: "beforeEach(() => { stub = vi.fn(() => 'x'); });",
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 1, column: 26 },
+        snippet: "vi.fn(() => 'x')",
+      },
+    ]);
+  });
+
+  it("passes a stub declaration without an implementation", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: "beforeEach(() => { stub = vi.fn(); });",
+      }),
+    ).toEqual([]);
+  });
+
+  it("skips a spec suffix outside the test-file scope", () => {
+    expect(
+      findingsIn({
+        file: repoPathSchema.parse("src/order.spec.ts"),
+        source: "beforeEach(() => stub.mockReturnValue('order'));",
+      }),
+    ).toEqual([]);
+  });
+
   it("leaves named callbacks outside the inline hook check", () => {
     expect(
       findingsIn({

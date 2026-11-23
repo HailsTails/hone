@@ -200,21 +200,28 @@ describe("Existing literal module-mock observations", () => {
 });
 
 describe("Global patches in edition 2", () => {
-  it("reports direct global stubs", () => {
-    const observed = sourceObservations({
-      source: "vi.stubGlobal('focus', value);",
-      edition: editionOf("2"),
-    });
-    observed.observers.enter?.({
-      node: observed.tree
-        .getChildAt(0, observed.tree)
-        .getChildAt(0, observed.tree)
-        .getChildAt(0, observed.tree),
-    });
-    expect(observed.observers.finish()).toEqual([
-      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "vi.stubGlobal('focus', value);" },
-    ]);
-  });
+  it.each([editionOf("2"), editionOf("3")])(
+    "reports direct global stubs in edition %s",
+    (edition) => {
+      const observed = sourceObservations({
+        source: "vi.stubGlobal('focus', value);",
+        edition,
+      });
+      observed.observers.enter?.({
+        node: observed.tree
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree),
+      });
+      expect(observed.observers.finish()).toEqual([
+        {
+          check: ADDRESS,
+          anchor: { line: 5, column: 2 },
+          snippet: "vi.stubGlobal('focus', value);",
+        },
+      ]);
+    },
+  );
 
   it("reports assignments to process environment keys", () => {
     const observed = sourceObservations({

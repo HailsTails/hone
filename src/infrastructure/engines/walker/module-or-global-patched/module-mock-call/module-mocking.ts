@@ -1,17 +1,12 @@
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import { editionReaches } from "../../../../../domain/rule-set/edition-reach.ts";
+import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
-const TEST_FILE = /\.(?:test|spec)\.(?:ts|tsx|mts|cts)$/;
-
-const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
-  if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return request.file.endsWith(".test.ts") || request.file.endsWith(".test.tsx")
-    ? "eligible"
-    : "skipped";
-};
+const GLOBAL_PATCH_EDITION = editionOf("2");
 
 const snippetAt = (request: { readonly source: string; readonly position: number }): string => {
   const snippet = request.source.slice(request.position, request.position + 80).replace(/\n/g, " ");
@@ -95,14 +90,13 @@ export const check: WalkerPiece = {
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        const moduleMockBindings = testFileEligibility({ file }) === "eligible" ? bindings : [];
-        const globalPatchBindings =
-          folderScope({ file }) === "authored" && TEST_FILE.test(file)
-            ? bindings.filter((binding) => binding.edition === "2")
-            : [];
-        if (moduleMockBindings.length === 0 && globalPatchBindings.length === 0) {
+        if (testFileEligibility({ file }) === "skipped" || bindings.length === 0) {
           return { outcome: "ok", value: { kind: "skipped" } };
         }
+        const globalPatchBindings = bindings.filter(
+          ({ edition }) =>
+            editionReaches({ edition, introducedIn: GLOBAL_PATCH_EDITION }) === "reached",
+        );
         return {
           outcome: "ok",
           value: {
@@ -113,7 +107,7 @@ export const check: WalkerPiece = {
                 enter: ({ node }) => {
                   const findingBindings =
                     moduleMockOf({ syntaxApi, node }) !== undefined
-                      ? moduleMockBindings
+                      ? bindings
                       : globalPatchBindings.length > 0 &&
                           globalPatchOf({ syntaxApi, node }) !== undefined
                         ? globalPatchBindings
