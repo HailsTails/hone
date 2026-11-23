@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
+import type { EngineRun } from "../application/ports/engine/engine-run.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
+import type { RecordKind, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import {
   type RecordsSourceFor,
   type VersionTwoRecordInput,
@@ -62,6 +65,109 @@ describe("versionTwoRecordDebtOf", () => {
     ).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
+    });
+    expect(input.recordsStoreOf).not.toHaveBeenCalled();
+  });
+});
+
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
+
+const AUTHORISED_LOCATION_KIND: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const CATALOGUE: SymptomCatalogue = {
+  principles: [],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [DEBT_KIND, AUTHORISED_LOCATION_KIND],
+  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
+  engines: [{ name: "eslint" }],
+  symptoms: [],
+  clauses: [],
+  namedBans: [],
+  checks: [],
+};
+
+const OUT_OF_DATE_ESLINT_RUN: EngineRun = {
+  mechanism: "eslint",
+  hits: [],
+  nativeExceptions: [],
+  coverableKinds: [],
+  projection: "out-of-date",
+  slices: [],
+  unprojectedFolders: [],
+  measured: [],
+  misnamedRuleIds: [],
+};
+
+const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
+  ...inputFailingCatalogue(),
+  stages: {
+    catalogue: vi.fn<VersionTwoStages["catalogue"]>().mockReturnValue({
+      outcome: "ok",
+      value: CATALOGUE,
+    }),
+    settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+      outcome: "ok",
+      value: {
+        available: [],
+        selection: {
+          selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
+          bindings: [],
+          clauseRoots: [],
+          excluded: [],
+          eslintConfigRoots: [],
+          fileExceptionWhyChains: "required",
+        },
+        runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: DEFAULT_CONVENTIONS,
+        notes: [],
+      },
+    }),
+    records: vi.fn<VersionTwoStages["records"]>().mockReturnValue({
+      outcome: "ok",
+      value: { records: [], refused: [], notes: [], base: { measured: "yes" } },
+    }),
+    tree: vi.fn<VersionTwoStages["tree"]>().mockReturnValue({
+      outcome: "ok",
+      value: { tracked: [], declaredConfigRoots: [] },
+    }),
+    engines: vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+      outcome: "ok",
+      value: [OUT_OF_DATE_ESLINT_RUN],
+    }),
+    projections: vi.fn<VersionTwoStages["projections"]>(),
+    touched: vi.fn<VersionTwoStages["touched"]>().mockReturnValue({
+      measured: "yes",
+      paths: new Set(),
+    }),
+  },
+});
+
+describe("versionTwoRecordDebtOf, an out-of-date projection", () => {
+  it("refuses with projection-stale naming the project command and opens no records store", async () => {
+    const input = inputWithOutOfDateProjection();
+
+    expect(
+      await versionTwoRecordDebtOf({ ...input, leave: [], projectCommand: PROJECT_COMMAND }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "projection-stale",
+        problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+        projectCommand: PROJECT_COMMAND,
+      },
     });
     expect(input.recordsStoreOf).not.toHaveBeenCalled();
   });

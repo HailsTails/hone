@@ -3,7 +3,12 @@ import type {
   RunMeasurement,
   RunMeasurements,
 } from "../../../domain/records/measurement/measured-at.ts";
-import type { EngineNotRun, RunProjectionProblem } from "../../../domain/report/run-report.ts";
+import type {
+  EngineNotRun,
+  MissingProjection,
+  RunProjectionProblem,
+  RunUnmeasured,
+} from "../../../domain/report/run-report.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import type { SelectedClause } from "../../../domain/settings/selection/selection.ts";
@@ -144,9 +149,47 @@ export const engineProblemsOf = (request: {
 }): readonly RunProjectionProblem[] =>
   request.runs.flatMap((run) => problemOf({ catalogue: request.catalogue, run }));
 
-export const refreshableProjectionProblemOf = (request: {
+type RefreshableProjection = RunProjectionProblem | MissingProjection;
+
+const refreshableProblemOf = (request: {
+  readonly problem: RunProjectionProblem;
+}): RefreshableProjection | undefined => {
+  const { problem } = request;
+  switch (problem.scope) {
+    case "projection":
+      return problem;
+    case "slice":
+      switch (problem.state) {
+        case "out-of-date":
+        case "missing":
+          return problem;
+        case "unconfigured":
+          return undefined;
+      }
+  }
+};
+
+const refreshableUnmeasuredOf = (request: {
+  readonly unmeasured: RunUnmeasured;
+}): RefreshableProjection | undefined => {
+  const { unmeasured } = request;
+  if (unmeasured.kind !== "engine-not-run") {
+    return undefined;
+  }
+  switch (unmeasured.projection) {
+    case "missing":
+      return unmeasured;
+    case "not-included":
+    case "measured-nothing":
+      return undefined;
+  }
+};
+
+export const refreshableProjectionOf = (request: {
   readonly problems: readonly RunProjectionProblem[];
-}): RunProjectionProblem | undefined =>
-  request.problems.find(
-    (problem) => problem.scope === "projection" || problem.state !== "unconfigured",
-  );
+  readonly unmeasured: readonly RunUnmeasured[];
+}): RefreshableProjection | undefined =>
+  request.unmeasured
+    .map((unmeasured) => refreshableUnmeasuredOf({ unmeasured }))
+    .concat(request.problems.map((problem) => refreshableProblemOf({ problem })))
+    .find((refreshable) => refreshable !== undefined);

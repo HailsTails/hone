@@ -4179,6 +4179,31 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
           "project command": PROJECT_COMMAND,
         },
       },
+      {
+        entry: {
+          kind: "projection-stale",
+          problem: {
+            scope: "slice",
+            engine: { name: "eslint" },
+            state: "missing",
+            slice: repoPathOf("packages/ui/hone.eslint.mjs"),
+          },
+          projectCommand: PROJECT_COMMAND,
+        },
+        fills: {
+          engine: "eslint",
+          slice: "packages/ui/hone.eslint.mjs",
+          "project command": PROJECT_COMMAND,
+        },
+      },
+      {
+        entry: {
+          kind: "projection-stale",
+          problem: { kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" },
+          projectCommand: PROJECT_COMMAND,
+        },
+        fills: { engine: "eslint", "project command": PROJECT_COMMAND },
+      },
     ],
     "not-ready-yet": [
       {

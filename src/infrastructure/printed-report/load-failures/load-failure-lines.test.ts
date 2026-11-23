@@ -288,7 +288,15 @@ describe("runLoadFailureLine, a stale projection", () => {
       },
       line: `load failure: projection-stale eslint missing packages/ui/hone.eslint.mjs: that slice is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
     },
-  ])("prints $failure.problem.scope", ({ failure, line }) => {
+    {
+      failure: {
+        kind: "projection-stale",
+        problem: { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "missing" },
+        projectCommand: PROJECT_COMMAND,
+      },
+      line: `load failure: projection-stale engine-not-run eslint missing: hone.eslint.mjs is not written; run ${PROJECT_COMMAND} and commit every file it writes`,
+    },
+  ])("prints the stale projection", ({ failure, line }) => {
     expect(runLoadFailureLine({ failure, upgradeCommand: undefined })).toBe(line);
   });
 });

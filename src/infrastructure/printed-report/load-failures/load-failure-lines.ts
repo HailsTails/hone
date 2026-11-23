@@ -29,7 +29,7 @@ import {
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 import { onOneLine, quoted } from "../printed-text.ts";
 import { recordsFileText } from "../records/record-lines.ts";
-import { projectionProblemLine } from "../run-state-lines.ts";
+import { projectionMissingLine, projectionProblemLine } from "../run-state-lines.ts";
 
 const LOAD_FAILURE_LEAD = "load failure:";
 
@@ -254,7 +254,11 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
     case "not-ready-yet":
       return notReadyFields({ what: failure.what });
     case "projection-stale":
-      return [projectionProblemLine(failure)];
+      return [
+        "scope" in failure.problem
+          ? projectionProblemLine({ ...failure, problem: failure.problem })
+          : projectionMissingLine({ ...failure, unmeasured: failure.problem }),
+      ];
   }
 };
 

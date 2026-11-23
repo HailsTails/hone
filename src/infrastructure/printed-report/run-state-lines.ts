@@ -4,6 +4,7 @@ import type { RecordsUnmeasured } from "../../domain/records/measurement/records
 import type {
   AssessmentLeftElsewhere,
   EngineNotRun,
+  MissingProjection,
   RunProjectionProblem,
   RunUnmeasured,
 } from "../../domain/report/run-report.ts";
@@ -82,6 +83,13 @@ const measuredNothingNextStep = (request: EngineRequest & { readonly engine: Eng
     ? `the ${request.engine.name} lines under projection-problems name what to fix`
     : `check that the ${request.engine.name} configuration lints the files under check`;
 
+export const projectionMissingLine = (
+  request: ProjectCommand & { readonly unmeasured: MissingProjection },
+): string => {
+  const { engine } = request.unmeasured;
+  return `${request.unmeasured.kind} ${engine.name} missing: ${projectionFileOf({ engine })} is not written; ${refreshStep(request)}`;
+};
+
 const engineNotRunLine = (
   request: EngineRequest & { readonly unmeasured: EngineNotRun },
 ): string => {
@@ -90,7 +98,7 @@ const engineNotRunLine = (
   const file = projectionFileOf({ engine });
   switch (unmeasured.projection) {
     case "missing":
-      return `${unmeasured.kind} ${engine.name} missing: ${file} is not written; ${refreshStep(request)}`;
+      return projectionMissingLine({ ...request, unmeasured });
     case "measured-nothing":
       return `${unmeasured.kind} ${engine.name} measured-nothing: the ${engine.name} engine measured no file in this run, so the records its checks answer were not judged, neither kept as answering nor removed as stale; ${measuredNothingNextStep({ ...request, engine })}`;
     case "not-included":

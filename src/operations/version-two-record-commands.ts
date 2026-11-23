@@ -9,7 +9,7 @@ import {
   type RecordCommandFailure,
   recordDebtOf,
 } from "../application/records/record-commands.ts";
-import { refreshableProjectionProblemOf } from "../application/run/engines/engine-states.ts";
+import { refreshableProjectionOf } from "../application/run/engines/engine-states.ts";
 import { type VersionTwoStages, versionTwoRunOver } from "../application/run/version-two-run.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
@@ -55,7 +55,10 @@ export const versionTwoRecordDebtOf = async (
     return run;
   }
   const { catalogue, report, runs, touched } = run.value;
-  const stale = refreshableProjectionProblemOf({ problems: report["projection-problems"] });
+  const stale = refreshableProjectionOf({
+    problems: report["projection-problems"],
+    unmeasured: report.unmeasured,
+  });
   if (stale !== undefined) {
     return {
       outcome: "failed",

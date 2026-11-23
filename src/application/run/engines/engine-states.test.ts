@@ -15,7 +15,7 @@ import {
   engineMeasurementOf,
   engineProblemsOf,
   engineUnmeasuredOf,
-  refreshableProjectionProblemOf,
+  refreshableProjectionOf,
 } from "./engine-states.ts";
 
 const AUDIT = "walker" as const;
@@ -329,17 +329,41 @@ describe("engineProblemsOf", () => {
   });
 });
 
-describe("refreshableProjectionProblemOf", () => {
+describe("refreshableProjectionOf", () => {
   const SLICE = repoPathOf("packages/a/hone.eslint.mjs");
 
-  it("is nothing when there are no problems", () => {
-    expect(refreshableProjectionProblemOf({ problems: [] })).toBeUndefined();
+  const MISSING_ROOT = {
+    kind: "engine-not-run",
+    engine: ESLINT_ENGINE,
+    projection: "missing",
+  } as const;
+
+  it("is nothing when there are no problems and nothing unmeasured", () => {
+    expect(refreshableProjectionOf({ problems: [], unmeasured: [] })).toBeUndefined();
   });
 
-  it("is nothing when the only problem is a slice no configuration loads, which project does not repair", () => {
+  it("is nothing for a slice no configuration loads, which project does not repair", () => {
     expect(
-      refreshableProjectionProblemOf({
+      refreshableProjectionOf({
         problems: [{ scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE }],
+        unmeasured: [],
+      }),
+    ).toBeUndefined();
+  });
+
+  it("is nothing for an engine that measured nothing or is not included, which project does not repair", () => {
+    expect(
+      refreshableProjectionOf({
+        problems: [],
+        unmeasured: [
+          { kind: "engine-not-run", engine: ESLINT_ENGINE, projection: "measured-nothing" },
+          {
+            kind: "engine-not-run",
+            engine: ESLINT_ENGINE,
+            projection: "not-included",
+            nestedConfigurations: [],
+          },
+        ],
       }),
     ).toBeUndefined();
   });
@@ -347,24 +371,26 @@ describe("refreshableProjectionProblemOf", () => {
   it("is the out-of-date root projection", () => {
     const problem = { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" } as const;
 
-    expect(refreshableProjectionProblemOf({ problems: [problem] })).toBe(problem);
+    expect(refreshableProjectionOf({ problems: [problem], unmeasured: [] })).toBe(problem);
   });
 
-  it("is the first slice project would write, past one it cannot repair", () => {
-    const missing = {
-      scope: "slice",
-      engine: ESLINT_ENGINE,
-      state: "missing",
-      slice: SLICE,
-    } as const;
+  it("is the root projection that is not written", () => {
+    expect(refreshableProjectionOf({ problems: [], unmeasured: [MISSING_ROOT] })).toBe(
+      MISSING_ROOT,
+    );
+  });
+
+  it.each(["missing", "out-of-date"] as const)("is a slice that is %s", (state) => {
+    const problem = { scope: "slice", engine: ESLINT_ENGINE, state, slice: SLICE } as const;
 
     expect(
-      refreshableProjectionProblemOf({
+      refreshableProjectionOf({
         problems: [
           { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE },
-          missing,
+          problem,
         ],
+        unmeasured: [],
       }),
-    ).toBe(missing);
+    ).toBe(problem);
   });
 });
