@@ -46,11 +46,11 @@ describe("runtimeDeclarationsOf", () => {
 
 describe("sourceValueLookupOf", () => {
   it.each([
-    'import type { console } from "./ports";',
-    'import { type console } from "./ports";',
-    'import type console = require("./ports");',
-  ])("ignores the type-only binding in %s", (statement) => {
-    const sourceFile = parse({ fileName: "src/a.ts", source: `${statement}\nconsole();` });
+    'import type { console } from "./ports";\nconsole();',
+    'import { type console } from "./ports";\nconsole();',
+    'import type console = require("./ports");\nconsole();',
+  ])("ignores the type-only binding in %s", (source) => {
+    const sourceFile = parse({ fileName: "src/a.ts", source });
     const use = sourceFile.statements[1];
     assert.isDefined(use);
     assert(syntaxApi.isExpressionStatement(use));
@@ -59,26 +59,26 @@ describe("sourceValueLookupOf", () => {
     expect(lookup(use.expression.expression)).toEqual([]);
   });
 
-  it.each(["interface console {}", "type console = object;"])(
-    "retains the local value beside %s",
-    (statement) => {
-      const sourceFile = parse({
-        fileName: "src/a.ts",
-        source: `${statement}\nconst console = available;\nconsole();`,
-      });
-      const bindingStatement = sourceFile.statements[1];
-      const use = sourceFile.statements[2];
-      assert.isDefined(bindingStatement);
-      assert(syntaxApi.isVariableStatement(bindingStatement));
-      assert.isDefined(use);
-      assert(syntaxApi.isExpressionStatement(use));
-      assert(syntaxApi.isCallExpression(use.expression));
-      const lookup = sourceValueLookupOf({ syntaxApi, sourceFile });
-      expect(lookup(use.expression.expression)).toEqual([
-        bindingStatement.declarationList.declarations[0],
-      ]);
-    },
-  );
+  it.each([
+    "interface console {}\nconst console = available;\nconsole();",
+    "type console = object;\nconst console = available;\nconsole();",
+  ])("retains the local value beside %s", (source) => {
+    const sourceFile = parse({
+      fileName: "src/a.ts",
+      source,
+    });
+    const bindingStatement = sourceFile.statements[1];
+    const use = sourceFile.statements[2];
+    assert.isDefined(bindingStatement);
+    assert(syntaxApi.isVariableStatement(bindingStatement));
+    assert.isDefined(use);
+    assert(syntaxApi.isExpressionStatement(use));
+    assert(syntaxApi.isCallExpression(use.expression));
+    const lookup = sourceValueLookupOf({ syntaxApi, sourceFile });
+    expect(lookup(use.expression.expression)).toEqual([
+      bindingStatement.declarationList.declarations[0],
+    ]);
+  });
 });
 
 describe("sourceBindingsOf", () => {
