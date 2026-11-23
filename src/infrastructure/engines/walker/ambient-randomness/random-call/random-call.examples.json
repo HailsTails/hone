@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "ambient random calls",
+      "fileName": "src/order.ts",
+      "source": "Math.random();\ncrypto.randomUUID();\ncrypto.getRandomValues(bytes);",
+      "expectedLines": [1, 2, 3]
+    }
+  ],
+  "allow": [
+    {
+      "name": "injected randomness",
+      "fileName": "src/order.ts",
+      "source": "randomness.next();",
+      "expectedLines": []
+    },
+    {
+      "name": "injected crypto receiver",
+      "fileName": "src/order.ts",
+      "source": "const newId = (crypto: Pick<Crypto, \"randomUUID\">) => crypto.randomUUID();",
+      "expectedLines": []
+    },
+    {
+      "name": "random function alias is outside the syntax check",
+      "fileName": "src/order.ts",
+      "source": "const next = Math.random;\nnext();",
+      "expectedLines": []
+    }
+  ]
+}
