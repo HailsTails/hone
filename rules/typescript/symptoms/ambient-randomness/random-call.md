@@ -2,7 +2,7 @@
 
 ```json
 {
-  "misses": "Local variable aliases and crypto obtained through ordinary require calls or dynamic imports.",
+  "misses": "Local variable aliases, self.crypto, and crypto obtained through ordinary require calls or dynamic imports.",
   "settingsTracedTo": "None."
 }
 ```
