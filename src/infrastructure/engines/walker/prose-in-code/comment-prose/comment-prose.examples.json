@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "line and documentation prose",
+      "fileName": "src/order.ts",
+      "source": "// The fallback is safe.\n/** Reads an order. */\nexport const order = 1;",
+      "expectedLines": [1, 2]
+    }
+  ],
+  "allow": [
+    {
+      "name": "tracked follow-up",
+      "fileName": "src/order.ts",
+      "source": "// TODO(#16)\nexport const order = 1;",
+      "expectedLines": []
+    },
+    {
+      "name": "comment markers inside a string",
+      "fileName": "src/order.ts",
+      "source": "const marker = '// not a comment';",
+      "expectedLines": []
+    },
+    {
+      "name": "JavaScript is outside the TypeScript check",
+      "fileName": "src/order.js",
+      "source": "// A comment in JavaScript.",
+      "expectedLines": []
+    }
+  ]
+}
