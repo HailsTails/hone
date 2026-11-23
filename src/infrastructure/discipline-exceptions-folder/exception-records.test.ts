@@ -2418,6 +2418,19 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
       ],
     });
   });
+
+  it("names the field each evidence shape refused when a record matches none of them", () => {
+    const [refused] = parseExceptionEntries({
+      entries: [{ place: AT_0, entry: REASONED_LOCATION }],
+      selection: SELECTION,
+      fileExceptionWhyChains: "required",
+      baseline: NOTHING_AT_BASE,
+    }).invalid;
+    expect(refused?.problem).toEqual({
+      kind: "evidence-refused",
+      detail: expect.stringMatching(/whyChain[\s\S]*provenance/),
+    });
+  });
 });
 
 describe("parseExceptionEntries holds a file carve-out as debt, which needs no why-chain whatever fileExceptionWhyChains says", () => {

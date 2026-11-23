@@ -207,6 +207,28 @@ const plainFileCarveOutSchema = z.strictObject({
   provenance: z.never().optional(),
 });
 
+const indented = (request: { readonly text: string }): string =>
+  request.text
+    .split("\n")
+    .map((line) => `  ${line}`)
+    .join("\n");
+
+const evidenceRefusalOf = (request: { readonly issues: readonly z.core.$ZodIssue[] }): string =>
+  request.issues
+    .map((issue) =>
+      issue.code === "invalid_union" && issue.errors.length > 0
+        ? [
+            "✖ matches none of the evidence shapes:",
+            ...issue.errors.map((branch, index) =>
+              indented({
+                text: `${index === 0 ? "either" : "or"}:\n${indented({ text: evidenceRefusalOf({ issues: branch }) })}`,
+              }),
+            ),
+          ].join("\n")
+        : z.prettifyError(new z.ZodError([issue])),
+    )
+    .join("\n");
+
 type FileEvidenceSchemas = {
   readonly "authorised-location": z.ZodType<Unjudged<AuthorisedLocationEntry>>;
   readonly "file-carve-out": z.ZodType<Unjudged<FileCarveOutEntry>>;
@@ -577,7 +599,10 @@ const parsedRecord = (request: {
           })
         : {
             outcome: "failed",
-            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
+            error: {
+              kind: "evidence-refused",
+              detail: evidenceRefusalOf({ issues: evidence.error.issues }),
+            },
           };
     }
     case "file-carve-out": {
@@ -597,7 +622,10 @@ const parsedRecord = (request: {
           })
         : {
             outcome: "failed",
-            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
+            error: {
+              kind: "evidence-refused",
+              detail: evidenceRefusalOf({ issues: evidence.error.issues }),
+            },
           };
     }
     case "clause-wide-carve-out": {
