@@ -2,6 +2,12 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.0.0-pre.3
+
+### Fixes
+
+- index records, measurements and declarations once instead of rescanning per hit (#365)
+
 ## 2.0.0-pre.2
 
 ### Fixes
