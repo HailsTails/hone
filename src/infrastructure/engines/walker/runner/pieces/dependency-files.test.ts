@@ -5,8 +5,21 @@ import {
   dependencySourceOf,
   locatedPackageManifestOf,
   PACKAGE_MANIFEST,
+  WORKFLOW,
 } from "./dependency-files.ts";
 import type { WalkerFile } from "./walker-piece.ts";
+
+describe("workflow files", () => {
+  it("recognises GitLab separately from the other supported workflow files", () => {
+    const gitlab = WORKFLOW.exec(".gitlab-ci.yaml");
+    const github = WORKFLOW.exec(".github/workflows/check.yml");
+    assert.isNotNull(gitlab);
+    assert.isNotNull(github);
+    expect(gitlab.groups).toEqual({ gitlab: ".gitlab-ci.yaml" });
+    expect(github.groups).toEqual({ gitlab: undefined });
+    expect(WORKFLOW.exec("packages/.gitlab-ci.yaml")).toBeNull();
+  });
+});
 
 describe("dependencySourceOf", () => {
   it.each(["src/index.ts", "packages/example/dist/package.json"])(

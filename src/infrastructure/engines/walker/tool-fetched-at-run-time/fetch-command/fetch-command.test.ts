@@ -67,16 +67,17 @@ const findingsIn = (request: {
 };
 
 describe("fetch-command", () => {
-  it("reports fetches in GitLab script list items and skips a variable assignment", () => {
+  it("reports fetches in GitLab script list items and skips variable assignments", () => {
     const file = repoPathSchema.parse(".gitlab-ci.yml");
     expect(
       findingsIn({
         file,
-        source: "build:\n  script:\n    - PNPX=1\n    - pnpx some-tool\n    - npx another-tool",
+        source:
+          "build:\n  script:\n    - PNPX=1\n    - NPX=1\n    - BUNX=1\n    - pnpx some-tool\n    - npx another-tool",
       }),
     ).toEqual([
-      { file, check: ADDRESS, anchor: { line: 4, column: 0 }, snippet: "- pnpx some-tool" },
-      { file, check: ADDRESS, anchor: { line: 5, column: 0 }, snippet: "- npx another-tool" },
+      { file, check: ADDRESS, anchor: { line: 6, column: 0 }, snippet: "- pnpx some-tool" },
+      { file, check: ADDRESS, anchor: { line: 7, column: 0 }, snippet: "- npx another-tool" },
     ]);
   });
 

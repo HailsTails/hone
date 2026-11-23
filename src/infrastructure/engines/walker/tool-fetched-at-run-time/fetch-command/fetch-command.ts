@@ -14,7 +14,7 @@ type CommandFile = "shell" | "workflow" | "gitlab";
 
 const SHELL = /\.(?:sh|bash|zsh|ps1|cmd|bat)$/;
 const COMMAND_START =
-  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|pnpx(?!=)|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\b/i;
+  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|pnpx|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\b(?!=)/i;
 const DOWNLOAD_PIPE =
   /(?:^|[;&|])\s*(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^|\r\n]*\|\s*(?:sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\b/i;
 
@@ -49,8 +49,9 @@ const manifestCommandsOf = (file: WalkerFile): Commands => {
 };
 
 const commandFileOf = (file: WalkerFile["file"]): CommandFile => {
-  if (/^\.gitlab-ci\.ya?ml$/.test(file)) return "gitlab";
-  return WORKFLOW.test(file) ? "workflow" : "shell";
+  const workflow = WORKFLOW.exec(file);
+  if (workflow === null) return "shell";
+  return workflow.groups?.gitlab === undefined ? "workflow" : "gitlab";
 };
 
 const fileCommandsOf = (file: WalkerFile & { readonly kind: CommandFile }): Commands => {
