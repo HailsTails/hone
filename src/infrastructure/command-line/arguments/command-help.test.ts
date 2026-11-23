@@ -28,7 +28,7 @@ write the native configuration each selected embedded mechanism needs, printing 
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --help, -h
       print this help
 
@@ -43,7 +43,7 @@ add a file carve-out naming only its clause and file to the exception records fo
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --base-revision <revision>
       the branch's base, the revision the run that assesses decay is given, such as origin/main; a file it does not hold gets no record
   --leave <path>
@@ -62,7 +62,7 @@ remove from the exception records each stale or forfeited file carve-out whose f
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --base-revision <revision>
       the revision the change is measured from; without it no file carve-out can be forfeited
   --forfeiture <this-run|elsewhere>
@@ -81,7 +81,7 @@ move the exception records from discipline-exceptions.json into the discipline-e
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --help, -h
       print this help
 

@@ -417,6 +417,16 @@ describe("parseAuthoriseArguments", () => {
     });
   });
 
+  it("refuses a missing --repo", () => {
+    expect(parseAuthoriseArguments({ arguments: [] })).toEqual(
+      invalid({
+        detail: argumentProblemText({
+          problem: { kind: "option-required", subcommand: "authorise", option: REPO_OPTION },
+        }),
+      }),
+    );
+  });
+
   it("refuses --root-check, the version 1 name, as an unknown option", () => {
     expect(
       parseAuthoriseArguments({

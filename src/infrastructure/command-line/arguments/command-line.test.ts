@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { COMMANDS, subcommandOf } from "./command-line.ts";
+import { COMMANDS, REPO_OPTION, UPGRADE_REPO_OPTION, subcommandOf } from "./command-line.ts";
 
 describe("subcommandOf", () => {
   it.each([
@@ -29,5 +29,15 @@ describe("COMMANDS", () => {
 
   it("gives project only --repo", () => {
     expect(COMMANDS.project.options).toMatchObject([{ name: "--repo", need: "required" }]);
+  });
+
+  it("names hone.config.json for --repo, and disciplines.json only for the upgrade of a version 1 repository", () => {
+    expect(REPO_OPTION.summary).toBe(
+      "the folder that holds hone.config.json, usually the repository root",
+    );
+    expect(COMMANDS.upgrade.options).toEqual([UPGRADE_REPO_OPTION]);
+    expect(UPGRADE_REPO_OPTION.summary).toBe(
+      "the folder that holds disciplines.json, usually the repository root",
+    );
   });
 });

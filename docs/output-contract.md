@@ -127,7 +127,7 @@ check the repository against the disciplines it selects and print the report, en
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --base-revision <revision>
       the revision the change is measured from; without it no file carve-out can be forfeited
   --report-output <full|failures-only|counts|verdict-only>
@@ -152,7 +152,7 @@ write the native configuration each selected embedded mechanism needs, printing 
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --help, -h
       print this help
 
@@ -170,7 +170,7 @@ add a file carve-out naming only its clause and file to the exception records fo
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --base-revision <revision>
       the branch's base, the revision the run that assesses decay is given, such as origin/main; a file it does not hold gets no record
   --leave <path>
@@ -192,7 +192,7 @@ remove from the exception records each stale or forfeited file carve-out whose f
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --base-revision <revision>
       the revision the change is measured from; without it no file carve-out can be forfeited
   --forfeiture <this-run|elsewhere>
@@ -254,7 +254,7 @@ move the exception records from discipline-exceptions.json into the discipline-e
 
 options:
   --repo <dir>
-      the folder that holds disciplines.json, usually the repository root
+      the folder that holds hone.config.json, usually the repository root
   --help, -h
       print this help
 
@@ -499,7 +499,7 @@ An `arguments-invalid` line says what was wrong with the command as typed. Its w
 | `option-joined` | `load failure: arguments-invalid give <option> and its value as two arguments, as in <option> <value>, not "<given>"` |
 | `value-missing` | `load failure: arguments-invalid <option> needs a value, as in <option> <value>` |
 | `option-repeated` | `load failure: arguments-invalid <option> is given more than once; give it once` |
-| `option-required` | `load failure: arguments-invalid hone <command> needs --repo <dir>: the folder that holds disciplines.json, usually the repository root` |
+| `option-required` | `load failure: arguments-invalid hone <command> needs --repo <dir>: the folder that holds hone.config.json, usually the repository root` |
 | `choice-invalid` | `load failure: arguments-invalid <option> takes <values>, not "<given>"` |
 | `option-removed` | `load failure: arguments-invalid removed: "--waived-clauses"; in clauses, mark a clause "not-run" when its mechanism does not run, or "not-adopted" when its rule does not apply; see MIGRATING.md section 12` |
 | `repo-unresolvable` | `load failure: arguments-invalid --repo <dir> resolves to no absolute path` |

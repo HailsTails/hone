@@ -72,12 +72,12 @@ export const REPO_OPTION: CommandOption = {
   value: "<dir>",
   need: "required",
   occurrence: "once",
-  summary: "the folder that holds disciplines.json, usually the repository root",
+  summary: "the folder that holds hone.config.json, usually the repository root",
 };
 
-export const AUTHORISE_REPO_OPTION: CommandOption = {
+export const UPGRADE_REPO_OPTION: CommandOption = {
   ...REPO_OPTION,
-  summary: "the folder that holds hone.config.json, usually the repository root",
+  summary: "the folder that holds disciplines.json, usually the repository root",
 };
 
 export const BASE_REVISION_OPTION: CommandOption = {
@@ -250,7 +250,7 @@ export const COMMANDS: Readonly<Record<Subcommand, CommandSpec>> = {
   [AUTHORISE_SUBCOMMAND]: {
     summary:
       "write one authorised location to the records of a hone.config.json repository from the arguments given, with the why chain given, printing what was done",
-    options: [AUTHORISE_REPO_OPTION, ...AUTHORISE_COMMAND_OPTIONS],
+    options: [REPO_OPTION, ...AUTHORISE_COMMAND_OPTIONS],
     exits: [
       {
         code: 0,
@@ -280,7 +280,7 @@ export const COMMANDS: Readonly<Record<Subcommand, CommandSpec>> = {
   [UPGRADE_SUBCOMMAND]: {
     summary:
       "move a version 1 repository to version 2: write hone.config.json, the hone-records folder and the projection, check that version 2 reports what version 1 reported, then remove the version 1 files",
-    options: [REPO_OPTION],
+    options: [UPGRADE_REPO_OPTION],
     exits: [
       { code: 0, meaning: "the repository was upgraded, or is already on version 2" },
       {

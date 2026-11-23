@@ -18,7 +18,6 @@ import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
   ADOPTION_BASE_REVISION_OPTION,
-  AUTHORISE_REPO_OPTION,
   BASE_REVISION_OPTION,
   COMMANDS,
   type CommandOption,
@@ -308,7 +307,7 @@ export const parseAuthoriseArguments = (request: {
   const repo = requiredValue({
     subcommand: "authorise",
     values: values.value,
-    option: AUTHORISE_REPO_OPTION,
+    option: REPO_OPTION,
   });
   return repo.outcome === "failed"
     ? repo
