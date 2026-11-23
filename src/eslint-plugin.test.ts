@@ -20,6 +20,7 @@ describe("@hailstails/hone/eslint-plugin", () => {
         "positional-parameters#parameter-count": expect.anything(),
         "tangled-function#cognitive-complexity": expect.anything(),
         "long-function#function-length": expect.anything(),
+        "wide-input#unread-parameter": expect.anything(),
         "work-inside-a-condition#else-after-an-exit": expect.anything(),
         "rebinding#parameter-reassignment": expect.anything(),
       },

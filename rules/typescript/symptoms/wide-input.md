@@ -3,7 +3,7 @@
 ```json
 {
   "group": "Unit shape",
-  "seen": "A parameter type holding fields the unit never reads.",
+  "seen": "A parameter, or a field of one, the unit never reads.",
   "mayIndicate": [
     {
       "case": "does-one-job",
@@ -24,7 +24,8 @@
   ],
   "breachUsuallySits": "in the unit's declared input",
   "seenBy": [
-    "types"
+    "types",
+    "syntax"
   ],
   "reports": "seen-to-breach",
   "recipes": [
