@@ -363,6 +363,33 @@ const CLOCK_BOUNDARY: PlacedRecord = {
   },
 };
 
+const TEST_BODY_DEBT: PlacedRecord = {
+  place: { file: repoPathOf("hone-records/debt/branch-in-a-test.json"), index: 0 },
+  record: {
+    kind: "debt",
+    symptom: BRANCH_IN_A_TEST,
+    reach: WHOLE_SYMPTOM,
+    file: TEST_FILE,
+    holding: { held: "stated" },
+  },
+};
+
+const NOTED_TEST_BODY_LOCATION: PlacedRecord = {
+  place: { file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"), index: 0 },
+  record: {
+    kind: "authorised-location",
+    symptom: BRANCH_IN_A_TEST,
+    reach: { reaches: "unknown-check", check: "test-bodies" },
+    file: TEST_FILE,
+    holding: {
+      held: "carried",
+      entry: {},
+      lacks: ["case", "owes", "whyChain"],
+      standing: "unjudged",
+    },
+  },
+};
+
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
     expect(
@@ -446,14 +473,25 @@ describe("answeredLine", () => {
     );
   });
 
-  it("ends with the fix and the page that shows it when the check names one, and names no indications", () => {
+  it("names the fix and the page that shows it before the records when a debt answers and the check names one, and names no indications", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
-        answered: { finding: BRANCH_FINDING, by: [DEBT] },
+        answered: { finding: BRANCH_FINDING, by: [TEST_BODY_DEBT, NOTED_TEST_BODY_LOCATION] },
       }),
     ).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; answered by debt fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if) answered by debt answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test`,
+    );
+  });
+
+  it("names no fix when no debt answers the finding", () => {
+    expect(
+      answeredLine({
+        catalogue: REPORT_CATALOGUE,
+        answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION] },
+      }),
+    ).toBe(
+      'branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test',
     );
   });
 });
