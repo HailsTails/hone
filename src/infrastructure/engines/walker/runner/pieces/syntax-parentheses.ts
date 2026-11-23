@@ -6,3 +6,8 @@ export const withoutParentheses = ({ syntaxApi, node }: ParenthesesRequest): Syn
   syntaxApi.isParenthesizedExpression(node)
     ? withoutParentheses({ syntaxApi, node: node.expression })
     : node;
+
+export const outermostParenthesesOf = ({ syntaxApi, node }: ParenthesesRequest): SyntaxNode =>
+  node.parent !== undefined && syntaxApi.isParenthesizedExpression(node.parent)
+    ? outermostParenthesesOf({ syntaxApi, node: node.parent })
+    : node;

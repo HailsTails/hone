@@ -126,6 +126,15 @@ describe("the test-call aliases check", () => {
     ).toEqual([]);
   });
 
+  it("does not report a chained call when the test binding comes from another module", () => {
+    expect(
+      findingsIn({
+        file: TEST_FILE,
+        source: 'import { test } from "./tools.ts";\ntest.each([1])("x", fn);',
+      }),
+    ).toEqual([]);
+  });
+
   it("passes locals and shadowing bindings and still flags the Vitest import outside the shadow", () => {
     expect(
       findingsIn({
