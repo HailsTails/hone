@@ -1,1 +1,1 @@
-export { default } from "../../eslint/direct-console/console-calls/acme.eslint-plugin.ts";
+export { default } from "../../../engines/eslint/direct-console/console-calls/acme.eslint-plugin.ts";
