@@ -11,6 +11,12 @@
       "fileName": "src/order.ts",
       "source": "import { randomUUID as uuid } from 'node:crypto';\nglobalThis.crypto.randomUUID();\nwindow.crypto.getRandomValues(bytes);\nuuid();",
       "expectedLines": [2, 3, 4]
+    },
+    {
+      "name": "static CommonJS import and qualified Web Crypto",
+      "fileName": "src/order.cts",
+      "source": "import nodeCrypto = require('crypto');\nnodeCrypto.webcrypto.getRandomValues(bytes);\nnodeCrypto.randomUUID();",
+      "expectedLines": [2, 3]
     }
   ],
   "allow": [

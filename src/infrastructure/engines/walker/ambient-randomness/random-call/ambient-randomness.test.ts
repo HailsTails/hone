@@ -203,6 +203,52 @@ describe("ambient randomness", () => {
     ).toEqual([]);
   });
 
+  it("finds Web Crypto through a namespace and either spelling of a default import", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import * as nodeCrypto from "node:crypto";\nimport moduleCrypto from "node:crypto";\nimport { default as legacyCrypto } from "crypto";\nnodeCrypto.webcrypto.getRandomValues(bytes);\nmoduleCrypto["webcrypto"].getRandomValues(bytes);\nlegacyCrypto.randomUUID();',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 4, column: 0 },
+        snippet: "nodeCrypto.webcrypto.getRandomValues",
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: 'moduleCrypto["webcrypto"].getRandomValues',
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 6, column: 0 },
+        snippet: "legacyCrypto.randomUUID",
+      },
+    ]);
+  });
+
+  it("finds a static require import in a TypeScript CommonJS file", () => {
+    const file = repoPathSchema.parse("src/order.cts");
+    expect(
+      findingsIn({
+        file,
+        source: 'import nodeCrypto = require("crypto");\nnodeCrypto.randomUUID();',
+      }),
+    ).toEqual([
+      {
+        file,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "nodeCrypto.randomUUID",
+      },
+    ]);
+  });
+
   it("leaves an aliased random function outside the syntax check", () => {
     expect(
       findingsIn({ file: SOURCE_FILE, source: "const { random } = Math;\nrandom();" }),

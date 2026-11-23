@@ -1,7 +1,4 @@
-import {
-  sourceBindingsOf,
-  sourceValueDeclarationsOf,
-} from "../../runner/pieces/source-bindings.ts";
+import { sourceBindingsOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
@@ -31,14 +28,34 @@ const memberOf = ({ syntaxApi, node }: SyntaxRequest) => {
   return undefined;
 };
 
-const nodeCryptoImport = ({ syntaxApi, node }: SyntaxRequest): boolean =>
-  syntaxApi.isImportDeclaration(node) &&
-  syntaxApi.isStringLiteral(node.moduleSpecifier) &&
-  (node.moduleSpecifier.text === "node:crypto" || node.moduleSpecifier.text === "crypto") &&
-  node.importClause?.isTypeOnly !== true;
+const cryptoModuleName = (specifier: string): boolean =>
+  specifier === "node:crypto" || specifier === "crypto";
+
+const nodeCryptoImport = ({ syntaxApi, node }: SyntaxRequest): boolean => {
+  if (syntaxApi.isImportDeclaration(node)) {
+    return (
+      syntaxApi.isStringLiteral(node.moduleSpecifier) &&
+      cryptoModuleName(node.moduleSpecifier.text) &&
+      node.importClause?.isTypeOnly !== true
+    );
+  }
+  if (
+    !syntaxApi.isImportEqualsDeclaration(node) ||
+    node.isTypeOnly ||
+    !syntaxApi.isExternalModuleReference(node.moduleReference)
+  )
+    return false;
+  const specifier = node.moduleReference.expression;
+  return (
+    specifier !== undefined &&
+    syntaxApi.isStringLiteral(specifier) &&
+    cryptoModuleName(specifier.text)
+  );
+};
 
 const comesFromNodeCrypto = ({ syntaxApi, node }: SyntaxRequest): boolean => {
-  if (syntaxApi.isImportDeclaration(node)) return nodeCryptoImport({ syntaxApi, node });
+  if (syntaxApi.isImportDeclaration(node) || syntaxApi.isImportEqualsDeclaration(node))
+    return nodeCryptoImport({ syntaxApi, node });
   return (
     node.parent !== undefined &&
     !syntaxApi.isSourceFile(node) &&
@@ -46,29 +63,39 @@ const comesFromNodeCrypto = ({ syntaxApi, node }: SyntaxRequest): boolean => {
   );
 };
 
-const nodeCryptoBindingOf = (request: SyntaxRequest): "module" | "random-function" | "other" => {
+const nodeCryptoBindingOf = (
+  request: SyntaxRequest,
+): "node-module" | "web-crypto" | "random-function" | "other" => {
   const { syntaxApi, node } = request;
   if (syntaxApi.isImportSpecifier(node)) {
     if (node.isTypeOnly || !comesFromNodeCrypto(request)) return "other";
     const importedName = (node.propertyName ?? node.name).text;
-    if (importedName === "webcrypto") return "module";
+    if (importedName === "webcrypto") return "web-crypto";
+    if (importedName === "default") return "node-module";
     return CRYPTO_RANDOM_METHODS.has(importedName) ? "random-function" : "other";
   }
   if (
-    (syntaxApi.isNamespaceImport(node) || syntaxApi.isImportClause(node)) &&
+    (syntaxApi.isNamespaceImport(node) ||
+      syntaxApi.isImportClause(node) ||
+      syntaxApi.isImportEqualsDeclaration(node)) &&
     comesFromNodeCrypto(request)
   ) {
-    return "module";
+    return "node-module";
   }
   return "other";
 };
 
 const qualifiedCrypto = (request: CallContext & { readonly receiver: SyntaxNode }): boolean => {
-  const { syntaxApi, declarationsOf, receiver } = request;
+  const { syntaxApi, declarationsOf, receiver, hasCryptoImport } = request;
   const member = memberOf({ syntaxApi, node: receiver });
+  if (member === undefined || !syntaxApi.isIdentifier(member.receiver)) return false;
+  if (member.name === "webcrypto" && hasCryptoImport) {
+    return declarationsOf(member.receiver).some(
+      (node) => nodeCryptoBindingOf({ syntaxApi, node }) === "node-module",
+    );
+  }
   return (
-    member?.name === "crypto" &&
-    syntaxApi.isIdentifier(member.receiver) &&
+    member.name === "crypto" &&
     (member.receiver.text === "globalThis" || member.receiver.text === "window") &&
     declarationsOf(member.receiver).length === 0
   );
@@ -81,7 +108,10 @@ const cryptoReceiver = (request: CallContext & { readonly receiver: SyntaxNode }
   const declarations = declarationsOf(receiver);
   return (
     (receiver.text === "crypto" && declarations.length === 0) ||
-    declarations.some((node) => nodeCryptoBindingOf({ syntaxApi, node }) === "module")
+    declarations.some((node) => {
+      const kind = nodeCryptoBindingOf({ syntaxApi, node });
+      return kind === "node-module" || kind === "web-crypto";
+    })
   );
 };
 
@@ -134,7 +164,7 @@ export const check: WalkerPiece = {
               let bindingsInSource: ReturnType<typeof sourceBindingsOf> | undefined;
               const declarationsOf: DeclarationsOf = (node) => {
                 bindingsInSource ??= sourceBindingsOf({ syntaxApi, sourceFile });
-                return sourceValueDeclarationsOf({ syntaxApi, bindings: bindingsInSource, node });
+                return bindingsInSource.getSymbolAtLocation(node)?.declarations ?? [];
               };
               return {
                 enter: ({ node }) => {
