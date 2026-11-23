@@ -18,7 +18,9 @@ type SpecifierSite =
 
 type Rewrite = { readonly start: number; readonly end: number; readonly text: string };
 
-type TargetForm = { readonly found: RepoPath; readonly suffix: string };
+type ResolutionCandidate = { readonly written: string; readonly onDisk: string };
+
+type TargetForm = { readonly found: RepoPath; readonly candidate: ResolutionCandidate };
 
 type MovedFile = {
   readonly file: RepoPath;
@@ -50,17 +52,37 @@ const ANCHOR = "/";
 
 const CURRENT_FOLDER = ".";
 
-const ADDED_SUFFIXES: readonly string[] = ["", ".ts", "/index.ts"];
+const PARENT_FOLDER = "..";
 
-const JS_FOR_TS = "js-for-ts";
+const RESOLVED_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".d.ts", ".js", ".jsx"];
 
-const JS_EXTENSION = /\.js$/;
+const SOURCE_FOR_EMITTED: readonly ResolutionCandidate[] = [
+  { written: ".js", onDisk: ".ts" },
+  { written: ".js", onDisk: ".tsx" },
+  { written: ".mjs", onDisk: ".mts" },
+  { written: ".cjs", onDisk: ".cts" },
+  { written: ".jsx", onDisk: ".tsx" },
+];
 
-const TS_EXTENSION = ".ts";
-
-const TS_FILE = /\.ts$/;
+const RESOLUTION_CANDIDATES: readonly ResolutionCandidate[] = [
+  { written: "", onDisk: "" },
+  ...RESOLVED_EXTENSIONS.flatMap((extension) => [
+    { written: "", onDisk: extension },
+    { written: "", onDisk: `/index${extension}` },
+  ]),
+  ...SOURCE_FOR_EMITTED,
+];
 
 const QUOTE_LENGTH = 1;
+
+const importCallOf = (request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly node: SyntaxNode;
+}): SyntaxNode | undefined =>
+  request.syntaxApi.isCallExpression(request.node) &&
+  request.node.expression.kind === request.syntaxApi.SyntaxKind.ImportKeyword
+    ? request.node
+    : undefined;
 
 const callSpecifierOf = (request: {
   readonly syntaxApi: SyntaxApi;
@@ -70,8 +92,10 @@ const callSpecifierOf = (request: {
   if (!syntaxApi.isCallExpression(node)) return undefined;
   const callee = node.expression;
   const [first] = node.arguments;
+  if (first !== undefined && importCallOf({ syntaxApi, node: first }) !== undefined)
+    return undefined;
   const named =
-    callee.kind === syntaxApi.SyntaxKind.ImportKeyword ||
+    importCallOf(request) !== undefined ||
     (syntaxApi.isIdentifier(callee) && callee.text === REQUIRE) ||
     (syntaxApi.isPropertyAccessExpression(callee) &&
       syntaxApi.isIdentifier(callee.expression) &&
@@ -131,19 +155,32 @@ const targetFormOf = (request: {
   readonly target: string;
   readonly moved: ReadonlyMap<RepoPath, RepoPath>;
 }): TargetForm | undefined => {
-  const forms = [
-    ...ADDED_SUFFIXES.map((suffix) => ({ path: `${request.target}${suffix}`, suffix })),
-    { path: request.target.replace(JS_EXTENSION, TS_EXTENSION), suffix: JS_FOR_TS },
-  ];
-  const [form] = forms.flatMap(({ path, suffix }) =>
-    [...request.moved.keys()].filter((key) => key === path).map((found) => ({ found, suffix })),
-  );
+  const [form] = RESOLUTION_CANDIDATES.filter(({ written }) =>
+    request.target.endsWith(written),
+  ).flatMap((candidate) => {
+    const path = `${request.target.slice(0, request.target.length - candidate.written.length)}${candidate.onDisk}`;
+    return [...request.moved.keys()]
+      .filter((key) => key === path)
+      .map((found) => ({ found, candidate }));
+  });
   return form;
 };
 
-const writtenTargetOf = (request: { readonly to: RepoPath; readonly suffix: string }): string => {
-  if (request.suffix === JS_FOR_TS) return request.to.replace(TS_FILE, ".js");
-  return request.suffix === "" ? request.to : request.to.slice(0, -request.suffix.length);
+const writtenTargetOf = (request: {
+  readonly to: RepoPath;
+  readonly candidate: ResolutionCandidate;
+}): string =>
+  `${request.to.slice(0, request.to.length - request.candidate.onDisk.length)}${request.candidate.written}`;
+
+const segmentsOf = (path: string): readonly string[] =>
+  path.split(ANCHOR).filter((segment) => segment !== "");
+
+const relativeBetween = (request: { readonly from: string; readonly to: string }): string => {
+  const from = segmentsOf(request.from);
+  const to = segmentsOf(request.to);
+  const diverging = from.findIndex((segment, index) => to[index] !== segment);
+  const shared = diverging === -1 ? from.length : diverging;
+  return [...from.slice(shared).map(() => PARENT_FOLDER), ...to.slice(shared)].join(ANCHOR);
 };
 
 const specifierTextOf = (relative: string): string => {
@@ -168,7 +205,9 @@ const destinationOf = (
 ): string | "not-moved" => {
   const form = targetFormOf(request);
   const to = form === undefined ? undefined : request.moved.get(form.found);
-  if (form !== undefined && to !== undefined) return writtenTargetOf({ to, suffix: form.suffix });
+  if (form !== undefined && to !== undefined) {
+    return writtenTargetOf({ to, candidate: form.candidate });
+  }
   const inFolder =
     request.target === request.folder || request.target.startsWith(`${request.folder}${ANCHOR}`);
   return inFolder ? "not-moved" : request.target;
@@ -193,20 +232,18 @@ const rewriteOf = (
   if (destination === "not-moved") {
     return refusedAt({ tree, node: site.node, reason: "target-not-moved" });
   }
-  const relative = path.relative({
-    from: path.directoryOf({ path: anchored(request.movedTo) }),
-    to: anchored(destination),
-  });
-  if (relative.relation === "different-root") {
-    return refusedAt({ tree, node: site.node, reason: "target-not-moved" });
-  }
   return {
     outcome: "ok",
     value: [
       {
         start: site.node.getStart(tree) + QUOTE_LENGTH,
         end: site.node.getEnd() - QUOTE_LENGTH,
-        text: specifierTextOf(relative.path),
+        text: specifierTextOf(
+          relativeBetween({
+            from: path.directoryOf({ path: anchored(request.movedTo) }),
+            to: destination,
+          }),
+        ),
       },
     ],
   };

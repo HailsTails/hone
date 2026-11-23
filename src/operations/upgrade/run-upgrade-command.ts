@@ -22,6 +22,7 @@ import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.t
 import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPortOf } from "../../application/ports/upgrade/version-one-projection-port.ts";
 import type {
+  ImportsRewrittenOf,
   ImportsRewriterOf,
   ItemTextOf,
   TeamRuleSetsRequest,
@@ -286,6 +287,8 @@ const withMentions = (request: {
   }),
 });
 
+const IMPORTS_KEPT: ImportsRewrittenOf = ({ text }) => ({ outcome: "ok", value: text });
+
 const teamLayoutPlanFor = async (
   request: UpgradeInput & { readonly prepared: Prepared },
 ): Promise<Result<TeamLayoutPlan, UpgradeStop>> => {
@@ -296,7 +299,11 @@ const teamLayoutPlanFor = async (
   if (layouts.outcome === "failed") {
     return stoppedByLoad({ failure: layouts.error });
   }
-  const importsRewrittenOf = await request.importsRewriterOf();
+  const importsRewrittenOf: Result<ImportsRewrittenOf, LoadFailure> = layouts.value.some(
+    ({ clauses }) => clauses.some(({ pieces }) => pieces.length > 0),
+  )
+    ? await request.importsRewriterOf()
+    : { outcome: "ok", value: IMPORTS_KEPT };
   if (importsRewrittenOf.outcome === "failed") {
     return stoppedByLoad({ failure: importsRewrittenOf.error });
   }

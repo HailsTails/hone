@@ -6,6 +6,7 @@ import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import type {
   ImportsRewrittenOf,
   ImportsRewriterOf,
+  SpecifierRefusal,
 } from "../../../../application/ports/upgrade/version-one-team-layout.ts";
 import type { LoadFailure } from "../../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../../domain/repository/absolute-path-types.ts";
@@ -17,21 +18,29 @@ import {
 } from "../../../../domain/runner/runner-failure.ts";
 import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
 import { runnerResultSchema } from "../runner-module/runner-result-schema.ts";
+import type { DeepReadonly, Equal } from "../runner-module/type-equality.ts";
+
+const specifierRefusalSchema = z
+  .object({
+    reason: z.enum(["specifier-not-literal", "target-not-moved"]),
+    line: z.number().int().positive(),
+  })
+  .readonly();
 
 const rewrittenSchema = z.discriminatedUnion("outcome", [
   z.object({ outcome: z.literal("ok"), value: z.string() }).readonly(),
   z
     .object({
       outcome: z.literal("failed"),
-      error: z
-        .object({
-          reason: z.enum(["specifier-not-literal", "target-not-moved"]),
-          line: z.number().int().positive(),
-        })
-        .readonly(),
+      error: specifierRefusalSchema,
     })
     .readonly(),
 ]);
+
+export const isSpecifierRefusalSchemaEqual: Equal<
+  DeepReadonly<z.output<typeof specifierRefusalSchema>>,
+  SpecifierRefusal
+> = true;
 
 const rewriterSchema = runnerResultSchema({
   value: z.function({ input: [z.unknown()], output: rewrittenSchema }),

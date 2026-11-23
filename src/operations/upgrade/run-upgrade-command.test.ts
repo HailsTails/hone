@@ -10,7 +10,10 @@ import type {
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
 import type { ProofRuns, ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
-import type { ImportsRewrittenOf } from "../../application/ports/upgrade/version-one-team-layout.ts";
+import type {
+  ImportsRewrittenOf,
+  VersionOneTeamLayout,
+} from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
@@ -18,6 +21,7 @@ import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { type UpgradeInput, type UpgradePorts, upgradeOf } from "./run-upgrade-command.ts";
 
@@ -135,6 +139,56 @@ const RECORDS_ON_DISK = vi.fn<RecordsOnDiskOf>().mockReturnValue({
   value: { files: [], folders: [], root: { kind: "repository" } },
 });
 
+const CONSOLE_CLAUSE = {
+  ruleSet: { name: ruleSetNameOf("acme") },
+  discipline: disciplineIdOf("ACME-1"),
+  clause: clauseIdOf("console-calls"),
+};
+
+const UNPIECED_LAYOUT: VersionOneTeamLayout = {
+  ruleSet: { name: ruleSetNameOf("acme") },
+  location: { location: "folder", path: repoPathOf("acme") },
+  namesFile: repoPathOf("acme/version-two-names.json"),
+  clauses: [
+    {
+      clause: CONSOLE_CLAUSE,
+      naming: { naming: "unnamed" },
+      summary: "no direct console output",
+      anchor: { kind: "file" },
+      exceptions: "allowed",
+      cases: { flag: [], allow: [] },
+      pieces: [],
+    },
+  ],
+  definitions: [],
+  versionOneFiles: [],
+};
+
+const PIECED_LAYOUT: VersionOneTeamLayout = {
+  ...UNPIECED_LAYOUT,
+  clauses: [
+    {
+      clause: CONSOLE_CLAUSE,
+      naming: { naming: "unnamed" },
+      summary: "no direct console output",
+      anchor: { kind: "file" },
+      exceptions: "allowed",
+      cases: { flag: [], allow: [] },
+      pieces: [
+        {
+          mechanism: "walker",
+          settings: { module: "console.ts" },
+          checkSettings: {},
+          editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
+          folder: repoPathOf("acme/mechanisms/audit/ACME-1"),
+          module: repoPathOf("console.ts"),
+          files: [{ file: repoPathOf("console.ts"), text: "export const check = {};\n" }],
+        },
+      ],
+    },
+  ],
+};
+
 describe("upgradeOf", () => {
   it("stops on the run settings' load failure and lists no tracked files", async () => {
     const git = gitListing({ tracked: TRACKED });
@@ -230,7 +284,7 @@ describe("upgradeOf", () => {
     expect(proofOf).not.toHaveBeenCalled();
   });
 
-  it("stops on the load failure of the TypeScript that rewrites moved imports, before the proof", async () => {
+  it("stops on the load failure of the TypeScript that rewrites a team's moved imports, before the proof", async () => {
     const proofOf = vi.fn<UpgradeInput["proofOf"]>();
 
     expect(
@@ -239,6 +293,7 @@ describe("upgradeOf", () => {
           git: gitListing({ tracked: TRACKED }),
           recordsOnDiskOf: RECORDS_ON_DISK,
           versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [PIECED_LAYOUT] }),
           importsRewriterOf: vi
             .fn<UpgradeInput["importsRewriterOf"]>()
             .mockResolvedValue({ outcome: "failed", error: SELECTION_ABSENT }),
@@ -249,13 +304,9 @@ describe("upgradeOf", () => {
     expect(proofOf).not.toHaveBeenCalled();
   });
 
-  it("refuses a team rule set with an unnamed clause before the proof, naming the clause and its names file", async () => {
+  it("refuses a team rule set with an unnamed clause before the proof, naming the clause and its names file, loading no import rewriter for a set with no piece folder", async () => {
     const proofOf = vi.fn<UpgradeInput["proofOf"]>();
-    const clause = {
-      ruleSet: { name: ruleSetNameOf("acme") },
-      discipline: disciplineIdOf("ACME-1"),
-      clause: clauseIdOf("console-calls"),
-    };
+    const importsRewriterOf = vi.fn<UpgradeInput["importsRewriterOf"]>();
 
     expect(
       await upgradeOf(
@@ -265,27 +316,9 @@ describe("upgradeOf", () => {
           versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
           versionOneTeamLayoutsOf: () => ({
             outcome: "ok",
-            value: [
-              {
-                ruleSet: { name: ruleSetNameOf("acme") },
-                location: { location: "folder", path: repoPathOf("acme") },
-                namesFile: repoPathOf("acme/version-two-names.json"),
-                clauses: [
-                  {
-                    clause,
-                    naming: { naming: "unnamed" },
-                    summary: "no direct console output",
-                    anchor: { kind: "file" },
-                    exceptions: "allowed",
-                    cases: { flag: [], allow: [] },
-                    pieces: [],
-                  },
-                ],
-                definitions: [],
-                versionOneFiles: [],
-              },
-            ],
+            value: [UNPIECED_LAYOUT],
           }),
+          importsRewriterOf,
           proofOf,
         }),
       ),
@@ -297,13 +330,20 @@ describe("upgradeOf", () => {
           kind: "plan-refused",
           refusal: {
             kind: "team-names-missing",
-            missing: [{ missing: "clause", clause, namesFile: "acme/version-two-names.json" }],
+            missing: [
+              {
+                missing: "clause",
+                clause: CONSOLE_CLAUSE,
+                namesFile: "acme/version-two-names.json",
+              },
+            ],
           },
           removedByVersionOne: [],
         },
       },
     });
     expect(proofOf).not.toHaveBeenCalled();
+    expect(importsRewriterOf).not.toHaveBeenCalled();
   });
 
   describe("reading mentions once the proof is decided", () => {
