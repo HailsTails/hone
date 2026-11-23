@@ -18,7 +18,6 @@ import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 import { type ArgumentProblem, argumentsInvalid } from "./argument-problem.ts";
 import {
   ADOPTION_BASE_REVISION_OPTION,
-  AUTHORISE_REPO_OPTION,
   BASE_REVISION_OPTION,
   COMMANDS,
   type CommandOption,
@@ -28,6 +27,7 @@ import {
   LEAVE_OPTION,
   type OptionName,
   REPO_OPTION,
+  VERSION_ONE_REPO_OPTION,
   REPORT_OUTPUT_OPTION,
   type Subcommand,
   subcommandOf,
@@ -169,11 +169,6 @@ const requiredValue = (request: {
     : { outcome: "ok", value: given };
 };
 
-const requiredRepo = (request: {
-  readonly subcommand: Subcommand;
-  readonly values: OptionValues;
-}): Result<string, LoadFailure> => requiredValue({ ...request, option: REPO_OPTION });
-
 const chosenValue = <Choice extends string>(request: {
   readonly option: CommandOption;
   readonly choices: readonly Choice[];
@@ -193,7 +188,7 @@ const checkArgumentsOf = <Output extends string>(request: {
   readonly values: OptionValues;
   readonly reportOutputs: readonly Output[];
 }): Result<CheckArguments<Output>, LoadFailure> => {
-  const repo = requiredRepo({ subcommand: "check", values: request.values });
+  const repo = requiredValue({ subcommand: "check", values: request.values, option: REPO_OPTION });
   if (repo.outcome === "failed") {
     return repo;
   }
@@ -237,7 +232,11 @@ export const parseCheckArguments = <Output extends string>(request: {
 const pruneDebtArgumentsOf = (request: {
   readonly values: OptionValues;
 }): Result<PruneDebtArguments, LoadFailure> => {
-  const repo = requiredRepo({ subcommand: "prune-debt", values: request.values });
+  const repo = requiredValue({
+    subcommand: "prune-debt",
+    values: request.values,
+    option: REPO_OPTION,
+  });
   if (repo.outcome === "failed") {
     return repo;
   }
@@ -272,7 +271,7 @@ export const parseProjectArguments = (request: {
   if (values.outcome === "failed") {
     return values;
   }
-  const repo = requiredRepo({ subcommand: "project", values: values.value });
+  const repo = requiredValue({ subcommand: "project", values: values.value, option: REPO_OPTION });
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
 };
 
@@ -283,7 +282,11 @@ export const parseSplitRecordsArguments = (request: {
   if (values.outcome === "failed") {
     return values;
   }
-  const repo = requiredRepo({ subcommand: "split-records", values: values.value });
+  const repo = requiredValue({
+    subcommand: "split-records",
+    values: values.value,
+    option: VERSION_ONE_REPO_OPTION,
+  });
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
 };
 
@@ -294,7 +297,11 @@ export const parseUpgradeArguments = (request: {
   if (values.outcome === "failed") {
     return values;
   }
-  const repo = requiredRepo({ subcommand: "upgrade", values: values.value });
+  const repo = requiredValue({
+    subcommand: "upgrade",
+    values: values.value,
+    option: VERSION_ONE_REPO_OPTION,
+  });
   return repo.outcome === "failed" ? repo : { outcome: "ok", value: { repo: repo.value } };
 };
 
@@ -308,7 +315,7 @@ export const parseAuthoriseArguments = (request: {
   const repo = requiredValue({
     subcommand: "authorise",
     values: values.value,
-    option: AUTHORISE_REPO_OPTION,
+    option: REPO_OPTION,
   });
   return repo.outcome === "failed"
     ? repo
@@ -337,7 +344,11 @@ const leavePaths = (request: {
 const recordDebtArgumentsOf = (request: {
   readonly values: OptionValues;
 }): Result<RecordDebtArguments, LoadFailure> => {
-  const repo = requiredRepo({ subcommand: "record-debt", values: request.values });
+  const repo = requiredValue({
+    subcommand: "record-debt",
+    values: request.values,
+    option: REPO_OPTION,
+  });
   if (repo.outcome === "failed") {
     return repo;
   }

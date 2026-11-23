@@ -13,6 +13,7 @@ import {
   parsePruneDebtArguments,
   parseRecordDebtArguments,
   parseSplitRecordsArguments,
+  parseUpgradeArguments,
 } from "./command-arguments.ts";
 import {
   ADOPTION_BASE_REVISION_OPTION,
@@ -20,6 +21,7 @@ import {
   LEAVE_OPTION,
   REPO_OPTION,
   REPORT_OUTPUT_OPTION,
+  VERSION_ONE_REPO_OPTION,
 } from "./command-line.ts";
 
 const invalid = (request: { readonly detail: string }) => ({
@@ -266,7 +268,11 @@ describe("parseSplitRecordsArguments", () => {
   it.each([
     {
       given: [],
-      problem: { kind: "option-required", subcommand: "split-records", option: REPO_OPTION },
+      problem: {
+        kind: "option-required",
+        subcommand: "split-records",
+        option: VERSION_ONE_REPO_OPTION,
+      },
     },
     {
       given: ["--repo", "/work/repo", "--base-revision", "main"],
@@ -417,6 +423,16 @@ describe("parseAuthoriseArguments", () => {
     });
   });
 
+  it("refuses a missing --repo", () => {
+    expect(parseAuthoriseArguments({ arguments: [] })).toEqual(
+      invalid({
+        detail: argumentProblemText({
+          problem: { kind: "option-required", subcommand: "authorise", option: REPO_OPTION },
+        }),
+      }),
+    );
+  });
+
   it("refuses --root-check, the version 1 name, as an unknown option", () => {
     expect(
       parseAuthoriseArguments({
@@ -438,6 +454,21 @@ describe("parseAuthoriseArguments", () => {
       invalid({
         detail: argumentProblemText({
           problem: { kind: "option-unknown", subcommand: "authorise", given: "--symptom" },
+        }),
+      }),
+    );
+  });
+});
+
+describe("a version 1 command given no --repo", () => {
+  it.each([
+    { subcommand: "upgrade", parse: parseUpgradeArguments },
+    { subcommand: "split-records", parse: parseSplitRecordsArguments },
+  ] as const)("refuses $subcommand naming the version 1 settings file", ({ subcommand, parse }) => {
+    expect(parse({ arguments: [] })).toEqual(
+      invalid({
+        detail: argumentProblemText({
+          problem: { kind: "option-required", subcommand, option: VERSION_ONE_REPO_OPTION },
         }),
       }),
     );
