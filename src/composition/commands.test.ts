@@ -539,6 +539,8 @@ const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun 
   projection: "current",
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 });
 

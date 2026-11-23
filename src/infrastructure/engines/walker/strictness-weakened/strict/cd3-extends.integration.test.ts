@@ -335,6 +335,8 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
           measured: EVERY_CLAUSE_ON_EVERY_TSCONFIG,
           projection: "none",
           slices: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
         },
       });

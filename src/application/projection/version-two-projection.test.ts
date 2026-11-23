@@ -171,18 +171,19 @@ describe("versionTwoProjectionOver", () => {
   });
 
   it("fails with the projection stage's failure", async () => {
-    const notReady: RunLoadFailure = {
-      kind: "not-ready-yet",
-      what: { thing: "eslint-config-roots", paths: ["packages/web"] },
+    const failure: RunLoadFailure = {
+      kind: "engine-failed",
+      engine: { named: "mechanism", mechanism: "eslint" },
+      failure: { kind: "tool-failed", detail: "ESLint could not produce a projection" },
     };
     const stages = stagesGiving({
       projections: vi
         .fn<VersionTwoStages["projections"]>()
-        .mockResolvedValue({ outcome: "failed", error: notReady }),
+        .mockResolvedValue({ outcome: "failed", error: failure }),
     });
     expect(await versionTwoProjectionOver({ stages })).toEqual({
       outcome: "failed",
-      error: notReady,
+      error: failure,
     });
   });
 });

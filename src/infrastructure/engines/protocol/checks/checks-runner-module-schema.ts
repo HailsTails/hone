@@ -3,10 +3,10 @@ import { z } from "zod";
 import type {
   ChecksSliceProblem,
   MisnamedRuleId,
-  NotReadyYetFailure,
   ProjectedFile,
 } from "../../../../domain/runner/checks-run-report.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
+import { unprojectedFolderSchema } from "../embedded/embedded-run-report-schema.ts";
 import { runnerFailureSchema } from "../runner-module/runner-failure-schema.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
@@ -57,6 +57,8 @@ export const checksSliceProblemSchema = z
 export const namedChecksRunReportSchema = z
   .strictObject({
     slices: z.array(checksSliceProblemSchema).readonly(),
+    nestedConfigurations: z.array(repoPathSchema).readonly(),
+    unprojectedFolders: z.array(unprojectedFolderSchema).readonly(),
     misnamedRuleIds: z.array(misnamedRuleIdSchema).readonly(),
     hits: z.array(checkHitSchema).readonly(),
     nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
@@ -65,24 +67,12 @@ export const namedChecksRunReportSchema = z
   })
   .readonly();
 
-const notReadyYetFailureSchema = z
-  .object({
-    kind: z.literal("not-ready-yet"),
-    what: z
-      .object({
-        thing: z.literal("eslint-config-roots"),
-        paths: z.array(z.string()).min(1).readonly(),
-      })
-      .readonly(),
-  })
-  .readonly();
-
 export const namedChecksRunResultSchema = z.discriminatedUnion("outcome", [
   z.strictObject({ outcome: z.literal("ok"), value: namedChecksRunReportSchema }).readonly(),
   z
     .strictObject({
       outcome: z.literal("failed"),
-      error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
+      error: runnerFailureSchema,
     })
     .readonly(),
 ]);
@@ -102,7 +92,7 @@ export const measurementResultSchema = z.discriminatedUnion("outcome", [
   z
     .strictObject({
       outcome: z.literal("failed"),
-      error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
+      error: runnerFailureSchema,
     })
     .readonly(),
 ]);
@@ -114,7 +104,7 @@ export const checksProjectResultSchema = z.union([
   z
     .object({
       outcome: z.literal("failed"),
-      error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
+      error: runnerFailureSchema,
     })
     .readonly(),
 ]);
@@ -132,9 +122,4 @@ export const isChecksSliceProblemSchemaEqual: Equal<
 export const isMisnamedRuleIdSchemaEqual: Equal<
   DeepReadonlyKeepingTuples<z.output<typeof misnamedRuleIdSchema>>,
   MisnamedRuleId
-> = true;
-
-export const isNotReadyYetFailureSchemaEqual: Equal<
-  DeepReadonly<z.output<typeof notReadyYetFailureSchema>>,
-  NotReadyYetFailure
 > = true;

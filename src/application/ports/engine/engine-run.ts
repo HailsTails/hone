@@ -13,6 +13,7 @@ import type {
   ChecksSliceProblem,
   MisnamedRuleId,
 } from "../../../domain/runner/checks-run-report.ts";
+import type { UnprojectedFolderReport } from "../../../domain/runner/mechanism-run.ts";
 import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
 import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
 import type { RunnerCall } from "./runner-module.ts";
@@ -51,6 +52,8 @@ export type NamedEngineRun = {
   readonly projection: "none" | ProjectionState;
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
   readonly slices: readonly ChecksSliceProblem[];
+  readonly nestedConfigurations: readonly RepoPath[];
+  readonly unprojectedFolders: readonly UnprojectedFolderReport[];
   readonly hits: readonly CheckHit[];
   readonly nativeExceptions: readonly CheckNativeException[];
   readonly measured: readonly CheckMeasurement[];

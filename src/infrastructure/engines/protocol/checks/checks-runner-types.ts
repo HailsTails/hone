@@ -5,14 +5,11 @@ import type {
 import type { Result } from "../../../../domain/result.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
 import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
-import type {
-  NotReadyYetFailure,
-  ProjectedFile,
-} from "../../../../domain/runner/checks-run-report.ts";
+import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
 
-export type ChecksRunFailure = RunnerFailure | NotReadyYetFailure;
+export type ChecksRunFailure = RunnerFailure;
 
 export type NamedChecksRunReport = Omit<NamedEngineRun, "mechanism" | "coverableKinds">;
 

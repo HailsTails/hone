@@ -13,12 +13,12 @@ describe("runFailureOf", () => {
         engines: [],
         source: {
           kind: "not-ready-yet",
-          what: { thing: "eslint-config-roots", paths: ["packages/web"] },
+          what: { thing: "command", command: "prune-debt" },
         },
       }),
     ).toEqual({
       kind: "not-ready-yet",
-      what: { thing: "eslint-config-roots", paths: ["packages/web"] },
+      what: { thing: "command", command: "prune-debt" },
     });
   });
 

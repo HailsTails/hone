@@ -126,6 +126,8 @@ describe("namedEngineRunOf", () => {
       measured,
       projection: "not-included",
       slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
       misnamedRuleIds: [],
     };
     const run = vi
@@ -160,6 +162,8 @@ describe("namedEngineRunOf", () => {
           measured: [{ check: BINDING.address, file: CONFIG }],
           projection: "not-included",
           slices: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
         },
       }),
@@ -190,6 +194,8 @@ describe("namedEngineRunOf", () => {
           measured: [],
           projection: "not-included",
           slices: [{ slice: "packages/example/disciplines.eslint.mjs", state: "not-applied" }],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
         },
       }),
@@ -226,6 +232,8 @@ describe("namedEngineRunOf", () => {
       measured: [],
       projection: "not-included",
       slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
       misnamedRuleIds: [],
     };
     const measureVersionOne = vi.fn().mockResolvedValue({
@@ -281,6 +289,8 @@ describe("namedEngineRunOf", () => {
       measured: [{ check: BINDING.address, file: CONFIG }],
       projection: "none",
       slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
       misnamedRuleIds: [],
     };
     const run = vi
@@ -332,6 +342,8 @@ describe("namedEngineRunOf", () => {
       measured: [{ check: "leftover-debugging#debug-statement", file: A }],
       projection: "not-included",
       slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
       misnamedRuleIds: [],
     };
     const runner: ParsedNamedRunner = {
@@ -376,6 +388,8 @@ describe("namedEngineRunOf", () => {
           measured: [],
           projection: "none",
           slices: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
           misnamedRuleIds: [],
         },
       }),
@@ -392,7 +406,7 @@ describe("namedEngineRunOf", () => {
     });
   });
 
-  it("passes a deferred run through with its unresolved roots", async () => {
+  it("rejects the retired configuration roots failure as invalid runner output", async () => {
     const notReady = {
       outcome: "failed",
       error: {
@@ -403,7 +417,14 @@ describe("namedEngineRunOf", () => {
     const runner = { ...namedRunner(), run: vi.fn().mockResolvedValue(notReady) };
     await expect(
       namedEngineRunOf({ mechanism: "walker", runner, request: REQUEST }),
-    ).resolves.toEqual(notReady);
+    ).resolves.toMatchObject({
+      outcome: "failed",
+      error: {
+        kind: "runner-failed",
+        mechanism: "walker",
+        failure: { kind: "runner-invalid-output" },
+      },
+    });
   });
 
   it("reports a rejected runner call as invalid output", async () => {

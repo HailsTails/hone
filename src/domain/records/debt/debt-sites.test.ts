@@ -18,7 +18,7 @@ import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
-import { debtSitesOf, siteAddressText, unrecordableSitesOf } from "./debt-sites.ts";
+import { debtSitesOf, siteAddressText } from "./debt-sites.ts";
 
 const AUDIT = "walker" as const;
 
@@ -305,13 +305,24 @@ const UNCATALOGUED_FINDING: CheckFinding = {
   snippet: "x",
 };
 
+const WALKER_RUN = {
+  mechanism: AUDIT,
+  nativeExceptions: [],
+  coverableKinds: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+};
+
+const ESLINT_RUN = { ...WALKER_RUN, mechanism: ESLINT };
+
 describe("the findings no debt can be written for", () => {
   it("names an unregistered finding by its check address", () => {
     expect(
-      unrecordableSitesOf({
+      debtSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [UNCATALOGUED_FINDING, CLOCK_FINDING],
-      }),
+        runs: [WALKER_RUN, ESLINT_RUN],
+      }).unrecordable,
     ).toEqual([
       { address: "unknown-symptom#nowhere", file: ORDER_FILE, because: { kind: "no-check" } },
     ]);
@@ -319,10 +330,11 @@ describe("the findings no debt can be written for", () => {
 
   it("names an unregistered check of a known symptom", () => {
     expect(
-      unrecordableSitesOf({
+      debtSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [{ ...CAST_FINDING, check: "claimed-type#no-such-check" }],
-      }),
+        runs: [WALKER_RUN, ESLINT_RUN],
+      }).unrecordable,
     ).toEqual([
       { address: "claimed-type#no-such-check", file: WEBHOOK_FILE, because: { kind: "no-check" } },
     ]);
@@ -330,12 +342,13 @@ describe("the findings no debt can be written for", () => {
 
   it("names a finding whose named check is not run by the engine that raised it", () => {
     expect(
-      unrecordableSitesOf({
+      debtSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [
           { ...CLOCK_FINDING, mechanism: ESLINT, check: "date-used-directly#clock-sources" },
         ],
-      }),
+        runs: [WALKER_RUN, ESLINT_RUN],
+      }).unrecordable,
     ).toEqual([
       {
         address: "date-used-directly#clock-sources",
@@ -347,13 +360,14 @@ describe("the findings no debt can be written for", () => {
 
   it("names each unrecordable check and file once", () => {
     expect(
-      unrecordableSitesOf({
+      debtSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [
           UNCATALOGUED_FINDING,
           { ...UNCATALOGUED_FINDING, anchor: { line: 9, column: 1 } },
         ],
-      }),
+        runs: [WALKER_RUN, ESLINT_RUN],
+      }).unrecordable,
     ).toEqual([
       { address: "unknown-symptom#nowhere", file: ORDER_FILE, because: { kind: "no-check" } },
     ]);
@@ -361,8 +375,26 @@ describe("the findings no debt can be written for", () => {
 });
 
 describe("the debt a run's unanswered findings call for", () => {
+  it("cannot record a finding when only another engine has a run result", () => {
+    expect(
+      debtSitesOf({ catalogue: REPORT_CATALOGUE, findings: [CLOCK_FINDING], runs: [ESLINT_RUN] }),
+    ).toEqual({
+      recordable: [],
+      unrecordable: [
+        {
+          address: "date-used-directly#clock-sources",
+          file: ORDER_FILE,
+          because: { kind: "no-run" },
+        },
+      ],
+    });
+  });
+
   it("names a finding by its symptom and the check that found it", () => {
-    expect(debtSitesOf({ catalogue: REPORT_CATALOGUE, findings: [CLOCK_FINDING] })).toEqual([
+    expect(
+      debtSitesOf({ catalogue: REPORT_CATALOGUE, findings: [CLOCK_FINDING], runs: [WALKER_RUN] })
+        .recordable,
+    ).toEqual([
       {
         ruleSet: TOOL_RULE_SET,
         address: "date-used-directly#clock-sources",
@@ -383,10 +415,44 @@ describe("the debt a run's unanswered findings call for", () => {
           checks: [{ ...CLOCK_CHECK, symptom: teamSymptom }],
         },
         findings: [CLOCK_FINDING],
-      }),
+        runs: [WALKER_RUN],
+      }).recordable,
     ).toEqual([
       {
         ruleSet: acme,
+        address: "date-used-directly#clock-sources",
+        file: ORDER_FILE,
+        origin: "finding",
+      },
+    ]);
+  });
+
+  it("marks a finding outside the projection only when its engine names the folder", () => {
+    const unprojected = { folder: repoPathOf("src/adapters"), selectionFolder: repoPathOf("src") };
+    const sites = debtSitesOf({
+      catalogue: REPORT_CATALOGUE,
+      findings: [CAST_FINDING, CLOCK_FINDING],
+      runs: [
+        WALKER_RUN,
+        {
+          mechanism: CAST_FINDING.mechanism,
+          nativeExceptions: [],
+          coverableKinds: [],
+          nestedConfigurations: [unprojected.selectionFolder],
+          unprojectedFolders: [unprojected],
+        },
+      ],
+    });
+    expect(sites.recordable).toEqual([
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: "claimed-type#cast-expressions",
+        file: WEBHOOK_FILE,
+        origin: "finding",
+        unprojected: { ...unprojected, mechanism: CAST_FINDING.mechanism },
+      },
+      {
+        ruleSet: TOOL_RULE_SET,
         address: "date-used-directly#clock-sources",
         file: ORDER_FILE,
         origin: "finding",
@@ -409,7 +475,8 @@ describe("the debt a run's unanswered findings call for", () => {
       debtSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [{ ...CLOCK_FINDING, check: "date-used-directly#clock-sources" }],
-      }),
+        runs: [WALKER_RUN, ESLINT_RUN],
+      }).recordable,
     ).toEqual([
       {
         ruleSet: TOOL_RULE_SET,
@@ -422,7 +489,11 @@ describe("the debt a run's unanswered findings call for", () => {
 
   it("writes no debt when the finding’s check is absent from the catalogue", () => {
     expect(
-      debtSitesOf({ catalogue: { ...REPORT_CATALOGUE, checks: [] }, findings: [CLOCK_FINDING] }),
+      debtSitesOf({
+        catalogue: { ...REPORT_CATALOGUE, checks: [] },
+        findings: [CLOCK_FINDING],
+        runs: [WALKER_RUN, ESLINT_RUN],
+      }).recordable,
     ).toEqual([]);
   });
 
@@ -430,12 +501,13 @@ describe("the debt a run's unanswered findings call for", () => {
     expect(
       debtSitesOf({
         catalogue: REPORT_CATALOGUE,
+        runs: [WALKER_RUN, ESLINT_RUN],
         findings: [
           CLOCK_FINDING,
           CAST_FINDING,
           { ...CLOCK_FINDING, anchor: { line: 20, column: 4 } },
         ],
-      }),
+      }).recordable,
     ).toEqual([
       {
         ruleSet: TOOL_RULE_SET,
@@ -456,11 +528,12 @@ describe("the debt a run's unanswered findings call for", () => {
     expect(
       debtSitesOf({
         catalogue: REPORT_CATALOGUE,
+        runs: [WALKER_RUN, ESLINT_RUN],
         findings: [
           UNCATALOGUED_FINDING,
           { ...CLOCK_FINDING, check: "branch-in-a-test#unregistered" },
         ],
-      }),
+      }).recordable,
     ).toEqual([]);
   });
 });

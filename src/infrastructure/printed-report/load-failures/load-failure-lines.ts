@@ -131,35 +131,10 @@ const catalogueFields = (request: { readonly failure: CatalogueNotRead }): reado
   }
 };
 
-const MOST_FOLDERS_NAMED = 3;
-
-const foldersText = (request: { readonly folders: readonly string[] }): string => {
-  const unnamed = request.folders.length - MOST_FOLDERS_NAMED;
-  const named = request.folders.slice(0, MOST_FOLDERS_NAMED).join(", ");
-  return unnamed > 0 ? `${named} and ${unnamed} more` : named;
-};
-
-const configRootsFields = (request: {
-  readonly what: Extract<NotReadyYet, { readonly thing: "eslint-config-roots" }>;
-}): readonly string[] => {
-  return [
-    "eslint-config-roots:",
-    `this release does not run a repository that holds other version 2 repositories yet; folders holding ${SETTINGS_FILE_NAME}: ${foldersText({ folders: request.what.paths })}; move them out of this repository, and run each on its own with --repo`,
-  ];
-};
-
-const notReadyFields = (request: { readonly what: NotReadyYet }): readonly string[] => {
-  const { what } = request;
-  switch (what.thing) {
-    case "command":
-      return [
-        `${what.command}:`,
-        `this release runs ${what.command} on version 1 files only, and this repository holds ${SETTINGS_FILE_NAME}`,
-      ];
-    case "eslint-config-roots":
-      return configRootsFields({ what });
-  }
-};
+const notReadyFields = ({ what }: { readonly what: NotReadyYet }): readonly string[] => [
+  `${what.command}:`,
+  `this release runs ${what.command} on version 1 files only, and this repository holds ${SETTINGS_FILE_NAME}`,
+];
 
 type ToolFailure = Extract<
   RunLoadFailure,

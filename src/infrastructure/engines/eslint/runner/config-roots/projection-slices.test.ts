@@ -229,6 +229,32 @@ describe("governingPackageOf", () => {
   });
 });
 
+describe("nested configuration paths in a named repository", () => {
+  it("uses the named settings file for both projection reach and folder attribution", () => {
+    const request = {
+      settingsFile: "hone.config.json",
+      trackedPaths: [
+        repoPathOf("hone.config.json"),
+        repoPathOf("pkg/hone.config.json"),
+        repoPathOf("pkg/lib/eslint.config.mjs"),
+        repoPathOf("pkg/lib/a.ts"),
+        repoPathOf("idle/hone.config.json"),
+        repoPathOf("idle/eslint.config.mjs"),
+        repoPathOf("old/disciplines.json"),
+        repoPathOf("old/a.ts"),
+      ],
+      files: [repoPathOf("pkg/lib/a.ts"), repoPathOf("old/a.ts")],
+    };
+    expect({
+      nested: nestedConfigurationFoldersOf(request),
+      unprojected: unprojectedFoldersOf({ ...request, lookup: "nearest-to-file" }),
+    }).toEqual({
+      nested: [repoPathOf("pkg")],
+      unprojected: [{ folder: repoPathOf("pkg/lib"), selectionFolder: repoPathOf("pkg") }],
+    });
+  });
+});
+
 describe("nestedConfigurationFoldersOf", () => {
   const NESTED_TREE = tracked([
     "fixtures/consumer/disciplines.json",
@@ -240,6 +266,7 @@ describe("nestedConfigurationFoldersOf", () => {
   it("names each outermost folder holding its own disciplines.json and a file under check", () => {
     expect(
       nestedConfigurationFoldersOf({
+        settingsFile: "disciplines.json",
         trackedPaths: NESTED_TREE,
         files: tracked(["fixtures/consumer/inner/old.ts", "fixtures/plain/x.ts", "src/a.ts"]),
       }),
@@ -273,6 +300,7 @@ describe("unprojectedFoldersOf", () => {
   it("names each outermost folder inside a folder holding its own disciplines.json whose own ESLint config its files load, holding a file under check, beside the folder holding that disciplines.json", () => {
     expect(
       unprojectedFoldersOf({
+        settingsFile: "disciplines.json",
         trackedPaths: OWN_CONFIG_TREE,
         files: FILES,
         lookup: "nearest-to-file",
@@ -286,6 +314,7 @@ describe("unprojectedFoldersOf", () => {
   it("names the outermost folder holding its own disciplines.json as the one a person would govern from this repository", () => {
     expect(
       unprojectedFoldersOf({
+        settingsFile: "disciplines.json",
         trackedPaths: tracked([
           "eslint.config.mjs",
           "nested/disciplines.json",
@@ -301,6 +330,7 @@ describe("unprojectedFoldersOf", () => {
   it("names no folder holding its own disciplines.json but no ESLint config, whose files load the config above it", () => {
     expect(
       unprojectedFoldersOf({
+        settingsFile: "disciplines.json",
         trackedPaths: tracked(["eslint.config.mjs", "fixtures/rooted/disciplines.json"]),
         files: tracked(["fixtures/rooted/src/parse.ts"]),
         lookup: "nearest-to-file",
@@ -311,6 +341,7 @@ describe("unprojectedFoldersOf", () => {
   it("names no folder when every file loads the repository root's config", () => {
     expect(
       unprojectedFoldersOf({
+        settingsFile: "disciplines.json",
         trackedPaths: OWN_CONFIG_TREE,
         files: FILES,
         lookup: "repository-root",

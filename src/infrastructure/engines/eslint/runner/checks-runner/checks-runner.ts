@@ -16,6 +16,7 @@ import {
   answeredByPlaceOf,
 } from "../../../../../domain/records/answering/records-by-place.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
+import { exclusionOf } from "../../../../../domain/repository/exclusion.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
@@ -31,7 +32,6 @@ import type {
 import { toolchainBoundNamedChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import {
   nestedVersionTwoFoldersOf,
-  nestedVersionTwoRepositoriesOf,
   SETTINGS_FILE_NAME,
 } from "../config-roots/checks-nested-repositories.ts";
 import {
@@ -47,6 +47,10 @@ import {
   teamConfigLookupFor,
 } from "../config-roots/config-lookup.ts";
 import { cachedGoverningIgnores } from "../config-roots/governing-config.ts";
+import {
+  nestedConfigurationFoldersOf,
+  unprojectedFoldersOf,
+} from "../config-roots/projection-slices.ts";
 import { conformedNamedCases, parsedPluginOf } from "../conformance/eslint-conform.ts";
 import {
   CHECKS_PLUGIN_NAMESPACE,
@@ -122,6 +126,13 @@ const measurementOf = (request: {
         value: { report: request.result.value, unappliedSlices: request.unappliedSlices ?? [] },
       };
 
+const NO_PROJECTION_REACH: Pick<
+  NamedChecksRunReport,
+  "nestedConfigurations" | "unprojectedFolders"
+> = {
+  nestedConfigurations: [],
+  unprojectedFolders: [],
+};
 const NO_FINDINGS = { hits: [], nativeExceptions: [], measured: [], misnamedRuleIds: [] };
 
 const reportAs = (request: {
@@ -129,7 +140,12 @@ const reportAs = (request: {
   readonly slices: readonly ChecksSliceProblem[];
 }): Outcome<NamedChecksRunReport> => ({
   outcome: "ok",
-  value: { ...NO_FINDINGS, projection: request.projection, slices: request.slices },
+  value: {
+    ...NO_FINDINGS,
+    ...NO_PROJECTION_REACH,
+    projection: request.projection,
+    slices: request.slices,
+  },
 });
 
 const toolFailed = (request: {
@@ -201,21 +217,6 @@ const lookupOf = (request: {
     ...lookupRequestOf(request),
     declared: request.run.declaredConfigLookup,
   });
-
-const notReadyOver = (request: {
-  readonly run: NamedEngineRunRequest;
-}): Outcome<never> | undefined => {
-  const nested = nestedVersionTwoRepositoriesOf({
-    trackedPaths: request.run.trackedPaths,
-    files: request.run.files,
-  });
-  return nested.length > 0
-    ? {
-        outcome: "failed",
-        error: { kind: "not-ready-yet", what: { thing: "eslint-config-roots", paths: nested } },
-      }
-    : undefined;
-};
 
 const slicesOver = (request: {
   readonly run: NamedEngineRunRequest;
@@ -633,6 +634,7 @@ const lintedReport = async (
             ...tracked.value,
           ],
           measured: findings.value.flatMap((found) => found.measured),
+          ...NO_PROJECTION_REACH,
           projection: request.status.projection,
           slices: request.status.slices,
           misnamedRuleIds: findings.value.flatMap((found) => found.misnamedRuleIds),
@@ -677,6 +679,29 @@ const unappliedPackageSlicesOf = (request: {
   });
 };
 
+const projectionReachOf = (request: {
+  readonly trackedPaths: readonly RepoPath[];
+  readonly files: readonly RepoPath[];
+  readonly settingsFile: string;
+  readonly lookup: EslintConfigLookup;
+  readonly selected: readonly SelectedNamedCheck[];
+  readonly answeredByPlace: AnsweredByPlace;
+  readonly queried: QueriedFiles;
+}): Pick<NamedChecksRunReport, "nestedConfigurations" | "unprojectedFolders"> => {
+  if (request.lookup === "repository-root") return NO_PROJECTION_REACH;
+  const nestedConfigurations = nestedConfigurationFoldersOf(request).filter((folder) => {
+    const checked = request.queried.checked.filter(
+      ({ file }) => exclusionOf({ path: file, excluded: [folder] }) === "excluded",
+    );
+    return (
+      checked.length > 0 &&
+      projectionEffectOf({ ...request, queried: { checked, ignored: [] } }) === "not-in-effect"
+    );
+  });
+  const unprojectedFolders = unprojectedFoldersOf(request);
+  return { nestedConfigurations, unprojectedFolders };
+};
+
 const queriedRun = async (
   request: Omit<LintRequest, "queried" | "query" | "projectionSelected" | "answeredByPlace"> & {
     readonly platform: EslintPlatformPorts;
@@ -686,9 +711,10 @@ const queriedRun = async (
   },
 ): Promise<MeasuredRun> => {
   const source = request.versionOneProjection;
+  const settingsFile = source?.settingsFile ?? SETTINGS_FILE_NAME;
   const query = queryInstanceOf({
     ...request,
-    settingsFile: source?.settingsFile ?? SETTINGS_FILE_NAME,
+    settingsFile,
   });
   if (query.outcome === "failed") {
     return query;
@@ -730,13 +756,20 @@ const queriedRun = async (
           selected: projectionSelected,
           queried: queried.value,
         });
+  const projection = projectionWhenNotInEffect({ status });
+  const folders = {
+    trackedPaths: request.run.trackedPaths,
+    files: request.run.files,
+    settingsFile,
+    lookup: request.lookup,
+  };
   const result =
     projectionEffectOf({
       selected: projectionSelected,
       answeredByPlace,
       queried: queried.value,
     }) === "not-in-effect"
-      ? reportAs({ projection: projectionWhenNotInEffect({ status }), slices: status.slices })
+      ? reportAs({ projection, slices: status.slices })
       : await lintedReport({
           ...request,
           status,
@@ -745,7 +778,29 @@ const queriedRun = async (
           query: query.value,
           queried: queried.value,
         });
-  return measurementOf({ result, unappliedSlices });
+  if (result.outcome === "failed") return result;
+  const reach = projectionReachOf({
+    ...folders,
+    selected: projectionSelected,
+    answeredByPlace,
+    queried: queried.value,
+  });
+  const withoutParentProjection = reach.unprojectedFolders.map(({ folder }) => folder);
+  return measurementOf({
+    result: {
+      outcome: "ok",
+      value: {
+        ...result.value,
+        ...reach,
+        nativeExceptions: result.value.nativeExceptions.filter(
+          (exception) =>
+            exception.kind !== "config-override" ||
+            exclusionOf({ path: exception.file, excluded: withoutParentProjection }) === "checked",
+        ),
+      },
+    },
+    unappliedSlices,
+  });
 };
 
 const projectedRun = async (request: {
@@ -854,8 +909,6 @@ export const checksRunnerOver = (request: {
   readonly platform: EslintPlatformPorts;
 }): EslintChecksRunner => ({
   run: async (run) => {
-    const notReady = notReadyOver({ run });
-    if (notReady !== undefined) return notReady;
     const measured = await projectedRun({
       ...request,
       run,
@@ -867,24 +920,16 @@ export const checksRunnerOver = (request: {
       : { outcome: "ok", value: measured.value.report };
   },
   measureVersionOne: ({ run, projection }) =>
-    Promise.resolve(notReadyOver({ run })).then(
-      (notReady) =>
-        notReady ??
-        projectedRun({
-          ...request,
-          run,
-          versionOneProjection: projection,
-          projectionStatusOf: () => ({
-            outcome: "ok",
-            value: { projection: "current", slices: [] },
-          }),
-        }),
-    ),
-  project: (run) =>
-    Promise.resolve(
-      notReadyOver({ run }) ??
-        projectedFilesOf({ run, ports: request.ports, platform: request.platform }),
-    ),
+    projectedRun({
+      ...request,
+      run,
+      versionOneProjection: projection,
+      projectionStatusOf: () => ({
+        outcome: "ok",
+        value: { projection: "current", slices: [] },
+      }),
+    }),
+  project: (run) => Promise.resolve(projectedFilesOf({ ...request, run })),
   conform: (conform) =>
     conformedNamedCases({
       binding: conform.binding,

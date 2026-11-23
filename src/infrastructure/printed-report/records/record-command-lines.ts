@@ -9,6 +9,8 @@ import type { PrunableDebt, PrunedReason } from "../../../domain/records/debt/pr
 import type { UnrecordableBecause } from "../../../domain/records/debt/unrecordable-site.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
+import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
+import { NESTED_CONFIGURATION_ISSUE } from "../../command-line/nested-configuration-issue.ts";
 import { recordsFileText, refusalText } from "./record-lines.ts";
 import { scriptOptionAdviceOf } from "./script-option-advice.ts";
 
@@ -28,6 +30,7 @@ const UNRECORDABLE_DETAIL: Readonly<
 > = {
   "no-check":
     "the catalogue gives this finding no symptom or check to record debt against; fix the finding",
+  "no-run": "the engine that reported this finding has no run result to record debt against",
   ignore:
     "an ESLint ignore leaves the file out of the team's lint run, which no record can hold; Hone's run checked the file and recorded what it found there as debt, so what is left is the ignore: remove it, or, if the file is generated or vendored and not yours to hold to the checks, list it in exclude in hone.config.json so Hone's setting and the team's ignore agree",
   "inline-rule-config":
@@ -63,6 +66,8 @@ const detailOf = (request: { readonly outcome: DebtOutcome }): string => {
       return `under --leave ${outcome.under}; record it as an authorised location with a why chain, or fix it`;
     case "touched":
       return TOUCHED_DETAIL[outcome.of];
+    case "nested-configuration":
+      return `the file loads the ${outcome.mechanism} configuration in ${outcome.folder}, and ${outcome.selectionFolder} holds its own ${SETTINGS_FILE_NAME}. The parent projection cannot apply debt there (${NESTED_CONFIGURATION_ISSUE}). Fix the finding or govern the folder from this repository`;
     case "unrecordable":
       return unrecordableDetailOf({ because: outcome.because });
   }

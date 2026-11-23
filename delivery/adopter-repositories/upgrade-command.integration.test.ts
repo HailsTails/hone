@@ -442,6 +442,32 @@ const commitEverything = (request: { readonly repo: string }): void => {
 };
 
 describe("hone upgrade over a real repository, through the real ports", () => {
+  it.each([
+    { file: "hone.config.json", settings: '{ "version": 2, "checks": {} }\n' },
+    { file: "disciplines.json", settings: SELECTION },
+  ])(
+    "upgrades a parent repository whose tracked source folder has its own $file",
+    async ({ file, settings }) => {
+      const repo = await versionOneRepositoryOf({
+        selection: SELECTION,
+        exceptions: NO_RECORDS,
+        sources: { "kept.ts": KEPT_CLASS, [file]: settings },
+      });
+      const upgraded = await runCommandIn({
+        repo,
+        subcommand: "upgrade",
+        options: [],
+        modules: DEFAULT_MODULES,
+      });
+
+      expect(upgraded.exits).toEqual([[{ code: 0 }]]);
+      expect(upgraded.writes).toMatchObject([
+        [{ text: expect.stringContaining("upgraded to version 2") }],
+      ]);
+      expect(fileText.exists({ path: `${repo}/src/${file}` })).toBe("present");
+    },
+  );
+
   it("upgrades a version 1 repository, checks it with the projection current, and finds nothing left to upgrade", async () => {
     const repo = await versionOneRepository({ source: KEPT_CLASS, exceptions: EXCEPTIONS });
     const upgraded = await runCommandIn({

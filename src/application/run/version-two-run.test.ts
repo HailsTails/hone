@@ -316,6 +316,8 @@ const RUN: NamedEngineRun = {
   projection: "current",
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 };
 
@@ -477,18 +479,19 @@ describe("versionTwoRunOver", () => {
   });
 
   it("fails with the engines' failure", async () => {
-    const notReady: RunLoadFailure = {
-      kind: "not-ready-yet",
-      what: { thing: "eslint-config-roots", paths: ["packages/web"] },
+    const failure: RunLoadFailure = {
+      kind: "engine-failed",
+      engine: { named: "mechanism", mechanism: "eslint" },
+      failure: { kind: "tool-failed", detail: "ESLint could not check the file" },
     };
     const stages = stagesGiving({
       engines: vi
         .fn<VersionTwoStages["engines"]>()
-        .mockResolvedValue({ outcome: "failed", error: notReady }),
+        .mockResolvedValue({ outcome: "failed", error: failure }),
     });
     expect(await versionTwoRunOver({ stages, arguments: NO_ARGUMENTS })).toEqual({
       outcome: "failed",
-      error: notReady,
+      error: failure,
     });
   });
 });

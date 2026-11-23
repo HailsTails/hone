@@ -365,6 +365,8 @@ const REPORT = {
   hits: [],
   nativeExceptions: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
   projection: "current",
   slices: [],

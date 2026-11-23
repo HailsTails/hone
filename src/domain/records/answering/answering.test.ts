@@ -452,6 +452,8 @@ const inlineRun = (request: {
   mechanism: AUDIT,
   nativeExceptions: request.nativeExceptions,
   coverableKinds: ["inline-disable", "command-line-option"],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
 });
 
 const staleFor = (request: {
@@ -1241,7 +1243,15 @@ describe("answerFindings, natives held", () => {
         findings: [],
         touched: NOTHING_TOUCHED,
         measurements: { runs: [], tracked: [], excluded: [] },
-        runs: [{ mechanism: AUDIT, nativeExceptions: [DISABLE_IN_A], coverableKinds: [] }],
+        runs: [
+          {
+            mechanism: AUDIT,
+            nativeExceptions: [DISABLE_IN_A],
+            coverableKinds: [],
+            nestedConfigurations: [],
+            unprojectedFolders: [],
+          },
+        ],
       }),
     ).toEqual({
       ...NOTHING_ANSWERED,
@@ -1343,6 +1353,8 @@ describe("answerFindings, natives held", () => {
             mechanism: ESLINT,
             nativeExceptions: [DISABLE_IN_A],
             coverableKinds: ["inline-disable"],
+            nestedConfigurations: [],
+            unprojectedFolders: [],
           },
         ],
       }),
@@ -1363,7 +1375,13 @@ describe("answerFindings, natives held", () => {
         touched: NOTHING_TOUCHED,
         measurements: { runs: [], tracked: [], excluded: [] },
         runs: [
-          { mechanism: ESLINT, nativeExceptions: [disableInB], coverableKinds: [] },
+          {
+            mechanism: ESLINT,
+            nativeExceptions: [disableInB],
+            coverableKinds: [],
+            nestedConfigurations: [],
+            unprojectedFolders: [],
+          },
           inlineRun({ nativeExceptions: [DISABLE_IN_A, SCRIPT_RULE_OFF] }),
         ],
       }),

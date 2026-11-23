@@ -58,6 +58,8 @@ describe("namedEngineRunsOf", () => {
       coverableKinds: [],
       projection: "none",
       slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
       misnamedRuleIds: [],
       hits: [],
       nativeExceptions: [],

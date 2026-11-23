@@ -35,8 +35,3 @@ export type ChecksSliceProblem = {
   readonly slice: RepoPath;
   readonly state: "missing" | "out-of-date" | "unconfigured";
 };
-
-export type NotReadyYetFailure = {
-  readonly kind: "not-ready-yet";
-  readonly what: { readonly thing: "eslint-config-roots"; readonly paths: readonly string[] };
-};

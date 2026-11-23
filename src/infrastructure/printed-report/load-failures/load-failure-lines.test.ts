@@ -335,38 +335,6 @@ describe("runLoadFailureLine, a stale projection", () => {
   });
 });
 
-describe("runLoadFailureLine, not-ready-yet eslint-config-roots", () => {
-  const lineOf = (what: { readonly paths: readonly string[] }) =>
-    runLoadFailureLine({
-      failure: { kind: "not-ready-yet", what: { thing: "eslint-config-roots", ...what } },
-      upgradeCommand: undefined,
-    });
-
-  it("names the other version 2 repositories inside this one", () => {
-    expect(lineOf({ paths: ["vendor/lib", "vendor/tool"] })).toBe(
-      "load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: vendor/lib, vendor/tool; move them out of this repository, and run each on its own with --repo",
-    );
-  });
-
-  it("names exactly three folders with no count of the rest", () => {
-    expect(lineOf({ paths: ["a", "b", "c"] })).toBe(
-      "load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: a, b, c; move them out of this repository, and run each on its own with --repo",
-    );
-  });
-
-  it("counts one more when four folders hold a settings file", () => {
-    expect(lineOf({ paths: ["a", "b", "c", "d"] })).toBe(
-      "load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: a, b, c and 1 more; move them out of this repository, and run each on its own with --repo",
-    );
-  });
-
-  it("counts the rest when five folders hold a settings file", () => {
-    expect(lineOf({ paths: ["a", "b", "c", "d", "e"] })).toBe(
-      "load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: a, b, c and 2 more; move them out of this repository, and run each on its own with --repo",
-    );
-  });
-});
-
 describe("runLoadFailureLine, a version 1 file found while no command rewrites it", () => {
   it("prints upgrade-needed naming plain hone upgrade when no invocation could be built", () => {
     expect(

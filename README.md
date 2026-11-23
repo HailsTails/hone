@@ -88,7 +88,7 @@ import hone from "./hone.eslint.mjs";
 export default [{ files: ["**/*.{ts,tsx,mts,cts}"] }, ...hone];
 ```
 
-A package with no `eslint.config.*` of its own is linted by the nearest config above it, so its records stay in that config's slice. A file is governed by the deepest config root that contains it. A folder holding its own `hone.config.json` is a nested Hone configuration, which is not supported yet ([#72](https://github.com/HailsTails/hone/issues/72)): when the ESLint engine would check a file under it, `check` and `project` stop before anything is checked or written, while a run that lists only walker checks does not stop. A folder holding one and no file the run would check gets no slice, and nor does anything under it. Either fix works today: run the folder on its own with `--repo`, as the line says, or govern it from this repository by removing its `hone.config.json` and keeping its records here, after which `hone project` writes its slice.
+A package with no `eslint.config.*` of its own is linted by the nearest config above it, so its records stay in that config's slice. A file is governed by the deepest config root that contains it. When a folder holds its own `hone.config.json`, `check` and `project` continue. Hone skips projection slices in that folder and names it when it keeps the parent projection out of effect.
 
 A config root keeps its slice even where a config above it ignores its folder: a lint run from that folder loads its own config and never reads the ignores above it, so `hone project` writes the same slices from the same inputs every time. A repository with only a root config gets exactly the projection it had before.
 

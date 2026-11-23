@@ -6,7 +6,7 @@ import {
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import { runVerdictOf } from "../../../domain/report/report-sections.ts";
-import type { RunReport } from "../../../domain/report/run-report.ts";
+import type { RunAssessment, RunReport } from "../../../domain/report/run-report.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
@@ -38,6 +38,17 @@ const clauseTextOfCheck = (request: {
 
 const recordFileKeyOf = (request: { readonly placed: PlacedRecord }): string =>
   "file" in request.placed.record ? request.placed.record.file : request.placed.record.kind;
+
+const assessmentKeyOf = (request: { readonly note: RunAssessment }): string => {
+  const { note } = request;
+  switch (note.concern) {
+    case "forfeiture":
+    case "carried-standing":
+      return joinedKey({ parts: [note.concern, note.assessedBy] });
+    case "nested-projection":
+      return joinedKey({ parts: [note.concern, note.engine.name, ...note.folders] });
+  }
+};
 
 export const afterSectionsOf = (request: {
   readonly report: RunReport;
@@ -107,9 +118,7 @@ export const afterSectionsOf = (request: {
         ],
       }),
     ),
-    assessment: report.assessment.map(({ concern, assessedBy }) =>
-      joinedKey({ parts: [concern, assessedBy] }),
-    ),
+    assessment: report.assessment.map((note) => assessmentKeyOf({ note })),
     verdict: [runVerdictOf({ report })],
   };
 };

@@ -5,11 +5,7 @@ import type {
 } from "../../domain/finding/governance.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { type DebtOutcome, debtOutcomesOf } from "../../domain/records/debt/debt-effects.ts";
-import {
-  debtSitesOf,
-  inSiteOrder,
-  unrecordableSitesOf,
-} from "../../domain/records/debt/debt-sites.ts";
+import { debtSitesOf, inSiteOrder } from "../../domain/records/debt/debt-sites.ts";
 import { nativeDebtSitesOf } from "../../domain/records/debt/native-debt-sites.ts";
 import { type PrunableDebt, prunableDebtOf } from "../../domain/records/debt/prunable-debt.ts";
 import type { HoneRecordsFailure } from "../../domain/records/hone-records-failure.ts";
@@ -177,19 +173,16 @@ const outcomesOf = (request: {
     unrecorded: request.run.unrecorded,
     runs: request.run.runs,
   });
+  const findings = debtSitesOf({
+    catalogue,
+    findings: request.run.findings,
+    runs: request.run.runs,
+  });
   return {
     outcome: "ok",
     value: debtOutcomesOf({
-      sites: inSiteOrder({
-        sites: [
-          ...natives.recordable,
-          ...debtSitesOf({ catalogue, findings: request.run.findings }),
-        ],
-      }),
-      unrecordable: [
-        ...unrecordableSitesOf({ catalogue, findings: request.run.findings }),
-        ...natives.unrecordable,
-      ],
+      sites: inSiteOrder({ sites: [...natives.recordable, ...findings.recordable] }),
+      unrecordable: [...findings.unrecordable, ...natives.unrecordable],
       records: held.value.records,
       leave: request.run.leave,
       touched,

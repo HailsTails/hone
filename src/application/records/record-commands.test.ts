@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CheckFinding } from "../../domain/finding/governance.ts";
+import type { CheckFinding, NamedGovernedRun } from "../../domain/finding/governance.ts";
 import type {
   Case,
   Check,
@@ -404,13 +404,49 @@ const UNMEASURED: TouchedSet = {
 };
 
 describe("hone record-debt over a run's unanswered findings", () => {
+  const walkerRun: NamedGovernedRun = {
+    mechanism: AUDIT,
+    nativeExceptions: [],
+    coverableKinds: [],
+    nestedConfigurations: [],
+    unprojectedFolders: [],
+  };
   const request: RecordDebtRequest = {
     findings: [CLOCK_FINDING],
     unrecorded: [],
-    runs: [],
+    runs: [walkerRun, { ...walkerRun, mechanism: ESLINT }],
     touched: NOTHING_CHANGED,
     leave: [],
   };
+
+  it("reports a missing engine run without asking the records editor to write debt", () => {
+    const { apply, store } = storeOf();
+    const recordsEditor = editorAdding({ added: [] });
+    expect(
+      recordDebtOf({
+        ports: {
+          catalogue: REPORT_CATALOGUE,
+          recordsReader: READER_HOLDING_NOTHING,
+          recordsEditor,
+          source: sourceOf({ documents: [] }),
+          store,
+        },
+        run: { ...request, runs: [] },
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          address: "date-used-directly#clock-sources",
+          file: ORDER_FILE,
+          effect: "unrecordable",
+          because: { kind: "no-run" },
+        },
+      ],
+    });
+    expect(recordsEditor.documentsWithAdded).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+  });
 
   it("writes one debt record under hone-records/debt for the symptom and check, as the editor adds it", () => {
     const { apply, store } = storeOf();
@@ -507,6 +543,47 @@ describe("hone record-debt over a run's unanswered findings", () => {
         ],
       }),
     );
+  });
+
+  it("prints a nested configuration result without writing debt the projection cannot apply", () => {
+    const { apply, store } = storeOf();
+    const folder = repoPathOf("src/orders");
+    const unprojected = { folder, selectionFolder: repoPathOf("src") };
+    const result = recordDebtOf({
+      ports: {
+        catalogue: REPORT_CATALOGUE,
+        recordsReader: READER_HOLDING_NOTHING,
+        recordsEditor: editorAdding({ added: [] }),
+        source: sourceOf({ documents: [] }),
+        store,
+      },
+      run: {
+        ...request,
+        runs: [
+          {
+            mechanism: CLOCK_FINDING.mechanism,
+            nativeExceptions: [],
+            coverableKinds: [],
+            nestedConfigurations: [unprojected.selectionFolder],
+            unprojectedFolders: [unprojected],
+          },
+        ],
+      },
+    });
+    expect(result).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          address: CLOCK_FINDING.check,
+          file: ORDER_FILE,
+          effect: "nested-configuration",
+          mechanism: CLOCK_FINDING.mechanism,
+          ...unprojected,
+        },
+      ],
+    });
+    expect(apply).not.toHaveBeenCalled();
   });
 
   it("reads the held records from the source's documents, against the catalogue and no base", () => {

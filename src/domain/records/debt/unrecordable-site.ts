@@ -3,6 +3,7 @@ import type { NativeException, ScriptOptionCause } from "../../runner/runner-res
 
 export type UnrecordableBecause =
   | { readonly kind: "no-check" }
+  | { readonly kind: "no-run" }
   | { readonly kind: Exclude<NativeException["kind"], "command-line-option"> }
   | { readonly kind: "command-line-option"; readonly cause: ScriptOptionCause };
 

@@ -287,7 +287,14 @@ describe("afterSectionsOf", () => {
           unmeasured: [
             { kind: "engine-not-run", engine: { name: "walker" }, projection: "missing" },
           ],
-          assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 1 }],
+          assessment: [
+            { concern: "forfeiture", assessedBy: "elsewhere", debts: 1 },
+            {
+              concern: "nested-projection",
+              engine: { name: "eslint" },
+              folders: [repoPathOf("pkg")],
+            },
+          ],
         },
       }),
     ).toEqual({
@@ -306,7 +313,7 @@ describe("afterSectionsOf", () => {
       editions: [],
       unmeasured: ["walker not-run missing"],
       "projection-problems": ["slice walker missing packages/web"],
-      assessment: ["forfeiture elsewhere"],
+      assessment: ["forfeiture elsewhere", "nested-projection eslint pkg"],
       verdict: ["fail"],
     });
   });

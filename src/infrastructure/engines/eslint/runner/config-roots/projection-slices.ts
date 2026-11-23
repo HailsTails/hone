@@ -2,6 +2,7 @@ import type { ExceptionRecord } from "../../../../../domain/records/discipline-e
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { UnprojectedFolderReport } from "../../../../../domain/runner/mechanism-run.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
+import { VERSION_ONE_SETTINGS_FILE_NAME } from "../../../../../domain/settings/settings-file.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { PROJECTION_PATH } from "../projection/projection-text.ts";
 import { configuredDirectoriesOf } from "./checks-config-roots.ts";
@@ -10,8 +11,6 @@ import { directoryOf, fileNameOf } from "./checks-paths.ts";
 export type ConfigRoot =
   | { readonly placement: "repository" }
   | { readonly placement: "package"; readonly directory: RepoPath };
-
-const SELECTION_FILE_NAME = "disciplines.json";
 
 const REPOSITORY_ROOT: ConfigRoot = { placement: "repository" };
 
@@ -23,11 +22,12 @@ const within = (request: {
     ? "within"
     : "outside";
 
-const nestedRepositories = (request: {
+export const nestedRepositoryFoldersOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
+  readonly settingsFile: string;
 }): readonly string[] =>
   request.trackedPaths
-    .filter((path) => fileNameOf({ path }) === SELECTION_FILE_NAME)
+    .filter((path) => fileNameOf({ path }) === request.settingsFile)
     .map((path) => directoryOf({ path }))
     .filter((directory) => directory !== "");
 
@@ -55,7 +55,10 @@ type RootsRequest = {
 };
 
 const packageDirectories = (request: RootsRequest): readonly RepoPath[] => {
-  const nested = nestedRepositories(request);
+  const nested = nestedRepositoryFoldersOf({
+    ...request,
+    settingsFile: VERSION_ONE_SETTINGS_FILE_NAME,
+  });
   const configured = configuredDirectoriesOf(request);
   return [...new Set([...configured, ...request.declared])]
     .filter((directory) => directory !== "")
@@ -133,19 +136,21 @@ const holdingOf = (request: {
 
 export const nestedConfigurationFoldersOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
+  readonly settingsFile: string;
   readonly files: readonly RepoPath[];
 }): readonly RepoPath[] =>
-  outermostOf({ nested: nestedRepositories(request) })
+  outermostOf({ nested: nestedRepositoryFoldersOf(request) })
     .filter((folder) => holdingOf({ paths: request.files, folder }) === "holds")
     .sort(codeUnitOrder)
     .map((folder) => repoPathSchema.parse(folder));
 
 export const unprojectedFoldersOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
+  readonly settingsFile: string;
   readonly files: readonly RepoPath[];
   readonly lookup: EslintConfigLookup;
 }): readonly UnprojectedFolderReport[] => {
-  const nested = nestedRepositories(request);
+  const nested = nestedRepositoryFoldersOf(request);
   const outermostNested = outermostOf({ nested });
   const ownConfigured = configuredDirectoriesOf(request).filter(
     (directory) => directory !== "" && insideNestedRepository({ directory, nested }) === "nested",
@@ -172,7 +177,10 @@ export const orphanedSliceDirectoriesOf = (request: {
   readonly trackedPaths: readonly RepoPath[];
   readonly roots: readonly ConfigRoot[];
 }): readonly RepoPath[] => {
-  const nested = nestedRepositories(request);
+  const nested = nestedRepositoryFoldersOf({
+    ...request,
+    settingsFile: VERSION_ONE_SETTINGS_FILE_NAME,
+  });
   const rooted = new Set<string>(
     request.roots.flatMap((root) => (root.placement === "package" ? [root.directory] : [])),
   );

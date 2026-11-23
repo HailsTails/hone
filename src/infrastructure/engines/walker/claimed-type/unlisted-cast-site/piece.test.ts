@@ -101,6 +101,8 @@ describe("CD-2 audit piece.json", () => {
       value: {
         projection: "none",
         slices: [],
+        nestedConfigurations: [],
+        unprojectedFolders: [],
         misnamedRuleIds: [],
         hits: [],
         nativeExceptions: [

@@ -64,6 +64,8 @@ const runWith = (request: {
   projection: request.projection,
   slices: [],
   measured: [],
+  nestedConfigurations: [],
+  unprojectedFolders: [],
   misnamedRuleIds: [],
 });
 
@@ -98,6 +100,33 @@ describe("engineUnmeasuredOf", () => {
       },
     ]);
   });
+
+  it.each(["not-included", "current", "out-of-date"] as const)(
+    "names a nested folder beyond all measured coverage when projection is %s",
+    (projection) => {
+      const folder = repoPathOf("pkg");
+      expect(
+        engineUnmeasuredOf({
+          catalogue: REPORT_CATALOGUE,
+          runs: [
+            {
+              ...runWith({ mechanism: ESLINT, projection }),
+              nestedConfigurations: [folder],
+            },
+          ],
+          tracked: TRACKED,
+          selected: [],
+        }),
+      ).toEqual([
+        {
+          kind: "engine-not-run",
+          engine: ESLINT_ENGINE,
+          projection: "not-included",
+          nestedConfigurations: [folder],
+        },
+      ]);
+    },
+  );
 
   it("names the mechanism when the catalogue gives it no engine", () => {
     expect(
