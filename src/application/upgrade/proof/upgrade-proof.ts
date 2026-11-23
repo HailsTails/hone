@@ -227,7 +227,9 @@ const rolledBackWith = (request: UpgradeProofRequest & Written): readonly Unrest
 const comparedAfterWriting = async (
   request: UpgradeProofRequest & Written,
 ): Promise<Result<null, ProofRefusal>> => {
-  const after = await request.runs.versionTwo();
+  const after = await request.runs.versionTwo({
+    written: request.plan.files.map(({ file }) => file),
+  });
   if (after.outcome === "failed") {
     return {
       outcome: "failed",

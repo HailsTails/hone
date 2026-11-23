@@ -175,8 +175,14 @@ const AUTHORISED_DOCUMENT: RecordsDocument = {
   },
 };
 
+const TRACKED = repoPathOf("src/a.ts");
+
+const WRITTEN = repoPathOf("hone.eslint.d.mts");
+
 const git = (): GitPort => ({
-  trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
+  trackedPaths: vi
+    .fn<GitPort["trackedPaths"]>()
+    .mockReturnValue({ outcome: "ok", value: [TRACKED] }),
   changedSince: vi.fn<GitPort["changedSince"]>(),
   contentInBase: vi.fn<GitPort["contentInBase"]>(),
   textInBase: vi.fn<GitPort["textInBase"]>(),
@@ -197,7 +203,7 @@ const exceptions = (): ExceptionRepository => ({
 });
 
 describe("foundTreeCheckReachOf", () => {
-  it("gives a version 1 check the tree the upgrade found as its base revision, git and entries at the base", () => {
+  it("gives a version 1 check the tree the upgrade found as its base revision, git that tracks only what git tracks, and entries at the base", () => {
     const underlyingGit = git();
     const underlyingExceptions = exceptions();
     const reach = foundTreeCheckReachOf({
@@ -216,6 +222,7 @@ describe("foundTreeCheckReachOf", () => {
         baseRevision: FOUND_TREE_REVISION,
       }),
       entriesAtBase: reach.exceptionRepository.readAt({ revision: FOUND_TREE_REVISION }),
+      tracked: reach.git.trackedPaths({ repoRoot: REPO_ROOT }),
       askedGit: [
         vi.mocked(underlyingGit.changedSince).mock.calls,
         vi.mocked(underlyingExceptions.readAt).mock.calls,
@@ -224,6 +231,7 @@ describe("foundTreeCheckReachOf", () => {
       baseRevision: FOUND_TREE_REVISION,
       changedSince: { outcome: "ok", value: [] },
       entriesAtBase: { outcome: "ok", value: [ENTRY] },
+      tracked: { outcome: "ok", value: [TRACKED] },
       askedGit: [[], []],
     });
   });
@@ -237,7 +245,7 @@ const FOUND_RECORDS_SOURCE: RecordsSource = {
 };
 
 describe("foundTreeRunReachOf", () => {
-  it("gives a version 2 run the tree the upgrade found as its base revision and git, and records at the base made from the working tree's entries", () => {
+  it("gives a version 2 run the tree the upgrade found as its base revision, git that tracks the files the upgrade wrote, and records at the base made from the working tree's entries", () => {
     const underlyingSource: RecordsSource = {
       read: vi.fn<RecordsSource["read"]>(),
       readAt: vi.fn<RecordsSource["readAt"]>(),
@@ -251,6 +259,7 @@ describe("foundTreeRunReachOf", () => {
       .fn<FoundTreeRecordsSourceOf>()
       .mockReturnValue(() => FOUND_RECORDS_SOURCE);
     const reach = foundTreeRunReachOf({
+      written: [WRITTEN],
       recordsSourceOf,
       foundTreeRecordsSourceOf,
       loadFailureDetail,
@@ -279,6 +288,7 @@ describe("foundTreeRunReachOf", () => {
         baseRevision: FOUND_TREE_REVISION,
       }),
       recordsAtBase,
+      tracked: reach.git.trackedPaths({ repoRoot: REPO_ROOT }),
       handedOver: {
         recordsSourceOf: handed.recordsSourceOf,
         entriesAtBase: handed.exceptionsOf({ repoRoot: REPO_ROOT }).readAt(),
@@ -289,6 +299,7 @@ describe("foundTreeRunReachOf", () => {
       baseRevision: FOUND_TREE_REVISION,
       changedSince: { outcome: "ok", value: [] },
       recordsAtBase: { outcome: "ok", value: [AUTHORISED_DOCUMENT] },
+      tracked: { outcome: "ok", value: [TRACKED, WRITTEN] },
       handedOver: { recordsSourceOf, entriesAtBase: { outcome: "ok", value: [ENTRY] } },
       askedRecords: [],
       askedEntries: [],

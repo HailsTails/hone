@@ -9,7 +9,9 @@ import type {
 } from "../../application/ports/records/version-one-reading.ts";
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
+import type { ProofRuns, ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
+import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
@@ -92,6 +94,38 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
 });
 
 const TRACKED: ReturnType<GitPort["trackedPaths"]> = { outcome: "ok", value: [] };
+
+const VERSION_ONE_READ_EXCLUDING_VENDOR = vi.fn<VersionOneReadOf>().mockReturnValue({
+  outcome: "ok",
+  value: {
+    reading: {
+      selection: {
+        version: 1,
+        ruleSets: [],
+        clauses: [],
+        exclude: [repoPathOf("vendor")],
+        eslintConfigRoots: [],
+        fileExceptionWhyChains: "required",
+        reportOutput: "full",
+        assessment: { forfeiture: "this-run" },
+        clauseSettings: [],
+        checkEditions: "pinned",
+      },
+      heads: [],
+    },
+    versionOneFiles: {
+      recordsFiles: [],
+      recordsFolders: [],
+      recordsRoot: { kind: "repository" },
+      settings: repoPathOf("disciplines.json"),
+    },
+  },
+});
+
+const RECORDS_ON_DISK = vi.fn<RecordsOnDiskOf>().mockReturnValue({
+  outcome: "ok",
+  value: { files: [], folders: [], root: { kind: "repository" } },
+});
 
 describe("upgradeOf", () => {
   it("stops on the run settings' load failure and lists no tracked files", async () => {
@@ -180,39 +214,7 @@ describe("upgradeOf", () => {
       findings: 0,
     };
 
-    const versionOneReadExcludingVendor = vi.fn<VersionOneReadOf>().mockReturnValue({
-      outcome: "ok",
-      value: {
-        reading: {
-          selection: {
-            version: 1,
-            ruleSets: [],
-            clauses: [],
-            exclude: [repoPathOf("vendor")],
-            eslintConfigRoots: [],
-            fileExceptionWhyChains: "required",
-            reportOutput: "full",
-            assessment: { forfeiture: "this-run" },
-            clauseSettings: [],
-            checkEditions: "pinned",
-          },
-          heads: [],
-        },
-        versionOneFiles: {
-          recordsFiles: [],
-          recordsFolders: [],
-          recordsRoot: { kind: "repository" },
-          settings: repoPathOf("disciplines.json"),
-        },
-      },
-    });
-
-    const recordsOnDisk = vi.fn<RecordsOnDiskOf>().mockReturnValue({
-      outcome: "ok",
-      value: { files: [], folders: [], root: { kind: "repository" } },
-    });
-
-    it("reads the tracked files outside the version 1 exclude and returns what they mention when the proof is ok", async () => {
+    it("reads every tracked file, the version 1 exclude included, and returns what they mention when the proof is ok", async () => {
       const git = gitListing({
         tracked: {
           outcome: "ok",
@@ -221,8 +223,12 @@ describe("upgradeOf", () => {
       });
       const read = vi
         .fn<FileTextPort["read"]>()
-        .mockReturnValueOnce({ outcome: "ok", value: '"lint": "cat disciplines.json"' });
-      const join = vi.fn<PathPort["join"]>().mockReturnValueOnce("/repo/package.json");
+        .mockReturnValueOnce({ outcome: "ok", value: '"lint": "cat disciplines.json"' })
+        .mockReturnValueOnce({ outcome: "ok", value: "see disciplines.eslint.d.mts" });
+      const join = vi
+        .fn<PathPort["join"]>()
+        .mockReturnValueOnce("/repo/package.json")
+        .mockReturnValueOnce("/repo/vendor/x.md");
       const proofOf = vi.fn().mockResolvedValue({ outcome: "ok", value: CARRIED });
       const command = commandOver({ git });
 
@@ -235,16 +241,26 @@ describe("upgradeOf", () => {
               fileText: { ...command.fileText, read },
               path: { ...command.path, join },
             },
-            recordsOnDiskOf: recordsOnDisk,
-            versionOneReadOf: versionOneReadExcludingVendor,
+            recordsOnDiskOf: RECORDS_ON_DISK,
+            versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
             proofOf,
           }),
         ),
       ).toEqual({
         outcome: "ok",
-        value: { ...CARRIED, mentions: [{ file: "package.json", line: 1 }], unread: [] },
+        value: {
+          ...CARRIED,
+          mentions: [
+            { file: "package.json", line: 1 },
+            { file: "vendor/x.md", line: 1 },
+          ],
+          unread: [],
+        },
       });
-      expect(read.mock.calls).toEqual([[{ path: "/repo/package.json" }]]);
+      expect(read.mock.calls).toEqual([
+        [{ path: "/repo/package.json" }],
+        [{ path: "/repo/vendor/x.md" }],
+      ]);
     });
 
     it("reads no tracked file when the proof is refused", async () => {
@@ -267,8 +283,8 @@ describe("upgradeOf", () => {
           inputWith({
             git,
             command: { ...command, fileText: { ...command.fileText, read } },
-            recordsOnDiskOf: recordsOnDisk,
-            versionOneReadOf: versionOneReadExcludingVendor,
+            recordsOnDiskOf: RECORDS_ON_DISK,
+            versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
             proofOf,
           }),
         ),
@@ -284,6 +300,49 @@ describe("upgradeOf", () => {
         },
       });
       expect(read).not.toHaveBeenCalled();
+    });
+  });
+  it("runs the version 2 proof over the found tree with the files the upgrade wrote", async () => {
+    const proofRunsOf = vi.fn<ProofRunsOf>().mockReturnValue({
+      versionOne: vi.fn<ProofRuns["versionOne"]>(),
+      versionTwo: vi.fn<ProofRuns["versionTwo"]>(),
+    });
+    const stages: VersionTwoStages = {
+      catalogue: vi
+        .fn<VersionTwoStages["catalogue"]>()
+        .mockReturnValue({ outcome: "failed", error: { kind: "config-absent", repo: "/repo" } }),
+      settings: vi.fn<VersionTwoStages["settings"]>(),
+      records: vi.fn<VersionTwoStages["records"]>(),
+      tree: vi.fn<VersionTwoStages["tree"]>(),
+      engines: vi.fn<VersionTwoStages["engines"]>(),
+      projections: vi.fn<VersionTwoStages["projections"]>(),
+      touched: vi.fn<VersionTwoStages["touched"]>(),
+    };
+    const foundTreeStages = vi.fn<UpgradeInput["foundTreeStages"]>().mockReturnValue(stages);
+    const written = { written: [repoPathOf("hone.eslint.d.mts")] };
+    await upgradeOf(
+      inputWith({
+        git: gitListing({ tracked: TRACKED }),
+        recordsOnDiskOf: RECORDS_ON_DISK,
+        versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+        proofRunsOf,
+        proofOf: vi.fn().mockResolvedValue({
+          outcome: "failed",
+          error: {
+            kind: "oracle-failed",
+            failure: { kind: "version-one-run-failed", detail: "x" },
+          },
+        }),
+        foundTreeStages,
+      }),
+    );
+    const [[sources]] = proofRunsOf.mock.calls;
+    expect({
+      run: await sources.versionTwo(written),
+      stagesFor: foundTreeStages.mock.calls,
+    }).toEqual({
+      run: { outcome: "failed", error: { kind: "config-absent", repo: "/repo" } },
+      stagesFor: [[written]],
     });
   });
 });

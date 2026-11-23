@@ -591,7 +591,16 @@ const WRITING = [
   },
 ];
 
-const RUNNING_VERSION_TWO = [{ port: "versionTwo", arguments: [] }];
+const RUNNING_VERSION_TWO = [
+  {
+    port: "versionTwo",
+    arguments: [
+      {
+        written: ["hone.config.json", "hone-records/debt/loop-keyword.json", "hone.eslint.mjs"],
+      },
+    ],
+  },
+];
 
 const ROLLING_BACK = [
   { port: "write", arguments: [{ path: CONFIG_PATH, text: ORIGINAL_CONFIG }] },
@@ -611,7 +620,7 @@ const REMOVING_VERSION_ONE = [
 ];
 
 describe("upgradeProof", () => {
-  it("writes the version 2 files, finds the two runs equal and removes the version 1 files, in that order", async () => {
+  it("writes the version 2 files, runs version 2 with them counted as tracked, finds the two runs equal and removes the version 1 files, in that order", async () => {
     const doubles = doublesOver({
       kindOf: kindsOfEveryPlannedFileNew(),
       path: recordsFolderPath(),

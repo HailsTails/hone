@@ -1,3 +1,4 @@
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type {
   FoundTreeRecordsSourceOf,
@@ -20,6 +21,7 @@ export const foundTreeCheckReachOf = (request: {
     git: request.check.git,
     fileText: request.check.fileText,
     path: request.check.path,
+    written: [],
   }),
   exceptionRepository: foundTreeExceptionsOf({
     repository: request.check.exceptionRepository,
@@ -28,6 +30,7 @@ export const foundTreeCheckReachOf = (request: {
 });
 
 export const foundTreeRunReachOf = (request: {
+  readonly written: readonly RepoPath[];
   readonly recordsSourceOf: RecordsSourceOf;
   readonly foundTreeRecordsSourceOf: FoundTreeRecordsSourceOf;
   readonly loadFailureDetail: LoadFailureDetail;
@@ -44,6 +47,7 @@ export const foundTreeRunReachOf = (request: {
     git: request.command.git,
     fileText: request.command.fileText,
     path: request.command.path,
+    written: request.written,
   }),
   recordsSourceOf: request.foundTreeRecordsSourceOf({
     recordsSourceOf: request.recordsSourceOf,

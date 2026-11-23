@@ -19,8 +19,8 @@ export const proofRunsOf = (request: ProofRunSources): ProofRuns => ({
       ? failedWith({ detail: loadFailureDetail({ failure: run.error }) })
       : run;
   },
-  versionTwo: async () => {
-    const run = await request.versionTwo();
+  versionTwo: async (written) => {
+    const run = await request.versionTwo(written);
     return run.outcome === "failed"
       ? failedWith({
           detail: runLoadFailureLine({ failure: run.error, upgradeCommand: undefined }),
