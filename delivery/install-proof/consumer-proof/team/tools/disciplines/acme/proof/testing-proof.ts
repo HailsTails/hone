@@ -1,4 +1,4 @@
-import { folderScope, isEdition, type PieceFailure, type CheckBinding, type WalkerDisk } from "@hailstails/hone/audit";
+import { folderScope, isEdition, isRuleSetName, type PieceFailure, type CheckBinding, type WalkerDisk } from "@hailstails/hone/audit";
 import { type CaseUnderTest, checkConformanceOf, checkUnderTestOf, repoPathOf } from "@hailstails/hone/testing";
 import typescript from "typescript";
 import { check } from "../engines/walker/scratch-file/scratch-files/scratch-files.ts";
@@ -43,8 +43,13 @@ const examples = [...scratchCases.flag, ...scratchCases.allow].map((sourceCase):
   }
   return { name: sourceCase.name, file: file.value, source: sourceCase.source, edition };
 });
+const RULE_SET = "acme";
+if (!isRuleSetName(RULE_SET)) {
+  throw new Error(`${RULE_SET} is not a rule set name`);
+}
 const binding: CheckBinding = {
   address: "scratch-file#scratch-files",
+  ruleSet: { name: RULE_SET },
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "tools/disciplines/acme/engines/walker/scratch-file/scratch-files",

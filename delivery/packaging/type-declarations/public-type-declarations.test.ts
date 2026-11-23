@@ -402,9 +402,9 @@ describe("the declarations the public type entries ship, emitted in memory by th
     expect(reach.valueDeclaring).toEqual([]);
   });
 
-  it("declare folderScope, editionReaches and isEdition from the audit entry, the three testing functions from the testing entry, only the default export from the eslint-plugin entry, and no named value from the rule-set entry", () => {
+  it("declare folderScope, editionReaches, isEdition and isRuleSetName from the audit entry, the three testing functions from the testing entry, only the default export from the eslint-plugin entry, and no named value from the rule-set entry", () => {
     expect(reach.entryValues).toEqual({
-      audit: ["folderScope", "editionReaches", "isEdition"],
+      audit: ["folderScope", "editionReaches", "isEdition", "isRuleSetName"],
       "eslint-plugin": ["export default plugin;"],
       "rule-set": [],
       testing: ["repoPathOf", "checkUnderTestOf", "checkConformanceOf"],
