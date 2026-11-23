@@ -1,0 +1,24 @@
+{
+  "flag": [
+    {
+      "name": "types defined inside a test file",
+      "fileName": "src/order.test.ts",
+      "source": "type Amount = number;\ninterface Item { amount: Amount }\nenum State { Written }",
+      "expectedLines": [1, 2, 3]
+    }
+  ],
+  "allow": [
+    {
+      "name": "types are imported from their owner",
+      "fileName": "src/order.test.ts",
+      "source": "import type { Amount } from \"./order.ts\";\nconst input: Amount = 1;",
+      "expectedLines": []
+    },
+    {
+      "name": "inline type literal",
+      "fileName": "src/order.test.ts",
+      "source": "const input = { amount: 1 } satisfies { amount: number };",
+      "expectedLines": []
+    }
+  ]
+}
