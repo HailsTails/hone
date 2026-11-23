@@ -3,7 +3,7 @@ name: Agent
 on:
   issues:
     types: [labeled]
-  pull_request:
+  pull_request_target:
     types: [opened, ready_for_review, synchronize, labeled]
 
 permissions: {}
@@ -17,7 +17,7 @@ env:
   ANTHROPIC_VERSION: 2026-10-21
   ANTHROPIC_BETA: managed-agents-2026-04-01
   BUDGET_CENTS: '1500'
-  MODE: ${{ github.event_name == 'pull_request' && 'claude-review' || github.event.label.name }}
+  MODE: ${{ github.event_name == 'pull_request_target' && 'claude-review' || github.event.label.name }}
   NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
   AGENT_BRANCH: agent/issue-${{ github.event.issue.number }}
   CHECKOUT_BRANCH: ${{ github.event.pull_request.head.ref || 'main' }}
@@ -31,7 +31,7 @@ jobs:
       (github.event_name == 'issues' &&
         contains(fromJSON('["claude", "claude-triage"]'), github.event.label.name) &&
         (github.event.sender.login == github.repository_owner || github.event.sender.login == 'rin-author[bot]')) ||
-      (github.event_name == 'pull_request' &&
+      (github.event_name == 'pull_request_target' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
         (github.event.action == 'opened' ||
           github.event.action == 'ready_for_review' ||
