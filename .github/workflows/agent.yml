@@ -3,11 +3,13 @@ name: Agent
 on:
   issues:
     types: [labeled]
+  pull_request:
+    types: [opened, ready_for_review, labeled]
 
 permissions: {}
 
 concurrency:
-  group: agent-${{ github.event.issue.number }}
+  group: agent-${{ github.event.issue.number || github.event.pull_request.number }}
   cancel-in-progress: false
 
 env:
@@ -16,14 +18,24 @@ env:
   ANTHROPIC_BETA: managed-agents-2026-04-01
   AGENT_MODEL: claude-opus-5-5
   BUDGET_CENTS: '1500'
-  MODE: ${{ github.event.label.name }}
-  ISSUE_NUMBER: ${{ github.event.issue.number }}
+  MODE: ${{ github.event_name == 'pull_request' && 'claude-review' || github.event.label.name }}
+  NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
   AGENT_BRANCH: agent/issue-${{ github.event.issue.number }}
+  CHECKOUT_BRANCH: ${{ github.event.pull_request.head.ref || 'main' }}
+  STARTED_BY_LABEL: ${{ github.event.action == 'labeled' }}
 
 jobs:
   agent:
-    name: Managed agent works the issue
-    if: contains(fromJSON('["claude", "claude-triage"]'), github.event.label.name) && github.event.sender.login == github.repository_owner
+    name: Managed agent
+    if: >-
+      (github.event_name == 'issues' &&
+        contains(fromJSON('["claude", "claude-triage"]'), github.event.label.name) &&
+        github.event.sender.login == github.repository_owner) ||
+      (github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        !github.event.pull_request.draft &&
+        (github.event.action != 'labeled' ||
+          (github.event.label.name == 'claude-review' && github.event.sender.login == github.repository_owner)))
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions: {}
@@ -38,7 +50,7 @@ jobs:
           client-id: Iv23liOdEzeYFi4AjZwp
           private-key: ${{ secrets.RIN_AUTHOR_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
-          permission-contents: ${{ github.event.label.name == 'claude' && 'write' || 'read' }}
+          permission-contents: ${{ github.event.label.name == 'claude' && github.event_name == 'issues' && 'write' || 'read' }}
 
       - name: Start the session
         id: session
@@ -47,8 +59,8 @@ jobs:
           PUSH_TOKEN: ${{ steps.push-token.outputs.token }}
           REPOSITORY_URL: ${{ github.event.repository.html_url }}
           REPOSITORY_NAME: ${{ github.event.repository.name }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
+          TITLE: ${{ github.event.issue.title || github.event.pull_request.title }}
+          BODY: ${{ github.event.issue.body || github.event.pull_request.body }}
         run: |
           set -euo pipefail
           anthropic() {
@@ -62,8 +74,10 @@ jobs:
             echo "$response"
           }
           workspace="/workspace/$REPOSITORY_NAME"
-          if [ "$MODE" = claude ]; then
-            system=$(cat <<EOF
+          case "$MODE" in
+            claude)
+              kind=Issue
+              system=$(cat <<EOF
           You work on one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main.
           Read AGENTS.md there and follow it, with these exceptions for this run:
           - Work on a new branch named $AGENT_BRANCH and push it to origin yourself. Do not open a pull request.
@@ -73,9 +87,10 @@ jobs:
           If you cannot finish with a green check, push nothing and say why in your last message.
           Your last message is the pull request description: what changed and why, in a few short lines.
           EOF
-            )
-          else
-            system=$(cat <<EOF
+              ) ;;
+            claude-triage)
+              kind=Issue
+              system=$(cat <<EOF
           You triage one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main. Read AGENTS.md there.
           Change nothing, commit nothing, push nothing.
           Decide from the code on main, its tests and git history whether the issue still applies.
@@ -85,27 +100,37 @@ jobs:
           - Obsolete: why version 2 no longer has the problem, with file paths.
           - Needs Helen: the one decision that blocks it.
           EOF
-            )
-          fi
-          agent_id=$(jq -n --arg name "hone-issue-$ISSUE_NUMBER" --arg model "$AGENT_MODEL" --arg system "$system" \
+              ) ;;
+            claude-review)
+              kind="Pull request"
+              system=$(cat <<EOF
+          You review one pull request of the $REPOSITORY_NAME repository. Its branch $CHECKOUT_BRANCH is checked out at $workspace.
+          Read AGENTS.md there: its rules are the review standard. Change nothing, commit nothing, push nothing.
+          Run git fetch origin main, then review git diff origin/main...HEAD. The scope is the change: report only problems the change introduces or leaves open in what it touches.
+          Look for correctness bugs, broken AGENTS.md rules, and missing or wrong unit tests for changed behaviour. You may run pnpm scripts after corepack enable and pnpm install --frozen-lockfile.
+          Your last message is the review: each finding as one line with file:line, the problem, and why it matters, most severe first. With no findings, say No findings and what you checked, in one line.
+          EOF
+              ) ;;
+          esac
+          agent_id=$(jq -n --arg name "hone-$MODE-$NUMBER" --arg model "$AGENT_MODEL" --arg system "$system" \
             '{name: $name, model: $model, system: $system, tools: [{type: "agent_toolset_20260401"}]}' \
             | anthropic agents | jq -r .id)
           echo "agent_id=$agent_id" >> "$GITHUB_OUTPUT"
-          environment_id=$(jq -n --arg name "hone-issue-$ISSUE_NUMBER" \
+          environment_id=$(jq -n --arg name "hone-$MODE-$NUMBER" \
             '{name: $name, config: {type: "cloud", networking: {type: "limited", allow_package_managers: true}}}' \
             | anthropic environments | jq -r .id)
           echo "environment_id=$environment_id" >> "$GITHUB_OUTPUT"
           session_id=$(jq -n \
             --arg agent "$agent_id" --arg environment "$environment_id" \
             --arg url "$REPOSITORY_URL" --arg mount "$workspace" --arg token "$PUSH_TOKEN" \
-            --arg budget "$BUDGET_CENTS" --arg number "$ISSUE_NUMBER" \
-            --arg title "$ISSUE_TITLE" --arg body "$ISSUE_BODY" \
+            --arg branch "$CHECKOUT_BRANCH" --arg budget "$BUDGET_CENTS" \
+            --arg kind "$kind" --arg number "$NUMBER" --arg title "$TITLE" --arg body "$BODY" \
             '{
               agent: $agent,
               environment_id: $environment,
-              resources: [{type: "github_repository", url: $url, mount_path: $mount, authorization_token: $token, checkout: {type: "branch", name: "main"}}],
+              resources: [{type: "github_repository", url: $url, mount_path: $mount, authorization_token: $token, checkout: {type: "branch", name: $branch}}],
               budget: {type: "limit", max_list_cost: {amount: $budget, currency: "USD"}},
-              initial_events: [{type: "user.message", content: [{type: "text", text: ("Issue #" + $number + ": " + $title + "\n\n" + $body)}]}]
+              initial_events: [{type: "user.message", content: [{type: "text", text: ($kind + " #" + $number + ": " + $title + "\n\n" + $body)}]}]
             }' \
             | anthropic sessions | jq -r .id)
           echo "session_id=$session_id" >> "$GITHUB_OUTPUT"
@@ -145,8 +170,8 @@ jobs:
             echo "cost_cents=$(jq -r '.usage.list_cost.amount // "unknown"' <<<"$session")"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Mint the pull request token
-        id: review-token
+      - name: Mint the reporting token
+        id: report-token
         if: always() && steps.session.outputs.session_id != ''
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         with:
@@ -157,10 +182,10 @@ jobs:
           permission-pull-requests: write
           permission-issues: write
 
-      - name: Open the pull request and report on the issue
-        if: always() && steps.review-token.outputs.token != ''
+      - name: Report the outcome
+        if: always() && steps.report-token.outputs.token != ''
         env:
-          GH_TOKEN: ${{ steps.review-token.outputs.token }}
+          GH_TOKEN: ${{ steps.report-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           STATUS: ${{ steps.outcome.outputs.status }}
           STOP_REASON: ${{ steps.outcome.outputs.stop_reason }}
@@ -170,19 +195,25 @@ jobs:
           set -euo pipefail
           touch "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/errors.txt"
           outcome="Agent session ${STATUS:-not started}, stop reason ${STOP_REASON:-none}, list cost ${COST_CENTS:-unknown} US cents. [Run]($RUN_URL)"
-          if head_message=$(gh api "repos/$GH_REPO/commits/$AGENT_BRANCH" --jq .commit.message 2>/dev/null); then
+          if [ "$MODE" = claude ] && head_message=$(gh api "repos/$GH_REPO/commits/$AGENT_BRANCH" --jq .commit.message 2>/dev/null); then
             body_file="$RUNNER_TEMP/pull-request.md"
-            { echo "Closes #$ISSUE_NUMBER"; echo; cat "$RUNNER_TEMP/summary.md"; echo; echo "$outcome"; } > "$body_file"
+            { echo "Closes #$NUMBER"; echo; cat "$RUNNER_TEMP/summary.md"; echo; echo "$outcome"; } > "$body_file"
             pull_request=$(gh pr create --draft --base main --head "$AGENT_BRANCH" \
               --title "$(head -n1 <<<"$head_message")" --body-file "$body_file")
-            gh issue comment "$ISSUE_NUMBER" --body "Draft pull request: $pull_request"$'\n\n'"$outcome"
+            gh issue comment "$NUMBER" --body "Draft pull request: $pull_request"$'\n\n'"$outcome"
           else
+            case "$MODE" in
+              claude) heading="The agent pushed no branch." ;;
+              claude-triage) heading="**Agent triage**" ;;
+              claude-review) heading="**Agent review**" ;;
+            esac
             comment_file="$RUNNER_TEMP/comment.md"
-            if [ "$MODE" = claude ]; then heading="The agent pushed no branch."; else heading="**Agent triage**"; fi
             { echo "$heading"; echo; cat "$RUNNER_TEMP/summary.md"; echo; cat "$RUNNER_TEMP/errors.txt"; echo; echo "$outcome"; } > "$comment_file"
-            gh issue comment "$ISSUE_NUMBER" --body-file "$comment_file"
+            gh issue comment "$NUMBER" --body-file "$comment_file"
           fi
-          gh issue edit "$ISSUE_NUMBER" --remove-label "$MODE"
+          if [ "$STARTED_BY_LABEL" = true ]; then
+            gh issue edit "$NUMBER" --remove-label "$MODE"
+          fi
 
       - name: Clean up the agent and environment
         if: always() && steps.session.outputs.agent_id != ''
