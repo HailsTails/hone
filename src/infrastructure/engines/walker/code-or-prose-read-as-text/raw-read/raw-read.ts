@@ -1,11 +1,11 @@
-import { sourceBindingsOf } from "../../runner/pieces/source-bindings.ts";
+import { sourceBindingsPerFile } from "../../runner/pieces/source-bindings.ts";
 import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
 import { type SyntaxVisit, syntaxNodeCheck } from "../../runner/pieces/syntax-node-check.ts";
 import { withoutParentheses } from "../../runner/pieces/syntax-parentheses.ts";
 import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type {
+  Identifier,
   SyntaxNode,
-  SyntaxTree,
   TypeChecker,
 } from "../../runner/toolchain/typescript-parse.ts";
 
@@ -13,6 +13,11 @@ const TEXT_TYPES = new Set(["ts", "tsx", "mts", "cts", "md", "mdx"]);
 const PATH_BUILDERS = new Set(["join", "resolve", "normalize", "fileURLToPath"]);
 const FILE_READS = new Set(["readFile", "readFileSync"]);
 const FILE_SYSTEM_MODULES = new Set(["fs", "fs/promises", "node:fs", "node:fs/promises"]);
+const AMBIENT_FILE_SYSTEM_NAMES: ReadonlyMap<string, readonly string[]> = new Map([
+  ["fs", ["module"]],
+  ["readFile", ["readFile"]],
+  ["readFileSync", ["readFileSync"]],
+]);
 
 type SoughtLiteral = Pick<SyntaxVisit, "syntaxApi" | "node"> & {
   readonly accepts: (text: string) => boolean;
@@ -111,35 +116,71 @@ const fileSystemImportNameOf = ({ syntaxApi, node }: SyntaxSite): string | undef
   return syntaxApi.isImportSpecifier(node) ? (node.propertyName ?? node.name).text : "module";
 };
 
-const fileReadCallee = (
-  request: SyntaxSite & { readonly checker: () => TypeChecker },
-): SyntaxNode | undefined => {
-  const { syntaxApi, node, checker } = request;
-  const name = memberNameOf(request);
-  if (name === undefined || !FILE_READS.has(name)) return undefined;
-  if (syntaxApi.isIdentifier(node)) {
-    const declarations = checker().getSymbolAtLocation(node)?.declarations ?? [];
-    return declarations.length === 0 ||
-      declarations.some(
-        (declaration) => fileSystemImportNameOf({ syntaxApi, node: declaration }) === name,
-      )
+type BoundSite = SyntaxSite & { readonly bindingsOf: () => TypeChecker };
+
+type FileSystemPart = "module" | "promises" | "other";
+
+const fileSystemImportsOf = ({ syntaxApi, node }: SyntaxSite): readonly SyntaxNode[] =>
+  node
+    .getSourceFile()
+    .statements.filter(
+      (statement) =>
+        syntaxApi.isImportDeclaration(statement) &&
+        syntaxApi.isStringLiteral(statement.moduleSpecifier) &&
+        FILE_SYSTEM_MODULES.has(statement.moduleSpecifier.text),
+    );
+
+const fileSystemNamesOf = (
+  request: BoundSite & { readonly node: Identifier },
+): readonly string[] => {
+  const { syntaxApi, node, bindingsOf } = request;
+  const ambient = AMBIENT_FILE_SYSTEM_NAMES.get(node.text) ?? [];
+  if (ambient.length === 0 && fileSystemImportsOf(request).length === 0) return [];
+  const declarations = bindingsOf().getSymbolAtLocation(node)?.declarations ?? [];
+  if (declarations.length === 0) return ambient;
+  return declarations.flatMap(
+    (declaration) => fileSystemImportNameOf({ syntaxApi, node: declaration }) ?? [],
+  );
+};
+
+const identifierPartOf = (request: BoundSite & { readonly node: Identifier }): FileSystemPart => {
+  const names = fileSystemNamesOf(request);
+  if (names.includes("module")) return "module";
+  return names.includes("promises") ? "promises" : "other";
+};
+
+const requiredModuleOf = ({ syntaxApi, node }: SyntaxSite): string | undefined => {
+  if (
+    !syntaxApi.isCallExpression(node) ||
+    !syntaxApi.isIdentifier(node.expression) ||
+    node.expression.text !== "require"
+  )
+    return undefined;
+  const [module] = node.arguments;
+  return module !== undefined && syntaxApi.isStringLiteral(module) ? module.text : undefined;
+};
+
+const fileSystemPartOf = (request: BoundSite): FileSystemPart => {
+  const { syntaxApi } = request;
+  const node = withoutParentheses(request);
+  if (syntaxApi.isIdentifier(node)) return identifierPartOf({ ...request, node });
+  if (syntaxApi.isPropertyAccessExpression(node) && node.name.text === "promises")
+    return fileSystemPartOf({ ...request, node: node.expression }) === "module"
+      ? "promises"
+      : "other";
+  const required = requiredModuleOf({ syntaxApi, node });
+  return required !== undefined && FILE_SYSTEM_MODULES.has(required) ? "module" : "other";
+};
+
+const fileReadCallee = (request: BoundSite): SyntaxNode | undefined => {
+  const { syntaxApi, node } = request;
+  if (syntaxApi.isIdentifier(node))
+    return fileSystemNamesOf({ ...request, node }).some((name) => FILE_READS.has(name))
       ? node
       : undefined;
-  }
-  if (!syntaxApi.isPropertyAccessExpression(node)) return undefined;
-  const owner = node.expression;
-  const receiver =
-    syntaxApi.isPropertyAccessExpression(owner) && owner.name.text === "promises"
-      ? owner.expression
-      : owner;
-  if (!syntaxApi.isIdentifier(receiver)) return undefined;
-  const declarations = checker().getSymbolAtLocation(receiver)?.declarations ?? [];
-  if (declarations.length === 0) return receiver.text === "fs" ? node : undefined;
-  return declarations.some(
-    (declaration) => fileSystemImportNameOf({ syntaxApi, node: declaration }) === "module",
-  )
-    ? node
-    : undefined;
+  if (!syntaxApi.isPropertyAccessExpression(node) || !FILE_READS.has(node.name.text))
+    return undefined;
+  return fileSystemPartOf({ ...request, node: node.expression }) === "other" ? undefined : node;
 };
 
 const rawGlobPathOf = (request: SyntaxVisit): SyntaxNode | undefined => {
@@ -169,7 +210,7 @@ const rawGlobPathOf = (request: SyntaxVisit): SyntaxNode | undefined => {
 };
 
 const readPathOf = (
-  request: SyntaxVisit & { readonly checker: () => TypeChecker },
+  request: SyntaxVisit & { readonly bindingsOf: () => TypeChecker },
 ): SyntaxNode | undefined => {
   const { syntaxApi, node } = request;
   if (syntaxApi.isImportDeclaration(node))
@@ -188,18 +229,11 @@ const readPathOf = (
 
 export const check: WalkerPiece = {
   prepare: (request) => {
-    const bindings = new WeakMap<SyntaxTree, TypeChecker>();
+    const fileBindingsOf = sourceBindingsPerFile();
     return syntaxNodeCheck({
       eligibility: testFileEligibility,
       found: (visit) => {
-        const checker = (): TypeChecker => {
-          const previous = bindings.get(visit.sourceFile);
-          if (previous !== undefined) return previous;
-          const bound = sourceBindingsOf(visit);
-          bindings.set(visit.sourceFile, bound);
-          return bound;
-        };
-        const at = readPathOf({ ...visit, checker });
+        const at = readPathOf({ ...visit, bindingsOf: () => fileBindingsOf(visit) });
         return at === undefined ? undefined : { at, snippet: at.getText(visit.sourceFile) };
       },
     }).prepare(request);

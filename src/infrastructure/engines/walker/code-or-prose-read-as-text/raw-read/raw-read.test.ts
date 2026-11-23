@@ -181,6 +181,64 @@ describe("raw reads", () => {
     });
   });
 
+  it("finds renamed reads, the imported promises namespace and required file systems", async () => {
+    await expect(
+      observeWalkerPiece({
+        piece: check,
+        binding: BINDING,
+        file: TEST_FILE,
+        source:
+          'import { readFile as read } from "node:fs/promises";\nimport { promises } from "fs";\nimport { promises as files } from "node:fs";\nawait read("./order.ts");\nawait promises.readFile("README.md");\nawait files.readFile("guide.mdx");\nrequire("fs").readFileSync("src/order.ts");\nrequire("node:fs").promises.readFile("src/order.mts");',
+      }),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: [
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 4, column: 11 },
+          snippet: '"./order.ts"',
+        },
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 5, column: 24 },
+          snippet: '"README.md"',
+        },
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 6, column: 21 },
+          snippet: '"guide.mdx"',
+        },
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 7, column: 27 },
+          snippet: '"src/order.ts"',
+        },
+        {
+          file: TEST_FILE,
+          check: BINDING.address,
+          anchor: { line: 8, column: 37 },
+          snippet: '"src/order.mts"',
+        },
+      ],
+    });
+  });
+
+  it("passes renamed writes, renamed local reads and required local modules", async () => {
+    await expect(
+      observeWalkerPiece({
+        piece: check,
+        binding: BINDING,
+        file: TEST_FILE,
+        source:
+          'import { writeFile as readFile } from "node:fs/promises";\nimport { readFile as read } from "./ports.ts";\nawait readFile("./order.ts", "");\nawait read("./order.ts");\nrequire("./ports.ts").readFileSync("src/order.ts");',
+      }),
+    ).resolves.toEqual({ outcome: "ok", value: [] });
+  });
+
   it("finds static template suffixes and raw query forms without searching unrelated arguments", async () => {
     await expect(
       observeWalkerPiece({

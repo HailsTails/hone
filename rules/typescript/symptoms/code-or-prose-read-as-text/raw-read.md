@@ -2,7 +2,7 @@
 
 ```json
 {
-  "misses": "Paths supplied through variables or another module.",
+  "misses": "Paths supplied through variables or another module, and file systems reached through a `require` result held in a variable.",
   "settingsTracedTo": "None."
 }
 ```
