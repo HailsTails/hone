@@ -33,7 +33,7 @@ export type AnsweredFinding = {
 };
 
 export type HeldException = {
-  readonly exception: AttributedCheckException;
+  readonly exception: Extract<AttributedCheckException, { readonly kind: "inline-disable" }>;
   readonly by: readonly PlacedRecord[];
 };
 
@@ -307,9 +307,9 @@ export const answerFindings = (request: AnsweringRequest): Answering => {
     findings: judged.flatMap((entry) => (entry.by.length === 0 ? [entry.finding] : [])),
     answered: judged.filter((entry) => entry.by.length > 0),
     held: natives.flatMap((native) =>
-      native.holders.length === 0
-        ? []
-        : [{ exception: native.exception, by: answerersOf({ holders: native.holders }) }],
+      native.exception.kind === "inline-disable" && native.holders.length > 0
+        ? [{ exception: native.exception, by: answerersOf({ holders: native.holders }) }]
+        : [],
     ),
     stale: staleRecords({
       inForce,
