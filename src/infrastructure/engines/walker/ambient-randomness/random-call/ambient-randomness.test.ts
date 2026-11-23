@@ -255,6 +255,22 @@ describe("ambient randomness", () => {
     ).toEqual([]);
   });
 
+  it("does not treat a declare statement as a locally supplied crypto value", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: "declare const crypto: Crypto;\ncrypto.randomUUID();",
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "crypto.randomUUID",
+      },
+    ]);
+  });
+
   it("lets a runtime random boundary record answer the finding in its adapter", () => {
     expect(findingsIn({ file: ADAPTER_FILE, source: "crypto.randomUUID();" })).toEqual([
       {

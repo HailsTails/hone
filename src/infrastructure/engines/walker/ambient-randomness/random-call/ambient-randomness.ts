@@ -1,7 +1,11 @@
-import { sourceBindingsOf } from "../../runner/pieces/source-bindings.ts";
+import { runtimeDeclarationsOf, sourceBindingsOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
-import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
+import type {
+  SyntaxApi,
+  SyntaxNode,
+  TypeChecker,
+} from "../../runner/toolchain/typescript-parse.ts";
 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
@@ -161,10 +165,14 @@ export const check: WalkerPiece = {
               const hasCryptoImport = sourceFile.statements.some((node) =>
                 nodeCryptoImport({ syntaxApi, node }),
               );
-              let bindingsInSource: ReturnType<typeof sourceBindingsOf> | undefined;
+              let bindingsInSource: TypeChecker | undefined;
               const declarationsOf: DeclarationsOf = (node) => {
                 bindingsInSource ??= sourceBindingsOf({ syntaxApi, sourceFile });
-                return bindingsInSource.getSymbolAtLocation(node)?.declarations ?? [];
+                const found = bindingsInSource.getSymbolAtLocation(node);
+                return runtimeDeclarationsOf({
+                  syntaxApi,
+                  declarations: found?.declarations ?? [],
+                });
               };
               return {
                 enter: ({ node }) => {
