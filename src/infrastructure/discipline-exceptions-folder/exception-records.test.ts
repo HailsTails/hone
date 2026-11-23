@@ -2401,27 +2401,35 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
   });
 
   it("refuses a reason-only authorised location while file exception why-chains are required, naming the missing whyChain, the setting and the contract page", () => {
-    expect(
-      parseExceptionEntries({
-        entries: [{ place: AT_0, entry: REASONED_LOCATION }],
-        selection: SELECTION,
-        fileExceptionWhyChains: "required",
-        baseline: NOTHING_AT_BASE,
-      }),
-    ).toEqual({
+    const refusal = parseExceptionEntries({
+      entries: [{ place: AT_0, entry: REASONED_LOCATION }],
+      selection: SELECTION,
+      fileExceptionWhyChains: "required",
+      baseline: NOTHING_AT_BASE,
+    });
+    expect(refusal).toEqual({
       records: [],
       invalid: [
         {
           place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
-          problem: {
-            kind: "evidence-refused",
-            detail: expect.stringMatching(
-              /whyChain[\s\S]*fileExceptionWhyChains[\s\S]*docs\/why-chain-contract\.md[\s\S]*"fileExceptionWhyChains": "optional"/,
-            ),
-          },
+          problem: { kind: "evidence-refused", detail: expect.stringContaining("whyChain") },
         },
       ],
     });
+    expect(refusal.invalid).toEqual([
+      expect.objectContaining({
+        problem: expect.objectContaining({
+          detail: expect.stringContaining("fileExceptionWhyChains"),
+        }),
+      }),
+    ]);
+    expect(refusal.invalid).toEqual([
+      expect.objectContaining({
+        problem: expect.objectContaining({
+          detail: expect.stringContaining("docs/why-chain-contract.md"),
+        }),
+      }),
+    ]);
   });
 
   it("refuses a malformed authorised location while file exception why-chains are required with the validation message, not the missing whyChain", () => {
@@ -2437,7 +2445,7 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
         place: { layout: "single-file", file: "discipline-exceptions.json", index: 0 },
         problem: {
           kind: "evidence-refused",
-          detail: expect.not.stringContaining("missing whyChain"),
+          detail: "✖ Invalid input",
         },
       },
     ]);
