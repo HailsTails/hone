@@ -33,9 +33,10 @@ jobs:
         (github.event.sender.login == github.repository_owner || github.event.sender.login == 'rin-author[bot]')) ||
       (github.event_name == 'pull_request_target' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
-        (github.event.action == 'opened' ||
-          github.event.action == 'ready_for_review' ||
-          (github.event.action == 'synchronize' && startsWith(github.event.pull_request.head.ref, 'agent/issue-')) ||
+        ((!contains(github.event.pull_request.labels.*.name, 'agent-detached') &&
+          (github.event.action == 'opened' ||
+            github.event.action == 'ready_for_review' ||
+            (github.event.action == 'synchronize' && startsWith(github.event.pull_request.head.ref, 'agent/issue-')))) ||
           (github.event.action == 'labeled' && github.event.label.name == 'claude-review' && github.event.sender.login == github.repository_owner)))
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -244,7 +245,8 @@ jobs:
             issue="${BASH_REMATCH[1]}"
             verdict=$(grep -m1 -v '^[[:space:]]*$' "$RUNNER_TEMP/summary.md" || true)
             handbacks=$(gh api "repos/$GH_REPO/issues/$NUMBER/comments" --jq '[.[] | select(.body | startswith("**Builder follow-up**"))] | length')
-            if [ -n "$verdict" ] && [[ "$verdict" != *"No findings"* ]] && (( handbacks < HANDBACK_LIMIT )); then
+            detached=$(gh api "repos/$GH_REPO/issues/$NUMBER/labels" --jq 'any(.[]; .name == "agent-detached")')
+            if [ -n "$verdict" ] && [[ "$verdict" != *"No findings"* ]] && [ "$detached" = false ] && (( handbacks < HANDBACK_LIMIT )); then
               gh issue edit "$issue" --add-label claude
               gh pr comment "$NUMBER" --body "Handed back to the builder on #$issue to address this review (follow-up $((handbacks + 1)) of $HANDBACK_LIMIT)."
             fi
