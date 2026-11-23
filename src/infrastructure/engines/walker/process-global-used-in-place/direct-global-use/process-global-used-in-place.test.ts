@@ -108,6 +108,36 @@ const CATALOGUE: SymptomCatalogue = {
 };
 
 describe("process globals", () => {
+  it.each([
+    'import process = require("process");',
+    'import { default as process } from "node:process";',
+    'const process = require("node:process");',
+  ])("reports process under its canonical name through %s", (declaration) => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: `${declaration}\nprocess.env.MODE;`,
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 0 },
+        snippet: "process.env",
+      },
+    ]);
+  });
+
+  it("passes a local require substitute that returns an injected process port", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'const require = injectedLoader;\nconst process = require("node:process");\nprocess.env.MODE;',
+      }),
+    ).toEqual([]);
+  });
+
   it("reports Node built-in imports that name the original process and console", () => {
     expect(
       findingsIn({

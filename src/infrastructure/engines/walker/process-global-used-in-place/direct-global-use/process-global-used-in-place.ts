@@ -16,7 +16,18 @@ const PROCESS_MEMBERS = new Set(["env", "argv", "exit", "on"]);
 const moduleSpecifierOf = ({
   syntaxApi,
   node,
-}: Pick<SyntaxRequest, "syntaxApi" | "node">): SyntaxNode | undefined => {
+  declarationsOf,
+}: SyntaxRequest): SyntaxNode | undefined => {
+  if (syntaxApi.isVariableDeclaration(node)) {
+    const value = node.initializer;
+    if (value === undefined || !syntaxApi.isCallExpression(value)) return undefined;
+    const { expression, arguments: callArguments } = value;
+    return syntaxApi.isIdentifier(expression) &&
+      expression.text === "require" &&
+      declarationsOf(expression).length === 0
+      ? callArguments[0]
+      : undefined;
+  }
   if (syntaxApi.isImportEqualsDeclaration(node))
     return syntaxApi.isExternalModuleReference(node.moduleReference)
       ? node.moduleReference.expression
@@ -27,8 +38,9 @@ const moduleSpecifierOf = ({
     syntaxApi.isNamespaceImport(node) ||
     syntaxApi.isImportClause(node)
   )
-    return moduleSpecifierOf({ syntaxApi, node: node.parent });
-  if (syntaxApi.isNamedImports(node)) return moduleSpecifierOf({ syntaxApi, node: node.parent });
+    return moduleSpecifierOf({ syntaxApi, node: node.parent, declarationsOf });
+  if (syntaxApi.isNamedImports(node))
+    return moduleSpecifierOf({ syntaxApi, node: node.parent, declarationsOf });
   return syntaxApi.isImportDeclaration(node) ? node.moduleSpecifier : undefined;
 };
 
@@ -49,7 +61,7 @@ const processOrConsole = ({
   if (
     declarations.length > 0 &&
     declarations.every((declaration) => {
-      const specifier = moduleSpecifierOf({ syntaxApi, node: declaration });
+      const specifier = moduleSpecifierOf({ syntaxApi, node: declaration, declarationsOf });
       return (
         specifier === undefined ||
         !syntaxApi.isStringLiteral(specifier) ||
