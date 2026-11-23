@@ -48,7 +48,7 @@ describe("argumentProblemText", () => {
     },
     {
       problem: { kind: "option-required", subcommand: "check", option: REPO_OPTION },
-      text: "hone check needs --repo <dir>: the folder that holds disciplines.json, usually the repository root",
+      text: "hone check needs --repo <dir>: the folder that holds hone.config.json, usually the repository root",
     },
   ] as const)("words $problem.kind for the person who typed the command", ({ problem, text }) => {
     expect(argumentProblemText({ problem })).toBe(text);
