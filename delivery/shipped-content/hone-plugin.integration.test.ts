@@ -152,6 +152,7 @@ describe("honePluginAt, over this repository's catalogue and pieces", () => {
       "hone/thrown-non-error#throw-only-error",
       "hone/untyped-value#explicit-any",
       "hone/untyped-value#implicit-any-let",
+      "hone/wide-input#unread-parameter",
       "hone/work-inside-a-condition#else-after-an-exit",
     ]);
   });
@@ -175,6 +176,7 @@ describe("honePluginAt, over this repository's catalogue and pieces", () => {
           "positional-parameters#parameter-count": expect.anything(),
           "tangled-function#cognitive-complexity": expect.anything(),
           "long-function#function-length": expect.anything(),
+          "wide-input#unread-parameter": expect.anything(),
           "work-inside-a-condition#else-after-an-exit": expect.anything(),
           "rebinding#parameter-reassignment": expect.anything(),
         },

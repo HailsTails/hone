@@ -25,6 +25,9 @@ export type TypescriptEslintPluginModule = {
   readonly default: Pick<typeof typescriptEslintPlugin, "meta">;
 };
 
+export type TypescriptEslintRule =
+  (typeof typescriptEslintPlugin)["rules"][keyof (typeof typescriptEslintPlugin)["rules"]];
+
 export type EslintToolchainModules = {
   readonly eslint: () => Promise<EslintModule>;
   readonly typescriptParser: () => Promise<TypescriptParser>;
