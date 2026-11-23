@@ -1,9 +1,11 @@
-import { type JSONVisitor, visit } from "jsonc-parser";
-
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import { createDefaultJsoncParsePort } from "./jsonc-parse.ts";
+import {
+  createDefaultJsoncParsePort,
+  createDefaultJsoncTreePort,
+  type JsoncNode,
+} from "./jsonc-parse.ts";
 import { folderScope } from "./source-scope.ts";
 import type { WalkerFile } from "./walker-piece.ts";
 
@@ -28,75 +30,100 @@ export const dependencySourceOf = (
     : { outcome: "ok", value: undefined };
 
 const jsonc = createDefaultJsoncParsePort({ trailingCommas: "refused" });
+const jsoncTree = createDefaultJsoncTreePort({ trailingCommas: "refused" });
 
-type PackageManifest = { readonly source: string; readonly fields: ReadonlyMap<string, unknown> };
+const unparseableManifest = (file: WalkerFile, detail: string): ReadFile<never> => ({
+  outcome: "failed",
+  error: { kind: "file-unparseable", file: file.file, detail },
+});
 
-const readPackageManifest = (file: WalkerFile): ReadFile<PackageManifest> => {
+export const packageManifestOf = (file: WalkerFile): ReadFile<ReadonlyMap<string, unknown>> => {
   const text = dependencySourceOf({ ...file, accepts: PACKAGE_MANIFEST });
   if (text.outcome === "failed") return text;
   if (text.value === undefined) return { outcome: "ok", value: undefined };
   const parsed = jsonc.parse({ source: text.value });
   return parsed.outcome === "failed"
-    ? {
-        outcome: "failed",
-        error: { kind: "file-unparseable", file: file.file, detail: parsed.error.detail },
-      }
-    : {
-        outcome: "ok",
-        value: { source: text.value, fields: new Map(fieldsOf(parsed.value)) },
-      };
+    ? unparseableManifest(file, parsed.error.detail)
+    : { outcome: "ok", value: new Map(fieldsOf(parsed.value)) };
 };
 
-export const packageManifestOf = (file: WalkerFile): ReadFile<ReadonlyMap<string, unknown>> => {
-  const manifest = readPackageManifest(file);
-  return manifest.outcome === "failed"
-    ? manifest
-    : { outcome: "ok", value: manifest.value?.fields };
+type ManifestField = {
+  readonly value: unknown;
+  readonly anchor: Anchor;
+  readonly snippet: string;
+  readonly fields: LocatedManifest;
 };
 
-type FieldSite = { readonly anchor: Anchor; readonly snippet: string };
+type LocatedManifest = ReadonlyMap<string, ManifestField>;
 
-type LocatedManifest = {
-  readonly fields: PackageManifest["fields"];
-  readonly fieldAt: (path: readonly string[]) => FieldSite | undefined;
+type LineSearch = {
+  readonly starts: readonly number[];
+  readonly offset: number;
+  readonly first: number;
+  readonly last: number;
 };
 
-const manifestSitesOf = (source: string): LocatedManifest["fieldAt"] => {
-  const properties = new Map<string, { readonly offset: number; readonly anchor: Anchor }>();
-  const sites = new Map<string, FieldSite>();
-  const visitor: JSONVisitor = {
-    onObjectProperty: (name, offset, length, line, column, parentPath) => {
-      const key = JSON.stringify([...parentPath(), name]);
-      const anchor = { line: line + 1, column };
-      properties.set(key, { offset, anchor });
-      sites.set(key, { anchor, snippet: source.slice(offset, offset + length) });
-    },
-    onLiteralValue: (value: unknown, offset, length, _line, _column, path) => {
-      if (typeof value !== "string") return;
-      const key = JSON.stringify(path());
-      const property = properties.get(key);
-      if (property === undefined) return;
-      sites.set(key, {
-        anchor: property.anchor,
-        snippet: source.slice(property.offset, offset + length).replace(/\r?\n[ \t]*/g, " "),
-      });
-    },
-  };
-  visit(source, visitor);
-  return (path) => sites.get(JSON.stringify(path));
+const lineIndexOf = (request: LineSearch): number => {
+  const { offset, starts, first, last } = request;
+  if (first === last) return first;
+  const middle = Math.ceil((first + last) / 2);
+  return (starts[middle] ?? 0) <= offset
+    ? lineIndexOf({ ...request, first: middle })
+    : lineIndexOf({ ...request, last: middle - 1 });
+};
+
+type ManifestSource = { readonly source: string; readonly starts: readonly number[] };
+
+const propertyAnchor = (offset: number, locations: ManifestSource): Anchor => {
+  const { starts } = locations;
+  const line = lineIndexOf({ starts, offset, first: 0, last: starts.length - 1 });
+  return { line: line + 1, column: offset - (starts[line] ?? 0) };
+};
+
+const sourceToken = (source: string, token: JsoncNode): string =>
+  source.slice(token.offset, token.offset + token.length);
+
+const locatedFieldsOf = (request: {
+  readonly node: JsoncNode | undefined;
+  readonly locations: ManifestSource;
+}): LocatedManifest => {
+  const { node, locations } = request;
+  if (node?.type !== "object") return new Map();
+  const { source } = locations;
+  return new Map(
+    node.children?.flatMap((property): readonly (readonly [string, ManifestField])[] => {
+      const [key, value] = property.children ?? [];
+      if (key === undefined || typeof key.value !== "string" || value === undefined) return [];
+      const keyToken = sourceToken(source, key);
+      return [
+        [
+          key.value,
+          {
+            value: value.value,
+            anchor: propertyAnchor(key.offset, locations),
+            snippet:
+              value.type === "string" ? `${keyToken}: ${sourceToken(source, value)}` : keyToken,
+            fields: locatedFieldsOf({ node: value, locations }),
+          },
+        ],
+      ];
+    }),
+  );
 };
 
 export const locatedPackageManifestOf = (file: WalkerFile): ReadFile<LocatedManifest> => {
-  const manifest = readPackageManifest(file);
-  if (manifest.outcome === "failed") return manifest;
+  const text = dependencySourceOf({ ...file, accepts: PACKAGE_MANIFEST });
+  if (text.outcome === "failed") return text;
+  if (text.value === undefined) return { outcome: "ok", value: undefined };
+  const source = text.value;
+  const parsed = jsoncTree.parse({ source });
+  if (parsed.outcome === "failed") return unparseableManifest(file, parsed.error.detail);
+  const starts = [
+    0,
+    ...Array.from(source.matchAll(/\r\n|\r|\n/g), ({ index, 0: ending }) => index + ending.length),
+  ];
   return {
     outcome: "ok",
-    value:
-      manifest.value === undefined
-        ? undefined
-        : {
-            fields: manifest.value.fields,
-            fieldAt: manifestSitesOf(manifest.value.source),
-          },
+    value: locatedFieldsOf({ node: parsed.value, locations: { source, starts } }),
   };
 };
