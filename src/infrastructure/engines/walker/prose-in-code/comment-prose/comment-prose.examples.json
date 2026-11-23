@@ -5,6 +5,12 @@
       "fileName": "src/order.ts",
       "source": "// The fallback is safe.\n/** Reads an order. */\nexport const order = 1;",
       "expectedLines": [1, 2]
+    },
+    {
+      "name": "prose after a tracked reference",
+      "fileName": "src/order.ts",
+      "source": "// TODO(#16) because the source changed\nexport const order = 1;",
+      "expectedLines": [1]
     }
   ],
   "allow": [
@@ -12,6 +18,12 @@
       "name": "tracked follow-up",
       "fileName": "src/order.ts",
       "source": "// TODO(#16)\nexport const order = 1;",
+      "expectedLines": []
+    },
+    {
+      "name": "supported tool directives",
+      "fileName": "src/order.ts",
+      "source": "// @vitest-environment jsdom\nconst order = /* @__PURE__ */ open();\n/* eslint-env node */",
       "expectedLines": []
     },
     {
