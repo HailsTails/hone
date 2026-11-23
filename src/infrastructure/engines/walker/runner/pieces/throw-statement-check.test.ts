@@ -1,11 +1,20 @@
-import syntaxApi from "typescript";
 import { assert, describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { defaultTypeScriptPeers, loadParsePort } from "../toolchain/typescript-toolchain.ts";
 import { throwStatementCheck } from "./throw-statement-check.ts";
 import { textsDisk } from "./walker-disk.ts";
+
+const loadedParse = await loadParsePort({
+  peers: defaultTypeScriptPeers({
+    installRoot: `${import.meta.dirname}/../../../../../..`,
+    installForm: "source",
+  }),
+});
+assert(loadedParse.outcome === "ok");
+const { syntaxApi } = loadedParse.value;
 
 const FILE = repoPathOf("src/orders.spec.mts");
 const BINDING: CheckBinding = {
