@@ -24,21 +24,17 @@ import {
   renderRunSectionsText,
 } from "../../src/infrastructure/printed-report/run-report-text.ts";
 
-const REPORTED_NOT_GATED: readonly RunSectionName[] = ["findings", "unrecorded"];
-
 export const VERSION_TWO_GATED_SECTIONS: readonly RunSectionName[] = RUN_SECTION_NAMES.filter(
-  (section) => runSectionRoleOf({ section }) === "failing" && !REPORTED_NOT_GATED.includes(section),
+  (section) => runSectionRoleOf({ section }) === "failing",
 );
 
 const gateLineOf = (request: {
-  readonly findings: number;
-  readonly unrecorded: number;
   readonly scope: AssessmentScope;
   readonly failing: readonly string[];
 }): string =>
   request.failing.length > 0
     ? `self-check: fail${request.scope}, gated sections hold entries: ${request.failing.join(", ")}\n`
-    : `self-check: pass${request.scope}, the selection, records and projection are sound; findings (${request.findings}) and unrecorded (${request.unrecorded}) are reported above and not gated\n`;
+    : `self-check: pass${request.scope}, no failing section holds an entry\n`;
 
 export const versionTwoSelfCheckOutcomeOf = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
@@ -50,7 +46,7 @@ export const versionTwoSelfCheckOutcomeOf = (request: {
   );
   return {
     code: failing.length > 0 ? 1 : 0,
-    text: `${renderRunSectionsText(versionTwoReportRequestOf(request))}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, scope: assessmentScopeOf({ report }), failing })}`,
+    text: `${renderRunSectionsText(versionTwoReportRequestOf(request))}${gateLineOf({ scope: assessmentScopeOf({ report }), failing })}`,
   };
 };
 

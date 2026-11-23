@@ -74,10 +74,12 @@ const IGNORED_IN_A: AttributedCheckException = {
 };
 
 describe("VERSION_TWO_GATED_SECTIONS", () => {
-  it("names every failing section of a version 2 run except the findings and the unrecorded native exceptions, which are reported and not gated", () => {
+  it("names every failing section of a version 2 run, findings and unrecorded native exceptions included", () => {
     expect(VERSION_TWO_GATED_SECTIONS).toEqual([
+      "findings",
       "stale",
       "forfeited",
+      "unrecorded",
       "misnamed",
       "refused",
       "unmeasured",
@@ -149,11 +151,11 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 0,
-      text: "self-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
+      text: "self-check: pass, no failing section holds an entry\n",
     });
   });
 
-  it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated, after the report's sections and with no verdict of hone's own", () => {
+  it("fails a run holding findings and unrecorded native exceptions, naming both after the report's sections", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
         ports: SELF_CHECK_PORTS,
@@ -167,8 +169,8 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
         }),
       }),
     ).toEqual({
-      code: 0,
-      text: "findings (1)\nunrecorded (2)\nself-check: pass, the selection, records and projection are sound; findings (1) and unrecorded (2) are reported above and not gated\n",
+      code: 1,
+      text: "findings (1)\nunrecorded (2)\nself-check: fail, gated sections hold entries: findings (1), unrecorded (2)\n",
     });
   });
 
@@ -186,7 +188,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 0,
-      text: "self-check: pass (partial assessment), the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
+      text: "self-check: pass (partial assessment), no failing section holds an entry\n",
     });
   });
 
@@ -220,7 +222,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 1,
-      text: "findings (1)\nmisnamed (1)\nrefused (1)\nunmeasured (1)\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
+      text: "findings (1)\nmisnamed (1)\nrefused (1)\nunmeasured (1)\nself-check: fail, gated sections hold entries: findings (1), misnamed (1), refused (1), unmeasured (1)\n",
     });
   });
 

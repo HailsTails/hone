@@ -43,10 +43,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "delivery/self-check/self-check.integration.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {

@@ -241,7 +241,7 @@ This repository is self-contained: it holds its own configuration and its own lo
 
 Hone checks itself with its own `hone.config.json` and the records in `hone-records/`. The consumer folders `install-proof` copies out are excluded, since they are other repositories checked by their own Hone run.
 
-`self-check` prints Hone's full report on itself, then one `self-check:` line. It fails when the selection, the records or the projection are not sound, and not on findings, which it prints and counts. CI runs it on every change with the pull request's base, or the previous `main`, as the base revision.
+`self-check` prints Hone's full report on itself, then one `self-check:` line. It fails when any failing section of the report holds an entry, findings and unrecorded native exceptions included. CI runs it on every change with the pull request's base, or the previous `main`, as the base revision.
 
 Continuous integration runs on every pull request, drafts included, and on every push to `main`, from `pnpm-lock.yaml` alone, in two jobs, both required checks. They run side by side on the oldest claimed Node. Linux runs `check`, `self-check` and `package-determinism`, packs as the release does, and proves the tarball installs on a newer Node. Windows packs and proves its own tarball. A third job fails when the two tarballs differ. macOS is not proven in CI. A separate workflow, `pull-request-title.yml`, runs `pull-request-title` on each pull request's title whenever the pull request is opened, edited, reopened, marked ready or pushed to.
 

@@ -1,84 +1,19 @@
-import { afterAll, assert, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
-import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
-import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
-import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
 import {
   createDefaultCommandRunPort,
   createDefaultScratchFilesPort,
-  type ScratchFilesPort,
 } from "../install-proof/install-proof-ports.ts";
 
-type ScratchRepositories = {
-  readonly repositoryWith: (request: {
-    readonly files: Readonly<Record<string, string>>;
-  }) => AbsolutePath;
-  readonly removeAll: () => void;
-};
+const REPO = createDefaultPathPort({}).join({
+  segments: [import.meta.dirname, "..", "..", "artefacts", "self-check-scratch"],
+});
 
-const scratchRepositoriesUnder = (request: {
-  readonly parent: string;
-  readonly fileText: FileTextPort;
-  readonly scratch: ScratchFilesPort;
-}): ScratchRepositories => {
-  const made: AbsolutePath[] = [];
-  return {
-    repositoryWith: (repository) => {
-      const folder = absolutePathSchema.parse(
-        `${request.parent.replaceAll("\\", "/")}/scratch-${globalThis.crypto.randomUUID()}`,
-      );
-      const directory = request.scratch.makeDirectory({ path: folder });
-      if (directory.outcome !== "ok") {
-        throw new Error(
-          `a scratch folder could not be made at ${folder}: ${directory.error.detail}`,
-        );
-      }
-      made.push(folder);
-      Object.entries(repository.files).forEach(([name, text]) => {
-        request.fileText.write({ path: `${folder}/${name}`, text });
-      });
-      return folder;
-    },
-    removeAll: () => {
-      made.forEach((folder) => {
-        request.scratch.removeTree({ path: folder });
-      });
-    },
-  };
-};
-
-const repositoryWithSubfolder = (request: {
-  readonly repositories: ScratchRepositories;
-  readonly scratch: Pick<ScratchFilesPort, "makeDirectory">;
-  readonly fileText: Pick<FileTextPort, "write">;
-  readonly files: Readonly<Record<string, string>>;
-  readonly subfolder: string;
-  readonly subfolderFiles: Readonly<Record<string, string>>;
-}): AbsolutePath => {
-  const repo = request.repositories.repositoryWith({ files: request.files });
-  const folder = `${repo}/${request.subfolder}`;
-  const made = request.scratch.makeDirectory({ path: folder });
-  if (made.outcome !== "ok") {
-    throw new Error(`a scratch subfolder could not be made at ${folder}: ${made.error.detail}`);
-  }
-  Object.entries(request.subfolderFiles).forEach(([name, text]) => {
-    const written = request.fileText.write({ path: `${folder}/${name}`, text });
-    if (written.outcome !== "ok") {
-      throw new Error(
-        `a scratch file could not be written at ${folder}/${name}: ${written.error.detail}`,
-      );
-    }
-  });
-  return repo;
-};
-
-const INSTALL_ROOT = absolutePathSchema.parse(
-  createDefaultPathPort({}).join({ segments: [`${import.meta.dirname}/..`, ".."] }),
-);
-
-const SELF_CHECK_FILE = `${INSTALL_ROOT}/delivery/self-check/self-check.ts`;
+const SELF_CHECK_FILE = createDefaultPathPort({}).join({
+  segments: [import.meta.dirname, "self-check.ts"],
+});
 
 const EACH_STEP_IS_A_PROCESS_MILLISECONDS = 120_000;
 
@@ -86,17 +21,11 @@ const fileText = createDefaultFileTextPort({});
 
 const scratch = createDefaultScratchFilesPort({});
 
-const repositories = scratchRepositoriesUnder({
-  parent: `${INSTALL_ROOT}/artefacts`,
-  fileText,
-  scratch,
-});
+const commands = createDefaultCommandRunPort({});
 
 afterAll(() => {
-  repositories.removeAll();
+  scratch.removeTree({ path: REPO });
 });
-
-const commands = createDefaultCommandRunPort({});
 
 const CONFIG = `{
   "version": 2,
@@ -129,6 +58,22 @@ const GIT_IDENTITY = [
   "commit.gpgsign=false",
 ];
 
+const GIT_INIT = [...GIT_IDENTITY, "init", "-q"];
+
+const GIT_ADD = [...GIT_IDENTITY, "add", "."];
+
+const GIT_COMMIT = [...GIT_IDENTITY, "commit", "-q", "-m", "step"];
+
+const PROJECT = [SELF_CHECK_FILE, "project", "--repo", REPO];
+
+const RECORD_DEBT = [SELF_CHECK_FILE, "record-debt", "--repo", REPO, "--base-revision", "HEAD"];
+
+const CHECK = [SELF_CHECK_FILE, "check", "--repo", REPO];
+
+const CHECK_ELSEWHERE = [...CHECK, "--forfeiture", "elsewhere"];
+
+const CHECK_AGAINST_HEAD = [...CHECK, "--base-revision", "HEAD"];
+
 const NOT_ADOPTED =
   "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#unlisted-cast-site\nclaimed-type#non-null-assertions\n";
 
@@ -144,7 +89,7 @@ claimed-type#cast-to-any walker src/cast.ts:1:22 JSON.parse(text) as any;  sympt
 assessment (1)
 forfeiture elsewhere: 0 debt records not checked for forfeiture in this run
 symptoms (2)
-${CLASS_SYMPTOM}${CAST_SYMPTOM}self-check: pass (partial assessment), the selection, records and projection are sound; findings (2) and unrecorded (0) are reported above and not gated
+${CLASS_SYMPTOM}${CAST_SYMPTOM}self-check: fail (partial assessment), gated sections hold entries: findings (2)
 `;
 
 const ANSWERED_BY_DEBT = `answered (2)
@@ -157,80 +102,57 @@ forfeiture-unmeasured no-base-revision: no --base-revision was given, so debt ca
 self-check: fail, gated sections hold entries: unmeasured (1)
 `;
 
-const MEASURED_TEXT = `${NOT_ADOPTED}${ANSWERED_BY_DEBT}self-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated
+const MEASURED_TEXT = `${NOT_ADOPTED}${ANSWERED_BY_DEBT}self-check: pass, no failing section holds an entry
 `;
 
-type Printed = { readonly text: string; readonly code: number };
+const SUCCEEDED = expect.objectContaining({ outcome: "exited", exitCode: 0 });
 
-const git = (request: { readonly repo: string; readonly arguments: readonly string[] }): void => {
-  const run = commands.run({
-    command: "git",
-    arguments: [...GIT_IDENTITY, ...request.arguments],
-    directory: request.repo,
-  });
-  assert(run.outcome === "exited", "a git step in the scratch repository ran to an exit");
-  assert(run.exitCode === 0, "a git step in the scratch repository succeeded");
-};
+const DONE = { outcome: "ok", value: null };
 
-const selfCheckIn = (request: {
-  readonly repo: string;
-  readonly subcommand: string;
-  readonly options: readonly string[];
-}): Printed => {
-  const run = commands.run({
-    command: "node",
-    arguments: [SELF_CHECK_FILE, request.subcommand, "--repo", request.repo, ...request.options],
-    directory: request.repo,
-  });
-  assert(run.outcome === "exited", "the self-check ran to an exit");
-  return { text: run.output, code: run.exitCode };
-};
-
-const adopterRepository = (request: {
-  readonly sources: Readonly<Record<string, string>>;
-}): string => {
-  const repo = repositoryWithSubfolder({
-    repositories,
-    scratch,
-    fileText,
-    files: { "hone.config.json": CONFIG, "eslint.config.mjs": ESLINT_CONFIG },
-    subfolder: "src",
-    subfolderFiles: request.sources,
-  });
-  git({ repo, arguments: ["init", "-q"] });
-  git({ repo, arguments: ["add", "."] });
-  return repo;
-};
+const WRITTEN = { outcome: "ok", value: undefined };
 
 describe("self-check over a version 2 repository, run as the real script", () => {
   it(
-    "reports findings without gating them, and gates debt whose forfeiture cannot be judged",
+    "gates findings, and gates debt whose forfeiture cannot be judged",
     () => {
-      const repo = adopterRepository({
-        sources: { "kept.ts": CLASS_SOURCE, "cast.ts": CAST_SOURCE },
-      });
-      selfCheckIn({ repo, subcommand: "project", options: [] });
-      git({ repo, arguments: ["add", "."] });
-      git({ repo, arguments: ["commit", "-q", "-m", "commit"] });
-      const findingsOnly = selfCheckIn({
-        repo,
-        subcommand: "check",
-        options: ["--forfeiture", "elsewhere"],
-      });
-      selfCheckIn({ repo, subcommand: "record-debt", options: ["--base-revision", "HEAD"] });
-      selfCheckIn({ repo, subcommand: "project", options: [] });
-      git({ repo, arguments: ["add", "."] });
-      git({ repo, arguments: ["commit", "-q", "-m", "debt"] });
-      const unmeasured = selfCheckIn({ repo, subcommand: "check", options: [] });
-      const measured = selfCheckIn({
-        repo,
-        subcommand: "check",
-        options: ["--base-revision", "HEAD"],
-      });
-      expect({ findingsOnly, unmeasured, measured }).toEqual({
-        findingsOnly: { text: FINDINGS_ONLY_TEXT, code: 0 },
-        unmeasured: { text: UNMEASURED_TEXT, code: 1 },
-        measured: { text: MEASURED_TEXT, code: 0 },
+      const setUp = [
+        scratch.removeTree({ path: REPO }),
+        scratch.makeDirectory({ path: `${REPO}/src` }),
+        fileText.write({ path: `${REPO}/hone.config.json`, text: CONFIG }),
+        fileText.write({ path: `${REPO}/eslint.config.mjs`, text: ESLINT_CONFIG }),
+        fileText.write({ path: `${REPO}/src/kept.ts`, text: CLASS_SOURCE }),
+        fileText.write({ path: `${REPO}/src/cast.ts`, text: CAST_SOURCE }),
+      ];
+      const runs = [
+        commands.run({ command: "git", arguments: GIT_INIT, directory: REPO }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: REPO }),
+        commands.run({ command: "node", arguments: PROJECT, directory: REPO }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: REPO }),
+        commands.run({ command: "git", arguments: GIT_COMMIT, directory: REPO }),
+        commands.run({ command: "node", arguments: CHECK_ELSEWHERE, directory: REPO }),
+        commands.run({ command: "node", arguments: RECORD_DEBT, directory: REPO }),
+        commands.run({ command: "node", arguments: PROJECT, directory: REPO }),
+        commands.run({ command: "git", arguments: GIT_ADD, directory: REPO }),
+        commands.run({ command: "git", arguments: GIT_COMMIT, directory: REPO }),
+        commands.run({ command: "node", arguments: CHECK, directory: REPO }),
+        commands.run({ command: "node", arguments: CHECK_AGAINST_HEAD, directory: REPO }),
+      ];
+      expect({ setUp, runs }).toEqual({
+        setUp: [DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN],
+        runs: [
+          SUCCEEDED,
+          SUCCEEDED,
+          SUCCEEDED,
+          SUCCEEDED,
+          SUCCEEDED,
+          { outcome: "exited", exitCode: 1, output: FINDINGS_ONLY_TEXT },
+          SUCCEEDED,
+          SUCCEEDED,
+          SUCCEEDED,
+          SUCCEEDED,
+          { outcome: "exited", exitCode: 1, output: UNMEASURED_TEXT },
+          { outcome: "exited", exitCode: 0, output: MEASURED_TEXT },
+        ],
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,

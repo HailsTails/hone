@@ -63,10 +63,6 @@
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "delivery/self-check/self-check.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "delivery/shipped-content/cd14-class-syntax-cases.test.ts"
     },
     {

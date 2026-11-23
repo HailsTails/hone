@@ -35,10 +35,6 @@
     },
     {
       "answers": "computed-value-in-a-test#test-body",
-      "file": "delivery/self-check/self-check.integration.test.ts"
-    },
-    {
-      "answers": "computed-value-in-a-test#test-body",
       "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
     },
     {
