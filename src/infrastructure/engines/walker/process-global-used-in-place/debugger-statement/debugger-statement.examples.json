@@ -1,0 +1,18 @@
+{
+  "flag": [
+    {
+      "name": "execution enters the runtime debugger",
+      "fileName": "src/reserve.ts",
+      "source": "export function reserve() {\n  debugger;\n}",
+      "expectedLines": [2]
+    }
+  ],
+  "allow": [
+    {
+      "name": "a data property does not pause execution",
+      "fileName": "src/reserve.ts",
+      "source": "export const options = { debugger: false };",
+      "expectedLines": []
+    }
+  ]
+}
