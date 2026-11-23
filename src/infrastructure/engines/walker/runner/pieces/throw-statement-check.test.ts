@@ -32,7 +32,8 @@ describe("throwStatementCheck", () => {
     { scope: "production", path: "src/orders.spec.mts" },
   ])("skips $path when checking $scope scope", ({ scope, path }) => {
     const file = repoPathSchema.parse(path);
-    const prepared = throwStatementCheck(scope).prepare({
+    const piece = throwStatementCheck(scope);
+    const prepared = piece.prepare({
       bindings: [BINDING],
       repository: {
         files: [file],
@@ -62,7 +63,8 @@ describe("throwStatementCheck", () => {
       const file = repoPathSchema.parse(path);
       const source =
         'throw new Error(\r\n  "1234567890123456789012345678901234567890123456789012345678901234567890",\r\n);';
-      const prepared = throwStatementCheck(scope).prepare({
+      const piece = throwStatementCheck(scope);
+      const prepared = piece.prepare({
         bindings: [BINDING],
         repository: {
           files: [file],
