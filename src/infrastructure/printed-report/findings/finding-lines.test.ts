@@ -41,6 +41,8 @@ const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
+const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
+
 const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
 const TESTS_ARE_OURS: Principle = { name: "tests-are-ours", title: "Tests are ours" };
@@ -357,19 +359,37 @@ const CLOCK_BOUNDARY: PlacedRecord = {
 
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
-    expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: CLOCK_FINDING })).toBe(
-      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator",
+    expect(
+      findingLine({
+        catalogue: REPORT_CATALOGUE,
+        finding: CLOCK_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
+      `date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); symptom: date-used-directly (${SYMPTOM_PAGE}#date-used-directly) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator`,
     );
   });
 
   it("ends with the fix and the page that shows it when the check names one, and keeps a line break in the snippet on one line", () => {
-    expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: BRANCH_FINDING })).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; may indicate: straight-through-tests, no-hidden-effects fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
+    expect(
+      findingLine({
+        catalogue: REPORT_CATALOGUE,
+        finding: BRANCH_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
     );
   });
 
   it("leads with the check address and mechanism when the catalogue has no check for the finding, and names no symptom", () => {
-    expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: TEAM_FINDING })).toBe(
+    expect(
+      findingLine({
+        catalogue: REPORT_CATALOGUE,
+        finding: TEAM_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
       "outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
     );
   });
@@ -485,7 +505,7 @@ describe("unrecordedLines", () => {
         reach: "every-selected-check",
         mechanism: ESLINT,
       },
-      line: "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:4 // eslint-disable-next-line names no rule and escapes every selected check: naming the rule is the cheap fix",
+      line: "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:4 // eslint-disable-next-line names no rule and escapes every selected check",
     },
     {
       name: "an inline rule config",

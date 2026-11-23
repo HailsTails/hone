@@ -364,9 +364,9 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
 });
 
 const FAILING_REPORT = `findings (1)
-claimed-type#cast-expressions eslint src/a.ts:4:9 body as Event may indicate: declared-not-asserted
+claimed-type#cast-expressions eslint src/a.ts:4:9 body as Event symptom: claimed-type (../install/rules/typescript/symptoms.md#claimed-type) may indicate: declared-not-asserted
 symptoms (1)
-claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. A schema proves the type: an authorised location. Known debt: debt. Read ../install/rules/typescript/symptoms.md#claimed-type
+claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. Read ../install/rules/typescript/symptoms.md#claimed-type
 verdict: fail
 `;
 

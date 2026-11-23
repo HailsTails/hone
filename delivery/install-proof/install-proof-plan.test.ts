@@ -305,7 +305,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
 `;
 
 const CLASS_SYMPTOM =
-  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this";
+  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this";
 
 const ESLINT_ACTIONS: readonly ProofAction[] = [
   {
@@ -319,7 +319,7 @@ const ESLINT_ACTIONS: readonly ProofAction[] = [
     expectation: {
       exitCode: 1,
       output: `findings (1)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 symptoms (1)
 ${CLASS_SYMPTOM}
 verdict: fail
@@ -334,9 +334,9 @@ const AUDIT_ACTIONS: readonly ProofAction[] = [
     expectation: {
       exitCode: 1,
       output: `findings (1)
-unit-without-a-running-test#companion-test-file walker src/kept.ts:1:0 missing co-located *.test.ts(x) sibling may indicate: tested-where-its-owned
+unit-without-a-running-test#companion-test-file walker src/kept.ts:1:0 missing co-located *.test.ts(x) sibling symptom: unit-without-a-running-test (node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test) may indicate: tested-where-its-owned
 symptoms (1)
-unit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Recipe: Companion test file. Known debt: debt. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test
+unit-without-a-running-test: Unit without a running test. May indicate: gives each unit its test → Tested where it's owned. The breach usually sits in the missing test. Read node_modules/@hailstails/hone/rules/typescript/symptoms.md#unit-without-a-running-test
 verdict: fail
 `,
     },
@@ -360,7 +360,7 @@ export default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins
 `;
 
 const WORKSPACE_REPORT = `findings (1)
-authored-class-or-this#class-keyword eslint packages/web/src/kept.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+authored-class-or-this#class-keyword eslint packages/web/src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (node_modules/@hailstails/hone/rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
 answered (1)
 authored-class-or-this#class-keyword eslint packages/web/src/legacy.ts:1:7 export class Legacy {} answered by debt
 available (1)
@@ -440,11 +440,11 @@ const TEAM_ACTIONS: readonly ProofAction[] = [
       output: `editions (1)
 acme/scratch-file#scratch-files walker edition 1 of 2
 findings (2)
-acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); may indicate: repository-ready
-acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md may indicate: repository-ready
+acme/direct-console#console-calls eslint src/start-banner.ts:1:0 console.log("web started"); symptom: direct-console (tools/disciplines/acme/rules/typescript/symptoms/direct-console.md) may indicate: repository-ready
+acme/scratch-file#scratch-files walker notes.scratch.md:1:0 notes.scratch.md symptom: scratch-file (tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md) may indicate: repository-ready
 symptoms (2)
-direct-console: Direct console. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Known debt: debt. Read tools/disciplines/acme/rules/typescript/symptoms/direct-console.md
-scratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Known debt: debt. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md
+direct-console: Direct console. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Read tools/disciplines/acme/rules/typescript/symptoms/direct-console.md
+scratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the source change. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md
 verdict: fail
 `,
     },
