@@ -1,33 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
-import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
-import { runner } from "./runner.ts";
+import { namedChecksRunnerModuleSchema } from "../../protocol/checks/checks-runner-module-schema.ts";
+import { namedChecksRunner } from "./runner.ts";
 
 describe("runner", () => {
-  it("is a standalone runner module core accepts", () => {
-    expect(runnerModuleSchema.safeParse(runner)).toMatchObject({
+  it("is a named runner module core accepts", () => {
+    expect(namedChecksRunnerModuleSchema.safeParse(namedChecksRunner)).toMatchObject({
       success: true,
-      data: { exceptionPath: "standalone" },
+      data: { projectedKinds: ["inline-disable"] },
     });
   });
 
   it("refuses a clause whose settings name a module outside the piece folder before loading anything", async () => {
     expect(
-      await runner.conform({
-        clause: {
-          address: {
-            ruleSet: TOOL_RULE_SET,
-            discipline: disciplineIdOf("XX-1"),
-            clause: clauseIdOf("first-check"),
-          },
+      await namedChecksRunner.conform({
+        binding: {
+          address: "example#first-check",
+          engine: "walker",
           anchor: { kind: "file" },
           pieceRoot: "/install/mechanisms/audit/XX-1",
-          clauseSettings: {},
+          checkSettings: {},
           edition: editionOf("1"),
           settings: { module: "../x.ts" },
         },

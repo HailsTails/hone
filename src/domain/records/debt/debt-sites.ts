@@ -1,8 +1,7 @@
-import type { Finding } from "../../finding/governance.ts";
+import type { CheckFinding } from "../../finding/governance.ts";
 import { checkAddressOf } from "../../language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
-import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import { findingSitesOf, type RaisedFinding } from "../answering/answering.ts";
 import type { Site } from "../answering/record-reach.ts";
 import { codePointOrder } from "../code-point-order.ts";
@@ -50,7 +49,7 @@ export const debtSiteOf = (request: {
 
 export const sitesOfFinding = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly finding: Finding;
+  readonly finding: CheckFinding;
 }): readonly Site[] =>
   findingSitesOf({
     raised: { finding: request.finding, party: NOT_REPORTED },
@@ -59,7 +58,7 @@ export const sitesOfFinding = (request: {
 
 export const debtSitesOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly findings: readonly Finding[];
+  readonly findings: readonly CheckFinding[];
 }): readonly DebtSite[] =>
   inSiteOrder({
     sites: request.findings
@@ -69,13 +68,13 @@ export const debtSitesOf = (request: {
 
 export const unrecordableSitesOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly findings: readonly Finding[];
+  readonly findings: readonly CheckFinding[];
 }): readonly UnrecordableSite[] =>
   inSiteOrder({
     sites: request.findings
       .filter((finding) => sitesOfFinding({ catalogue: request.catalogue, finding }).length === 0)
       .map((finding): UnrecordableSite => ({
-        address: clauseAddressText({ address: finding.clause }),
+        address: finding.check,
         file: finding.file,
         because: { kind: "no-check" },
       })),

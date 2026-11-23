@@ -5,14 +5,11 @@ import type {
   ModuleLoad,
   ModuleLoaderPort,
 } from "../../../../../application/ports/host/module-loader-port.ts";
-import type { Check } from "../../../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import cd27Plugin from "../../test-switched-off/focused-tests/eslint-plugin.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
+import type { PluginCheck } from "./check-rule-id.ts";
 import { type HonePluginFailure, honePluginAt, honePluginFailureText } from "./hone-plugin.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
@@ -21,24 +18,13 @@ const SILENT_BOUNDARY: EslintMajorBoundary = {
   declarationText: "declare const projection: readonly unknown[];\nexport default projection;\n",
 };
 
-const SKIPPED_TESTS_CHECK: Check = {
+const SKIPPED_TESTS_CHECK: PluginCheck = {
   name: "skipped-tests",
   symptom: {
     name: "test-switched-off",
     title: "Test switched off",
-    seen: "a site",
-    mayIndicate: [],
-    breachUsuallySits: "in the unit",
-    recipes: [],
-    correctUses: [],
-  },
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-27"),
-    clause: clauseIdOf("skipped-tests"),
   },
   engines: [{ name: "eslint" }],
-  forms: [],
 };
 
 const PIECE_FILE =
@@ -48,7 +34,10 @@ const PLUGIN_MODULE_PATH =
   "/install/src/infrastructure/engines/eslint/test-switched-off/focused-tests/eslint-plugin.ts";
 
 const PIECE_TEXT =
-  '{"version":2,"anchor":{"kind":"file"},"implementation":{"symptom":"test-switched-off","check":"focused-tests"},"settings":{"pluginNamespace":"hone-cd27","pluginModule":"eslint-plugin.ts","rule":"skipped-tests"}}';
+  '{"version":2,"anchor":{"kind":"file"},"implementation":{"symptom":"test-switched-off","check":"focused-tests"},"settings":{"rule":"skipped-tests"}}';
+
+const SHARED_PIECE_TEXT =
+  '{"version":2,"anchor":{"kind":"keyword","keyword":"only"},"settings":{"pluginNamespace":"hone-cd27","pluginModule":"eslint-plugin.ts","rule":"focused-tests"}}';
 
 const PIECE_READ: ReturnType<FileTextPort["read"]> = { outcome: "ok", value: PIECE_TEXT };
 
@@ -58,7 +47,10 @@ const pluginBuiltFrom = (request: {
   readonly read: ReturnType<FileTextPort["read"]>;
   readonly load: ModuleLoad;
 }) => {
-  const read = vi.fn<FileTextPort["read"]>().mockReturnValue(request.read);
+  const read = vi
+    .fn<FileTextPort["read"]>()
+    .mockReturnValueOnce(request.read)
+    .mockReturnValueOnce({ outcome: "ok", value: SHARED_PIECE_TEXT });
   const load = vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue(request.load);
   const built = honePluginAt({
     checks: [SKIPPED_TESTS_CHECK],

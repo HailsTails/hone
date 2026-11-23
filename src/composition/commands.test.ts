@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
 import type { CommandRequest } from "../application/ports/command-request.ts";
-import type { EngineRun } from "../application/ports/engine/engine-run.ts";
+import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
 import type {
   DirectoryEntry,
   DirectoryPort,
@@ -11,7 +11,7 @@ import type { FileTextPort } from "../application/ports/file-system/file-text-po
 import type { GitTreePort } from "../application/ports/git-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
-import type { SettingsReading } from "../application/run/settings/read-settings.ts";
+import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Case,
@@ -36,11 +36,11 @@ import type { TouchedSet } from "../domain/repository/touched-set.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../domain/rule-set/edition-of.ts";
+import type { CheckHit, CheckNativeException } from "../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem } from "../domain/runner/checks-run-report.ts";
-import type { Hit, NativeException } from "../domain/runner/runner-result-types.ts";
 import type { ForfeitureAssessment } from "../domain/settings/assessment.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { recordsReader } from "../infrastructure/hone-records-folder/reading/records-reading.ts";
 import { recordsEditor } from "../infrastructure/hone-records-folder/writing/records-edit.ts";
@@ -151,7 +151,6 @@ const commandOver = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,
@@ -483,15 +482,16 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const FILE_A = repoPathOf("src/a.ts");
 
-const settingsWith = (request: { readonly forfeiture: ForfeitureAssessment }): SettingsReading => ({
+const settingsWith = (request: {
+  readonly forfeiture: ForfeitureAssessment;
+}): NamedSettingsReading => ({
   available: [],
   selection: {
-    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-    bindings: [],
-    clauseRoots: [],
+    selected: [],
+    notAdopted: [],
+    notRun: [],
     excluded: [],
     eslintConfigRoots: [],
-    fileExceptionWhyChains: "required",
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: request.forfeiture } },
   eslintConfigLookup: { lookup: "detected" },
@@ -517,61 +517,63 @@ const HELD_DEBT: PlacedRecord = {
   },
 };
 
-const CAST: Hit = {
-  clause: CAST_EXPRESSIONS,
+const CAST: CheckHit = {
+  check: "claimed-type#cast-expressions",
   file: FILE_A,
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
-  check: "claimed-type#cast-expressions",
 };
 
-const runOf = (request: { readonly hits: readonly Hit[] }): EngineRun => ({
+const runOf = (request: { readonly hits: readonly CheckHit[] }): NamedEngineRun => ({
   mechanism: ESLINT,
   hits: request.hits,
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
   slices: [],
-  unprojectedFolders: [],
   measured: [],
   misnamedRuleIds: [],
 });
 
-const INLINE_DISABLE: NativeException = {
+const INLINE_DISABLE: CheckNativeException = {
   kind: "inline-disable",
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: FILE_A,
   line: 3,
   text: "// eslint-disable-next-line hone/claimed-type#cast-expressions",
-  reach: "one-clause",
+  reach: "one-check",
 };
 
-const IGNORE: NativeException = { kind: "ignore", clause: CAST_EXPRESSIONS, file: FILE_A };
+const IGNORE: CheckNativeException = {
+  kind: "ignore",
+  check: "claimed-type#cast-expressions",
+  file: FILE_A,
+};
 
-const INLINE_RULE_CONFIG: NativeException = {
+const INLINE_RULE_CONFIG: CheckNativeException = {
   kind: "inline-rule-config",
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: FILE_A,
   line: 4,
   text: '/* eslint hone/claimed-type#cast-expressions: "off" */',
 };
 
-const SUPPRESSION_ENTRY: NativeException = {
+const SUPPRESSION_ENTRY: CheckNativeException = {
   kind: "suppression-entry",
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: FILE_A,
   location: repoPathOf("eslint-suppressions.json"),
 };
 
-const CONFIG_OVERRIDE: NativeException = {
+const CONFIG_OVERRIDE: CheckNativeException = {
   kind: "config-override",
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: FILE_A,
 };
 
-const COMMAND_LINE_OPTION: NativeException = {
+const COMMAND_LINE_OPTION: CheckNativeException = {
   kind: "command-line-option",
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   location: repoPathOf("package.json"),
   script: "lint",
   option: "--no-inline-config",
@@ -579,15 +581,15 @@ const COMMAND_LINE_OPTION: NativeException = {
 };
 
 const runHoldingNatives = (request: {
-  readonly nativeExceptions: readonly NativeException[];
-}): EngineRun => ({
+  readonly nativeExceptions: readonly CheckNativeException[];
+}): NamedEngineRun => ({
   ...runOf({ hits: [] }),
   nativeExceptions: request.nativeExceptions,
   coverableKinds: ["config-override", "inline-disable"],
 });
 
 const stagesHoldingNatives = (request: {
-  readonly nativeExceptions: readonly NativeException[];
+  readonly nativeExceptions: readonly CheckNativeException[];
 }): VersionTwoStages =>
   stagesGiving({
     engines: vi
@@ -640,6 +642,7 @@ const ranWith = async (request: {
   const stagesOver = vi.fn<StagesOver>().mockReturnValue(request.stages);
   const recorded = recordedProcessWith({ arguments: request.arguments });
   await request.handler({
+    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
     gitTree: gitTreeStub(),
     directory: repository.directory,
     fileRemoval: repository.fileRemoval,
@@ -835,10 +838,10 @@ describe("versionTwoRecordDebtCommandOf", () => {
       writes: [
         [
           {
-            text: `CD-2#cast-expressions unrecordable package.json: a lint-script option weakens the script's whole run, so no record can cover it; remove it from the script
-CD-2#cast-expressions unrecordable src/a.ts: an ESLint ignore leaves the file out of the team's lint run, which no record can hold; Hone's run checked the file and recorded what it found there as debt, so what is left is the ignore: remove it, or, if the file is generated or vendored and not yours to hold to the checks, list it in exclude in hone.config.json so Hone's setting and the team's ignore agree
-CD-2#cast-expressions unrecordable src/a.ts: a comment that sets a rule's configuration changes what the rule checks, which no record can hold; remove the comment
-CD-2#cast-expressions unrecordable src/a.ts: an entry in the suppressions file hides a finding from the team's lint run, which no record can hold; Hone's run still finds it and records it as debt, so remove the entry from the suppressions file
+            text: `claimed-type#cast-expressions unrecordable package.json: a lint-script option weakens the script's whole run, so no record can cover it; remove it from the script
+claimed-type#cast-expressions unrecordable src/a.ts: an ESLint ignore leaves the file out of the team's lint run, which no record can hold; Hone's run checked the file and recorded what it found there as debt, so what is left is the ignore: remove it, or, if the file is generated or vendored and not yours to hold to the checks, list it in exclude in hone.config.json so Hone's setting and the team's ignore agree
+claimed-type#cast-expressions unrecordable src/a.ts: a comment that sets a rule's configuration changes what the rule checks, which no record can hold; remove the comment
+claimed-type#cast-expressions unrecordable src/a.ts: an entry in the suppressions file hides a finding from the team's lint run, which no record can hold; Hone's run still finds it and records it as debt, so remove the entry from the suppressions file
 `,
           },
         ],
@@ -860,7 +863,7 @@ CD-2#cast-expressions unrecordable src/a.ts: an entry in the suppressions file h
       writes: [
         [
           {
-            text: "CD-2#cast-expressions unrecordable src/a.ts: an override in the ESLint configuration turns the check down for this file, which no record can hold; where debt holds the check the projection already turns it off, so remove the override or narrow it to the files that need it\n",
+            text: "claimed-type#cast-expressions unrecordable src/a.ts: an override in the ESLint configuration turns the check down for this file, which no record can hold; where debt holds the check the projection already turns it off, so remove the override or narrow it to the files that need it\n",
           },
         ],
       ],
@@ -870,7 +873,7 @@ CD-2#cast-expressions unrecordable src/a.ts: an entry in the suppressions file h
   });
 
   it("gives a script option the advice that matches why Hone could not judge it", async () => {
-    const wrapped: NativeException = {
+    const wrapped: CheckNativeException = {
       ...COMMAND_LINE_OPTION,
       cause: { kind: "wrapped", command: "eslint", wrapper: "env" },
     };
@@ -883,7 +886,7 @@ CD-2#cast-expressions unrecordable src/a.ts: an entry in the suppressions file h
     expect(ran.writes).toEqual([
       [
         {
-          text: 'CD-2#cast-expressions unrecordable package.json: "env" comes before eslint and is neither a package runner nor a NAME=value setting, so Hone cannot tell what the option does to the files under check; put only package runners and NAME=value settings before eslint\n',
+          text: 'claimed-type#cast-expressions unrecordable package.json: "env" comes before eslint and is neither a package runner nor a NAME=value setting, so Hone cannot tell what the option does to the files under check; put only package runners and NAME=value settings before eslint\n',
         },
       ],
     ]);
@@ -991,21 +994,38 @@ describe("versionTwoPruneDebtCommandOf", () => {
     expect(ran.repository.filesHeld()).toEqual([]);
   });
 
-  const settingsSelectingCast = (): SettingsReading => {
+  const settingsSelectingCast = (): NamedSettingsReading => {
     const settings = settingsWith({ forfeiture: "this-run" });
     return {
       ...settings,
       selection: {
         ...settings.selection,
-        selection: {
-          ...settings.selection.selection,
-          selected: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, exceptions: "allowed" }],
-        },
+        selected: [
+          {
+            address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+            check: CAST_CHECK,
+            exceptions: "allowed",
+            binding: {
+              address: "claimed-type#cast-expressions",
+              engine: ESLINT,
+              pieceRoot: "/install/cast",
+              settings: {},
+              checkSettings: {},
+              anchor: { kind: "file" },
+              edition: editionOf("1"),
+            },
+            editions: {
+              declared: [editionOf("1")],
+              default: editionOf("1"),
+              latest: editionOf("1"),
+            },
+          },
+        ],
       },
     };
   };
 
-  const prunedWhileEngineRan = async (request: { readonly run: EngineRun }) => {
+  const prunedWhileEngineRan = async (request: { readonly run: NamedEngineRun }) => {
     const ran = await ranWith({
       handler: versionTwoPruneDebtCommandOf,
       arguments: ["--repo", "/repo"],
@@ -1127,9 +1147,9 @@ describe("versionTwoPruneDebtCommandOf", () => {
   });
 
   it("removes the debt once the engine measured its check at its file and found nothing", async () => {
-    const measured = {
+    const measured: NamedEngineRun = {
       ...runOf({ hits: [] }),
-      measured: [{ clause: CAST_EXPRESSIONS, file: FILE_A }],
+      measured: [{ check: "claimed-type#cast-expressions", file: FILE_A }],
     };
     expect(await prunedWhileEngineRan({ run: measured })).toEqual({
       writes: [[{ text: "claimed-type removed src/a.ts: stale\n" }]],

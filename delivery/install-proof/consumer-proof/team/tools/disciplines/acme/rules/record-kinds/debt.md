@@ -1,0 +1,7 @@
+# Debt
+
+```json
+{
+  "phrase": "debt"
+}
+```

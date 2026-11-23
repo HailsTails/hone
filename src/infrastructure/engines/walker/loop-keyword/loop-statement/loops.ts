@@ -12,7 +12,7 @@ const COUNTED_FOR = /\bfor\s*\([^)]*;[^)]*;[^)]*\)/;
 const WHILE_LOOP = /\bwhile\s*\(/;
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
@@ -29,8 +29,8 @@ export const check: WalkerPiece = {
           const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
           return [FOR_OF, COUNTED_FOR, WHILE_LOOP].flatMap((pattern) =>
             pattern.test(line)
-              ? clauses.map((clause) => ({
-                  clause: clause.address,
+              ? bindings.map((binding) => ({
+                  check: binding.address,
                   anchor: { line: index + 1, column: 0 },
                   snippet,
                 }))

@@ -12,7 +12,6 @@ import {
 } from "../infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { exceptionEntryParser } from "../infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { SPLIT_RECORDS } from "./commands.ts";
 import { commandOf } from "./composed-command.ts";
@@ -174,7 +173,6 @@ const commandOver = (request: {
   process: request.process,
   path: request.disk.ports.path,
   fileText: request.disk.ports.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn() },
   git: request.disk.ports.git,
   exceptionRepositoryOf: exceptionRepositoryOf(request.disk.ports),

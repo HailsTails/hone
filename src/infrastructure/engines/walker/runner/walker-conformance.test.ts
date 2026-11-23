@@ -1,112 +1,72 @@
 import { assert, describe, expect, it } from "vitest";
 
-import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
+import {
+  checkAddressOfNames,
+  checkAddressTextOf,
+  checkNamesOf,
+  type CheckAddressText,
+} from "../../../../domain/language-layer/check-address-text.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
-import type { DisciplineFile, SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
-import { editionRunsOf } from "../../../../domain/runner/edition-runs.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
+import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { defaultClauseSettings } from "../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { absolutePathSchema } from "../../../content-files/absolute-path.ts";
-import { readHeldDiscipline } from "../../../content-files/rule-sets/held-discipline.ts";
-import { readInstalledNames } from "../../../content-files/rule-sets/installed-pieces.ts";
-import { readLocatedPieceFile } from "../../../content-files/rule-sets/located-piece-file.ts";
-import { clauseAddressSchema } from "../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema } from "../../../hone-config-file/identifiers.ts";
+import { createNamedCheckExamplesRepository } from "../../../content-files/rule-sets/named-check-examples.ts";
+import { readBoundCatalogue } from "../../../content-files/symptom-catalogues/bound-catalogue.ts";
 import { createDefaultEntryKindPort } from "../../../node/file-system/file-system-port.ts";
+import { createDefaultDirectoryPort } from "../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import { checkConformance } from "../../protocol/conformance.ts";
-import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
-import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
+import { readNamedPiece } from "../../named-piece.ts";
+import { namedChecksRunnerModuleSchema } from "../../protocol/checks/checks-runner-module-schema.ts";
+import { namedCheckConformance } from "../../protocol/conformance.ts";
+import { toolchainBoundNamedChecksRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
-import * as walkerRunnerModule from "./runner.ts";
+import { namedChecksRunner } from "./runner.ts";
 import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
 import { loadParsePort, typeScriptPeersNamed } from "./toolchain/typescript-toolchain.ts";
 
 type ConformanceRow = {
   readonly name: string;
-  readonly clause: RunnerClause;
+  readonly binding: CheckBinding;
   readonly cases: readonly SourceCase[];
 };
 
 const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
 
-const disciplineOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly discipline: string;
-}): DisciplineFile => {
-  const held = readHeldDiscipline({
-    fileText: request.fileText,
-    path: createDefaultPathPort({}),
-    ruleSetRoot: RULE_SET_ROOT,
-    installRoot: RULE_SET_ROOT,
-    discipline: disciplineIdSchema.parse(request.discipline),
-  });
-  assert(
-    held.outcome === "ok",
-    `${request.discipline} reads through the install's discipline reader`,
-  );
-  const discipline = held.value;
-  assert(discipline.held === "present", `the install holds ${request.discipline}`);
-  return discipline.file;
-};
+const fileText = createDefaultFileTextPort({});
+const path = createDefaultPathPort({});
+const roots = { installRoot: RULE_SET_ROOT, ruleSetRoot: RULE_SET_ROOT };
+const examples = createNamedCheckExamplesRepository({ fileText, path });
 
-const rowsOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly discipline: string;
-  readonly mechanism: EngineId;
-}): readonly ConformanceRow[] => {
-  const discipline = disciplineOf(request);
-  const piece = readLocatedPieceFile({
-    fileText: request.fileText,
-    path: createDefaultPathPort({}),
-    ruleSetRoot: RULE_SET_ROOT,
-    installRoot: RULE_SET_ROOT,
-    mechanism: request.mechanism,
-    discipline,
-  });
-  assert(
-    piece.outcome === "ok",
-    `${request.discipline} ${request.mechanism} piece.json reads through the rule-set reader`,
-  );
-  return piece.value.clauses.flatMap((entry) => {
-    const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
-    assert(
-      definition?.kind === "mechanical",
-      `${request.discipline}#${entry.clause} is a mechanical clause`,
+const rowsOf = (address: CheckAddressText): readonly ConformanceRow[] => {
+  const names = checkNamesOf({ text: address });
+  assert.isDefined(names);
+  const piece = readNamedPiece({ ...roots, ...names, mechanism: "walker", fileText, path });
+  assert(piece.outcome === "ok");
+  const read = examples.read({ installRoot: RULE_SET_ROOT, check: address, engine: "walker" });
+  assert(read.outcome === "ok");
+  const { editions, anchor, pieceRoot, settings, declarations, forms } = piece.value;
+  return editions.declared.flatMap((edition) => {
+    const cases = read.value.examples.filter(
+      (example) => (example.edition ?? editions.default) === edition,
     );
-    const clause: RunnerClause = {
-      address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
-      anchor: definition.anchor,
-      pieceRoot: entry.pieceRoot,
-      settings: entry.settings,
-      clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
-      edition: entry.editions.default,
+    const binding: CheckBinding = {
+      address,
+      engine: "walker",
+      edition,
+      anchor,
+      pieceRoot,
+      settings,
+      checkSettings: defaultClauseSettings({ declarations }),
+      forms: Object.fromEntries(
+        Object.entries(forms).map(([form, named]) => [form, checkAddressOfNames(named)]),
+      ),
     };
-    return editionRunsOf({
-      clause,
-      cases: [...definition.cases.flag, ...definition.cases.allow],
-    }).map((run) => ({
-      name:
-        run.clause.edition === entry.editions.default
-          ? `${request.discipline}#${entry.clause}`
-          : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
-      ...run,
-    }));
+    return cases.length === 0 ? [] : [{ name: `${address} edition ${edition}`, binding, cases }];
   });
-};
-
-const conformanceRows = (request: {
-  readonly disciplines: readonly string[];
-  readonly mechanism: EngineId;
-}): readonly ConformanceRow[] => {
-  const fileText = createDefaultFileTextPort({});
-  return request.disciplines.flatMap((discipline) =>
-    rowsOf({ fileText, discipline, mechanism: request.mechanism }),
-  );
 };
 
 const FLOOR_PEERS = typeScriptPeersNamed({
@@ -139,43 +99,38 @@ declare global {
   }
 }
 
-const heldNames = readInstalledNames({
-  fileText: createDefaultFileTextPort({}),
-  path: createDefaultPathPort({}),
-  installRoot: RULE_SET_ROOT,
+const catalogue = readBoundCatalogue({
+  ...roots,
+  fileText,
+  path,
+  directory: createDefaultDirectoryPort({}),
 });
-
-assert(heldNames.outcome === "ok", "the install's version 1 names read");
-
-const legacyDisciplines = [
-  ...new Set(
-    heldNames.value.namedClauses
-      .filter((clause) => clause.kind === "mechanical")
-      .map(({ clause }) => clause.discipline),
-  ),
-].sort();
-
-const CONFORMANCE_ROWS = conformanceRows({
-  disciplines: legacyDisciplines,
-  mechanism: "walker",
-});
-
-const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
+assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
+const CONFORMANCE_ROWS = catalogue.value.catalogue.checks
+  .filter(({ engines }) => engines.some(({ name }) => name === "walker"))
+  .flatMap((check) => rowsOf(checkAddressTextOf({ check })));
+const walkerRunner = namedChecksRunnerModuleSchema.parse(namedChecksRunner);
 
 describe("the shipped walker pieces", () => {
-  it("includes example coverage through the installed version-one adapter", () => {
+  it("includes example coverage from installed check declarations", () => {
     expect(CONFORMANCE_ROWS).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: "CD-14#class-syntax" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ name: "authored-class-or-this#class-keyword edition 1" }),
+      ]),
     );
   });
 });
 
-describe("the audit runner, loaded as core loads it, conforms to every registered clause's shared cases read from the shipped files (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
+describe("the shipped walker runner conforms to its named examples", () => {
   it.each(CONFORMANCE_ROWS)(
     "$name has no conformance failure over its flag and allow cases",
     async (row) => {
       expect(
-        await checkConformance({ clause: row.clause, cases: row.cases, runner: walkerRunner }),
+        await namedCheckConformance({
+          binding: row.binding,
+          cases: row.cases,
+          runner: walkerRunner,
+        }),
       ).toEqual({
         outcome: "ok",
         value: [],
@@ -184,9 +139,11 @@ describe("the audit runner, loaded as core loads it, conforms to every registere
   );
 });
 
-describe("the audit runner on the oldest supported TypeScript, 4.8.4, conforms to every registered clause's shared cases (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
-  const floorRunner = runnerModuleSchema.parse(
-    toolchainBoundStandaloneRunner({
+describe("the shipped walker runner conforms to its named examples on TypeScript 4.8.4", () => {
+  const floorRunner = namedChecksRunnerModuleSchema.parse(
+    toolchainBoundNamedChecksRunner({
+      fileScope: "tracked",
+      projectedKinds: [],
       toolchain: floorParsePort().then((parse): Result<TypeScriptParsePort, RunnerFailure> => ({
         outcome: "ok",
         value: parse,
@@ -206,7 +163,11 @@ describe("the audit runner on the oldest supported TypeScript, 4.8.4, conforms t
     "$name has no conformance failure over its flag and allow cases",
     async (row) => {
       expect(
-        await checkConformance({ clause: row.clause, cases: row.cases, runner: floorRunner }),
+        await namedCheckConformance({
+          binding: row.binding,
+          cases: row.cases,
+          runner: floorRunner,
+        }),
       ).toEqual({
         outcome: "ok",
         value: [],

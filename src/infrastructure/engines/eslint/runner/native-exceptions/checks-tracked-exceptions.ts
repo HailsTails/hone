@@ -1,39 +1,51 @@
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { CheckNativeException } from "../../../../../domain/runner/check-observations.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type {
   NativeException,
   ScriptOptionCause,
 } from "../../../../../domain/runner/runner-result-types.ts";
-import type { SelectedCheck } from "../checks-runner/checks-run-types.ts";
+import type { SelectedNamedCheck } from "../checks-runner/checks-run-types.ts";
 import { filesNamed, repositoryDirectoryOf } from "../config-roots/checks-paths.ts";
 import {
+  type CheckSubject,
   type PackageJsonScan,
   type PackageScriptsReader,
+  type RuleSubject,
+  type ScannedRule,
   type ScriptOption,
-  scannedPackageScripts,
+  type ScriptOptionException,
+  scannedScriptsFor,
   type SelectedRule,
 } from "./package-script-scanner.ts";
 import type { OptionVerdict, ScriptOptionJudge } from "./script-option-effect.ts";
-import { type SuppressionsReader, suppressionEntriesIn } from "./suppressions-scanner.ts";
+import {
+  type SuppressionException,
+  type SuppressionsReader,
+  suppressionEntriesFor,
+} from "./suppressions-scanner.ts";
 
 type Outcome<Value> = Result<Value, RunnerFailure>;
+type TrackedException<Subject extends RuleSubject> =
+  | SuppressionException<Subject>
+  | (ScriptOptionException<Subject> & { readonly cause: ScriptOptionCause });
 
 const SUPPRESSIONS_FILE_NAME = "eslint-suppressions.json";
 
 const PACKAGE_JSON_NAME = "package.json";
 
-const suppressionsExceptions = (request: {
+const suppressionsExceptions = <Subject extends RuleSubject>(request: {
   readonly suppressionsAt: SuppressionsReader;
   readonly location: RepoPath;
   readonly keysRelativeTo: RepoPath | "repo-root";
-  readonly selectedRules: readonly SelectedRule[];
-}): Outcome<readonly NativeException[]> => {
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): Outcome<readonly TrackedException<Subject>[]> => {
   const suppressions = request.suppressionsAt({ location: request.location });
   return suppressions.outcome === "failed"
     ? suppressions
-    : suppressionEntriesIn({
+    : suppressionEntriesFor({
         location: request.location,
         keysRelativeTo: request.keysRelativeTo,
         suppressions: suppressions.value,
@@ -43,7 +55,7 @@ const suppressionsExceptions = (request: {
 
 const causeOf = (request: {
   readonly verdict: OptionVerdict;
-  readonly option: ScriptOption;
+  readonly option: Pick<ScriptOption, "command">;
 }): ScriptOptionCause | undefined => {
   switch (request.verdict.kind) {
     case "weakens":
@@ -55,10 +67,10 @@ const causeOf = (request: {
   }
 };
 
-const weakeningExceptions = (request: {
-  readonly option: ScriptOption;
+const weakeningExceptions = <Subject extends RuleSubject>(request: {
+  readonly option: ScriptOption<Subject>;
   readonly judge: ScriptOptionJudge;
-}): Promise<Outcome<readonly NativeException[]>> =>
+}): Promise<Outcome<readonly TrackedException<Subject>[]>> =>
   request.judge({ option: request.option }).then((verdict) => {
     if (verdict.outcome === "failed") {
       return verdict;
@@ -69,40 +81,40 @@ const weakeningExceptions = (request: {
       value:
         cause === undefined
           ? []
-          : request.option.exceptions.map((exception): NativeException => ({
+          : request.option.exceptions.map((exception): TrackedException<Subject> => ({
               ...exception,
               cause,
             })),
     };
   });
 
-const judgedScriptExceptions = (request: {
-  readonly scan: PackageJsonScan;
+const judgedScriptExceptions = <Subject extends RuleSubject>(request: {
+  readonly scan: PackageJsonScan<Subject>;
   readonly judge: ScriptOptionJudge;
-}): Promise<Outcome<readonly NativeException[]>> =>
+}): Promise<Outcome<readonly TrackedException<Subject>[]>> =>
   Promise.all(
     request.scan.scriptOptions.map((option) =>
       weakeningExceptions({ option, judge: request.judge }),
     ),
   ).then((outcomes) => gatheredOutcomes({ outcomes }));
 
-const unreadableScriptExceptions = (request: {
-  readonly scan: PackageJsonScan;
-}): readonly NativeException[] =>
+const unreadableScriptExceptions = <Subject extends RuleSubject>(request: {
+  readonly scan: PackageJsonScan<Subject>;
+}): readonly TrackedException<Subject>[] =>
   request.scan.unreadableScripts.flatMap((unreadable) =>
-    unreadable.exceptions.map((exception): NativeException => ({
+    unreadable.exceptions.map((exception): TrackedException<Subject> => ({
       ...exception,
       cause: { kind: "unreadable", command: unreadable.command },
     })),
   );
 
-const scannedPackageExceptions = (request: {
+const scannedPackageExceptions = <Subject extends RuleSubject>(request: {
   readonly suppressionsAt: SuppressionsReader;
   readonly packagePath: RepoPath;
-  readonly scan: PackageJsonScan;
-  readonly selectedRules: readonly SelectedRule[];
+  readonly scan: PackageJsonScan<Subject>;
+  readonly selectedRules: readonly ScannedRule<Subject>[];
   readonly judge: ScriptOptionJudge;
-}): Promise<Outcome<readonly NativeException[]>> =>
+}): Promise<Outcome<readonly TrackedException<Subject>[]>> =>
   judgedScriptExceptions(request).then((scriptExceptions) =>
     gatheredOutcomes({
       outcomes: [
@@ -120,18 +132,18 @@ const scannedPackageExceptions = (request: {
     }),
   );
 
-const packageJsonExceptions = (request: {
+const packageJsonExceptions = <Subject extends RuleSubject>(request: {
   readonly packageScriptsAt: PackageScriptsReader;
   readonly suppressionsAt: SuppressionsReader;
   readonly packagePath: RepoPath;
-  readonly selectedRules: readonly SelectedRule[];
+  readonly selectedRules: readonly ScannedRule<Subject>[];
   readonly judge: ScriptOptionJudge;
-}): Promise<Outcome<readonly NativeException[]>> => {
+}): Promise<Outcome<readonly TrackedException<Subject>[]>> => {
   const scripts = request.packageScriptsAt({ packagePath: request.packagePath });
   if (scripts.outcome === "failed") {
     return Promise.resolve(scripts);
   }
-  const scan = scannedPackageScripts({
+  const scan = scannedScriptsFor({
     path: request.packagePath,
     scripts: scripts.value,
     selectedRules: request.selectedRules,
@@ -148,9 +160,9 @@ export type TrackedRequest = {
   readonly judge: ScriptOptionJudge;
 };
 
-export const trackedExceptionsOfRules = (
-  request: TrackedRequest & { readonly selectedRules: readonly SelectedRule[] },
-): Promise<Outcome<readonly NativeException[]>> =>
+const trackedFor = <Subject extends RuleSubject>(
+  request: TrackedRequest & { readonly selectedRules: readonly ScannedRule<Subject>[] },
+): Promise<Outcome<readonly TrackedException<Subject>[]>> =>
   Promise.all([
     ...filesNamed({ trackedPaths: request.trackedPaths, name: SUPPRESSIONS_FILE_NAME }).map(
       (location) =>
@@ -167,28 +179,25 @@ export const trackedExceptionsOfRules = (
     ),
   ]).then((outcomes) => gatheredOutcomes({ outcomes }));
 
-const namedFor = (request: {
-  readonly entry: SelectedCheck;
-  readonly outcome: Outcome<readonly NativeException[]>;
-}): Outcome<readonly NativeException[]> =>
-  request.outcome.outcome === "failed"
-    ? request.outcome
-    : {
-        outcome: "ok",
-        value: request.outcome.value.map((exception): NativeException => ({
-          ...exception,
-          check: request.entry.address,
-        })),
-      };
-
-export const trackedExceptionsOf = (
-  request: TrackedRequest & { readonly selected: readonly SelectedCheck[] },
+export const trackedExceptionsOfRules = (
+  request: TrackedRequest & { readonly selectedRules: readonly SelectedRule[] },
 ): Promise<Outcome<readonly NativeException[]>> =>
+  trackedFor({
+    ...request,
+    selectedRules: request.selectedRules.map(({ ruleId, clause }) => ({
+      ruleId,
+      subject: { clause },
+    })),
+  });
+
+export const trackedNamedExceptionsOf = (
+  request: TrackedRequest & { readonly selected: readonly SelectedNamedCheck[] },
+): Promise<Outcome<readonly CheckNativeException[]>> =>
   Promise.all(
-    request.selected.map((entry) =>
-      trackedExceptionsOfRules({
+    request.selected.map(({ ruleId, address }) =>
+      trackedFor<CheckSubject>({
         ...request,
-        selectedRules: [{ ruleId: entry.ruleId, clause: entry.clause }],
-      }).then((outcome) => namedFor({ entry, outcome })),
+        selectedRules: [{ ruleId, subject: { check: address } }],
+      }),
     ),
   ).then((outcomes) => gatheredOutcomes({ outcomes }));

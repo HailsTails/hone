@@ -14,7 +14,6 @@ import type { VersionOneCommandRequest } from "../application/ports/version-one-
 import { helpText } from "../infrastructure/command-line/arguments/command-help.ts";
 import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
 import { runHelpText } from "../infrastructure/command-line/arguments/run-help.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { type CommandHandler, type Subcommands, toolCommandOf } from "./composed-command.ts";
 import { INSTALLED_PORTS, toolSubcommandsOf } from "./run-tool-command.ts";
@@ -89,7 +88,6 @@ const commandOver = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,
@@ -197,7 +195,6 @@ const commandRequest = (request: { readonly process: ProcessPort }): VersionOneC
   process: request.process,
   path: UNUSED_PATH,
   fileText: UNUSED_FILE_TEXT,
-  engine: createDefaultEnginePort({}),
   modules: UNUSED_MODULES,
   git: UNUSED_GIT,
   exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),

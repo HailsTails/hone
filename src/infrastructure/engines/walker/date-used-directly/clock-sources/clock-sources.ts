@@ -8,7 +8,7 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
@@ -18,8 +18,8 @@ export const check: WalkerPiece = {
         if (text.outcome === "failed") return text;
         const hits = text.value.split("\n").flatMap((line, index) =>
           /\bDate\.now\(\)/.test(line) || /\bnew\x20Date\b/.test(line)
-            ? clauses.map((clause) => ({
-                clause: clause.address,
+            ? bindings.map((binding) => ({
+                check: binding.address,
                 anchor: { line: index + 1, column: 0 },
                 snippet: line.trim(),
               }))

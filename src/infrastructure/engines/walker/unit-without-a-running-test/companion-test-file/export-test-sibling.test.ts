@@ -1,11 +1,9 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { SourceObservers, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
@@ -31,17 +29,14 @@ const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/view.tsx");
 const SIBLING = repoPathOf("src/view.test.tsx");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-23"),
-  clause: clauseIdOf("export-test-sibling"),
-};
+const ADDRESS: CheckAddressText = "unit-without-a-running-test#companion-test-file";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-23",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "export-test-sibling.ts" },
 };
@@ -51,7 +46,7 @@ const sourceObservations = (request: {
   readonly repository: WalkerRepository;
 }): SourceObservers => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: request.repository,
     syntaxApi: SYNTAX_API,
   });
@@ -82,7 +77,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
 
     expect(observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "missing co-located *.test.ts(x) sibling",
       },
@@ -110,7 +105,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
 
     expect(observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "missing co-located *.test.ts(x) sibling",
       },
@@ -125,7 +120,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
 
     expect(observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "missing co-located *.test.ts(x) sibling",
       },
@@ -147,7 +142,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     const sibling = repoPathOf("src/value.test.ts");
     const source = "export const value = 1;\n";
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: {
         files: [file, sibling],
         exists: vi.fn().mockReturnValue("present"),
@@ -199,7 +194,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
   ])("preserves the existing companion-check exclusion for %s", (fileName) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -217,7 +212,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     (fileName) => {
       const file = repoPathSchema.parse(fileName);
       const prepared = check.prepare({
-        clauses: [CLAUSE],
+        bindings: [CLAUSE],
         repository: { files: [file], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
         syntaxApi: SYNTAX_API,
       });

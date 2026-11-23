@@ -1,13 +1,10 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
@@ -37,30 +34,46 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/logic.test.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-27"),
-  clause: clauseIdOf("test-body-logic"),
-};
+const ADDRESS: CheckAddressText = "test-body-forms#all";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
+  forms: {
+    "branching-with-if": ADDRESS,
+    "a-try-block": ADDRESS,
+    "a-ternary": ADDRESS,
+    "a-let": ADDRESS,
+    "a-method-that-picks-or-tests-an-element": ADDRESS,
+    "a-method-that-computes-a-value": ADDRESS,
+    "a-method-that-mutates": ADDRESS,
+    "a-short-circuit": ADDRESS,
+    "an-optional-chain-after-an-index": ADDRESS,
+    "an-optional-chain-on-a-mock-call": ADDRESS,
+    "an-optional-chain-on-a-mock-result": ADDRESS,
+    "an-optional-chain-on-a-property": ADDRESS,
+    "an-optional-call": ADDRESS,
+    "a-switch": ADDRESS,
+    "serialising-or-parsing-json": ADDRESS,
+    "merging-objects": ADDRESS,
+    "building-an-object-from-entries": ADDRESS,
+    "building-an-array-from-a-length": ADDRESS,
+    "a-math-call": ADDRESS,
+    "logic-inside-a-function-the-test-passes-on": ADDRESS,
+  },
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-27",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "test-body-logic.ts" },
 };
 
-const SECOND_EDITION_CLAUSE: RunnerClause = { ...CLAUSE, edition: editionOf("2") };
-const TEAM_ADDRESS = {
-  ruleSet: { name: ruleSetNameOf("team") },
-  discipline: disciplineIdOf("TM-27"),
-  clause: clauseIdOf("test-body-logic"),
-};
-const TEAM_SECOND_EDITION_CLAUSE: RunnerClause = {
+const SECOND_EDITION_CLAUSE: CheckBinding = { ...CLAUSE, edition: editionOf("2") };
+const TEAM_ADDRESS: CheckAddressText = "branch-in-a-test#test-body";
+const TEAM_SECOND_EDITION_CLAUSE: CheckBinding = {
   ...SECOND_EDITION_CLAUSE,
   address: TEAM_ADDRESS,
+  forms: { "a-short-circuit": TEAM_ADDRESS },
 };
 
 type SourceObservations = {
@@ -73,10 +86,10 @@ type SourceObservations = {
 
 const sourceObservations = (request: {
   readonly source: string;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
 }): SourceObservations => {
   const prepared = check.prepare({
-    clauses: request.clauses,
+    bindings: request.bindings,
     repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
     syntaxApi: SYNTAX_API,
   });
@@ -117,7 +130,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
   ])("preserves own test-family eligibility without reading for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -137,7 +150,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
   it("emits all structural observations in encounter order with one finding for a multi-binding let statement", () => {
     const observed = sourceObservations({
       source: "if(x)f();\ntry{}catch(e){}\nx?y:z;\nlet a,b;\n",
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
     });
     const statements = observed.tree.getChildAt(0, observed.tree);
     const letStatement = statements.getChildAt(3, observed.tree);
@@ -162,25 +175,25 @@ describe("CD-27 existing whole-test-file logic observations", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "if(x)f(); try{}catch(e){} x?y:z; let a,b; ",
         remedy: expect.objectContaining({ section: "branching-with-if" }),
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "try{}catch(e){} x?y:z; let a,b; ",
         remedy: expect.objectContaining({ section: "a-try-block" }),
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 0 },
         snippet: "x?y:z; let a,b; ",
         remedy: expect.objectContaining({ section: "a-ternary" }),
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 4, column: 0 },
         snippet: "let a,b; ",
         remedy: expect.objectContaining({ section: "a-let" }),
@@ -198,7 +211,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
   it("retains dynamic and mutation calls at module level and inside a nested callback without a callback gate", () => {
     const observed = sourceObservations({
       source: "r.map(f);\r\nr.push(1);\r\nit('',()=>s.filter(f));\r\n",
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
     });
     const statements = observed.tree.getChildAt(0, observed.tree);
     const testCall = statements.getChildAt(2, observed.tree).getChildAt(0, observed.tree);
@@ -219,19 +232,19 @@ describe("CD-27 existing whole-test-file logic observations", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "r.map(f);\r r.push(1);\r it('',()=>s.filter(f));\r ",
         remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "r.push(1);\r it('',()=>s.filter(f));\r ",
         remedy: expect.objectContaining({ section: "a-method-that-mutates" }),
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 10 },
         snippet: "s.filter(f));\r ",
         remedy: expect.objectContaining({ section: "a-method-that-picks-or-tests-an-element" }),
@@ -247,7 +260,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
   it("adds the original ellipsis at exactly eighty source characters without collapsing whitespace", () => {
     const observed = sourceObservations({
       source: "r.map(f);\nabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
     });
 
     observed.enter({
@@ -259,7 +272,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet:
           "r.map(f); abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr…",
@@ -273,7 +286,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
     const observed = sourceObservations({
       source:
         "const a=1;\nvar b=2;\nfor(let i=0;i<1;i++){}\nr['map'](f);\nmap(f);\nr.custom();\nvi.fn(()=>1);\nm.mockImplementation(()=>1);\nvi.mock('module');\nthrow failure;\ntype Flag = X extends Y ? A : B;\n",
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
     });
     const statements = observed.tree.getChildAt(0, observed.tree);
     const forStatement = statements.getChildAt(2, observed.tree);
@@ -302,7 +315,7 @@ describe("CD-27 existing whole-test-file logic observations", () => {
 
 const firstExpressionOf = (request: {
   readonly source: string;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
 }): {
   readonly observed: SourceObservations;
   readonly expression: SyntaxNode;
@@ -353,14 +366,14 @@ describe("CD-27 second-edition logic observations", () => {
     ({ source, section }) => {
       const { observed, expression } = firstExpressionOf({
         source,
-        clauses: [SECOND_EDITION_CLAUSE],
+        bindings: [SECOND_EDITION_CLAUSE],
       });
 
       observed.enter({ node: expression });
 
       expect(observed.observers.finish()).toEqual([
         {
-          clause: ADDRESS,
+          check: ADDRESS,
           anchor: { line: 1, column: 0 },
           snippet: source,
           remedy: expect.objectContaining({ section }),
@@ -373,7 +386,7 @@ describe("CD-27 second-edition logic observations", () => {
   it.each(SECOND_EDITION_EXPRESSIONS)(
     "keeps $name unflagged under the first edition",
     ({ source }) => {
-      const { observed, expression } = firstExpressionOf({ source, clauses: [CLAUSE] });
+      const { observed, expression } = firstExpressionOf({ source, bindings: [CLAUSE] });
 
       observed.enter({ node: expression });
 
@@ -384,16 +397,16 @@ describe("CD-27 second-edition logic observations", () => {
   it("flags a switch statement under the second edition only", () => {
     const second = sourceObservations({
       source: "switch (x) {}",
-      clauses: [SECOND_EDITION_CLAUSE],
+      bindings: [SECOND_EDITION_CLAUSE],
     });
-    const first = sourceObservations({ source: "switch (x) {}", clauses: [CLAUSE] });
+    const first = sourceObservations({ source: "switch (x) {}", bindings: [CLAUSE] });
 
     second.enter({ node: second.tree.getChildAt(0, second.tree).getChildAt(0, second.tree) });
     first.enter({ node: first.tree.getChildAt(0, first.tree).getChildAt(0, first.tree) });
 
     expect(second.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "switch (x) {}",
         remedy: expect.objectContaining({ section: "a-switch" }),
@@ -405,14 +418,14 @@ describe("CD-27 second-edition logic observations", () => {
   it("keeps flagging first-edition logic under the second edition", () => {
     const { observed, expression } = firstExpressionOf({
       source: "r.map(f);",
-      clauses: [SECOND_EDITION_CLAUSE],
+      bindings: [SECOND_EDITION_CLAUSE],
     });
 
     observed.enter({ node: expression });
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "r.map(f);",
         remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
@@ -420,17 +433,17 @@ describe("CD-27 second-edition logic observations", () => {
     ]);
   });
 
-  it("attributes a second-edition hit only to the clauses running the second edition", () => {
+  it("attributes a second-edition hit only to the bindings running the second edition", () => {
     const { observed, expression } = firstExpressionOf({
       source: "a ?? b;",
-      clauses: [CLAUSE, TEAM_SECOND_EDITION_CLAUSE],
+      bindings: [CLAUSE, TEAM_SECOND_EDITION_CLAUSE],
     });
 
     observed.enter({ node: expression });
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: TEAM_ADDRESS,
+        check: TEAM_ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "a ?? b;",
         remedy: expect.objectContaining({ section: "a-short-circuit" }),
@@ -452,7 +465,7 @@ describe("CD-27 second-edition logic observations", () => {
   ])("keeps $name unflagged under the second edition", ({ source }) => {
     const { observed, expression } = firstExpressionOf({
       source,
-      clauses: [SECOND_EDITION_CLAUSE],
+      bindings: [SECOND_EDITION_CLAUSE],
     });
 
     observed.enter({ node: expression });

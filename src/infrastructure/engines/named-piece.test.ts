@@ -55,6 +55,71 @@ describe("readNamedPiece", () => {
     expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
   });
 
+  it("takes shared fields from the implementation and keeps the check's own settings", () => {
+    const implementationPath =
+      "/install/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json";
+    const implementationRoot =
+      "/install/src/infrastructure/engines/walker/ambient-randomness/random-call";
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce(PIECE_PATH)
+      .mockReturnValueOnce(implementationPath)
+      .mockReturnValueOnce(EXAMPLES_PATH)
+      .mockReturnValueOnce(implementationRoot);
+    const read = vi
+      .fn<FileTextPort["read"]>()
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value:
+          '{"version":2,"implementation":{"symptom":"ambient-randomness","check":"random-call"},"settings":{"operation":"ambient"},"checkSettings":{"limit":{"default":3}}}',
+      })
+      .mockReturnValueOnce({
+        outcome: "ok",
+        value:
+          '{"version":2,"anchor":{"kind":"keyword","keyword":"new"},"settings":{"module":"random-call.ts"},"editions":["1","2"]}',
+      });
+    expect(
+      readNamedPiece({ ...SUBJECT, path: { join }, fileText: { exists: () => "present", read } }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        pieceRoot: implementationRoot,
+        anchor: { kind: "keyword", keyword: "new" },
+        settings: { module: "random-call.ts", operation: "ambient" },
+        editions: { declared: ["1", "2"], default: "1", latest: "2" },
+        declarations: { limit: { default: 3 } },
+      },
+    });
+    expect(read).toHaveBeenNthCalledWith(2, { path: implementationPath });
+  });
+
+  it("reports a missing implementation at the target declaration path", () => {
+    const implementationPath =
+      "/install/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json";
+    const join = vi
+      .fn<PathPort["join"]>()
+      .mockReturnValueOnce(PIECE_PATH)
+      .mockReturnValueOnce(implementationPath);
+    const exists = vi
+      .fn<FileTextPort["exists"]>()
+      .mockReturnValueOnce("present")
+      .mockReturnValueOnce("absent");
+    const read = vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
+      outcome: "ok",
+      value:
+        '{"version":2,"implementation":{"symptom":"ambient-randomness","check":"random-call"}}',
+    });
+    expect(readNamedPiece({ ...SUBJECT, path: { join }, fileText: { exists, read } })).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "file-malformed",
+        path: implementationPath,
+        detail: "referenced implementation is missing",
+      },
+    });
+    expect(read).toHaveBeenCalledExactlyOnceWith({ path: PIECE_PATH });
+  });
+
   it("names the requested check when its declaration is absent", () => {
     const join = vi.fn<PathPort["join"]>().mockReturnValue(PIECE_PATH);
     const read = vi.fn<FileTextPort["read"]>();

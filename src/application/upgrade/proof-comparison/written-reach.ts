@@ -28,14 +28,17 @@ const reachOf = (request: {
   if (reach === "not-a-recorded-reach" || reach.reaches !== "one-check") {
     return "beyond-the-entries";
   }
-  const check = checkNamed({ address: request.written.answers, catalogues: request.catalogues });
+  const clause = checkNamed({
+    address: request.written.answers,
+    catalogues: request.catalogues,
+  })?.clause;
   const held =
-    check !== undefined &&
+    clause !== undefined &&
     request.inputs.some(
       (input) =>
         input.kind !== "clause-wide-carve-out" &&
         input.record.file === request.written.file &&
-        sameClauseAddress({ left: input.record.clause, right: check.clause }) === "same",
+        sameClauseAddress({ left: input.record.clause, right: clause }) === "same",
     );
   return held ? "within-an-entry" : "beyond-the-entries";
 };

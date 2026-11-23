@@ -1,31 +1,57 @@
+import type { Check, Engine, Symptom } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type {
+  CheckHit,
+  CheckMeasurement,
+  CheckNativeException,
+} from "../../../domain/runner/check-observations.ts";
+import type {
+  AnsweredFile,
   ChecksSliceProblem,
   MisnamedRuleId,
 } from "../../../domain/runner/checks-run-report.ts";
-import type { MechanismRun } from "../../../domain/runner/mechanism-run.ts";
-import type { NativeException } from "../../../domain/runner/runner-result-types.ts";
-import type { ClauseBinding } from "../../../domain/settings/selection/selection.ts";
-import type { ChecksRunRequest, LoadedRunner, RunnerCall } from "./runner-module.ts";
+import type { ProjectionState } from "../../../domain/runner/runner-result-types.ts";
+import type { EslintConfigLookup } from "../../../domain/settings/eslint-config-lookup.ts";
+import type { RunnerCall } from "./runner-module.ts";
 
-export type ParsedChecksRunner = {
-  readonly projectedKinds: readonly NativeException["kind"][];
+export type RunnerFileScope = "tracked" | "typescript";
+
+export type ParsedNamedRunner = {
+  readonly fileScope: RunnerFileScope;
+  readonly projectedKinds: readonly CheckNativeException["kind"][];
   readonly run: RunnerCall;
   readonly conform: RunnerCall;
   readonly project: RunnerCall;
 };
 
-export type LoadedEngine = {
+export type EngineCheck = Pick<Check, "ruleSet"> & {
+  readonly name: string;
+  readonly symptom: Pick<Symptom, "name" | "title">;
+  readonly engines: readonly Engine[];
+};
+
+export type NamedEngineRunRequest = {
+  readonly repoRoot: AbsolutePath;
+  readonly installRoot: AbsolutePath;
+  readonly files: readonly RepoPath[];
+  readonly trackedPaths: readonly RepoPath[];
+  readonly answered: readonly AnsweredFile[];
+  readonly declaredConfigRoots: readonly RepoPath[];
+  readonly declaredConfigLookup: EslintConfigLookup | undefined;
+  readonly bindings: readonly CheckBinding[];
+  readonly checks?: readonly EngineCheck[];
+};
+
+export type NamedEngineRun = {
   readonly mechanism: EngineId;
-  readonly runner: LoadedRunner;
-  readonly checksRunner: ParsedChecksRunner | undefined;
-};
-
-export type EngineRun = Omit<MechanismRun, "slices"> & {
-  readonly slices: readonly ChecksSliceProblem[];
+  readonly coverableKinds: readonly CheckNativeException["kind"][];
+  readonly projection: "none" | ProjectionState;
   readonly misnamedRuleIds: readonly MisnamedRuleId[];
-};
-
-export type EngineRunRequest = Omit<ChecksRunRequest, "bindings"> & {
-  readonly bindings: readonly ClauseBinding[];
+  readonly slices: readonly ChecksSliceProblem[];
+  readonly hits: readonly CheckHit[];
+  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly measured: readonly CheckMeasurement[];
 };

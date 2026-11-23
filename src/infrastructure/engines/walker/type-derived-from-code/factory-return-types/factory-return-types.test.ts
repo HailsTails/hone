@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -31,25 +29,22 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/profile.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-7a"),
-  clause: clauseIdOf("factory-return-types"),
-};
+const ADDRESS: CheckAddressText = "type-derived-from-code#factory-return-types";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const TYPE_QUERY = "Return" + "Type";
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-7a",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "factory-return-types.ts" },
 };
 
 const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -75,12 +70,12 @@ describe("CD-7a existing raw factory-type query check", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `type First = ${TYPE_QUERY}<typeof createFirst>;`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `type Third = ${TYPE_QUERY}<typeof createThird>;`,
           },
@@ -103,22 +98,22 @@ describe("CD-7a existing raw factory-type query check", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `const literal = '${TYPE_QUERY}<typeof create>';`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `const stable = 1; // ${TYPE_QUERY}<typeof create>`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `type Twice = [${TYPE_QUERY}<typeof first>, ${TYPE_QUERY}<typeof second>];`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 4, column: 0 },
             snippet: `type Unclosed = ${TYPE_QUERY}<typeof factory`,
           },
@@ -140,12 +135,12 @@ describe("CD-7a existing raw factory-type query check", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `type Profile = ${TYPE_QUERY}<typeof factory>; // abcdefghijklmnopqrstuvwxyzabcdefgh`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `type Profile = ${TYPE_QUERY}<typeof factory>; // abcdefghijklmnopqrstuvwxyzabcdefgh…`,
           },

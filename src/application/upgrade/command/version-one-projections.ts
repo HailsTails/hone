@@ -6,23 +6,16 @@ import type { ProjectionWrite } from "../../../domain/runner/runner-result-types
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
-import type { SelectionRepositoryOf } from "../../ports/selection/selection-repository.ts";
-import type { ProjectRequest } from "../../projection/run-project.ts";
-import type { CheckRequest } from "../../run/check/run-check.ts";
 import { teamConfigsOf } from "../proof/team-config-finder.ts";
 import {
   type VersionOneProjectionsOf,
   versionOneProjectionsOver,
 } from "../proof/version-one-projections-reading.ts";
 
-export type VersionOneProject = (
-  request: ProjectRequest,
-) => Promise<Result<readonly ProjectionWrite[], LoadFailure>>;
+export type VersionOneProject = () => Promise<Result<readonly ProjectionWrite[], LoadFailure>>;
 
 export type VersionOneProjectionsRequest = {
   readonly project: VersionOneProject;
-  readonly check: CheckRequest;
-  readonly selectionRepositoryOf: SelectionRepositoryOf;
   readonly loadFailureDetail: LoadFailureDetail;
   readonly fileText: FileTextPort;
   readonly path: PathPort;
@@ -35,11 +28,7 @@ export const versionOneProjectionsOfRepository = (
 ): VersionOneProjectionsOf =>
   versionOneProjectionsOver({
     project: async () => {
-      const projected = await request.project({
-        ...request.check,
-        fileText: request.fileText,
-        selectionRepositoryOf: request.selectionRepositoryOf,
-      });
+      const projected = await request.project();
       return projected.outcome === "failed"
         ? {
             outcome: "failed",

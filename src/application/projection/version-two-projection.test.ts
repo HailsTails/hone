@@ -10,7 +10,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import type { ProjectedFile } from "../../domain/runner/checks-run-report.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { CheckedTree } from "../run/checked-tree-of.ts";
-import type { SettingsReading } from "../run/settings/read-settings.ts";
+import type { NamedSettingsReading } from "../run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../run/version-two-run.ts";
 import { versionTwoProjectionOver } from "./version-two-projection.ts";
 
@@ -44,15 +44,14 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
-const SETTINGS: SettingsReading = {
+const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-    bindings: [],
-    clauseRoots: [],
+    selected: [],
+    notAdopted: [],
+    notRun: [],
     excluded: [],
     eslintConfigRoots: [],
-    fileExceptionWhyChains: "required",
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },

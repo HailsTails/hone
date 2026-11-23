@@ -1,10 +1,14 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 
+import {
+  type CheckAddressText,
+  checkNamesOf,
+} from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { readBoundCatalogue } from "../../../../content-files/symptom-catalogues/bound-catalogue.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { createSettingsSources } from "../../../../hone-config-file/settings-sources.ts";
+import { createCheckPieceSource } from "../../../../hone-config-file/settings-sources.ts";
 import { createDefaultDirectoryTreePort } from "../../../../node/file-system/directory-tree-port.ts";
 import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
@@ -17,7 +21,7 @@ import {
   type EslintToolchainModules,
 } from "../toolchain/eslint-toolchain.ts";
 import { type AnsweredFile, checksProjectionText } from "./checks-projection.ts";
-import { type ProjectedBinding, projectedChecksOf } from "./projected-checks.ts";
+import { projectedNamedChecksOf } from "./projected-checks.ts";
 
 type EslintLine = "eslint-10" | "eslint-9";
 
@@ -86,40 +90,40 @@ const catalogue = () => {
   return reading.value.catalogue;
 };
 
-const bindingOf = (request: { readonly clause: string }): ProjectedBinding => {
-  const address = clauseAddressSchema.parse(request.clause);
-  const sources = createSettingsSources({
-    directory: createDefaultDirectoryPort({}),
-    repoRoot: INSTALL_ROOT,
+const bindingOf = (request: { readonly address: CheckAddressText }): CheckBinding => {
+  const names = checkNamesOf({ text: request.address });
+  assert(names !== undefined, `${request.address} is a named check`);
+  const readPiece = createCheckPieceSource({
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
     fileText,
     path,
   });
-  const piece = sources.pieceClause({
-    ruleSetRoot: INSTALL_ROOT,
-    clause: address,
-    mechanism: ESLINT,
-  });
-  assert(piece.outcome === "ok", `${request.clause} resolves its eslint piece`);
+  const piece = readPiece({ ruleSetRoot: INSTALL_ROOT, names, mechanism: ESLINT });
+  assert(piece.outcome === "ok", `${request.address} resolves its eslint piece`);
   return {
-    mechanism: ESLINT,
-    clause: { address, pieceRoot: piece.value.pieceRoot, settings: piece.value.settings },
+    address: request.address,
+    engine: ESLINT,
+    anchor: piece.value.anchor,
+    pieceRoot: piece.value.pieceRoot,
+    settings: piece.value.settings,
+    checkSettings: {},
+    edition: piece.value.editions.default,
   };
 };
 
 const versionTwoText = (): string => {
-  const checks = projectedChecksOf({
+  const checks = projectedNamedChecksOf({
     checks: catalogue().checks,
     bindings: [
-      bindingOf({ clause: "CD-2#non-null-assertions" }),
-      bindingOf({ clause: "CD-6#naming-convention" }),
-      bindingOf({ clause: "CD-14#class-syntax" }),
-      bindingOf({ clause: "CD-14#static-only-class" }),
-      bindingOf({ clause: "CD-27#focused-tests" }),
-      bindingOf({ clause: "CD-27#skipped-tests" }),
-      bindingOf({ clause: "CD-40#parameter-count" }),
-      bindingOf({ clause: "CD-44#parameter-reassignment" }),
+      bindingOf({ address: "claimed-type#non-null-assertions" }),
+      bindingOf({ address: "name-off-its-casing#naming-convention" }),
+      bindingOf({ address: "authored-class-or-this#class-keyword" }),
+      bindingOf({ address: "authored-class-or-this#static-members-only" }),
+      bindingOf({ address: "test-switched-off#focused-tests" }),
+      bindingOf({ address: "test-switched-off#skipped-tests" }),
+      bindingOf({ address: "positional-parameters#parameter-count" }),
+      bindingOf({ address: "rebinding#parameter-reassignment" }),
     ],
   });
   assert(checks.outcome === "ok", "the version 2 checks project");

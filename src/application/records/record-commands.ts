@@ -1,7 +1,7 @@
 import type {
-  AttributedNativeException,
-  Finding,
-  GovernedRun,
+  AttributedCheckException,
+  CheckFinding,
+  NamedGovernedRun,
 } from "../../domain/finding/governance.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import { type DebtOutcome, debtOutcomesOf } from "../../domain/records/debt/debt-effects.ts";
@@ -48,9 +48,9 @@ export type RecordDebtPorts = {
 };
 
 export type RecordDebtRequest = {
-  readonly findings: readonly Finding[];
-  readonly unrecorded: readonly AttributedNativeException[];
-  readonly runs: readonly GovernedRun[];
+  readonly findings: readonly CheckFinding[];
+  readonly unrecorded: readonly AttributedCheckException[];
+  readonly runs: readonly NamedGovernedRun[];
   readonly touched: TouchedSet;
   readonly leave: readonly RepoPath[];
 };

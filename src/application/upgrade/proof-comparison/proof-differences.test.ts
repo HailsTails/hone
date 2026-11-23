@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
+import type {
+  AttributedNativeException,
+  CheckFinding,
+  Finding,
+} from "../../../domain/finding/governance.ts";
 import type {
   Check,
   Engine,
@@ -150,7 +154,6 @@ const EMPTY_BEFORE: CheckReport = {
   unmeasured: [],
   projectionProblems: [],
   assessment: [],
-  readFirst: [],
 };
 
 const EMPTY_AFTER: RunReport = {
@@ -184,7 +187,13 @@ const LOOP_FINDING: Finding = {
   mechanism: AUDIT,
 };
 
-const NAMED_LOOP_FINDING: Finding = { ...LOOP_FINDING, check: "loop-keyword#loops" };
+const NAMED_LOOP_FINDING: CheckFinding = {
+  file: SRC_A,
+  anchor: { line: 3, column: 1 },
+  snippet: "the loop line",
+  mechanism: AUDIT,
+  check: "loop-keyword#loops",
+};
 
 const CARVE_OUT: ExceptionRecord = {
   kind: "file-carve-out",
@@ -311,7 +320,7 @@ describe("proofDifferencesOf", () => {
   });
 
   it("reads version 2's finding at the clause of the check it names, so a wrong attribution is a difference", () => {
-    const misattributed: Finding = { ...LOOP_FINDING, check: "rebinding#test-body" };
+    const misattributed: CheckFinding = { ...NAMED_LOOP_FINDING, check: "rebinding#test-body" };
     expect(
       differencesBetween({
         before: { findings: [LOOP_FINDING] },
@@ -403,17 +412,21 @@ describe("proofDifferencesOf", () => {
     ]);
   });
 
-  it("names a finding whose check version 2 does not name, never reading it at the finding's own clause", () => {
+  it("does not map a named finding raised by an engine that does not measure its check", () => {
     expect(
       differencesBetween({
         before: { findings: [LOOP_FINDING] },
-        after: { findings: [LOOP_FINDING] },
+        after: {
+          findings: [
+            { ...NAMED_LOOP_FINDING, check: "loop-keyword#test-body", mechanism: "eslint" },
+          ],
+        },
       }),
     ).toEqual([
       {
         section: "findings",
         onlyBefore: ["CD-15#loops src/a.ts 3:1"],
-        onlyAfter: ["unknown-check none src/a.ts 3:1"],
+        onlyAfter: ["unknown-check loop-keyword#test-body src/a.ts 3:1"],
       },
     ]);
   });

@@ -16,7 +16,7 @@ export type OptionVerdict =
   | { readonly kind: "not-plain"; readonly reason: NotPlainReason };
 
 export type ScriptOptionJudge = (request: {
-  readonly option: ScriptOption;
+  readonly option: Pick<ScriptOption, "location" | "effect" | "settlement" | "command">;
 }) => Promise<Result<OptionVerdict, RunnerFailure>>;
 
 type JudgeContext = {

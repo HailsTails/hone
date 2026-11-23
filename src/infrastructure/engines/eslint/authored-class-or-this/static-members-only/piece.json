@@ -1,12 +1,6 @@
 {
   "version": 2,
-  "anchor": {
-    "kind": "keyword",
-    "keyword": "class"
-  },
   "settings": {
-    "pluginNamespace": "hone",
-    "pluginModule": "eslint-plugin.ts",
     "rule": "no-extraneous-class",
     "options": [
       {

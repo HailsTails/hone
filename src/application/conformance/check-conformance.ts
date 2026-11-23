@@ -1,17 +1,22 @@
+import { gatheredOutcomes } from "../../domain/gathered-outcomes.ts";
+import { checkNamesOf } from "../../domain/language-layer/check-address-text.ts";
+import { isRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
+import type { CheckBinding } from "../../domain/runner/check-binding.ts";
+import { casesByEdition } from "../../domain/runner/edition-runs.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
-import type { EnginePort } from "../ports/engine/engine-port.ts";
+import type { NamedConformancePort } from "../ports/engine/engine-port.ts";
 import type { RunnerLocation } from "../ports/engine/runner-location.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
 import type {
   NamedCheckExamples,
   NamedCheckExamplesRepository,
 } from "../ports/rule-set/named-check-examples.ts";
-import { conformBoundClause } from "./clause-conformance.ts";
+import type { RepoPathOf } from "./conformance-testing-types.ts";
 import type {
+  CheckConformanceFailure,
   CheckRequest,
   CheckUnderTest,
-  ConformanceFailure,
   ConformanceSetupFailure,
 } from "./conformance-testing-types.ts";
 
@@ -24,16 +29,18 @@ type ExamplesRequest = CheckRequest & {
 const examplesOf = (
   request: ExamplesRequest,
 ): Result<NamedCheckExamples, ConformanceSetupFailure> => {
+  if (checkNamesOf({ text: request.check }) === undefined) {
+    return { outcome: "failed", error: { kind: "address-invalid", detail: request.check } };
+  }
   const read = request.examples.read(request);
-  return read.outcome === "failed"
-    ? {
-        outcome: "failed",
-        error: {
-          kind: "rule-set-unloadable",
-          detail: request.loadFailureDetail({ failure: read.error }),
-        },
-      }
-    : read;
+  if (read.outcome === "ok") return read;
+  return {
+    outcome: "failed",
+    error: {
+      kind: read.error.kind === "piece-missing" ? "check-missing" : "rule-set-unloadable",
+      detail: request.loadFailureDetail({ failure: read.error }),
+    },
+  };
 };
 
 export const checkUnderTestOf = (
@@ -60,39 +67,61 @@ export const checkUnderTestOf = (
   };
 };
 
-export const checkConformanceOf = (
+export const checkConformanceOf = async (
   request: ExamplesRequest &
-    Omit<RunnerLocation, "mechanism"> & { readonly enginePort: EnginePort },
-): Promise<Result<readonly ConformanceFailure[], ConformanceSetupFailure>> => {
+    Omit<RunnerLocation, "mechanism"> & { readonly enginePort: NamedConformancePort },
+): Promise<Result<readonly CheckConformanceFailure[], ConformanceSetupFailure>> => {
   const read = examplesOf(request);
-  if (read.outcome === "failed") {
-    return Promise.resolve(read);
-  }
-  const translated = request.examples.runnerAddress(request);
-  if (translated.outcome === "failed") {
-    return Promise.resolve({
+  if (read.outcome === "failed") return read;
+
+  const mechanism = request.engine;
+  const runner = await request.enginePort.load({ ...request, mechanism });
+  if (runner.outcome === "failed") {
+    return {
       outcome: "failed",
       error: {
-        kind: "address-invalid",
-        detail: request.loadFailureDetail({ failure: translated.error }),
+        kind: "runner-unloadable",
+        detail: request.loadFailureDetail({ failure: runner.error }),
       },
-    });
+    };
   }
   const { piece, examples } = read.value;
-  const clause = {
-    address: translated.value,
+  const binding: CheckBinding = {
+    address: request.check,
+    engine: mechanism,
     anchor: piece.anchor,
     pieceRoot: piece.pieceRoot,
     settings: piece.settings,
-    clauseSettings: defaultClauseSettings({ declarations: piece.declarations }),
+    forms: piece.forms,
+    checkSettings: defaultClauseSettings({ declarations: piece.declarations }),
     edition: piece.editions.default,
   };
-  const { installRoot, moduleExtension, modules, path, engine, enginePort, loadFailureDetail } =
-    request;
-  return conformBoundClause({
-    location: { installRoot, moduleExtension, modules, path, mechanism: engine },
-    engine: enginePort,
-    loadFailureDetail,
-    bound: { clause, cases: examples },
+  const conformed = gatheredOutcomes({
+    outcomes: await Promise.all(
+      casesByEdition({ cases: examples, defaultEdition: binding.edition }).map(
+        ({ edition, cases }) =>
+          request.enginePort.conform({
+            binding: { ...binding, edition },
+            cases,
+            runner: runner.value,
+          }),
+      ),
+    ),
   });
+  return conformed.outcome === "ok"
+    ? conformed
+    : {
+        outcome: "failed",
+        error: {
+          kind: "runner-refused",
+          detail: request.loadFailureDetail({
+            failure: { kind: "runner-failed", mechanism, failure: conformed.error },
+          }),
+        },
+      };
 };
+
+export const repoPathOf: RepoPathOf = ({ file }) =>
+  isRepoPath(file)
+    ? { outcome: "ok", value: file }
+    : { outcome: "failed", error: { kind: "file-invalid", detail: file } };

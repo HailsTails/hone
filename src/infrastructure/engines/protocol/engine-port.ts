@@ -1,14 +1,23 @@
-import type { EnginePort } from "../../../application/ports/engine/engine-port.ts";
-import { checkConformance } from "./conformance.ts";
+import type {
+  NamedConformancePort,
+  NamedEnginePort,
+} from "../../../application/ports/engine/engine-port.ts";
+import { namedCheckConformance } from "./conformance.ts";
 import {
-  projectMechanism,
-  runMechanismWithRecords,
-} from "./embedded/embedded-mechanism-dispatch.ts";
-import { engineProjectionOf, engineRunOf, loadedEngineOf } from "./engine-run/engine-run.ts";
+  loadedNamedRunnerOf,
+  namedEngineProjectionOf,
+  namedEngineRunOf,
+} from "./engine-run/engine-run.ts";
 
-export const createDefaultEnginePort = (_options: Record<string, never>): EnginePort => ({
-  load: loadedEngineOf,
-  run: { checks: engineRunOf, withRecords: runMechanismWithRecords },
-  project: { checks: engineProjectionOf, withRecords: projectMechanism },
-  conform: checkConformance,
+export const createNamedConformancePort = (
+  _options: Record<string, never>,
+): NamedConformancePort => ({
+  load: loadedNamedRunnerOf,
+  conform: namedCheckConformance,
+});
+
+export const createNamedEnginePort = (_options: Record<string, never>): NamedEnginePort => ({
+  load: loadedNamedRunnerOf,
+  run: namedEngineRunOf,
+  project: namedEngineProjectionOf,
 });

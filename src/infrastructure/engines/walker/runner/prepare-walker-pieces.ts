@@ -5,15 +5,15 @@ import type {
   ModuleLoaderPort,
 } from "../../../../application/ports/host/module-loader-port.ts";
 import type { Result } from "../../../../domain/result.ts";
+import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
 import type { WalkerFile, WalkerRepository } from "./pieces/walker-piece.ts";
 import type { SyntaxApi } from "./toolchain/typescript-parse.ts";
 
-export type SelectedWalkerClause = {
+export type SelectedWalkerBinding = {
   readonly modulePath: string;
-  readonly clause: RunnerClause;
+  readonly binding: CheckBinding;
 };
 
 export type LoadedPreparedWalkerCheck = {
@@ -23,12 +23,12 @@ export type LoadedPreparedWalkerCheck = {
 
 export type PreparedWalkerPiece = {
   readonly modulePath: string;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly check: LoadedPreparedWalkerCheck;
 };
 
 export type PrepareWalkerPiecesRequest = {
-  readonly selected: readonly SelectedWalkerClause[];
+  readonly selected: readonly SelectedWalkerBinding[];
   readonly repository: WalkerRepository;
   readonly syntaxApi: SyntaxApi;
   readonly modules: ModuleLoaderPort;
@@ -68,31 +68,35 @@ const pieceInvalid = (request: {
   },
 });
 
-const firstPerModule = (request: {
-  readonly selected: readonly SelectedWalkerClause[];
-}): readonly SelectedWalkerClause[] =>
-  request.selected.filter(
-    (entry, index) =>
-      request.selected.findIndex((other) => other.modulePath === entry.modulePath) === index,
-  );
+type ImplementationGroup = {
+  readonly selected: SelectedWalkerBinding;
+  readonly bindings: CheckBinding[];
+};
 
-const clausesForModule = (request: {
-  readonly selected: readonly SelectedWalkerClause[];
-  readonly modulePath: string;
-}): readonly RunnerClause[] =>
-  request.selected
-    .filter((entry) => entry.modulePath === request.modulePath)
-    .map((entry) => entry.clause);
+const groupsByImplementation = (request: {
+  readonly selected: readonly SelectedWalkerBinding[];
+}): readonly ImplementationGroup[] => {
+  const groups = new Map<string, ImplementationGroup>();
+  for (const selected of request.selected) {
+    const group = groups.get(selected.modulePath);
+    if (group === undefined) {
+      groups.set(selected.modulePath, { selected, bindings: [selected.binding] });
+    } else {
+      group.bindings.push(selected.binding);
+    }
+  }
+  return [...groups.values()];
+};
 
 const acceptedPreparation = (request: {
   readonly returned: unknown;
-  readonly selected: SelectedWalkerClause;
-  readonly clauses: readonly RunnerClause[];
+  readonly selected: SelectedWalkerBinding;
+  readonly bindings: readonly CheckBinding[];
 }): PreparedWalkerPieceResult => {
   const parsed = walkerPreparationResultSchema.safeParse(request.returned);
   if (!parsed.success) {
     return pieceInvalid({
-      pieceRoot: request.selected.clause.pieceRoot,
+      pieceRoot: request.selected.binding.pieceRoot,
       detail: parsed.error.message,
     });
   }
@@ -103,7 +107,7 @@ const acceptedPreparation = (request: {
     outcome: "ok",
     value: {
       modulePath: request.selected.modulePath,
-      clauses: request.clauses,
+      bindings: request.bindings,
       check: parsed.data.value,
     },
   };
@@ -111,55 +115,52 @@ const acceptedPreparation = (request: {
 
 const acceptedModule = (request: {
   readonly loaded: ModuleLoad;
-  readonly selected: SelectedWalkerClause;
-  readonly clauses: readonly RunnerClause[];
+  readonly selected: SelectedWalkerBinding;
+  readonly bindings: readonly CheckBinding[];
   readonly repository: WalkerRepository;
   readonly syntaxApi: SyntaxApi;
 }): PreparedWalkerPieceResult => {
   if (request.loaded.outcome === "failed") {
     return pieceInvalid({
-      pieceRoot: request.selected.clause.pieceRoot,
+      pieceRoot: request.selected.binding.pieceRoot,
       detail: request.loaded.error.detail,
     });
   }
   const parsed = registeredWalkerPieceModuleSchema.safeParse(request.loaded.value);
   if (!parsed.success) {
     return pieceInvalid({
-      pieceRoot: request.selected.clause.pieceRoot,
+      pieceRoot: request.selected.binding.pieceRoot,
       detail: parsed.error.message,
     });
   }
   try {
     return acceptedPreparation({
       returned: parsed.data.check.prepare({
-        clauses: request.clauses,
+        bindings: request.bindings,
         repository: request.repository,
         syntaxApi: request.syntaxApi,
       }),
       selected: request.selected,
-      clauses: request.clauses,
+      bindings: request.bindings,
     });
   } catch (thrown) {
     return pieceInvalid({
-      pieceRoot: request.selected.clause.pieceRoot,
+      pieceRoot: request.selected.binding.pieceRoot,
       detail: thrown instanceof Error ? thrown.message : String(thrown),
     });
   }
 };
 
 const loadModule = (request: {
-  readonly selected: SelectedWalkerClause;
+  readonly group: ImplementationGroup;
   readonly preparation: PrepareWalkerPiecesRequest;
 }): Promise<PreparedWalkerPieceResult> => {
-  const clauses = clausesForModule({
-    selected: request.preparation.selected,
-    modulePath: request.selected.modulePath,
-  });
-  return request.preparation.modules.load({ path: request.selected.modulePath }).then((loaded) =>
+  const { selected, bindings } = request.group;
+  return request.preparation.modules.load({ path: selected.modulePath }).then((loaded) =>
     acceptedModule({
       loaded,
-      selected: request.selected,
-      clauses,
+      selected,
+      bindings,
       repository: request.preparation.repository,
       syntaxApi: request.preparation.syntaxApi,
     }),
@@ -186,5 +187,5 @@ export const prepareWalkerPieces = (
   request: PrepareWalkerPiecesRequest,
 ): Promise<PrepareWalkerPiecesResult> =>
   Promise.all(
-    firstPerModule(request).map((selected) => loadModule({ selected, preparation: request })),
+    groupsByImplementation(request).map((group) => loadModule({ group, preparation: request })),
   ).then((preparations) => collectPreparations({ preparations }));

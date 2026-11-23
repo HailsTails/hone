@@ -11,11 +11,12 @@ import type {
 } from "../../../domain/report/run-report.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
-import type { SelectedClause } from "../../../domain/settings/selection/selection.ts";
-import type { EngineRun } from "../../ports/engine/engine-run.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
+import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import { typescriptFilesOf } from "../checked-tree-of.ts";
 
 type CatalogueEngines = Pick<SymptomCatalogue, "engines">;
+type Selected = Pick<CheckBinding, "address" | "engine">;
 
 const engineOf = (request: {
   readonly catalogue: CatalogueEngines;
@@ -45,19 +46,19 @@ export const engineMeasurementOf = (request: {
 };
 
 const runMeasurementOf = (request: {
-  readonly run: EngineRun;
-  readonly selected: readonly SelectedClause[];
+  readonly run: NamedEngineRun;
+  readonly selected: readonly Selected[];
 }): RunMeasurement => ({
   mechanism: request.run.mechanism,
   selected: request.selected
-    .filter((clause) => clause.mechanism === request.run.mechanism)
-    .map((clause) => clause.address),
+    .filter(({ engine }) => engine === request.run.mechanism)
+    .map(({ address }) => address),
   measured: request.run.measured,
 });
 
 export const runMeasurementsOf = (request: {
-  readonly runs: readonly EngineRun[];
-  readonly selected: readonly SelectedClause[];
+  readonly runs: readonly NamedEngineRun[];
+  readonly selected: readonly Selected[];
   readonly tracked: readonly RepoPath[];
   readonly excluded: readonly RepoPath[];
 }): RunMeasurements => ({
@@ -80,8 +81,8 @@ const measuredNothingOf = (request: {
 
 const notRunOf = (request: {
   readonly catalogue: CatalogueEngines;
-  readonly run: EngineRun;
-  readonly selected: readonly SelectedClause[];
+  readonly run: NamedEngineRun;
+  readonly selected: readonly Selected[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
@@ -106,7 +107,7 @@ const notRunOf = (request: {
 
 const projectionProblemOf = (request: {
   readonly engine: Engine;
-  readonly run: EngineRun;
+  readonly run: NamedEngineRun;
 }): readonly RunProjectionProblem[] =>
   request.run.projection === "out-of-date"
     ? [{ scope: "projection", engine: request.engine, state: "out-of-date" }]
@@ -114,24 +115,24 @@ const projectionProblemOf = (request: {
 
 const problemOf = (request: {
   readonly catalogue: CatalogueEngines;
-  readonly run: EngineRun;
+  readonly run: NamedEngineRun;
 }): readonly RunProjectionProblem[] => {
   const engine = engineOf({ catalogue: request.catalogue, mechanism: request.run.mechanism });
   return [
     ...projectionProblemOf({ engine, run: request.run }),
-    ...request.run.slices.map((slice): RunProjectionProblem => ({
+    ...request.run.slices.map(({ state, slice }): RunProjectionProblem => ({
       scope: "slice",
       engine,
-      state: slice.state,
-      slice: slice.slice,
+      state,
+      slice,
     })),
   ];
 };
 
 export const engineUnmeasuredOf = (request: {
   readonly catalogue: CatalogueEngines;
-  readonly runs: readonly EngineRun[];
-  readonly selected: readonly SelectedClause[];
+  readonly runs: readonly NamedEngineRun[];
+  readonly selected: readonly Selected[];
   readonly tracked: readonly RepoPath[];
 }): readonly EngineNotRun[] =>
   request.runs.flatMap((run) =>
@@ -145,7 +146,7 @@ export const engineUnmeasuredOf = (request: {
 
 export const engineProblemsOf = (request: {
   readonly catalogue: CatalogueEngines;
-  readonly runs: readonly EngineRun[];
+  readonly runs: readonly NamedEngineRun[];
 }): readonly RunProjectionProblem[] =>
   request.runs.flatMap((run) => problemOf({ catalogue: request.catalogue, run }));
 

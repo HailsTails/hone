@@ -407,13 +407,7 @@ describe("the declarations the public type entries ship, emitted in memory by th
       audit: ["folderScope", "editionReaches", "isEdition"],
       "eslint-plugin": ["export default plugin;"],
       "rule-set": [],
-      testing: [
-        "clauseConformanceOf",
-        "clauseUnderTestOf",
-        "repoPathOf",
-        "checkUnderTestOf",
-        "checkConformanceOf",
-      ],
+      testing: ["repoPathOf", "checkUnderTestOf", "checkConformanceOf"],
     });
   });
 

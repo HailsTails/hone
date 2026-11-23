@@ -4,38 +4,32 @@ import type { AbsolutePath } from "../../../../../domain/repository/absolute-pat
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type {
-  Hit,
-  MeasuredPair,
-  NativeException,
-} from "../../../../../domain/runner/runner-result-types.ts";
+  CheckHit,
+  CheckMeasurement,
+  CheckNativeException,
+} from "../../../../../domain/runner/check-observations.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { MeasuredPair } from "../../../../../domain/runner/runner-result-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type {
   MisnamedRuleId,
-  SelectedCheck,
+  SelectedNamedCheck,
   VersionOneRuleId,
 } from "../checks-runner/checks-run-types.ts";
 import type { LintedFile } from "../toolchain/eslint-instance.ts";
-import { hitsCutFrom, messageReadingOf } from "./lint-hits.ts";
+import { namedHitsCutFrom, namedMessageReadingOf } from "./lint-hits.ts";
 import { misnamedRuleIdsIn } from "./misnamed-rule-ids.ts";
 import { type LinesReader, sourceLinesFor } from "./source-lines.ts";
 
 type Outcome<Value> = Result<Value, RunnerFailure>;
-
-type FileFindings = {
-  readonly hits: readonly Hit[];
-  readonly nativeExceptions: readonly NativeException[];
-  readonly measured: readonly MeasuredPair[];
-  readonly misnamedRuleIds: readonly MisnamedRuleId[];
-};
 
 type FileRequest = {
   readonly linted: LintedFile;
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
   readonly sourceLines: LinesReader;
-  readonly selected: readonly SelectedCheck[];
+  readonly selected: readonly SelectedNamedCheck[];
   readonly checkRuleIds: readonly string[];
   readonly versionOneRuleIds: readonly VersionOneRuleId[];
 };
@@ -87,69 +81,43 @@ export const measuredOn = (request: {
   return [...distinct.values()].map((clause) => ({ clause, file: request.file }));
 };
 
-const checkFindingsOf = (
-  request: FileRequest & { readonly file: RepoPath; readonly entry: SelectedCheck },
-): Outcome<Omit<FileFindings, "measured" | "misnamedRuleIds">> => {
-  const { entry } = request;
-  const reading = messageReadingOf({
-    file: request.file,
-    messages: request.linted.messages,
-    selected: [{ ruleId: entry.ruleId, clause: { address: entry.clause } }],
-  });
-  if (reading.outcome === "failed") {
-    return reading;
-  }
-  const lines = sourceLinesFor({
-    file: request.file,
-    ruleHits: reading.value.ruleHits,
-    readLines: request.sourceLines,
-  });
-  return lines.outcome === "failed"
-    ? lines
-    : {
-        outcome: "ok",
-        value: {
-          hits: hitsCutFrom({
-            file: request.file,
-            ruleHits: reading.value.ruleHits,
-            lines: lines.value,
-          }).map((hit) => ({ ...hit, check: entry.address })),
-          nativeExceptions: reading.value.nativeExceptions.map((exception) => ({
-            ...exception,
-            check: entry.address,
-          })),
-        },
-      };
+type NamedFileFindings = {
+  readonly hits: readonly CheckHit[];
+  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly measured: readonly CheckMeasurement[];
+  readonly misnamedRuleIds: readonly MisnamedRuleId[];
 };
 
-export const lintedFindingsOf = (request: FileRequest): Outcome<FileFindings> => {
-  const file = parseableFile(request);
-  if (file.outcome === "failed") {
-    return file;
-  }
-  const perCheck = gatheredOutcomes({
-    outcomes: request.selected.map((entry) =>
-      listedOutcome({ outcome: checkFindingsOf({ ...request, file: file.value, entry }) }),
+export const namedLintedFindingsOf = (request: FileRequest): Outcome<NamedFileFindings> => {
+  const parsed = parseableFile(request);
+  if (parsed.outcome === "failed") return parsed;
+  const file = parsed.value;
+  const messages = request.linted.messages;
+  const selected = request.selected.map(({ address, ruleId }) => ({ ruleId, check: address }));
+  const read = gatheredOutcomes({
+    outcomes: selected.map((rule) =>
+      listedOutcome({ outcome: namedMessageReadingOf({ file, messages, selected: [rule] }) }),
     ),
   });
-  return perCheck.outcome === "failed"
-    ? perCheck
-    : {
-        outcome: "ok",
-        value: {
-          hits: perCheck.value.flatMap((found) => found.hits),
-          nativeExceptions: perCheck.value.flatMap((found) => found.nativeExceptions),
-          measured: measuredOn({
-            file: file.value,
-            linted: request.linted,
-            clauses: request.selected.map((entry) => entry.clause),
-          }),
-          misnamedRuleIds: misnamedRuleIdsIn({
-            file: file.value,
-            messages: request.linted.messages,
-            checkRuleIds: request.checkRuleIds,
-            versionOneRuleIds: request.versionOneRuleIds,
-          }),
-        },
-      };
+  if (read.outcome === "failed") return read;
+  const ruleHits = read.value.flatMap((observed) => observed.ruleHits);
+  const lines = sourceLinesFor({ file, ruleHits, readLines: request.sourceLines });
+  if (lines.outcome === "failed") return lines;
+  const checked = messages.some(({ ruleId }) => ruleId === null)
+    ? []
+    : [...new Set(selected.map(({ check }) => check))];
+  return {
+    outcome: "ok",
+    value: {
+      hits: namedHitsCutFrom({ file, ruleHits, lines: lines.value }),
+      nativeExceptions: read.value.flatMap((observed) => observed.nativeExceptions),
+      measured: checked.map((check) => ({ check, file })),
+      misnamedRuleIds: misnamedRuleIdsIn({
+        file,
+        messages,
+        checkRuleIds: request.checkRuleIds,
+        versionOneRuleIds: request.versionOneRuleIds,
+      }),
+    },
+  };
 };

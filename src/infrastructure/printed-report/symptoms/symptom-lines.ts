@@ -1,5 +1,5 @@
 import { findingSiteOf } from "../../../domain/finding/check-site.ts";
-import type { Finding } from "../../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   CorrectUse,
   Indication,
@@ -55,11 +55,12 @@ export const symptomLine = (
     .map((indication) => indicationText({ indication }))
     .join("; ");
   const uses = [...symptom.correctUses, knownDebt].map((use) => useSentence({ use })).join(" ");
-  return `${symptom.name}: ${symptom.title}. May indicate: ${indications}. The breach usually sits ${symptom.breachUsuallySits}.${recipeSentence(symptom)} ${uses} Read ${request.page}#${symptom.name}`;
+  const source = symptom.sourceFile ?? `${request.page}#${symptom.name}`;
+  return `${symptom.name}: ${symptom.title}. May indicate: ${indications}. The breach usually sits ${symptom.breachUsuallySits}.${recipeSentence(symptom)} ${uses} Read ${source}`;
 };
 
 export const findingSymptomsOf = (
-  request: CatalogueRequest & { readonly findings: readonly Finding[] },
+  request: CatalogueRequest & { readonly findings: readonly CheckFinding[] },
 ): readonly Symptom[] => {
   const symptoms = request.findings.flatMap((finding) => {
     const site = findingSiteOf({ catalogue: request.catalogue, finding });

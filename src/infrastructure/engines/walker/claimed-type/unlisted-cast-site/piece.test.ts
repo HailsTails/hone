@@ -2,13 +2,11 @@ import { assert, describe, expect, it, vi } from "vitest";
 
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
 import { walkerPieceSettingsSchema } from "../../runner/pieces/walker-check-schema.ts";
@@ -35,20 +33,17 @@ const defaultParsePort = loadedParsePort.value;
 const EXPECTATION = "@ts-expect-" + "error";
 const IGNORE = "@ts-" + "ignore";
 const NOCHECK = "@ts-" + "nocheck";
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-2"),
-  clause: clauseIdOf("cast-expressions"),
-};
+const ADDRESS: CheckAddressText = "claimed-type#unlisted-cast-site";
 const TEST_FILE = repoPathOf("src/basket.test.ts");
 const GENERATED_FILE = repoPathOf("dist/basket.ts");
 const SETTINGS = walkerPieceSettingsSchema.parse(piece.settings);
 
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-2",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: SETTINGS,
 };
@@ -77,15 +72,18 @@ const castFreeRun = () =>
     installRoot: absoluteRootOf("/install"),
     files: [TEST_FILE, GENERATED_FILE],
     trackedPaths: [TEST_FILE, GENERATED_FILE],
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
+    answered: [],
+    declaredConfigRoots: [],
+    declaredConfigLookup: undefined,
   });
 
 const expectationOn = (request: { readonly line: number; readonly text: string }) => ({
   kind: "inline-disable",
-  clause: ADDRESS,
+  check: ADDRESS,
   file: TEST_FILE,
   ...request,
-  reach: "one-clause",
+  reach: "one-check",
 });
 
 describe("CD-2 audit piece.json", () => {
@@ -100,13 +98,16 @@ describe("CD-2 audit piece.json", () => {
     expect(await castFreeRun()).toEqual({
       outcome: "ok",
       value: {
+        projection: "none",
+        slices: [],
+        misnamedRuleIds: [],
         hits: [],
         nativeExceptions: [
           expectationOn({ line: 1, text: `// ${NOCHECK}` }),
           expectationOn({ line: 3, text: `// ${EXPECTATION} until lines is typed (#42)` }),
           expectationOn({ line: 6, text: `// ${IGNORE}` }),
         ],
-        measured: [{ clause: ADDRESS, file: TEST_FILE }],
+        measured: [{ check: ADDRESS, file: TEST_FILE }],
       },
     });
   });

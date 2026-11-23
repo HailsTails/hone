@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Finding } from "../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../domain/finding/governance.ts";
 import type {
   Case,
   Check,
@@ -269,27 +269,23 @@ const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-ty
 
 const RECORDS_FOLDER = repoPathOf("hone-records");
 
-const CLOCK_FINDING: Finding = {
-  clause: CLOCK_SOURCES,
+const CLOCK_FINDING: CheckFinding = {
+  check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
   anchor: { line: 14, column: 0 },
   snippet: "chargedAt",
 };
 
-const UNCATALOGUED_FINDING: Finding = {
+const UNCATALOGUED_FINDING: CheckFinding = {
   ...CLOCK_FINDING,
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-99"),
-    clause: clauseIdOf("nowhere"),
-  },
+  check: "unknown-symptom#nowhere",
 };
 
-const NEW_FILE_FINDING: Finding = { ...CLOCK_FINDING, file: NEW_FILE };
+const NEW_FILE_FINDING: CheckFinding = { ...CLOCK_FINDING, file: NEW_FILE };
 
-const TOUCHED_FINDING: Finding = {
-  clause: CAST_EXPRESSIONS,
+const TOUCHED_FINDING: CheckFinding = {
+  check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: TOUCHED_FILE,
   anchor: { line: 4, column: 9 },
@@ -564,13 +560,13 @@ describe("hone record-debt over a run's unanswered findings", () => {
     expect(recorded).toEqual({
       outcome: "ok",
       value: [
+        { address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" },
         {
-          address: "CD-99#nowhere",
+          address: "unknown-symptom#nowhere",
           file: ORDER_FILE,
           effect: "unrecordable",
           because: { kind: "no-check" },
         },
-        { address: "date-used-directly#clock-sources", file: ORDER_FILE, effect: "recorded" },
       ],
     });
     expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith(
@@ -600,7 +596,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
-          address: "CD-99#nowhere",
+          address: "unknown-symptom#nowhere",
           file: ORDER_FILE,
           effect: "unrecordable",
           because: { kind: "no-check" },

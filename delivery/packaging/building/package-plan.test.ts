@@ -75,7 +75,7 @@ describe("packagePlanOf", () => {
       },
       {
         path: "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json",
-        text: '{"version":2,"settings":{"pluginModule":"test-switches.ts","rule":"skipped-tests"},"implementation":{"symptom":"test-switched-off","check":"focused-tests"}}',
+        text: '{"version":2,"settings":{"rule":"skipped-tests"},"implementation":{"symptom":"test-switched-off","check":"focused-tests"}}',
       },
     ];
     expect(piecePathsIn({ sourcePaths })).toEqual([
@@ -101,7 +101,7 @@ describe("packagePlanOf", () => {
           },
           {
             path: "src/infrastructure/engines/eslint/test-switched-off/skipped-tests/piece.json",
-            text: expect.stringContaining('"pluginModule": "test-switches.js"'),
+            text: expect.stringContaining('"check": "focused-tests"'),
           },
         ],
       },

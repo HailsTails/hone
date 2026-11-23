@@ -54,7 +54,6 @@ const EMPTY_REPORT: CheckReport = {
   unmeasured: [],
   projectionProblems: [],
   assessment: [],
-  readFirst: [],
 };
 
 const finding = (request: { readonly clause: Finding["clause"] }): Finding => ({

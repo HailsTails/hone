@@ -1,6 +1,6 @@
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { sameClauseAddress } from "../rule-set/clause-address.ts";
-import { checkAddressTextOf } from "./check-address-text.ts";
+import { type CheckAddressText, checkAddressTextOf } from "./check-address-text.ts";
 import type { Check, CheckContent, SymptomCatalogue } from "./symptom-catalogue.ts";
 
 export type FoundCheck =
@@ -14,8 +14,13 @@ const foundAmong = (request: { readonly checks: readonly Check[] }): FoundCheck 
   return check === undefined ? NO_CHECK : { found: "check", check };
 };
 
-export const checkAddressOf = (request: { readonly check: Check }): string =>
+export const checkAddressOf = (request: { readonly check: Check }): CheckAddressText =>
   checkAddressTextOf(request);
+
+export const qualifiedCheckAddressOf = (request: { readonly check: Check }): string => {
+  const address = checkAddressOf(request);
+  return request.check.ruleSet === undefined ? address : `${request.check.ruleSet}/${address}`;
+};
 
 export const checkAt = (request: {
   readonly catalogue: SymptomCatalogue;
@@ -30,9 +35,11 @@ export const checkAt = (request: {
 export const checksOf = <Each extends CheckContent>(request: {
   readonly catalogue: { readonly checks: readonly Each[] };
   readonly clause: ClauseAddress;
-}): readonly Each[] =>
+}): readonly (Each & { readonly clause: ClauseAddress })[] =>
   request.catalogue.checks.filter(
-    (check) => sameClauseAddress({ left: check.clause, right: request.clause }) === "same",
+    (check): check is Each & { readonly clause: ClauseAddress } =>
+      check.clause !== undefined &&
+      sameClauseAddress({ left: check.clause, right: request.clause }) === "same",
   );
 
 export type NamedCheck =

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding, GovernedRun } from "../../finding/governance.ts";
+import type { CheckFinding, NamedGovernedRun } from "../../finding/governance.ts";
 import type {
   Check,
   Engine,
@@ -15,7 +15,7 @@ import type { TouchedSet } from "../../repository/touched-set.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import type { NativeException } from "../../runner/runner-result-types.ts";
+import type { CheckNativeException } from "../../runner/check-observations.ts";
 import type {
   AuthorisedLocation,
   Debt,
@@ -144,12 +144,6 @@ const IMPORT_BOUNDARIES = {
   clause: clauseIdOf("import-boundaries"),
 };
 
-const UNCATALOGUED = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-99"),
-  clause: clauseIdOf("nowhere"),
-};
-
 const checkOf = (request: {
   readonly name: string;
   readonly symptom: Symptom;
@@ -208,71 +202,71 @@ const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/adapter-per-outside-
 
 const DEPENDENCIES_FILE = repoPathOf("hone-records/dependency-records.json");
 
-const NO_CLASS_IN_A: Finding = {
-  clause: NO_CLASS,
+const NO_CLASS_IN_A: CheckFinding = {
+  check: "authored-class-or-this#class-syntax",
   file: FILE_A,
   anchor: { line: 3, column: 5 },
   snippet: "class A {}",
   mechanism: AUDIT,
 };
 
-const NO_CLASS_IN_B: Finding = {
-  clause: NO_CLASS,
+const NO_CLASS_IN_B: CheckFinding = {
+  check: "authored-class-or-this#class-syntax",
   file: FILE_B,
   anchor: { line: 8, column: 1 },
   snippet: "class B {}",
   mechanism: AUDIT,
 };
 
-const NO_THIS_IN_A: Finding = {
-  clause: NO_THIS,
+const NO_THIS_IN_A: CheckFinding = {
+  check: "authored-class-or-this#this-keyword",
   file: FILE_A,
   anchor: { line: 4, column: 7 },
   snippet: "this.total",
   mechanism: AUDIT,
 };
 
-const NO_CLASS_IN_A_BY_ESLINT: Finding = { ...NO_CLASS_IN_A, mechanism: ESLINT };
+const NO_CLASS_IN_A_BY_ESLINT: CheckFinding = { ...NO_CLASS_IN_A, mechanism: ESLINT };
 
-const FOR_OF_IN_A: Finding = {
-  clause: NO_FOR_OF,
+const FOR_OF_IN_A: CheckFinding = {
+  check: "loop-keyword#for-of",
   file: FILE_A,
   anchor: { line: 9, column: 2 },
   snippet: "a loop over the orders",
   mechanism: AUDIT,
 };
 
-const UNCATALOGUED_IN_A: Finding = {
-  clause: UNCATALOGUED,
+const UNCATALOGUED_IN_A: CheckFinding = {
+  check: "unknown-symptom#nowhere",
   file: FILE_A,
   anchor: { line: 1, column: 0 },
   snippet: "nowhere",
   mechanism: AUDIT,
 };
 
-const UUID_IMPORT_IN_IDS: Finding = {
-  clause: IMPORT_BOUNDARIES,
+const UUID_IMPORT_IN_IDS: CheckFinding = {
+  check: "outside-import-past-a-boundary#import-or-require",
   file: IDS_ADAPTER,
   anchor: { line: 1, column: 0 },
   snippet: "banned third-party import: uuid — use its recorded wrapping boundary",
   mechanism: AUDIT,
 };
 
-const LODASH_IMPORT_IN_A: Finding = {
-  clause: IMPORT_BOUNDARIES,
+const LODASH_IMPORT_IN_A: CheckFinding = {
+  check: "outside-import-past-a-boundary#import-or-require",
   file: FILE_A,
   anchor: { line: 1, column: 0 },
   snippet: "banned third-party import: lodash — use its recorded wrapping boundary",
   mechanism: AUDIT,
 };
 
-const unreported = (finding: Finding): RaisedFinding => ({
+const unreported = (finding: CheckFinding): RaisedFinding => ({
   finding,
   party: { reported: "not-reported" },
 });
 
 const importing = (request: {
-  readonly finding: Finding;
+  readonly finding: CheckFinding;
   readonly specifier: string;
 }): RaisedFinding => ({
   finding: request.finding,
@@ -433,18 +427,18 @@ const UNMEASURED: TouchedSet = { measured: "no", base: { state: "not-given" } };
 
 const ELSEWHERE: TouchedSet = { measured: "elsewhere" };
 
-const DISABLE_IN_A: NativeException = {
+const DISABLE_IN_A: CheckNativeException = {
   kind: "inline-disable",
-  clause: NO_CLASS,
+  check: "authored-class-or-this#class-syntax",
   file: FILE_A,
   line: 4,
   text: "// eslint-disable-next-line",
-  reach: "one-clause",
+  reach: "one-check",
 };
 
-const SCRIPT_RULE_OFF: NativeException = {
+const SCRIPT_RULE_OFF: CheckNativeException = {
   kind: "command-line-option",
-  clause: NO_CLASS,
+  check: "authored-class-or-this#class-syntax",
   location: PACKAGE_JSON,
   script: "lint",
   option: "--rule no-class:off",
@@ -452,8 +446,8 @@ const SCRIPT_RULE_OFF: NativeException = {
 };
 
 const inlineRun = (request: {
-  readonly nativeExceptions: readonly NativeException[];
-}): GovernedRun => ({
+  readonly nativeExceptions: readonly CheckNativeException[];
+}): NamedGovernedRun => ({
   mechanism: AUDIT,
   nativeExceptions: request.nativeExceptions,
   coverableKinds: ["inline-disable", "command-line-option"],
@@ -589,7 +583,7 @@ describe("answerFindings, answer", () => {
   });
 
   it("does not answer by a boundary record an import of another outside party in its module, and lists it stale", () => {
-    const lodashInIds: Finding = {
+    const lodashInIds: CheckFinding = {
       ...UUID_IMPORT_IN_IDS,
       snippet: "banned third-party import: lodash — use its recorded wrapping boundary",
     };
@@ -767,7 +761,7 @@ describe("answerFindings, a record naming one check", () => {
     });
   });
 
-  it("does not answer by a record naming one check a finding of its symptom that no check of the catalogue raised", () => {
+  it("does not answer by either reach when the finding names a check its engine does not measure", () => {
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -779,8 +773,8 @@ describe("answerFindings, a record naming one check", () => {
       }),
     ).toEqual({
       ...NOTHING_ANSWERED,
-      answered: [{ finding: NO_CLASS_IN_A_BY_ESLINT, by: [DEBT_ON_CLASS_IN_A] }],
-      stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
+      findings: [NO_CLASS_IN_A_BY_ESLINT],
+      stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A), creditedNothing(DEBT_ON_CLASS_IN_A)],
     });
   });
 
@@ -1036,7 +1030,7 @@ describe("answerFindings, paid debt", () => {
   });
 
   it("answers by the boundary record its own outside party's imports and by the debt every other import", () => {
-    const lodashInIds: Finding = {
+    const lodashInIds: CheckFinding = {
       ...UUID_IMPORT_IN_IDS,
       anchor: { line: 2, column: 0 },
       snippet: "banned third-party import: lodash — use its recorded wrapping boundary",
@@ -1243,13 +1237,13 @@ describe("answerFindings, natives held", () => {
   });
 
   it("lists an inline disable on an import check in a boundary record's module, since a suppression does not report its outside party", () => {
-    const disableInIds: NativeException = {
+    const disableInIds: CheckNativeException = {
       kind: "inline-disable",
-      clause: IMPORT_BOUNDARIES,
+      check: "outside-import-past-a-boundary#import-or-require",
       file: IDS_ADAPTER,
       line: 1,
       text: "// eslint-disable-next-line",
-      reach: "one-clause",
+      reach: "one-check",
     };
     expect(
       answerFindings({
@@ -1268,13 +1262,13 @@ describe("answerFindings, natives held", () => {
   });
 
   it("lists an inline disable on an import check at a deviation's file, since the import it hides may be a named ban", () => {
-    const disableInA: NativeException = {
+    const disableInA: CheckNativeException = {
       kind: "inline-disable",
-      clause: IMPORT_BOUNDARIES,
+      check: "outside-import-past-a-boundary#import-or-require",
       file: FILE_A,
       line: 1,
       text: "// eslint-disable-next-line",
-      reach: "one-clause",
+      reach: "one-check",
     };
     expect(
       answerFindings({
@@ -1329,7 +1323,7 @@ describe("answerFindings, natives held", () => {
   });
 
   it("keeps unrecorded native exceptions in the runs' order, then each run's own order", () => {
-    const disableInB: NativeException = { ...DISABLE_IN_A, file: FILE_B };
+    const disableInB: CheckNativeException = { ...DISABLE_IN_A, file: FILE_B };
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -1369,23 +1363,23 @@ const LOCATED_CLASS_HERITAGE_IN_A: PlacedRecord = {
   record: { ...CLASS_LOCATION_IN_A, reach: { reaches: "one-check", check: CLASS_HERITAGE } },
 };
 
-const HERITAGE_FINDING_IN_A: Finding = {
+const HERITAGE_FINDING_IN_A: CheckFinding = {
   ...NO_CLASS_IN_A,
   check: "authored-class-or-this#class-heritage",
 };
 
-const MISNAMED_FINDING_IN_A: Finding = {
+const MISNAMED_FINDING_IN_A: CheckFinding = {
   ...NO_CLASS_IN_A,
   check: "authored-class-or-this#class-keyword",
 };
 
-const HERITAGE_DISABLE_IN_A: NativeException = {
+const HERITAGE_DISABLE_IN_A: CheckNativeException = {
   ...DISABLE_IN_A,
   check: "authored-class-or-this#class-heritage",
 };
 
 describe("answerFindings, a finding or exception that names its check", () => {
-  it("answers a finding by the record naming that check and not by the record naming the other check of its clause", () => {
+  it("answers a finding by the record naming that check and not by the record naming the other check of its symptom", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
@@ -1402,7 +1396,7 @@ describe("answerFindings, a finding or exception that names its check", () => {
     });
   });
 
-  it("does not answer a finding naming a check its clause does not have, even by a record on the whole symptom", () => {
+  it("does not answer a finding naming an unregistered check, even by a record on the whole symptom", () => {
     expect(
       answerFindings({
         catalogue: TWO_CHECKS_ON_NO_CLASS,
@@ -1540,17 +1534,24 @@ const staleAmong = (request: {
 
 const walkerMeasured = (request: { readonly file: RepoPath }): RunMeasurement => ({
   mechanism: AUDIT,
-  selected: [NO_CLASS, NO_THIS, IMPORT_BOUNDARIES],
+  selected: [
+    "authored-class-or-this#class-syntax",
+    "authored-class-or-this#this-keyword",
+    "outside-import-past-a-boundary#import-or-require",
+  ],
   measured: [
-    { clause: NO_CLASS, file: request.file },
-    { clause: NO_THIS, file: request.file },
-    { clause: IMPORT_BOUNDARIES, file: request.file },
+    { check: "authored-class-or-this#class-syntax", file: request.file },
+    { check: "authored-class-or-this#this-keyword", file: request.file },
+    { check: "outside-import-past-a-boundary#import-or-require", file: request.file },
   ],
 });
 
 const ESLINT_SELECTED_MEASURING_NOTHING: RunMeasurement = {
   mechanism: ESLINT,
-  selected: [CLASS_IN_TYPES, IMPORT_IN_TYPES],
+  selected: [
+    "authored-class-or-this#class-in-types",
+    "outside-import-past-a-boundary#import-in-types",
+  ],
   measured: [],
 };
 
@@ -1558,8 +1559,8 @@ describe("answerFindings, what the runs measured", () => {
   it("lists a record as stale once every check it reaches was measured at its file and credited nothing", () => {
     const eslintMeasured: RunMeasurement = {
       mechanism: ESLINT,
-      selected: [CLASS_IN_TYPES],
-      measured: [{ clause: CLASS_IN_TYPES, file: FILE_A }],
+      selected: ["authored-class-or-this#class-in-types"],
+      measured: [{ check: "authored-class-or-this#class-in-types", file: FILE_A }],
     };
     expect(
       staleAmong({
@@ -1668,13 +1669,13 @@ describe("answerFindings, what the runs measured", () => {
   it("lists a boundary record as stale once its module's files were measured by every engine of a check it reaches", () => {
     const eslintMeasured: RunMeasurement = {
       mechanism: ESLINT,
-      selected: [IMPORT_IN_TYPES],
-      measured: [{ clause: IMPORT_IN_TYPES, file: IDS_ADAPTER }],
+      selected: ["outside-import-past-a-boundary#import-in-types"],
+      measured: [{ check: "outside-import-past-a-boundary#import-in-types", file: IDS_ADAPTER }],
     };
     const walkerInModule: RunMeasurement = {
       mechanism: AUDIT,
-      selected: [IMPORT_BOUNDARIES],
-      measured: [{ clause: IMPORT_BOUNDARIES, file: IDS_ADAPTER }],
+      selected: ["outside-import-past-a-boundary#import-or-require"],
+      measured: [{ check: "outside-import-past-a-boundary#import-or-require", file: IDS_ADAPTER }],
     };
     expect(
       staleAmong({

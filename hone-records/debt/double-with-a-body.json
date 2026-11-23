@@ -2,10 +2,6 @@
   "version": 2,
   "records": [
     {
-      "answers": "double-with-a-body#stub-implementation",
-      "file": "src/operations/record-debt/run-record-debt-command.test.ts"
-    },
-    {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/command-line/installation/installed-version.test.ts"
     },
@@ -36,18 +32,6 @@
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/check-command.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/commands.project.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/commands.record-debt.test.ts"
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",

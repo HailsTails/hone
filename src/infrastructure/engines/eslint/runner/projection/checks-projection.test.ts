@@ -44,6 +44,20 @@ describe("CHECKS_PROJECTION_PATH", () => {
 });
 
 describe("checksProjectionText", () => {
+  it("imports a team's plugin and switches off its named check on answered files", () => {
+    const projection = checksProjectionText({
+      pluginImport: PACKAGE_IMPORT,
+      plugins: [{ namespace: "team", specifier: "./tools/plugin.ts" }],
+      checks: [{ ...SKIPPED_TESTS, ruleId: "team/no-skips" }],
+      answered: [
+        { symptom: "test-switched-off", check: "skipped-tests", file: repoPathOf("src/a.ts") },
+      ],
+    });
+    expect(projection).toBe(
+      'import hone from "@hailstails/hone/eslint-plugin";\nimport plugin0 from "./tools/plugin.ts";\nexport default [{ name: "hone/checks", files: ["**/*.{ts,tsx,mts,cts}"], plugins: { hone, "team": plugin0 }, rules: { "team/no-skips": "error" } },\n{ name: "hone/answered/test-switched-off#skipped-tests", files: ["src/a.ts"], rules: { "team/no-skips": "off" } }];\n',
+    );
+  });
+
   it("writes the plan's projection byte for byte", () => {
     expect(
       checksProjectionText({ pluginImport: PACKAGE_IMPORT, checks: [SKIPPED_TESTS], answered: [] }),

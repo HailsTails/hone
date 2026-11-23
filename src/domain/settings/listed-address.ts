@@ -1,8 +1,12 @@
+import { type CheckAddressText, isCheckAddressText } from "../language-layer/check-address-text.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { isRuleSetName } from "../rule-set/identifiers.ts";
 
-export type ListedAddress = { readonly ruleSet: ClauseAddress["ruleSet"]; readonly check: string };
+export type ListedAddress = {
+  readonly ruleSet: ClauseAddress["ruleSet"];
+  readonly check: CheckAddressText;
+};
 
 const LISTED_ADDRESS_TEXT = /^(?:(?<ruleSet>[^/#]+)\/)?(?<check>[^/#]+#[^/#]+)$/;
 
@@ -19,7 +23,9 @@ export const listedAddressOf = (request: { readonly text: string }): ListedAddre
   const parts = LISTED_ADDRESS_TEXT.exec(request.text)?.groups;
   const check = parts?.check;
   const ruleSet = ruleSetOf({ name: parts?.ruleSet });
-  return check === undefined || ruleSet === undefined ? undefined : { ruleSet, check };
+  return check === undefined || !isCheckAddressText(check) || ruleSet === undefined
+    ? undefined
+    : { ruleSet, check };
 };
 
 export const listedAddressText = (request: { readonly address: ListedAddress }): string =>

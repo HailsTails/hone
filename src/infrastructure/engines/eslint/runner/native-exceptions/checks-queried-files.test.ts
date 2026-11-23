@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { answeredByPlaceOf } from "../../../../../domain/records/answering/records-by-place.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import type { SelectedCheck } from "../checks-runner/checks-run-types.ts";
+import type { SelectedNamedCheck } from "../checks-runner/checks-run-types.ts";
 import type { GoverningIgnores } from "../config-roots/governing-config.ts";
 import type { AnsweredFile } from "../projection/checks-projection.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";
@@ -17,20 +15,17 @@ import type {
   IgnoredState,
   QueryInstance,
 } from "../toolchain/eslint-instance.ts";
-import { projectionEffectOf, queriedFilesOf, queryExceptionsOf } from "./checks-queried-files.ts";
+import {
+  projectionEffectOf,
+  queriedFilesOf,
+  namedQueryExceptionsOf,
+} from "./checks-queried-files.ts";
 import type { CheckedFile } from "./checks-rule-effects.ts";
 
-const CLAUSE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-1"),
-  clause: clauseIdOf("explicit-any"),
-};
-
-const EXPLICIT_ANY: SelectedCheck = {
+const EXPLICIT_ANY: SelectedNamedCheck = {
   address: "untyped-value#explicit-any",
   symptom: "untyped-value",
   ruleId: "hone/untyped-value#explicit-any",
-  clause: CLAUSE,
   options: [],
 };
 
@@ -186,25 +181,25 @@ describe("queriedFilesOf", () => {
   });
 });
 
-describe("queryExceptionsOf", () => {
+describe("namedQueryExceptionsOf", () => {
   it("reports an ignored file as an ignore and a weakened rule as a config override, each naming the check", () => {
     expect(
-      queryExceptionsOf({
+      namedQueryExceptionsOf({
         selected: [EXPLICIT_ANY],
-        answered: [],
+        answeredByPlace: answeredByPlaceOf({ answered: [] }),
         queried: { ignored: [A], checked: [checkedWith({ file: B, state: OFF })] },
       }),
     ).toEqual([
-      { kind: "ignore", clause: CLAUSE, file: A, check: "untyped-value#explicit-any" },
-      { kind: "config-override", clause: CLAUSE, file: B, check: "untyped-value#explicit-any" },
+      { kind: "ignore", file: A, check: "untyped-value#explicit-any" },
+      { kind: "config-override", file: B, check: "untyped-value#explicit-any" },
     ]);
   });
 
   it("does not report as an override the off state of a file the records answer", () => {
     expect(
-      queryExceptionsOf({
+      namedQueryExceptionsOf({
         selected: [EXPLICIT_ANY],
-        answered: ANSWERED_B,
+        answeredByPlace: answeredByPlaceOf({ answered: ANSWERED_B }),
         queried: { ignored: [], checked: [checkedWith({ file: B, state: OFF })] },
       }),
     ).toEqual([]);
@@ -212,24 +207,22 @@ describe("queryExceptionsOf", () => {
 
   it("reports the off state of a file only the answers at other files name", () => {
     expect(
-      queryExceptionsOf({
+      namedQueryExceptionsOf({
         selected: [EXPLICIT_ANY],
-        answered: ANSWERED_B,
+        answeredByPlace: answeredByPlaceOf({ answered: ANSWERED_B }),
         queried: {
           ignored: [],
           checked: [checkedWith({ file: A, state: OFF }), checkedWith({ file: B, state: OFF })],
         },
       }),
-    ).toEqual([
-      { kind: "config-override", clause: CLAUSE, file: A, check: "untyped-value#explicit-any" },
-    ]);
+    ).toEqual([{ kind: "config-override", file: A, check: "untyped-value#explicit-any" }]);
   });
 
   it("reports nothing for a rule enforced at severity 2", () => {
     expect(
-      queryExceptionsOf({
+      namedQueryExceptionsOf({
         selected: [EXPLICIT_ANY],
-        answered: [],
+        answeredByPlace: answeredByPlaceOf({ answered: [] }),
         queried: { ignored: [], checked: [checkedWith({ file: A, state: ENFORCED })] },
       }),
     ).toEqual([]);
@@ -241,7 +234,7 @@ describe("projectionEffectOf", () => {
     expect(
       projectionEffectOf({
         selected: [EXPLICIT_ANY],
-        answered: ANSWERED_B,
+        answeredByPlace: answeredByPlaceOf({ answered: ANSWERED_B }),
         queried: { ignored: [], checked: [checkedWith({ file: B, state: OFF })] },
       }),
     ).toBe("in-effect");
@@ -251,7 +244,7 @@ describe("projectionEffectOf", () => {
     expect(
       projectionEffectOf({
         selected: [EXPLICIT_ANY],
-        answered: [],
+        answeredByPlace: answeredByPlaceOf({ answered: [] }),
         queried: { ignored: [A], checked: [] },
       }),
     ).toBe("in-effect");
@@ -261,7 +254,7 @@ describe("projectionEffectOf", () => {
     expect(
       projectionEffectOf({
         selected: [EXPLICIT_ANY],
-        answered: [],
+        answeredByPlace: answeredByPlaceOf({ answered: [] }),
         queried: { ignored: [], checked: [checkedWith({ file: A, state: ABSENT })] },
       }),
     ).toBe("not-in-effect");
@@ -271,7 +264,7 @@ describe("projectionEffectOf", () => {
     expect(
       projectionEffectOf({
         selected: [EXPLICIT_ANY],
-        answered: ANSWERED_B,
+        answeredByPlace: answeredByPlaceOf({ answered: ANSWERED_B }),
         queried: { ignored: [], checked: [checkedWith({ file: B, state: ENFORCED })] },
       }),
     ).toBe("not-in-effect");

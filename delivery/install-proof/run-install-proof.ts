@@ -173,7 +173,7 @@ const installedCommand = (request: {
   readonly label: string;
   readonly script: CommandScript;
   readonly arguments: readonly string[];
-  readonly action: Extract<ProofAction, { readonly kind: "check" | "project" }>;
+  readonly action: Extract<ProofAction, { readonly kind: CommandScript }>;
 }): Result<null, string> => {
   const judged = judgedStep({
     label: request.label,
@@ -306,10 +306,11 @@ const performedAction = (request: {
         action,
       });
     case "project":
+    case "upgrade":
       return installedCommand({
         ...request,
-        label: `${request.consumer} project`,
-        script: "project",
+        label: `${request.consumer} ${action.kind}`,
+        script: action.kind,
         arguments: [],
         action,
       });
@@ -400,8 +401,17 @@ const preparedConsumer = (request: {
   readonly fixture: string;
   readonly repo: string;
   readonly files: readonly ConsumerFile[];
+  readonly replace?: readonly string[];
 }): Result<null, string> => {
   const label = `prepare the consumer ${request.repo}`;
+  const directories = [
+    ...new Set(
+      request.files.flatMap(({ name }) => {
+        const at = name.lastIndexOf("/");
+        return at === -1 ? [] : [name.slice(0, at)];
+      }),
+    ),
+  ];
   return inOrder({
     steps: [
       () =>
@@ -410,9 +420,19 @@ const preparedConsumer = (request: {
           result: request.context.scratch.copyTree({
             from: request.fixture,
             to: request.repo,
-            disposition: () => "kept",
+            disposition: ({ name }) => (request.replace?.includes(name) ? "left-out" : "kept"),
           }),
         }),
+      ...directories.map(
+        (directory): Step =>
+          () =>
+            labelled({
+              label,
+              result: request.context.scratch.makeDirectory({
+                path: request.context.path.join({ segments: [request.repo, directory] }),
+              }),
+            }),
+      ),
       ...request.files.map(
         (file): Step =>
           () =>
@@ -673,11 +693,15 @@ const installedConsumer = (
           context,
           fixture: consumerFixture(request),
           repo: request.repo,
-          files: consumerFiles({
-            devDependencies: devDependencies.value,
-            settings: request.settings,
-            proofCase: request.proofCase,
-          }),
+          replace: request.proofCase.setup?.replace,
+          files: [
+            ...consumerFiles({
+              devDependencies: devDependencies.value,
+              settings: request.settings,
+              proofCase: request.proofCase,
+            }),
+            ...(request.proofCase.setup?.files ?? []),
+          ],
         }),
       () =>
         ranCommand({

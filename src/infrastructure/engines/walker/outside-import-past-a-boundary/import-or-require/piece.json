@@ -7,7 +7,7 @@
     "module": "import-boundaries.ts"
   },
   "checkSettings": {
-    "confinedPackages": {
+    "confinedOutsideDependencies": {
       "default": []
     }
   }

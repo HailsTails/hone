@@ -1,42 +1,49 @@
-import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
+import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import {
+  type CheckAddressText,
+  checkAddressTextOf,
+} from "../../../../../domain/language-layer/check-address-text.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import { checkOfRuleId, type RuledCheck } from "../hone-plugin/check-rule-id.ts";
+import { checkRuleIdOf, type PluginCheck, runsOnEslint } from "../hone-plugin/check-rule-id.ts";
 import type { ProjectedCheck } from "../projection/checks-projection.ts";
-import type { SelectedCheck } from "./checks-run-types.ts";
+import type { SelectedNamedCheck } from "./checks-run-types.ts";
 
-const selectedCheckOf = (request: {
-  readonly checks: readonly RuledCheck[];
-  readonly projected: ProjectedCheck;
-}): Result<SelectedCheck, RunnerFailure> => {
-  const { projected } = request;
-  const found = checkOfRuleId({ checks: request.checks, ruleId: projected.ruleId });
-  return found.found === "check"
-    ? {
-        outcome: "ok",
-        value: {
-          address: `${projected.symptom}#${projected.check}`,
-          symptom: projected.symptom,
-          ruleId: projected.ruleId,
-          clause: found.check.clause,
-          options: projected.options,
-        },
-      }
-    : {
-        outcome: "failed",
-        error: {
-          kind: "tool-failed",
-          detail: `the rule ${projected.ruleId} names no check of the catalogue that runs on ESLint`,
-        },
-      };
-};
-
-export const selectedChecksOf = (request: {
-  readonly checks: readonly RuledCheck[];
+export const selectedNamedChecksOf = (request: {
+  readonly checks: readonly PluginCheck[];
   readonly projected: readonly ProjectedCheck[];
-}): Result<readonly SelectedCheck[], RunnerFailure> =>
-  gatheredOutcomes({
-    outcomes: request.projected.map((projected) =>
-      listedOutcome({ outcome: selectedCheckOf({ checks: request.checks, projected }) }),
+}): Result<readonly SelectedNamedCheck[], RunnerFailure> => {
+  const checks = new Map(
+    request.checks
+      .filter((check) => runsOnEslint({ check }) === "eslint")
+      .map((check) => [checkAddressTextOf({ check }), check]),
+  );
+  return gatheredOutcomes({
+    outcomes: request.projected.map(
+      (projected): Result<readonly SelectedNamedCheck[], RunnerFailure> => {
+        const address: CheckAddressText = `${projected.symptom}#${projected.check}`;
+        const check = checks.get(address);
+        return check !== undefined &&
+          (projected.plugin !== undefined || checkRuleIdOf({ check }) === projected.ruleId)
+          ? {
+              outcome: "ok",
+              value: [
+                {
+                  address,
+                  symptom: projected.symptom,
+                  ruleId: projected.ruleId,
+                  options: projected.options,
+                },
+              ],
+            }
+          : {
+              outcome: "failed",
+              error: {
+                kind: "tool-failed",
+                detail: `the rule ${projected.ruleId} names no check of the catalogue that runs on ESLint`,
+              },
+            };
+      },
     ),
   });
+};

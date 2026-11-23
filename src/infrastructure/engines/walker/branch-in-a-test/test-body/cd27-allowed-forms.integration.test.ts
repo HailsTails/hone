@@ -1,30 +1,30 @@
 import { assert, describe, expect, it } from "vitest";
 
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import {
+  checkAddressOfNames,
+  checkAddressTextOf,
+  checkNamesOf,
+} from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
-import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import { editionRunsOf } from "../../../../../domain/runner/edition-runs.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
-import { readInstalledNames } from "../../../../content-files/rule-sets/installed-pieces.ts";
-import { readLocatedPieceFile } from "../../../../content-files/rule-sets/located-piece-file.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
-import { createDefaultEntryKindPort } from "../../../../node/file-system/file-system-port.ts";
+import { readBoundCatalogue } from "../../../../content-files/symptom-catalogues/bound-catalogue.ts";
+import {
+  createDefaultDirectoryPort,
+  createDefaultEntryKindPort,
+} from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import * as eslintRunnerModule from "../../../eslint/runner/runner.ts";
-import { checkConformance } from "../../../protocol/conformance.ts";
-import {
-  runnerModuleSchema,
-  type StandaloneRunner,
-} from "../../../protocol/runner-module/runner-module-schema.ts";
+import { namedChecksRunner as eslintRunner } from "../../../eslint/runner/runner.ts";
+import { readNamedPiece } from "../../../named-piece.ts";
+import { namedCheckConformance } from "../../../protocol/conformance.ts";
 import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
-import * as walkerRunnerModule from "../../runner/runner.ts";
+import { namedChecksRunner as walkerRunner } from "../../runner/runner.ts";
 import type {
   CompilerOptions,
   SyntaxApi,
@@ -249,12 +249,12 @@ const overlaidFileText = (request: {
 const remedySectionsOf = async (request: {
   readonly repoRoot: string;
   readonly parse: TypeScriptParsePort;
-  readonly clause: RunnerClause;
+  readonly bindings: readonly CheckBinding[];
   readonly source: string;
 }): Promise<readonly string[]> => {
   const path = createDefaultPathPort({});
   const repoRoot = absolutePathSchema.parse(request.repoRoot);
-  const runner: StandaloneRunner = createWalkerRunner({
+  const runner = createWalkerRunner({
     fileText: overlaidFileText({
       base: createDefaultFileTextPort({}),
       files: {
@@ -271,94 +271,16 @@ const remedySectionsOf = async (request: {
     installRoot: repoRoot,
     files: [FORM_FILE],
     trackedPaths: [FORM_FILE],
-    clauses: [request.clause],
+    bindings: request.bindings,
+    answered: [],
+    declaredConfigRoots: [],
+    declaredConfigLookup: undefined,
   });
   if (report.outcome === "failed") return [`run failed: ${report.error.kind}`];
   return report.value.hits.flatMap((hit) => (hit.remedy === undefined ? [] : [hit.remedy.section]));
 };
 
-type ConformanceRow = {
-  readonly name: string;
-  readonly clause: RunnerClause;
-  readonly cases: readonly SourceCase[];
-};
-
 const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
-
-const disciplineOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly discipline: string;
-}): DisciplineFile => {
-  const held = readHeldDiscipline({
-    fileText: request.fileText,
-    path: createDefaultPathPort({}),
-    ruleSetRoot: RULE_SET_ROOT,
-    installRoot: RULE_SET_ROOT,
-    discipline: disciplineIdSchema.parse(request.discipline),
-  });
-  assert(
-    held.outcome === "ok",
-    `${request.discipline} reads through the install's discipline reader`,
-  );
-  const discipline = held.value;
-  assert(discipline.held === "present", `the install holds ${request.discipline}`);
-  return discipline.file;
-};
-
-const rowsOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly discipline: string;
-  readonly mechanism: EngineId;
-}): readonly ConformanceRow[] => {
-  const discipline = disciplineOf(request);
-  const piece = readLocatedPieceFile({
-    fileText: request.fileText,
-    path: createDefaultPathPort({}),
-    ruleSetRoot: RULE_SET_ROOT,
-    installRoot: RULE_SET_ROOT,
-    mechanism: request.mechanism,
-    discipline,
-  });
-  assert(
-    piece.outcome === "ok",
-    `${request.discipline} ${request.mechanism} piece.json reads through the rule-set reader`,
-  );
-  return piece.value.clauses.flatMap((entry) => {
-    const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
-    assert(
-      definition?.kind === "mechanical",
-      `${request.discipline}#${entry.clause} is a mechanical clause`,
-    );
-    const clause: RunnerClause = {
-      address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
-      anchor: definition.anchor,
-      pieceRoot: entry.pieceRoot,
-      settings: entry.settings,
-      clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
-      edition: entry.editions.default,
-    };
-    return editionRunsOf({
-      clause,
-      cases: [...definition.cases.flag, ...definition.cases.allow],
-    }).map((run) => ({
-      name:
-        run.clause.edition === entry.editions.default
-          ? `${request.discipline}#${entry.clause}`
-          : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
-      ...run,
-    }));
-  });
-};
-
-const conformanceRows = (request: {
-  readonly disciplines: readonly string[];
-  readonly mechanism: EngineId;
-}): readonly ConformanceRow[] => {
-  const fileText = createDefaultFileTextPort({});
-  return request.disciplines.flatMap((discipline) =>
-    rowsOf({ fileText, discipline, mechanism: request.mechanism }),
-  );
-};
 
 const REPO_ROOT = createDefaultPathPort({}).join({
   segments: [import.meta.dirname, "..", "..", "..", "..", "..", ".."],
@@ -410,51 +332,64 @@ const CHECK_ITEM_PAGES = [
   },
 ];
 
-const heldNames = readInstalledNames({
+const source = {
+  installRoot: RULE_SET_ROOT,
+  ruleSetRoot: RULE_SET_ROOT,
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
-  installRoot: RULE_SET_ROOT,
-});
+};
+const catalogue = readBoundCatalogue({ ...source, directory: createDefaultDirectoryPort({}) });
+assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
+const CHECKS = catalogue.value.catalogue.checks;
+const rowsFor = (mechanism: EngineId) =>
+  CHECKS.filter(({ engines }) => engines.some(({ name }) => name === mechanism)).flatMap(
+    (check) => {
+      const address = checkAddressTextOf({ check });
+      const names = checkNamesOf({ text: address });
+      assert.isDefined(names);
+      const held = readNamedPiece({ ...source, ...names, mechanism });
+      assert(held.outcome === "ok");
+      const { editions, settings, pieceRoot, anchor, declarations, forms } = held.value;
+      return editions.declared.map((edition) => {
+        const binding: CheckBinding = {
+          address,
+          engine: mechanism,
+          edition,
+          settings,
+          pieceRoot,
+          anchor,
+          checkSettings: defaultClauseSettings({ declarations }),
+          forms: Object.fromEntries(
+            Object.entries(forms).map(([form, name]) => [form, checkAddressOfNames(name)]),
+          ),
+        };
+        return { name: `${address} edition ${edition}`, binding };
+      });
+    },
+  );
 
-assert(heldNames.outcome === "ok", "the install's version 1 names read");
+const WALKER_ROWS = rowsFor("walker");
+const ESLINT_ROWS = rowsFor("eslint");
 
-const legacyDisciplines = [
-  ...new Set(
-    heldNames.value.namedClauses
-      .filter((clause) => clause.kind === "mechanical")
-      .map(({ clause }) => clause.discipline),
-  ),
-].sort();
-
-const AUDIT_ROWS = conformanceRows({
-  disciplines: legacyDisciplines,
-  mechanism: "walker",
-});
-
-const ESLINT_ROWS = conformanceRows({
-  disciplines: legacyDisciplines,
-  mechanism: "eslint",
-});
-
-const CLAUSES_THAT_REACH_TEST_FILES = {
-  audit: [
-    "CD-1#any-cast",
-    "CD-2#cast-expressions",
-    "CD-6#identifier-names",
-    "CD-14#class-syntax",
-    "CD-15#loops",
-    "CD-25#dependency-isolation",
-    "CD-27#test-body-logic",
-    "CD-27#test-body-logic edition 2",
-    "CD-43#boolean-signatures",
+const CHECKS_THAT_REACH_TEST_FILES = {
+  walker: [
+    "claimed-type#cast-to-any edition 1",
+    "claimed-type#unlisted-cast-site edition 1",
+    "shorthand-name#identifier-names edition 1",
+    "authored-class-or-this#class-keyword edition 1",
+    "loop-keyword#loop-statement edition 1",
+    "double-with-a-body#stub-implementation edition 1",
+    "branch-in-a-test#test-body edition 1",
+    "branch-in-a-test#test-body edition 2",
+    "boolean-in-a-signature#boolean-annotation edition 1",
   ],
   eslint: [
-    "CD-1#explicit-any",
-    "CD-2#non-null-assertions",
-    "CD-10#throw-only-error",
-    "CD-14#class-syntax",
-    "CD-40#parameter-count",
-    "CD-41#function-length",
+    "untyped-value#explicit-any edition 1",
+    "claimed-type#non-null-assertions edition 1",
+    "thrown-non-error#throw-only-error edition 1",
+    "authored-class-or-this#class-keyword edition 1",
+    "positional-parameters#parameter-count edition 1",
+    "long-function#function-length edition 1",
   ],
 };
 
@@ -481,10 +416,6 @@ const TYPE_ERRORS = typeErrorsOf({
   repoRoot: REPO_ROOT,
   blocks: BLOCKS,
 });
-
-const walkerRunner = runnerModuleSchema.parse(walkerRunnerModule.runner);
-
-const eslintRunner = runnerModuleSchema.parse(eslintRunnerModule.runner);
 
 describe("the allowed-form compilation over written-out forms, so it can fail", () => {
   it("reports reading an indexed element that may be missing and an optional property given undefined, under the compiler options CD-3 requires", () => {
@@ -535,29 +466,27 @@ describe("the check items' Allowed forms in a test", () => {
     expect(actual).toEqual(expected);
   });
 
-  it("holds the forms to every audit and ESLint clause, among them those that reach a test file", () => {
+  it("holds the forms to every Walker and ESLint check, among them those that reach a test file", () => {
     expect(
-      rowsNamed({ rows: AUDIT_ROWS, names: CLAUSES_THAT_REACH_TEST_FILES.audit }),
+      rowsNamed({ rows: WALKER_ROWS, names: CHECKS_THAT_REACH_TEST_FILES.walker }),
     ).toHaveLength(9);
     expect(
-      rowsNamed({ rows: ESLINT_ROWS, names: CLAUSES_THAT_REACH_TEST_FILES.eslint }),
+      rowsNamed({ rows: ESLINT_ROWS, names: CHECKS_THAT_REACH_TEST_FILES.eslint }),
     ).toHaveLength(6);
   });
 
   it.each(SECTIONS)(
     "shows under $heading a flagged form whose finding names that section",
     async ({ flagged, section }) => {
-      const [secondEditionRow] = rowsNamed({
-        rows: AUDIT_ROWS,
-        names: ["CD-27#test-body-logic edition 2"],
-      });
-      assert.isDefined(secondEditionRow);
+      const bindings = WALKER_ROWS.map(({ binding }) => binding).filter(
+        ({ edition, forms }) => edition === "2" && forms?.[section] !== undefined,
+      );
 
       expect(
         await remedySectionsOf({
           repoRoot: REPO_ROOT,
           parse: defaultParsePort,
-          clause: secondEditionRow.clause,
+          bindings,
           source: flagged,
         }),
       ).toContain(section);
@@ -575,11 +504,15 @@ describe("the check items' Allowed forms in a test", () => {
     expect(TYPE_ERRORS.unattributed).toEqual([]);
   });
 
-  it.each(AUDIT_ROWS)(
+  it.each(WALKER_ROWS)(
     "has no form to write instead that the audit runner flags under $name",
     async (row) => {
       expect(
-        await checkConformance({ clause: row.clause, cases: ALLOW_CASES, runner: walkerRunner }),
+        await namedCheckConformance({
+          binding: row.binding,
+          cases: ALLOW_CASES,
+          runner: walkerRunner,
+        }),
       ).toEqual({ outcome: "ok", value: [] });
     },
   );
@@ -588,7 +521,11 @@ describe("the check items' Allowed forms in a test", () => {
     "has no form to write instead that the ESLint runner flags under $name",
     async (row) => {
       expect(
-        await checkConformance({ clause: row.clause, cases: ALLOW_CASES, runner: eslintRunner }),
+        await namedCheckConformance({
+          binding: row.binding,
+          cases: ALLOW_CASES,
+          runner: eslintRunner,
+        }),
       ).toEqual({ outcome: "ok", value: [] });
     },
   );

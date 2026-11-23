@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { EnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
@@ -29,18 +28,6 @@ const nodePorts = (): NodePorts => ({
     write: vi.fn<FileTextPort["write"]>(),
   },
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
-  engine: {
-    load: vi.fn<EnginePort["load"]>(),
-    run: {
-      checks: vi.fn<EnginePort["run"]["checks"]>(),
-      withRecords: vi.fn<EnginePort["run"]["withRecords"]>(),
-    },
-    project: {
-      checks: vi.fn<EnginePort["project"]["checks"]>(),
-      withRecords: vi.fn<EnginePort["project"]["withRecords"]>(),
-    },
-    conform: vi.fn<EnginePort["conform"]>(),
-  },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
     changedSince: vi.fn<GitPort["changedSince"]>(),
@@ -66,19 +53,10 @@ describe("installedPortsOver", () => {
       ports.path,
       ports.fileText,
       ports.modules,
-      ports.engine,
       ports.git,
       ports.gitTree,
       ports.directory,
-    ]).toEqual([
-      node.path,
-      node.fileText,
-      node.modules,
-      node.engine,
-      node.git,
-      node.gitTree,
-      node.directory,
-    ]);
+    ]).toEqual([node.path, node.fileText, node.modules, node.git, node.gitTree, node.directory]);
     expect([
       ports.fileCreation,
       ports.fileRemoval,

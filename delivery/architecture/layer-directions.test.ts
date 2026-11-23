@@ -249,7 +249,7 @@ describe("the layer directions of every source and test file under src, read as 
         "./src/application/ports/host/path-port.ts": expect.any(String),
         "./src/application/run/run-report-of.ts": expect.any(String),
         "./src/infrastructure/node/path-port.ts": expect.any(String),
-        "./src/operations/check/run-check-command.ts": expect.any(String),
+        "./src/operations/check/version-two-check-command.ts": expect.any(String),
         "./src/composition/commands.ts": expect.any(String),
         "./src/domain/result.test.ts": expect.any(String),
         "./src/infrastructure/node/path-port.test.ts": expect.any(String),

@@ -17,10 +17,10 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
-import type { Hit } from "../../domain/runner/runner-result-types.ts";
+import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
-import type { EngineRun } from "../ports/engine/engine-run.ts";
-import type { SettingsReading } from "./settings/read-settings.ts";
+import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
   type VersionTwoRequest,
   type VersionTwoStages,
@@ -277,15 +277,14 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   namedBans: [{ outsideDependency: "lodash" }],
 };
 
-const SETTINGS: SettingsReading = {
+const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-    bindings: [],
-    clauseRoots: [],
+    selected: [],
+    notAdopted: [],
+    notRun: [],
     excluded: [repoPathOf("dist")],
     eslintConfigRoots: [],
-    fileExceptionWhyChains: "required",
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
@@ -295,22 +294,20 @@ const SETTINGS: SettingsReading = {
 
 const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
 
-const HIT: Hit = {
-  clause: CAST_EXPRESSIONS,
+const HIT: CheckHit = {
+  check: "claimed-type#cast-expressions",
   file: FILE_A,
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
-  check: "claimed-type#cast-expressions",
 };
 
-const RUN: EngineRun = {
+const RUN: NamedEngineRun = {
   mechanism: ESLINT,
   hits: [HIT],
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
   slices: [],
-  unprojectedFolders: [],
   measured: [],
   misnamedRuleIds: [],
 };

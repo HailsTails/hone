@@ -11,9 +11,8 @@ import type { ExceptionRepository } from "../../src/application/ports/records/ex
 import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { FileCarveOutRecord } from "../../src/application/ports/upgrade/record-answer-oracle.ts";
-import { runProject } from "../../src/application/projection/run-project.ts";
 import { createAnsweringOracle } from "../../src/application/upgrade/record-answers/answering-oracle.ts";
-import { createVersionOneEnginePass } from "../../src/application/upgrade/record-answers/version-one-engine-pass.ts";
+import { createUpgradeBefore } from "../../src/application/upgrade/record-answers/upgrade-before.ts";
 import type { Finding } from "../../src/domain/finding/governance.ts";
 import type { Check } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
@@ -29,17 +28,31 @@ import { readBoundCatalogue } from "../../src/infrastructure/content-files/sympt
 import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
-import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import {
-  createEslintPort,
-  type EslintPort,
-} from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
+  readSelectionFile,
+  selectionFilePathOf,
+} from "../../src/infrastructure/disciplines-file/selection-reader.ts";
+import {
+  bindEslintChecksModule,
+  createChecksRunner,
+} from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import {
+  ESLINT_PROJECTED_KINDS,
+  versionOneProjectionOver,
+} from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import { createNamedEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import { measureVersionOneProjection } from "../../src/infrastructure/engines/protocol/engine-run/engine-run.ts";
+import { loadVersionOneProjectionOver } from "../../src/infrastructure/engines/protocol/upgrade/load-version-one-projection.ts";
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
+import {
+  createCheckPieceSource,
+  createSettingsSources,
+} from "../../src/infrastructure/hone-config-file/settings-sources.ts";
 import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultDirectoryPort } from "../../src/infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
@@ -73,7 +86,7 @@ assert(
   `the eslint-10 toolchain runs ESLint ${loadedEslintToolchain.value.eslintVersion}`,
 );
 
-const defaultEslintPort: EslintPort = createEslintPort({ toolchain: loadedEslintToolchain.value });
+const defaultEslintPort = createEslintPort({ toolchain: loadedEslintToolchain.value });
 
 type ScratchRepositories = {
   readonly repositoryWith: (request: {
@@ -145,7 +158,7 @@ const shippedCheckOf = (request: {
 }): Check => {
   const [only, ...others] = request.catalogues.flatMap(({ catalogue }) =>
     catalogue.checks.filter(
-      (check) => check.name === request.name && check.clause.discipline === request.discipline,
+      (check) => check.name === request.name && check.clause?.discipline === request.discipline,
     ),
   );
   if (only === undefined || others.length > 0) {
@@ -279,14 +292,21 @@ const checkPortsOver = (request: {
   const pieceModules: ModuleLoaderPort = { load: createDefaultModuleLoaderPort({}).load };
   const runners: Readonly<Record<string, unknown>> = {
     [ESLINT_RUNNER]: {
-      runner: createEslintRunner({
-        fileText,
-        fileRemoval: createDefaultFileRemovalPort({}),
-        modules: pieceModules,
-        path,
-        eslint: defaultEslintPort,
-        moduleExtension: ".ts",
+      ...bindEslintChecksModule({
+        projectedKinds: ESLINT_PROJECTED_KINDS,
+        runner: Promise.resolve({
+          outcome: "ok",
+          value: createChecksRunner({
+            fileText,
+            fileRemoval: createDefaultFileRemovalPort({}),
+            modules: pieceModules,
+            path,
+            eslint: defaultEslintPort,
+            moduleExtension: ".ts",
+          }),
+        }),
       }),
+      versionOneProjectionOver,
     },
   };
   const modules: ModuleLoaderPort = {
@@ -325,12 +345,9 @@ const carvedRepository = async (): Promise<AbsolutePath> => {
       "eslint.config.mjs": TEAM_CONFIG,
     },
   });
-  const { modules, ports } = checkPortsOver({ repoRoot, tracked: [] });
-  const projected = await runProject({
-    ...withSingleFileRecords({ ...ports, modules }),
-    modules,
-    engine: createDefaultEnginePort({}),
-  });
+  const projected = await upgradeBeforeOver({ repoRoot, tracked: [] }).prepareProjections([
+    CARVE_OUT,
+  ]);
   assert(
     projected.outcome === "ok",
     "the carved repository's projection is written by hone project",
@@ -399,21 +416,36 @@ const trackedIn = (request: { readonly files: readonly RepoPath[] }): GitPort =>
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 });
 
-const enginePassOver = (request: {
+const upgradeBeforeOver = (request: {
   readonly repoRoot: AbsolutePath;
   readonly tracked: readonly RepoPath[];
 }) => {
   const { modules, ports } = checkPortsOver(request);
-  return createVersionOneEnginePass({
-    loadFailureDetail,
+  const selection = readSelectionFile({
+    fileText,
+    path: selectionFilePathOf({ path, repoRoot: request.repoRoot }),
+  });
+  assert(selection.outcome === "ok");
+  return createUpgradeBefore({
     check: {
       ...withSingleFileRecords({ ...ports, modules }),
       modules,
-      engine: createDefaultEnginePort({}),
       baseRevision: undefined,
       assessment: DEFAULT_ASSESSMENT,
       selectionRepository: createSelectionRepository(ports),
     },
+    engine: createNamedEnginePort({}),
+    sources: createSettingsSources({ ...ports, directory: createDefaultDirectoryPort({}) }),
+    readPiece: createCheckPieceSource(ports),
+    selection: selection.value,
+    catalogues: catalogues(),
+    loadFailureDetail,
+    measureVersionOne: measureVersionOneProjection,
+    projection: loadVersionOneProjectionOver({
+      ...ports,
+      modules,
+      fileRemoval: createDefaultFileRemovalPort({}),
+    }),
   });
 };
 
@@ -434,14 +466,20 @@ const UNPROJECTED_TRACKED: readonly RepoPath[] = [
 
 describe("the version 1 engine pass over a real ESLint run of a repository that carves out src/kept.ts", () => {
   it("returns the class finding raw, though the projection it ran under carries the carve-out as a config override", async () => {
-    const pass = enginePassOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED });
+    const pass = upgradeBeforeOver({
+      repoRoot: await carvedRepository(),
+      tracked: CARVED_TRACKED,
+    }).enginePass;
     const withCarveOut = await pass.findingsFor({ records: [CARVE_OUT] });
     assert(withCarveOut.outcome === "ok", "the pass runs");
     expect(withCarveOut.value.findings).toEqual([CLASS_FINDING]);
   });
 
   it("refuses the same projection when given no records, since the records are what its override was projected from", async () => {
-    const pass = enginePassOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED });
+    const pass = upgradeBeforeOver({
+      repoRoot: await carvedRepository(),
+      tracked: CARVED_TRACKED,
+    }).enginePass;
     await expect(pass.findingsFor({ records: [] })).resolves.toEqual({
       outcome: "failed",
       error: {
@@ -454,7 +492,8 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
 
   it("lets the oracle credit the carve-out with the findings it holds", async () => {
     const oracle = createAnsweringOracle({
-      enginePass: enginePassOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED }),
+      enginePass: upgradeBeforeOver({ repoRoot: await carvedRepository(), tracked: CARVED_TRACKED })
+        .enginePass,
       catalogues: catalogues(),
     });
     const answered = await oracle.answer({ records: [CARVE_OUT] });
@@ -473,10 +512,10 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
 
 describe("the version 1 engine pass over a real ESLint run of a repository whose config does not include the projection", () => {
   it("fails the pass, since the run was not made", async () => {
-    const pass = enginePassOver({
+    const pass = upgradeBeforeOver({
       repoRoot: unprojectedRepository(),
       tracked: UNPROJECTED_TRACKED,
-    });
+    }).enginePass;
     await expect(pass.findingsFor({ records: [CARVE_OUT] })).resolves.toEqual({
       outcome: "failed",
       error: { kind: "projection-not-current", file: "disciplines.eslint.mjs", state: "missing" },

@@ -12,7 +12,7 @@ const SECOND = editionOf("2");
 
 const TWO_EDITIONS: ClauseEditions = { declared: [FIRST, SECOND], default: FIRST, latest: SECOND };
 
-const CONFINED: ClauseSettingDeclarations = { confinedPackages: { default: [] } };
+const CONFINED: ClauseSettingDeclarations = { confinedOutsideDependencies: { default: [] } };
 
 const MODE: ClauseSettingDeclarations = {
   mode: { default: "strict", choices: ["strict", "loose"] },
@@ -36,7 +36,7 @@ describe("settledCheckSettings", () => {
       }),
     ).toEqual<{ readonly outcome: "ok"; readonly value: SettledCheckSettings }>({
       outcome: "ok",
-      value: { clauseSettings: { confinedPackages: [] }, edition: FIRST },
+      value: { clauseSettings: { confinedOutsideDependencies: [] }, edition: FIRST },
     });
   });
 
@@ -72,7 +72,7 @@ describe("settledCheckSettings", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: { clauseSettings: { confinedPackages: ["uuid"] }, edition: FIRST },
+      value: { clauseSettings: { confinedOutsideDependencies: ["uuid"] }, edition: FIRST },
     });
   });
 

@@ -1,11 +1,11 @@
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { editionReaches } from "../../../../../domain/rule-set/edition-reach.ts";
 import type { Edition } from "../../../../../domain/rule-set/edition-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import {
   createDefaultJsoncParsePort,
   type JsoncParsePort,
@@ -27,21 +27,34 @@ const IMPLIED_BY_STRICT: readonly StrictOption[] = ["useUnknownInCatchVariables"
 
 const FILE_ANCHOR = { line: 1, column: 0 } as const;
 
-const STRICT_FLAGS: readonly { readonly clause: string; readonly option: StrictOption }[] = [
-  { clause: "strict", option: "strict" },
-  { clause: "no-unchecked-indexed-access", option: "noUncheckedIndexedAccess" },
-  { clause: "exact-optional-property-types", option: "exactOptionalPropertyTypes" },
-  { clause: "no-implicit-override", option: "noImplicitOverride" },
-  { clause: "no-fallthrough-cases-in-switch", option: "noFallthroughCasesInSwitch" },
-  {
-    clause: "no-property-access-from-index-signature",
-    option: "noPropertyAccessFromIndexSignature",
-  },
-  { clause: "use-unknown-in-catch-variables", option: "useUnknownInCatchVariables" },
-];
+const STRICT_FLAGS: readonly { readonly check: CheckAddressText; readonly option: StrictOption }[] =
+  [
+    { check: "strictness-weakened#strict", option: "strict" },
+    {
+      check: "strictness-weakened#no-unchecked-indexed-access",
+      option: "noUncheckedIndexedAccess",
+    },
+    {
+      check: "strictness-weakened#exact-optional-property-types",
+      option: "exactOptionalPropertyTypes",
+    },
+    { check: "strictness-weakened#no-implicit-override", option: "noImplicitOverride" },
+    {
+      check: "strictness-weakened#no-fallthrough-cases-in-switch",
+      option: "noFallthroughCasesInSwitch",
+    },
+    {
+      check: "strictness-weakened#no-property-access-from-index-signature",
+      option: "noPropertyAccessFromIndexSignature",
+    },
+    {
+      check: "strictness-weakened#use-unknown-in-catch-variables",
+      option: "useUnknownInCatchVariables",
+    },
+  ];
 
 type SelectedFlag = {
-  readonly address: ClauseAddress;
+  readonly address: CheckAddressText;
   readonly option: StrictOption;
   readonly judges: "own-options" | "resolved-options";
 };
@@ -57,18 +70,17 @@ const configEligibility = (request: { readonly file: string }): "eligible" | "ex
 };
 
 const selectedFlagsOf = (request: {
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
 }): readonly SelectedFlag[] =>
   STRICT_FLAGS.flatMap((flag) =>
-    request.clauses
-      .filter(
-        (clause) => clause.address.discipline === "CD-3" && clause.address.clause === flag.clause,
-      )
-      .map((clause) => ({
-        address: clause.address,
+    request.bindings
+      .filter((binding) => binding.address === flag.check)
+      .map((binding) => ({
+        address: binding.address,
         option: flag.option,
         judges:
-          editionReaches({ edition: clause.edition, introducedIn: RESOLVING_EDITION }) === "reached"
+          editionReaches({ edition: binding.edition, introducedIn: RESOLVING_EDITION }) ===
+          "reached"
             ? "resolved-options"
             : "own-options",
       })),
@@ -175,7 +187,7 @@ const presenceHit = (request: {
   readonly flag: SelectedFlag;
   readonly value: unknown;
 }): PieceHit => ({
-  clause: request.flag.address,
+  check: request.flag.address,
   anchor: FILE_ANCHOR,
   snippet: `compilerOptions.${request.flag.option} = ${JSON.stringify(request.value)}`,
 });
@@ -206,7 +218,7 @@ const hitsOf = (request: {
     if (own !== undefined) return [presenceHit({ flag, value: own[1] })];
     if (flag.judges === "own-options" || resolved === undefined) return [];
     const snippet = judgedSnippet({ config: request.config, resolved, option: flag.option });
-    return snippet === undefined ? [] : [{ clause: flag.address, anchor: FILE_ANCHOR, snippet }];
+    return snippet === undefined ? [] : [{ check: flag.address, anchor: FILE_ANCHOR, snippet }];
   });
 };
 
@@ -214,8 +226,8 @@ export const createCompilerOverridesCheck = (options: {
   readonly jsonc: JsoncParsePort;
   readonly resolutionOf: CompilerOptionsResolutionOf;
 }): WalkerPiece => ({
-  prepare: ({ clauses, repository, syntaxApi }) => {
-    const flags = selectedFlagsOf({ clauses });
+  prepare: ({ bindings, repository, syntaxApi }) => {
+    const flags = selectedFlagsOf({ bindings });
     const resolution = options.resolutionOf({ syntaxApi, disk: repository.disk });
     return {
       outcome: "ok",

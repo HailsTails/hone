@@ -3,6 +3,7 @@ import type { FileTextPort } from "../../application/ports/file-system/file-text
 import type { ModuleExtension } from "../../application/ports/host/module-extension.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type {
+  CheckPieceSource,
   PieceClause,
   SettingsDocument,
   SettingsSources,
@@ -20,6 +21,7 @@ import { readHeldDiscipline } from "../content-files/rule-sets/held-discipline.t
 import { readLocatedPieceFile } from "../content-files/rule-sets/located-piece-file.ts";
 import { pieceFilePath } from "../content-files/rule-sets/rule-set-reader.ts";
 import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
+import { checkPieceOf, readNamedPiece } from "../engines/named-piece.ts";
 import { runnerModuleSegmentsOf } from "../node/modules/install-layout.ts";
 import { ruleSetRootOf } from "./rule-set-root.ts";
 
@@ -175,3 +177,26 @@ export const createSettingsSources = (options: SourcesOptions): SettingsSources 
     }),
   pieceClause: (request) => pieceClauseOf({ ...options, ...request }),
 });
+
+export const createCheckPieceSource =
+  (options: Omit<SourcesOptions, "directory" | "repoRoot">): CheckPieceSource =>
+  (request) => {
+    const runnerPath = options.path.join({
+      segments: runnerModuleSegmentsOf({
+        installRoot: options.installRoot,
+        mechanism: request.mechanism,
+        moduleExtension: options.moduleExtension,
+      }),
+    });
+    if (options.fileText.exists({ path: runnerPath }) === "absent") {
+      return failed({ kind: "runner-missing", mechanism: request.mechanism });
+    }
+    const piece = readNamedPiece({
+      ...options,
+      ...request.names,
+      ruleSetRoot: request.ruleSetRoot,
+      mechanism: request.mechanism,
+    });
+    if (piece.outcome === "failed") return piece;
+    return { outcome: "ok", value: checkPieceOf(piece.value) };
+  };

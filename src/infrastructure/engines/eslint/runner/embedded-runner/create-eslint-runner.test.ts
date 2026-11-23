@@ -38,7 +38,11 @@ import type {
   QueryInstance,
 } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
-import { type EslintRunnerPorts, eslintRunnerOver } from "./create-eslint-runner.ts";
+import {
+  type EslintRunnerPorts,
+  eslintRunnerOver,
+  versionOneProjectionOver,
+} from "./create-eslint-runner.ts";
 import type { EslintRepository } from "./eslint-repository.ts";
 
 const SILENT_BOUNDARY: EslintMajorBoundary = {
@@ -3372,5 +3376,36 @@ describe("package projection slices, a run that cannot finish", () => {
       writes: [],
       removals: [],
     });
+  });
+});
+
+describe("versionOneProjectionOver", () => {
+  it("inspects the missing legacy projection and exposes the selected legacy rule without writing", async () => {
+    const write = vi.fn();
+    const remove = vi.fn();
+    const projection = versionOneProjectionOver({
+      fileText: {
+        exists: () => "absent",
+        read: ({ path }) => ({
+          outcome: "failed",
+          error: { kind: "unreadable", path, detail: "absent" },
+        }),
+        write,
+      },
+      fileRemoval: { remove },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+      moduleExtension: ".ts",
+    });
+    await expect(
+      projection.inspect(projectRequest({ trackedPaths: [], records: [] })),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: {
+        files: [{ file: PROJECTION_FILE, state: "missing" }],
+        ruleIds: new Map([["CD-14#class-syntax", RULE_ID]]),
+      },
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
   });
 });

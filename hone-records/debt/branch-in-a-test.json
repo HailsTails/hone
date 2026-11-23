@@ -47,10 +47,6 @@
     },
     {
       "answers": "branch-in-a-test#test-body",
-      "file": "src/composition/commands.record-debt.test.ts"
-    },
-    {
-      "answers": "branch-in-a-test#test-body",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {

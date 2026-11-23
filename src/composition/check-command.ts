@@ -1,10 +1,6 @@
-import type {
-  CheckArguments,
-  CheckLocations,
-} from "../application/ports/command/command-arguments.ts";
+import type { CheckArguments } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
 import type { PathPort } from "../application/ports/host/path-port.ts";
-import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
 import type { VersionTwoRun } from "../application/run/version-two-run.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import { runVerdictOf } from "../domain/report/report-sections.ts";
@@ -12,8 +8,6 @@ import type { RunReport } from "../domain/report/run-report.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import {
-  REPORT_OUTPUTS,
-  type ReportOutput,
   VERSION_TWO_REPORT_OUTPUTS,
   type VersionTwoReportOutput,
 } from "../domain/settings/report-output.ts";
@@ -24,24 +18,11 @@ import {
 } from "../infrastructure/command-line/arguments/tool-invocations.ts";
 import { packageLinkOf } from "../infrastructure/command-line/installation/package-link.ts";
 import { shownPathOf } from "../infrastructure/command-line/installation/shown-path.ts";
-import {
-  type CheckRun,
-  checkCommandOutcome,
-  type GuidedCheckRun,
-  guidedCheckCommandOutcome,
-} from "../infrastructure/command-line/outcomes/check-command-outcome.ts";
 import type { CommandOutcome } from "../infrastructure/command-line/outcomes/command-outcome.ts";
-import { checkLocationsOf } from "../infrastructure/printed-report/check-locations.ts";
 import { renderRunReportText } from "../infrastructure/printed-report/run-report-text.ts";
-import {
-  type SymptomGuideIn,
-  symptomGuideIn,
-} from "../infrastructure/printed-report/symptoms/symptom-guide.ts";
-import { checkOf } from "../operations/check/run-check-command.ts";
 import { versionTwoCheckOf } from "../operations/check/version-two-check-command.ts";
-import { loadFailed, loadResultOf, runFailed, type ToolCommand } from "./composed-command.ts";
-import type { ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
-import { runSettingsOver, withShownPaths } from "./version-one-runs.ts";
+import { loadFailed, runFailed, type ToolCommand } from "./composed-command.ts";
+import type { ToolPorts } from "./tool-ports.ts";
 import {
   repositoryLocatedOf,
   stagesOverRepository,
@@ -56,17 +37,6 @@ type VersionTwoCheckRun = {
   readonly located: RepositoryLocated;
   readonly commands: CheckCommands;
   readonly run: VersionTwoRun;
-};
-
-export type CheckRunAt = (
-  request: VersionOneCommandPorts & { readonly locations: CheckLocations },
-) => Promise<Result<CheckRun, LoadFailure>>;
-
-export type GuidedCheckRequest = {
-  readonly ports: VersionOneCommandPorts;
-  readonly arguments: CheckArguments<ReportOutput>;
-  readonly checkRunAt: CheckRunAt;
-  readonly symptomGuideIn: SymptomGuideIn;
 };
 
 export type VersionTwoChecked = { readonly outcome: CommandOutcome; readonly report: RunReport };
@@ -95,101 +65,6 @@ const checkCommandsOf = (request: {
         outcome: "ok",
         value: { projectCommand: projectCommand.value, pruneCommand: pruneCommand.value },
       };
-};
-
-const unshownCheckRunAt = async (
-  request: VersionOneCommandPorts & CheckLocations,
-): Promise<Result<CheckRun, LoadFailure>> => {
-  const commands = checkCommandsOf(request);
-  if (commands.outcome === "failed") {
-    return commands;
-  }
-  const checked = await checkOf({ ...request, runSettingsOf: runSettingsOver(request) });
-  return checked.outcome === "failed"
-    ? checked
-    : { outcome: "ok", value: { ...checked.value, ...commands.value } };
-};
-
-export const checkRunAt: CheckRunAt = async (request) => {
-  const { path, fileText } = request;
-  const { repoRoot, installRoot } = request.locations;
-  const run = await unshownCheckRunAt({ ...request, ...request.locations });
-  return withShownPaths({
-    path,
-    fileText,
-    repoRoot,
-    installRoot: { outcome: "ok", value: installRoot },
-    run,
-  });
-};
-
-const parseVersionOneCheck = (request: {
-  readonly arguments: readonly string[];
-}): Result<CheckArguments<ReportOutput>, LoadFailure> =>
-  parseCheckArguments({ arguments: request.arguments, reportOutputs: REPORT_OUTPUTS });
-
-export const CHECK: ToolCommand<CheckArguments<ReportOutput>, CheckRun, VersionOneToolPorts> = {
-  parse: parseVersionOneCheck,
-  run: async ({ command, ports, parsed }) => {
-    const locations = checkLocationsOf({
-      arguments: parsed,
-      path: ports.path,
-      fileText: ports.fileText,
-      moduleUrl: command.moduleUrl,
-    });
-    return locations.outcome === "failed"
-      ? loadFailed({ failure: locations.error })
-      : loadResultOf({
-          result: await checkRunAt({
-            ...ports,
-            moduleUrl: command.moduleUrl,
-            locations: locations.value,
-          }),
-        });
-  },
-  print: ({ produced }) => checkCommandOutcome({ result: { outcome: "ok", value: produced } }),
-};
-
-export const guidedCheckRunFor = async (
-  request: GuidedCheckRequest,
-): Promise<Result<GuidedCheckRun, LoadFailure>> => {
-  const { ports } = request;
-  const { path, fileText, moduleUrl } = ports;
-  const locations = checkLocationsOf({ arguments: request.arguments, path, fileText, moduleUrl });
-  if (locations.outcome === "failed") {
-    return locations;
-  }
-  const run = await request.checkRunAt({ ...ports, locations: locations.value });
-  if (run.outcome === "failed") {
-    return run;
-  }
-  const guide = request.symptomGuideIn({
-    path,
-    fileText,
-    repoRoot: locations.value.repoRoot,
-    installRoot: locations.value.installRoot,
-  });
-  return { outcome: "ok", value: { ...run.value, guide } };
-};
-
-export const GUIDED_CHECK: ToolCommand<
-  CheckArguments<ReportOutput>,
-  GuidedCheckRun,
-  VersionOneToolPorts & Pick<ToolPorts, "boundCatalogueOf">
-> = {
-  parse: parseVersionOneCheck,
-  run: async ({ command, ports, parsed }) =>
-    loadResultOf({
-      result: await guidedCheckRunFor({
-        ports: { ...ports, moduleUrl: command.moduleUrl },
-        arguments: parsed,
-        checkRunAt,
-        symptomGuideIn: (locations) =>
-          symptomGuideIn({ ...locations, boundCatalogueOf: ports.boundCatalogueOf }),
-      }),
-    }),
-  print: ({ produced }) =>
-    guidedCheckCommandOutcome({ result: { outcome: "ok", value: produced } }),
 };
 
 const symptomPageOf = (request: {

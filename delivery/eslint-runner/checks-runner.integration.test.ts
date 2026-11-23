@@ -1,5 +1,6 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 
+import type { NamedEngineRunRequest } from "../../src/application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
@@ -15,7 +16,6 @@ import type { RunnerClause } from "../../src/domain/runner/runner-module-types.t
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import ESLINT_CD_14_PIECE from "../../src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/piece.json" with { type: "json" };
-import type { ChecksRunRequest } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-run-types.ts";
 import { createChecksRunner } from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
 import {
   createEslintRunner,
@@ -231,10 +231,15 @@ const BINDING_SETTINGS = ESLINT_CD_14_PIECE.settings;
 
 const PIECE_ROOT = `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`;
 
-const BINDINGS: ChecksRunRequest["bindings"] = [
+const BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
-    mechanism: "eslint",
-    clause: { address: CLASS_SYNTAX, pieceRoot: PIECE_ROOT, settings: BINDING_SETTINGS },
+    address: CLASS_CHECK,
+    engine: "eslint",
+    anchor: { kind: "keyword", keyword: "class" },
+    pieceRoot: PIECE_ROOT,
+    settings: BINDING_SETTINGS,
+    checkSettings: {},
+    edition: editionOf("1"),
   },
 ];
 
@@ -281,9 +286,9 @@ afterAll(() => {
 });
 
 const ROOT_FILE_RUN: {
-  readonly answered: ChecksRunRequest["answered"];
+  readonly answered: NamedEngineRunRequest["answered"];
   readonly declaredConfigRoots: readonly RepoPath[];
-  readonly declaredConfigLookup: ChecksRunRequest["declaredConfigLookup"];
+  readonly declaredConfigLookup: NamedEngineRunRequest["declaredConfigLookup"];
   readonly queried: readonly RepoPath[];
   readonly tracked: readonly RepoPath[];
   readonly sub: Readonly<Record<string, string>>;
@@ -309,9 +314,9 @@ const runnerOn = async (request: { readonly line: EslintLine }) =>
 const runOver = async (request: {
   readonly line: EslintLine;
   readonly files: Readonly<Record<string, string>>;
-  readonly answered: ChecksRunRequest["answered"];
+  readonly answered: NamedEngineRunRequest["answered"];
   readonly declaredConfigRoots: readonly RepoPath[];
-  readonly declaredConfigLookup: ChecksRunRequest["declaredConfigLookup"];
+  readonly declaredConfigLookup: NamedEngineRunRequest["declaredConfigLookup"];
   readonly queried: readonly RepoPath[];
   readonly tracked: readonly RepoPath[];
   readonly sub: Readonly<Record<string, string>>;
@@ -337,7 +342,6 @@ export default [{ ignores: ["kept.ts"] }, ...hone];
 const ADOPTED = { "eslint.config.mjs": TEAM_CONFIG, [CHECKS_PROJECTION_PATH]: PROJECTION_TEXT };
 
 const CLASS_HIT = {
-  clause: CLASS_SYNTAX,
   file: "kept.ts",
   anchor: { line: 1, column: 7 },
   snippet: "export class Kept {}",
@@ -346,7 +350,7 @@ const CLASS_HIT = {
 
 const CLASS_HIT_ON_LINE_2 = { ...CLASS_HIT, anchor: { line: 2, column: 7 } };
 
-const MEASURED = [{ clause: CLASS_SYNTAX, file: "kept.ts" }];
+const MEASURED = [{ check: CLASS_CHECK, file: "kept.ts" }];
 
 const ONE_CLASS = "export class Kept {}\n";
 
@@ -373,7 +377,7 @@ const V1_CLAUSE: RunnerClause = {
 
 const V1_CONFIG = `import projection from "./disciplines.eslint.mjs";\nexport default [...projection];\n`;
 
-const REPOSITORY_ROOT_LOOKUP: ChecksRunRequest["declaredConfigLookup"] = "repository-root";
+const REPOSITORY_ROOT_LOOKUP: NamedEngineRunRequest["declaredConfigLookup"] = "repository-root";
 
 const SUB_FILE = repoPathOf("sub/kept.ts");
 
@@ -458,11 +462,10 @@ describe.each(ESLINT_LINES)(
           nativeExceptions: [
             {
               kind: "inline-disable",
-              clause: CLASS_SYNTAX,
               file: "kept.ts",
               line: 1,
               text: `// eslint-disable-next-line ${CLASS_RULE}`,
-              reach: "one-clause",
+              reach: "one-check",
               check: CLASS_CHECK,
             },
           ],
@@ -514,11 +517,10 @@ describe.each(ESLINT_LINES)(
           nativeExceptions: [
             {
               kind: "inline-disable",
-              clause: CLASS_SYNTAX,
               file: "kept.ts",
               line: 1,
               text: comment,
-              reach: "one-clause",
+              reach: "one-check",
               check: CLASS_CHECK,
             },
           ],
@@ -543,7 +545,6 @@ describe.each(ESLINT_LINES)(
           nativeExceptions: [
             {
               kind: "inline-rule-config",
-              clause: CLASS_SYNTAX,
               file: "kept.ts",
               line: 1,
               text: comment,
@@ -616,9 +617,7 @@ describe.each(ESLINT_LINES)(
         value: {
           ...REPORT,
           hits: [CLASS_HIT],
-          nativeExceptions: [
-            { kind: "ignore", clause: CLASS_SYNTAX, file: "kept.ts", check: CLASS_CHECK },
-          ],
+          nativeExceptions: [{ kind: "ignore", file: "kept.ts", check: CLASS_CHECK }],
           measured: MEASURED,
         },
       });
@@ -641,9 +640,7 @@ describe.each(ESLINT_LINES)(
         value: {
           ...REPORT,
           hits: [CLASS_HIT],
-          nativeExceptions: [
-            { kind: "config-override", clause: CLASS_SYNTAX, file: "kept.ts", check: CLASS_CHECK },
-          ],
+          nativeExceptions: [{ kind: "config-override", file: "kept.ts", check: CLASS_CHECK }],
           measured: MEASURED,
         },
       });
@@ -688,7 +685,7 @@ describe.each(ESLINT_LINES)(
         value: {
           ...REPORT,
           hits: [SUB_HIT],
-          measured: [{ clause: CLASS_SYNTAX, file: "sub/kept.ts" }],
+          measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
         },
       });
     });
@@ -738,10 +735,8 @@ describe.each(ESLINT_LINES)(
         value: {
           ...REPORT,
           hits: [SUB_HIT],
-          measured: [{ clause: CLASS_SYNTAX, file: "sub/kept.ts" }],
-          nativeExceptions: [
-            { kind: "ignore", clause: CLASS_SYNTAX, file: "sub/kept.ts", check: CLASS_CHECK },
-          ],
+          measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
+          nativeExceptions: [{ kind: "ignore", file: "sub/kept.ts", check: CLASS_CHECK }],
         },
       });
     });
@@ -784,7 +779,6 @@ describe.each(ESLINT_LINES)(
           nativeExceptions: [
             {
               kind: "suppression-entry",
-              clause: CLASS_SYNTAX,
               file: "kept.ts",
               location: "eslint-suppressions.json",
               check: CLASS_CHECK,
@@ -810,7 +804,6 @@ describe.each(ESLINT_LINES)(
           nativeExceptions: [
             {
               kind: "command-line-option",
-              clause: CLASS_SYNTAX,
               location: "package.json",
               script: "lint:suppress",
               option: "--suppress-all",
@@ -899,7 +892,7 @@ describe.each(ESLINT_LINES)(
           value: {
             ...REPORT,
             hits: [SUB_HIT],
-            measured: [{ clause: CLASS_SYNTAX, file: "sub/kept.ts" }],
+            measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
           },
         },
       });
@@ -934,7 +927,7 @@ describe.each(ESLINT_LINES)(
         value: {
           ...REPORT,
           hits: [SUB_HIT],
-          measured: [{ clause: CLASS_SYNTAX, file: "sub/kept.ts" }],
+          measured: [{ check: CLASS_CHECK, file: "sub/kept.ts" }],
         },
       });
     });
@@ -948,7 +941,7 @@ import sub from "./${SUB_SLICE}";
 export default [...hone, ...sub];
 `;
 
-const SUB_MEASURED = [{ clause: CLASS_SYNTAX, file: "sub/kept.ts" }];
+const SUB_MEASURED = [{ check: CLASS_CHECK, file: "sub/kept.ts" }];
 
 const ANSWERED_IN_SUB = [
   { symptom: "authored-class-or-this", check: "class-keyword", file: SUB_FILE },

@@ -17,7 +17,7 @@ type SwitchState = {
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
@@ -37,8 +37,8 @@ export const check: WalkerPiece = {
             const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
             const hits =
               state.depth + opens > 0 && DEFAULT_ARM.test(line)
-                ? clauses.map((clause) => ({
-                    clause: clause.address,
+                ? bindings.map((binding) => ({
+                    check: binding.address,
                     anchor: { line: index + 1, column: 0 },
                     snippet,
                   }))

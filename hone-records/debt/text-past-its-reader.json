@@ -35,18 +35,6 @@
     },
     {
       "answers": "text-past-its-reader#test-body",
-      "file": "src/composition/check-command.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/composition/commands.project.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
-      "file": "src/composition/commands.record-debt.test.ts"
-    },
-    {
-      "answers": "text-past-its-reader#test-body",
       "file": "delivery/adopter-repositories/upgrade-command.integration.test.ts"
     },
     {

@@ -1,7 +1,6 @@
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import { isRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
 import { clauseAddressOf } from "../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../domain/rule-set/identifier-types.ts";
@@ -145,10 +144,4 @@ export const clauseUnderTestOf = (
   };
 };
 
-export const repoPathOf = (request: {
-  readonly file: string;
-}): Result<RepoPath, ConformanceSetupFailure> => {
-  return isRepoPath(request.file)
-    ? { outcome: "ok", value: request.file }
-    : setupFailed({ kind: "file-invalid", detail: request.file });
-};
+export { repoPathOf } from "./check-conformance.ts";

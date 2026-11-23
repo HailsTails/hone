@@ -19,6 +19,7 @@ type ItemFolder = {
   readonly path: Pick<PathPort, "join">;
   readonly root: AbsolutePath;
   readonly beside: HeldBesideItems;
+  readonly symptomSourcePrefix?: string;
 };
 
 type ItemRead = Result<PlacedItem, VersionTwoLoadFailure>;
@@ -56,6 +57,9 @@ const placedItemAt = (request: ItemFolder & { readonly file: string }): ItemRead
         outcome: "ok",
         value: {
           name: identity.value.name,
+          ...(request.symptomSourcePrefix === undefined || identity.value.kind !== "symptom"
+            ? {}
+            : { sourceFile: `${request.symptomSourcePrefix}/${request.file}` }),
           within: identity.value.within,
           title: read.value.title,
           item: facts.value,
@@ -85,9 +89,29 @@ const holdingOf = (request: {
 }): Result<ContentHolding, VersionTwoLoadFailure> => {
   const file = catalogueFileOf({ items: request.items, beside: request.beside });
   const content = file.outcome === "failed" ? file : catalogueContentFromFile({ file: file.value });
-  return content.outcome === "failed"
-    ? { outcome: "failed", error: malformed({ path: request.root, detail: content.error }) }
-    : { outcome: "ok", value: { held: "catalogue", content: content.value } };
+  if (content.outcome === "failed") {
+    return { outcome: "failed", error: malformed({ path: request.root, detail: content.error }) };
+  }
+  const sourceFiles = new Map<string, string>();
+  for (const { name, sourceFile } of request.items) {
+    if (sourceFile !== undefined) sourceFiles.set(name, sourceFile);
+  }
+  if (sourceFiles.size === 0) {
+    return { outcome: "ok", value: { held: "catalogue", content: content.value } };
+  }
+  const symptoms = content.value.symptoms.map((symptom) => ({
+    ...symptom,
+    sourceFile: sourceFiles.get(symptom.name),
+  }));
+  const byName = new Map(symptoms.map((symptom) => [symptom.name, symptom]));
+  const checks = content.value.checks.map((check) => ({
+    ...check,
+    symptom: byName.get(check.symptom.name) ?? check.symptom,
+  }));
+  return {
+    outcome: "ok",
+    value: { held: "catalogue", content: { ...content.value, symptoms, checks } },
+  };
 };
 
 const readItemFolderCatalogue = (

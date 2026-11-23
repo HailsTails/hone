@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
+import type { AttributedCheckException, CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   Case,
   Check,
@@ -22,7 +22,6 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
-import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import {
   answeredLine,
   checkLine,
@@ -236,12 +235,6 @@ const CAST_EXPRESSIONS = {
   clause: clauseIdOf("cast-expressions"),
 };
 
-const TEAM_CLAUSE = {
-  ruleSet: { name: ruleSetNameOf("acme") },
-  discipline: disciplineIdOf("AC-1"),
-  clause: clauseIdOf("no-moment"),
-};
-
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
@@ -304,16 +297,16 @@ const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
 const PACKAGE_FILE = repoPathOf("package.json");
 
-const CLOCK_FINDING: Finding = {
-  clause: CLOCK_SOURCES,
+const CLOCK_FINDING: CheckFinding = {
+  check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
   anchor: { line: 14, column: 0 },
   snippet: "const chargedAt = clock.now();",
 };
 
-const BRANCH_FINDING: Finding = {
-  clause: TEST_BODY_LOGIC,
+const BRANCH_FINDING: CheckFinding = {
+  check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: TEST_FILE,
   anchor: { line: 22, column: 2 },
@@ -333,8 +326,8 @@ const SECOND_CAST_CHECK: Check = {
   forms: [],
 };
 
-const TEAM_FINDING: Finding = {
-  clause: TEAM_CLAUSE,
+const TEAM_FINDING: CheckFinding = {
+  check: "outside-import-past-a-boundary#no-moment",
   mechanism: ESLINT,
   file: ORDER_FILE,
   anchor: { line: 1, column: 0 },
@@ -375,9 +368,9 @@ describe("findingLine", () => {
     );
   });
 
-  it("leads with the clause address and mechanism when the catalogue has no check for the finding, and names no symptom", () => {
+  it("leads with the check address and mechanism when the catalogue has no check for the finding, and names no symptom", () => {
     expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: TEAM_FINDING })).toBe(
-      "acme/AC-1#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
+      "outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
     );
   });
 });
@@ -434,14 +427,14 @@ describe("the lines that name a check", () => {
 describe("unrecordedLines", () => {
   it.each<{
     readonly name: string;
-    readonly exception: AttributedNativeException;
+    readonly exception: AttributedCheckException;
     readonly line: string;
   }>([
     {
       name: "an ignore",
       exception: {
         kind: "ignore",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         mechanism: ESLINT,
       },
@@ -451,7 +444,7 @@ describe("unrecordedLines", () => {
       name: "a config override",
       exception: {
         kind: "config-override",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         mechanism: ESLINT,
       },
@@ -461,7 +454,7 @@ describe("unrecordedLines", () => {
       name: "a suppression entry",
       exception: {
         kind: "suppression-entry",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         location: repoPathOf("eslint-suppressions.json"),
         mechanism: ESLINT,
@@ -472,11 +465,11 @@ describe("unrecordedLines", () => {
       name: "an inline disable of one rule",
       exception: {
         kind: "inline-disable",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         line: 4,
         text: "// eslint-disable-next-line no-restricted-syntax",
-        reach: "one-clause",
+        reach: "one-check",
         mechanism: ESLINT,
       },
       line: "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:4 // eslint-disable-next-line no-restricted-syntax",
@@ -485,11 +478,11 @@ describe("unrecordedLines", () => {
       name: "an inline disable that names no rule",
       exception: {
         kind: "inline-disable",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         line: 4,
         text: "// eslint-disable-next-line",
-        reach: "every-selected-clause",
+        reach: "every-selected-check",
         mechanism: ESLINT,
       },
       line: "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:4 // eslint-disable-next-line names no rule and escapes every selected check: naming the rule is the cheap fix",
@@ -498,7 +491,7 @@ describe("unrecordedLines", () => {
       name: "an inline rule config",
       exception: {
         kind: "inline-rule-config",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         line: 1,
         text: "/* eslint no-restricted-syntax: off */",
@@ -510,7 +503,7 @@ describe("unrecordedLines", () => {
       name: "a command-line option that weakens the whole run",
       exception: {
         kind: "command-line-option",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
         script: "lint",
         option: "--no-inline-config",
@@ -523,7 +516,7 @@ describe("unrecordedLines", () => {
       name: "a command-line option after another command",
       exception: {
         kind: "command-line-option",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
         script: "lint",
         option: "--rule x:off",
@@ -540,7 +533,7 @@ describe("unrecordedLines", () => {
       name: "a wrapped command-line option",
       exception: {
         kind: "command-line-option",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
         script: "lint",
         option: "--rule x:off",
@@ -553,7 +546,7 @@ describe("unrecordedLines", () => {
       name: "a command-line option in a script Hone cannot read",
       exception: {
         kind: "command-line-option",
-        clause: CAST_EXPRESSIONS,
+        check: "claimed-type#cast-expressions",
         location: PACKAGE_FILE,
         script: "lint",
         option: "eslint 'x",
@@ -566,29 +559,33 @@ describe("unrecordedLines", () => {
     expect(unrecordedLines({ catalogue: REPORT_CATALOGUE, exception })).toEqual([line]);
   });
 
-  it("prints a suppression of a clause the catalogue has no check for, led by its clause and mechanism", () => {
+  it("prints an unregistered suppression by its check address and engine", () => {
     expect(
       unrecordedLines({
         catalogue: REPORT_CATALOGUE,
-        exception: { kind: "ignore", clause: TEAM_CLAUSE, file: ORDER_FILE, mechanism: ESLINT },
+        exception: {
+          kind: "ignore",
+          check: "outside-import-past-a-boundary#no-moment",
+          file: ORDER_FILE,
+          mechanism: ESLINT,
+        },
       }),
-    ).toEqual(["acme/AC-1#no-moment eslint ignore src/orders/charge-order.ts"]);
+    ).toEqual([
+      "outside-import-past-a-boundary#no-moment eslint ignore src/orders/charge-order.ts",
+    ]);
   });
 
-  it("prints one line for each check of the suppressed clause on that engine", () => {
+  it("gives a suppression the line for its check when another check shares the symptom", () => {
     expect(
       unrecordedLines({
         catalogue: { ...REPORT_CATALOGUE, checks: [CAST_CHECK, SECOND_CAST_CHECK] },
         exception: {
           kind: "ignore",
-          clause: CAST_EXPRESSIONS,
+          check: "claimed-type#cast-walker",
           file: WEBHOOK_FILE,
           mechanism: ESLINT,
         },
       }),
-    ).toEqual([
-      "claimed-type#cast-expressions eslint ignore src/adapters/stripe-webhook.ts",
-      "claimed-type#cast-walker eslint ignore src/adapters/stripe-webhook.ts",
-    ]);
+    ).toEqual(["claimed-type#cast-walker eslint ignore src/adapters/stripe-webhook.ts"]);
   });
 });

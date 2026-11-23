@@ -11,9 +11,9 @@ import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
-import type { ClauseBinding } from "../../../../../domain/settings/selection/selection.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import { checksPluginImportOf, projectedChecksOf } from "./projected-checks.ts";
+import { checksPluginImportOf, projectedNamedChecksOf } from "./projected-checks.ts";
 
 const WALKER_ENGINE: Engine = { name: "walker" };
 
@@ -118,78 +118,51 @@ const ESLINT = "eslint" as const;
 
 const AUDIT = "walker" as const;
 
-const PARAMETER_COUNT_BINDING: ClauseBinding = {
-  mechanism: ESLINT,
-  clause: {
-    address: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-40"),
-      clause: clauseIdOf("parameter-count"),
-    },
-    anchor: { kind: "file" },
-    pieceRoot: "/install/mechanisms/eslint/CD-40",
-    settings: {
-      pluginNamespace: "hone-cd40",
-      pluginModule: "cd40/cd40.eslint-plugin.ts",
-      rule: "max-params",
-      options: [{ max: 2, countVoidThis: true }],
-    },
-    clauseSettings: {},
-    edition: editionOf("1"),
+const PARAMETER_COUNT_BINDING: CheckBinding = {
+  address: "positional-parameters#parameter-count",
+  engine: ESLINT,
+  anchor: { kind: "file" },
+  pieceRoot: "/install/eslint/positional-parameters/parameter-count",
+  settings: {
+    pluginNamespace: "hone-cd40",
+    pluginModule: "cd40/cd40.eslint-plugin.ts",
+    rule: "max-params",
+    options: [{ max: 2, countVoidThis: true }],
   },
+  checkSettings: {},
+  edition: editionOf("1"),
 };
 
-const SKIPPED_TESTS_BINDING: ClauseBinding = {
-  mechanism: ESLINT,
-  clause: {
-    address: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-27"),
-      clause: clauseIdOf("skipped-tests"),
-    },
-    anchor: { kind: "file" },
-    pieceRoot: "/install/mechanisms/eslint/CD-27",
-    settings: {
-      pluginNamespace: "hone-cd27",
-      pluginModule: "cd27/cd27.eslint-plugin.ts",
-      rule: "skipped-tests",
-    },
-    clauseSettings: {},
-    edition: editionOf("1"),
+const SKIPPED_TESTS_BINDING: CheckBinding = {
+  address: "test-switched-off#skipped-tests",
+  engine: ESLINT,
+  anchor: { kind: "file" },
+  pieceRoot: "/install/eslint/test-switched-off/skipped-tests",
+  settings: {
+    pluginNamespace: "hone-cd27",
+    pluginModule: "cd27/cd27.eslint-plugin.ts",
+    rule: "skipped-tests",
   },
+  checkSettings: {},
+  edition: editionOf("1"),
 };
 
-const WALKER_BINDING: ClauseBinding = {
-  mechanism: AUDIT,
-  clause: {
-    address: {
-      ruleSet: TOOL_RULE_SET,
-      discipline: disciplineIdOf("CD-27"),
-      clause: clauseIdOf("test-body-logic"),
-    },
-    anchor: { kind: "file" },
-    pieceRoot: "/install/mechanisms/audit/CD-27",
-    settings: { module: "test-body-logic.ts" },
-    clauseSettings: {},
-    edition: editionOf("1"),
-  },
-};
-
-const OTHER_RULE_SET_CHECK: Check = {
-  ...SKIPPED_TESTS_CHECK,
-  clause: {
-    ruleSet: { name: ruleSetNameOf("acme") },
-    discipline: disciplineIdOf("CD-27"),
-    clause: clauseIdOf("skipped-tests"),
-  },
+const WALKER_BINDING: CheckBinding = {
+  address: "rebinding#test-body",
+  engine: AUDIT,
+  anchor: { kind: "file" },
+  pieceRoot: "/install/walker/rebinding/test-body",
+  settings: { module: "test-body-logic.ts" },
+  checkSettings: {},
+  edition: editionOf("1"),
 };
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
-describe("projectedChecksOf", () => {
+describe("projectedNamedChecksOf", () => {
   it("projects each ESLint binding's check under its rule id, with the piece's options, and no binding of another engine", () => {
     expect(
-      projectedChecksOf({
+      projectedNamedChecksOf({
         checks: PLUGIN_CHECKS,
         bindings: [SKIPPED_TESTS_BINDING, WALKER_BINDING, PARAMETER_COUNT_BINDING],
       }),
@@ -214,66 +187,115 @@ describe("projectedChecksOf", () => {
 
   it("refuses an ESLint binding whose settings are not an ESLint piece's, naming its piece", () => {
     expect(
-      projectedChecksOf({
+      projectedNamedChecksOf({
         checks: PLUGIN_CHECKS,
+        bindings: [{ ...SKIPPED_TESTS_BINDING, settings: { module: "skipped-tests.ts" } }],
+      }),
+    ).toMatchObject({
+      outcome: "failed",
+      error: { kind: "piece-invalid", pieceRoot: SKIPPED_TESTS_BINDING.pieceRoot },
+    });
+  });
+
+  it("refuses an ESLint binding for a check only Walker runs", () => {
+    expect(
+      projectedNamedChecksOf({
+        checks: PLUGIN_CHECKS,
+        bindings: [{ ...WALKER_BINDING, engine: ESLINT, settings: SKIPPED_TESTS_BINDING.settings }],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "check-unknown", address: WALKER_BINDING.address },
+    });
+  });
+
+  it("refuses a team’s attempt to occupy Hone’s reserved plugin namespace", () => {
+    expect(
+      projectedNamedChecksOf({
+        checks: [SKIPPED_TESTS_CHECK],
         bindings: [
           {
-            mechanism: ESLINT,
-            clause: { ...SKIPPED_TESTS_BINDING.clause, settings: { module: "skipped-tests.ts" } },
+            ...SKIPPED_TESTS_BINDING,
+            ruleSet: ruleSetNameOf("team"),
+            settings: { pluginNamespace: "hone", pluginModule: "plugin.ts", rule: "no-skips" },
           },
         ],
       }),
     ).toMatchObject({
       outcome: "failed",
-      error: { kind: "piece-invalid", pieceRoot: "/install/mechanisms/eslint/CD-27" },
+      error: { kind: "piece-invalid", pieceRoot: SKIPPED_TESTS_BINDING.pieceRoot },
     });
   });
 
-  it("refuses an ESLint binding whose clause no check runs on ESLint, naming its clause", () => {
+  it("keeps a team's ESLint namespace and plugin module when projecting its named check", () => {
     expect(
-      projectedChecksOf({
-        checks: PLUGIN_CHECKS,
+      projectedNamedChecksOf({
+        checks: [SKIPPED_TESTS_CHECK],
         bindings: [
           {
-            mechanism: ESLINT,
-            clause: {
-              ...SKIPPED_TESTS_BINDING.clause,
-              address: {
-                ruleSet: TOOL_RULE_SET,
-                discipline: disciplineIdOf("CD-27"),
-                clause: clauseIdOf("focused-tests"),
-              },
-            },
+            address: "test-switched-off#skipped-tests",
+            engine: "eslint",
+            ruleSet: ruleSetNameOf("team"),
+            anchor: { kind: "file" },
+            pieceRoot: "/repo/team",
+            settings: { pluginNamespace: "team", pluginModule: "plugin.ts", rule: "no-skips" },
+            checkSettings: {},
+            edition: editionOf("1"),
           },
         ],
       }),
     ).toEqual({
-      outcome: "failed",
-      error: { kind: "check-unknown", address: "CD-27#focused-tests" },
+      outcome: "ok",
+      value: [
+        {
+          symptom: "test-switched-off",
+          check: "skipped-tests",
+          ruleId: "team/no-skips",
+          options: [],
+          plugin: { namespace: "team", module: "plugin.ts", pieceRoot: "/repo/team" },
+        },
+      ],
     });
   });
 
-  it("refuses an ESLint binding whose check is another rule set's, which the plugin holds no rule for, naming its clause", () => {
+  it("projects a selected check that has no version one clause", () => {
     expect(
-      projectedChecksOf({
-        checks: [OTHER_RULE_SET_CHECK],
+      projectedNamedChecksOf({
+        checks: [
+          { name: "debug-call", symptom: { name: "leftover-debugging" }, engines: [ESLINT_ENGINE] },
+          {
+            name: "debug-statement",
+            symptom: { name: "leftover-debugging" },
+            engines: [ESLINT_ENGINE],
+          },
+        ],
         bindings: [
           {
-            mechanism: ESLINT,
-            clause: {
-              ...SKIPPED_TESTS_BINDING.clause,
-              address: {
-                ruleSet: { name: ruleSetNameOf("acme") },
-                discipline: disciplineIdOf("CD-27"),
-                clause: clauseIdOf("skipped-tests"),
-              },
+            address: "leftover-debugging#debug-call",
+            engine: "eslint",
+            anchor: { kind: "file" },
+            pieceRoot: "/install/pieces/leftover-debugging",
+            settings: {
+              pluginNamespace: "original",
+              pluginModule: "plugin.ts",
+              rule: "debug-call",
+              options: [{ allowed: ["warn"] }],
             },
+            checkSettings: {},
+            edition: editionOf("1"),
           },
         ],
       }),
     ).toEqual({
-      outcome: "failed",
-      error: { kind: "check-outside-rule-set", address: "acme/CD-27#skipped-tests" },
+      outcome: "ok",
+      value: [
+        {
+          symptom: "leftover-debugging",
+          check: "debug-call",
+          ruleId: "hone/leftover-debugging#debug-call",
+          options: [{ allowed: ["warn"] }],
+        },
+      ],
     });
   });
 });

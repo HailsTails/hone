@@ -19,7 +19,12 @@
   "checkSettings": {
     "untracked-escape#directive-pointers": { "trackerPatterns": ["^\\(spec-\\d+\\)$"] },
     "outside-import-past-a-boundary#import-or-require": { "confinedOutsideDependencies": ["uuid"] },
-    "branch-in-a-test#test-body": { "edition": "2" }
+    "branch-in-a-test#test-body": { "edition": "2" },
+    "computed-value-in-a-test#test-body": { "edition": "2" },
+    "rebinding#test-body": { "edition": "2" },
+    "text-past-its-reader#test-body": { "edition": "2" },
+    "throw-or-catch-in-a-test#try-block": { "edition": "2" },
+    "double-with-a-body#logic-in-a-passed-function": { "edition": "2" }
   },
   "forfeiture": "elsewhere",
   "layers": {}

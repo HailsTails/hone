@@ -1,66 +1,60 @@
 import { describe, expect, it } from "vitest";
 
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type {
-  ClauseSettingValues,
-  RunnerClause,
-} from "../../../../../domain/runner/runner-module-types.ts";
-import { stringListClauseSettings } from "./piece-clause-settings.ts";
+  CheckSettingValues,
+  CheckBinding,
+} from "../../../../../domain/runner/check-binding.ts";
+import { stringListCheckSettings } from "./piece-check-settings.ts";
 
-const CLAUSE_WITH_NO_SETTINGS: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-19"),
-    clause: clauseIdOf("import-boundaries"),
-  },
+const CLAUSE_WITH_NO_SETTINGS: CheckBinding = {
+  address: "example#import-boundaries",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-19",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "a.ts" },
 };
 
-const clauseWith = (request: { readonly clauseSettings: ClauseSettingValues }): RunnerClause => ({
+const clauseWith = (request: { readonly checkSettings: CheckSettingValues }): CheckBinding => ({
   ...CLAUSE_WITH_NO_SETTINGS,
-  clauseSettings: request.clauseSettings,
+  checkSettings: request.checkSettings,
 });
 
-describe("stringListClauseSettings", () => {
-  it("reads each named string list from the clause's settings, apart from the mechanism settings", () => {
+describe("stringListCheckSettings", () => {
+  it("reads each named string list from the binding's settings, apart from the mechanism settings", () => {
     expect(
-      stringListClauseSettings({
-        clause: clauseWith({ clauseSettings: { allowed: ["x"], denied: [] } }),
+      stringListCheckSettings({
+        binding: clauseWith({ checkSettings: { allowed: ["x"], denied: [] } }),
         keys: ["allowed", "denied"],
       }),
     ).toEqual({ outcome: "ok", value: { allowed: ["x"], denied: [] } });
   });
 
-  it.each<{ readonly name: string; readonly clause: RunnerClause }>([
-    { name: "empty", clause: CLAUSE_WITH_NO_SETTINGS },
-    { name: "missing a named list", clause: clauseWith({ clauseSettings: { allowed: [] } }) },
+  it.each<{ readonly name: string; readonly binding: CheckBinding }>([
+    { name: "empty", binding: CLAUSE_WITH_NO_SETTINGS },
+    { name: "missing a named list", binding: clauseWith({ checkSettings: { allowed: [] } }) },
     {
       name: "holding an unnamed setting",
-      clause: clauseWith({ clauseSettings: { allowed: [], denied: [], extra: [] } }),
+      binding: clauseWith({ checkSettings: { allowed: [], denied: [], extra: [] } }),
     },
     {
       name: "holding a list that is not of strings",
-      clause: clauseWith({ clauseSettings: { allowed: [1], denied: [] } }),
+      binding: clauseWith({ checkSettings: { allowed: [1], denied: [] } }),
     },
     {
       name: "holding an empty string",
-      clause: clauseWith({ clauseSettings: { allowed: [""], denied: [] } }),
+      binding: clauseWith({ checkSettings: { allowed: [""], denied: [] } }),
     },
-  ])("is piece-invalid, naming the clause, when the clause settings are $name", ({ clause }) => {
-    expect(stringListClauseSettings({ clause, keys: ["allowed", "denied"] })).toEqual({
+  ])("is piece-invalid, naming the binding, when the binding settings are $name", ({ binding }) => {
+    expect(stringListCheckSettings({ binding, keys: ["allowed", "denied"] })).toEqual({
       outcome: "failed",
       error: {
         kind: "piece-invalid",
         pieceRoot: "/install/mechanisms/audit/CD-19",
         detail: expect.stringContaining(
-          "the clauseSettings of CD-19#import-boundaries are malformed",
+          "the checkSettings of example#import-boundaries are malformed",
         ),
       },
     });

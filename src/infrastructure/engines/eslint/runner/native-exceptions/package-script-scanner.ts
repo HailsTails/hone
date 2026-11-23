@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
@@ -12,9 +13,13 @@ import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { packageJsonSchema } from "./eslint-file-schemas.ts";
 
-export type SelectedRule = {
+type ClauseSubject = { readonly clause: ClauseAddress };
+export type CheckSubject = { readonly check: CheckAddressText };
+export type RuleSubject = ClauseSubject | CheckSubject;
+export type SelectedRule = { readonly ruleId: string } & ClauseSubject;
+export type ScannedRule<Subject extends RuleSubject> = {
   readonly ruleId: string;
-  readonly clause: ClauseAddress;
+  readonly subject: Subject;
 };
 
 export type ScriptCommand = readonly string[];
@@ -37,10 +42,11 @@ type SettledInvocation = EslintInvocation & {
   readonly command: string;
 };
 
-export type ScriptOptionException = Omit<
+export type ScriptOptionException<Subject extends RuleSubject = ClauseSubject> = Omit<
   Extract<NativeException, { readonly kind: "command-line-option" }>,
-  "cause"
->;
+  "cause" | "clause" | "check"
+> &
+  Subject;
 
 type Expansion = "literal" | "shell-expanded";
 
@@ -62,12 +68,12 @@ export type WeakeningOption = {
   readonly effect: OptionEffect;
 };
 
-export type ScriptOption = {
+export type ScriptOption<Subject extends RuleSubject = ClauseSubject> = {
   readonly location: RepoPath;
   readonly effect: OptionEffect;
   readonly settlement: Settlement;
   readonly command: string;
-  readonly exceptions: readonly ScriptOptionException[];
+  readonly exceptions: readonly ScriptOptionException<Subject>[];
 };
 
 export type ScriptSuppressionsLocation = {
@@ -75,15 +81,15 @@ export type ScriptSuppressionsLocation = {
   readonly script: string;
 };
 
-export type UnreadableScript = {
+export type UnreadableScript<Subject extends RuleSubject = ClauseSubject> = {
   readonly command: string;
-  readonly exceptions: readonly ScriptOptionException[];
+  readonly exceptions: readonly ScriptOptionException<Subject>[];
 };
 
-export type PackageJsonScan = {
-  readonly scriptOptions: readonly ScriptOption[];
+export type PackageJsonScan<Subject extends RuleSubject = ClauseSubject> = {
+  readonly scriptOptions: readonly ScriptOption<Subject>[];
   readonly suppressionsLocations: readonly ScriptSuppressionsLocation[];
-  readonly unreadableScripts: readonly UnreadableScript[];
+  readonly unreadableScripts: readonly UnreadableScript<Subject>[];
 };
 
 type ScriptPiece =
@@ -599,34 +605,34 @@ export const repoPathResolved = (request: {
   return { outcome: "ok", value: parsed.data };
 };
 
-const scriptOptionOf = (request: {
+const scriptOptionOf = <Subject extends RuleSubject>(request: {
   readonly weakening: WeakeningOption;
   readonly invocation: SettledInvocation;
   readonly path: RepoPath;
   readonly script: string;
-  readonly selectedRules: readonly SelectedRule[];
-}): ScriptOption => ({
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): ScriptOption<Subject> => ({
   location: request.path,
   effect: request.weakening.effect,
   settlement: request.invocation.settlement,
   command: request.invocation.command,
   exceptions: request.selectedRules
     .filter((rule) => request.weakening.ruleIds.includes(rule.ruleId))
-    .map((rule): ScriptOptionException => ({
+    .map((rule): ScriptOptionException<Subject> => ({
+      ...rule.subject,
       kind: "command-line-option",
-      clause: rule.clause,
       location: request.path,
       script: request.script,
       option: request.weakening.option,
     })),
 });
 
-const scriptOptionsOf = (request: {
+const scriptOptionsOf = <Subject extends RuleSubject>(request: {
   readonly invocations: readonly SettledInvocation[];
   readonly path: RepoPath;
   readonly script: string;
-  readonly selectedRules: readonly SelectedRule[];
-}): readonly ScriptOption[] => {
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): readonly ScriptOption<Subject>[] => {
   const selectedRuleIds = request.selectedRules.map((rule) => rule.ruleId);
   return request.invocations.flatMap((invocation) =>
     commandLineOptionsOf({ invocation, selectedRuleIds }).map((weakening) =>
@@ -635,13 +641,13 @@ const scriptOptionsOf = (request: {
   );
 };
 
-const locatedScan = (request: {
-  readonly scan: Result<PackageJsonScan, RunnerFailure>;
+const locatedScan = <Subject extends RuleSubject>(request: {
+  readonly scan: Result<PackageJsonScan<Subject>, RunnerFailure>;
   readonly locationText: string;
   readonly baseSegments: readonly string[];
   readonly path: RepoPath;
   readonly script: string;
-}): Result<PackageJsonScan, RunnerFailure> => {
+}): Result<PackageJsonScan<Subject>, RunnerFailure> => {
   if (request.scan.outcome === "failed") {
     return request.scan;
   }
@@ -670,20 +676,22 @@ const locatedScan = (request: {
   };
 };
 
-const EMPTY_SCAN: PackageJsonScan = {
+const EMPTY_SCAN: PackageJsonScan<never> = {
   scriptOptions: [],
   suppressionsLocations: [],
   unreadableScripts: [],
 };
 
-type ScriptRequest = {
+type ScriptRequest<Subject extends RuleSubject> = {
   readonly path: RepoPath;
   readonly script: string;
   readonly scriptText: string;
-  readonly selectedRules: readonly SelectedRule[];
+  readonly selectedRules: readonly ScannedRule<Subject>[];
 };
 
-const unreadableScan = (request: ScriptRequest): PackageJsonScan => {
+const unreadableScan = <Subject extends RuleSubject>(
+  request: ScriptRequest<Subject>,
+): PackageJsonScan<Subject> => {
   const command = request.scriptText
     .split(UNREADABLE_SCRIPT_BREAKS)
     .find((piece) => eslintNamingOf({ token: piece }) === "names-eslint");
@@ -695,9 +703,9 @@ const unreadableScan = (request: ScriptRequest): PackageJsonScan => {
     unreadableScripts: [
       {
         command,
-        exceptions: request.selectedRules.map((rule): ScriptOptionException => ({
+        exceptions: request.selectedRules.map((rule): ScriptOptionException<Subject> => ({
+          ...rule.subject,
           kind: "command-line-option",
-          clause: rule.clause,
           location: request.path,
           script: request.script,
           option: request.scriptText,
@@ -707,7 +715,9 @@ const unreadableScan = (request: ScriptRequest): PackageJsonScan => {
   };
 };
 
-const scriptScan = (request: ScriptRequest): Result<PackageJsonScan, RunnerFailure> => {
+const scriptScan = <Subject extends RuleSubject>(
+  request: ScriptRequest<Subject>,
+): Result<PackageJsonScan<Subject>, RunnerFailure> => {
   const commands = shellCommandsOf({ script: request.scriptText });
   if (commands.outcome === "failed") {
     return { outcome: "ok", value: unreadableScan(request) };
@@ -716,7 +726,7 @@ const scriptScan = (request: ScriptRequest): Result<PackageJsonScan, RunnerFailu
   const baseSegments = request.path.split("/").slice(0, -1);
   return invocations
     .flatMap((invocation) => suppressionsLocationValuesOf({ invocation }))
-    .reduce<Result<PackageJsonScan, RunnerFailure>>(
+    .reduce<Result<PackageJsonScan<Subject>, RunnerFailure>>(
       (scan, locationText) =>
         locatedScan({
           scan,
@@ -732,13 +742,13 @@ const scriptScan = (request: ScriptRequest): Result<PackageJsonScan, RunnerFailu
     );
 };
 
-const mergedScriptScan = (request: {
-  readonly scan: Result<PackageJsonScan, RunnerFailure>;
+const mergedScriptScan = <Subject extends RuleSubject>(request: {
+  readonly scan: Result<PackageJsonScan<Subject>, RunnerFailure>;
   readonly script: string;
   readonly scriptText: string;
   readonly path: RepoPath;
-  readonly selectedRules: readonly SelectedRule[];
-}): Result<PackageJsonScan, RunnerFailure> => {
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): Result<PackageJsonScan<Subject>, RunnerFailure> => {
   if (request.scan.outcome === "failed") {
     return request.scan;
   }
@@ -816,12 +826,12 @@ export const packageScriptsReaderOf =
     return packageScriptsOf({ path: packagePath, text: text.value });
   };
 
-export const scannedPackageScripts = (request: {
+export const scannedScriptsFor = <Subject extends RuleSubject>(request: {
   readonly path: RepoPath;
   readonly scripts: PackageScripts;
-  readonly selectedRules: readonly SelectedRule[];
-}): Result<PackageJsonScan, RunnerFailure> =>
-  Object.entries(request.scripts).reduce<Result<PackageJsonScan, RunnerFailure>>(
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): Result<PackageJsonScan<Subject>, RunnerFailure> =>
+  Object.entries(request.scripts).reduce<Result<PackageJsonScan<Subject>, RunnerFailure>>(
     (scan, [script, scriptText]) =>
       mergedScriptScan({
         scan,
@@ -832,6 +842,19 @@ export const scannedPackageScripts = (request: {
       }),
     { outcome: "ok", value: EMPTY_SCAN },
   );
+
+export const scannedPackageScripts = (request: {
+  readonly path: RepoPath;
+  readonly scripts: PackageScripts;
+  readonly selectedRules: readonly SelectedRule[];
+}): Result<PackageJsonScan, RunnerFailure> =>
+  scannedScriptsFor({
+    ...request,
+    selectedRules: request.selectedRules.map(({ ruleId, clause }) => ({
+      ruleId,
+      subject: { clause },
+    })),
+  });
 
 export const scanPackageJson = (request: {
   readonly path: RepoPath;

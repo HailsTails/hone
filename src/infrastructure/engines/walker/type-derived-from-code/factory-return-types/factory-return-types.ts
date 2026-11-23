@@ -10,7 +10,7 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
 const RETURN_TYPE_TYPEOF = /\bReturnType\s*<\s*typeof\b/;
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
@@ -30,8 +30,8 @@ export const check: WalkerPiece = {
             return [];
           const collapsed = trimmed.replace(/\s+/g, " ");
           const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
-          return clauses.map((clause) => ({
-            clause: clause.address,
+          return bindings.map((binding) => ({
+            check: binding.address,
             anchor: { line: index + 1, column: 0 },
             snippet,
           }));

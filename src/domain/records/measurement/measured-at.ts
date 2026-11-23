@@ -1,16 +1,17 @@
-import type { Check } from "../../language-layer/symptom-catalogue.ts";
+import {
+  type CheckAddressText,
+  checkAddressTextOf,
+} from "../../language-layer/check-address-text.ts";
 import { type Exclusion, exclusionOf } from "../../repository/exclusion.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
-import type { ClauseAddress } from "../../rule-set/clause-address-types.ts";
-import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { MeasuredPair } from "../../runner/runner-result-types.ts";
+import type { CheckMeasurement } from "../../runner/check-observations.ts";
 import type { ReachedPlace } from "../answering/record-reach.ts";
 
 export type RunMeasurement = {
   readonly mechanism: EngineId;
-  readonly selected: readonly ClauseAddress[];
-  readonly measured: readonly MeasuredPair[];
+  readonly selected: readonly CheckAddressText[];
+  readonly measured: readonly CheckMeasurement[];
 };
 
 export type RunMeasurements = {
@@ -25,8 +26,8 @@ type PathsOf = { readonly files: ReadonlySet<string>; readonly folders: Readonly
 
 type IndexedRun = {
   readonly mechanism: EngineId;
-  readonly selected: ReadonlySet<string>;
-  readonly measured: ReadonlyMap<string, PathsOf>;
+  readonly selected: ReadonlySet<CheckAddressText>;
+  readonly measured: ReadonlyMap<CheckAddressText, PathsOf>;
 };
 
 export type MeasurementIndex = {
@@ -47,16 +48,14 @@ const pathsOf = (request: { readonly files: readonly string[] }): PathsOf => ({
   folders: new Set(request.files.flatMap((file) => foldersHolding({ file }))),
 });
 
-const clauseKeyOf = (request: { readonly clause: ClauseAddress }): string =>
-  clauseAddressText({ address: request.clause });
-
 const indexedRunOf = (request: { readonly run: RunMeasurement }): IndexedRun => ({
   mechanism: request.run.mechanism,
-  selected: new Set(request.run.selected.map((clause) => clauseKeyOf({ clause }))),
+  selected: new Set(request.run.selected),
   measured: new Map(
-    [...Map.groupBy(request.run.measured, (pair) => clauseKeyOf({ clause: pair.clause }))].map(
-      ([clause, pairs]) => [clause, pathsOf({ files: pairs.map((pair) => pair.file) })],
-    ),
+    [...Map.groupBy(request.run.measured, ({ check }) => check)].map(([address, pairs]) => [
+      address,
+      pathsOf({ files: pairs.map((pair) => pair.file) }),
+    ]),
   ),
 });
 
@@ -67,16 +66,6 @@ export const measurementIndexOf = (request: {
   tracked: pathsOf({ files: request.measurements.tracked }),
   excluded: request.measurements.excluded,
 });
-
-const runsOfCheck = (request: {
-  readonly runs: readonly IndexedRun[];
-  readonly check: Check;
-}): readonly IndexedRun[] =>
-  request.runs.filter(
-    (run) =>
-      request.check.engines.some((engine) => engine.name === run.mechanism) &&
-      run.selected.has(clauseKeyOf({ clause: request.check.clause })),
-  );
 
 type Coverage = "covers" | "does-not-cover";
 
@@ -100,22 +89,16 @@ const placeExclusionOf = (request: {
   readonly place: ReachedPlace["place"];
 }): Exclusion => exclusionOf({ path: pathOfPlace(request), excluded: request.excluded });
 
-const measuredAt = (request: {
-  readonly run: IndexedRun;
-  readonly reached: ReachedPlace;
-}): Coverage => {
-  const paths = request.run.measured.get(clauseKeyOf({ clause: request.reached.check.clause }));
-  return paths === undefined
-    ? "does-not-cover"
-    : pathsCover({ paths, place: request.reached.place });
-};
-
 export const measurementOf = (request: {
   readonly measurements: MeasurementIndex;
   readonly reached: ReachedPlace;
 }): Measurement => {
   const { measurements, reached } = request;
-  const running = runsOfCheck({ runs: measurements.runs, check: reached.check });
+  const { check, place } = reached;
+  const named = checkAddressTextOf({ check });
+  const running = measurements.runs.filter(
+    (run) => check.engines.some(({ name }) => name === run.mechanism) && run.selected.has(named),
+  );
   if (running.length === 0) {
     return "not-run";
   }
@@ -125,7 +108,10 @@ export const measurementOf = (request: {
   if (pathsCover({ paths: measurements.tracked, place: reached.place }) === "does-not-cover") {
     return "gone";
   }
-  return running.some((run) => measuredAt({ run, reached }) === "covers")
+  return running.some((run) => {
+    const paths = run.measured.get(named);
+    return paths !== undefined && pathsCover({ paths, place }) === "covers";
+  })
     ? "measured"
     : "not-measured";
 };

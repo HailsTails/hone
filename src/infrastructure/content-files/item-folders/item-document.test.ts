@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
@@ -168,11 +168,15 @@ describe("catalogueFileOf", () => {
     );
   });
 
-  it("refuses a check that no clause of the version 1 names gives", () => {
-    expect(catalogueFileOf({ items: [CHECK], beside: NOTHING_BESIDE })).toEqual({
-      outcome: "failed",
-      error: "date-used-directly#clock-sources is named by no clause in the version 1 names",
+  it("registers a named check without a version one clause", () => {
+    const assembled = catalogueFileOf({ items: [CHECK], beside: NOTHING_BESIDE });
+
+    expect(assembled).toMatchObject({
+      outcome: "ok",
+      value: { checks: [{ symptom: "date-used-directly", name: "clock-sources" }] },
     });
+    assert(assembled.outcome === "ok");
+    expect(assembled.value.checks[0]).not.toHaveProperty("clause");
   });
 
   it("refuses version 1 names that give a check no item holds", () => {

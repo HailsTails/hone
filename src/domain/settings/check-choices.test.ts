@@ -15,8 +15,7 @@ import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import {
   type CheckChoiceRefusal,
-  type CheckChoices,
-  checkChoicesOf,
+  namedCheckChoicesOf,
   type RuleSetCatalogue,
 } from "./check-choices.ts";
 import type { GivenCheckSettings, ListedCheck } from "./settings-file.ts";
@@ -144,72 +143,112 @@ const LISTED_LOOPS: ListedCheck = {
   state: { state: "not-adopted" },
 };
 
-describe("checkChoicesOf", () => {
-  it("chooses each clause once, run by the mechanism its listed engine stands for, with the checks that list it", () => {
-    expect(
-      checkChoicesOf({
-        catalogues: CATALOGUES,
-        checks: [...LISTED_TEST_BODY, LISTED_LOOPS],
-        checkSettings: [],
-      }),
-    ).toEqual<{
-      readonly outcome: "ok";
-      readonly value: CheckChoices;
-    }>({
-      outcome: "ok",
-      value: {
-        clauses: [
-          {
-            clause: TEST_BODY_CLAUSE,
-            checks: [LISTED_TEST_BODY[0].address, LISTED_TEST_BODY[1].address],
-            choice: { state: "run", mechanism: "walker", settings: undefined },
-          },
-          {
-            clause: LOOPS_CLAUSE,
-            checks: [LISTED_LOOPS.address],
-            choice: { state: "not-adopted" },
-          },
-        ],
-        available: [],
-      },
-    });
-  });
-
-  it("carries the settings given on a run check to its clause", () => {
-    const settings: GivenCheckSettings = {
+describe("namedCheckChoicesOf", () => {
+  it("keeps different editions for two checks that share an implementation", () => {
+    const first: GivenCheckSettings = {
+      address: { ruleSet: "hone", check: "loop-keyword#test-body" },
+      values: { edition: "1" },
+    };
+    const second: GivenCheckSettings = {
       address: { ruleSet: "hone", check: "rebinding#test-body" },
       values: { edition: "2" },
     };
     expect(
-      checkChoicesOf({
+      namedCheckChoicesOf({
+        catalogues: CATALOGUES,
+        checks: LISTED_TEST_BODY,
+        checkSettings: [first, second],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        checks: [
+          {
+            address: first.address,
+            check: LOOP_KEYWORD_TEST_BODY,
+            choice: { state: "run", mechanism: "walker", settings: first },
+          },
+          {
+            address: second.address,
+            check: REBINDING_TEST_BODY,
+            choice: { state: "run", mechanism: "walker", settings: second },
+          },
+        ],
+        available: [LOOP_KEYWORD_LOOPS],
+      },
+    });
+  });
+
+  it("allows one check to run when another check of the same piece is off", () => {
+    expect(
+      namedCheckChoicesOf({
+        catalogues: CATALOGUES,
+        checks: [
+          {
+            address: { ruleSet: "hone", check: "loop-keyword#test-body" },
+            state: { state: "run", engine: "walker" },
+          },
+          {
+            address: { ruleSet: "hone", check: "rebinding#test-body" },
+            state: { state: "not-adopted" },
+          },
+        ],
+        checkSettings: [],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        checks: [
+          { check: LOOP_KEYWORD_TEST_BODY, choice: { state: "run" } },
+          { check: REBINDING_TEST_BODY, choice: { state: "not-adopted" } },
+        ],
+      },
+    });
+  });
+  it("runs one check while its sibling on the same piece is unlisted", () => {
+    const [listed] = LISTED_TEST_BODY;
+    expect(
+      namedCheckChoicesOf({ catalogues: CATALOGUES, checks: [listed], checkSettings: [] }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        checks: [
+          {
+            address: listed.address,
+            check: LOOP_KEYWORD_TEST_BODY,
+            choice: { state: "run", mechanism: "walker", settings: undefined },
+          },
+        ],
+        available: [LOOP_KEYWORD_LOOPS],
+      },
+    });
+  });
+
+  it("applies supplied settings only to the selected check that owns them", () => {
+    const settings: GivenCheckSettings = {
+      address: LISTED_TEST_BODY[1].address,
+      values: { edition: "2" },
+    };
+    expect(
+      namedCheckChoicesOf({
         catalogues: CATALOGUES,
         checks: LISTED_TEST_BODY,
         checkSettings: [settings],
       }),
     ).toMatchObject({
       outcome: "ok",
-      value: { clauses: [{ clause: TEST_BODY_CLAUSE, choice: { state: "run", settings } }] },
-    });
-  });
-
-  it("takes the same settings given on two checks of one clause", () => {
-    const settings: readonly GivenCheckSettings[] = [
-      { address: { ruleSet: "hone", check: "loop-keyword#test-body" }, values: { edition: "2" } },
-      { address: { ruleSet: "hone", check: "rebinding#test-body" }, values: { edition: "2" } },
-    ];
-    expect(
-      checkChoicesOf({ catalogues: CATALOGUES, checks: LISTED_TEST_BODY, checkSettings: settings }),
-    ).toMatchObject({
-      outcome: "ok",
       value: {
-        clauses: [{ clause: TEST_BODY_CLAUSE, choice: { state: "run", settings: settings[0] } }],
+        checks: [
+          { check: LOOP_KEYWORD_TEST_BODY, choice: { state: "run", settings: undefined } },
+          { check: REBINDING_TEST_BODY, choice: { state: "run", settings } },
+        ],
       },
     });
   });
 
   it("offers as available every check of a listed symptom that is listed nowhere", () => {
     expect(
-      checkChoicesOf({ catalogues: CATALOGUES, checks: LISTED_TEST_BODY, checkSettings: [] }),
+      namedCheckChoicesOf({ catalogues: CATALOGUES, checks: LISTED_TEST_BODY, checkSettings: [] }),
     ).toMatchObject({
       outcome: "ok",
       value: { available: [LOOP_KEYWORD_LOOPS] },
@@ -234,26 +273,28 @@ describe("checkChoicesOf", () => {
       },
     ];
     expect(
-      checkChoicesOf({
+      namedCheckChoicesOf({
         catalogues: grown,
         checks: [...LISTED_TEST_BODY, LISTED_LOOPS],
         checkSettings: [],
       }),
-    ).toEqual<{
-      readonly outcome: "ok";
-      readonly value: CheckChoices;
-    }>({
+    ).toEqual({
       outcome: "ok",
       value: {
-        clauses: [
+        checks: [
           {
-            clause: TEST_BODY_CLAUSE,
-            checks: [LISTED_TEST_BODY[0].address, LISTED_TEST_BODY[1].address],
+            address: LISTED_TEST_BODY[0].address,
+            check: LOOP_KEYWORD_TEST_BODY,
             choice: { state: "run", mechanism: "walker", settings: undefined },
           },
           {
-            clause: LOOPS_CLAUSE,
-            checks: [LISTED_LOOPS.address],
+            address: LISTED_TEST_BODY[1].address,
+            check: REBINDING_TEST_BODY,
+            choice: { state: "run", mechanism: "walker", settings: undefined },
+          },
+          {
+            address: LISTED_LOOPS.address,
+            check: LOOP_KEYWORD_LOOPS,
             choice: { state: "not-adopted" },
           },
         ],
@@ -331,29 +372,6 @@ describe("checkChoicesOf", () => {
       },
     },
     {
-      name: "a check that runs with another left unlisted",
-      checks: [LISTED_TEST_BODY[0]],
-      checkSettings: [],
-      refusal: {
-        kind: "checks-run-together",
-        address: "loop-keyword#test-body",
-        others: ["rebinding#test-body"],
-      },
-    },
-    {
-      name: "two checks that run together listed in different states",
-      checks: [
-        LISTED_TEST_BODY[0],
-        { address: { ruleSet: "hone", check: "rebinding#test-body" }, state: { state: "not-run" } },
-      ],
-      checkSettings: [],
-      refusal: {
-        kind: "checks-run-together",
-        address: "loop-keyword#test-body",
-        others: ["rebinding#test-body"],
-      },
-    },
-    {
       name: "settings on a check that is not adopted",
       checks: [LISTED_LOOPS],
       checkSettings: [
@@ -399,21 +417,8 @@ describe("checkChoicesOf", () => {
         prefixedAddress: "hone/rebinding#test-body",
       },
     },
-    {
-      name: "different settings on two checks that run together",
-      checks: LISTED_TEST_BODY,
-      checkSettings: [
-        { address: { ruleSet: "hone", check: "loop-keyword#test-body" }, values: { edition: "2" } },
-        { address: { ruleSet: "hone", check: "rebinding#test-body" }, values: { edition: "1" } },
-      ],
-      refusal: {
-        kind: "check-settings-differ",
-        address: "rebinding#test-body",
-        other: "loop-keyword#test-body",
-      },
-    },
   ])("refuses $name", ({ checks, checkSettings, refusal }) => {
-    expect(checkChoicesOf({ catalogues: CATALOGUES, checks, checkSettings })).toEqual({
+    expect(namedCheckChoicesOf({ catalogues: CATALOGUES, checks, checkSettings })).toEqual({
       outcome: "failed",
       error: refusal,
     });

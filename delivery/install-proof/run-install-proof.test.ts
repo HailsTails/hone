@@ -37,6 +37,7 @@ const consumerManifestPinning = (request: { readonly tarball: string }): string 
       scripts: {
         "hone:check": "hone check --repo .",
         "hone:project": "hone project --repo .",
+        "hone:upgrade": "hone upgrade --repo .",
       },
       devDependencies: { typescript: "4.8.4", "@hailstails/hone": request.tarball },
     },

@@ -68,7 +68,7 @@ const classifyName = (request: { readonly name: string }): "shorthand" | "filler
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, syntaxApi }) => ({
+  prepare: ({ bindings, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
@@ -95,12 +95,12 @@ export const check: WalkerPiece = {
                   .replace(/\n/g, " ");
                 const anchor = anchorAt({ position: request.position });
                 hits.push(
-                  ...clauses.map((clause) => ({
+                  ...bindings.map((binding) => ({
                     owner: request.owner,
                     hit: {
-                      clause: clause.address,
+                      check: binding.address,
                       anchor,
-                      snippet: snippet.length === SNIPPET_MAX_LENGTH ? snippet + "…" : snippet,
+                      snippet: snippet.length === SNIPPET_MAX_LENGTH ? `${snippet}…` : snippet,
                     },
                   })),
                 );

@@ -1,6 +1,5 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
-import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
 import type { FileCreationPort } from "../application/ports/file-system/file-creation-port.ts";
@@ -8,35 +7,31 @@ import type { FileRemovalPort } from "../application/ports/file-system/file-remo
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import { versionTwoRunOver } from "../application/run/version-two-run.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
-import {
-  createEslintRunner,
-  ESLINT_PROJECTED_KINDS,
-} from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import { createChecksRunner } from "../infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import { ESLINT_PROJECTED_KINDS } from "../infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   loadEslintToolchain,
 } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
-import {
-  toolchainBoundEmbeddedRunner,
-  toolchainBoundStandaloneRunner,
-} from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
+import { toolchainBoundNamedChecksRunner } from "../infrastructure/engines/protocol/toolchain/toolchain-bound-runner.ts";
 import { createWalkerRunner } from "../infrastructure/engines/walker/runner/create-walker-runner.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
 } from "../infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import { installFormOf } from "../infrastructure/node/modules/install-layout.ts";
 import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import type { PackageLocationPort } from "../infrastructure/node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { checkRunAt } from "./check-command.ts";
 import { installedPortsOver } from "./installed-ports.ts";
+import { versionTwoStagesOver } from "./version-two-stages.ts";
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -66,7 +61,7 @@ const modulesServingRunner = (request: {
 }): ModuleLoaderPort => ({
   load: (load) =>
     load.path.replaceAll("\\", "/").endsWith(request.runnerSuffix)
-      ? Promise.resolve({ outcome: "ok", value: { runner: request.runner } })
+      ? Promise.resolve({ outcome: "ok", value: { namedChecksRunner: request.runner } })
       : request.base.load(load),
 });
 
@@ -85,23 +80,18 @@ const REPO_ROOT = resolvedPath({
 });
 
 const NAMING_CONVENTION = {
-  ruleSet: "hone",
-  discipline: "CD-6",
-  clause: "naming-convention",
-} as const;
+  name: "naming-convention",
+  symptom: expect.objectContaining({ name: "name-off-its-casing" }),
+};
 
-const repositoryFiles = (request: { readonly clauses: Readonly<Record<string, string>> }) =>
+const repositoryFiles = (request: { readonly checks: Readonly<Record<string, string>> }) =>
   overlaidFileText({
     base: createDefaultFileTextPort({}),
     files: {
-      [`${REPO_ROOT}/disciplines.json`]: JSON.stringify({
-        version: 1,
+      [`${REPO_ROOT}/hone.config.json`]: JSON.stringify({
+        version: 2,
         ruleSets: {},
-        clauses: request.clauses,
-      }),
-      [`${REPO_ROOT}/discipline-exceptions.json`]: JSON.stringify({
-        version: 1,
-        exceptions: [],
+        checks: request.checks,
       }),
       [`${REPO_ROOT}/src/greeting.ts`]:
         "export const greetingFor = (visitorName: string): string => visitorName.trim();\n",
@@ -109,38 +99,37 @@ const repositoryFiles = (request: { readonly clauses: Readonly<Record<string, st
   });
 
 const NOT_RUNNING_NAMING_CONVENTION = repositoryFiles({
-  clauses: {
-    "CD-6#identifier-names": "walker",
-    "CD-6#naming-convention": "not-run",
+  checks: {
+    "shorthand-name#identifier-names": "walker",
+    "name-off-its-casing#naming-convention": "not-run",
   },
 });
 
 const NOT_ADOPTING_NAMING_CONVENTION = repositoryFiles({
-  clauses: {
-    "CD-6#identifier-names": "walker",
-    "CD-6#naming-convention": "not-adopted",
+  checks: {
+    "shorthand-name#identifier-names": "walker",
+    "name-off-its-casing#naming-convention": "not-adopted",
   },
 });
 
 const RUNNING_NAMING_CONVENTION = repositoryFiles({
-  clauses: {
-    "CD-6#identifier-names": "walker",
-    "CD-6#naming-convention": "eslint",
+  checks: {
+    "shorthand-name#identifier-names": "walker",
+    "name-off-its-casing#naming-convention": "eslint",
   },
 });
 
-const AUDIT_ONLY = repositoryFiles({
-  clauses: { "CD-6#identifier-names": "walker" },
+const WALKER_ONLY = repositoryFiles({
+  checks: {
+    "shorthand-name#identifier-names": "walker",
+    "name-off-its-casing#filename-case": "not-adopted",
+  },
 });
 
 const git: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
     outcome: "ok",
-    value: [
-      repoPathOf("discipline-exceptions.json"),
-      repoPathOf("disciplines.json"),
-      repoPathOf("src/greeting.ts"),
-    ],
+    value: [repoPathOf("hone.config.json"), repoPathOf("src/greeting.ts")],
   }),
   changedSince: vi.fn<GitPort["changedSince"]>(),
   contentInBase: vi.fn<GitPort["contentInBase"]>(),
@@ -159,7 +148,8 @@ const eslintNotInstalled: PackageLocationPort = {
 };
 
 const eslintRunnerWithoutPeersOver = (request: { readonly fileText: FileTextPort }) =>
-  toolchainBoundEmbeddedRunner({
+  toolchainBoundNamedChecksRunner({
+    fileScope: "tracked",
     toolchain: loadEslintToolchain({
       peers: {
         modules: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" })
@@ -169,7 +159,7 @@ const eslintRunnerWithoutPeersOver = (request: { readonly fileText: FileTextPort
     }),
     projectedKinds: ESLINT_PROJECTED_KINDS,
     runnerOf: (toolchain) =>
-      createEslintRunner({
+      createChecksRunner({
         fileText: request.fileText,
         fileRemoval: createDefaultFileRemovalPort({}),
         modules: createDefaultModuleLoaderPort({}),
@@ -179,14 +169,16 @@ const eslintRunnerWithoutPeersOver = (request: { readonly fileText: FileTextPort
       }),
   });
 
-const auditRunnerOver = (request: { readonly fileText: FileTextPort }) =>
-  toolchainBoundStandaloneRunner({
+const walkerRunnerOver = (request: { readonly fileText: FileTextPort }) =>
+  toolchainBoundNamedChecksRunner({
+    fileScope: "typescript",
     toolchain: loadParsePort({
       peers: defaultTypeScriptPeers({
         installRoot: INSTALL_ROOT,
         installForm: installFormOf({ moduleExtension: ".ts" }),
       }),
     }),
+    projectedKinds: ["inline-disable"],
     runnerOf: (parse) =>
       createWalkerRunner({
         fileText: request.fileText,
@@ -206,7 +198,7 @@ const modulesServing = (request: {
     runner: request.eslintRunner,
     base: modulesServingRunner({
       runnerSuffix: "/src/infrastructure/engines/walker/runner/runner.ts",
-      runner: auditRunnerOver({ fileText: request.fileText }),
+      runner: walkerRunnerOver({ fileText: request.fileText }),
       base: createDefaultModuleLoaderPort({}),
     }),
   });
@@ -224,47 +216,42 @@ const checkOf = (request: {
   readonly modules: ModuleLoaderPort;
   readonly fileText: FileTextPort;
 }) =>
-  checkRunAt({
-    ...installedPortsOver({
-      path,
-      fileText: request.fileText,
-      modules: request.modules,
-      engine: createDefaultEnginePort({}),
-      git,
-      gitTree: {
-        pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }),
-      },
-      directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
-      fileCreation: { createNew: vi.fn<FileCreationPort["createNew"]>() },
-      fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
-      directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
-      entryKind: ABSENT_ENTRY_KIND,
-    }),
-    moduleUrl: new URL("../hone.ts", import.meta.url).href,
-    locations: {
-      arguments: {
-        repo: REPO_ROOT,
+  versionTwoRunOver({
+    stages: versionTwoStagesOver({
+      ports: installedPortsOver({
+        path,
+        fileText: request.fileText,
+        modules: request.modules,
+        git,
+        gitTree: {
+          pathsAt: vi.fn<GitTreePort["pathsAt"]>().mockReturnValue({ outcome: "ok", value: [] }),
+        },
+        directory: createDefaultDirectoryPort({}),
+        fileCreation: { createNew: vi.fn<FileCreationPort["createNew"]>() },
+        fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>() },
+        directoryRemoval: { removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>() },
+        entryKind: ABSENT_ENTRY_KIND,
+      }),
+      locations: {
+        repoRoot: REPO_ROOT,
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".ts",
         baseRevision: undefined,
-        reportOutput: undefined,
-        forfeiture: undefined,
       },
-      repoRoot: REPO_ROOT,
-      installRoot: INSTALL_ROOT,
-    },
+    }),
+    arguments: { reportOutput: undefined, forfeiture: undefined, measuring: "when-debt-held" },
   });
 
-const WHOLE_AUDIT_ONLY_REPORT = {
+const WHOLE_WALKER_ONLY_REPORT = {
   findings: [],
   stale: [],
-  uncovered: [],
-  invalidRecords: [],
+  refused: [],
   unmeasured: [],
   assessment: [],
-  readFirst: [],
 };
 
-describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLint installed", () => {
-  it("passes as a whole assessment with no ESLint peer resolvable, listing the clause as not run", async () => {
+describe("adopting named checks with an ESLint check adopted but not run, and no ESLint installed", () => {
+  it("passes as a whole assessment with no ESLint peer resolvable, listing the check as not run", async () => {
     expect(
       await checkOf({
         modules: peerlessEslintOver({
@@ -276,9 +263,9 @@ describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLin
       outcome: "ok",
       value: expect.objectContaining({
         report: expect.objectContaining({
-          ...WHOLE_AUDIT_ONLY_REPORT,
-          notAdopted: [],
-          notRun: [NAMING_CONVENTION],
+          ...WHOLE_WALKER_ONLY_REPORT,
+          "not-adopted": [],
+          "not-run": [expect.objectContaining(NAMING_CONVENTION)],
         }),
       }),
     });
@@ -296,16 +283,16 @@ describe("adopting CD-6 with its ESLint clause adopted but not run, and no ESLin
       outcome: "ok",
       value: expect.objectContaining({
         report: expect.objectContaining({
-          ...WHOLE_AUDIT_ONLY_REPORT,
-          notRun: [NAMING_CONVENTION],
+          ...WHOLE_WALKER_ONLY_REPORT,
+          "not-run": [expect.objectContaining(NAMING_CONVENTION)],
         }),
       }),
     });
   });
 });
 
-describe("adopting CD-6 with its ESLint clause not adopted, and no ESLint installed", () => {
-  it("passes as a whole assessment with no ESLint peer, listing the clause as not adopted", async () => {
+describe("adopting named checks with an ESLint check not adopted, and no ESLint installed", () => {
+  it("passes as a whole assessment with no ESLint peer, listing the check as not adopted", async () => {
     expect(
       await checkOf({
         modules: unloadableEslintOver({
@@ -317,17 +304,17 @@ describe("adopting CD-6 with its ESLint clause not adopted, and no ESLint instal
       outcome: "ok",
       value: expect.objectContaining({
         report: expect.objectContaining({
-          ...WHOLE_AUDIT_ONLY_REPORT,
-          notAdopted: [NAMING_CONVENTION],
-          notRun: [],
+          ...WHOLE_WALKER_ONLY_REPORT,
+          "not-adopted": [expect.objectContaining(NAMING_CONVENTION)],
+          "not-run": [],
         }),
       }),
     });
   });
 });
 
-describe("adopting CD-6 without stating its ESLint clause, and no ESLint installed", () => {
-  it("fails when the ESLint clause runs, because the ESLint mechanism needs its peers", async () => {
+describe("an ESLint check in named settings, and no ESLint installed", () => {
+  it("fails when the ESLint check runs, because the ESLint mechanism needs its peers", async () => {
     expect(
       await checkOf({
         modules: peerlessEslintOver({ fileText: RUNNING_NAMING_CONVENTION }),
@@ -336,8 +323,8 @@ describe("adopting CD-6 without stating its ESLint clause, and no ESLint install
     ).toMatchObject({
       outcome: "failed",
       error: {
-        kind: "runner-failed",
-        mechanism: "eslint",
+        kind: "engine-failed",
+        engine: { named: "engine", engine: { name: "eslint" } },
         failure: {
           kind: "toolchain-unavailable",
           peers: [
@@ -350,15 +337,15 @@ describe("adopting CD-6 without stating its ESLint clause, and no ESLint install
     });
   });
 
-  it("reports the ESLint clause uncovered when clauses leaves it out", async () => {
+  it("lists an omitted sibling check as available without loading ESLint", async () => {
     expect(
       await checkOf({
-        modules: peerlessEslintOver({ fileText: AUDIT_ONLY }),
-        fileText: AUDIT_ONLY,
+        modules: unloadableEslintOver({ fileText: WALKER_ONLY }),
+        fileText: WALKER_ONLY,
       }),
     ).toMatchObject({
       outcome: "ok",
-      value: { report: { findings: [], uncovered: [NAMING_CONVENTION] } },
+      value: { report: { findings: [], available: [expect.objectContaining(NAMING_CONVENTION)] } },
     });
   });
 });

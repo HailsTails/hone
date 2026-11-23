@@ -9,35 +9,46 @@ import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.
 import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import { parsedJson } from "../../../../content-files/rule-sets/rule-set-reader.ts";
 import { suppressionsFileSchema } from "./eslint-file-schemas.ts";
-import { repoPathResolved, type SelectedRule } from "./package-script-scanner.ts";
+import {
+  repoPathResolved,
+  type RuleSubject,
+  type ScannedRule,
+  type SelectedRule,
+} from "./package-script-scanner.ts";
 
 const REPO_ROOT = "repo-root";
 
-const ruleExceptions = (request: {
+export type SuppressionException<Subject extends RuleSubject> = {
+  readonly kind: "suppression-entry";
+  readonly file: RepoPath;
+  readonly location: RepoPath;
+} & Subject;
+
+const ruleExceptions = <Subject extends RuleSubject>(request: {
   readonly ruleIds: readonly string[];
   readonly file: RepoPath;
   readonly location: RepoPath;
-  readonly selectedRules: readonly SelectedRule[];
-}): readonly NativeException[] =>
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): readonly SuppressionException<Subject>[] =>
   request.ruleIds.flatMap((ruleId) =>
     request.selectedRules
       .filter((rule) => rule.ruleId === ruleId)
-      .map((rule): NativeException => ({
+      .map((rule): SuppressionException<Subject> => ({
+        ...rule.subject,
         kind: "suppression-entry",
-        clause: rule.clause,
         file: request.file,
         location: request.location,
       })),
   );
 
-const appendedEntry = (request: {
-  readonly entries: Result<readonly NativeException[], RunnerFailure>;
+const appendedEntry = <Subject extends RuleSubject>(request: {
+  readonly entries: Result<readonly SuppressionException<Subject>[], RunnerFailure>;
   readonly key: string;
   readonly ruleIds: readonly string[];
   readonly baseSegments: readonly string[];
   readonly location: RepoPath;
-  readonly selectedRules: readonly SelectedRule[];
-}): Result<readonly NativeException[], RunnerFailure> => {
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): Result<readonly SuppressionException<Subject>[], RunnerFailure> => {
   if (request.entries.outcome === "failed") {
     return request.entries;
   }
@@ -100,15 +111,15 @@ export const suppressionsFileOf = (request: {
   return { outcome: "ok", value: suppressions.data };
 };
 
-export const suppressionEntriesIn = (request: {
+export const suppressionEntriesFor = <Subject extends RuleSubject>(request: {
   readonly location: RepoPath;
   readonly keysRelativeTo: RepoPath | "repo-root";
   readonly suppressions: SuppressionsFile;
-  readonly selectedRules: readonly SelectedRule[];
-}): Result<readonly NativeException[], RunnerFailure> => {
+  readonly selectedRules: readonly ScannedRule<Subject>[];
+}): Result<readonly SuppressionException<Subject>[], RunnerFailure> => {
   const baseSegments = baseSegmentsOf({ keysRelativeTo: request.keysRelativeTo });
   return Object.entries(request.suppressions).reduce<
-    Result<readonly NativeException[], RunnerFailure>
+    Result<readonly SuppressionException<Subject>[], RunnerFailure>
   >(
     (entries, [key, rules]) =>
       appendedEntry({
@@ -122,6 +133,20 @@ export const suppressionEntriesIn = (request: {
     { outcome: "ok", value: [] },
   );
 };
+
+export const suppressionEntriesIn = (request: {
+  readonly location: RepoPath;
+  readonly keysRelativeTo: RepoPath | "repo-root";
+  readonly suppressions: SuppressionsFile;
+  readonly selectedRules: readonly SelectedRule[];
+}): Result<readonly NativeException[], RunnerFailure> =>
+  suppressionEntriesFor({
+    ...request,
+    selectedRules: request.selectedRules.map(({ ruleId, clause }) => ({
+      ruleId,
+      subject: { clause },
+    })),
+  });
 
 export const suppressionEntriesOf = (request: {
   readonly location: RepoPath;

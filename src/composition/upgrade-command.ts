@@ -9,8 +9,11 @@ import { parseUpgradeArguments } from "../infrastructure/command-line/arguments/
 import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
 import { proofRunsOf } from "../infrastructure/command-line/proof-runs.ts";
 import { shippedCataloguesOf } from "../infrastructure/content-files/symptom-catalogues/shipped-catalogues.ts";
+import { upgradeRuleSetCataloguesOf } from "../infrastructure/content-files/symptom-catalogues/upgrade-rule-set-catalogues.ts";
 import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/version-one-records-on-disk.ts";
+import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
+import { measureVersionOneProjection } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
 import {
   ALREADY_ON_VERSION_TWO,
   upgradeSuccessOutcomeOf,
@@ -22,7 +25,6 @@ import {
 } from "../operations/upgrade/run-upgrade-command.ts";
 import { type CommandHandler, loadFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
-import { runSettingsOver } from "./version-one-runs.ts";
 import {
   repositoryLocatedOf,
   stagesOverRepository,
@@ -64,14 +66,23 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
   return {
     command: { ...ports, moduleUrl: command.moduleUrl },
     ports,
+    measureVersionOne: measureVersionOneProjection,
     located,
-    runSettingsOf: runSettingsOver(ports),
+    runSettingsOf: ({ repoRoot }) => readRunSettings({ fileText, path, repoRoot }),
     catalogues: () =>
       shippedCataloguesOf({
         fileText,
         directory: ports.directory,
         path,
         installRoot: located.installRoot,
+      }),
+    externalCataloguesOf: (selection) =>
+      upgradeRuleSetCataloguesOf({
+        ...located,
+        fileText,
+        directory: ports.directory,
+        path,
+        selection,
       }),
     recordsOnDiskOf: ({ repoRoot }) =>
       recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),

@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { ParsedChecksRunner } from "../../../../application/ports/engine/engine-run.ts";
 import type {
   ChecksSliceProblem,
   MisnamedRuleId,
@@ -8,23 +7,23 @@ import type {
   ProjectedFile,
 } from "../../../../domain/runner/checks-run-report.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { nativeExceptionSchema } from "../embedded/embedded-run-report-schema.ts";
 import { runnerFailureSchema } from "../runner-module/runner-failure-schema.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
-import {
-  hitSchema,
-  measuredPairSchema,
-  nativeExceptionKindSchema,
-} from "../runner-module/runner-result-schema.ts";
+import { nativeExceptionKindSchema } from "../runner-module/runner-result-schema.ts";
 import type {
   DeepReadonly,
   DeepReadonlyKeepingTuples,
   Equal,
 } from "../runner-module/type-equality.ts";
-import type { ChecksRunReport, LoadedChecksRunner } from "./checks-runner-types.ts";
+import {
+  checkHitSchema,
+  checkMeasurementSchema,
+  checkNativeExceptionSchema,
+} from "./check-wire.ts";
 
-export const checksRunnerModuleSchema = z.object({
+export const namedChecksRunnerModuleSchema = z.object({
   projectedKinds: z.array(nativeExceptionKindSchema),
+  fileScope: z.enum(["tracked", "typescript"]),
   run: runnerCallSchema,
   conform: runnerCallSchema,
   project: runnerCallSchema,
@@ -55,14 +54,14 @@ export const checksSliceProblemSchema = z
   })
   .readonly();
 
-export const checksRunReportSchema = z
-  .object({
-    hits: z.array(hitSchema).readonly(),
-    nativeExceptions: z.array(nativeExceptionSchema).readonly(),
-    measured: z.array(measuredPairSchema).readonly(),
-    projection: z.enum(["current", "out-of-date", "missing", "not-included"]),
+export const namedChecksRunReportSchema = z
+  .strictObject({
     slices: z.array(checksSliceProblemSchema).readonly(),
     misnamedRuleIds: z.array(misnamedRuleIdSchema).readonly(),
+    hits: z.array(checkHitSchema).readonly(),
+    nativeExceptions: z.array(checkNativeExceptionSchema).readonly(),
+    measured: z.array(checkMeasurementSchema).readonly(),
+    projection: z.enum(["none", "current", "out-of-date", "missing", "not-included"]),
   })
   .readonly();
 
@@ -78,10 +77,30 @@ const notReadyYetFailureSchema = z
   })
   .readonly();
 
-export const checksRunResultSchema = z.union([
-  z.object({ outcome: z.literal("ok"), value: checksRunReportSchema }).readonly(),
+export const namedChecksRunResultSchema = z.discriminatedUnion("outcome", [
+  z.strictObject({ outcome: z.literal("ok"), value: namedChecksRunReportSchema }).readonly(),
   z
-    .object({
+    .strictObject({
+      outcome: z.literal("failed"),
+      error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
+    })
+    .readonly(),
+]);
+
+export const measurementResultSchema = z.discriminatedUnion("outcome", [
+  z
+    .strictObject({
+      outcome: z.literal("ok"),
+      value: z
+        .strictObject({
+          report: namedChecksRunReportSchema,
+          unappliedSlices: z.array(repoPathSchema).readonly(),
+        })
+        .readonly(),
+    })
+    .readonly(),
+  z
+    .strictObject({
       outcome: z.literal("failed"),
       error: z.union([runnerFailureSchema, notReadyYetFailureSchema]),
     })
@@ -103,21 +122,6 @@ export const checksProjectResultSchema = z.union([
 export const isProjectedFileSchemaEqual: Equal<
   DeepReadonly<z.output<typeof projectedFileSchema>>,
   ProjectedFile
-> = true;
-
-export const isParsedChecksRunnerSchemaEqual: Equal<
-  DeepReadonly<z.output<typeof checksRunnerModuleSchema>>,
-  ParsedChecksRunner
-> = true;
-
-export const isChecksModuleKeySetEqual: Equal<
-  keyof LoadedChecksRunner,
-  keyof z.output<typeof checksRunnerModuleSchema>
-> = true;
-
-export const isChecksRunReportSchemaEqual: Equal<
-  DeepReadonlyKeepingTuples<z.output<typeof checksRunReportSchema>>,
-  ChecksRunReport
 > = true;
 
 export const isChecksSliceProblemSchemaEqual: Equal<

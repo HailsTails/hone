@@ -1,7 +1,7 @@
 import type { WalkerPiece } from "../../../../../../engines/walker/runner/pieces/walker-piece.ts";
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => ({
@@ -9,8 +9,8 @@ export const check: WalkerPiece = {
         value: {
           kind: "complete",
           hits: file.endsWith(".tmp.ts")
-            ? clauses.map((clause) => ({
-                clause: clause.address,
+            ? bindings.map((binding) => ({
+                check: binding.address,
                 anchor: { line: 1, column: 0 },
                 snippet: file,
               }))

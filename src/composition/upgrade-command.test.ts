@@ -6,7 +6,6 @@ import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { commandOf } from "./composed-command.ts";
 import type { VersionOneToolPorts } from "./tool-ports.ts";
@@ -72,7 +71,6 @@ const commandOver = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,
@@ -107,6 +105,9 @@ const PORTS: UpgradeOnlyPorts = {
   boundCatalogueOf: vi.fn(),
   settingsFormat: { fileOf: vi.fn(), documentOf: vi.fn(), textOf: vi.fn() },
   settingsSourcesOf: vi.fn(),
+  checkPieceSourceOf: vi.fn(),
+  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+  versionOneProjectionOf: vi.fn(),
 };
 
 const gitFailing = (): GitPort => ({

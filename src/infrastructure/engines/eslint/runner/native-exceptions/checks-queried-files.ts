@@ -1,15 +1,19 @@
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import {
+  answeredAt,
+  type AnsweredByPlace,
+} from "../../../../../domain/records/answering/records-by-place.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { CheckNativeException } from "../../../../../domain/runner/check-observations.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import { mappedOutcome } from "../checks-outcomes.ts";
-import type { SelectedCheck } from "../checks-runner/checks-run-types.ts";
+import type { SelectedNamedCheck } from "../checks-runner/checks-run-types.ts";
 import { SETTINGS_FILE_NAME } from "../config-roots/checks-nested-repositories.ts";
 import { brokenConfigVerdict, type GoverningIgnores } from "../config-roots/governing-config.ts";
-import { type AnsweredFile, CHECKS_PROJECTION_PATH } from "../projection/checks-projection.ts";
+import { CHECKS_PROJECTION_PATH } from "../projection/checks-projection.ts";
 import type {
   ConfigFileSearch,
   IgnoredState,
@@ -19,11 +23,9 @@ import {
   allOffIn,
   type CheckedFile,
   enabledEverywhere,
+  enforcedIn,
   type Holding,
-  ignoreExceptionsOf,
-  overrideExceptionsOf,
   type ProjectionEffect,
-  type RuleTarget,
 } from "./checks-rule-effects.ts";
 
 type Outcome<Value> = Result<Value, RunnerFailure>;
@@ -268,75 +270,34 @@ export const queriedFilesOf = (request: {
 }): Promise<Outcome<QueriedFiles>> =>
   queriedFiles({ ...request, location: { ...request.location, names: VERSION_TWO_NAMES } });
 
-type AnsweredByFile = ReadonlyMap<RepoPath, readonly AnsweredFile[]>;
-
-const answeredByFileOf = (request: {
-  readonly answered: readonly AnsweredFile[];
-}): AnsweredByFile => Map.groupBy(request.answered, (answer) => answer.file);
-
 const answeredHolds = (request: {
-  readonly answeredByFile: AnsweredByFile;
-  readonly entry: SelectedCheck;
+  readonly answeredByPlace: AnsweredByPlace;
+  readonly entry: Pick<SelectedNamedCheck, "address" | "symptom">;
   readonly file: RepoPath;
 }): Holding =>
-  (request.answeredByFile.get(request.file) ?? []).some(
-    (answer) =>
-      answer.symptom === request.entry.symptom &&
-      (answer.check === undefined || `${answer.symptom}#${answer.check}` === request.entry.address),
-  )
+  answeredAt({ byPlace: request.answeredByPlace, ...request.entry, file: request.file })
     ? "holds"
     : "does-not-hold";
 
-const targetOf = (request: { readonly entry: SelectedCheck }): RuleTarget => ({
-  ruleId: request.entry.ruleId,
-  clause: request.entry.clause,
-  check: request.entry.address,
-});
-
-const targetsOf = (request: {
-  readonly selected: readonly SelectedCheck[];
-}): readonly RuleTarget[] => request.selected.map((entry) => targetOf({ entry }));
-
-export const queryExceptionsOf = (request: {
-  readonly selected: readonly SelectedCheck[];
-  readonly answered: readonly AnsweredFile[];
-  readonly queried: QueriedFiles;
-}): readonly NativeException[] => {
-  const answeredByFile = answeredByFileOf(request);
-  return [
-    ...request.queried.ignored.flatMap((file) =>
-      ignoreExceptionsOf({ targets: targetsOf(request), file }),
-    ),
-    ...request.queried.checked.flatMap((checked) =>
-      overrideExceptionsOf({
-        targets: targetsOf(request),
-        checked,
-        holding: (target) =>
-          request.selected.some(
-            (entry) =>
-              entry.address === target.check &&
-              answeredHolds({ answeredByFile, entry, file: checked.file }) === "holds",
-          )
-            ? "holds"
-            : "does-not-hold",
-      }),
-    ),
-  ];
-};
+type ProjectedRule = Pick<SelectedNamedCheck, "address" | "symptom" | "ruleId">;
 
 const answeredOff = (request: {
-  readonly selected: readonly SelectedCheck[];
-  readonly answered: readonly AnsweredFile[];
+  readonly selected: readonly ProjectedRule[];
+  readonly answeredByPlace: AnsweredByPlace;
   readonly queried: QueriedFiles;
 }): ProjectionEffect => {
-  const answeredByFile = answeredByFileOf(request);
   return request.queried.checked.every(
     (checked) =>
       allOffIn({
         checked,
         ruleIds: request.selected
           .filter(
-            (entry) => answeredHolds({ answeredByFile, entry, file: checked.file }) === "holds",
+            (entry) =>
+              answeredHolds({
+                answeredByPlace: request.answeredByPlace,
+                entry,
+                file: checked.file,
+              }) === "holds",
           )
           .map((entry) => entry.ruleId),
       }) === "in-effect",
@@ -346,8 +307,8 @@ const answeredOff = (request: {
 };
 
 export const projectionEffectOf = (request: {
-  readonly selected: readonly SelectedCheck[];
-  readonly answered: readonly AnsweredFile[];
+  readonly selected: readonly ProjectedRule[];
+  readonly answeredByPlace: AnsweredByPlace;
   readonly queried: QueriedFiles;
 }): ProjectionEffect =>
   enabledEverywhere({
@@ -356,3 +317,36 @@ export const projectionEffectOf = (request: {
   }) === "in-effect" && answeredOff(request) === "in-effect"
     ? "in-effect"
     : "not-in-effect";
+
+export const namedQueryExceptionsOf = (request: {
+  readonly selected: readonly SelectedNamedCheck[];
+  readonly answeredByPlace: AnsweredByPlace;
+  readonly queried: QueriedFiles;
+}): readonly CheckNativeException[] => {
+  return [
+    ...request.queried.ignored.flatMap((file) =>
+      request.selected.map(({ address }): CheckNativeException => ({
+        kind: "ignore",
+        check: address,
+        file,
+      })),
+    ),
+    ...request.queried.checked.flatMap((checked) =>
+      request.selected
+        .filter((entry) => enforcedIn({ checked, ruleId: entry.ruleId }) === "does-not-hold")
+        .filter(
+          (entry) =>
+            answeredHolds({
+              answeredByPlace: request.answeredByPlace,
+              entry,
+              file: checked.file,
+            }) === "does-not-hold",
+        )
+        .map(({ address }): CheckNativeException => ({
+          kind: "config-override",
+          check: address,
+          file: checked.file,
+        })),
+    ),
+  ];
+};

@@ -1,29 +1,26 @@
 import { assert, describe, expect, it } from "vitest";
 
-import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import { checkAddressTextOf } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
-import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import { editionRunsOf } from "../../../../../domain/runner/edition-runs.ts";
+import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import { casesByEdition } from "../../../../../domain/runner/edition-runs.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
-import { readHeldDiscipline } from "../../../../content-files/rule-sets/held-discipline.ts";
-import { readInstalledNames } from "../../../../content-files/rule-sets/installed-pieces.ts";
-import { readLocatedPieceFile } from "../../../../content-files/rule-sets/located-piece-file.ts";
-import { clauseAddressSchema } from "../../../../discipline-exceptions-folder/clause-address.ts";
-import { disciplineIdSchema } from "../../../../hone-config-file/identifiers.ts";
+import { createNamedCheckExamplesRepository } from "../../../../content-files/rule-sets/named-check-examples.ts";
+import { readBoundCatalogue } from "../../../../content-files/symptom-catalogues/bound-catalogue.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
+import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import { checksRunnerModuleSchema } from "../../../protocol/checks/checks-runner-module-schema.ts";
-import type { LoadedChecksRunner } from "../../../protocol/checks/checks-runner-types.ts";
-import { checkConformance } from "../../../protocol/conformance.ts";
-import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
-import { toolchainBoundChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
+import { namedChecksRunnerModuleSchema } from "../../../protocol/checks/checks-runner-module-schema.ts";
+import type { NamedChecksRunner } from "../../../protocol/checks/checks-runner-types.ts";
+import { namedCheckConformance } from "../../../protocol/conformance.ts";
+import { loadedNamedRunnerOf } from "../../../protocol/engine-run/engine-run.ts";
+import { toolchainBoundNamedChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createChecksRunner } from "../checks-runner/checks-runner.ts";
 import { ESLINT_PROJECTED_KINDS } from "../embedded-runner/create-eslint-runner.ts";
 import {
@@ -88,8 +85,9 @@ const pieceModulesOn = (request: {
   readonly base: ModuleLoaderPort;
 }): ModuleLoaderPort => LINES[request.line].pieceModules({ base: request.base });
 
-const eslintChecksRunnerOn = (request: { readonly line: EslintLine }): LoadedChecksRunner =>
-  toolchainBoundChecksRunner({
+const eslintChecksRunnerOn = (request: { readonly line: EslintLine }): NamedChecksRunner =>
+  toolchainBoundNamedChecksRunner({
+    fileScope: "typescript",
     toolchain: loadedEslintToolchain(request).then(
       (toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain }),
     ),
@@ -107,86 +105,11 @@ const eslintChecksRunnerOn = (request: { readonly line: EslintLine }): LoadedChe
 
 type ConformanceRow = {
   readonly name: string;
-  readonly clause: RunnerClause;
+  readonly binding: CheckBinding;
   readonly cases: readonly SourceCase[];
 };
 
 const RULE_SET_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
-
-const disciplineOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly discipline: string;
-}): DisciplineFile => {
-  const held = readHeldDiscipline({
-    fileText: request.fileText,
-    path: createDefaultPathPort({}),
-    ruleSetRoot: RULE_SET_ROOT,
-    installRoot: RULE_SET_ROOT,
-    discipline: disciplineIdSchema.parse(request.discipline),
-  });
-  assert(
-    held.outcome === "ok",
-    `${request.discipline} reads through the install's discipline reader`,
-  );
-  const discipline = held.value;
-  assert(discipline.held === "present", `the install holds ${request.discipline}`);
-  return discipline.file;
-};
-
-const rowsOf = (request: {
-  readonly fileText: FileTextPort;
-  readonly discipline: string;
-  readonly mechanism: EngineId;
-}): readonly ConformanceRow[] => {
-  const discipline = disciplineOf(request);
-  const piece = readLocatedPieceFile({
-    fileText: request.fileText,
-    path: createDefaultPathPort({}),
-    ruleSetRoot: RULE_SET_ROOT,
-    installRoot: RULE_SET_ROOT,
-    mechanism: request.mechanism,
-    discipline,
-  });
-  assert(
-    piece.outcome === "ok",
-    `${request.discipline} ${request.mechanism} piece.json reads through the rule-set reader`,
-  );
-  return piece.value.clauses.flatMap((entry) => {
-    const definition = discipline.clauses.find((clause) => clause.id === entry.clause);
-    assert(
-      definition?.kind === "mechanical",
-      `${request.discipline}#${entry.clause} is a mechanical clause`,
-    );
-    const clause: RunnerClause = {
-      address: clauseAddressSchema.parse(`${request.discipline}#${entry.clause}`),
-      anchor: definition.anchor,
-      pieceRoot: entry.pieceRoot,
-      settings: entry.settings,
-      clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
-      edition: entry.editions.default,
-    };
-    return editionRunsOf({
-      clause,
-      cases: [...definition.cases.flag, ...definition.cases.allow],
-    }).map((run) => ({
-      name:
-        run.clause.edition === entry.editions.default
-          ? `${request.discipline}#${entry.clause}`
-          : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
-      ...run,
-    }));
-  });
-};
-
-const conformanceRows = (request: {
-  readonly disciplines: readonly string[];
-  readonly mechanism: EngineId;
-}): readonly ConformanceRow[] => {
-  const fileText = createDefaultFileTextPort({});
-  return request.disciplines.flatMap((discipline) =>
-    rowsOf({ fileText, discipline, mechanism: request.mechanism }),
-  );
-};
 
 declare global {
   interface ImportMeta {
@@ -202,30 +125,46 @@ declare global {
   }
 }
 
-const heldNames = readInstalledNames({
-  fileText: createDefaultFileTextPort({}),
-  path: createDefaultPathPort({}),
+const fileText = createDefaultFileTextPort({});
+const path = createDefaultPathPort({});
+const catalogue = readBoundCatalogue({
+  fileText,
+  path,
+  directory: createDefaultDirectoryPort({}),
+  ruleSetRoot: RULE_SET_ROOT,
   installRoot: RULE_SET_ROOT,
 });
-
-assert(heldNames.outcome === "ok", "the install's version 1 names read");
-
-const legacyDisciplines = [
-  ...new Set(
-    heldNames.value.namedClauses
-      .filter((clause) => clause.kind === "mechanical")
-      .map(({ clause }) => clause.discipline),
-  ),
-].sort();
-
-const CONFORMANCE_ROWS = conformanceRows({
-  disciplines: legacyDisciplines,
-  mechanism: "eslint",
-});
+assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
+const examples = createNamedCheckExamplesRepository({ fileText, path });
+const CONFORMANCE_ROWS: readonly ConformanceRow[] = catalogue.value.catalogue.checks
+  .filter(({ engines }) => engines.some(({ name }) => name === "eslint"))
+  .flatMap((check) => {
+    const address = checkAddressTextOf({ check });
+    const held = examples.read({ check: address, engine: "eslint", installRoot: RULE_SET_ROOT });
+    assert(held.outcome === "ok");
+    const { piece } = held.value;
+    return casesByEdition({
+      defaultEdition: piece.editions.default,
+      cases: held.value.examples,
+    }).map(({ edition, cases }) => ({
+      name: `${address} edition ${edition}`,
+      binding: {
+        address,
+        engine: "eslint",
+        edition,
+        anchor: piece.anchor,
+        pieceRoot: piece.pieceRoot,
+        settings: piece.settings,
+        checkSettings: defaultClauseSettings({ declarations: piece.declarations }),
+        forms: piece.forms,
+      },
+      cases,
+    }));
+  });
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
 
-const shippedEngine = await loadedEngineOf({
+const shippedEngine = await loadedNamedRunnerOf({
   mechanism: "eslint",
   installRoot: INSTALL_ROOT,
   moduleExtension: ".ts",
@@ -235,17 +174,15 @@ const shippedEngine = await loadedEngineOf({
 
 assert(shippedEngine.outcome === "ok", "core loads the ESLint module");
 
-const shippedChecksRunner = shippedEngine.value.checksRunner;
-
-assert.isDefined(shippedChecksRunner, "the ESLint module exports its checks runner");
+const shippedChecksRunner = shippedEngine.value;
 
 describe("the ESLint checks runner, loaded as core loads it, conforms to every registered ESLint clause's shared cases on real ESLint (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
   it.each(CONFORMANCE_ROWS)(
     "$name has no conformance failure over its flag and allow cases",
     async (row) => {
       expect(
-        await checkConformance({
-          clause: row.clause,
+        await namedCheckConformance({
+          binding: row.binding,
           cases: row.cases,
           runner: shippedChecksRunner,
         }),
@@ -260,13 +197,17 @@ describe("the ESLint checks runner, loaded as core loads it, conforms to every r
 describe.each(ESLINT_LINES)(
   "the ESLint checks runner on %s, built as the shipped one is, conforms to every registered ESLint clause's shared cases (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)",
   (line) => {
-    const lineRunner = checksRunnerModuleSchema.parse(eslintChecksRunnerOn({ line }));
+    const lineRunner = namedChecksRunnerModuleSchema.parse(eslintChecksRunnerOn({ line }));
 
     it.each(CONFORMANCE_ROWS)(
       "$name has no conformance failure over its flag and allow cases",
       async (row) => {
         expect(
-          await checkConformance({ clause: row.clause, cases: row.cases, runner: lineRunner }),
+          await namedCheckConformance({
+            binding: row.binding,
+            cases: row.cases,
+            runner: lineRunner,
+          }),
         ).toEqual({
           outcome: "ok",
           value: [],

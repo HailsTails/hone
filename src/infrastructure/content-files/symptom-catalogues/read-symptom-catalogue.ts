@@ -24,15 +24,20 @@ type CatalogueSource = {
   readonly path: Pick<PathPort, "join">;
   readonly ruleSetRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
+  readonly upgradeNames?: VersionOneNames;
 };
 
 const namesOfRuleSet = (request: CatalogueSource): Result<VersionOneNames, VersionTwoLoadFailure> =>
-  request.ruleSetRoot === request.installRoot
-    ? readVersionOneNames({
-        fileText: request.fileText,
-        path: request.path.join({ segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS] }),
-      })
-    : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
+  request.upgradeNames !== undefined
+    ? { outcome: "ok", value: request.upgradeNames }
+    : request.ruleSetRoot === request.installRoot
+      ? readVersionOneNames({
+          fileText: request.fileText,
+          path: request.path.join({
+            segments: [request.installRoot, ...VERSION_ONE_NAMES_SEGMENTS],
+          }),
+        })
+      : { outcome: "ok", value: NO_VERSION_ONE_NAMES };
 
 const readSymptomCatalogue = (
   request: CatalogueSource,
@@ -71,6 +76,10 @@ const readSymptomCatalogue = (
     path: request.path,
     root: root.data,
     beside,
+    symptomSourcePrefix:
+      request.ruleSetRoot === request.installRoot
+        ? undefined
+        : SYMPTOM_CATALOGUE_SEGMENTS.join("/"),
   }).read({});
 };
 

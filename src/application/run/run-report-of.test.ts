@@ -25,10 +25,10 @@ import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import type { ChecksSliceProblem, MisnamedRuleId } from "../../domain/runner/checks-run-report.ts";
-import type { Hit } from "../../domain/runner/runner-result-types.ts";
-import type { EngineRun } from "../ports/engine/engine-run.ts";
-import { type RunReportRequest, runReportOf } from "./run-report-of.ts";
+import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
+import { type RunReportRequest, namedRunReportOf } from "./run-report-of.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -288,8 +288,7 @@ const FILE_B = repoPathOf("src/b.ts");
 
 const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
-const CAST_HIT: Hit = {
-  clause: CAST_EXPRESSIONS,
+const CAST_HIT: CheckHit = {
   file: FILE_A,
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
@@ -299,16 +298,15 @@ const CAST_HIT: Hit = {
 const CAST_FINDING = { ...CAST_HIT, mechanism: ESLINT };
 
 const eslintRunOf = (request: {
-  readonly hits: readonly Hit[];
-  readonly projection: EngineRun["projection"];
-}): EngineRun => ({
+  readonly hits: readonly CheckHit[];
+  readonly projection: NamedEngineRun["projection"];
+}): NamedEngineRun => ({
   mechanism: ESLINT,
   hits: request.hits,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
   projection: request.projection,
   slices: [],
-  unprojectedFolders: [],
   measured: [],
   misnamedRuleIds: [],
 });
@@ -328,10 +326,27 @@ const debtAt = (request: {
 });
 
 const SELECTS_CAST: RunReportRequest["selection"] = {
-  selected: [{ address: CAST_EXPRESSIONS, mechanism: ESLINT, exceptions: "allowed" }],
+  selected: [
+    {
+      address: { ruleSet: TOOL_RULE_SET, check: "claimed-type#cast-expressions" },
+      check: CAST_CHECK,
+      exceptions: "allowed",
+      binding: {
+        address: "claimed-type#cast-expressions",
+        engine: "eslint",
+        anchor: { kind: "file" },
+        pieceRoot: "/install/pieces",
+        settings: {},
+        checkSettings: {},
+        edition: editionOf("1"),
+      },
+      editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
+    },
+  ],
   notAdopted: [],
   notRun: [],
-  editions: [],
+  excluded: [],
+  eslintConfigRoots: [],
 };
 
 const LOCATION_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
@@ -362,7 +377,7 @@ const MEASURED_NOTHING_TOUCHED: TouchedSet = { measured: "yes", paths: new Set()
 const REQUEST: RunReportRequest = {
   available: [],
   catalogue: REPORT_CATALOGUE,
-  selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
+  selection: { selected: [], notAdopted: [], notRun: [], excluded: [], eslintConfigRoots: [] },
   excluded: [],
   notes: [],
   records: NO_RECORDS,
@@ -394,10 +409,13 @@ const EMPTY_REPORT: RunReport = {
   symptoms: [],
 };
 
-describe("runReportOf, findings and records", () => {
+describe("namedRunReportOf, findings and records", () => {
   it("reports a finding no record answers, naming its mechanism, with the note of its symptom", () => {
     expect(
-      runReportOf({ ...REQUEST, runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })] }),
+      namedRunReportOf({
+        ...REQUEST,
+        runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
+      }),
     ).toEqual({
       ...EMPTY_REPORT,
       findings: [CAST_FINDING],
@@ -405,21 +423,21 @@ describe("runReportOf, findings and records", () => {
     });
   });
 
-  it("reports a finding whose engine names no check with the check the catalogue resolves for it", () => {
-    const unnamedHit: Hit = {
-      clause: CLOCK_SOURCES,
+  it("reports a Walker finding with the named check’s catalogue symptom", () => {
+    const clockHit: CheckHit = {
+      check: "date-used-directly#clock-sources",
       file: FILE_A,
       anchor: { line: 2, column: 0 },
       snippet: "startedAt",
     };
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
-        runs: [{ ...eslintRunOf({ hits: [unnamedHit], projection: "current" }), mechanism: AUDIT }],
+        runs: [{ ...eslintRunOf({ hits: [clockHit], projection: "current" }), mechanism: AUDIT }],
       }),
     ).toEqual({
       ...EMPTY_REPORT,
-      findings: [{ ...unnamedHit, mechanism: AUDIT, check: "date-used-directly#clock-sources" }],
+      findings: [{ ...clockHit, mechanism: AUDIT }],
       symptoms: [DATE_USED_DIRECTLY],
     });
   });
@@ -427,7 +445,7 @@ describe("runReportOf, findings and records", () => {
   it("reports a finding a record answers as answered, and the record as not stale", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         records: { ...NO_RECORDS, records: [debt] },
         runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
@@ -441,7 +459,7 @@ describe("runReportOf, findings and records", () => {
   it("reports a record that answers nothing as stale", () => {
     const debt = debtAt({ file: FILE_B, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         records: { ...NO_RECORDS, records: [debt] },
         runs: [eslintRunOf({ hits: [CAST_HIT], projection: "current" })],
@@ -457,7 +475,7 @@ describe("runReportOf, findings and records", () => {
   it("does not call a record stale when the engine measuring its check was not in effect, since nothing was measured", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
@@ -483,7 +501,7 @@ describe("runReportOf, findings and records", () => {
       state: "missing",
     };
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
@@ -503,7 +521,7 @@ describe("runReportOf, findings and records", () => {
   it("does not call a record stale when the projection is out of date and the engine linted nothing, and says the engine measured nothing beside the out-of-date problem", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
@@ -521,14 +539,14 @@ describe("runReportOf, findings and records", () => {
   it("calls a record stale once the engine measured its check at its file and nothing credited it", () => {
     const debt = debtAt({ file: FILE_B, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
         runs: [
           {
             ...eslintRunOf({ hits: [], projection: "current" }),
-            measured: [{ clause: CAST_EXPRESSIONS, file: FILE_B }],
+            measured: [{ check: "claimed-type#cast-expressions", file: FILE_B }],
           },
         ],
       }),
@@ -538,7 +556,7 @@ describe("runReportOf, findings and records", () => {
   it("calls a record stale when its file is no longer in the tree, since no run can measure a file that is gone", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         tracked: [FILE_B],
@@ -546,7 +564,7 @@ describe("runReportOf, findings and records", () => {
         runs: [
           {
             ...eslintRunOf({ hits: [], projection: "current" }),
-            measured: [{ clause: CAST_EXPRESSIONS, file: FILE_B }],
+            measured: [{ check: "claimed-type#cast-expressions", file: FILE_B }],
           },
         ],
       }),
@@ -556,7 +574,7 @@ describe("runReportOf, findings and records", () => {
   it("calls a record stale when the settings exclude its file, which is still in the repository but out of what is checked", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         excluded: [FILE_A],
@@ -565,7 +583,7 @@ describe("runReportOf, findings and records", () => {
         runs: [
           {
             ...eslintRunOf({ hits: [], projection: "current" }),
-            measured: [{ clause: CAST_EXPRESSIONS, file: FILE_B }],
+            measured: [{ check: "claimed-type#cast-expressions", file: FILE_B }],
           },
         ],
       }),
@@ -579,14 +597,14 @@ describe("runReportOf, findings and records", () => {
   it("does not call a record stale when the engine measured other files but not its file", () => {
     const debt = debtAt({ file: FILE_B, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: SELECTS_CAST,
         records: { ...NO_RECORDS, records: [debt] },
         runs: [
           {
             ...eslintRunOf({ hits: [], projection: "current" }),
-            measured: [{ clause: CAST_EXPRESSIONS, file: FILE_A }],
+            measured: [{ check: "claimed-type#cast-expressions", file: FILE_A }],
           },
         ],
       }),
@@ -596,7 +614,7 @@ describe("runReportOf, findings and records", () => {
   it("reports debt on a file the change touched as forfeited, and the finding it held as unanswered", () => {
     const debt = debtAt({ file: FILE_A, index: 0 });
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         touched: { measured: "yes", paths: new Set([FILE_A]) },
         records: { ...NO_RECORDS, records: [debt] },
@@ -626,7 +644,7 @@ describe("runReportOf, findings and records", () => {
       refusals: [{ kind: "carried-changed-since-base" }],
     };
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         records: { records: [carried], refused: [refused], notes: [], base: { measured: "yes" } },
       }),
@@ -637,10 +655,10 @@ describe("runReportOf, findings and records", () => {
   });
 });
 
-describe("runReportOf, what the run could not measure", () => {
+describe("namedRunReportOf, what the run could not measure", () => {
   it("lists debt unmeasured for forfeiture when no base revision was given, beside an engine whose projection is not written", () => {
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         touched: { measured: "no", base: { state: "not-given" } },
         records: { ...NO_RECORDS, records: [debtAt({ file: FILE_B, index: 0 })] },
@@ -656,7 +674,10 @@ describe("runReportOf, what the run could not measure", () => {
 
   it("lists a projection that differs from what project writes now as a projection problem", () => {
     expect(
-      runReportOf({ ...REQUEST, runs: [eslintRunOf({ hits: [], projection: "out-of-date" })] }),
+      namedRunReportOf({
+        ...REQUEST,
+        runs: [eslintRunOf({ hits: [], projection: "out-of-date" })],
+      }),
     ).toMatchObject({
       "projection-problems": [{ scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" }],
     });
@@ -664,7 +685,7 @@ describe("runReportOf, what the run could not measure", () => {
 
   it("counts the debt records not checked for forfeiture when forfeiture is left elsewhere", () => {
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         touched: { measured: "elsewhere" },
         records: {
@@ -677,7 +698,7 @@ describe("runReportOf, what the run could not measure", () => {
 
   it("counts the carried records left to another run when forfeiture is left elsewhere and no base was measured", () => {
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         touched: { measured: "elsewhere" },
         records: {
@@ -706,7 +727,7 @@ describe("runReportOf, what the run could not measure", () => {
       gitMessage: "fatal: bad object",
     } as const;
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         touched: { measured: "elsewhere" },
         records: {
@@ -723,7 +744,7 @@ describe("runReportOf, what the run could not measure", () => {
 
   it("counts no carried records left to another run when forfeiture is left elsewhere but the base was measured", () => {
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         touched: { measured: "elsewhere" },
         records: { ...NO_RECORDS, records: [carriedLocationAt({ file: FILE_A, index: 0 })] },
@@ -732,35 +753,48 @@ describe("runReportOf, what the run could not measure", () => {
   });
 });
 
-describe("runReportOf, the selection and the settings", () => {
-  it("lists the checks of the clauses marked not-adopted or not-run, the checks available to list, the editions ran, the excluded paths and the settings notes", () => {
+describe("namedRunReportOf, the selection and the settings", () => {
+  it("lists the named choices, available checks, editions, excluded paths, and settings notes", () => {
+    const available: Check = { ...CAST_CHECK, name: "syntax" };
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         selection: {
-          selected: [],
-          notAdopted: [CAST_EXPRESSIONS],
-          notRun: [TEST_BODY_LOGIC],
-          editions: [
-            {
-              address: CAST_EXPRESSIONS,
-              mechanism: ESLINT,
-              edition: editionOf("1"),
+          ...SELECTS_CAST,
+          selected: SELECTS_CAST.selected.map((selected) => ({
+            ...selected,
+            editions: {
+              declared: [editionOf("1"), editionOf("2")],
+              default: editionOf("1"),
               latest: editionOf("2"),
+            },
+          })),
+          notAdopted: [
+            {
+              address: { ruleSet: TOOL_RULE_SET, check: "date-used-directly#clock-sources" },
+              check: CLOCK_CHECK,
+              choice: { state: "not-adopted" },
+            },
+          ],
+          notRun: [
+            {
+              address: { ruleSet: TOOL_RULE_SET, check: "branch-in-a-test#test-body" },
+              check: TEST_BODY_CHECK,
+              choice: { state: "not-run" },
             },
           ],
         },
         excluded: [repoPathOf("dist")],
         notes: [{ kind: "declared-not-read", key: "layers" }],
-        available: [CLOCK_CHECK],
+        available: [available],
       }),
     ).toEqual({
       ...EMPTY_REPORT,
       excluded: ["dist"],
-      "not-adopted": [CAST_CHECK],
+      "not-adopted": [CLOCK_CHECK],
       "not-run": [TEST_BODY_CHECK],
       editions: [{ check: CAST_CHECK, engine: ESLINT_ENGINE, edition: "1", latest: "2" }],
-      available: [CLOCK_CHECK],
+      available: [available],
       "settings-notes": [{ kind: "declared-not-read", key: "layers" }],
     });
   });
@@ -775,7 +809,7 @@ describe("runReportOf, the selection and the settings", () => {
       replacedBy: ["hone/authored-class-or-this#class-keyword"],
     };
     expect(
-      runReportOf({
+      namedRunReportOf({
         ...REQUEST,
         runs: [
           { ...eslintRunOf({ hits: [], projection: "current" }), misnamedRuleIds: [misnamed] },

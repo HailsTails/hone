@@ -12,7 +12,14 @@ export type ProjectedCheck = {
   readonly check: string;
   readonly ruleId: string;
   readonly options: RuleOptions;
+  readonly plugin?: {
+    readonly namespace: string;
+    readonly module: string;
+    readonly pieceRoot: string;
+  };
 };
+
+export type ProjectedPlugin = { readonly namespace: string; readonly specifier: string };
 
 export type AnsweredFile = {
   readonly symptom: string;
@@ -62,8 +69,15 @@ const codeUnitOrder = (request: { readonly left: string; readonly right: string 
   return request.left > request.right ? 1 : 0;
 };
 
-const checksBlock = (request: { readonly checks: readonly ProjectedCheck[] }): string =>
-  `{ name: ${quoted({ text: CHECKS_BLOCK })}, files: [${quoted({ text: SOURCE_FILES })}], plugins: { ${CHECKS_PLUGIN_NAMESPACE} }, rules: ${rulesText({ rules: enabledRules(request) })} }`;
+const checksBlock = (request: {
+  readonly checks: readonly ProjectedCheck[];
+  readonly plugins: readonly ProjectedPlugin[];
+}): string => {
+  const entries = request.plugins.map(
+    ({ namespace }, index) => `${quoted({ text: namespace })}: plugin${index}`,
+  );
+  return `{ name: ${quoted({ text: CHECKS_BLOCK })}, files: [${quoted({ text: SOURCE_FILES })}], plugins: { ${[CHECKS_PLUGIN_NAMESPACE, ...entries].join(LIST_SEPARATOR)} }, rules: ${rulesText({ rules: enabledRules(request) })} }`;
+};
 
 const reachOfAnswer = (request: { readonly answer: AnsweredFile }): string =>
   request.answer.check === undefined
@@ -120,12 +134,17 @@ const answeredBlock = (request: {
 
 export const checksProjectionText = (request: {
   readonly pluginImport: string;
+  readonly plugins?: readonly ProjectedPlugin[];
   readonly checks: readonly ProjectedCheck[];
   readonly answered: readonly AnsweredFile[];
 }): string => {
+  const plugins = request.plugins ?? [];
+  const imports = plugins.map(
+    ({ specifier }, index) => `import plugin${index} from ${quoted({ text: specifier })};\n`,
+  );
   const blocks = [
-    checksBlock(request),
+    checksBlock({ checks: request.checks, plugins }),
     ...answeredGroupsOf(request).map((group) => answeredBlock({ group, checks: request.checks })),
   ];
-  return `import ${CHECKS_PLUGIN_NAMESPACE} from ${quoted({ text: request.pluginImport })};\nexport default [${blocks.join(",\n")}];\n`;
+  return `import ${CHECKS_PLUGIN_NAMESPACE} from ${quoted({ text: request.pluginImport })};\n${imports.join("")}export default [${blocks.join(",\n")}];\n`;
 };

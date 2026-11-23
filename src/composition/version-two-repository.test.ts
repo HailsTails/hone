@@ -9,7 +9,6 @@ import type { RecordsSourceOf } from "../application/ports/records/records-sourc
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { repoRootOf, repositoryLocatedOf, stagesOverRepository } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
@@ -44,7 +43,6 @@ const command: VersionOneCommandRequest = {
   process: emptyProcess,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: memory.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,
@@ -124,7 +122,14 @@ describe("stagesOverRepository", () => {
     const gitTree: GitTreePort = { pathsAt: () => ({ outcome: "ok", value: [] }) };
     const recordsSourceOf = vi.fn<RecordsSourceOf>();
     const built = stagesOverRepository({
-      ports: { ...command, gitTree, directory: memory.directory, recordsSourceOf, stagesOver },
+      ports: {
+        ...command,
+        namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
+        gitTree,
+        directory: memory.directory,
+        recordsSourceOf,
+        stagesOver,
+      },
       moduleUrl: command.moduleUrl,
       located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
       baseRevision: "origin/main",

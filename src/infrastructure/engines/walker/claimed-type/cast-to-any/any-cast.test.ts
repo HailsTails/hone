@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
@@ -36,17 +34,14 @@ assert(
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 
 const FILE = repoPathOf("src/casts.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-1"),
-  clause: clauseIdOf("any-cast"),
-};
+const ADDRESS: CheckAddressText = "claimed-type#cast-to-any";
 const SYNTAX_API = loadedParsePort.value.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-1",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "any-cast.ts" },
 };
@@ -64,7 +59,7 @@ const sourceObservations = (request: { readonly source: string }): ObservationFi
     exists: vi.fn().mockReturnValue("present"),
     disk: EMPTY_DISK,
   };
-  const prepared = check.prepare({ clauses: [CLAUSE], repository, syntaxApi: SYNTAX_API });
+  const prepared = check.prepare({ bindings: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
   const file = prepared.value.prepareFile({
     file: FILE,
@@ -106,7 +101,7 @@ describe("CD-1 existing any-cast capability", () => {
   ])("preserves source-family eligibility for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -136,7 +131,7 @@ describe("CD-1 existing any-cast capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet:
           "candidate as any; const description = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmno…",
@@ -164,12 +159,8 @@ describe("CD-1 existing any-cast capability", () => {
     observed.observers.enter?.({ node: second });
 
     expect(observed.observers.finish()).toEqual([
-      {
-        clause: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "candidate as any; <any>other; ",
-      },
-      { clause: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "<any>other; " },
+      { check: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "candidate as any; <any>other; " },
+      { check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "<any>other; " },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 0 }], [{ position: 18 }]]);
   });
@@ -192,7 +183,7 @@ describe("CD-1 existing any-cast capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "candidate as Map<string, any>; ",
       },
@@ -266,7 +257,7 @@ describe("CD-1 existing any-cast capability", () => {
     observed.observers.enter?.({ node: cast });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet },
+      { check: ADDRESS, anchor: { line: 3, column: 2 }, snippet },
     ]);
   });
 });

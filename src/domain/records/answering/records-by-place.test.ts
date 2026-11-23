@@ -9,7 +9,13 @@ import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
 import type { HoneRecord, PlacedRecord, SymptomReach } from "../hone-records/hone-record.ts";
 import type { Site } from "./record-reach.ts";
-import { placedInRecordOrder, recordsByPlaceOf, recordsReachingSites } from "./records-by-place.ts";
+import {
+  answeredAt,
+  answeredByPlaceOf,
+  placedInRecordOrder,
+  recordsByPlaceOf,
+  recordsReachingSites,
+} from "./records-by-place.ts";
 
 const STUB_WITH_VIFN: Recipe = {
   name: "stub-with-vifn",
@@ -226,5 +232,25 @@ describe("placedInRecordOrder", () => {
         records: [OTHER_ADAPTER_DEBT, ADAPTER_DEBT, DEPENDENCY, DOMAIN_DEBT],
       }),
     ).toEqual([DOMAIN_DEBT, DEPENDENCY, OTHER_ADAPTER_DEBT]);
+  });
+});
+
+describe("answeredAt", () => {
+  const file = repoPathOf("src/a.ts");
+  const other = repoPathOf("src/b.ts");
+  const byPlace = answeredByPlaceOf({
+    answered: [
+      { file, symptom: "claimed-type", check: "cast-expressions" },
+      { file: other, symptom: "claimed-type" },
+    ],
+  });
+
+  it.each([
+    { file, address: "claimed-type#cast-expressions", expected: true },
+    { file, address: "claimed-type#assertion", expected: false },
+    { file: other, address: "claimed-type#assertion", expected: true },
+    { file: repoPathOf("src/c.ts"), address: "claimed-type#cast-expressions", expected: false },
+  ])("checks the answer for $address in $file", ({ file, address, expected }) => {
+    expect(answeredAt({ byPlace, file, address, symptom: "claimed-type" })).toBe(expected);
   });
 });

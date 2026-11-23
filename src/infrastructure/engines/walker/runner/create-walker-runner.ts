@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RunRequest } from "../../../../application/ports/engine/runner-module.ts";
+import type { NamedEngineRunRequest } from "../../../../application/ports/engine/engine-run.ts";
 import type { EntryKindPort } from "../../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
@@ -8,21 +8,17 @@ import type { PathPort } from "../../../../application/ports/host/path-port.ts";
 import { gatheredOutcomes } from "../../../../domain/gathered-outcomes.ts";
 import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
 import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
+import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
+import type { CheckHit, CheckMeasurement } from "../../../../domain/runner/check-observations.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
+import { checkHitSchema } from "../../protocol/checks/check-wire.ts";
 import type {
-  CaseVerdict,
-  Hit,
-  MeasuredPair,
-} from "../../../../domain/runner/runner-result-types.ts";
-import type { StandaloneRunner } from "../../protocol/runner-module/runner-module-schema.ts";
-import {
-  hitSchema,
-  runnerResultSchema,
-} from "../../protocol/runner-module/runner-result-schema.ts";
-import type { StandaloneRunReport } from "../../protocol/runner-module/standalone-run-report-schema.ts";
+  NamedChecksRunner,
+  NamedChecksRunReport,
+} from "../../protocol/checks/checks-runner-types.ts";
+import { runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
 import { observeWalkerFile } from "./observe-walker-file.ts";
 import type { DirectiveEscape } from "./pieces/type-directives.ts";
 import { walkerPieceSettingsSchema } from "./pieces/walker-check-schema.ts";
@@ -31,7 +27,7 @@ import type { WalkerFile, WalkerRepository } from "./pieces/walker-piece.ts";
 import {
   type PreparedWalkerPiece,
   prepareWalkerPieces,
-  type SelectedWalkerClause,
+  type SelectedWalkerBinding,
 } from "./prepare-walker-pieces.ts";
 import type { TypeScriptParsePort } from "./toolchain/typescript-parse.ts";
 
@@ -45,16 +41,16 @@ type WalkerPorts = {
   readonly entryKind: EntryKindPort;
 };
 
-type ClauseOrder = { readonly clauses: readonly RunnerClause[] };
+type BindingOrder = { readonly bindings: readonly CheckBinding[] };
 
-type WalkerRunReport = Required<StandaloneRunReport>;
+type WalkerRunReport = Pick<NamedChecksRunReport, "hits" | "nativeExceptions" | "measured">;
 
-type SettledClauses = {
-  readonly selected: readonly SelectedWalkerClause[];
+type SettledBindings = {
+  readonly selected: readonly SelectedWalkerBinding[];
   readonly escapes: readonly DirectiveEscape[];
 };
 
-const finishedHitsSchema = runnerResultSchema({ value: z.array(hitSchema).readonly() });
+const finishedHitsSchema = runnerResultSchema({ value: z.array(checkHitSchema).readonly() });
 
 const pieceInvalid = (request: {
   readonly pieceRoot: string;
@@ -67,13 +63,13 @@ const pieceInvalid = (request: {
 const thrownDetail = (request: { readonly thrown: unknown }): string =>
   request.thrown instanceof Error ? request.thrown.message : String(request.thrown);
 
-const settledClause = (request: {
-  readonly clause: RunnerClause;
+const settledBinding = (request: {
+  readonly binding: CheckBinding;
   readonly path: PathPort;
-}): Outcome<readonly SettledClauses[]> => {
-  const settings = walkerPieceSettingsSchema.safeParse(request.clause.settings);
+}): Outcome<readonly SettledBindings[]> => {
+  const settings = walkerPieceSettingsSchema.safeParse(request.binding.settings);
   if (!settings.success) {
-    return pieceInvalid({ pieceRoot: request.clause.pieceRoot, detail: settings.error.message });
+    return pieceInvalid({ pieceRoot: request.binding.pieceRoot, detail: settings.error.message });
   }
   return {
     outcome: "ok",
@@ -81,26 +77,26 @@ const settledClause = (request: {
       {
         selected: [
           {
-            clause: request.clause,
+            binding: request.binding,
             modulePath: request.path.join({
-              segments: [request.clause.pieceRoot, settings.data.module],
+              segments: [request.binding.pieceRoot, settings.data.module],
             }),
           },
         ],
         escapes: [
-          { clause: request.clause.address, directives: settings.data.escapingDirectives ?? [] },
+          { check: request.binding.address, directives: settings.data.escapingDirectives ?? [] },
         ],
       },
     ],
   };
 };
 
-const settledClauses = (request: {
-  readonly clauses: readonly RunnerClause[];
+const settledBindings = (request: {
+  readonly bindings: readonly CheckBinding[];
   readonly path: PathPort;
-}): Outcome<SettledClauses> => {
+}): Outcome<SettledBindings> => {
   const settled = gatheredOutcomes({
-    outcomes: request.clauses.map((clause) => settledClause({ clause, path: request.path })),
+    outcomes: request.bindings.map((binding) => settledBinding({ binding, path: request.path })),
   });
   if (settled.outcome === "failed") return settled;
   return {
@@ -121,10 +117,10 @@ type PreparedPieces = {
 
 const preparedPieces = (request: {
   readonly ports: WalkerPorts;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly repository: WalkerRepository;
 }): Promise<Outcome<PreparedPieces>> => {
-  const settled = settledClauses({ clauses: request.clauses, path: request.ports.path });
+  const settled = settledBindings({ bindings: request.bindings, path: request.ports.path });
   if (settled.outcome === "failed") return Promise.resolve(settled);
   return prepareWalkerPieces({
     selected: settled.value.selected,
@@ -138,24 +134,24 @@ const preparedPieces = (request: {
   );
 };
 
-const clauseRank = (request: ClauseOrder & { readonly hit: Hit }): number =>
-  request.clauses.findIndex(
-    (clause) => sameClauseAddress({ left: clause.address, right: request.hit.clause }) === "same",
-  );
+const checkRank = (request: BindingOrder & { readonly hit: CheckHit }): number =>
+  request.bindings.findIndex((binding) => binding.address === request.hit.check);
 
-const inSourceOrder = (request: ClauseOrder & { readonly hits: readonly Hit[] }): readonly Hit[] =>
+const inSourceOrder = (
+  request: BindingOrder & { readonly hits: readonly CheckHit[] },
+): readonly CheckHit[] =>
   [...request.hits].sort(
     (left, right) =>
       left.anchor.line - right.anchor.line ||
       left.anchor.column - right.anchor.column ||
-      clauseRank({ clauses: request.clauses, hit: left }) -
-        clauseRank({ clauses: request.clauses, hit: right }),
+      checkRank({ bindings: request.bindings, hit: left }) -
+        checkRank({ bindings: request.bindings, hit: right }),
   );
 
 const observedReport = (request: {
   readonly ports: WalkerPorts;
   readonly prepared: PreparedPieces;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly file: WalkerFile;
 }): Outcome<readonly WalkerRunReport[]> => {
   const observed = observeWalkerFile({
@@ -169,10 +165,10 @@ const observedReport = (request: {
     outcome: "ok",
     value: [
       {
-        hits: inSourceOrder({ clauses: request.clauses, hits: observed.value.hits }),
+        hits: inSourceOrder({ bindings: request.bindings, hits: observed.value.hits }),
         nativeExceptions: observed.value.nativeExceptions,
-        measured: observed.value.applicable.map((clause): MeasuredPair => ({
-          clause,
+        measured: observed.value.applicable.map((check): CheckMeasurement => ({
+          check,
           file: request.file.file,
         })),
       },
@@ -182,8 +178,8 @@ const observedReport = (request: {
 
 const finishedPiece = (request: {
   readonly piece: PreparedWalkerPiece;
-}): Outcome<readonly Hit[]> => {
-  const pieceRoot = request.piece.clauses[0]?.pieceRoot ?? request.piece.modulePath;
+}): Outcome<readonly CheckHit[]> => {
+  const pieceRoot = request.piece.bindings[0]?.pieceRoot ?? request.piece.modulePath;
   try {
     const parsed = finishedHitsSchema.safeParse(request.piece.check.finish());
     if (!parsed.success) return pieceInvalid({ pieceRoot, detail: parsed.error.message });
@@ -196,7 +192,7 @@ const finishedPiece = (request: {
 const walkedReport = (request: {
   readonly ports: WalkerPorts;
   readonly prepared: PreparedPieces;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly files: readonly WalkerFile[];
 }): Outcome<WalkerRunReport> => {
   const observed: Outcome<readonly WalkerRunReport[]>[] = [];
@@ -243,7 +239,7 @@ const repositoryFile = (request: {
 
 const runOverRepository = (request: {
   readonly ports: WalkerPorts;
-  readonly run: RunRequest;
+  readonly run: NamedEngineRunRequest;
 }): Promise<Outcome<WalkerRunReport>> => {
   const repository: WalkerRepository = {
     files: request.run.trackedPaths,
@@ -257,13 +253,13 @@ const runOverRepository = (request: {
       fileText: request.ports.fileText,
     }),
   };
-  return preparedPieces({ ports: request.ports, clauses: request.run.clauses, repository }).then(
+  return preparedPieces({ ports: request.ports, bindings: request.run.bindings, repository }).then(
     (prepared) => {
       if (prepared.outcome === "failed") return prepared;
       return walkedReport({
         ports: request.ports,
         prepared: prepared.value,
-        clauses: request.run.clauses,
+        bindings: request.run.bindings,
         files: request.run.trackedPaths.map((file) =>
           repositoryFile({ ports: request.ports, repoRoot: request.run.repoRoot, file }),
         ),
@@ -279,7 +275,7 @@ const caseFile = (request: { readonly sourceCase: SourceCase }): WalkerFile => (
 
 const caseVerdict = (request: {
   readonly ports: WalkerPorts;
-  readonly clause: RunnerClause;
+  readonly binding: CheckBinding;
   readonly sourceCase: SourceCase;
 }): Promise<Outcome<readonly CaseVerdict[]>> => {
   const repository: WalkerRepository = {
@@ -290,13 +286,13 @@ const caseVerdict = (request: {
       texts: { [request.sourceCase.fileName]: request.sourceCase.source },
     }),
   };
-  return preparedPieces({ ports: request.ports, clauses: [request.clause], repository }).then(
+  return preparedPieces({ ports: request.ports, bindings: [request.binding], repository }).then(
     (prepared) => {
       if (prepared.outcome === "failed") return prepared;
       const report = walkedReport({
         ports: request.ports,
         prepared: prepared.value,
-        clauses: [request.clause],
+        bindings: [request.binding],
         files: [caseFile(request)],
       });
       if (report.outcome === "failed") return report;
@@ -315,7 +311,7 @@ const caseVerdict = (request: {
 
 const conformCases = (request: {
   readonly ports: WalkerPorts;
-  readonly clause: RunnerClause;
+  readonly binding: CheckBinding;
   readonly cases: readonly SourceCase[];
 }): Promise<Outcome<readonly CaseVerdict[]>> =>
   request.cases.reduce<Promise<Outcome<readonly CaseVerdict[]>>>(
@@ -323,15 +319,23 @@ const conformCases = (request: {
       pending.then((collected) =>
         collected.outcome === "failed"
           ? collected
-          : caseVerdict({ ports: request.ports, clause: request.clause, sourceCase }).then((next) =>
-              gatheredOutcomes({ outcomes: [collected, next] }),
+          : caseVerdict({ ports: request.ports, binding: request.binding, sourceCase }).then(
+              (next) => gatheredOutcomes({ outcomes: [collected, next] }),
             ),
       ),
     Promise.resolve({ outcome: "ok", value: [] }),
   );
 
-export const createWalkerRunner = (ports: WalkerPorts): StandaloneRunner => ({
-  exceptionPath: "standalone",
-  run: (request) => runOverRepository({ ports, run: request }),
-  conform: (request) => conformCases({ ports, clause: request.clause, cases: request.cases }),
+export const createWalkerRunner = (ports: WalkerPorts): NamedChecksRunner => ({
+  run: async (request) => {
+    const walked = await runOverRepository({ ports, run: request });
+    return walked.outcome === "failed"
+      ? walked
+      : {
+          outcome: "ok",
+          value: { ...walked.value, projection: "none", slices: [], misnamedRuleIds: [] },
+        };
+  },
+  conform: (request) => conformCases({ ports, binding: request.binding, cases: request.cases }),
+  project: () => Promise.resolve({ outcome: "ok", value: [] }),
 });

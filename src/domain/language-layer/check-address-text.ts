@@ -17,6 +17,9 @@ export const checkNamesOf = (request: { readonly text: string }): CheckNames | u
 
 export type CheckAddressText = `${string}#${string}`;
 
+export const isCheckAddressText = (text: string): text is CheckAddressText =>
+  checkNamesOf({ text }) !== undefined;
+
 export const checkAddressOfNames = (names: CheckNames): CheckAddressText =>
   `${names.symptom}${CHECK_ADDRESS_SEPARATOR}${names.check}`;
 

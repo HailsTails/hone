@@ -3,12 +3,9 @@ import { assert, describe, expect, it } from "vitest";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { check } from "../../../walker/authored-class-or-this/class-keyword/class-syntax.ts";
@@ -93,15 +90,12 @@ const walkerRunner = createWalkerRunner({
   entryKind: { kindOf: () => "absent" },
 });
 
-const WALKER_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-14"),
-    clause: clauseIdOf("class-syntax"),
-  },
+const WALKER_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
@@ -111,7 +105,7 @@ describe("CD-14 class-syntax anchors in the audit and the ESLint piece", () => {
     "anchors at the class keyword on the same line in both mechanisms for the case $name",
     async (anchorCase) => {
       expect({
-        audit: await walkerRunner.conform({ clause: WALKER_CLAUSE, cases: [anchorCase] }),
+        audit: await walkerRunner.conform({ binding: WALKER_BINDING, cases: [anchorCase] }),
         eslint: await eslint.lintSourceCases({
           cwd: PIECE_ROOT,
           plugin: loadedPlugin,

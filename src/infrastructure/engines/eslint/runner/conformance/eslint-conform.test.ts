@@ -17,9 +17,9 @@ import type { EslintPort } from "../toolchain/eslint-instance.ts";
 import {
   type ConfiguredClause,
   conformedCases,
+  conformedNamedCases,
   configuredClause,
   type LoadedClause,
-  loadedPieceClauseOf,
   type Outcome,
   parsedPluginOf,
   pluginOf,
@@ -232,41 +232,6 @@ describe("pluginOf", () => {
   });
 });
 
-describe("loadedPieceClauseOf", () => {
-  const loading = (loaded: Awaited<ReturnType<ModuleLoaderPort["load"]>>) => ({
-    load: vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue(loaded),
-  });
-
-  it("loads the configured clause's plugin module from its path and joins the plugin to the clause", async () => {
-    const modules = loading({ outcome: "ok", value: { default: PLUGIN } });
-    await expect(loadedPieceClauseOf({ configured: CONFIGURED, modules })).resolves.toEqual({
-      outcome: "ok",
-      value: {
-        ...CONFIGURED,
-        plugin: {
-          rules: {
-            "no-class-authoring": { meta: { type: "problem" }, create: expect.any(Function) },
-          },
-        },
-      },
-    });
-    expect(modules.load).toHaveBeenCalledExactlyOnceWith({
-      path: "/install/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts",
-    });
-  });
-
-  it("is piece-invalid with the loader's detail when the module does not load", async () => {
-    const modules = loading({
-      outcome: "failed",
-      error: { kind: "module-unloadable", path: "/p.ts", detail: "Cannot find module" },
-    });
-    await expect(loadedPieceClauseOf({ configured: CONFIGURED, modules })).resolves.toEqual({
-      outcome: "failed",
-      error: { kind: "piece-invalid", pieceRoot: PIECE_ROOT, detail: "Cannot find module" },
-    });
-  });
-});
-
 describe("conformedCases", () => {
   it("lints the cases in the piece root with the plugin the caller loaded, and returns their verdicts", async () => {
     const lintSourceCases = vi
@@ -343,6 +308,48 @@ describe("conformedCases", () => {
     ).resolves.toMatchObject({
       outcome: "failed",
       error: { kind: "piece-invalid", pieceRoot: "relative/CD-14" },
+    });
+  });
+});
+
+describe("conformedNamedCases", () => {
+  it("loads the named piece’s plugin and passes its rule, options and cases to the linter", async () => {
+    const load = vi.fn<ModuleLoaderPort["load"]>().mockResolvedValue({
+      outcome: "ok",
+      value: { default: PLUGIN },
+    });
+    const lintSourceCases = vi
+      .fn<EslintPort["lintSourceCases"]>()
+      .mockResolvedValue(CLASS_VERDICTS);
+    await expect(
+      conformedNamedCases({
+        binding: {
+          address: "authored-class-or-this#class-keyword",
+          engine: "eslint",
+          anchor: CLASS_CLAUSE.anchor,
+          pieceRoot: PIECE_ROOT,
+          checkSettings: {},
+          edition: CLASS_CLAUSE.edition,
+          settings: { ...CONFIGURED.settings, options: [{ allowed: true }] },
+        },
+        cases: [CLASS_CASE],
+        path: POSIX_PATH,
+        modules: { load },
+        eslint: { lintSourceCases },
+      }),
+    ).resolves.toEqual(CLASS_VERDICTS);
+    expect(load).toHaveBeenCalledExactlyOnceWith({ path: CONFIGURED.modulePath });
+    expect(lintSourceCases).toHaveBeenCalledExactlyOnceWith({
+      cwd: PIECE_ROOT,
+      plugin: {
+        rules: {
+          "no-class-authoring": { create: expect.any(Function), meta: { type: "problem" } },
+        },
+      },
+      pluginNamespace: "hone",
+      rule: "no-class-authoring",
+      options: [{ allowed: true }],
+      cases: [CLASS_CASE],
     });
   });
 });

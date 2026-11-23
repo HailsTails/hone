@@ -1,28 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
-import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
-import { selectedChecksOf } from "./checks-selection.ts";
+import type { PluginCheck } from "../hone-plugin/check-rule-id.ts";
+import { selectedNamedChecksOf } from "./checks-selection.ts";
 
-const CLAUSE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-1"),
-  clause: clauseIdOf("explicit-any"),
-};
-
-const EXPLICIT_ANY: RuledCheck = {
+const EXPLICIT_ANY: PluginCheck = {
   name: "explicit-any",
   symptom: { name: "untyped-value", title: "Untyped value" },
-  clause: CLAUSE,
   engines: [{ name: "eslint" }],
 };
 
-describe("selectedChecksOf", () => {
-  it("gives each projected check its address, rule id, clause and options", () => {
+describe("selectedNamedChecksOf", () => {
+  it("gives each projected check its address, rule id and options", () => {
     expect(
-      selectedChecksOf({
+      selectedNamedChecksOf({
         checks: [EXPLICIT_ANY],
         projected: [
           {
@@ -40,7 +30,6 @@ describe("selectedChecksOf", () => {
           address: "untyped-value#explicit-any",
           symptom: "untyped-value",
           ruleId: "hone/untyped-value#explicit-any",
-          clause: CLAUSE,
           options: [{ ignoreRestArgs: true }],
         },
       ],
@@ -49,7 +38,7 @@ describe("selectedChecksOf", () => {
 
   it("fails for a projected rule id that names no check of the catalogue that runs on ESLint", () => {
     expect(
-      selectedChecksOf({
+      selectedNamedChecksOf({
         checks: [EXPLICIT_ANY],
         projected: [
           {
@@ -67,6 +56,33 @@ describe("selectedChecksOf", () => {
         detail:
           "the rule hone/untyped-value#gone names no check of the catalogue that runs on ESLint",
       },
+    });
+  });
+
+  it("retains the team's projected rule id and resolves it to the named check", () => {
+    expect(
+      selectedNamedChecksOf({
+        checks: [EXPLICIT_ANY],
+        projected: [
+          {
+            symptom: "untyped-value",
+            check: "explicit-any",
+            ruleId: "team/no-any",
+            options: [],
+            plugin: { namespace: "team", module: "plugin.ts", pieceRoot: "/repo/tools/team" },
+          },
+        ],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          address: "untyped-value#explicit-any",
+          symptom: "untyped-value",
+          ruleId: "team/no-any",
+          options: [],
+        },
+      ],
     });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { CommandRequest } from "../application/ports/command-request.ts";
-import type { EngineRun } from "../application/ports/engine/engine-run.ts";
+import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
@@ -9,7 +9,7 @@ import type { ModuleLoaderPort } from "../application/ports/host/module-loader-p
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import type { SettingsReading } from "../application/run/settings/read-settings.ts";
+import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Case,
@@ -30,7 +30,6 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { VERSION_TWO_CHECK } from "./check-command.ts";
 import { commandOf } from "./composed-command.ts";
@@ -295,15 +294,14 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const FILE_A = repoPathOf("src/a.ts");
 
-const SETTINGS: SettingsReading = {
+const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-    bindings: [],
-    clauseRoots: [],
+    selected: [],
+    notAdopted: [],
+    notRun: [],
     excluded: [],
     eslintConfigRoots: [],
-    fileExceptionWhyChains: "required",
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
@@ -313,32 +311,30 @@ const SETTINGS: SettingsReading = {
 
 const RECORDS: RecordsReading = { records: [], refused: [], notes: [], base: { measured: "yes" } };
 
-const CLEAN_RUN: EngineRun = {
+const CLEAN_RUN: NamedEngineRun = {
   mechanism: ESLINT,
   hits: [],
   nativeExceptions: [],
   coverableKinds: [],
   projection: "current",
   slices: [],
-  unprojectedFolders: [],
   measured: [],
   misnamedRuleIds: [],
 };
 
-const FAILING_RUN: EngineRun = {
+const FAILING_RUN: NamedEngineRun = {
   ...CLEAN_RUN,
   hits: [
     {
-      clause: CAST_EXPRESSIONS,
+      check: "claimed-type#cast-expressions",
       file: FILE_A,
       anchor: { line: 4, column: 9 },
       snippet: "body as Event",
-      check: "claimed-type#cast-expressions",
     },
   ],
 };
 
-const SLICES_RUN: EngineRun = {
+const SLICES_RUN: NamedEngineRun = {
   ...CLEAN_RUN,
   slices: [
     { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
@@ -403,7 +399,6 @@ const commandWith = (request: {
     }),
     write: vi.fn<FileTextPort["write"]>(),
   },
-  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
@@ -426,6 +421,7 @@ const ranWith = async (request: {
 }) => {
   const processPort = processWith({ arguments: request.arguments });
   await versionTwoCheckCommandOf({
+    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
     gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
     directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
     recordsSourceOf: vi.fn<RecordsSourceOf>(),

@@ -19,25 +19,26 @@ import type {
 import type { ProofRunsOf, ProofWritten } from "../../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-carried-over.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
+import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
+import type { VersionOneProjectionPortOf } from "../../application/ports/upgrade/version-one-projection-port.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
-import { runProject } from "../../application/projection/run-project.ts";
-import { type CheckRequest, runCheck } from "../../application/run/check/run-check.ts";
 import { type VersionTwoStages, versionTwoRunOver } from "../../application/run/version-two-run.ts";
 import {
   type PlannedProjectionPorts,
   plannedProjectionOf,
 } from "../../application/upgrade/command/planned-projection.ts";
 import { versionOneProjectionsOfRepository } from "../../application/upgrade/command/version-one-projections.ts";
-import { foundTreeCheckReachOf } from "../../application/upgrade/found-tree/found-tree-reach.ts";
 import { versionOneMentionsOf } from "../../application/upgrade/mentions/version-one-mentions.ts";
 import type { UpgradeProofRequest } from "../../application/upgrade/proof/upgrade-proof.ts";
 import { createAnsweringOracle } from "../../application/upgrade/record-answers/answering-oracle.ts";
-import { createVersionOneEnginePass } from "../../application/upgrade/record-answers/version-one-engine-pass.ts";
+import { createUpgradeBefore } from "../../application/upgrade/record-answers/upgrade-before.ts";
+import type { VersionOneCheckInput } from "../../application/upgrade/record-answers/version-one-check-input.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
 import { assessmentInEffect } from "../../domain/settings/assessment.ts";
 import type { RuleSetCatalogue } from "../../domain/settings/check-choices.ts";
+import type { ConsumerSelectionFile } from "../../domain/settings/selection/selection-file.ts";
 
 export type UpgradePorts = PlannedProjectionPorts & {
   readonly directory: DirectoryPort;
@@ -46,14 +47,19 @@ export type UpgradePorts = PlannedProjectionPorts & {
   readonly directoryRemoval: DirectoryRemovalPort;
   readonly entryKind: EntryKindPort;
   readonly loadFailureDetail: LoadFailureDetail;
+  readonly versionOneProjectionOf: VersionOneProjectionPortOf;
 };
 
 export type UpgradeInput = {
-  readonly command: VersionOneCommandPorts;
+  readonly command: Omit<VersionOneCommandPorts, "shownPathOfRepository">;
   readonly ports: UpgradePorts;
+  readonly measureVersionOne: MeasureVersionOneProjection;
   readonly located: RepositoryLocated;
   readonly runSettingsOf: RunSettingsOf;
   readonly catalogues: () => Result<readonly RuleSetCatalogue[], LoadFailure>;
+  readonly externalCataloguesOf: (
+    selection: ConsumerSelectionFile,
+  ) => Result<readonly RuleSetCatalogue[], LoadFailure>;
   readonly recordsOnDiskOf: RecordsOnDiskOf;
   readonly versionOneReadOf: VersionOneReadOf;
   readonly proofRunsOf: ProofRunsOf;
@@ -64,7 +70,7 @@ export type UpgradeInput = {
 };
 
 type Prepared = {
-  readonly check: CheckRequest;
+  readonly check: VersionOneCheckInput;
   readonly read: VersionOneRead;
   readonly catalogues: readonly RuleSetCatalogue[];
   readonly trackedPaths: readonly RepoPath[];
@@ -75,7 +81,7 @@ const stoppedByLoad = (request: { readonly failure: LoadFailure }): Result<never
   error: { stopped: "load-failed", failure: request.failure },
 });
 
-const checkRequestOf = (request: UpgradeInput): Result<CheckRequest, LoadFailure> => {
+const checkRequestOf = (request: UpgradeInput): Result<VersionOneCheckInput, LoadFailure> => {
   const { command } = request;
   const { repoRoot, installRoot } = request.located;
   const { fileText, path } = command;
@@ -97,7 +103,6 @@ const checkRequestOf = (request: UpgradeInput): Result<CheckRequest, LoadFailure
       }),
       fileText,
       modules: command.modules,
-      engine: command.engine,
       path,
       git: command.git,
       selectionRepository: command.selectionRepositoryOf({
@@ -109,7 +114,6 @@ const checkRequestOf = (request: UpgradeInput): Result<CheckRequest, LoadFailure
       }),
       exceptionRepository: command.exceptionRepositoryOf({ repoRoot }),
       exceptionEntryParser: command.exceptionEntryParser,
-      shownPathOf: command.shownPathOfRepository({ path, fileText, repoRoot, installRoot }),
     },
   };
 };
@@ -140,14 +144,18 @@ const preparedOf = (request: UpgradeInput): Result<Prepared, UpgradeStop> => {
     selectionRepository: check.value.selectionRepository,
     exceptionRepository: check.value.exceptionRepository,
   });
-  return read.outcome === "failed"
-    ? { outcome: "failed", error: { stopped: "refused", failure: read.error } }
+  if (read.outcome === "failed") {
+    return { outcome: "failed", error: { stopped: "refused", failure: read.error } };
+  }
+  const external = request.externalCataloguesOf(read.value.reading.selection);
+  return external.outcome === "failed"
+    ? stoppedByLoad({ failure: external.error })
     : {
         outcome: "ok",
         value: {
           check: check.value,
           read: read.value,
-          catalogues: catalogues.value,
+          catalogues: [...catalogues.value, ...external.value],
           trackedPaths: tracked.value,
         },
       };
@@ -157,6 +165,26 @@ const proofRequestOf = (
   request: UpgradeInput & { readonly prepared: Prepared },
 ): UpgradeProofRequest => {
   const { ports, command, located, prepared } = request;
+  const at = {
+    fileText: command.fileText,
+    fileRemoval: ports.fileRemoval,
+    directory: ports.directory,
+    path: command.path,
+    repoRoot: located.repoRoot,
+    installRoot: located.installRoot,
+    moduleExtension: prepared.check.moduleExtension,
+  };
+  const before = createUpgradeBefore({
+    measureVersionOne: request.measureVersionOne,
+    check: prepared.check,
+    selection: prepared.read.reading.selection,
+    catalogues: prepared.catalogues,
+    engine: ports.namedEngine,
+    sources: ports.settingsSourcesOf(at),
+    readPiece: ports.checkPieceSourceOf(at),
+    projection: ports.versionOneProjectionOf({ ...at, modules: command.modules }),
+    loadFailureDetail: ports.loadFailureDetail,
+  });
   return {
     ports: {
       fileText: command.fileText,
@@ -168,21 +196,11 @@ const proofRequestOf = (
       path: command.path,
     },
     oracle: createAnsweringOracle({
-      enginePass: createVersionOneEnginePass({
-        check: prepared.check,
-        loadFailureDetail: ports.loadFailureDetail,
-      }),
+      enginePass: before.enginePass,
       catalogues: prepared.catalogues,
     }),
     runs: request.proofRunsOf({
-      versionOne: () =>
-        runCheck({
-          ...prepared.check,
-          ...foundTreeCheckReachOf({
-            check: prepared.check,
-            loadFailureDetail: ports.loadFailureDetail,
-          }),
-        }),
+      versionOne: before.report,
       versionTwo: (proofWritten) =>
         versionTwoRunOver({
           stages: request.foundTreeStages(proofWritten),
@@ -207,12 +225,13 @@ const proofRequestOf = (
       boundCatalogueOf: ports.boundCatalogueOf,
       settingsFormat: ports.settingsFormat,
       settingsSourcesOf: ports.settingsSourcesOf,
+      checkPieceSourceOf: ports.checkPieceSourceOf,
+      namedEngine: ports.namedEngine,
     }),
     settingsFormat: ports.settingsFormat,
     versionOneProjectionsOf: versionOneProjectionsOfRepository({
-      project: runProject,
-      check: prepared.check,
-      selectionRepositoryOf: command.selectionRepositoryOf,
+      project: () =>
+        before.prepareProjections(prepared.read.reading.heads.map(({ record }) => record)),
       loadFailureDetail: ports.loadFailureDetail,
       fileText: command.fileText,
       path: command.path,

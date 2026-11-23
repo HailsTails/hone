@@ -12,9 +12,8 @@ import {
 } from "../../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { Result } from "../../../domain/result.ts";
-import { readNamedPiece, type NamedPiece } from "../../engines/named-piece.ts";
+import { checkPieceOf, readNamedPiece, type NamedPiece } from "../../engines/named-piece.ts";
 import { parsedJson } from "../parsed-json.ts";
-import { readInstalledNames } from "./installed-pieces.ts";
 import { clauseCasesSchema, sourceCaseSchema } from "./rule-set-reader.ts";
 
 type FilePorts = { readonly fileText: FileTextPort; readonly path: Pick<PathPort, "join"> };
@@ -66,25 +65,13 @@ const readExamplesDocument = (request: {
 };
 
 const exampleChecksOf = (
-  request: FilePorts & Lookup & { readonly piece: NamedPiece },
+  request: Lookup & { readonly piece: NamedPiece },
 ): Result<ReadonlySet<string>, VersionTwoLoadFailure> => {
   const owner = request.piece.exampleOwner;
   const ownerAddress = checkAddressOfNames(owner);
-  const declaredOwner: Result<NamedPiece, VersionTwoLoadFailure> =
-    ownerAddress === request.check
-      ? { outcome: "ok", value: request.piece }
-      : readNamedPiece({
-          ...request,
-          ...owner,
-          ruleSetRoot: request.installRoot,
-          mechanism: request.engine,
-        });
-  if (declaredOwner.outcome === "failed") {
-    return declaredOwner;
-  }
   const addresses = new Set<string>([
     ownerAddress,
-    ...Object.values(declaredOwner.value.forms).map(checkAddressOfNames),
+    ...Object.values(request.piece.forms).map(checkAddressOfNames),
   ]);
   if (!addresses.has(request.check)) {
     return malformed({
@@ -137,7 +124,7 @@ const examplesForCheck = (request: {
     ({ edition }) => edition !== undefined && !declared.includes(edition),
   );
   return unsupported === undefined
-    ? { outcome: "ok", value: { piece: request.piece, examples: selected } }
+    ? { outcome: "ok", value: { piece: checkPieceOf(request.piece), examples: selected } }
     : malformed({
         path,
         detail: `example ${unsupported.name} selects edition ${unsupported.edition} outside the declaration`,
@@ -182,14 +169,4 @@ export const createNamedCheckExamplesRepository = (
   ports: FilePorts,
 ): NamedCheckExamplesRepository => ({
   read: (request) => readExamples({ ...ports, ...request }),
-  runnerAddress: ({ installRoot, check }) => {
-    const legacy = readInstalledNames({ ...ports, installRoot });
-    if (legacy.outcome === "failed") {
-      return legacy;
-    }
-    const address = legacy.value.clauseOfCheck.get(check);
-    return address === undefined
-      ? { outcome: "failed", error: { kind: "unknown-clause", address: check } }
-      : { outcome: "ok", value: address };
-  },
 });

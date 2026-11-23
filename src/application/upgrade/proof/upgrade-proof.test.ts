@@ -1,6 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 
-import type { Finding } from "../../../domain/finding/governance.ts";
+import type { CheckFinding, Finding } from "../../../domain/finding/governance.ts";
 import type {
   Check,
   Engine,
@@ -249,7 +249,6 @@ const EMPTY_BEFORE: CheckReport = {
   unmeasured: [],
   projectionProblems: [],
   assessment: [],
-  readFirst: [],
 };
 
 const EMPTY_AFTER: RunReport = {
@@ -277,6 +276,14 @@ const EMPTY_AFTER: RunReport = {
 
 const LOOP_FINDING: Finding = {
   clause: LOOPS_CLAUSE,
+  file: SRC_A,
+  anchor: { line: 3, column: 1 },
+  snippet: "the loop line",
+  mechanism: AUDIT,
+  check: "loop-keyword#loops",
+};
+
+const NAMED_LOOP_FINDING: CheckFinding = {
   file: SRC_A,
   anchor: { line: 3, column: 1 },
   snippet: "the loop line",
@@ -816,7 +823,7 @@ describe("upgradeProof", () => {
     });
     doubles.runs.versionTwo.mockResolvedValue({
       outcome: "ok",
-      value: { ...EMPTY_AFTER, findings: [LOOP_FINDING] },
+      value: { ...EMPTY_AFTER, findings: [NAMED_LOOP_FINDING] },
     });
     const carried = await upgradeProof(requestOver({ doubles }));
     expect(carried).toMatchObject({
@@ -834,7 +841,7 @@ describe("upgradeProof", () => {
       outcome: "ok",
       value: {
         ...EMPTY_AFTER,
-        findings: [{ ...LOOP_FINDING, file: repoPathOf("hone.eslint.mjs") }],
+        findings: [{ ...NAMED_LOOP_FINDING, file: repoPathOf("hone.eslint.mjs") }],
       },
     });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
@@ -850,7 +857,7 @@ describe("upgradeProof", () => {
     });
     doubles.runs.versionTwo.mockResolvedValue({
       outcome: "ok",
-      value: { ...EMPTY_AFTER, findings: [LOOP_FINDING] },
+      value: { ...EMPTY_AFTER, findings: [NAMED_LOOP_FINDING] },
     });
     await expect(upgradeProof(requestOver({ doubles }))).resolves.toEqual({
       outcome: "failed",
@@ -884,7 +891,7 @@ describe("upgradeProof", () => {
       outcome: "ok",
       value: {
         ...EMPTY_AFTER,
-        findings: [LOOP_FINDING],
+        findings: [NAMED_LOOP_FINDING],
         misnamed: [
           {
             kind: "names-no-check",

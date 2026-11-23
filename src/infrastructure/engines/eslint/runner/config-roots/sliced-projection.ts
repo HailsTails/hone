@@ -13,7 +13,12 @@ import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
 import type { CoreInstall } from "../projection/core-install.ts";
 import { type ProjectionStates, projectionStateAt } from "../projection/projection-states.ts";
 import { type ProjectedPiece, projectionText } from "../projection/projection-text.ts";
-import { type ProjectionFiles, pluginImportOf, projectionState } from "../projection/projection.ts";
+import {
+  type GeneratedProjectionState,
+  type ProjectionFiles,
+  pluginImportOf,
+  projectionState,
+} from "../projection/projection.ts";
 import {
   type ConfigRoot,
   orphanedSliceDirectoriesOf,
@@ -275,4 +280,31 @@ export const slicedProjectionWrites = (
 ): Outcome<readonly ProjectionWrite[]> => {
   const plan = slicePlanOf(request);
   return plan.outcome === "failed" ? plan : appliedPlan({ ...request, plan: plan.value });
+};
+
+export const slicedProjectionCurrency = (
+  request: PlanRequest,
+): Outcome<readonly { readonly file: RepoPath; readonly state: GeneratedProjectionState }[]> => {
+  const states = request.projectionFiles.currentOf({
+    files: request.roots.map((root) => slicePathOf({ root })),
+  });
+  if (states.outcome === "failed") return states;
+  return gatheredOutcomes({
+    outcomes: request.roots.map((root) => {
+      const expected = rootPlan({ ...request, root });
+      if (expected.outcome === "failed") return expected;
+      const current = projectionStateAt({ states: states.value, file: expected.value.file });
+      return current.outcome === "failed"
+        ? current
+        : {
+            outcome: "ok",
+            value: [
+              {
+                file: expected.value.file,
+                state: projectionState({ current: current.value, generated: expected.value.text }),
+              },
+            ],
+          };
+    }),
+  });
 };

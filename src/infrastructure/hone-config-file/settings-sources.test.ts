@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
+import { checkNamesOf } from "../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
@@ -10,7 +11,7 @@ import type { DeclaredRuleSet } from "../../domain/settings/settings-file.ts";
 import { clauseAddressSchema } from "../discipline-exceptions-folder/clause-address.ts";
 import { createPathPort } from "../node/path-port.ts";
 import { engineIdSchema } from "./identifiers.ts";
-import { createSettingsSources } from "./settings-sources.ts";
+import { createCheckPieceSource, createSettingsSources } from "./settings-sources.ts";
 
 const REPO_ROOT = absoluteRootOf("/repo");
 
@@ -123,6 +124,61 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
 
 const TEAM_ROOT = absoluteRootOf("/repo/tools/hone-rules");
 
+describe("createCheckPieceSource", () => {
+  it("uses the installed runner with the team's named piece and resolves its forms", () => {
+    const names = checkNamesOf({ text: "loop-keyword#loop-statement" });
+    assert(names !== undefined);
+    const source = createCheckPieceSource({
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts",
+      fileText: inMemoryFileText({
+        files: {
+          ...TEAM_FILES,
+          "/repo/tools/hone-rules/mechanisms/walker/loop-keyword/loop-statement/piece.json":
+            JSON.stringify({
+              version: 2,
+              anchor: { kind: "file" },
+              settings: { module: "check.ts" },
+              forms: { for: { symptom: "loop-keyword", check: "loop-statement" } },
+            }),
+        },
+      }),
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    });
+
+    expect(source({ names, ruleSetRoot: TEAM_ROOT, mechanism: "walker" })).toMatchObject({
+      outcome: "ok",
+      value: {
+        pieceRoot: "/repo/tools/hone-rules/mechanisms/walker/loop-keyword/loop-statement",
+        forms: { for: "loop-keyword#loop-statement" },
+        settings: { module: "check.ts" },
+      },
+    });
+  });
+
+  it("reports the unavailable installed runner before reading the piece", () => {
+    const names = checkNamesOf({ text: "loop-keyword#loop-statement" });
+    assert(names !== undefined);
+    const read = vi.fn<FileTextPort["read"]>();
+    const source = createCheckPieceSource({
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts",
+      fileText: {
+        read,
+        exists: () => "absent",
+        write: vi.fn<FileTextPort["write"]>(),
+      },
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
+    });
+
+    expect(source({ names, ruleSetRoot: TEAM_ROOT, mechanism: "walker" })).toEqual({
+      outcome: "failed",
+      error: { kind: "runner-missing", mechanism: "walker" },
+    });
+    expect(read).not.toHaveBeenCalled();
+  });
+});
+
 const pieceOf = (request: {
   readonly files: Readonly<Record<string, string>>;
   readonly ruleSetRoot: AbsolutePath;
@@ -183,14 +239,14 @@ describe("createSettingsSources", () => {
     });
   });
 
-  it("reads a declared rule set's pieces from its mechanisms folder when it gives its catalogue", () => {
+  it("reports an unreadable named catalogue at the declared rule-set root", () => {
     const sources = createSettingsSources({
       directory: {
         list: vi.fn<DirectoryPort["list"]>().mockReturnValueOnce({
           outcome: "failed",
           error: {
             kind: "directory-unreadable",
-            path: absoluteRootOf("/repo/tools/hone-rules/mechanisms/audit"),
+            path: absoluteRootOf("/repo/tools/hone-rules/rules"),
             detail: "EACCES",
           },
         }),
@@ -201,12 +257,7 @@ describe("createSettingsSources", () => {
       moduleExtension: ".ts",
       fileText: {
         read: vi.fn<FileTextPort["read"]>(),
-        exists: vi
-          .fn<FileTextPort["exists"]>()
-          .mockReturnValueOnce("absent")
-          .mockReturnValueOnce("absent")
-          .mockReturnValueOnce("present")
-          .mockReturnValueOnce("absent"),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
         write: vi.fn<FileTextPort["write"]>(),
       },
       path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
@@ -215,7 +266,7 @@ describe("createSettingsSources", () => {
       outcome: "failed",
       error: {
         kind: "file-unreadable",
-        path: "/repo/tools/hone-rules/mechanisms/audit",
+        path: "/repo/tools/hone-rules/rules",
         detail: "EACCES",
       },
     });

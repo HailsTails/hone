@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../../finding/governance.ts";
+import type { CheckFinding } from "../../finding/governance.ts";
 import type {
   Case,
   Check,
@@ -275,28 +275,24 @@ const ORDER_FILE = repoPathOf("src/orders/charge-order.ts");
 
 const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
-const CLOCK_FINDING: Finding = {
-  clause: CLOCK_SOURCES,
+const CLOCK_FINDING: CheckFinding = {
+  check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
   anchor: { line: 14, column: 0 },
   snippet: "chargedAt",
 };
 
-const CAST_FINDING: Finding = {
-  clause: CAST_EXPRESSIONS,
+const CAST_FINDING: CheckFinding = {
+  check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: WEBHOOK_FILE,
   anchor: { line: 4, column: 9 },
   snippet: "body as Event",
 };
 
-const UNCATALOGUED_FINDING: Finding = {
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-99"),
-    clause: clauseIdOf("nowhere"),
-  },
+const UNCATALOGUED_FINDING: CheckFinding = {
+  check: "unknown-symptom#nowhere",
   mechanism: AUDIT,
   file: ORDER_FILE,
   anchor: { line: 1, column: 0 },
@@ -304,23 +300,25 @@ const UNCATALOGUED_FINDING: Finding = {
 };
 
 describe("the findings no debt can be written for", () => {
-  it("names a finding whose clause the catalogue names no symptom for, by its clause", () => {
+  it("names an unregistered finding by its check address", () => {
     expect(
       unrecordableSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [UNCATALOGUED_FINDING, CLOCK_FINDING],
       }),
-    ).toEqual([{ address: "CD-99#nowhere", file: ORDER_FILE, because: { kind: "no-check" } }]);
+    ).toEqual([
+      { address: "unknown-symptom#nowhere", file: ORDER_FILE, because: { kind: "no-check" } },
+    ]);
   });
 
-  it("names a finding whose named check is not of its clause", () => {
+  it("names an unregistered check of a known symptom", () => {
     expect(
       unrecordableSitesOf({
         catalogue: REPORT_CATALOGUE,
         findings: [{ ...CAST_FINDING, check: "claimed-type#no-such-check" }],
       }),
     ).toEqual([
-      { address: "CD-2#cast-expressions", file: WEBHOOK_FILE, because: { kind: "no-check" } },
+      { address: "claimed-type#no-such-check", file: WEBHOOK_FILE, because: { kind: "no-check" } },
     ]);
   });
 
@@ -333,11 +331,15 @@ describe("the findings no debt can be written for", () => {
         ],
       }),
     ).toEqual([
-      { address: "CD-17#clock-sources", file: ORDER_FILE, because: { kind: "no-check" } },
+      {
+        address: "date-used-directly#clock-sources",
+        file: ORDER_FILE,
+        because: { kind: "no-check" },
+      },
     ]);
   });
 
-  it("names each clause and file once", () => {
+  it("names each unrecordable check and file once", () => {
     expect(
       unrecordableSitesOf({
         catalogue: REPORT_CATALOGUE,
@@ -346,7 +348,9 @@ describe("the findings no debt can be written for", () => {
           { ...UNCATALOGUED_FINDING, anchor: { line: 9, column: 1 } },
         ],
       }),
-    ).toEqual([{ address: "CD-99#nowhere", file: ORDER_FILE, because: { kind: "no-check" } }]);
+    ).toEqual([
+      { address: "unknown-symptom#nowhere", file: ORDER_FILE, because: { kind: "no-check" } },
+    ]);
   });
 });
 
@@ -357,7 +361,7 @@ describe("the debt a run's unanswered findings call for", () => {
     ]);
   });
 
-  it("names a finding by the check it carries over the clause's own", () => {
+  it("names the reported check even when another check could explain the symptom", () => {
     expect(
       debtSitesOf({
         catalogue: REPORT_CATALOGUE,
@@ -368,10 +372,10 @@ describe("the debt a run's unanswered findings call for", () => {
     ]);
   });
 
-  it("names a finding by its symptom alone when no check of the symptom found it", () => {
+  it("writes no debt when the finding’s check is absent from the catalogue", () => {
     expect(
       debtSitesOf({ catalogue: { ...REPORT_CATALOGUE, checks: [] }, findings: [CLOCK_FINDING] }),
-    ).toEqual([{ address: "date-used-directly", file: ORDER_FILE, origin: "finding" }]);
+    ).toEqual([]);
   });
 
   it("lists each symptom, check and file once, ordered by file then address", () => {
@@ -390,11 +394,14 @@ describe("the debt a run's unanswered findings call for", () => {
     ]);
   });
 
-  it("skips a finding whose clause the catalogue does not name a symptom for", () => {
+  it("skips findings whose checks are unregistered", () => {
     expect(
       debtSitesOf({
         catalogue: REPORT_CATALOGUE,
-        findings: [UNCATALOGUED_FINDING, { ...CLOCK_FINDING, clause: TEST_BODY_LOGIC }],
+        findings: [
+          UNCATALOGUED_FINDING,
+          { ...CLOCK_FINDING, check: "branch-in-a-test#unregistered" },
+        ],
       }),
     ).toEqual([]);
   });

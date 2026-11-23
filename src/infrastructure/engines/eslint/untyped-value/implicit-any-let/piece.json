@@ -5,8 +5,6 @@
     "keyword": "let"
   },
   "settings": {
-    "pluginNamespace": "hone-cd1",
-    "pluginModule": "eslint-plugin.ts",
     "rule": "implicit-any-let"
   },
   "implementation": {

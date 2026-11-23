@@ -1,4 +1,3 @@
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultGitPort, createDefaultGitTreePort } from "../infrastructure/git/git-port.ts";
 import { createDefaultDirectoryRemovalPort } from "../infrastructure/node/file-system/directory-removal-port.ts";
 import { createDefaultFileCreationPort } from "../infrastructure/node/file-system/file-creation-port.ts";
@@ -10,12 +9,9 @@ import {
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
-import { GUIDED_CHECK, VERSION_TWO_CHECK } from "./check-command.ts";
+import { VERSION_TWO_CHECK } from "./check-command.ts";
 import {
   AUTHORISE,
-  PROJECT,
-  PRUNE_DEBT,
-  RECORD_DEBT,
   SPLIT_RECORDS,
   VERSION_TWO_NEEDED,
   VERSION_TWO_PROJECT,
@@ -34,14 +30,13 @@ import { alreadyUpgradedCommand, UPGRADE } from "./upgrade-command.ts";
 import {
   notReadyCommandOf,
   settingsRequiringCommandOf,
-  versionChosenCommandOf,
+  namedSettingsCommandOf,
 } from "./version-chosen-command.ts";
 
 export const INSTALLED_PORTS: ToolPorts = installedPortsOver({
   path: createDefaultPathPort({}),
   fileText: createDefaultFileTextPort({}),
   modules: createDefaultModuleLoaderPort({}),
-  engine: createDefaultEnginePort({}),
   git: createDefaultGitPort({}),
   gitTree: createDefaultGitTreePort({}),
   directory: createDefaultDirectoryPort({}),
@@ -52,25 +47,15 @@ export const INSTALLED_PORTS: ToolPorts = installedPortsOver({
 });
 
 export const toolSubcommandsOf = (ports: ToolPorts): Subcommands => ({
-  check: versionChosenCommandOf({
+  check: namedSettingsCommandOf({ ports, run: commandOf({ tool: VERSION_TWO_CHECK, ports }) }),
+  project: namedSettingsCommandOf({ ports, run: commandOf({ tool: VERSION_TWO_PROJECT, ports }) }),
+  "record-debt": namedSettingsCommandOf({
     ports,
-    versionOne: commandOf({ tool: GUIDED_CHECK, ports }),
-    versionTwo: commandOf({ tool: VERSION_TWO_CHECK, ports }),
+    run: commandOf({ tool: VERSION_TWO_RECORD_DEBT, ports }),
   }),
-  project: versionChosenCommandOf({
+  "prune-debt": namedSettingsCommandOf({
     ports,
-    versionOne: commandOf({ tool: PROJECT, ports }),
-    versionTwo: commandOf({ tool: VERSION_TWO_PROJECT, ports }),
-  }),
-  "record-debt": versionChosenCommandOf({
-    ports,
-    versionOne: commandOf({ tool: RECORD_DEBT, ports }),
-    versionTwo: commandOf({ tool: VERSION_TWO_RECORD_DEBT, ports }),
-  }),
-  "prune-debt": versionChosenCommandOf({
-    ports,
-    versionOne: commandOf({ tool: PRUNE_DEBT, ports }),
-    versionTwo: commandOf({ tool: VERSION_TWO_PRUNE_DEBT, ports }),
+    run: commandOf({ tool: VERSION_TWO_PRUNE_DEBT, ports }),
   }),
   authorise: settingsRequiringCommandOf({
     ports,

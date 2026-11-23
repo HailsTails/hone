@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -31,27 +29,24 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/clock-source.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-17"),
-  clause: clauseIdOf("clock-sources"),
-};
+const ADDRESS: CheckAddressText = "date-used-directly#clock-sources";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const DATE_NOW = "Date" + ".now()";
 const NEW_DATE = "new" + " Date";
 const LINE_COMMENT = "/" + "/";
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-17",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "clock-sources.ts" },
 };
 
 const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -77,17 +72,17 @@ describe("CD-17 existing raw clock observations", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `const first = ${NEW_DATE}().getTime();`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `${DATE_NOW}; ${NEW_DATE}();`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `const description = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";   ${DATE_NOW};`,
           },
@@ -110,17 +105,17 @@ describe("CD-17 existing raw clock observations", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${LINE_COMMENT} ${DATE_NOW}`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `const literal = "${NEW_DATE}";`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `const constructor = ${NEW_DATE};`,
           },

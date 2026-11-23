@@ -7,7 +7,6 @@ import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-
 import { checkNamesOf } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 import { namedPiecePathOf, readNamedPiece } from "../../../named-piece.ts";
 import { eslintPieceSettingsSchema } from "../pieces/eslint-piece-settings-schema.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
@@ -15,7 +14,7 @@ import {
   checkRuleIdOf,
   checkRuleNameOf,
   ESLINT_MECHANISM,
-  type RuledCheck,
+  type PluginCheck,
   runsOnEslint,
 } from "./check-rule-id.ts";
 import {
@@ -26,7 +25,7 @@ import {
 } from "./checks-plugin.ts";
 
 export type HonePluginSources = {
-  readonly checks: readonly RuledCheck[];
+  readonly checks: readonly PluginCheck[];
   readonly installRoot: AbsolutePath;
   readonly fileText: FileTextPort;
   readonly path: PathPort;
@@ -44,7 +43,7 @@ type Built<Value> = Result<Value, HonePluginFailure>;
 const moduleExportsSchema = z.looseObject({ default: z.unknown() });
 
 const pieceSourceOf = async (
-  request: HonePluginSources & { readonly check: RuledCheck },
+  request: HonePluginSources & { readonly check: PluginCheck },
 ): Promise<Built<PieceSource>> => {
   const { check, installRoot } = request;
   const names = checkNamesOf({ text: checkRuleNameOf({ check }) });
@@ -107,10 +106,7 @@ const pieceSourceOf = async (
 };
 
 export const honePluginAt = async (request: HonePluginSources): Promise<Built<ChecksPlugin>> => {
-  const eslint = request.checks.filter(
-    (check) =>
-      runsOnEslint({ check }) === "eslint" && check.clause.ruleSet === TOOL_IDENTITY.ownRuleSet,
-  );
+  const eslint = request.checks.filter((check) => runsOnEslint({ check }) === "eslint");
   const sources = gatheredOutcomes({
     outcomes: await Promise.all(
       eslint.map(async (check) =>

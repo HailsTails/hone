@@ -1,11 +1,17 @@
 import type { ProjectionRequest } from "../../../../../application/ports/engine/runner-module.ts";
+import type { FileRemovalPort } from "../../../../../application/ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
+import type { VersionOneProjectionPort } from "../../../../../application/ports/upgrade/version-one-projection-port.ts";
 import { gatheredOutcomes, listedOutcome } from "../../../../../domain/gathered-outcomes.ts";
 import type { ExceptionRecord } from "../../../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
+import {
+  clauseAddressText,
+  sameClauseAddress,
+} from "../../../../../domain/rule-set/clause-address.ts";
 import type { SliceProblem } from "../../../../../domain/runner/mechanism-run.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type {
@@ -39,6 +45,7 @@ import {
   packageSliceProblemsOf,
   type ProjectionClause,
   type SliceOrigin,
+  slicedProjectionCurrency,
   slicedProjectionWrites,
   sliceTextOf,
 } from "../config-roots/sliced-projection.ts";
@@ -858,7 +865,7 @@ const selectedRun = (request: {
 };
 
 const importOriginOf = (request: {
-  readonly ports: EslintRunnerPorts;
+  readonly ports: Pick<EslintRunnerPorts, "coreInstall">;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
 }): Outcome<ImportOrigin> => {
@@ -868,17 +875,19 @@ const importOriginOf = (request: {
     : { outcome: "ok", value: { repoRoot: request.repoRoot, install: install.value } };
 };
 
-const projectedWrite = (request: {
+type ProjectionPorts = Pick<EslintRunnerPorts, "coreInstall" | "path" | "repositoryAt">;
+
+const projectionPlanOf = (request: {
   readonly request: ProjectionRequest;
-  readonly ports: EslintRunnerPorts;
-}): Promise<Outcome<readonly ProjectionWrite[]>> => {
+  readonly ports: ProjectionPorts;
+}): Outcome<Parameters<typeof slicedProjectionWrites>[0]> => {
   const origin = importOriginOf({
     ports: request.ports,
     repoRoot: request.request.repoRoot,
     installRoot: request.request.installRoot,
   });
   if (origin.outcome === "failed") {
-    return Promise.resolve(origin);
+    return origin;
   }
   const configured = configuredSelection({
     clauses: request.request.clauses,
@@ -886,7 +895,7 @@ const projectedWrite = (request: {
     origin: origin.value,
   });
   if (configured.outcome === "failed") {
-    return Promise.resolve(configured);
+    return configured;
   }
   const repository = request.ports.repositoryAt({ repoRoot: request.request.repoRoot });
   const source = {
@@ -895,8 +904,9 @@ const projectedWrite = (request: {
     records: request.request.records,
     origin: sliceOriginOf({ path: request.ports.path, origin: origin.value }),
   };
-  return Promise.resolve(
-    slicedProjectionWrites({
+  return {
+    outcome: "ok",
+    value: {
       ...source,
       roots: configRootsOf({
         trackedPaths: request.request.trackedPaths,
@@ -904,8 +914,16 @@ const projectedWrite = (request: {
         lookup: repository.configLookup({ trackedPaths: request.request.trackedPaths }),
       }),
       trackedPaths: request.request.trackedPaths,
-    }),
-  );
+    },
+  };
+};
+
+const projectedWrite = (request: {
+  readonly request: ProjectionRequest;
+  readonly ports: ProjectionPorts;
+}): Promise<Outcome<readonly ProjectionWrite[]>> => {
+  const plan = projectionPlanOf(request);
+  return Promise.resolve(plan.outcome === "failed" ? plan : slicedProjectionWrites(plan.value));
 };
 
 const ranClauses = (request: {
@@ -965,3 +983,37 @@ export const createEslintRunner = (platform: EslintPlatformPorts): EmbeddedRunne
     path: platform.path,
     eslint: platform.eslint,
   });
+
+export const versionOneProjectionOver = (platform: {
+  readonly fileText: FileTextPort;
+  readonly fileRemoval: FileRemovalPort;
+  readonly path: PathPort;
+  readonly moduleExtension: EslintPlatformPorts["moduleExtension"];
+}): VersionOneProjectionPort => {
+  const ports: ProjectionPorts = {
+    path: platform.path,
+    repositoryAt: ({ repoRoot }) => eslintRepositoryOver({ ...platform, repoRoot }),
+    coreInstall: ({ installRoot }) => coreInstallOf({ ...platform, installRoot }),
+  };
+  return {
+    inspect: async (request) => {
+      const plan = projectionPlanOf({ request, ports });
+      if (plan.outcome === "failed") return plan;
+      const files = slicedProjectionCurrency(plan.value);
+      if (files.outcome === "failed") return files;
+      return {
+        outcome: "ok",
+        value: {
+          files: files.value,
+          ruleIds: new Map(
+            plan.value.clauses.map(({ address, ruleId }) => [
+              clauseAddressText({ address }),
+              ruleId,
+            ]),
+          ),
+        },
+      };
+    },
+    prepare: (request) => projectedWrite({ request, ports }),
+  };
+};

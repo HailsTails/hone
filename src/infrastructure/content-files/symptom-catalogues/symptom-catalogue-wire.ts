@@ -22,6 +22,7 @@ import type {
   Symptom,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
 import { clauseAddressSchema } from "../../discipline-exceptions-folder/clause-address.ts";
 import { engineIdSchema } from "../../hone-config-file/identifiers.ts";
@@ -125,7 +126,7 @@ export const recordKindWireSchema = z.strictObject({
 export const checkWireSchema = z.strictObject({
   symptom: catalogueNameSchema,
   name: catalogueNameSchema,
-  clause: clauseAddressSchema,
+  clause: clauseAddressSchema.optional(),
   flagsBeyondTheSymptom: textSchema.optional(),
   misses: textSchema.optional(),
   settingsTracedTo: textSchema.optional(),
@@ -551,11 +552,10 @@ type Checking = {
 };
 
 const checkedClauseOf = (
-  request: Checking & { readonly wire: CheckWire },
+  request: Checking & { readonly address: ClauseAddress },
 ): Resolution<CataloguedClause> => {
   const clause = request.clauses.find(
-    (candidate) =>
-      sameClauseAddress({ left: candidate.clause, right: request.wire.clause }) === "same",
+    (candidate) => sameClauseAddress({ left: candidate.clause, right: request.address }) === "same",
   );
   return clause === undefined
     ? {
@@ -563,7 +563,7 @@ const checkedClauseOf = (
         error: [
           notHeldRefusal({
             listing: "checks",
-            name: clauseAddressText({ address: request.wire.clause }),
+            name: clauseAddressText({ address: request.address }),
           }),
         ],
       }
@@ -596,7 +596,12 @@ const checkOf = (request: Checking & { readonly wire: CheckWire }): Resolution<C
     entries: request.symptoms,
     name: wire.symptom,
   });
-  const clause = checkedClauseOf(request);
+  if (wire.clause === undefined) {
+    return symptom.outcome === "failed"
+      ? symptom
+      : resolved({ name: wire.name, symptom: symptom.value, forms: [] });
+  }
+  const clause = checkedClauseOf({ ...request, address: wire.clause });
   return symptom.outcome === "failed" || clause.outcome === "failed"
     ? { outcome: "failed", error: [...faultsOf(symptom), ...faultsOf(clause)] }
     : sightedCheckOf({ wire, symptom: symptom.value, clause: clause.value });
@@ -698,7 +703,11 @@ const checkedClauseRepeatsOf = (request: { readonly file: CatalogueFile }): read
       listing: `the checks of ${symptom}`,
       names: request.file.checks
         .filter((check) => check.symptom === symptom)
-        .map((check) => clauseAddressText({ address: check.clause })),
+        .map((check) =>
+          check.clause === undefined
+            ? `${check.symptom}#${check.name}`
+            : clauseAddressText({ address: check.clause }),
+        ),
     }),
   );
 

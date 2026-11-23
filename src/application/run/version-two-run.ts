@@ -1,4 +1,4 @@
-import type { GovernedRun } from "../../domain/finding/governance.ts";
+import type { NamedGovernedRun } from "../../domain/finding/governance.ts";
 import type { SymptomCatalogue } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
@@ -12,10 +12,13 @@ import {
   type VersionTwoReportOutput,
   reportOutputInEffect,
 } from "../../domain/settings/report-output.ts";
-import type { EngineRun } from "../ports/engine/engine-run.ts";
+import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { CheckedTree } from "./checked-tree-of.ts";
-import { runReportOf } from "./run-report-of.ts";
-import type { SettingsReading } from "./settings/read-settings.ts";
+import { namedRunReportOf } from "./run-report-of.ts";
+import {
+  catalogueWithExternalChecks,
+  type NamedSettingsReading,
+} from "./settings/read-settings.ts";
 import type { TouchedMeasuring } from "./touched-set/touched-set-of.ts";
 
 export type VersionTwoRun = {
@@ -23,12 +26,12 @@ export type VersionTwoRun = {
   readonly catalogue: SymptomCatalogue;
   readonly touched: TouchedSet;
   readonly output: VersionTwoReportOutput;
-  readonly runs: readonly GovernedRun[];
+  readonly runs: readonly NamedGovernedRun[];
 };
 
 export type EngineStageRequest = {
   readonly catalogue: SymptomCatalogue;
-  readonly settings: SettingsReading;
+  readonly settings: NamedSettingsReading;
   readonly records: RecordsReading;
   readonly tree: CheckedTree;
 };
@@ -37,16 +40,16 @@ export type VersionTwoStages = {
   readonly catalogue: () => Result<SymptomCatalogue, RunLoadFailure>;
   readonly settings: (request: {
     readonly catalogue: SymptomCatalogue;
-  }) => Result<SettingsReading, RunLoadFailure>;
+  }) => Result<NamedSettingsReading, RunLoadFailure>;
   readonly records: (request: {
     readonly catalogue: SymptomCatalogue;
   }) => Result<RecordsReading, RunLoadFailure>;
   readonly tree: (request: {
-    readonly settings: SettingsReading;
+    readonly settings: NamedSettingsReading;
   }) => Result<CheckedTree, RunLoadFailure>;
   readonly engines: (
     request: EngineStageRequest,
-  ) => Promise<Result<readonly EngineRun[], RunLoadFailure>>;
+  ) => Promise<Result<readonly NamedEngineRun[], RunLoadFailure>>;
   readonly projections: (
     request: EngineStageRequest,
   ) => Promise<Result<readonly ProjectedFile[], RunLoadFailure>>;
@@ -76,12 +79,16 @@ export const versionTwoInputsOf = (request: {
   if (settings.outcome === "failed") {
     return settings;
   }
-  const records = request.stages.records({ catalogue: catalogue.value });
+  const effectiveCatalogue = catalogueWithExternalChecks({
+    catalogue: catalogue.value,
+    settings: settings.value,
+  });
+  const records = request.stages.records({ catalogue: effectiveCatalogue });
   return records.outcome === "failed"
     ? records
     : {
         outcome: "ok",
-        value: { catalogue: catalogue.value, settings: settings.value, records: records.value },
+        value: { catalogue: effectiveCatalogue, settings: settings.value, records: records.value },
       };
 };
 
@@ -111,9 +118,9 @@ export const versionTwoRunOver = async (request: {
     measuring: request.arguments.measuring,
     records,
   });
-  const report = runReportOf({
+  const report = namedRunReportOf({
     catalogue,
-    selection: settings.selection.selection,
+    selection: settings.selection,
     excluded: settings.selection.excluded,
     notes: settings.notes,
     records,
