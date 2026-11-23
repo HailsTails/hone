@@ -118,12 +118,15 @@ const verdictLine = (request: { readonly report: RunReport }): string =>
     ? `verdict: ${runVerdictOf(request)}`
     : `verdict: ${runVerdictOf(request)} (partial assessment)`;
 
-export const renderRunReportText = (request: RunReportRequest): string => {
-  const sectionLines = RUN_SECTION_NAMES.map((name) => ({
+export const renderRunSectionsText = (request: RunReportRequest): string =>
+  RUN_SECTION_NAMES.map((name) => ({
     name,
     lines: SECTION_LINES[name](request),
   }))
     .filter((section) => section.lines.length > 0)
-    .flatMap((section) => printedLines({ output: request.output, section }));
-  return `${[...sectionLines, verdictLine(request)].join("\n")}\n`;
-};
+    .flatMap((section) => printedLines({ output: request.output, section }))
+    .map((line) => `${line}\n`)
+    .join("");
+
+export const renderRunReportText = (request: RunReportRequest): string =>
+  `${renderRunSectionsText(request)}${verdictLine(request)}\n`;

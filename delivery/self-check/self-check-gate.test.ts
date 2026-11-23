@@ -78,22 +78,22 @@ describe("VERSION_TWO_GATED_SECTIONS", () => {
 });
 
 describe("versionTwoSelfCheckOutcomeOf", () => {
-  it("passes a clean run, printing the report and the gate line", () => {
+  it("passes a clean run, printing the gate line as its only verdict", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: { outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT },
+        checked: { sections: "", report: EMPTY_RUN_REPORT },
       }),
     ).toEqual({
       code: 0,
-      text: "verdict: pass\nself-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
+      text: "self-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
   });
 
-  it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated", () => {
+  it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated, after the report's sections and with no verdict of hone's own", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
         checked: {
-          outcome: { code: 1, text: "verdict: fail\n" },
+          sections: "findings (1)\n",
           report: {
             ...EMPTY_RUN_REPORT,
             findings: [NAMED_CLASS_IN_A],
@@ -103,7 +103,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 0,
-      text: "verdict: fail\nself-check: pass, the selection, records and projection are sound; findings (1) and unrecorded (2) are reported above and not gated\n",
+      text: "findings (1)\nself-check: pass, the selection, records and projection are sound; findings (1) and unrecorded (2) are reported above and not gated\n",
     });
   });
 
@@ -111,7 +111,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
         checked: {
-          outcome: { code: 1, text: "verdict: fail\n" },
+          sections: "misnamed (1)\n",
           report: {
             ...EMPTY_RUN_REPORT,
             findings: [NAMED_CLASS_IN_A],
@@ -136,7 +136,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 1,
-      text: "verdict: fail\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
+      text: "misnamed (1)\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
     });
   });
 });

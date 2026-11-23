@@ -22,7 +22,7 @@ import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
 import type { VersionTwoReportOutput } from "../../domain/settings/report-output.ts";
-import { renderRunReportText } from "./run-report-text.ts";
+import { renderRunReportText, renderRunSectionsText } from "./run-report-text.ts";
 
 const CAUSAL_WHY_CHAIN: WhyChain = {
   whys: [
@@ -578,5 +578,37 @@ describe("renderRunReportText", () => {
         output: "verdict-only",
       }),
     ).toBe("verdict: fail\n");
+  });
+});
+
+describe("renderRunSectionsText", () => {
+  it("prints every non-empty section in order without a verdict line", () => {
+    expect(
+      renderRunSectionsText({
+        report: {
+          ...EMPTY_REPORT,
+          findings: EVERY_SECTION.findings,
+          refused: EVERY_SECTION.refused,
+        },
+        output: "full",
+        catalogue: REPORT_CATALOGUE,
+        symptomPage: SYMPTOM_PAGE,
+        projectCommand: PROJECT_COMMAND,
+        pruneCommand: PRUNE_COMMAND,
+      }),
+    ).toBe(`findings (1)\n${LINES.findings}\nrefused (1)\n${LINES.refused}\n`);
+  });
+
+  it("prints nothing for a run with nothing to report", () => {
+    expect(
+      renderRunSectionsText({
+        report: EMPTY_REPORT,
+        output: "full",
+        catalogue: REPORT_CATALOGUE,
+        symptomPage: SYMPTOM_PAGE,
+        projectCommand: PROJECT_COMMAND,
+        pruneCommand: PRUNE_COMMAND,
+      }),
+    ).toBe("");
   });
 });

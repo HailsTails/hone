@@ -1,4 +1,7 @@
-import { VERSION_TWO_CHECK, type VersionTwoChecked } from "../../src/composition/check-command.ts";
+import {
+  VERSION_TWO_CHECK,
+  versionTwoReportRequestOf,
+} from "../../src/composition/check-command.ts";
 import {
   type CommandHandler,
   commandOf,
@@ -13,7 +16,11 @@ import {
   type RunSectionName,
   runSectionRoleOf,
 } from "../../src/domain/report/report-sections.ts";
+import type { RunReport } from "../../src/domain/report/run-report.ts";
 import type { CommandOutcome } from "../../src/infrastructure/command-line/outcomes/command-outcome.ts";
+import { renderRunSectionsText } from "../../src/infrastructure/printed-report/run-report-text.ts";
+
+type VersionTwoChecked = { readonly sections: string; readonly report: RunReport };
 
 const REPORTED_NOT_GATED: readonly RunSectionName[] = ["findings", "unrecorded"];
 
@@ -33,13 +40,13 @@ const gateLineOf = (request: {
 export const versionTwoSelfCheckOutcomeOf = (request: {
   readonly checked: VersionTwoChecked;
 }): CommandOutcome => {
-  const { report, outcome } = request.checked;
+  const { report, sections } = request.checked;
   const failing = VERSION_TWO_GATED_SECTIONS.filter((section) => report[section].length > 0).map(
     (section) => `${section} (${report[section].length})`,
   );
   return {
     code: failing.length > 0 ? 1 : 0,
-    text: `${outcome.text}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, failing })}`,
+    text: `${sections}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, failing })}`,
   };
 };
 
@@ -53,7 +60,7 @@ const selfCheckSubcommandsOf = (ports: ToolPorts): Subcommands => ({
         print: (request) =>
           versionTwoSelfCheckOutcomeOf({
             checked: {
-              outcome: VERSION_TWO_CHECK.print(request),
+              sections: renderRunSectionsText(versionTwoReportRequestOf(request)),
               report: request.produced.run.report,
             },
           }),
