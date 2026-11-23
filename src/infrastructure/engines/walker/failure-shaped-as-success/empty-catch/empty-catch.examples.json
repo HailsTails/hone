@@ -1,0 +1,18 @@
+{
+  "flag": [
+    {
+      "name": "empty catch and promise rejection handlers",
+      "fileName": "src/orders.ts",
+      "source": "try { save(); } catch { /* ignored */ }\nload().catch(() => {});\nload().then(useOrder, function () {});",
+      "expectedLines": [1, 2, 3]
+    }
+  ],
+  "allow": [
+    {
+      "name": "failures become observable values",
+      "fileName": "src/orders.ts",
+      "source": "try { save(); } catch (error) { return { outcome: \"failed\", error }; }\nload().catch(toFailure);\nload().then(() => {});",
+      "expectedLines": []
+    }
+  ]
+}
