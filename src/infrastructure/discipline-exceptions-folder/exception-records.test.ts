@@ -2428,7 +2428,46 @@ describe("parseExceptionEntries when file exception why-chains are optional", ()
     }).invalid;
     expect(refused?.problem).toEqual({
       kind: "evidence-refused",
-      detail: expect.stringMatching(/whyChain[\s\S]*provenance/),
+      detail: [
+        "✖ matches none of the evidence shapes:",
+        "  either:",
+        "    ✖ Invalid input",
+        "      → at whyChain",
+        "  or:",
+        "    ✖ Invalid input: expected object, received undefined",
+        "      → at provenance",
+      ].join("\n"),
+    });
+  });
+
+  it("names the field each file carve-out evidence shape refused when a record matches none of them", () => {
+    const [refused] = parseExceptionEntries({
+      entries: [
+        {
+          place: AT_0,
+          entry: { ...REASONED_CARVE_OUT, provenance: { kind: "inherited-debt", source: "s" } },
+        },
+      ],
+      selection: SELECTION,
+      fileExceptionWhyChains: "required",
+      baseline: NOTHING_AT_BASE,
+    }).invalid;
+    expect(refused?.problem).toEqual({
+      kind: "evidence-refused",
+      detail: [
+        "✖ matches none of the evidence shapes:",
+        "  either:",
+        "    ✖ Invalid input",
+        "      → at whyChain",
+        "    ✖ Invalid input: expected string, received undefined",
+        "      → at provenance.decision",
+        "  or:",
+        "    ✖ Invalid input: expected string, received undefined",
+        "      → at provenance.decision",
+        "  or:",
+        "    ✖ Invalid input: expected never, received object",
+        "      → at provenance",
+      ].join("\n"),
     });
   });
 });
