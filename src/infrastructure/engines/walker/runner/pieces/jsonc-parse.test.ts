@@ -2,6 +2,7 @@ import { assert, describe, expect, it, vi } from "vitest";
 
 import {
   createDefaultJsoncParsePort,
+  createDefaultJsoncTreePort,
   createJsoncParsePort,
   type JsoncProviderCall,
 } from "./jsonc-parse.ts";
@@ -79,6 +80,41 @@ describe("createDefaultJsoncParsePort", () => {
         error: { detail: expect.stringContaining("JSONC parse error") },
       },
       allowed: { outcome: "ok", value: { packages: { zod: ["zod@4.4.3"] } } },
+    });
+  });
+});
+
+describe("createDefaultJsoncTreePort", () => {
+  it("keeps the offsets of property names and values in a parsed document", () => {
+    expect(
+      createDefaultJsoncTreePort({ trailingCommas: "refused" }).parse({
+        source: '{"tool": "1.2"}',
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        type: "object",
+        children: [
+          {
+            type: "property",
+            children: [
+              { type: "string", offset: 1, value: "tool" },
+              { type: "string", offset: 9, value: "1.2" },
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it("refuses recovered trees with diagnostics", () => {
+    expect(
+      createDefaultJsoncTreePort({ trailingCommas: "refused" }).parse({
+        source: '{"tool": "1.2",}',
+      }),
+    ).toMatchObject({
+      outcome: "failed",
+      error: { detail: expect.stringContaining("JSONC parse error") },
     });
   });
 });

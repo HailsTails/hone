@@ -40,25 +40,44 @@ describe("packageManifestOf", () => {
 });
 
 describe("locatedPackageManifestOf", () => {
-  it("locates a namespaced dependency by its JSON path across CRLF lines", () => {
+  it("locates a namespaced dependency across CRLF lines and omits intervening comments", () => {
     const manifest = locatedPackageManifestOf({
       file: repoPathSchema.parse("package.json"),
       readText: () => ({
         outcome: "ok",
         value:
-          '{\r\n  "devDependencies": {\r\n    "@scope/dev.tool":\r\n      "^4.0.0"\r\n  }\r\n}',
+          '{\r\n  "devDependencies": {\r\n    "@scope/dev.tool": // check the next release\r\n      "^4.0.0"\r\n  }\r\n}',
       }),
     });
-    assert(manifest.outcome === "ok");
-    expect(manifest.value?.fieldAt(["devDependencies", "@scope/dev.tool"])).toEqual({
+    assert(manifest.outcome === "ok" && manifest.value !== undefined);
+    const dependencySection = manifest.value.get("devDependencies");
+    assert(dependencySection !== undefined);
+    expect(dependencySection.fields.get("@scope/dev.tool")).toMatchObject({
       anchor: { line: 3, column: 4 },
       snippet: '"@scope/dev.tool": "^4.0.0"',
+      value: "^4.0.0",
     });
-    expect(manifest.value?.fieldAt(["devDependencies"])).toEqual({
+    expect(dependencySection).toMatchObject({
       anchor: { line: 2, column: 2 },
       snippet: '"devDependencies"',
     });
-    expect(manifest.value?.fieldAt(["dependencies", "@scope/dev.tool"])).toBeUndefined();
+    expect(manifest.value.has("dependencies")).toBe(false);
+  });
+
+  it("uses the last value and anchor when a property is repeated", () => {
+    const manifest = locatedPackageManifestOf({
+      file: repoPathSchema.parse("package.json"),
+      readText: () => ({
+        outcome: "ok",
+        value: '{\n  "packageManager": "pnpm@1.2.3",\n  "packageManager": /* latest */ "pnpm@2"\n}',
+      }),
+    });
+    assert(manifest.outcome === "ok" && manifest.value !== undefined);
+    expect(manifest.value.get("packageManager")).toMatchObject({
+      anchor: { line: 3, column: 2 },
+      snippet: '"packageManager": "pnpm@2"',
+      value: "pnpm@2",
+    });
   });
 });
 

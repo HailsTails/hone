@@ -3,7 +3,6 @@ import type { Result } from "../../../../../domain/result.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import {
   dependencySourceOf,
-  fieldsOf,
   locatedPackageManifestOf,
   PACKAGE_MANIFEST,
   WORKFLOW,
@@ -46,23 +45,20 @@ const manifestVersionsOf = (file: WalkerFile): Versions => {
   const { value } = manifest;
   if (value === undefined) return { outcome: "ok", value: undefined };
   const sections =
-    value.fields.get("private") === true
+    value.get("private")?.value === true
       ? ["dependencies", "devDependencies", "optionalDependencies"]
       : ["devDependencies"];
   const floating = sections.flatMap((section) =>
-    fieldsOf(value.fields.get(section)).flatMap(([name, version]) => {
-      if (typeof version !== "string" || !floatingSpecifier(version)) return [];
-      const site = value.fieldAt([section, name]);
-      return site === undefined ? [] : [site];
-    }),
+    Array.from(value.get(section)?.fields.values() ?? []).filter(
+      ({ value: version }) => typeof version === "string" && floatingSpecifier(version),
+    ),
   );
-  const packageManager = value.fields.get("packageManager");
+  const packageManager = value.get("packageManager");
   if (
-    typeof packageManager === "string" &&
-    floatingSpecifier(packageManager.slice(packageManager.lastIndexOf("@") + 1))
+    typeof packageManager?.value === "string" &&
+    floatingSpecifier(packageManager.value.slice(packageManager.value.lastIndexOf("@") + 1))
   ) {
-    const site = value.fieldAt(["packageManager"]);
-    if (site !== undefined) floating.push(site);
+    floating.push(packageManager);
   }
   return { outcome: "ok", value: floating };
 };
