@@ -77,3 +77,14 @@ export const sourceValueDeclarationsOf = (request: {
       : bindings.getSymbolAtLocation(node);
   return runtimeDeclarationsOf({ syntaxApi, declarations: symbol?.declarations ?? [] });
 };
+
+export const sourceValueLookupOf = (request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly sourceFile: SyntaxTree;
+}): ((node: SyntaxNode) => readonly SyntaxNode[]) => {
+  let bindings: TypeChecker | undefined;
+  return (node) => {
+    bindings ??= sourceBindingsOf(request);
+    return sourceValueDeclarationsOf({ syntaxApi: request.syntaxApi, bindings, node });
+  };
+};

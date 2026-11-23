@@ -1,14 +1,7 @@
-import {
-  sourceBindingsOf,
-  sourceValueDeclarationsOf,
-} from "../../runner/pieces/source-bindings.ts";
+import { sourceValueLookupOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
-import type {
-  SyntaxApi,
-  SyntaxNode,
-  TypeChecker,
-} from "../../runner/toolchain/typescript-parse.ts";
+import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
 type SyntaxRequest = {
   readonly syntaxApi: SyntaxApi;
@@ -86,14 +79,8 @@ export const check: WalkerPiece = {
             kind: "syntax",
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
-              let bindingsInSource: TypeChecker | undefined;
-              const locallyBound = (node: SyntaxNode): boolean => {
-                bindingsInSource ??= sourceBindingsOf({ syntaxApi, sourceFile });
-                return (
-                  sourceValueDeclarationsOf({ syntaxApi, bindings: bindingsInSource, node })
-                    .length > 0
-                );
-              };
+              const declarationsOf = sourceValueLookupOf({ syntaxApi, sourceFile });
+              const locallyBound = (node: SyntaxNode): boolean => declarationsOf(node).length > 0;
               return {
                 enter: ({ node }) => {
                   const use =
