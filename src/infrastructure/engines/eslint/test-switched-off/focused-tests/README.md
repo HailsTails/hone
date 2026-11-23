@@ -2,9 +2,6 @@
 
 This piece enforces CD-27's `focused-tests` and `skipped-tests` clauses through ESLint, in the plugin `cd27/cd27.eslint-plugin.ts` under the namespace `hone-cd27`.
 
-- `focused-tests` reports `.only` and the bare `fdescribe`, `fit`, `ftest` and `fsuite`, at the `only` token.
-- `skipped-tests` reports `.skip`, `.fixme` and the bare `xdescribe`, `xit`, `xtest` and `xsuite`.
-
 `piece.json` names each clause, the namespace, the plugin module and the rule. It is the only file core reads to find the rules.
 
 ## Adopting the rule

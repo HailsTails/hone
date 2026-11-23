@@ -1796,6 +1796,51 @@ const projectRequest = (request: {
 });
 
 describe("project", () => {
+  it("uses the edition two options in both the governed rule and the projection", async () => {
+    const clause = {
+      ...CLASS_CLAUSE,
+      edition: editionOf("2"),
+      settings: {
+        ...CLASS_SETTINGS,
+        options: [{ max: 1 }],
+        optionsByEdition: { "2": [{ max: 2 }] },
+      },
+    };
+    const projection = `import piece0 from "./node_modules/@hailstails/hone/mechanisms/eslint/CD-14/cd14/cd14.eslint-plugin.ts";
+
+export default [
+  {
+    name: "hone-core/piece/hone",
+    files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: { "hone": piece0 },
+    rules: { "hone/no-class-authoring": ["error",{"max":2}] },
+  },
+];
+`;
+    const projectionFiles = rootHolding(ABSENT_PROJECTION);
+    const eslint = eslintOver({});
+    await expect(
+      runnerOver({ repository: projectionHolding({ text: projection }), eslint }).run(
+        runRequest({ clauses: [clause], records: [] }),
+      ),
+    ).resolves.toMatchObject({ outcome: "ok", value: { projection: "current" } });
+    expect(vi.mocked(eslint.createGovernanceInstance).mock.calls).toEqual([
+      [expect.objectContaining({ rules: [{ ruleId: RULE_ID, options: [{ max: 2 }] }] })],
+    ]);
+    await expect(
+      runnerOver({ repository: repositoryHolding({ projectionFiles }) }).project({
+        ...projectRequest({ trackedPaths: [], records: [] }),
+        clauses: [clause],
+      }),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: [{ path: "disciplines.eslint.mjs", effect: "written" }],
+    });
+    expect(projectionFiles.writeAt.mock.calls).toEqual([
+      [{ file: PROJECTION_FILE, text: projection }],
+    ]);
+  });
+
   it("writes the projection generated from the clauses and records to disciplines.eslint.mjs at the repository root", async () => {
     const projectionFiles = rootHolding(ABSENT_PROJECTION);
     const write = await runnerOver({ repository: repositoryHolding({ projectionFiles }) }).project(

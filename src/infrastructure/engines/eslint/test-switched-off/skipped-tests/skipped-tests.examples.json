@@ -29,6 +29,20 @@
       "fileName": "src/sum.test.ts",
       "source": "ns.describe.skip(\"sum\", () => {});\n",
       "expectedLines": [1]
+    },
+    {
+      "name": "test.todo deferred",
+      "edition": "2",
+      "fileName": "src/sum.test.ts",
+      "source": "test.todo(\"later\");\n",
+      "expectedLines": [1]
+    },
+    {
+      "name": "tests conditional on the machine",
+      "edition": "2",
+      "fileName": "src/sum.test.ts",
+      "source": "it.skipIf(isWindows)(\"runs elsewhere\", () => {});\ndescribe.runIf(hasDatabase)(\"live\", () => {});",
+      "expectedLines": [1, 2]
     }
   ],
   "allow": [
@@ -48,6 +62,20 @@
       "name": "test.concurrent",
       "fileName": "src/sum.test.ts",
       "source": "test.concurrent(\"adds\", () => {});\n",
+      "expectedLines": []
+    },
+    {
+      "name": "edition one keeps conditional modifiers outside the check",
+      "edition": "1",
+      "fileName": "src/sum.test.ts",
+      "source": "it.skipIf(isWindows)(\"runs elsewhere\", () => {});\nit.runIf(hasDatabase)(\"live\", () => {});",
+      "expectedLines": []
+    },
+    {
+      "name": "edition two does not report concurrent or table-driven tests",
+      "edition": "2",
+      "fileName": "src/sum.test.ts",
+      "source": "it.concurrent(\"adds\", () => {});\nit.each([1])(\"adds %s\", () => {});",
       "expectedLines": []
     }
   ]

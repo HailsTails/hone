@@ -1,7 +1,9 @@
 import { assert, describe, expect, it } from "vitest";
 
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { casesByEdition } from "../../../../../domain/runner/edition-runs.ts";
@@ -199,6 +201,34 @@ describe("the ESLint engine behind the compatibility check", () => {
   it("is the 9 line", () => {
     expect(ESLINT_9_VERSION).toMatch(/^9\./);
   });
+
+  it.each([
+    { edition: "1", expectedLines: [2] },
+    { edition: "2", expectedLines: [1, 2] },
+  ] as const)(
+    "uses the skipped-test options for edition $edition",
+    async ({ edition, expectedLines }) => {
+      const row = ROWS.find(({ name }) => name === "CD-27#skipped-tests");
+      assert.isDefined(row);
+      expect(
+        await eslint9CaseMismatches({
+          row: {
+            ...row,
+            clause: { ...row.clause, edition: editionOf(edition) },
+            cases: [
+              {
+                name: "ordinary and conditional skips",
+                fileName: repoPathOf("conditional.test.ts"),
+                source:
+                  'it.skipIf(onWindows)("conditional", () => {});\nit.skip("ordinary", () => {});',
+                expectedLines,
+              },
+            ],
+          },
+        }),
+      ).toEqual([]);
+    },
+  );
 });
 
 describe("the team's own ESLint 9 run: every ESLint piece's shared cases hold under the supported ESLint 9 line, with ESLint 9's own core rules handed to any piece that wraps them (CD-47: the shipped plugin modules are the assertion's subject; nothing is spawned or written)", () => {

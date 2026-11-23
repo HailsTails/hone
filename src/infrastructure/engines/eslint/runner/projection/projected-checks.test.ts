@@ -206,6 +206,31 @@ describe("projectedNamedChecksOf", () => {
     });
   });
 
+  it("projects the options that belong to the selected ESLint edition", () => {
+    const binding = {
+      ...SKIPPED_TESTS_BINDING,
+      edition: editionOf("2"),
+      settings: {
+        pluginNamespace: "hone-cd27",
+        pluginModule: "cd27/cd27.eslint-plugin.ts",
+        rule: "skipped-tests",
+        optionsByEdition: { "2": ["conditional-and-todo"] },
+      },
+    };
+    expect(projectedNamedChecksOf({ checks: PLUGIN_CHECKS, bindings: [binding] })).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          ruleSet: TOOL_RULE_SET,
+          symptom: "test-switched-off",
+          check: "skipped-tests",
+          ruleId: "hone/test-switched-off#skipped-tests",
+          options: ["conditional-and-todo"],
+        },
+      ],
+    });
+  });
+
   it("refuses an ESLint binding whose settings are not an ESLint piece's, naming its piece", () => {
     expect(
       projectedNamedChecksOf({

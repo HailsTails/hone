@@ -3,7 +3,7 @@
 ```json
 {
   "group": "Tests",
-  "seen": "`.only`, `.skip`, `fit` or `xit`.",
+  "seen": "`.only`, `.skip`, `fit`, `xit`, `.todo`, `.skipIf` or `.runIf`.",
   "mayIndicate": [
     {
       "case": "gives-each-unit-its-test",

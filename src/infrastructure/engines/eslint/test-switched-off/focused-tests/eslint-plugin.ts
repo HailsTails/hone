@@ -1,4 +1,4 @@
-import { siteRule } from "../../runner/pieces/rule-sites.ts";
+import { siteRule, type SiteObservers } from "../../runner/pieces/rule-sites.ts";
 import type { AST, Rule } from "../../runner/toolchain/eslint-instance.ts";
 
 type CalleeNode = {
@@ -32,6 +32,13 @@ const SKIPPED: TestModifier = {
   bareNames: new Set(["xdescribe", "xit", "xtest", "xsuite"]),
   roots: TEST_ROOTS,
   members: new Set(["skip", "fixme"]),
+};
+
+const CONDITIONAL_AND_TODO = "conditional-and-todo";
+
+const EXTENDED_SKIPS: TestModifier = {
+  ...SKIPPED,
+  members: new Set([...SKIPPED.members, "todo", "skipIf", "runIf"]),
 };
 
 const memberName = (request: { readonly property: CalleeNode | undefined }): string | undefined => {
@@ -79,41 +86,53 @@ const modifiedLink = (request: {
     : links.slice(testFunction + 1).find((link) => request.modifier.members.has(link.name));
 };
 
-const modifierRule = (request: {
+const observeModifier = (request: {
+  readonly context: Rule.RuleContext;
   readonly modifier: TestModifier;
-  readonly description: string;
-  readonly message: string;
+}): SiteObservers => ({
+  calls: (node) => {
+    const loc = modifiedLink({ callee: node.callee, modifier: request.modifier })?.node.loc;
+    if (loc === undefined || loc === null) return;
+    request.context.report({ loc, messageId: "modifiedTest" });
+  },
+});
+
+const focusedRule = (modifier: TestModifier): Rule.RuleModule =>
+  siteRule({
+    meta: {
+      type: "problem",
+      docs: { description: "Disallow focused tests" },
+      schema: [],
+      messages: { modifiedTest: "remove the focus so every test runs." },
+    },
+    observe: (context) => observeModifier({ context, modifier }),
+  });
+
+const skippedRule = (request: {
+  readonly defaultModifier: TestModifier;
+  readonly byOption: ReadonlyMap<string, TestModifier>;
 }): Rule.RuleModule =>
   siteRule({
     meta: {
       type: "problem",
-      docs: { description: request.description },
-      schema: [],
-      messages: { modifiedTest: request.message },
+      docs: { description: "Disallow skipped tests" },
+      schema: [{ enum: [...request.byOption.keys()] }],
+      messages: { modifiedTest: "remove the skip so the test runs, or delete the test." },
     },
-    observe: (context) => ({
-      calls: (node) => {
-        const loc = modifiedLink({ callee: node.callee, modifier: request.modifier })?.node.loc;
-        if (loc === undefined || loc === null) {
-          return;
-        }
-        context.report({ loc, messageId: "modifiedTest" });
-      },
-    }),
+    observe: (context) => {
+      const [option]: readonly unknown[] = context.options;
+      const selected = typeof option === "string" ? request.byOption.get(option) : undefined;
+      return observeModifier({ context, modifier: selected ?? request.defaultModifier });
+    },
   });
 
 export default {
   meta: { name: "hone-cd27", version: "0.0.0-local" },
   rules: {
-    "focused-tests": modifierRule({
-      modifier: FOCUSED,
-      description: "Disallow focused tests (CD-27)",
-      message: "CD-27: remove the focus so every test runs.",
-    }),
-    "skipped-tests": modifierRule({
-      modifier: SKIPPED,
-      description: "Disallow skipped tests (CD-27)",
-      message: "CD-27: remove the skip so the test runs, or delete the test.",
+    "focused-tests": focusedRule(FOCUSED),
+    "skipped-tests": skippedRule({
+      defaultModifier: SKIPPED,
+      byOption: new Map([[CONDITIONAL_AND_TODO, EXTENDED_SKIPS]]),
     }),
   },
 };

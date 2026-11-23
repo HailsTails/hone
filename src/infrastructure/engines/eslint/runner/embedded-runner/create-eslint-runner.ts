@@ -285,7 +285,7 @@ const projectionClausesOf = (request: {
   request.configured.map((entry) => ({
     address: entry.clause.address,
     ruleId: entry.ruleId,
-    options: ruleOptionsOf({ settings: entry.settings }),
+    options: ruleOptionsOf({ settings: entry.settings, edition: entry.clause.edition }),
     pluginNamespace: entry.settings.pluginNamespace,
     pieceRoot: entry.clause.pieceRoot,
     pluginModule: entry.settings.pluginModule,
@@ -494,7 +494,7 @@ const governedRulesOf = (request: {
 }): readonly GovernedRule[] =>
   request.selected.map((entry) => ({
     ruleId: entry.ruleId,
-    options: ruleOptionsOf({ settings: entry.settings }),
+    options: ruleOptionsOf({ settings: entry.settings, edition: entry.clause.edition }),
   }));
 
 const pluginsByNamespace = (request: {
