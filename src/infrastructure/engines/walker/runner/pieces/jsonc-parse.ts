@@ -2,13 +2,13 @@ import { type Node, parse, type ParseError, parseTree } from "jsonc-parser";
 
 import type { Result } from "../../../../../domain/result.ts";
 
-export type JsoncParsePort<Value = unknown> = {
+export type JsoncParsePort<Value> = {
   readonly parse: (request: {
     readonly source: string;
   }) => Result<Value, { readonly detail: string }>;
 };
 
-export type JsoncProviderCall<Value = unknown> = (request: { readonly source: string }) => {
+export type JsoncProviderCall<Value> = (request: { readonly source: string }) => {
   readonly value: Value;
   readonly errors: readonly ParseError[];
 };
@@ -55,7 +55,7 @@ const defaultProviderCallOf =
 
 export const createDefaultJsoncParsePort = (options: {
   readonly trailingCommas: TrailingCommas;
-}): JsoncParsePort =>
+}): JsoncParsePort<unknown> =>
   createJsoncParsePort({
     parseProvider: defaultProviderCallOf<unknown>({ ...options, read: parse }),
   });

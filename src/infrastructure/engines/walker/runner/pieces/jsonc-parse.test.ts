@@ -12,7 +12,7 @@ describe("createJsoncParsePort", () => {
     const source = ' { "value": false } \r\n';
     const parsedValue = { marker: "unchanged" };
     const parseProvider = vi
-      .fn<JsoncProviderCall>()
+      .fn<JsoncProviderCall<unknown>>()
       .mockReturnValue({ value: parsedValue, errors: [] });
 
     const parseOutcome = createJsoncParsePort({ parseProvider }).parse({ source });
@@ -23,7 +23,7 @@ describe("createJsoncParsePort", () => {
   });
 
   it("refuses a recovered provider value when parsing returned diagnostics", () => {
-    const parseProvider = vi.fn<JsoncProviderCall>().mockReturnValue({
+    const parseProvider = vi.fn<JsoncProviderCall<unknown>>().mockReturnValue({
       value: { recovered: true },
       errors: [{ error: 3, offset: 8, length: 1 }],
     });
@@ -39,7 +39,7 @@ describe("createJsoncParsePort", () => {
   });
 
   it("maps only the first diagnostic's code, offset and length to deterministic failure detail", () => {
-    const parseProvider = vi.fn<JsoncProviderCall>().mockReturnValue({
+    const parseProvider = vi.fn<JsoncProviderCall<unknown>>().mockReturnValue({
       value: undefined,
       errors: [
         { error: 4, offset: 12, length: 2 },
@@ -58,7 +58,7 @@ describe("createJsoncParsePort", () => {
   });
 
   it("returns unexpected provider failure as owned detail without escaping the result", () => {
-    const parseProvider: JsoncProviderCall = () => assert.fail("provider failed");
+    const parseProvider: JsoncProviderCall<unknown> = () => assert.fail("provider failed");
 
     const parseOutcome = createJsoncParsePort({ parseProvider }).parse({
       source: "provider input",

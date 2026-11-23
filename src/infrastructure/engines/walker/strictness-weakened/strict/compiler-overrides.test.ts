@@ -128,7 +128,7 @@ const UNRESOLVING: CompilerOptionsResolutionOf = () => ({
 });
 
 const prepareCheck = (request: {
-  readonly jsonc: JsoncParsePort;
+  readonly jsonc: JsoncParsePort<unknown>;
   readonly bindings: readonly CheckBinding[];
   readonly file?: WalkerFile["file"];
   readonly resolutionOf?: CompilerOptionsResolutionOf;
@@ -154,7 +154,7 @@ describe("CD3 existing explicit compiler overrides", () => {
   it("returns every selected explicit flag in legacy policy order with one read and parse", () => {
     const source =
       '{"compilerOptions":{"useUnknownInCatchVariables":false,"noPropertyAccessFromIndexSignature":true,"noFallthroughCasesInSwitch":false,"noImplicitOverride":true,"exactOptionalPropertyTypes":false,"noUncheckedIndexedAccess":false,"strict":true}}';
-    const parse = vi.fn<JsoncParsePort["parse"]>().mockReturnValue({
+    const parse = vi.fn<JsoncParsePort<unknown>["parse"]>().mockReturnValue({
       outcome: "ok",
       value: {
         compilerOptions: {
@@ -233,7 +233,7 @@ describe("CD3 existing explicit compiler overrides", () => {
   });
 
   it("ignores an unselected present flag and a selected absent flag without evaluating inheritance", () => {
-    const parse = vi.fn<JsoncParsePort["parse"]>().mockReturnValue({
+    const parse = vi.fn<JsoncParsePort<unknown>["parse"]>().mockReturnValue({
       outcome: "ok",
       value: {
         extends: "../tsconfig.base.json",
@@ -266,7 +266,7 @@ describe("CD3 existing explicit compiler overrides", () => {
   });
 
   it("retains presence-only observations for arbitrary JSON option values", () => {
-    const parse = vi.fn<JsoncParsePort["parse"]>().mockReturnValue({
+    const parse = vi.fn<JsoncParsePort<unknown>["parse"]>().mockReturnValue({
       outcome: "ok",
       value: {
         compilerOptions: {
@@ -328,7 +328,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     },
   ])("completes a valid config with $name without findings", ({ config }) => {
     const parse = vi
-      .fn<JsoncParsePort["parse"]>()
+      .fn<JsoncParsePort<unknown>["parse"]>()
       .mockReturnValue({ outcome: "ok", value: config });
     const readText = vi
       .fn<WalkerFile["readText"]>()
@@ -352,7 +352,7 @@ describe("CD3 existing explicit compiler overrides", () => {
       outcome: "failed",
       error: { kind: "file-unreadable", file: FILE, detail: "fixture read refused" },
     });
-    const parse = vi.fn<JsoncParsePort["parse"]>();
+    const parse = vi.fn<JsoncParsePort<unknown>["parse"]>();
     const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual(failure);
@@ -361,7 +361,7 @@ describe("CD3 existing explicit compiler overrides", () => {
   });
 
   it("attributes a parser refusal to this config while preserving its detail", () => {
-    const parse = vi.fn<JsoncParsePort["parse"]>().mockReturnValue({
+    const parse = vi.fn<JsoncParsePort<unknown>["parse"]>().mockReturnValue({
       outcome: "failed",
       error: { detail: "fixture parser refused original input" },
     });
@@ -390,7 +390,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     { name: "scalar compilerOptions", config: { compilerOptions: "strict" } },
   ])("refuses $name as an affected unparseable file", ({ config }) => {
     const parse = vi
-      .fn<JsoncParsePort["parse"]>()
+      .fn<JsoncParsePort<unknown>["parse"]>()
       .mockReturnValue({ outcome: "ok", value: config });
     const readText = vi
       .fn<WalkerFile["readText"]>()
@@ -411,7 +411,9 @@ describe("CD3 existing explicit compiler overrides", () => {
     { name: "nested root-only directory config", fileName: "src/vendor/tsconfig.json" },
   ])("admits $name from the supplied candidate population", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
-    const parse = vi.fn<JsoncParsePort["parse"]>().mockReturnValue({ outcome: "ok", value: {} });
+    const parse = vi
+      .fn<JsoncParsePort<unknown>["parse"]>()
+      .mockReturnValue({ outcome: "ok", value: {} });
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
@@ -433,7 +435,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     { name: "root-only excluded directory", fileName: "vendor/tsconfig.json" },
   ])("excludes $name without reading or parsing", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
-    const parse = vi.fn<JsoncParsePort["parse"]>();
+    const parse = vi.fn<JsoncParsePort<unknown>["parse"]>();
     const readText = vi.fn<WalkerFile["readText"]>();
     const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES, file });
 

@@ -223,7 +223,7 @@ const hitsOf = (request: {
 };
 
 export const createCompilerOverridesCheck = (options: {
-  readonly jsonc: JsoncParsePort;
+  readonly jsonc: JsoncParsePort<unknown>;
   readonly resolutionOf: CompilerOptionsResolutionOf;
 }): WalkerPiece => ({
   prepare: ({ bindings, repository, syntaxApi }) => {
