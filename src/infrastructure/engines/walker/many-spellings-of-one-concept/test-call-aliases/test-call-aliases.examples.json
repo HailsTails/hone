@@ -1,0 +1,36 @@
+{
+  "flag": [
+    {
+      "name": "Vitest test and suite aliases",
+      "fileName": "src/orders.test.ts",
+      "source": "import { test, suite } from \"vitest\";\ntest(\"sends the order\", () => {});\nsuite.skip(\"orders\", () => {});",
+      "expectedLines": [2, 3]
+    },
+    {
+      "name": "test aliases available as globals",
+      "fileName": "src/orders.test.tsx",
+      "source": "test.each([1])(\"order %s\", () => {});\nsuite(\"orders\", () => {});",
+      "expectedLines": [1, 2]
+    }
+  ],
+  "allow": [
+    {
+      "name": "the test vocabulary",
+      "fileName": "src/orders.test.ts",
+      "source": "import { it, describe } from \"vitest\";\ndescribe(\"orders\", () => { it(\"sends\", () => {}); });",
+      "expectedLines": []
+    },
+    {
+      "name": "an unrelated local binding",
+      "fileName": "src/orders.test.ts",
+      "source": "const test = (value: number) => value > 0;\ntest(1);",
+      "expectedLines": []
+    },
+    {
+      "name": "the check stays in test files",
+      "fileName": "src/orders.ts",
+      "source": "test(1);",
+      "expectedLines": []
+    }
+  ]
+}
