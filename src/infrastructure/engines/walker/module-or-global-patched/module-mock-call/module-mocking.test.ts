@@ -200,28 +200,30 @@ describe("Existing literal module-mock observations", () => {
 });
 
 describe("Global patches in edition 2", () => {
-  it.each([editionOf("2"), editionOf("3")])(
-    "reports direct global stubs in edition %s",
-    (edition) => {
-      const observed = sourceObservations({
-        source: "vi.stubGlobal('focus', value);",
-        edition,
-      });
-      observed.observers.enter?.({
-        node: observed.tree
-          .getChildAt(0, observed.tree)
-          .getChildAt(0, observed.tree)
-          .getChildAt(0, observed.tree),
-      });
-      expect(observed.observers.finish()).toEqual([
-        {
-          check: ADDRESS,
-          anchor: { line: 5, column: 2 },
-          snippet: "vi.stubGlobal('focus', value);",
-        },
-      ]);
-    },
-  );
+  it.each([
+    { edition: editionOf("2"), source: "vi.stubGlobal('focus', value);" },
+    { edition: editionOf("3"), source: "vi.stubGlobal('focus', value);" },
+    { edition: editionOf("2"), source: "vi.stubEnv('MODE', 'test');" },
+    { edition: editionOf("3"), source: "vi['stubEnv']('MODE', 'test');" },
+  ])("reports $source in edition $edition", ({ edition, source }) => {
+    const observed = sourceObservations({
+      source,
+      edition,
+    });
+    observed.observers.enter?.({
+      node: observed.tree
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree),
+    });
+    expect(observed.observers.finish()).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 5, column: 2 },
+        snippet: source,
+      },
+    ]);
+  });
 
   it("reports assignments to process environment keys", () => {
     const observed = sourceObservations({
@@ -239,8 +241,41 @@ describe("Global patches in edition 2", () => {
     ]);
   });
 
-  it("keeps global patches out of edition 1", () => {
-    const observed = sourceObservations({ source: "vi.stubGlobal('focus', value);" });
+  it.each(["++process.env.COUNT;", "process.env['COUNT']--;"])(
+    "reports an environment update through %s",
+    (source) => {
+      const observed = sourceObservations({ source, edition: editionOf("2") });
+      observed.observers.enter?.({
+        node: observed.tree
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree),
+      });
+      expect(observed.observers.finish()).toEqual([
+        { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: source },
+      ]);
+    },
+  );
+
+  it.each(["vi.stubGlobal('focus', value);", "vi.stubEnv('MODE', 'test');"])(
+    "keeps %s out of edition 1",
+    (source) => {
+      const observed = sourceObservations({ source });
+      observed.observers.enter?.({
+        node: observed.tree
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree),
+      });
+      expect(observed.observers.finish()).toEqual([]);
+    },
+  );
+
+  it("does not follow a local environment alias", () => {
+    const observed = sourceObservations({
+      source: "environment.MODE = 'test';",
+      edition: editionOf("2"),
+    });
     observed.observers.enter?.({
       node: observed.tree
         .getChildAt(0, observed.tree)
@@ -250,9 +285,9 @@ describe("Global patches in edition 2", () => {
     expect(observed.observers.finish()).toEqual([]);
   });
 
-  it("does not follow a local environment alias", () => {
+  it("leaves spyOn calls outside the patch check", () => {
     const observed = sourceObservations({
-      source: "environment.MODE = 'test';",
+      source: "vi.spyOn(globalThis, 'fetch');",
       edition: editionOf("2"),
     });
     observed.observers.enter?.({
