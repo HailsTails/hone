@@ -2,12 +2,12 @@
 
 ```json
 {
-  "misses": "Aliased receivers and indirect writes.",
+  "misses": "Both editions miss aliased receivers and module mocks such as vi.doMock or vi[\"mock\"]. Edition 1 leaves global patches to review. Edition 2 still misses indirect writes and global vi.spyOn calls.",
   "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
 }
 ```
 
-Calls to `vi.mock`. Edition 2 also flags `vi.stubGlobal` and direct writes to `process.env` in test files.
+Calls to `vi.mock`. Edition 2 also flags `vi.stubGlobal`, `vi.stubEnv` and direct changes to `process.env` in test files, including assignments, deletes, increments and decrements.
 
 ## Flags
 

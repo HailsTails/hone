@@ -7,6 +7,7 @@ import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-pa
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
 const GLOBAL_PATCH_EDITION = editionOf("2");
+const VITEST_GLOBAL_STUBS = new Set(["stubGlobal", "stubEnv"]);
 
 const snippetAt = (request: { readonly source: string; readonly position: number }): string => {
   const snippet = request.source.slice(request.position, request.position + 80).replace(/\n/g, " ");
@@ -60,7 +61,8 @@ const globalPatchOf = (request: SyntaxRequest): SyntaxNode | undefined => {
   const { syntaxApi, node } = request;
   if (syntaxApi.isCallExpression(node)) {
     const member = memberOf({ syntaxApi, node: node.expression });
-    return member?.name === "stubGlobal" &&
+    return member !== undefined &&
+      VITEST_GLOBAL_STUBS.has(member.name) &&
       syntaxApi.isIdentifier(member.receiver) &&
       member.receiver.text === "vi"
       ? node
