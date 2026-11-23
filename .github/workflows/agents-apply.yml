@@ -1,0 +1,93 @@
+name: Agent definitions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .anthropic/**
+      - '!.anthropic/claude-lock.json'
+      - AGENTS.md
+      - .github/workflows/agents-apply.yml
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: agent-definitions
+  cancel-in-progress: false
+
+env:
+  ANT_VERSION: 2.7.1
+  ANT_SHA256: 7c4bf5081532d994201bc3678657c8f314e487c521ec53937d15c0aca25c2bf0
+
+jobs:
+  apply:
+    name: Apply the agent definitions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Install the ant CLI
+        run: |
+          set -euo pipefail
+          archive="ant_${ANT_VERSION}_linux_amd64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$archive" "https://github.com/anthropics/anthropic-cli/releases/download/v${ANT_VERSION}/$archive"
+          echo "$ANT_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/ant"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/ant"
+          echo "$RUNNER_TEMP/ant" >> "$GITHUB_PATH"
+
+      - name: Give each agent the AGENTS.md rules
+        run: |
+          set -euo pipefail
+          for agent in .anthropic/agents/*.md; do
+            printf '\n# AGENTS.md on main\n\n' >> "$agent"
+            cat AGENTS.md >> "$agent"
+          done
+
+      - name: Apply
+        working-directory: .anthropic
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: ant apply --yes agents environments
+
+      - name: Mint the lock file token
+        id: lock-token
+        if: hashFiles('.anthropic/claude-lock.json') != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23liOdEzeYFi4AjZwp
+          private-key: ${{ secrets.RIN_AUTHOR_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Propose the updated lock file
+        if: steps.lock-token.outputs.token != ''
+        env:
+          GH_TOKEN: ${{ steps.lock-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- .anthropic/claude-lock.json && git ls-files --error-unmatch .anthropic/claude-lock.json >/dev/null 2>&1; then
+            exit 0
+          fi
+          branch="agent-definitions/lock-${GITHUB_SHA::7}"
+          content=$(base64 -w0 .anthropic/claude-lock.json)
+          gh api "repos/$GH_REPO/git/refs" -f ref="refs/heads/$branch" -f sha="$GITHUB_SHA" > /dev/null
+          existing=$(gh api "repos/$GH_REPO/contents/.anthropic/claude-lock.json?ref=$branch" --jq .sha 2>/dev/null || true)
+          gh api -X PUT "repos/$GH_REPO/contents/.anthropic/claude-lock.json" \
+            -f branch="$branch" -f content="$content" \
+            -f message="chore: record the applied agent definitions" \
+            ${existing:+-f sha="$existing"} > /dev/null
+          gh pr create --base main --head "$branch" \
+            --title "chore: record the applied agent definitions" \
+            --body "The Agent definitions workflow applied \`.anthropic/\` at $GITHUB_SHA. This records the resource IDs in \`claude-lock.json\`, so the next apply updates the same agents instead of creating new ones."

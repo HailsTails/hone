@@ -16,7 +16,6 @@ env:
   ANTHROPIC_API: https://api.anthropic.com/v1
   ANTHROPIC_VERSION: 2026-10-21
   ANTHROPIC_BETA: managed-agents-2026-04-01
-  AGENT_MODEL: claude-opus-5-5
   BUDGET_CENTS: '1500'
   MODE: ${{ github.event_name == 'pull_request' && 'claude-review' || github.event.label.name }}
   NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
@@ -73,58 +72,28 @@ jobs:
               --data-binary @-) || { echo "POST $1 failed: $response" >&2; return 1; }
             echo "$response"
           }
+          anthropic_get() {
+            local response
+            response=$(curl -sS --fail-with-body "$ANTHROPIC_API/$1" \
+              -H "x-api-key: $ANTHROPIC_API_KEY" \
+              -H "anthropic-version: $ANTHROPIC_VERSION" \
+              -H "anthropic-beta: $ANTHROPIC_BETA") || { echo "GET $1 failed: $response" >&2; return 1; }
+            echo "$response"
+          }
+          resource_id() {
+            local id
+            id=$(anthropic_get "$1" | jq -r --arg name "$2" '[.data[] | select(.name == $name and .archived_at == null)] | first | .id // empty')
+            [ -n "$id" ] || { echo "No active $1 named $2: run the Agent definitions workflow" >&2; return 1; }
+            echo "$id"
+          }
           workspace="/workspace/$REPOSITORY_NAME"
-          standard=$(curl -sS --fail "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/AGENTS.md")
           case "$MODE" in
-            claude)
-              kind=Issue
-              run_note="Push your work to the branch $AGENT_BRANCH."
-              system=$(cat <<EOF
-          You work on one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main.
-          Follow the AGENTS.md rules below, with these exceptions for this run:
-          - Work on the new branch the first message names and push it to origin yourself. Do not open a pull request.
-          - Set up with: corepack enable, then pnpm install --frozen-lockfile.
-          Build exactly what the issue asks, no more. Before pushing, run pnpm run check and leave it green.
-          Commit with a conventional commit subject, using the bot identity AGENTS.md names.
-          If you cannot finish with a green check, push nothing and say why in your last message.
-          Your last message is the pull request description: what changed and why, in a few short lines.
-          EOF
-              ) ;;
-            claude-triage)
-              kind=Issue
-              run_note=""
-              system=$(cat <<EOF
-          You triage one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main. The AGENTS.md rules below describe the repository.
-          Change nothing, commit nothing, push nothing.
-          Decide from the code on main, its tests and git history whether the issue still applies.
-          Your last message is the triage, at most eight short lines, starting with one verdict:
-          - Still applies: what is still wrong, with file paths, and whether a one-PR fix is clear enough to hand to an agent.
-          - Already fixed: the commit or file that fixed it.
-          - Obsolete: why version 2 no longer has the problem, with file paths.
-          - Needs Helen: the one decision that blocks it.
-          EOF
-              ) ;;
-            claude-review)
-              kind="Pull request"
-              run_note="Its branch $CHECKOUT_BRANCH is checked out."
-              system=$(cat <<EOF
-          You review one pull request of the $REPOSITORY_NAME repository, whose branch is checked out at $workspace.
-          The AGENTS.md rules below, as they stand on main, are the review standard. Change nothing, commit nothing, push nothing.
-          Run git fetch origin main, then review git diff origin/main...HEAD. The scope is the change: report only problems the change introduces or leaves open in what it touches.
-          Look for correctness bugs, broken AGENTS.md rules, and missing or wrong unit tests for changed behaviour. You may run pnpm scripts after corepack enable and pnpm install --frozen-lockfile.
-          Your last message is the review: each finding as one line with file:line, the problem, and why it matters, most severe first. With no findings, say No findings and what you checked, in one line.
-          EOF
-              ) ;;
+            claude) agent_name="Hone builder"; kind=Issue; run_note="Push your work to the branch $AGENT_BRANCH." ;;
+            claude-triage) agent_name="Hone triager"; kind=Issue; run_note="" ;;
+            claude-review) agent_name="Hone reviewer"; kind="Pull request"; run_note="Its branch $CHECKOUT_BRANCH is checked out." ;;
           esac
-          system="$system"$'\n\n# AGENTS.md on main\n\n'"$standard"
-          agent_id=$(jq -n --arg name "hone-$MODE-$NUMBER" --arg model "$AGENT_MODEL" --arg system "$system" \
-            '{name: $name, model: $model, system: $system, tools: [{type: "agent_toolset_20260401"}]}' \
-            | anthropic agents | jq -r .id)
-          echo "agent_id=$agent_id" >> "$GITHUB_OUTPUT"
-          environment_id=$(jq -n --arg name "hone-$MODE-$NUMBER" \
-            '{name: $name, config: {type: "cloud", networking: {type: "limited", allow_package_managers: true}}}' \
-            | anthropic environments | jq -r .id)
-          echo "environment_id=$environment_id" >> "$GITHUB_OUTPUT"
+          agent_id=$(resource_id agents "$agent_name")
+          environment_id=$(resource_id environments hone)
           session_id=$(jq -n \
             --arg agent "$agent_id" --arg environment "$environment_id" \
             --arg url "$REPOSITORY_URL" --arg mount "$workspace" --arg token "$PUSH_TOKEN" \
@@ -229,15 +198,3 @@ jobs:
             gh issue edit "$NUMBER" --remove-label "$MODE"
           fi
 
-      - name: Clean up the agent and environment
-        if: always() && steps.session.outputs.agent_id != ''
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          AGENT_ID: ${{ steps.session.outputs.agent_id }}
-          ENVIRONMENT_ID: ${{ steps.session.outputs.environment_id }}
-        run: |
-          headers=(-H "x-api-key: $ANTHROPIC_API_KEY" -H "anthropic-version: $ANTHROPIC_VERSION" -H "anthropic-beta: $ANTHROPIC_BETA")
-          curl -sS -X POST "${headers[@]}" "$ANTHROPIC_API/agents/$AGENT_ID/archive" > /dev/null || true
-          if [ -n "$ENVIRONMENT_ID" ]; then
-            curl -sS -X DELETE "${headers[@]}" "$ANTHROPIC_API/environments/$ENVIRONMENT_ID" > /dev/null || true
-          fi
