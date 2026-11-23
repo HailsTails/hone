@@ -719,6 +719,88 @@ describe("buildPackage", () => {
     });
   });
 
+  it("ships the checks page naming the engines whose piece declarations in the source run each check", async () => {
+    const { files, built } = builtWith({
+      source: {
+        ...SOURCE,
+        "/package/rules/principles/one-place-decides.md":
+          "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n",
+        "/package/rules/cases/does-one-job.md":
+          '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "one-place-decides" }] }\n```\n',
+        "/package/rules/typescript/symptoms/ambient-randomness.md":
+          '# Ambient randomness\n\n```json\n{ "group": "World", "seen": "A call.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "principle": "one-place-decides" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }\n```\n',
+        "/package/rules/typescript/symptoms/ambient-randomness/random-call.md":
+          "# random-call\n\n```json\n{}\n```\n",
+        "/package/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json":
+          '{ "version": 2, "anchor": { "kind": "file" }, "settings": {} }',
+      },
+      bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+    });
+
+    await built;
+
+    expect(files.textsUnder({ folder: "/out/rules" })).toMatchObject({
+      "/out/rules/typescript/checks.md":
+        "# Checks in TypeScript\n\n## Ambient randomness\n\n### random-call\n\n- **Engines:** `walker`\n",
+    });
+  });
+
+  it("fails naming a piece declaration the checks page cannot read, writing nothing", async () => {
+    const { files, built } = builtWith({
+      source: {
+        ...SOURCE,
+        "/package/rules/principles/one-place-decides.md":
+          "# One place decides\n\n```json\n{}\n```\n\n- **Must hold:** One decision, one unit.\n",
+        "/package/rules/cases/does-one-job.md":
+          '# Does one job\n\n```json\n{ "standing": "accepted", "owes": [{ "principle": "one-place-decides" }] }\n```\n',
+        "/package/rules/typescript/symptoms/ambient-randomness.md":
+          '# Ambient randomness\n\n```json\n{ "group": "World", "seen": "A call.", "mayIndicate": [{ "case": "does-one-job", "points": [{ "principle": "one-place-decides" }] }], "breachUsuallySits": "in the unit", "seenBy": ["syntax"], "recipes": [], "correctUses": [] }\n```\n',
+        "/package/rules/typescript/symptoms/ambient-randomness/random-call.md":
+          "# random-call\n\n```json\n{}\n```\n",
+        "/package/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json":
+          '{ "version": 2, "settings": {} }',
+      },
+      bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+    });
+
+    expect({ result: await built, written: files.textsUnder({ folder: "/out" }) }).toMatchObject({
+      result: {
+        outcome: "failed",
+        error: expect.stringContaining(
+          "FAIL: render the catalogue pages: load failure: file-malformed /package/src/infrastructure/engines/walker/ambient-randomness/random-call/piece.json",
+        ),
+      },
+      written: NOTHING_WRITTEN,
+    });
+  });
+
+  it("fails naming a package root it cannot resolve, writing nothing", async () => {
+    const files = inMemoryFiles({ initial: { ...SOURCE, "/out/stale.js": "stale\n" } });
+
+    const built = await buildPackage({
+      ports: {
+        path: {
+          ...posixPath,
+          resolve: () => ({
+            outcome: "failed",
+            error: { kind: "working-directory-unusable", path: "/package" },
+          }),
+        },
+        fileText: files.fileText,
+        scratch: files.scratch,
+        bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+        declarations: emittingDeclarations({ declarations: ENTRY_DECLARATIONS }),
+      },
+      packageRoot: "/package",
+      outputRoot: "/out",
+    });
+
+    expect({ result: built, written: files.textsUnder({ folder: "/out" }) }).toEqual({
+      result: { outcome: "failed", error: "FAIL: resolve the package root: /package" },
+      written: NOTHING_WRITTEN,
+    });
+  });
+
   it("fails naming an item the catalogue pages cannot be rendered from, writing nothing", async () => {
     const { files, built } = builtWith({
       source: {

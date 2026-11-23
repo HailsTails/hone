@@ -1,3 +1,5 @@
+import type { EngineBindingsRepository } from "../../../src/application/ports/engine-bindings-repository.ts";
+import type { EngineBindings } from "../../../src/domain/language-layer/catalogue-binding.ts";
 import {
   catalogueFileOf,
   type PlacedItem,
@@ -9,15 +11,17 @@ import {
 } from "../../../src/infrastructure/content-files/item-folders/item-identity.ts";
 import { itemTextOf } from "../../../src/infrastructure/content-files/item-folders/item-text.ts";
 import { parsedJson } from "../../../src/infrastructure/content-files/parsed-json.ts";
+import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import {
   VERSION_ONE_NAMES_SEGMENTS,
   type VersionOneNames,
   versionOneNamesOf,
 } from "../../../src/infrastructure/disciplines-file/version-one-names.ts";
 import { ENGINE_REGISTRY } from "../../../src/infrastructure/engines/engine-registry.ts";
+import { loadFailureText } from "../../../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
 import { casesPageOf } from "./cases-page.ts";
 import type { CataloguePage, ItemPathPort, Rendered } from "./catalogue-page.ts";
-import { checksPageOf } from "./checks-page.ts";
+import { addressedCheckOf, checksPageOf } from "./checks-page.ts";
 import { principlesPageOf } from "./principles-page.ts";
 import { recipesPageOf } from "./recipes-page.ts";
 import { rulesPageOf } from "./rules-page.ts";
@@ -85,8 +89,21 @@ const namesIn = (request: { readonly files: readonly SourceFile[] }): Rendered<V
   return document.outcome === "failed" ? document : versionOneNamesOf({ document: document.value });
 };
 
+const bindingsOf = (request: {
+  readonly file: CatalogueFile;
+  readonly engineBindings: EngineBindingsRepository;
+}): Rendered<EngineBindings> => {
+  const bindings = request.engineBindings.read({
+    checks: request.file.checks.map(addressedCheckOf),
+  });
+  return bindings.outcome === "failed"
+    ? { outcome: "failed", error: loadFailureText({ failure: bindings.error }) }
+    : bindings;
+};
+
 export const cataloguePagesOf = (request: {
   readonly files: readonly SourceFile[];
+  readonly engineBindings: EngineBindingsRepository;
   readonly path: ItemPathPort;
 }): Rendered<readonly CataloguePage[]> => {
   const names = namesIn(request);
@@ -109,6 +126,10 @@ export const cataloguePagesOf = (request: {
   if (file.outcome === "failed") {
     return file;
   }
+  const bindings = bindingsOf({ file: file.value, engineBindings: request.engineBindings });
+  if (bindings.outcome === "failed") {
+    return bindings;
+  }
   const source = {
     file: file.value,
     prose: new Map(items.value.map((each): readonly [string, string] => [each.path, each.prose])),
@@ -129,7 +150,7 @@ export const cataloguePagesOf = (request: {
           cases.value,
           recipesPageOf(source),
           symptoms.value,
-          checksPageOf(source),
+          checksPageOf({ ...source, bindings: bindings.value }),
         ],
       };
 };

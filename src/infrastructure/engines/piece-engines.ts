@@ -1,14 +1,14 @@
 import type { EngineBindingsRepository } from "../../application/ports/engine-bindings-repository.ts";
-import type { DirectoryPort } from "../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../application/ports/host/path-port.ts";
 import type { EngineBindings } from "../../domain/language-layer/catalogue-binding.ts";
 import {
+  type AddressedCheck,
   type CheckAddressText,
   checkAddressTextOf,
   checkNamesOf,
 } from "../../domain/language-layer/check-address-text.ts";
-import type { CheckContent, Engine } from "../../domain/language-layer/symptom-catalogue.ts";
+import type { Engine } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
@@ -16,8 +16,7 @@ import { ENGINE_REGISTRY } from "./engine-registry.ts";
 import { readNamedPiece } from "./named-piece.ts";
 
 type PieceSource = {
-  readonly fileText: FileTextPort;
-  readonly directory: DirectoryPort;
+  readonly fileText: Pick<FileTextPort, "exists" | "read">;
   readonly path: Pick<PathPort, "join">;
   readonly ruleSetRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
@@ -51,7 +50,7 @@ const bindingsByAddress = (bindings: readonly Binding[]): EngineBindings => {
 const namedBindingOf = (request: {
   readonly source: PieceSource;
   readonly engine: Engine;
-  readonly check: CheckContent;
+  readonly check: AddressedCheck;
 }): Bound => {
   const address = checkAddressTextOf(request);
   const names = checkNamesOf({ text: address });
@@ -67,7 +66,7 @@ const namedBindingOf = (request: {
 
 const readEngineBindings = (
   source: PieceSource,
-  checks: readonly CheckContent[],
+  checks: readonly AddressedCheck[],
 ): Result<EngineBindings, VersionTwoLoadFailure> => {
   const bound = allBound(
     ENGINE_REGISTRY.flatMap((engine) =>
