@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "origin": {
+    "base_url": "https://api.anthropic.com",
+    "organization_id": "6273dd14-3343-4014-bdb2-e4c1435f2215",
+    "workspace_id": "wrkspc_01RrXstUv9L81ncYgjURbDnB"
+  },
+  "resources": {
+    "./agents/hone-builder.md": {
+      "kind": "agent",
+      "id": "agent_01Q3xc9VhpVoWkFz48mqLWmr",
+      "version": "1",
+      "hash": "9a2836e04907ab3f82c9571db61b45c3",
+      "remote_hash": "c571e290c738adef77a196ad88c817df",
+      "stamp": "1"
+    },
+    "./agents/hone-reviewer.md": {
+      "kind": "agent",
+      "id": "agent_0166AL4hhkfnEMEUkbcRkeXR",
+      "version": "1",
+      "hash": "ca0e75f2ee366f7fc38e63871a634bf3",
+      "remote_hash": "ce878ec99726a4b30d603545cc6ba36d",
+      "stamp": "1"
+    },
+    "./agents/hone-triager.md": {
+      "kind": "agent",
+      "id": "agent_01Cx8XWLuQBAHiqGqh8qLvBo",
+      "version": "1",
+      "hash": "6fcd41325a7612f0439ecb9741e5729d",
+      "remote_hash": "ad416b2285b4c83bb629f0dc40b9f14c",
+      "stamp": "1"
+    },
+    "./environments/hone.yaml": {
+      "kind": "environment",
+      "id": "env_01GmZyykoFALeib6hRdFfExb",
+      "hash": "050eca726ac1d155806688ca36d1294f",
+      "remote_hash": "3e3eeb690a86057cfd0bc0b949729689",
+      "stamp": "2026-11-23T05:00:27.822208Z"
+    }
+  }
+}
