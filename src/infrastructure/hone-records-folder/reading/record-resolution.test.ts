@@ -70,7 +70,7 @@ const STATES_WHAT_THE_UNIT_GIVES_BACK: Case = {
 };
 
 const STUB_WITH_VIFN: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "stub-with-vifn",
   title: "Stub with vi.fn",
   standing: "accepted",
@@ -95,7 +95,7 @@ const DEBT_KIND: RecordKind = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -110,7 +110,7 @@ const CLAIMED_TYPE: Symptom = {
 };
 
 const TEXT_PAST_ITS_READER: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "text-past-its-reader",
   title: "Text past its reader",
   seen: "JSON text in a test.",
@@ -126,7 +126,7 @@ const TEXT_PAST_ITS_READER: Symptom = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "An if in a test.",
@@ -142,7 +142,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const DOUBLE_WITH_A_BODY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "double-with-a-body",
   title: "Double with a body",
   seen: "A fake.",
@@ -336,7 +336,7 @@ describe("recordOf, debt", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "text-past-its-reader", file: "src/orders/charge-order.test.ts" },
       }),
     ).toEqual({
@@ -357,7 +357,7 @@ describe("recordOf, debt", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: {
           answers: "text-past-its-reader",
           file: "src/orders/charge-order.test.ts",
@@ -391,7 +391,7 @@ describe("recordOf, debt", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: symptom.name, file: "src/held.ts" },
       }),
     ).toEqual({
@@ -413,7 +413,7 @@ describe("recordOf, debt", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "unheard-of", file: "src/held.ts" },
       }),
     ).toEqual({
@@ -428,7 +428,7 @@ describe("recordOf, debt", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "claimed-type", file: "src/held.ts" },
       }),
     ).toEqual({
@@ -443,7 +443,7 @@ describe("recordOf, debt", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "text-past-its-reader" },
       }),
     ).toEqual({
@@ -465,7 +465,7 @@ describe("recordOf, authorised locations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: STATED_AUTHORISED_LOCATION,
       }),
     ).toEqual({
@@ -494,7 +494,7 @@ describe("recordOf, authorised locations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: repoPathOf("hone-records/authorised-locations/branch-in-a-test.json"),
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
           ...STATED_AUTHORISED_LOCATION,
           answers: "branch-in-a-test",
@@ -528,7 +528,7 @@ describe("recordOf, authorised locations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...STATED_AUTHORISED_LOCATION, case: "needs-it-here" },
       }),
     ).toEqual({
@@ -556,7 +556,7 @@ describe("recordOf, authorised locations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...STATED_AUTHORISED_LOCATION, owes: "written-out-answers" },
       }),
     ).toEqual({
@@ -599,7 +599,7 @@ describe("recordOf, authorised locations", () => {
           catalogue: CATALOGUE,
           base: UNMEASURED,
           file: AUTHORISED_FILE,
-          filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+          filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
           entry: { ...STATED_AUTHORISED_LOCATION, ...written },
         }),
       ).toEqual({
@@ -625,7 +625,7 @@ describe("recordOf, authorised locations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: repoPathOf("hone-records/authorised-locations/text-past-its-reader.json"),
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
           ...STATED_AUTHORISED_LOCATION,
           answers: "text-past-its-reader",
@@ -663,7 +663,7 @@ describe("recordOf, authorised locations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
           ...STATED_AUTHORISED_LOCATION,
           whyChain: { ...WHY_CHAIN, readback: "It is needed here." },
@@ -692,7 +692,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_ON_CLAIMED_TYPE_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "claimed-type#cast-expressions", file: "src/adapters/stripe-webhook.ts" },
       }),
     ).toEqual({
@@ -713,7 +713,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...STATED_AUTHORISED_LOCATION, answers: "claimed-type#cast-expressions" },
       }),
     ).toEqual({
@@ -742,7 +742,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...CARRIED_AUTHORISED_LOCATION, answers: "claimed-type#cast-expressions" },
       }),
     ).toEqual({
@@ -775,7 +775,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_ON_CLAIMED_TYPE_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers, file: "src/adapters/stripe-webhook.ts" },
       }),
     ).toEqual({
@@ -790,7 +790,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...STATED_AUTHORISED_LOCATION, answers: "claimed-type#non-null-assertions" },
       }),
     ).toEqual({
@@ -819,7 +819,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...CARRIED_AUTHORISED_LOCATION, answers: "claimed-type#test-body" },
       }),
     ).toEqual({
@@ -845,7 +845,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "claimed-type#cast-expressions", file: "src/adapters/stripe-webhook.ts" },
       }),
     ).toEqual({
@@ -860,7 +860,7 @@ describe("recordOf, a record naming one check of its symptom", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: repoPathOf("hone-records/debt/unheard-of.json"),
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "unheard-of#cast-expressions", file: "src/held.ts" },
       }),
     ).toEqual({ outcome: "failed", error: [{ kind: "unknown-symptom", symptom: "unheard-of" }] });
@@ -930,7 +930,7 @@ describe("recordOf, carried records", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: CARRIED_AUTHORISED_LOCATION,
       }),
     ).toEqual({
@@ -964,7 +964,7 @@ describe("recordOf, carried records", () => {
           ],
         },
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: CARRIED_AUTHORISED_LOCATION,
       }),
     ).toEqual({
@@ -998,7 +998,7 @@ describe("recordOf, carried records", () => {
           ],
         },
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: {
           ...CARRIED_AUTHORISED_LOCATION,
           carried: { ...CARRIED_ENTRY, reason: "Reworded." },
@@ -1045,7 +1045,7 @@ describe("recordOf, carried records", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: {
           answers: "text-past-its-reader",
           file: "src/orders/charge-order.test.ts",
@@ -1303,7 +1303,7 @@ describe("recordOf, a record's own text never stops the reader", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEBT_FILE,
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers, file: "src/held.ts" },
       }),
     ).toEqual({
@@ -1318,7 +1318,7 @@ describe("recordOf, a record's own text never stops the reader", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
-        filedUnder: { kind: "deviations", ruleSet: "hone" },
+        filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
         entry: { ...DEVIATION, recipe: "stub-with-vifn\n" },
       }),
     ).toEqual({
@@ -1335,7 +1335,7 @@ describe("recordOf, deviations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
-        filedUnder: { kind: "deviations", ruleSet: "hone" },
+        filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
         entry: DEVIATION,
       }),
     ).toEqual({
@@ -1373,7 +1373,10 @@ describe("recordOf, deviations", () => {
         filedUnder: { kind: "deviations", ruleSet: ACME },
         entry: DEVIATION,
       }),
-    ).toEqual({ outcome: "failed", error: [{ kind: "unknown-recipe", recipe: "stub-with-vifn" }] });
+    ).toEqual({
+      outcome: "failed",
+      error: [{ kind: "unknown-recipe", recipe: "acme/stub-with-vifn" }],
+    });
   });
 
   it("refuses a deviation whose recipe reason is not the catalogue's sentence", () => {
@@ -1382,7 +1385,7 @@ describe("recordOf, deviations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: DEVIATIONS_FILE,
-        filedUnder: { kind: "deviations", ruleSet: "hone" },
+        filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
         entry: { ...DEVIATION, recipeReason: "Stubs are simpler." },
       }),
     ).toEqual({
@@ -1403,7 +1406,7 @@ describe("recordOf, deviations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: repoPathOf("hone-records/deviations/hand-rolled-fakes.json"),
-        filedUnder: { kind: "deviations", ruleSet: "hone" },
+        filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
         entry: { ...DEVIATION, recipe: "hand-rolled-fakes" },
       }),
     ).toEqual({
@@ -1418,7 +1421,7 @@ describe("recordOf, deviations", () => {
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: repoPathOf("hone-records/deviations/whole-written-out-expectation.json"),
-        filedUnder: { kind: "deviations", ruleSet: "hone" },
+        filedUnder: { kind: "deviations", ruleSet: TOOL_RULE_SET },
         entry: DEVIATION,
       }),
     ).toEqual({
@@ -1591,7 +1594,7 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: repoPathOf("hone-records/debt/claimed-type.json"),
-        filedUnder: { kind: "debt", ruleSet: "hone" },
+        filedUnder: { kind: "debt", ruleSet: TOOL_RULE_SET },
         entry: { answers: "claimed-type", file: "src/collections/lodash-grouping.ts" },
       }),
     ).toEqual({
@@ -1612,7 +1615,7 @@ describe("recordOf, a named ban refuses no debt and no authorised location", () 
         catalogue: CATALOGUE,
         base: UNMEASURED,
         file: AUTHORISED_FILE,
-        filedUnder: { kind: "authorised-locations", ruleSet: "hone" },
+        filedUnder: { kind: "authorised-locations", ruleSet: TOOL_RULE_SET },
         entry: { ...STATED_AUTHORISED_LOCATION, file: "src/collections/lodash-grouping.ts" },
       }),
     ).toEqual({

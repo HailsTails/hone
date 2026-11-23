@@ -29,11 +29,16 @@ type OwnedSymptom = Pick<Symptom, "ruleSet" | "name">;
 const symptomKey = (request: { readonly symptom: OwnedSymptom }): ReachKey =>
   `symptom:${ownedNameText(request.symptom)}`;
 
+const addressKey = (request: { readonly address: OwnedName }): ReachKey =>
+  `check:${ownedNameText(request.address)}`;
+
 const checkKey = (request: { readonly symptom: OwnedSymptom; readonly check: string }): ReachKey =>
-  `check:${ownedNameText({
-    ruleSet: request.symptom.ruleSet,
-    name: checkAddressTextOf({ check: { name: request.check, symptom: request.symptom } }),
-  })}`;
+  addressKey({
+    address: {
+      ruleSet: request.symptom.ruleSet,
+      name: checkAddressTextOf({ check: { name: request.check, symptom: request.symptom } }),
+    },
+  });
 
 export type AnsweredByPlace = ReadonlyMap<RepoPath, ReadonlySet<ReachKey>>;
 
@@ -65,7 +70,7 @@ export const answeredAt = (request: {
   return (
     answers !== undefined &&
     (answers.has(symptomKey({ symptom: { ruleSet, name: request.symptom } })) ||
-      answers.has(`check:${ownedNameText({ ruleSet, name: request.address })}`))
+      answers.has(addressKey({ address: { ruleSet, name: request.address } })))
   );
 };
 

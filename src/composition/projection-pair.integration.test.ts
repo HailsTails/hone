@@ -135,10 +135,10 @@ const VERSION_ONE_RECORDS: readonly ExceptionRecord[] = [
 ];
 
 const VERSION_TWO_ANSWERED: readonly AnsweredFile[] = [
-  { ruleSet: "hone", symptom: "claimed-type", file: LEGACY },
-  { ruleSet: "hone", symptom: "rebinding", file: LEGACY },
-  { ruleSet: "hone", symptom: "positional-parameters", file: WIDE },
-  { ruleSet: "hone", symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
+  { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: LEGACY },
+  { ruleSet: TOOL_RULE_SET, symptom: "rebinding", file: LEGACY },
+  { ruleSet: TOOL_RULE_SET, symptom: "positional-parameters", file: WIDE },
+  { ruleSet: TOOL_RULE_SET, symptom: "test-switched-off", check: "skipped-tests", file: SKIPPING },
 ];
 
 const PROBED_FILES: readonly string[] = [
@@ -178,7 +178,7 @@ const specifierOf = (request: { readonly modulePath: string }): string => {
 
 const toolCatalogue = (): SymptomCatalogue => {
   const reading = readBoundCatalogue({
-    ruleSet: "hone",
+    ruleSet: TOOL_RULE_SET,
     directory: createDefaultDirectoryPort({}),
     fileText,
     path,

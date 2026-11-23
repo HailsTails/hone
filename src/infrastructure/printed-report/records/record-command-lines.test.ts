@@ -291,7 +291,11 @@ describe("the lines hone authorise prints", () => {
           judged: "refused",
           refusals: [
             { kind: "unknown-symptom", symptom: "no-such-symptom" },
-            { kind: "not-a-records-name", name: "Not A Name" },
+            {
+              kind: "not-a-records-name",
+              folder: repoPathOf("hone-records/authorised-locations"),
+              name: "Not A Name",
+            },
           ],
         },
       }),

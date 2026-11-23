@@ -162,7 +162,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -191,7 +191,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -211,7 +211,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -429,7 +429,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
-          ruleSet: "hone",
+          ruleSet: TOOL_RULE_SET,
           address: "date-used-directly#clock-sources",
           file: ORDER_FILE,
           effect: "recorded",
@@ -519,7 +519,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
-          ruleSet: "hone",
+          ruleSet: TOOL_RULE_SET,
           address: "date-used-directly#clock-sources",
           file: ORDER_FILE,
           effect: "already-recorded",
@@ -550,14 +550,14 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
-          ruleSet: "hone",
+          ruleSet: TOOL_RULE_SET,
           address: "claimed-type#cast-expressions",
           file: TOUCHED_FILE,
           effect: "touched",
           of: "finding",
         },
         {
-          ruleSet: "hone",
+          ruleSet: TOOL_RULE_SET,
           address: "date-used-directly#clock-sources",
           file: NEW_FILE,
           effect: "touched",
@@ -585,7 +585,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
-          ruleSet: "hone",
+          ruleSet: TOOL_RULE_SET,
           address: "claimed-type#cast-expressions",
           file: TOUCHED_FILE,
           effect: "recorded",
@@ -618,7 +618,7 @@ describe("hone record-debt over a run's unanswered findings", () => {
       outcome: "ok",
       value: [
         {
-          ruleSet: "hone",
+          ruleSet: TOOL_RULE_SET,
           address: "date-used-directly#clock-sources",
           file: ORDER_FILE,
           effect: "recorded",
@@ -808,7 +808,7 @@ describe("hone prune-debt over a run's paid, stale and forfeited debt", () => {
 });
 
 const AUTHORISE: AuthoriseRequest = {
-  answers: { ruleSet: "hone", name: "claimed-type" },
+  answers: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   file: TOUCHED_FILE,
   case: "gives-a-value-its-type",
   owes: "declared-not-asserted",

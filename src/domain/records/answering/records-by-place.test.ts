@@ -19,7 +19,7 @@ import {
 } from "./records-by-place.ts";
 
 const STUB_WITH_VIFN: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "stub-with-vifn",
   title: "Stub with vi.fn",
   standing: "accepted",
@@ -27,7 +27,7 @@ const STUB_WITH_VIFN: Recipe = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "Seen.",

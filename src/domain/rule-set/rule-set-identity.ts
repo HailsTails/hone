@@ -22,13 +22,19 @@ const ownerOf = (request: { readonly text: string }): RuleSetIdentity | undefine
   return isRuleSetName(request.text) ? { name: request.text } : undefined;
 };
 
+const isOwnerAndName = (parts: readonly string[]): parts is readonly [string, string] =>
+  parts.length === 2;
+
 export const ownedNameOf = (request: {
   readonly text: string;
 }): OwnedName | "not-an-owned-name" => {
-  const [first, name, ...rest] = request.text.split(RULE_SET_SEPARATOR);
-  if (name === undefined) return { ruleSet: TOOL_RULE_SET, name: request.text };
-  const ruleSet = ownerOf({ text: first ?? "" });
-  return ruleSet === undefined || rest.length > 0 || name === ""
-    ? "not-an-owned-name"
-    : { ruleSet, name };
+  const parts = request.text.split(RULE_SET_SEPARATOR);
+  if (!isOwnerAndName(parts)) {
+    return parts.length === 1
+      ? { ruleSet: TOOL_RULE_SET, name: request.text }
+      : "not-an-owned-name";
+  }
+  const [owner, name] = parts;
+  const ruleSet = ownerOf({ text: owner });
+  return ruleSet === undefined || name === "" ? "not-an-owned-name" : { ruleSet, name };
 };

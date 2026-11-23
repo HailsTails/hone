@@ -83,7 +83,7 @@ const DEBT_KIND: RecordKind = {
 };
 
 const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "adapter-per-outside-party",
   title: "Adapter per outside party",
   standing: "accepted",
@@ -91,7 +91,7 @@ const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
 };
 
 const STUB_WITH_VIFN: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "stub-with-vifn",
   title: "Stub with vi.fn",
   standing: "accepted",
@@ -102,7 +102,7 @@ const symptomOf = (request: {
   readonly name: string;
   readonly recipes: readonly Recipe[];
 }): Symptom => ({
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: request.name,
   title: request.name,
   seen: "Seen.",

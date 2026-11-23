@@ -19,10 +19,7 @@ import type {
   RecordsReading,
 } from "../../domain/records/hone-records/hone-record.ts";
 import type { RecordAddition } from "../../domain/records/hone-records/records-edit.ts";
-import {
-  namedRecordsFileOf,
-  namedRecordsFolderOf,
-} from "../../domain/records/hone-records/records-layout.ts";
+import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
 import type { BaseRevisionAvailability } from "../../domain/repository/base-revision-availability.ts";
@@ -119,14 +116,7 @@ const additionOf = (request: {
   return file.outcome === "failed"
     ? {
         outcome: "failed",
-        error: {
-          kind: "records-folder",
-          failure: {
-            kind: "not-a-records-name",
-            folder: namedRecordsFolderOf({ ruleSet, kind: "debt" }),
-            name: file.error.name,
-          },
-        },
+        error: { kind: "records-folder", failure: file.error },
       }
     : {
         outcome: "ok",

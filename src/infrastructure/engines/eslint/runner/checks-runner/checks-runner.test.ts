@@ -164,7 +164,11 @@ const INSTALLED_ESLINT_PACKAGE_JSON = path.join({
 
 const CLASS_KEYWORD_CHECK: EngineCheck = {
   name: "class-keyword",
-  symptom: { ruleSet: "hone", name: "authored-class-or-this", title: "Authored class or this" },
+  symptom: {
+    ruleSet: TOOL_RULE_SET,
+    name: "authored-class-or-this",
+    title: "Authored class or this",
+  },
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
@@ -185,7 +189,7 @@ const CURRENT_PROJECTION_TEXT = checksProjectionText({
 const CLASS_BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
     address: "authored-class-or-this#class-keyword",
-    ruleSet: "hone",
+    ruleSet: TOOL_RULE_SET,
     engine: "eslint",
     pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
     settings: ESLINT_CD_14_PIECE.settings,

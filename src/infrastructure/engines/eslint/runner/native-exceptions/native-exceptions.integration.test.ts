@@ -501,7 +501,7 @@ const CLAUSE = {
   clause: clauseIdOf("class-syntax"),
 };
 
-const CLASS_SYNTAX = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
+const CLASS_SYNTAX = { ruleSet: TOOL_RULE_SET, discipline: "CD-14", clause: "class-syntax" };
 
 const ESLINT_CLAUSE: RunnerClause = {
   address: CLAUSE,
@@ -518,7 +518,7 @@ const ESLINT_CLAUSE: RunnerClause = {
 
 const WALKER_BINDING: CheckBinding = {
   address: "authored-class-or-this#class-keyword",
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/authored-class-or-this/class-keyword`,
@@ -1158,7 +1158,7 @@ const classSyntaxCases = (): MechanicalCases => {
 
 const ESLINT_CLASS_BINDING: CheckBinding = {
   address: "authored-class-or-this#class-keyword",
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   engine: "eslint",
   anchor: ESLINT_CLAUSE.anchor,
   pieceRoot: ESLINT_CLAUSE.pieceRoot,

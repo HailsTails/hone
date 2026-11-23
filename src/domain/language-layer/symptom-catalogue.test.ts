@@ -49,7 +49,7 @@ const SENDS_DATA_OUT: Case = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -57,7 +57,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const RESULT_UNION: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "result-union",
   title: "Result union",
   standing: "accepted",
@@ -79,7 +79,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -90,7 +90,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const REBINDING: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "rebinding",
   title: "Rebinding",
   seen: "A `let` assigned again.",

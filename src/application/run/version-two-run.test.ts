@@ -112,7 +112,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -120,7 +120,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -128,7 +128,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const ITEACH_OVER_TYPED_ROWS: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "iteach-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
@@ -157,7 +157,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -177,7 +177,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -197,7 +197,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",

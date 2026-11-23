@@ -105,7 +105,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -113,7 +113,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -121,7 +121,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const ITEACH_OVER_TYPED_ROWS: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "iteach-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
@@ -150,7 +150,7 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -170,7 +170,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const BRANCH_IN_A_TEST: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "branch-in-a-test",
   title: "Branch in a test",
   seen: "`if` in a test file.",
@@ -190,7 +190,7 @@ const BRANCH_IN_A_TEST: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -364,7 +364,7 @@ describe("the debt a run's unanswered findings call for", () => {
   it("names a finding by its symptom and the check that found it", () => {
     expect(debtSitesOf({ catalogue: REPORT_CATALOGUE, findings: [CLOCK_FINDING] })).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "date-used-directly#clock-sources",
         file: ORDER_FILE,
         origin: "finding",
@@ -399,7 +399,7 @@ describe("the debt a run's unanswered findings call for", () => {
       siteAddressText({
         site: { ruleSet: { name: ruleSetNameOf("acme") }, address: "a#b", file: ORDER_FILE },
       }),
-      siteAddressText({ site: { ruleSet: "hone", address: "a#b", file: ORDER_FILE } }),
+      siteAddressText({ site: { ruleSet: TOOL_RULE_SET, address: "a#b", file: ORDER_FILE } }),
       siteAddressText({ site: { address: "a#b", file: ORDER_FILE } }),
     ]).toEqual(["acme/a#b", "a#b", "a#b"]);
   });
@@ -412,7 +412,7 @@ describe("the debt a run's unanswered findings call for", () => {
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "date-used-directly#clock-sources",
         file: ORDER_FILE,
         origin: "finding",
@@ -438,13 +438,13 @@ describe("the debt a run's unanswered findings call for", () => {
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "claimed-type#cast-expressions",
         file: WEBHOOK_FILE,
         origin: "finding",
       },
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "date-used-directly#clock-sources",
         file: ORDER_FILE,
         origin: "finding",

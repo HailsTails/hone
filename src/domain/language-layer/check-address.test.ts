@@ -41,7 +41,7 @@ const AUTHORISED_LOCATION: RecordKind = {
 const WALKER: Engine = { name: "walker" };
 
 const LOOP_KEYWORD: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -88,7 +88,7 @@ const RESULT_FAILURES_CLAUSE: ClauseAddress = {
 };
 
 const FAILURES_AS_VALUES: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "failures-as-values",
   title: "Failures as values",
   standing: "accepted",

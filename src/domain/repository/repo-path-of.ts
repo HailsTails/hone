@@ -1,3 +1,5 @@
+import type { NamedFolderKind } from "../records/hone-records/named-folder-kind.ts";
+import type { RuleSetName } from "../rule-set/identifier-types.ts";
 import type { RepoPath } from "./repo-path-types.ts";
 
 type Backslash = "\\";
@@ -91,7 +93,14 @@ export type StaticRepoPath<Text extends string> =
         : Text
     : never;
 
+const brandedAsRepoPath = (text: string): RepoPath => text as RepoPath;
+
 export const repoPathOf = <Text extends string>(text: StaticRepoPath<Text>): RepoPath => {
   const plain: string = text;
-  return plain as RepoPath;
+  return brandedAsRepoPath(plain);
 };
+
+export const repoPathBeneath = (request: {
+  readonly parent: RepoPath;
+  readonly segment: RuleSetName | NamedFolderKind;
+}): RepoPath => brandedAsRepoPath(`${request.parent}/${request.segment}`);

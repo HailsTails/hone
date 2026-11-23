@@ -26,16 +26,16 @@ import type {
   RuntimeFacility,
   SymptomReach,
 } from "../../../domain/records/hone-records/hone-record.ts";
+import type { NamedFolderKind } from "../../../domain/records/hone-records/named-folder-kind.ts";
 import type { RecordedReach } from "../../../domain/records/hone-records/recorded-reach.ts";
 import {
-  type NamedFolderKind,
   namedRecordsFileOf,
   type SingleFileKind,
 } from "../../../domain/records/hone-records/records-layout.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
-import { sameOwnedName } from "../../../domain/rule-set/rule-set-identity.ts";
+import { ownedNameText, sameOwnedName } from "../../../domain/rule-set/rule-set-identity.ts";
 import {
   carriedAuthorisedLocationWireSchema,
   carriedBoundaryRecordWireSchema,
@@ -118,7 +118,7 @@ const recipeNamed = (request: {
     (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
   );
   return recipe === undefined
-    ? refusedWith({ kind: "unknown-recipe", recipe: request.name })
+    ? refusedWith({ kind: "unknown-recipe", recipe: ownedNameText(request) })
     : resolved(recipe);
 };
 

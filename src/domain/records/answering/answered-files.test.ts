@@ -10,7 +10,7 @@ import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { answeredFilesOf } from "./answered-files.ts";
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "a value is given a type it was not checked for",
@@ -72,8 +72,8 @@ describe("answeredFilesOf", () => {
         ],
       }),
     ).toEqual([
-      { ruleSet: "hone", symptom: "claimed-type", file: FILE_A },
-      { ruleSet: "hone", symptom: "claimed-type", check: "cast-expressions", file: FILE_B },
+      { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: FILE_A },
+      { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", check: "cast-expressions", file: FILE_B },
     ]);
   });
 
@@ -93,7 +93,7 @@ describe("answeredFilesOf", () => {
           }),
         ],
       }),
-    ).toEqual([{ ruleSet: "hone", symptom: "claimed-type", file: FILE_A }]);
+    ).toEqual([{ ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: FILE_A }]);
   });
 
   it("names a team symptom's file with the team's rule set", () => {

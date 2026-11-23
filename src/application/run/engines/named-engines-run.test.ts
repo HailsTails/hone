@@ -18,7 +18,7 @@ const MANIFEST = repoPathOf("package.json");
 const FIRST_EDITION = editionOf("1");
 
 const SYMPTOM: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "held-value",
   title: "Held value",
   seen: "A value is held.",
@@ -35,7 +35,7 @@ const CHECK: Check = {
 };
 const BINDING: CheckBinding = {
   address: "held-value#named-check",
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/held-value/named-check",

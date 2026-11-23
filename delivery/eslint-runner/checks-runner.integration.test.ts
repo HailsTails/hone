@@ -202,7 +202,7 @@ const REPOSITORY_ROOT = absolutePathSchema.parse(
 );
 
 const CATALOGUE_HOLDING = readBoundCatalogue({
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),
@@ -235,7 +235,7 @@ const PIECE_ROOT = `${INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-c
 const BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
     address: CLASS_CHECK,
-    ruleSet: "hone",
+    ruleSet: TOOL_RULE_SET,
     engine: "eslint",
     anchor: { kind: "keyword", keyword: "class" },
     pieceRoot: PIECE_ROOT,

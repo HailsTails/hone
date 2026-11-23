@@ -55,7 +55,7 @@ const WALKER: Engine = { name: "walker" };
 const ESLINT_ENGINE: Engine = { name: "eslint" };
 
 const LOOP_KEYWORD: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "loop-keyword",
   title: "Loop keyword",
   seen: "`for` or `while`.",
@@ -238,7 +238,7 @@ describe("readNamedSettings and the settings document", () => {
               editions: { declared: [FIRST, SECOND], default: FIRST, latest: SECOND },
               binding: {
                 address: "loop-keyword#loops",
-                ruleSet: "hone",
+                ruleSet: TOOL_RULE_SET,
                 engine: "walker",
                 anchor: { kind: "file" },
                 pieceRoot: "/install/mechanisms/audit/CD-15",

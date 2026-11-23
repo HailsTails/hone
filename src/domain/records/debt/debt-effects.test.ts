@@ -86,7 +86,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -108,7 +108,7 @@ const AUTHORISED_LOCATION_KIND: RecordKind = {
 };
 
 const DATE_USED_DIRECTLY: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "date-used-directly",
   title: "Date used directly",
   seen: "Any use of `Date` outside the places that handle dates.",
@@ -128,7 +128,7 @@ const DATE_USED_DIRECTLY: Symptom = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -216,7 +216,7 @@ const HELD_CAST_DEBT: PlacedRecord = {
 };
 
 const REQUEST: DebtEffectsRequest = {
-  sites: [{ ruleSet: "hone", address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
+  sites: [{ ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
   unrecordable: [],
   records: [],
   leave: [],
@@ -226,14 +226,14 @@ const REQUEST: DebtEffectsRequest = {
 describe("what record-debt does with each symptom and file the check finds", () => {
   it("records debt on a file this change left alone", () => {
     expect(debtOutcomesOf(REQUEST)).toEqual([
-      { ruleSet: "hone", address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
+      { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
     ]);
   });
 
   it("writes nothing for debt already held on the same symptom, check and file, and says where it sits", () => {
     expect(debtOutcomesOf({ ...REQUEST, records: [HELD_CLOCK_DEBT] })).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: CLOCK_ADDRESS,
         file: ORDER_FILE,
         effect: "already-recorded",
@@ -260,7 +260,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
     };
     expect(debtOutcomesOf({ ...REQUEST, records: [HELD_CLOCK_DEBT, heldAgain] })).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: CLOCK_ADDRESS,
         file: ORDER_FILE,
         effect: "already-recorded",
@@ -274,9 +274,9 @@ describe("what record-debt does with each symptom and file the check finds", () 
       debtOutcomesOf({
         ...REQUEST,
         sites: [
-          { ruleSet: "hone", address: "claimed-type", file: ORDER_FILE, origin: "finding" },
+          { ruleSet: TOOL_RULE_SET, address: "claimed-type", file: ORDER_FILE, origin: "finding" },
           {
-            ruleSet: "hone",
+            ruleSet: TOOL_RULE_SET,
             address: "claimed-type#cast-expressions",
             file: ORDER_FILE,
             origin: "finding",
@@ -286,14 +286,14 @@ describe("what record-debt does with each symptom and file the check finds", () 
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "claimed-type",
         file: ORDER_FILE,
         effect: "already-recorded",
         heldIn: DEBT_FILE,
       },
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "claimed-type#cast-expressions",
         file: ORDER_FILE,
         effect: "recorded",
@@ -307,7 +307,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
         ...REQUEST,
         sites: [
           {
-            ruleSet: "hone",
+            ruleSet: TOOL_RULE_SET,
             address: "claimed-type#cast-expressions",
             file: LEFT_FILE,
             origin: "finding",
@@ -317,7 +317,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: "claimed-type#cast-expressions",
         file: LEFT_FILE,
         effect: "recorded",
@@ -329,12 +329,14 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ ruleSet: "hone", address: CLOCK_ADDRESS, file: LEFT_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: LEFT_FILE, origin: "finding" },
+        ],
         leave: [LEFT_FOLDER],
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: CLOCK_ADDRESS,
         file: LEFT_FILE,
         effect: "left",
@@ -347,12 +349,14 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ ruleSet: "hone", address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, origin: "finding" },
+        ],
         leave: [ORDER_FILE],
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: CLOCK_ADDRESS,
         file: ORDER_FILE,
         effect: "left",
@@ -365,11 +369,13 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ ruleSet: "hone", address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" },
+        ],
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: CLOCK_ADDRESS,
         file: TOUCHED_FILE,
         effect: "touched",
@@ -382,10 +388,18 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ ruleSet: "hone", address: CLOCK_ADDRESS, file: NEW_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: NEW_FILE, origin: "finding" },
+        ],
       }),
     ).toEqual([
-      { ruleSet: "hone", address: CLOCK_ADDRESS, file: NEW_FILE, effect: "touched", of: "finding" },
+      {
+        ruleSet: TOOL_RULE_SET,
+        address: CLOCK_ADDRESS,
+        file: NEW_FILE,
+        effect: "touched",
+        of: "finding",
+      },
     ]);
   });
 
@@ -395,7 +409,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
         ...REQUEST,
         sites: [
           {
-            ruleSet: "hone",
+            ruleSet: TOOL_RULE_SET,
             address: CLOCK_ADDRESS,
             file: TOUCHED_FILE,
             origin: "native-exception",
@@ -404,7 +418,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
       }),
     ).toEqual([
       {
-        ruleSet: "hone",
+        ruleSet: TOOL_RULE_SET,
         address: CLOCK_ADDRESS,
         file: TOUCHED_FILE,
         effect: "touched",
@@ -417,11 +431,13 @@ describe("what record-debt does with each symptom and file the check finds", () 
     expect(
       debtOutcomesOf({
         ...REQUEST,
-        sites: [{ ruleSet: "hone", address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" }],
+        sites: [
+          { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: TOUCHED_FILE, origin: "finding" },
+        ],
         touched: { measured: "elsewhere" },
       }),
     ).toEqual([
-      { ruleSet: "hone", address: CLOCK_ADDRESS, file: TOUCHED_FILE, effect: "recorded" },
+      { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: TOUCHED_FILE, effect: "recorded" },
     ]);
   });
 
@@ -447,7 +463,7 @@ describe("what record-debt does with each symptom and file the check finds", () 
         effect: "unrecordable",
         because: { kind: "no-check" },
       },
-      { ruleSet: "hone", address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
+      { ruleSet: TOOL_RULE_SET, address: CLOCK_ADDRESS, file: ORDER_FILE, effect: "recorded" },
     ]);
   });
 });

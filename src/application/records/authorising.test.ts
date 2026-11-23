@@ -97,7 +97,7 @@ const DEBT: RecordKind = {
 };
 
 const CLAIMED_TYPE: Symptom = {
-  ruleSet: "hone",
+  ruleSet: TOOL_RULE_SET,
   name: "claimed-type",
   title: "Claimed type",
   seen: "A cast.",
@@ -148,7 +148,7 @@ const RECORDS_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.
 const UNRELATED_RECORDS_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const REQUEST: AuthoriseRequest = {
-  answers: { ruleSet: "hone", name: "claimed-type" },
+  answers: { ruleSet: TOOL_RULE_SET, name: "claimed-type" },
   file: WEBHOOK_FILE,
   case: "gives-a-value-its-type",
   owes: "declared-not-asserted",
@@ -276,7 +276,10 @@ describe("the authorised location a person's arguments write", () => {
       place: ADDED_PLACE,
     });
     authorisingOf({
-      request: { ...REQUEST, answers: { ruleSet: "hone", name: "claimed-type#cast-expressions" } },
+      request: {
+        ...REQUEST,
+        answers: { ruleSet: TOOL_RULE_SET, name: "claimed-type#cast-expressions" },
+      },
       documents: [],
       catalogue: REPORT_CATALOGUE,
       recordsReader: READER_REFUSING_NOTHING,
@@ -435,7 +438,7 @@ describe("the authorised location a person's arguments write", () => {
   it("refuses a symptom the reading does not find in the catalogue", () => {
     expect(
       authorisingOf({
-        request: { ...REQUEST, answers: { ruleSet: "hone", name: "no-such-symptom" } },
+        request: { ...REQUEST, answers: { ruleSet: TOOL_RULE_SET, name: "no-such-symptom" } },
         documents: [],
         catalogue: REPORT_CATALOGUE,
         recordsReader: readerRefusing([
@@ -462,7 +465,7 @@ describe("the authorised location a person's arguments write", () => {
     });
     expect(
       authorisingOf({
-        request: { ...REQUEST, answers: { ruleSet: "hone", name: "Not A Name" } },
+        request: { ...REQUEST, answers: { ruleSet: TOOL_RULE_SET, name: "Not A Name" } },
         documents: [],
         catalogue: REPORT_CATALOGUE,
         recordsReader: READER_REFUSING_NOTHING,
@@ -470,7 +473,16 @@ describe("the authorised location a person's arguments write", () => {
       }),
     ).toEqual({
       outcome: "ok",
-      value: { judged: "refused", refusals: [{ kind: "not-a-records-name", name: "Not A Name" }] },
+      value: {
+        judged: "refused",
+        refusals: [
+          {
+            kind: "not-a-records-name",
+            folder: repoPathOf("hone-records/authorised-locations"),
+            name: "Not A Name",
+          },
+        ],
+      },
     });
     expect(recordsEditor.documentsWithAdded).not.toHaveBeenCalled();
   });

@@ -1,42 +1,37 @@
 import { type CheckAddressText, isCheckAddressText } from "../language-layer/check-address-text.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
-import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
-import { isRuleSetName } from "../rule-set/identifiers.ts";
+import {
+  type OwnedName,
+  ownedNameOf,
+  ownedNameText,
+  sameOwnedName,
+} from "../rule-set/rule-set-identity.ts";
 
 export type ListedAddress = {
   readonly ruleSet: ClauseAddress["ruleSet"];
   readonly check: CheckAddressText;
 };
 
-const LISTED_ADDRESS_TEXT = /^(?:(?<ruleSet>[^/#]+)\/)?(?<check>[^/#]+#[^/#]+)$/;
-
-const ruleSetOf = (request: {
-  readonly name: string | undefined;
-}): ClauseAddress["ruleSet"] | undefined => {
-  if (request.name === undefined || request.name === TOOL_RULE_SET) {
-    return TOOL_RULE_SET;
-  }
-  return isRuleSetName(request.name) ? { name: request.name } : undefined;
-};
-
 export const listedAddressOf = (request: { readonly text: string }): ListedAddress | undefined => {
-  const parts = LISTED_ADDRESS_TEXT.exec(request.text)?.groups;
-  const check = parts?.check;
-  const ruleSet = ruleSetOf({ name: parts?.ruleSet });
-  return check === undefined || !isCheckAddressText(check) || ruleSet === undefined
+  const owned = ownedNameOf({ text: request.text });
+  return owned === "not-an-owned-name" || !isCheckAddressText(owned.name)
     ? undefined
-    : { ruleSet, check };
+    : { ruleSet: owned.ruleSet, check: owned.name };
 };
+
+const ownedNameOfAddress = (request: { readonly address: ListedAddress }): OwnedName => ({
+  ruleSet: request.address.ruleSet,
+  name: request.address.check,
+});
 
 export const listedAddressText = (request: { readonly address: ListedAddress }): string =>
-  request.address.ruleSet === TOOL_RULE_SET
-    ? request.address.check
-    : `${request.address.ruleSet.name}/${request.address.check}`;
+  ownedNameText(ownedNameOfAddress(request));
 
 export const sameListedAddress = (request: {
   readonly left: ListedAddress;
   readonly right: ListedAddress;
 }): "same" | "different" =>
-  listedAddressText({ address: request.left }) === listedAddressText({ address: request.right })
-    ? "same"
-    : "different";
+  sameOwnedName({
+    left: ownedNameOfAddress({ address: request.left }),
+    right: ownedNameOfAddress({ address: request.right }),
+  });
