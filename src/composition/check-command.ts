@@ -4,7 +4,6 @@ import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { VersionTwoRun } from "../application/run/version-two-run.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import { runVerdictOf } from "../domain/report/report-sections.ts";
-import type { RunReport } from "../domain/report/run-report.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import {
@@ -18,8 +17,10 @@ import {
 } from "../infrastructure/command-line/arguments/tool-invocations.ts";
 import { packageLinkOf } from "../infrastructure/command-line/installation/package-link.ts";
 import { shownPathOf } from "../infrastructure/command-line/installation/shown-path.ts";
-import type { CommandOutcome } from "../infrastructure/command-line/outcomes/command-outcome.ts";
-import { renderRunReportText } from "../infrastructure/printed-report/run-report-text.ts";
+import {
+  type RunReportRequest,
+  renderRunReportText,
+} from "../infrastructure/printed-report/run-report-text.ts";
 import { versionTwoCheckOf } from "../operations/check/version-two-check-command.ts";
 import { loadFailed, runFailed, type ToolCommand } from "./composed-command.ts";
 import type { ToolPorts } from "./tool-ports.ts";
@@ -33,13 +34,11 @@ const SYMPTOM_PAGE_SEGMENTS: readonly string[] = ["rules", "typescript", "sympto
 
 type CheckCommands = { readonly projectCommand: string; readonly pruneCommand: string };
 
-type VersionTwoCheckRun = {
+export type VersionTwoCheckRun = {
   readonly located: RepositoryLocated;
   readonly commands: CheckCommands;
   readonly run: VersionTwoRun;
 };
-
-export type VersionTwoChecked = { readonly outcome: CommandOutcome; readonly report: RunReport };
 
 const checkCommandsOf = (request: {
   readonly path: PathPort;
@@ -79,6 +78,20 @@ const symptomPageOf = (request: {
     link: packageLinkOf({ path, fileText, repoRoot, installRoot }),
     target: path.join({ segments: [installRoot, ...SYMPTOM_PAGE_SEGMENTS] }),
   });
+};
+
+export const versionTwoReportRequestOf = (request: {
+  readonly ports: Pick<ToolPorts, "path" | "fileText">;
+  readonly produced: VersionTwoCheckRun;
+}): RunReportRequest => {
+  const { report, catalogue, output } = request.produced.run;
+  return {
+    report,
+    catalogue,
+    output,
+    symptomPage: symptomPageOf({ ports: request.ports, located: request.produced.located }),
+    ...request.produced.commands,
+  };
 };
 
 export const VERSION_TWO_CHECK: ToolCommand<
@@ -122,17 +135,8 @@ export const VERSION_TWO_CHECK: ToolCommand<
           value: { located: located.value, commands: commands.value, run: run.value },
         };
   },
-  print: ({ ports, produced }) => {
-    const { report, catalogue, output } = produced.run;
-    return {
-      code: runVerdictOf({ report }) === "pass" ? 0 : 1,
-      text: renderRunReportText({
-        report,
-        catalogue,
-        output,
-        symptomPage: symptomPageOf({ ports, located: produced.located }),
-        ...produced.commands,
-      }),
-    };
-  },
+  print: ({ ports, produced }) => ({
+    code: runVerdictOf({ report: produced.run.report }) === "pass" ? 0 : 1,
+    text: renderRunReportText(versionTwoReportRequestOf({ ports, produced })),
+  }),
 };

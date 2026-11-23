@@ -113,17 +113,23 @@ const printedLines = (request: {
   }
 };
 
-const verdictLine = (request: { readonly report: RunReport }): string =>
-  request.report.assessment.length === 0
-    ? `verdict: ${runVerdictOf(request)}`
-    : `verdict: ${runVerdictOf(request)} (partial assessment)`;
+export type AssessmentScope = "" | " (partial assessment)";
 
-export const renderRunReportText = (request: RunReportRequest): string => {
-  const sectionLines = RUN_SECTION_NAMES.map((name) => ({
+export const assessmentScopeOf = (request: { readonly report: RunReport }): AssessmentScope =>
+  request.report.assessment.length === 0 ? "" : " (partial assessment)";
+
+const verdictLine = (request: { readonly report: RunReport }): string =>
+  `verdict: ${runVerdictOf(request)}${assessmentScopeOf(request)}`;
+
+export const renderRunSectionsText = (request: RunReportRequest): string =>
+  RUN_SECTION_NAMES.map((name) => ({
     name,
     lines: SECTION_LINES[name](request),
   }))
     .filter((section) => section.lines.length > 0)
-    .flatMap((section) => printedLines({ output: request.output, section }));
-  return `${[...sectionLines, verdictLine(request)].join("\n")}\n`;
-};
+    .flatMap((section) => printedLines({ output: request.output, section }))
+    .map((line) => `${line}\n`)
+    .join("");
+
+export const renderRunReportText = (request: RunReportRequest): string =>
+  `${renderRunSectionsText(request)}${verdictLine(request)}\n`;

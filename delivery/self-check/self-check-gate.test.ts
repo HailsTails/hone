@@ -10,12 +10,20 @@ import type { ExceptionEntryParser } from "../../src/application/ports/records/e
 import type { ExceptionRepositoryOf } from "../../src/application/ports/records/exception-repository.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
 import type { VersionOneCommandRequest } from "../../src/application/ports/version-one-command-request.ts";
+import type { VersionTwoCheckRun } from "../../src/composition/check-command.ts";
 import type {
   AttributedCheckException,
   CheckFinding,
 } from "../../src/domain/finding/governance.ts";
+import type {
+  RecordKind,
+  SymptomCatalogue,
+} from "../../src/domain/language-layer/symptom-catalogue.ts";
 import type { RunReport } from "../../src/domain/report/run-report.ts";
+import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
+import type { VersionTwoReportOutput } from "../../src/domain/settings/report-output.ts";
+import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
 import {
   runSelfCheck,
   VERSION_TWO_GATED_SECTIONS,
@@ -77,41 +85,115 @@ describe("VERSION_TWO_GATED_SECTIONS", () => {
   });
 });
 
+const DEBT_KIND: RecordKind = {
+  name: "debt",
+  title: "Debt",
+  phrase: "debt",
+  todaysFormat: "file-carve-out",
+};
+
+const AUTHORISED_LOCATION_KIND: RecordKind = {
+  name: "authorised-location",
+  title: "Authorised location",
+  phrase: "an authorised location",
+  todaysFormat: "authorised-location",
+};
+
+const EMPTY_CATALOGUE: SymptomCatalogue = {
+  principles: [],
+  rules: [],
+  cases: [],
+  recipes: [],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
+  engines: [],
+  symptoms: [],
+  clauses: [],
+  checks: [],
+  namedBans: [],
+};
+
+const SELF_CHECK_PORTS = {
+  path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+  fileText: {
+    exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+    read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+      outcome: "failed",
+      error: { kind: "unreadable", path: "/repo/package.json", detail: "absent" },
+    }),
+    write: vi.fn<FileTextPort["write"]>(),
+  },
+};
+
+const producedOf = (request: {
+  readonly report: RunReport;
+  readonly output: VersionTwoReportOutput;
+}): VersionTwoCheckRun => ({
+  located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
+  commands: { projectCommand: PROJECT_COMMAND, pruneCommand: PRUNE_COMMAND },
+  run: {
+    report: request.report,
+    catalogue: EMPTY_CATALOGUE,
+    touched: { measured: "yes", paths: new Set() },
+    output: request.output,
+    runs: [],
+  },
+});
+
 describe("versionTwoSelfCheckOutcomeOf", () => {
-  it("passes a clean run, printing the report and the gate line", () => {
+  it("passes a clean run, printing the gate line as its only verdict", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: { outcome: { code: 0, text: "verdict: pass\n" }, report: EMPTY_RUN_REPORT },
+        ports: SELF_CHECK_PORTS,
+        produced: producedOf({ report: EMPTY_RUN_REPORT, output: "full" }),
       }),
     ).toEqual({
       code: 0,
-      text: "verdict: pass\nself-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
+      text: "self-check: pass, the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
   });
 
-  it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated", () => {
+  it("passes a run whose only failures are findings and unrecorded native exceptions, counting both as not gated, after the report's sections and with no verdict of hone's own", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: {
-          outcome: { code: 1, text: "verdict: fail\n" },
+        ports: SELF_CHECK_PORTS,
+        produced: producedOf({
           report: {
             ...EMPTY_RUN_REPORT,
             findings: [NAMED_CLASS_IN_A],
             unrecorded: [IGNORED_IN_A, IGNORED_IN_A],
           },
-        },
+          output: "counts",
+        }),
       }),
     ).toEqual({
       code: 0,
-      text: "verdict: fail\nself-check: pass, the selection, records and projection are sound; findings (1) and unrecorded (2) are reported above and not gated\n",
+      text: "findings (1)\nunrecorded (2)\nself-check: pass, the selection, records and projection are sound; findings (1) and unrecorded (2) are reported above and not gated\n",
+    });
+  });
+
+  it("marks the gate line as a partial assessment when part of the assessment was left to another run, though the output hides the assessment section", () => {
+    expect(
+      versionTwoSelfCheckOutcomeOf({
+        ports: SELF_CHECK_PORTS,
+        produced: producedOf({
+          report: {
+            ...EMPTY_RUN_REPORT,
+            assessment: [{ concern: "forfeiture", assessedBy: "elsewhere", debts: 2 }],
+          },
+          output: "actionable",
+        }),
+      }),
+    ).toEqual({
+      code: 0,
+      text: "self-check: pass (partial assessment), the selection, records and projection are sound; findings (0) and unrecorded (0) are reported above and not gated\n",
     });
   });
 
   it("fails naming each gated section that holds an entry, in the order the report lists them", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
-        checked: {
-          outcome: { code: 1, text: "verdict: fail\n" },
+        ports: SELF_CHECK_PORTS,
+        produced: producedOf({
           report: {
             ...EMPTY_RUN_REPORT,
             findings: [NAMED_CLASS_IN_A],
@@ -132,11 +214,31 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
             ],
             unmeasured: [{ kind: "import-unmeasured", base: { state: "not-given" } }],
           },
-        },
+          output: "counts",
+        }),
       }),
     ).toEqual({
       code: 1,
-      text: "verdict: fail\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
+      text: "findings (1)\nmisnamed (1)\nrefused (1)\nunmeasured (1)\nself-check: fail, gated sections hold entries: misnamed (1), refused (1), unmeasured (1)\n",
+    });
+  });
+
+  it("marks a failing gate line as a partial assessment too", () => {
+    expect(
+      versionTwoSelfCheckOutcomeOf({
+        ports: SELF_CHECK_PORTS,
+        produced: producedOf({
+          report: {
+            ...EMPTY_RUN_REPORT,
+            unmeasured: [{ kind: "import-unmeasured", base: { state: "not-given" } }],
+            assessment: [{ concern: "carried-standing", assessedBy: "elsewhere", carried: 1 }],
+          },
+          output: "verdict-only",
+        }),
+      }),
+    ).toEqual({
+      code: 1,
+      text: "self-check: fail (partial assessment), gated sections hold entries: unmeasured (1)\n",
     });
   });
 });

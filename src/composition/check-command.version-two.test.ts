@@ -25,13 +25,15 @@ import type {
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
+import type { RunReport } from "../domain/report/run-report.ts";
+import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
-import { VERSION_TWO_CHECK } from "./check-command.ts";
+import { VERSION_TWO_CHECK, versionTwoReportRequestOf } from "./check-command.ts";
 import { commandOf } from "./composed-command.ts";
 import type { VersionTwoRepositoryPorts } from "./version-two-repository.ts";
 import type { StagesOver } from "./version-two-stages.ts";
@@ -594,5 +596,69 @@ verdict: fail
       exits: [[{ code: 2 }]],
     });
     expect(stagesOver).not.toHaveBeenCalled();
+  });
+});
+
+const EMPTY_RUN_REPORT: RunReport = {
+  excluded: [],
+  "not-adopted": [],
+  "not-run": [],
+  editions: [],
+  findings: [],
+  answered: [],
+  available: [],
+  stale: [],
+  forfeited: [],
+  unrecorded: [],
+  misnamed: [],
+  paid: [],
+  refused: [],
+  unmeasured: [],
+  "projection-problems": [],
+  assessment: [],
+  "settings-notes": [],
+  "record-notes": [],
+  carried: [],
+  symptoms: [],
+};
+
+describe("versionTwoReportRequestOf", () => {
+  it("hands the printed report the run's report, catalogue and output, the check's commands and the symptom page shown from the repository", () => {
+    expect(
+      versionTwoReportRequestOf({
+        ports: {
+          path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
+          fileText: {
+            exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("absent"),
+            read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+              outcome: "failed",
+              error: { kind: "unreadable", path: "/repo/package.json", detail: "absent" },
+            }),
+            write: vi.fn<FileTextPort["write"]>(),
+          },
+        },
+        produced: {
+          located: { repoRoot: absoluteRootOf("/repo"), installRoot: absoluteRootOf("/install") },
+          commands: {
+            projectCommand: "node /install/src/hone.ts project --repo /repo",
+            pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",
+          },
+          run: {
+            report: EMPTY_RUN_REPORT,
+            catalogue: REPORT_CATALOGUE,
+            touched: { measured: "yes", paths: new Set() },
+            output: "counts",
+            runs: [],
+          },
+        },
+      }),
+    ).toEqual({
+      report: EMPTY_RUN_REPORT,
+      catalogue: REPORT_CATALOGUE,
+      output: "counts",
+      symptomPage: "../install/rules/typescript/symptoms.md",
+      projectCommand: "node /install/src/hone.ts project --repo /repo",
+      pruneCommand: "node /install/src/hone.ts prune-debt --repo /repo",
+    });
   });
 });
