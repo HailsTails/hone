@@ -2,6 +2,76 @@
 
 Every release of Hone, newest first. `pnpm run release-pull-request` writes each new section from the commits merged to `main` since the previous release tag, whose subjects are the squash-merged pull request titles; README.md's Compatibility section says what each kind of release may change. The sections below were written by hand from the merged pull requests when the changelog started.
 
+## 2.0.0-pre.4
+
+### Breaking changes
+
+- speak the named model in the walker, rule-set and testing entries (#415)
+
+### Features
+
+- detect process global access (#359)
+- detect ambient random calls (#360)
+- detect throws in production units (#361)
+- detect prose in TypeScript comments (#362)
+- detect global patches and stub answers in hooks (#363)
+- detect floating versions and fetched tools (#364)
+- ci: stable managed agents build, triage and review, invoked from issues and pull requests (#409)
+- ci: review draft pull requests and hand review findings back to the builder (#428)
+- ci: reviews run from main and post as rin-reviewer (#430)
+- agents: triager weighs issues against ordinary use (#431)
+- keep team records in their rule set's records folder (#390)
+- record, prune and authorise on team rule set addresses (#408)
+- hone upgrade converts a team rule set from its version 1 layout (#424)
+- agent-detached label stops agent reviews and hand-backs on a pull request (#437)
+- release: fold a stable release's pre-release changelog sections into one (#351) (#405)
+- detect Vitest test call aliases (#385)
+- detect debugger statements (#386)
+- detect ambient browser dialogs in edition two (#388)
+- detect conditional and todo tests in edition two (#389)
+- detect exports from test files (#392)
+- detect type declarations in test files (#393)
+- detect empty error handlers (#394)
+- detect built units called in place (#395)
+- detect assertions outside test cases (#396)
+- detect tests reading code or prose as text (#397)
+- detect unread function parameters (#398)
+- declare which files are tests with testFiles in hone.config.json (#434)
+- the generated checks page shows each check's engines (#407)
+
+### Fixes
+
+- record-debt refuses and names project when the projection is stale (#371)
+- --repo refusal and help name hone.config.json, not disciplines.json (#370)
+- upgrade proof counts the files it writes, mentions every version 1 file, and says what it compared (#373)
+- ci: the agent job reads the session's list cost amount (#406)
+- cap hook answer snippets at eighty characters (#401)
+- detect Vitest environment stubs in edition two (#402)
+- ci: the agent job streams session events through a file (#425)
+- lead findings with their symptom and source (#378)
+- explain the problem in walker test-body remedies (#381)
+- report floating versions at their manifest declarations (#411)
+- detect pnpx in workflow commands (#404)
+- self-check: print the gate line as the run's only verdict (#419)
+- treat workspace packages and subpath imports as own API in test-body logic (#427)
+- share tracker reference parsing (#414)
+- an answered finding line names the fix its finding line names (#426)
+- records: record-debt new-file and left lines no longer ask for a reason of its own (#418)
+- continue checks around nested Hone configurations (#384)
+
+### Other changes
+
+- retire the output contract doc and the test that pins it to the code (#376)
+- run and report version 2 checks by name (#358)
+- Claude works an issue labelled claude or a comment mentioning @claude (#380)
+- a Claude Managed Agent works an issue labelled claude (#400)
+- record the applied agent definitions (#410)
+- share TypeScript throw detection (#399)
+- read team rule sets from the version 2 layout and refuse the version 1 layout by name (#383)
+- share anchored walker snippets (#429)
+- record the applied agent definitions (#432)
+- assess debt forfeiture in Hone's own runs again (#438)
+
 ## 2.0.0-pre.3
 
 ### Fixes
