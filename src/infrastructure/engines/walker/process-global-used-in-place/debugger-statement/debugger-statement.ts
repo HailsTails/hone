@@ -1,38 +1,8 @@
 import { typeScriptSourceEligibility } from "../../runner/pieces/source-scope.ts";
-import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
+import { syntaxNodeCheck } from "../../runner/pieces/syntax-node-check.ts";
 
-export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => ({
-    outcome: "ok",
-    value: {
-      prepareFile: ({ file }) => {
-        if (typeScriptSourceEligibility({ file }) === "skipped")
-          return { outcome: "ok", value: { kind: "skipped" } };
-        return {
-          outcome: "ok",
-          value: {
-            kind: "syntax",
-            begin: ({ sourceFile, anchorAt }) => {
-              const hits: PieceHit[] = [];
-              return {
-                enter: ({ node }) => {
-                  if (!syntaxApi.isDebuggerStatement(node)) return;
-                  const anchor = anchorAt({ position: node.getStart(sourceFile) });
-                  hits.push(
-                    ...bindings.map(({ address }) => ({
-                      check: address,
-                      anchor,
-                      snippet: "debugger",
-                    })),
-                  );
-                },
-                finish: () => hits,
-              };
-            },
-          },
-        };
-      },
-      finish: () => ({ outcome: "ok", value: [] }),
-    },
-  }),
-};
+export const check = syntaxNodeCheck({
+  eligibility: typeScriptSourceEligibility,
+  found: ({ syntaxApi, node }) =>
+    syntaxApi.isDebuggerStatement(node) ? { at: node, snippet: "debugger" } : undefined,
+});
