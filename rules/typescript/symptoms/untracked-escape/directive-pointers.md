@@ -9,7 +9,7 @@
 TODOs, linter directives and `@ts-expect-error` without a tracker.
 
 ## Flags
-- `.ts` and `.tsx` files, including tests and declaration files; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
+- `.ts`, `.tsx`, `.mts` and `.cts` files, including tests and declaration files, and `.js`, `.jsx`, `.mjs` and `.cjs` files the compiler checks: under `// @ts-check`, or with `checkJs` on in the nearest `tsconfig.json`. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
 - `// TODO` not followed, after optional spaces, by a tracked reference, for example `// TODO(#42) ...`.
 - A comment starting with `biome-ignore`, `eslint-disable`, `eslint-enable`, `eslint-disable-line`, `eslint-disable-next-line`, an `oxlint-` equivalent or `eslint <config>`, unless the comment carries a tracked reference.
 - A TypeScript directive without a tracked reference after it, in each form the compiler honours: `@ts-expect-error` or `@ts-ignore` opening a `//` or `///` comment, or opening the last line of a block comment after any `/` and `*`; and `@ts-nocheck`, in any letter case, opening a `//` or `///` comment among the comments that start the file. As in the compiler, `@ts-ignore` and `@ts-expect-error` are matched as written, so `@ts-ignored` counts and `@Ts-Ignore` does not. Forms the compiler ignores, such as `/* @ts-nocheck */`, a directive above a block comment's closing line, or `////`, are not flagged. `@ts-check` turns checking on and is not flagged.

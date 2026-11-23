@@ -111,4 +111,48 @@ describe("CD-2 audit piece.json", () => {
       },
     });
   });
+
+  it("reports a directive in an ES module TypeScript file as an inline disable of cast-expressions", async () => {
+    const moduleFile = repoPathOf("src/d.mts");
+    const run = await createWalkerRunner({
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>().mockReturnValue({
+          outcome: "ok",
+          value: `// ${IGNORE}\nexport const m: number = "x";\n`,
+        }),
+        exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
+        write: vi.fn<FileTextPort["write"]>(),
+      },
+      modules,
+      path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
+      parse: defaultParsePort,
+      entryKind: { kindOf: () => "absent" },
+    }).run({
+      repoRoot: absoluteRootOf("/repo"),
+      installRoot: absoluteRootOf("/install"),
+      files: [moduleFile],
+      trackedPaths: [moduleFile],
+      bindings: [CLAUSE],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+    });
+
+    expect(run).toMatchObject({
+      outcome: "ok",
+      value: {
+        nativeExceptions: [
+          {
+            kind: "inline-disable",
+            check: ADDRESS,
+            file: moduleFile,
+            line: 1,
+            text: `// ${IGNORE}`,
+            reach: "one-check",
+          },
+        ],
+        measured: [{ check: ADDRESS, file: moduleFile }],
+      },
+    });
+  });
 });

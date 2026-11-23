@@ -215,6 +215,67 @@ describe("cast shapes", () => {
   });
 });
 
+describe("JSDoc type assertions", () => {
+  const argumentOf = (request: { readonly fileName: string; readonly source: string }) => {
+    const tree = SYNTAX_API.createSourceFile(
+      request.fileName,
+      request.source,
+      SYNTAX_API.ScriptTarget.Latest,
+      true,
+    );
+    return { tree, node: firstExpression(tree).getChildAt(2, tree).getChildAt(0, tree) };
+  };
+
+  it("reads a parenthesised expression under a JSDoc type tag in a JavaScript file as an assertion", () => {
+    const { tree, node } = argumentOf({
+      fileName: "src/casts.js",
+      source: "use(/** @type {Profile} */ (candidate));\n",
+    });
+    const assertion = assertionOf({ node, syntaxApi: SYNTAX_API });
+
+    expect(assertion).toMatchObject({ form: "jsdoc" });
+    expect(assertion?.expression.getText(tree)).toBe("candidate");
+    expect(assertion?.type.getText(tree)).toBe("Profile");
+  });
+
+  it.each(["src/casts.ts", "src/casts.mts"])(
+    "reads no assertion from the same JSDoc in %s, where the compiler ignores it",
+    (fileName) => {
+      const { node } = argumentOf({
+        fileName,
+        source: "use(/** @type {Profile} */ (candidate));\n",
+      });
+
+      expect(assertionOf({ node, syntaxApi: SYNTAX_API })).toBeUndefined();
+    },
+  );
+
+  it("reads no assertion from a parenthesised expression without a type tag", () => {
+    const { node } = argumentOf({
+      fileName: "src/casts.js",
+      source: "use(/** @see Profile */ (candidate));\n",
+    });
+
+    expect(assertionOf({ node, syntaxApi: SYNTAX_API })).toBeUndefined();
+  });
+
+  it.each<{ readonly source: string; readonly shape: CastShape }>([
+    { source: "use(/** @type {const} */ (['a']));\n", shape: "const-assertion" },
+    { source: "use(/** @type {unknown} */ (candidate));\n", shape: "unknown-widening" },
+    { source: "use(/** @type {Profile} */ (candidate));\n", shape: "type-assertion" },
+    {
+      source: "use(/** @type {Profile} */ (/** @type {unknown} */ (candidate)));\n",
+      shape: "through-unknown",
+    },
+  ])("reads $source as $shape", ({ source, shape }) => {
+    const { node } = argumentOf({ fileName: "src/casts.js", source });
+    const assertion = assertionOf({ node, syntaxApi: SYNTAX_API });
+    assert(assertion !== undefined);
+
+    expect(castShapeOf({ assertion, syntaxApi: SYNTAX_API })).toBe(shape);
+  });
+});
+
 describe("cast snippets", () => {
   it("reads eighty characters from the cast with line breaks as spaces, marking a cut", () => {
     const tree = SYNTAX_API.createSourceFile(

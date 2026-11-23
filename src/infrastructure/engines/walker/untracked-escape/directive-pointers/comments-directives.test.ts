@@ -125,10 +125,11 @@ describe("CD-5 existing annotation capability", () => {
     { name: "root-only excluded directory", fileName: "vendor/example.ts", kind: "skipped" },
     { name: "nested root-only directory", fileName: "src/vendor/example.ts", kind: "syntax" },
     { name: "TSX source", fileName: "src/example.tsx", kind: "syntax" },
+    { name: "ES module TypeScript source", fileName: "src/example.mts", kind: "syntax" },
+    { name: "CommonJS TypeScript source", fileName: "src/example.cts", kind: "syntax" },
     { name: "test source", fileName: "src/example.test.ts", kind: "syntax" },
     { name: "declaration source", fileName: "src/example.d.ts", kind: "syntax" },
     { name: "physical scripts source", fileName: "scripts/task.ts", kind: "syntax" },
-    { name: "non-TypeScript candidate", fileName: "src/example.js", kind: "skipped" },
   ])("preserves source eligibility without a read for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
@@ -147,6 +148,57 @@ describe("CD-5 existing annotation capability", () => {
       value: { kind },
     });
     expect(readText).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "a pragma-free file", source: "export const a = 1;\n", kind: "skipped" },
+    {
+      name: "a file under @ts-check",
+      source: "// @ts-check\nexport const a = 1;\n",
+      kind: "syntax",
+    },
+  ])(
+    "reads a JavaScript source only when the compiler checks it, skipping $name",
+    ({ source, kind }) => {
+      const file = repoPathOf("src/example.jsx");
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+        syntaxApi: SYNTAX_API,
+      });
+      assert(prepared.outcome === "ok");
+
+      expect(
+        prepared.value.prepareFile({
+          file,
+          readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+        }),
+      ).toMatchObject({ outcome: "ok", value: { kind } });
+    },
+  );
+
+  it("reads a JavaScript source a tsconfig checks with checkJs", () => {
+    const file = repoPathOf("src/example.cjs");
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: textsDisk({
+          root: "/repo",
+          texts: { "tsconfig.json": '{"compilerOptions":{"checkJs":true}}' },
+        }),
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({
+        file,
+        readText: vi.fn().mockReturnValue({ outcome: "ok", value: "export const a = 1;\n" }),
+      }),
+    ).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
   });
 
   it("returns every annotation in category order with supplied anchors", () => {

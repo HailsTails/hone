@@ -4,7 +4,7 @@ export type Assertion = {
   readonly node: SyntaxNode;
   readonly expression: SyntaxNode;
   readonly type: SyntaxNode;
-  readonly form: "as" | "angle-bracket";
+  readonly form: "as" | "angle-bracket" | "jsdoc";
 };
 
 export type AnyBearing = "any-bearing" | "any-free";
@@ -27,6 +27,19 @@ export const castSnippetAt = (request: {
   return snippet.length === SNIPPET_MAX_LENGTH ? `${snippet}…` : snippet;
 };
 
+const jsDocAssertionOf = (request: {
+  readonly node: SyntaxNode;
+  readonly syntaxApi: SyntaxApi;
+}): Assertion | undefined => {
+  const { node, syntaxApi } = request;
+  if (!syntaxApi.isParenthesizedExpression(node)) return undefined;
+  if ((node.flags & syntaxApi.NodeFlags.JavaScriptFile) === 0) return undefined;
+  const type = syntaxApi.getJSDocType(node);
+  return type === undefined
+    ? undefined
+    : { node, expression: node.expression, type, form: "jsdoc" };
+};
+
 export const assertionOf = (request: {
   readonly node: SyntaxNode;
   readonly syntaxApi: SyntaxApi;
@@ -36,7 +49,7 @@ export const assertionOf = (request: {
     return { node, expression: node.expression, type: node.type, form: "as" };
   if (syntaxApi.isTypeAssertionExpression(node))
     return { node, expression: node.expression, type: node.type, form: "angle-bracket" };
-  return undefined;
+  return jsDocAssertionOf(request);
 };
 
 const anyBearingFound = (request: {
@@ -71,6 +84,7 @@ const wrappedOperand = (request: {
   readonly syntaxApi: SyntaxApi;
 }): SyntaxNode | undefined => {
   const { node, syntaxApi } = request;
+  if (jsDocAssertionOf(request) !== undefined) return undefined;
   if (syntaxApi.isParenthesizedExpression(node) || syntaxApi.isNonNullExpression(node))
     return node.expression;
   return satisfiesOperand({ node, syntaxApi });

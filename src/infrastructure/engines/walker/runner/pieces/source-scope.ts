@@ -18,7 +18,7 @@ export const folderScope = (request: { readonly file: string }): "generated" | "
 export const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" =>
   typeScriptSourceKindOf(request) === "test" ? "eligible" : "skipped";
 
-const TYPESCRIPT_FILE = /\.(?:ts|tsx|mts|cts)$/;
+export const TYPESCRIPT_FILE = /\.(?:ts|tsx|mts|cts)$/;
 const DECLARATION_FILE = /\.d\.(?:ts|mts|cts)$/;
 const TEST_FILE = /\.test\.tsx?$/;
 

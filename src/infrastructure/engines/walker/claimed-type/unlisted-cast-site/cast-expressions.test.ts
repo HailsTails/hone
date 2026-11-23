@@ -94,10 +94,11 @@ describe("CD-2 existing cast capability", () => {
     { name: "root-only excluded directory", fileName: "vendor/example.ts", kind: "skipped" },
     { name: "nested root-only directory", fileName: "src/vendor/example.ts", kind: "syntax" },
     { name: "TSX source", fileName: "src/example.tsx", kind: "syntax" },
+    { name: "ES module TypeScript source", fileName: "src/example.mts", kind: "syntax" },
+    { name: "CommonJS TypeScript source", fileName: "src/example.cts", kind: "syntax" },
     { name: "test source", fileName: "src/example.test.ts", kind: "syntax" },
     { name: "test helper source", fileName: "tests/test-support.ts", kind: "syntax" },
     { name: "proof script source", fileName: "scripts/install-proof-plan.ts", kind: "syntax" },
-    { name: "non-TypeScript union candidate", fileName: "src/example.test.js", kind: "skipped" },
   ])("preserves source-family eligibility for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
@@ -115,6 +116,92 @@ describe("CD-2 existing cast capability", () => {
 
     expect(selected).toMatchObject({ outcome: "ok", value: { kind } });
     expect(readText).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "a pragma-free file", source: "export const a = 1;\n", kind: "skipped" },
+    {
+      name: "a file under @ts-check",
+      source: "// @ts-check\nexport const a = 1;\n",
+      kind: "syntax",
+    },
+  ])(
+    "reads a JavaScript source only when the compiler checks it, skipping $name",
+    ({ source, kind }) => {
+      const file = repoPathOf("src/example.js");
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+        syntaxApi: SYNTAX_API,
+      });
+      assert(prepared.outcome === "ok");
+
+      expect(
+        prepared.value.prepareFile({
+          file,
+          readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+        }),
+      ).toMatchObject({ outcome: "ok", value: { kind } });
+    },
+  );
+
+  it("reads a JavaScript source a tsconfig checks with checkJs", () => {
+    const file = repoPathOf("src/example.mjs");
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: textsDisk({
+          root: "/repo",
+          texts: { "tsconfig.json": '{"compilerOptions":{"checkJs":true}}' },
+        }),
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({
+        file,
+        readText: vi.fn().mockReturnValue({ outcome: "ok", value: "export const a = 1;\n" }),
+      }),
+    ).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
+  });
+
+  it("emits a JSDoc cast in a checked JavaScript file from the start of its JSDoc", () => {
+    const file = repoPathOf("src/casts.js");
+    const source = "// @ts-check\nuse(/** @type {Category} */ (rawText));\n";
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+    const selected = prepared.value.prepareFile({
+      file,
+      readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selected.outcome === "ok");
+    assert(selected.value.kind === "syntax");
+    const tree = SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true);
+    const anchorAt = vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 2, column: 4 });
+    const observers = selected.value.begin({ sourceFile: tree, anchorAt });
+
+    observers.enter?.({
+      node: statementCast({ tree, index: 0 }).getChildAt(2, tree).getChildAt(0, tree),
+    });
+
+    expect(observers.finish()).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 2, column: 4 },
+        snippet: "/** @type {Category} */ (rawText)); ",
+      },
+    ]);
+    expect(anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 17 });
   });
 
   it("emits an arbitrary cast with its owned clause, supplied anchor and eighty-character snippet", () => {

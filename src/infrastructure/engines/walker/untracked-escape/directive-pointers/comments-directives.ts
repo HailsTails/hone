@@ -3,17 +3,11 @@ import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
+import { checkedSourceOf } from "../../runner/pieces/checked-source.ts";
 import { stringListCheckSettings } from "../../runner/pieces/piece-check-settings.ts";
-import { folderScope } from "../../runner/pieces/source-scope.ts";
 import { typeDirectiveReaderFor } from "../../runner/pieces/type-directives.ts";
 import type { PieceHit, SourceObservers, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
-
-const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
-  if (!request.file.endsWith(".ts") && !request.file.endsWith(".tsx")) return "excluded";
-  if (folderScope({ file: request.file }) === "generated") return "excluded";
-  return "eligible";
-};
 
 const TODO_PATTERN = /\/\/\s*TODO\b/;
 const LINTER_DIRECTIVE_PATTERN =
@@ -195,15 +189,18 @@ const sourceObserversFor = (
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => {
+  prepare: ({ bindings, repository, syntaxApi }) => {
     const settled = trackedChecksOf({ bindings });
     if (settled.outcome === "failed") return settled;
     const trackedChecks = settled.value;
+    const checkedSource = checkedSourceOf({ syntaxApi, disk: repository.disk });
     return {
       outcome: "ok",
       value: {
-        prepareFile: ({ file }) => {
-          if (sourceEligibility({ file }) === "excluded") {
+        prepareFile: (walkerFile) => {
+          const checking = checkedSource(walkerFile);
+          if (checking.outcome === "failed") return checking;
+          if (checking.value === "unchecked") {
             return { outcome: "ok", value: { kind: "skipped" } };
           }
           return {
