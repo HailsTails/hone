@@ -473,14 +473,14 @@ describe("answeredLine", () => {
     );
   });
 
-  it("names the fix and the page that shows it before the records when a debt answers and the check names one, and names no indications", () => {
+  it("names the fix and the page that shows it before the records when any answering record is a debt and the check names one, and names no indications", () => {
     expect(
       answeredLine({
         catalogue: REPORT_CATALOGUE,
-        answered: { finding: BRANCH_FINDING, by: [TEST_BODY_DEBT, NOTED_TEST_BODY_LOCATION] },
+        answered: { finding: BRANCH_FINDING, by: [NOTED_TEST_BODY_LOCATION, TEST_BODY_DEBT] },
       }),
     ).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if) answered by debt answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test`,
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if) answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test answered by debt`,
     );
   });
 
