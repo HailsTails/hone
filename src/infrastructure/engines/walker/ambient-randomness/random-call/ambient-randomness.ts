@@ -1,3 +1,4 @@
+import { parameterBinding } from "../../runner/pieces/parameter-binding.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
@@ -15,14 +16,16 @@ const randomCall = (request: {
   const callee = node.expression;
   if (!syntaxApi.isPropertyAccessExpression(callee) && !syntaxApi.isElementAccessExpression(callee))
     return undefined;
-  if (!syntaxApi.isIdentifier(callee.expression)) return undefined;
+  const receiver = callee.expression;
+  if (!syntaxApi.isIdentifier(receiver)) return undefined;
+  if (parameterBinding({ syntaxApi, node, name: receiver.text }) === "local") return undefined;
   const member = syntaxApi.isPropertyAccessExpression(callee)
     ? callee.name
     : callee.argumentExpression;
   if (!syntaxApi.isIdentifier(member) && !syntaxApi.isStringLiteralLike(member)) return undefined;
   if (syntaxApi.isElementAccessExpression(callee) && !syntaxApi.isStringLiteralLike(member))
     return undefined;
-  return RANDOM_CALLS.has(`${callee.expression.text}.${member.text}`) ? callee : undefined;
+  return RANDOM_CALLS.has(`${receiver.text}.${member.text}`) ? callee : undefined;
 };
 
 export const check: WalkerPiece = {

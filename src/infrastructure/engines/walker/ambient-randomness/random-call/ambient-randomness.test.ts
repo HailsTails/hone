@@ -143,6 +143,15 @@ describe("ambient randomness", () => {
     ).toEqual([]);
   });
 
+  it("passes a crypto parameter used as an injected randomness port", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: 'const newId = (crypto: Pick<Crypto, "randomUUID">) => crypto.randomUUID();',
+      }),
+    ).toEqual([]);
+  });
+
   it("leaves an aliased random function outside the syntax check", () => {
     expect(
       findingsIn({ file: SOURCE_FILE, source: "const { random } = Math;\nrandom();" }),

@@ -1,3 +1,4 @@
+import { parameterBinding } from "../../runner/pieces/parameter-binding.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
@@ -7,29 +8,6 @@ type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
 const PROCESS_MEMBERS = new Set(["env", "argv", "exit", "on"]);
-
-const bindingNames = ({ syntaxApi, node }: SyntaxRequest): readonly string[] => {
-  if (syntaxApi.isIdentifier(node)) return [node.text];
-  if (!syntaxApi.isObjectBindingPattern(node) && !syntaxApi.isArrayBindingPattern(node)) return [];
-  return node.elements.flatMap((element) =>
-    syntaxApi.isBindingElement(element) ? bindingNames({ syntaxApi, node: element.name }) : [],
-  );
-};
-
-const parameterBinding = (
-  request: SyntaxRequest & { readonly name: string },
-): "local" | "unbound" => {
-  const { syntaxApi, node, name } = request;
-  if (syntaxApi.isSourceFile(node)) return "unbound";
-  if (
-    syntaxApi.isFunctionLike(node) &&
-    node.parameters.some((parameter) =>
-      bindingNames({ syntaxApi, node: parameter.name }).includes(name),
-    )
-  )
-    return "local";
-  return parameterBinding({ syntaxApi, node: node.parent, name });
-};
 
 const processOrConsole = ({ syntaxApi, node }: SyntaxRequest): SyntaxNode | undefined => {
   if (!syntaxApi.isPropertyAccessExpression(node) && !syntaxApi.isElementAccessExpression(node))

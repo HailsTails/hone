@@ -15,6 +15,12 @@
       "expectedLines": []
     },
     {
+      "name": "injected crypto receiver",
+      "fileName": "src/order.ts",
+      "source": "const newId = (crypto: Pick<Crypto, \"randomUUID\">) => crypto.randomUUID();",
+      "expectedLines": []
+    },
+    {
       "name": "random function alias is outside the syntax check",
       "fileName": "src/order.ts",
       "source": "const next = Math.random;\nnext();",
