@@ -34,6 +34,8 @@ const jsDocAssertionOf = (request: {
   const { node, syntaxApi } = request;
   if (!syntaxApi.isParenthesizedExpression(node)) return undefined;
   if ((node.flags & syntaxApi.NodeFlags.JavaScriptFile) === 0) return undefined;
+  if (!syntaxApi.getJSDocCommentsAndTags(node).some((entry) => entry.parent === node))
+    return undefined;
   const type = syntaxApi.getJSDocType(node);
   return type === undefined
     ? undefined

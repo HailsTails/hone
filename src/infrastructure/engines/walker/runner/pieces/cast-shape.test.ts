@@ -250,6 +250,37 @@ describe("JSDoc type assertions", () => {
     },
   );
 
+  it.each([
+    "/** @type {Profile} */ const profile = (candidate);\n",
+    "/** @type {Profile} */ module.exports = (candidate);\n",
+    "/** @type {unknown} */ const profile = (candidate);\n",
+    "/** @type {any} */ const profile = (candidate);\n",
+  ])("reads no assertion from brackets under an annotation on their line in %s", (source) => {
+    const tree = SYNTAX_API.createSourceFile(
+      "src/casts.js",
+      source,
+      SYNTAX_API.ScriptTarget.Latest,
+      true,
+    );
+    const bracketsIn = (node: SyntaxNode): SyntaxNode | undefined =>
+      SYNTAX_API.isParenthesizedExpression(node) ? node : SYNTAX_API.forEachChild(node, bracketsIn);
+    const brackets = bracketsIn(tree);
+    assert(brackets !== undefined);
+
+    expect(assertionOf({ node: brackets, syntaxApi: SYNTAX_API })).toBeUndefined();
+  });
+
+  it("reads an assertion from brackets with their own type tag under an annotation on their line", () => {
+    const { tree, node } = argumentOf({
+      fileName: "src/casts.js",
+      source: "use(/** @type {Profile} */ (/** @type {unknown} */ (candidate)));\n",
+    });
+    const inner = assertionOf({ node, syntaxApi: SYNTAX_API })?.expression;
+    assert(inner !== undefined);
+
+    expect(assertionOf({ node: inner, syntaxApi: SYNTAX_API })?.type.getText(tree)).toBe("unknown");
+  });
+
   it("reads no assertion from a parenthesised expression without a type tag", () => {
     const { node } = argumentOf({
       fileName: "src/casts.js",
