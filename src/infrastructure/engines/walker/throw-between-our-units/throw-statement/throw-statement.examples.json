@@ -1,0 +1,30 @@
+{
+  "flag": [
+    {
+      "name": "throws in production",
+      "fileName": "src/order.ts",
+      "source": "throw new Error('unavailable');",
+      "expectedLines": [1]
+    }
+  ],
+  "allow": [
+    {
+      "name": "returns a failure value",
+      "fileName": "src/order.ts",
+      "source": "export const run = () => ({ outcome: 'failed', error: 'unavailable' });",
+      "expectedLines": []
+    },
+    {
+      "name": "test throw is already checked",
+      "fileName": "src/order.test.ts",
+      "source": "throw new Error('test failure');",
+      "expectedLines": []
+    },
+    {
+      "name": "callee body is outside the syntax check",
+      "fileName": "src/order.ts",
+      "source": "externalLookup();",
+      "expectedLines": []
+    }
+  ]
+}

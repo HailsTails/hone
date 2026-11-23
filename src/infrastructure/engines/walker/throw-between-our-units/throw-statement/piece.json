@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "anchor": {
+    "kind": "file"
+  },
+  "settings": {
+    "module": "throws-in-production.ts"
+  }
+}
