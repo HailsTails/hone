@@ -3,7 +3,7 @@
 ```json
 {
   "group": "Names, prose and files",
-  "seen": "One domain concept named two or more ways across the code or the wire.",
+  "seen": "One concept named two or more ways across the code or the wire.",
   "mayIndicate": [
     {
       "case": "names-something",
@@ -17,7 +17,8 @@
   ],
   "breachUsuallySits": "in the vocabulary",
   "seenBy": [
-    "person"
+    "person",
+    "syntax"
   ],
   "reports": "seen",
   "recipes": [
