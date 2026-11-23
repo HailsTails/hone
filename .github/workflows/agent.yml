@@ -14,15 +14,16 @@ env:
   ANTHROPIC_API: https://api.anthropic.com/v1
   ANTHROPIC_VERSION: 2026-10-21
   ANTHROPIC_BETA: managed-agents-2026-04-01
-  AGENT_MODEL: claude-sonnet-5-5
-  BUDGET_CENTS: '500'
+  AGENT_MODEL: claude-opus-5-5
+  BUDGET_CENTS: '1500'
+  MODE: ${{ github.event.label.name }}
   ISSUE_NUMBER: ${{ github.event.issue.number }}
   AGENT_BRANCH: agent/issue-${{ github.event.issue.number }}
 
 jobs:
   agent:
     name: Managed agent works the issue
-    if: github.event.label.name == 'claude' && github.event.sender.login == github.repository_owner
+    if: contains(fromJSON('["claude", "claude-triage"]'), github.event.label.name) && github.event.sender.login == github.repository_owner
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions: {}
@@ -37,7 +38,7 @@ jobs:
           client-id: Iv23liOdEzeYFi4AjZwp
           private-key: ${{ secrets.RIN_AUTHOR_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
-          permission-contents: write
+          permission-contents: ${{ github.event.label.name == 'claude' && 'write' || 'read' }}
 
       - name: Start the session
         id: session
@@ -61,7 +62,8 @@ jobs:
             echo "$response"
           }
           workspace="/workspace/$REPOSITORY_NAME"
-          system=$(cat <<EOF
+          if [ "$MODE" = claude ]; then
+            system=$(cat <<EOF
           You work on one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main.
           Read AGENTS.md there and follow it, with these exceptions for this run:
           - Work on a new branch named $AGENT_BRANCH and push it to origin yourself. Do not open a pull request.
@@ -71,7 +73,20 @@ jobs:
           If you cannot finish with a green check, push nothing and say why in your last message.
           Your last message is the pull request description: what changed and why, in a few short lines.
           EOF
-          )
+            )
+          else
+            system=$(cat <<EOF
+          You triage one issue of the $REPOSITORY_NAME repository, checked out at $workspace on main. Read AGENTS.md there.
+          Change nothing, commit nothing, push nothing.
+          Decide from the code on main, its tests and git history whether the issue still applies.
+          Your last message is the triage, at most eight short lines, starting with one verdict:
+          - Still applies: what is still wrong, with file paths, and whether a one-PR fix is clear enough to hand to an agent.
+          - Already fixed: the commit or file that fixed it.
+          - Obsolete: why version 2 no longer has the problem, with file paths.
+          - Needs Helen: the one decision that blocks it.
+          EOF
+            )
+          fi
           agent_id=$(jq -n --arg name "hone-issue-$ISSUE_NUMBER" --arg model "$AGENT_MODEL" --arg system "$system" \
             '{name: $name, model: $model, system: $system, tools: [{type: "agent_toolset_20260401"}]}' \
             | anthropic agents | jq -r .id)
@@ -163,10 +178,11 @@ jobs:
             gh issue comment "$ISSUE_NUMBER" --body "Draft pull request: $pull_request"$'\n\n'"$outcome"
           else
             comment_file="$RUNNER_TEMP/comment.md"
-            { echo "The agent pushed no branch."; echo; cat "$RUNNER_TEMP/summary.md"; echo; cat "$RUNNER_TEMP/errors.txt"; echo; echo "$outcome"; } > "$comment_file"
+            if [ "$MODE" = claude ]; then heading="The agent pushed no branch."; else heading="**Agent triage**"; fi
+            { echo "$heading"; echo; cat "$RUNNER_TEMP/summary.md"; echo; cat "$RUNNER_TEMP/errors.txt"; echo; echo "$outcome"; } > "$comment_file"
             gh issue comment "$ISSUE_NUMBER" --body-file "$comment_file"
           fi
-          gh issue edit "$ISSUE_NUMBER" --remove-label claude
+          gh issue edit "$ISSUE_NUMBER" --remove-label "$MODE"
 
       - name: Clean up the agent and environment
         if: always() && steps.session.outputs.agent_id != ''
