@@ -348,6 +348,20 @@ describe("loadFailureText, a rule set left in the version 1 layout", () => {
   });
 });
 
+describe("loadFailureText, a check two rule sets hold", () => {
+  it("names the check and both rule sets", () => {
+    expect(
+      loadFailureText({
+        failure: {
+          kind: "rule-sets-share-a-check",
+          check: "loop-keyword#loops",
+          ruleSets: ["hone", "acme"],
+        },
+      }),
+    ).toBe("load failure: rule-sets-share-a-check loop-keyword#loops hone acme\n");
+  });
+});
+
 describe("loadFailureText, a rule set an upgrade stopped part way through", () => {
   it("names the rule set's folder and each version 1 file left in it", () => {
     expect(

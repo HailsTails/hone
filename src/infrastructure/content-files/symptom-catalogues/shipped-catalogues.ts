@@ -22,6 +22,7 @@ export const shippedCataloguesOf = (request: {
     ruleSetRoot: request.installRoot,
     ruleSet: TOOL_RULE_SET,
     installRoot: request.installRoot,
+    inheritedRecordKinds: [],
   });
   if (holding.outcome === "failed") {
     return holding;

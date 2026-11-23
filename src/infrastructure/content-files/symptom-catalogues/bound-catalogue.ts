@@ -4,7 +4,10 @@ import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { BoundCatalogueOf } from "../../../application/ports/symptom-catalogue-repository.ts";
 import { holdingBoundTo } from "../../../domain/language-layer/catalogue-binding.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
-import type { CatalogueHolding } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type {
+  CatalogueHolding,
+  RecordKind,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -20,6 +23,7 @@ type BoundCatalogueSource = {
   readonly ruleSetRoot: AbsolutePath;
   readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
+  readonly inheritedRecordKinds: readonly RecordKind[];
   readonly upgradeNames?: VersionOneNames;
 };
 

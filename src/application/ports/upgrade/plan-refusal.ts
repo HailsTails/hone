@@ -3,7 +3,7 @@ import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-ref
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
-import type { TeamDefinitionAddress } from "./version-one-team-layout.ts";
+import type { SpecifierRefusal, TeamDefinitionAddress } from "./version-one-team-layout.ts";
 
 export type ConfigImportRefusal =
   | {
@@ -74,6 +74,18 @@ export type TeamNameMissing =
       readonly namesFile: RepoPath;
     };
 
+export type PieceFolderSplitFault =
+  | {
+      readonly fault: "module-shared";
+      readonly module: RepoPath;
+      readonly clauses: readonly ClauseAddress[];
+    }
+  | {
+      readonly fault: SpecifierRefusal["reason"];
+      readonly file: RepoPath;
+      readonly line: number;
+    };
+
 export type PlanRefusal =
   | Unanswered
   | { readonly kind: "team-names-missing"; readonly missing: readonly TeamNameMissing[] }
@@ -81,7 +93,7 @@ export type PlanRefusal =
   | {
       readonly kind: "piece-folder-unsplittable";
       readonly folder: RepoPath;
-      readonly file: RepoPath;
+      readonly split: PieceFolderSplitFault;
     }
   | ProjectionFailure
   | ReplacementRefusal

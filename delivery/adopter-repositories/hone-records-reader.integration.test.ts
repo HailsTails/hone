@@ -190,6 +190,7 @@ const scratch = createDefaultScratchFilesPort({});
 
 const holding = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   directory: createDefaultDirectoryPort({}),
   fileText,
   path,

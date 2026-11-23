@@ -1,6 +1,7 @@
 import type {
   CatalogueHolding,
   ContentHolding,
+  RecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
@@ -19,4 +20,5 @@ export type BoundCatalogueOf = (request: {
   readonly ruleSetRoot: AbsolutePath;
   readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
+  readonly inheritedRecordKinds: readonly RecordKind[];
 }) => Result<CatalogueHolding, VersionTwoLoadFailure>;

@@ -3,6 +3,7 @@ import type { VersionOneReadFailure } from "../../../application/ports/records/v
 import type {
   ConfigImportRefusal,
   PairingRefusal,
+  PieceFolderSplitFault,
   PlanRefusal,
   TeamConfigRefusal,
   TeamNameMissing,
@@ -191,6 +192,21 @@ const teamNameMissingLineOf = (request: { readonly missing: TeamNameMissing }): 
   }
 };
 
+const pieceFolderSplitLineOf = (request: {
+  readonly folder: RepoPath;
+  readonly split: PieceFolderSplitFault;
+}): string => {
+  const { folder, split } = request;
+  switch (split.fault) {
+    case "module-shared":
+      return `one module, ${folder}/${split.module}, serves ${split.clauses.map((address) => clauseAddressText({ address })).join(", ")}, which version 2 makes separate checks, and a module moves to one check only. Give each clause a module of its own, then run the upgrade again.`;
+    case "specifier-not-literal":
+      return `${split.file}:${split.line} names a module with an expression rather than a string, so the upgrade cannot point it at where the files of ${folder} move. Write the path as a string, then run the upgrade again.`;
+    case "target-not-moved":
+      return `${split.file}:${split.line} imports a file of ${folder} that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.`;
+  }
+};
+
 const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly string[] => {
   const { refusal } = request;
   switch (refusal.kind) {
@@ -220,9 +236,7 @@ const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly strin
         `Write each in the names file, with the facts docs/extending.md gives each kind, then run the upgrade again.`,
       ];
     case "piece-folder-unsplittable":
-      return [
-        `the version 1 piece folder ${refusal.folder} is shared by several clauses, and splitting it between their checks would mean editing more of ${refusal.file} than its import specifiers. Give each clause a piece folder of its own, then run the upgrade again.`,
-      ];
+      return [pieceFolderSplitLineOf({ folder: refusal.folder, split: refusal.split })];
     case "rule-set-path-unplaceable":
       return [
         `the upgrade would write ${refusal.path}, which is not a path inside the repository. ${FAULT_IN_HONE}`,

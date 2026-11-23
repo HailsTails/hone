@@ -1,5 +1,6 @@
 import type { AnchorKind } from "../../../domain/finding/anchor.ts";
 import type { CheckNames } from "../../../domain/language-layer/check-address-text.ts";
+import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure } from "../../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -28,13 +29,20 @@ export type VersionOnePiece = {
   readonly files: readonly PieceFolderFile[];
 };
 
+export type SpecifierRefusal = {
+  readonly reason: "specifier-not-literal" | "target-not-moved";
+  readonly line: number;
+};
+
 export type ImportsRewrittenOf = (request: {
   readonly text: string;
   readonly file: RepoPath;
   readonly movedTo: RepoPath;
   readonly folder: RepoPath;
   readonly moved: ReadonlyMap<RepoPath, RepoPath>;
-}) => Result<string, "beyond-import-specifiers">;
+}) => Result<string, SpecifierRefusal>;
+
+export type ImportsRewriterOf = () => Promise<Result<ImportsRewrittenOf, LoadFailure>>;
 
 export type ClauseNaming =
   | { readonly naming: "named"; readonly check: CheckNames; readonly title: string }
@@ -74,6 +82,11 @@ export type VersionOneTeamLayout = {
 
 export type ItemTextOf = (request: { readonly title: string; readonly facts: unknown }) => string;
 
+export type TeamRuleSetsRequest = {
+  readonly selection: ConsumerSelectionFile;
+  readonly toolRecordKinds: readonly RecordKind[];
+};
+
 export type VersionOneTeamLayoutsOf = (
-  selection: ConsumerSelectionFile,
+  request: TeamRuleSetsRequest,
 ) => Result<readonly VersionOneTeamLayout[], LoadFailure>;

@@ -41,6 +41,7 @@ const pluginAt = async (request: {
     ruleSetRoot: request.installRoot,
     ruleSet: TOOL_RULE_SET,
     installRoot: request.installRoot,
+    inheritedRecordKinds: [],
   });
   if (catalogue.outcome === "failed") {
     return { outcome: "failed", error: loadFailureText({ failure: catalogue.error }) };

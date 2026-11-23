@@ -683,19 +683,74 @@ Nothing was changed.
     },
   },
   {
-    name: "a version 1 piece folder shared by several clauses cannot be split by its import specifiers alone",
+    name: "one version 1 module serves clauses that become separate checks",
     failure: {
       kind: "plan-refused",
       refusal: {
         kind: "piece-folder-unsplittable",
         folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
-        file: repoPathOf("acme/mechanisms/audit/ACME-2/drafts.ts"),
+        split: {
+          fault: "module-shared",
+          module: repoPathOf("scratch.ts"),
+          clauses: [
+            {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-2"),
+              clause: clauseIdOf("draft-files"),
+            },
+            {
+              ruleSet: { name: ruleSetNameOf("acme") },
+              discipline: disciplineIdOf("ACME-2"),
+              clause: clauseIdOf("scratch-files"),
+            },
+          ],
+        },
       },
       removedByVersionOne: [],
     },
     outcome: {
       code: 1,
-      text: "upgrade refused:\nthe version 1 piece folder acme/mechanisms/audit/ACME-2 is shared by several clauses, and splitting it between their checks would mean editing more of acme/mechanisms/audit/ACME-2/drafts.ts than its import specifiers. Give each clause a piece folder of its own, then run the upgrade again.\nNothing was changed.\n",
+      text: "upgrade refused:\none module, acme/mechanisms/audit/ACME-2/scratch.ts, serves acme/ACME-2#draft-files, acme/ACME-2#scratch-files, which version 2 makes separate checks, and a module moves to one check only. Give each clause a module of its own, then run the upgrade again.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "a moved file names a module with an expression",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "piece-folder-unsplittable",
+        folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
+        split: {
+          fault: "specifier-not-literal",
+          file: repoPathOf("acme/mechanisms/audit/ACME-2/drafts.ts"),
+          line: 4,
+        },
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nacme/mechanisms/audit/ACME-2/drafts.ts:4 names a module with an expression rather than a string, so the upgrade cannot point it at where the files of acme/mechanisms/audit/ACME-2 move. Write the path as a string, then run the upgrade again.\nNothing was changed.\n",
+    },
+  },
+  {
+    name: "a moved file imports a file of its folder that is not there",
+    failure: {
+      kind: "plan-refused",
+      refusal: {
+        kind: "piece-folder-unsplittable",
+        folder: repoPathOf("acme/mechanisms/audit/ACME-2"),
+        split: {
+          fault: "target-not-moved",
+          file: repoPathOf("acme/mechanisms/audit/ACME-2/drafts.ts"),
+          line: 2,
+        },
+      },
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nacme/mechanisms/audit/ACME-2/drafts.ts:2 imports a file of acme/mechanisms/audit/ACME-2 that is not there, so the upgrade cannot point it at where the folder's files move. Fix or remove the import, then run the upgrade again.\nNothing was changed.\n",
     },
   },
   {

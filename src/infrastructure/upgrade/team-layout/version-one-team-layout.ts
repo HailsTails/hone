@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
@@ -9,6 +11,7 @@ import type {
 } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
 import { SYMPTOM_CATALOGUE_SEGMENTS } from "../../../domain/language-layer/symptom-catalogue-location.ts";
+import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
@@ -40,8 +43,6 @@ import {
   versionOneNamesOf,
   type VersionOneNames,
 } from "../../disciplines-file/version-one-names.ts";
-import { eslintPieceSettingsSchema } from "../../engines/eslint/runner/pieces/eslint-piece-settings-schema.ts";
-import { walkerPieceSettingsSchema } from "../../engines/walker/runner/pieces/walker-check-schema.ts";
 import { disciplineIdSchema } from "../../hone-config-file/identifiers.ts";
 import { ruleSetRootOf } from "../../hone-config-file/rule-set-root.ts";
 import { readVersionTwoNames, VERSION_TWO_NAMES_FILE } from "./version-two-names.ts";
@@ -52,6 +53,7 @@ export type TeamLayoutSources = {
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
+  readonly toolRecordKinds: readonly RecordKind[];
 };
 
 export type TeamRuleSet = { readonly name: RuleSetName; readonly location: RuleSetLocation };
@@ -205,14 +207,16 @@ const folderFilesOf = (
   return files.outcome === "failed" ? files : { outcome: "ok", value: files.value.flat() };
 };
 
+const PIECE_MODULE_SETTINGS: Readonly<Record<EngineId, z.ZodType<string>>> = {
+  walker: z.looseObject({ module: z.string() }).transform(({ module }) => module),
+  eslint: z.looseObject({ pluginModule: z.string() }).transform(({ pluginModule }) => pluginModule),
+};
+
 const moduleOf = (request: {
   readonly mechanism: EngineId;
   readonly settings: unknown;
 }): RepoPath | undefined => {
-  const module =
-    request.mechanism === "walker"
-      ? walkerPieceSettingsSchema.safeParse(request.settings).data?.module
-      : eslintPieceSettingsSchema.safeParse(request.settings).data?.pluginModule;
+  const module = PIECE_MODULE_SETTINGS[request.mechanism].safeParse(request.settings).data;
   return module !== undefined && isRepoPath(module) ? module : undefined;
 };
 
@@ -474,6 +478,7 @@ const layoutsNeededOf = (request: PlacedTeamRuleSet): Read<readonly VersionOneTe
     ...request,
     ruleSetRoot: request.root,
     ruleSet: { name: request.ruleSet.name },
+    inheritedRecordKinds: request.toolRecordKinds,
   });
   if (held.outcome === "ok") {
     return held.value.held === "catalogue"

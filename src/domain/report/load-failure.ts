@@ -15,6 +15,11 @@ export type LoadFailure =
   | { readonly kind: "reserved-rule-set-name"; readonly name: string }
   | { readonly kind: "rule-set-name-collision"; readonly name: string; readonly other: string }
   | {
+      readonly kind: "rule-sets-share-a-check";
+      readonly check: string;
+      readonly ruleSets: readonly [string, string];
+    }
+  | {
       readonly kind: "duplicate-clause";
       readonly address: string;
       readonly prefixedAddress: string;

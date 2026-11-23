@@ -11,7 +11,6 @@ import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { RuleSetIdentity } from "../../../domain/rule-set/clause-address-types.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import {
   NO_VERSION_ONE_NAMES,
   readVersionOneNames,
@@ -30,6 +29,7 @@ type CatalogueSource = {
   readonly ruleSetRoot: AbsolutePath;
   readonly ruleSet: RuleSetIdentity;
   readonly installRoot: AbsolutePath;
+  readonly inheritedRecordKinds: readonly RecordKind[];
   readonly upgradeNames?: VersionOneNames;
 };
 
@@ -91,29 +91,6 @@ const refusedWhenVersionOne = (
     : { outcome: "ok", value: request.holding };
 };
 
-const inheritedRecordKindsOf = (
-  request: CatalogueSource,
-): Result<readonly RecordKind[], VersionTwoLoadFailure> => {
-  if (request.ruleSetRoot === request.installRoot) {
-    return { outcome: "ok", value: [] };
-  }
-  const tool = readSymptomCatalogue({
-    fileText: request.fileText,
-    directory: request.directory,
-    path: request.path,
-    ruleSetRoot: request.installRoot,
-    ruleSet: TOOL_RULE_SET,
-    installRoot: request.installRoot,
-  });
-  if (tool.outcome === "failed") {
-    return tool;
-  }
-  return {
-    outcome: "ok",
-    value: tool.value.held === "catalogue" ? tool.value.content.recordKinds : [],
-  };
-};
-
 const readSymptomCatalogue = (
   request: CatalogueSource,
 ): Result<ContentHolding, VersionTwoLoadFailure> => {
@@ -142,10 +119,6 @@ const readSymptomCatalogue = (
   if (request.fileText.exists({ path: root.data }) === "absent") {
     return { outcome: "ok", value: { held: "none" } };
   }
-  const inherited = inheritedRecordKindsOf(request);
-  if (inherited.outcome === "failed") {
-    return inherited;
-  }
   const beside = {
     engines: ENGINE_REGISTRY,
     clauses: clauses.value,
@@ -159,7 +132,7 @@ const readSymptomCatalogue = (
     root: root.data,
     ruleSet: request.ruleSet,
     beside,
-    inheritedRecordKinds: inherited.value,
+    inheritedRecordKinds: request.inheritedRecordKinds,
     symptomSourcePrefix:
       request.ruleSetRoot === request.installRoot
         ? undefined

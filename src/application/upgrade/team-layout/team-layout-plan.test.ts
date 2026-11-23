@@ -19,7 +19,9 @@ const itemTextOf = (request: { readonly title: string; readonly facts: unknown }
 
 const FIRST = editionOf("1");
 
-const importsUnchanged = vi.fn<ImportsRewrittenOf>();
+const importsRewritten = vi
+  .fn<ImportsRewrittenOf>()
+  .mockReturnValue({ outcome: "ok", value: "rewritten\n" });
 
 const CONSOLE_CLAUSE = {
   ruleSet: { name: ruleSetNameOf("acme") },
@@ -124,7 +126,7 @@ const LAYOUT: VersionOneTeamLayout = {
 };
 
 const planOf = (layouts: readonly VersionOneTeamLayout[]) =>
-  teamLayoutPlanOf({ layouts, toolChecks: [], itemTextOf, importsRewrittenOf: importsUnchanged });
+  teamLayoutPlanOf({ layouts, toolChecks: [], itemTextOf, importsRewrittenOf: importsRewritten });
 
 const SHARED_FOLDER = repoPathOf("acme/mechanisms/eslint/ACME-1");
 
@@ -179,7 +181,7 @@ const MOVED = new Map([
 ]);
 
 describe("teamLayoutPlanOf", () => {
-  it("writes the team's definitions, the symptom seen as its clauses' summaries, a check per clause, and each piece's whole folder with its examples, and removes the version 1 files and the folders they leave deepest first", () => {
+  it("writes the team's definitions, the symptom seen as its clauses' summaries, a check per clause, and each piece's folder through the import rewriter with its examples, and removes the version 1 files and the folders they leave deepest first", () => {
     expect(planOf([LAYOUT])).toEqual({
       outcome: "ok",
       value: {
@@ -211,11 +213,11 @@ describe("teamLayoutPlanOf", () => {
           },
           {
             file: "acme/engines/eslint/direct-console/console-calls/plugin.ts",
-            text: "export default {};\n",
+            text: "rewritten\n",
           },
           {
             file: "acme/engines/eslint/direct-console/console-calls/helpers/names.ts",
-            text: "export const names = [];\n",
+            text: "rewritten\n",
           },
         ],
         removed: [
@@ -243,7 +245,7 @@ describe("teamLayoutPlanOf", () => {
         layouts: [{ ...LAYOUT, location: { location: "repo-root" }, clauses: [] }],
         toolChecks: [],
         itemTextOf,
-        importsRewrittenOf: importsUnchanged,
+        importsRewrittenOf: importsRewritten,
       }),
     ).toMatchObject({
       outcome: "ok",
@@ -276,7 +278,7 @@ describe("teamLayoutPlanOf", () => {
         ],
         toolChecks: [],
         itemTextOf,
-        importsRewrittenOf: importsUnchanged,
+        importsRewrittenOf: importsRewritten,
       }),
     ).toEqual({
       outcome: "failed",
@@ -306,7 +308,7 @@ describe("teamLayoutPlanOf", () => {
         layouts: [{ ...LAYOUT, definitions: [PRINCIPLE, CASE] }],
         toolChecks: [],
         itemTextOf,
-        importsRewrittenOf: importsUnchanged,
+        importsRewrittenOf: importsRewritten,
       }),
     ).toEqual({
       outcome: "failed",
@@ -366,7 +368,7 @@ describe("teamLayoutPlanOf", () => {
     });
   });
 
-  it("refuses a shared piece folder whose files cannot be split by rewriting import specifiers alone, naming the folder and the file", () => {
+  it("refuses a shared piece folder whose imports the rewriter cannot follow, naming the folder, the file and the line", () => {
     expect(
       teamLayoutPlanOf({
         layouts: [SHARING_LAYOUT],
@@ -374,14 +376,18 @@ describe("teamLayoutPlanOf", () => {
         itemTextOf,
         importsRewrittenOf: vi
           .fn<ImportsRewrittenOf>()
-          .mockReturnValue({ outcome: "failed", error: "beyond-import-specifiers" }),
+          .mockReturnValue({ outcome: "failed", error: { reason: "target-not-moved", line: 2 } }),
       }),
     ).toEqual({
       outcome: "failed",
       error: {
         kind: "piece-folder-unsplittable",
         folder: "acme/mechanisms/eslint/ACME-1",
-        file: "acme/mechanisms/eslint/ACME-1/plugin.ts",
+        split: {
+          fault: "target-not-moved",
+          file: "acme/mechanisms/eslint/ACME-1/plugin.ts",
+          line: 2,
+        },
       },
     });
   });
@@ -392,7 +398,7 @@ describe("teamLayoutPlanOf", () => {
         layouts: [LAYOUT],
         toolChecks: ["direct-console#console-calls"],
         itemTextOf,
-        importsRewrittenOf: importsUnchanged,
+        importsRewrittenOf: importsRewritten,
       }),
     ).toEqual({
       outcome: "failed",

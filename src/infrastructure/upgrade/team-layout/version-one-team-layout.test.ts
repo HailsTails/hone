@@ -7,6 +7,7 @@ import type {
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { VersionOneTeamClause } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { catalogueNameOf } from "../../../domain/language-layer/catalogue-name.ts";
+import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
@@ -57,20 +58,17 @@ const FILES: Readonly<Record<string, string>> = {
   "/repo/acme/mechanisms/audit/ACME-1/helpers/pattern.ts": HELPER,
 };
 
-const HONE_INSTALL: Readonly<Record<string, string>> = {
-  "/install/src/infrastructure/disciplines-file/version-one-names.json":
-    '{ "version": 1, "clauses": [], "recordKinds": { "authorised-location": "authorised-location", "debt": "file-carve-out" } }',
-  "/install/rules/record-kinds/authorised-location.md":
-    '# Authorised location\n\n```json\n{ "phrase": "an authorised location" }\n```\n',
-  "/install/rules/record-kinds/debt.md": '# Debt\n\n```json\n{ "phrase": "debt" }\n```\n',
-};
+const TOOL_RECORD_KINDS: readonly RecordKind[] = [
+  {
+    name: "authorised-location",
+    title: "Authorised location",
+    phrase: "an authorised location",
+    todaysFormat: "authorised-location",
+  },
+  { name: "debt", title: "Debt", phrase: "debt", todaysFormat: "file-carve-out" },
+];
 
 const LISTINGS: Readonly<Record<string, readonly DirectoryEntry[]>> = {
-  "/install/rules": [{ name: "record-kinds", kind: "directory" }],
-  "/install/rules/record-kinds": [
-    { name: "authorised-location.md", kind: "file" },
-    { name: "debt.md", kind: "file" },
-  ],
   "/repo/acme": [
     { name: "mechanisms", kind: "directory" },
     { name: "rules", kind: "directory" },
@@ -89,7 +87,7 @@ const sourcesListing = (request: {
   readonly files: Readonly<Record<string, string>>;
   readonly listings: Readonly<Record<string, readonly DirectoryEntry[]>>;
 }) => {
-  const files = { ...HONE_INSTALL, ...request.files };
+  const { files } = request;
   const listings = { ...LISTINGS, ...request.listings };
   const fileText: FileTextPort = {
     exists: ({ path }) => (path in files || path in listings ? "present" : "absent"),
@@ -105,7 +103,14 @@ const sourcesListing = (request: {
     list: ({ path }) => ({ outcome: "ok", value: listings[path] ?? [] }),
     create: vi.fn<DirectoryPort["create"]>(),
   };
-  return { fileText, directory, path: PATH, repoRoot: REPO, installRoot: INSTALL };
+  return {
+    fileText,
+    directory,
+    path: PATH,
+    repoRoot: REPO,
+    installRoot: INSTALL,
+    toolRecordKinds: TOOL_RECORD_KINDS,
+  };
 };
 
 const sourcesHolding = (files: Readonly<Record<string, string>>) =>

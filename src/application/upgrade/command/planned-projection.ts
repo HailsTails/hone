@@ -68,6 +68,7 @@ const settingsReadingOf = (
     repoRoot,
     installRoot,
     moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
+    toolRecordKinds: catalogue.recordKinds,
   };
   const read = readNamedSettingsFile({
     sources: request.settingsSourcesOf(at),

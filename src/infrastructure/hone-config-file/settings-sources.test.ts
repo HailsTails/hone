@@ -118,6 +118,7 @@ const sourcesOver = (request: { readonly files: Readonly<Record<string, string>>
     repoRoot: REPO_ROOT,
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
+    toolRecordKinds: [],
     fileText: inMemoryFileText({ files: request.files }),
     path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   });
@@ -248,6 +249,7 @@ describe("createSettingsSources", () => {
       repoRoot: REPO_ROOT,
       installRoot: INSTALL_ROOT,
       moduleExtension: ".ts",
+      toolRecordKinds: [],
       fileText: {
         read: vi.fn<FileTextPort["read"]>(),
         exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),

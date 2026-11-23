@@ -177,6 +177,7 @@ type ToolFailure = Extract<
       | "reserved-rule-set-name"
       | "unknown-rule-set"
       | "rule-set-name-collision"
+      | "rule-sets-share-a-check"
       | "config-root-untracked"
       | "config-absent"
       | "settings-in-both-versions"
@@ -243,6 +244,11 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
       return [failure.name];
     case "rule-set-name-collision":
       return [failure.name, failure.other];
+    case "rule-sets-share-a-check":
+      return [
+        `${failure.check}:`,
+        `rule sets ${failure.ruleSets.join(" and ")} both hold this check, so its findings and records would be credited to the wrong one; rename the check in one of them`,
+      ];
     case "config-root-untracked":
       return [`${failure.root}:`, CONFIG_ROOT_REPAIR];
     case "config-absent":
@@ -375,6 +381,7 @@ const failureFields = (request: {
     case "reserved-rule-set-name":
     case "unknown-rule-set":
     case "rule-set-name-collision":
+    case "rule-sets-share-a-check":
     case "config-root-untracked":
     case "config-absent":
     case "settings-in-both-versions":

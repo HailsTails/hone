@@ -1,5 +1,6 @@
 import type { UpgradeArguments } from "../application/ports/command/command-arguments.ts";
 import type { RepositoryLocated } from "../application/ports/command/repository-located.ts";
+import { moduleExtensionOf } from "../application/ports/host/module-extension.ts";
 import type { ProofWritten } from "../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeCarriedOver } from "../application/ports/upgrade/upgrade-carried-over.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
@@ -15,12 +16,11 @@ import { recordsOnDiskOf } from "../infrastructure/discipline-exceptions-folder/
 import { readRunSettings } from "../infrastructure/disciplines-file/consumer-selection.ts";
 import { versionOneReadOf } from "../infrastructure/disciplines-file/version-one-reading.ts";
 import { measureVersionOneProjection } from "../infrastructure/engines/protocol/engine-run/engine-run.ts";
-import { createPathPort } from "../infrastructure/node/path-port.ts";
+import { createImportsRewriterOf } from "../infrastructure/engines/protocol/upgrade/load-imports-rewriter.ts";
 import {
   ALREADY_ON_VERSION_TWO,
   upgradeSuccessOutcomeOf,
 } from "../infrastructure/printed-report/upgrade/upgrade-success-text.ts";
-import { createImportsRewrittenOf } from "../infrastructure/upgrade/team-layout/moved-imports.ts";
 import { versionOneTeamLayoutsOf } from "../infrastructure/upgrade/team-layout/version-one-team-layout.ts";
 import {
   type UpgradeInput,
@@ -80,25 +80,28 @@ const upgradeInputOf = (request: Placed): UpgradeInput => {
         path,
         installRoot: located.installRoot,
       }),
-    externalCataloguesOf: (selection) =>
+    externalCataloguesOf: (teamRuleSets) =>
       upgradeRuleSetCataloguesOf({
         ...located,
+        ...teamRuleSets,
         fileText,
         directory: ports.directory,
         path,
-        selection,
       }),
-    versionOneTeamLayoutsOf: (selection) =>
+    versionOneTeamLayoutsOf: (teamRuleSets) =>
       versionOneTeamLayoutsOf({
         ...located,
+        ...teamRuleSets,
         fileText,
         directory: ports.directory,
         path,
-        selection,
       }),
     itemTextOf: itemTextFrom,
-    importsRewrittenOf: createImportsRewrittenOf({
-      path: createPathPort({ flavour: "posix", workingDirectory: () => "/" }),
+    importsRewriterOf: createImportsRewriterOf({
+      modules: ports.modules,
+      path,
+      installRoot: located.installRoot,
+      moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
     }),
     recordsOnDiskOf: ({ repoRoot }) =>
       recordsOnDiskOf({ repoRoot, fileText, directory: ports.directory }),

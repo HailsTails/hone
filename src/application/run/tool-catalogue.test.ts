@@ -65,6 +65,7 @@ describe("toolCatalogueOf", () => {
       ruleSetRoot: INSTALL,
       ruleSet: "hone",
       installRoot: INSTALL,
+      inheritedRecordKinds: [],
     });
   });
 

@@ -1,6 +1,7 @@
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../../application/ports/host/path-port.ts";
+import type { RecordKind } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
@@ -28,6 +29,7 @@ type Sources = {
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
   readonly selection: ConsumerSelectionFile;
+  readonly toolRecordKinds: readonly RecordKind[];
 };
 
 type PlacedRuleSet = Sources & { readonly ruleSet: TeamRuleSet; readonly root: AbsolutePath };
@@ -55,6 +57,7 @@ const catalogueAt = (
     ...request,
     ruleSet,
     ruleSetRoot: root.value,
+    inheritedRecordKinds: request.toolRecordKinds,
     upgradeNames: names.value,
   });
   if (held.outcome === "failed") return held;

@@ -22,8 +22,9 @@ import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.t
 import type { MeasureVersionOneProjection } from "../../application/ports/upgrade/version-one-measurement.ts";
 import type { VersionOneProjectionPortOf } from "../../application/ports/upgrade/version-one-projection-port.ts";
 import type {
-  ImportsRewrittenOf,
+  ImportsRewriterOf,
   ItemTextOf,
+  TeamRuleSetsRequest,
   VersionOneTeamLayoutsOf,
 } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
@@ -48,6 +49,7 @@ import {
 } from "../../application/upgrade/team-layout/team-layout-plan.ts";
 import { provenWithTeamLayout } from "../../application/upgrade/team-layout/team-layout-proof.ts";
 import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
+import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../domain/result.ts";
@@ -74,11 +76,11 @@ export type UpgradeInput = {
   readonly runSettingsOf: RunSettingsOf;
   readonly catalogues: () => Result<readonly RuleSetCatalogue[], LoadFailure>;
   readonly externalCataloguesOf: (
-    selection: ConsumerSelectionFile,
+    request: TeamRuleSetsRequest,
   ) => Result<readonly RuleSetCatalogue[], LoadFailure>;
   readonly versionOneTeamLayoutsOf: VersionOneTeamLayoutsOf;
   readonly itemTextOf: ItemTextOf;
-  readonly importsRewrittenOf: ImportsRewrittenOf;
+  readonly importsRewriterOf: ImportsRewriterOf;
   readonly recordsOnDiskOf: RecordsOnDiskOf;
   readonly versionOneReadOf: VersionOneReadOf;
   readonly proofRunsOf: ProofRunsOf;
@@ -94,6 +96,11 @@ type Prepared = {
   readonly catalogues: readonly RuleSetCatalogue[];
   readonly trackedPaths: readonly RepoPath[];
 };
+
+const toolRecordKindsOf = (prepared: Prepared): readonly RecordKind[] =>
+  prepared.catalogues.flatMap(({ ruleSet, catalogue }) =>
+    ruleSet === TOOL_RULE_SET ? catalogue.recordKinds : [],
+  );
 
 const stoppedByLoad = (request: { readonly failure: LoadFailure }): Result<never, UpgradeStop> => ({
   outcome: "failed",
@@ -202,6 +209,7 @@ const proofRequestOf = (
     repoRoot: located.repoRoot,
     installRoot: located.installRoot,
     moduleExtension: prepared.check.moduleExtension,
+    toolRecordKinds: toolRecordKindsOf(prepared),
   };
   const before = createUpgradeBefore({
     measureVersionOne: request.measureVersionOne,
@@ -278,12 +286,19 @@ const withMentions = (request: {
   }),
 });
 
-const teamLayoutPlanFor = (
+const teamLayoutPlanFor = async (
   request: UpgradeInput & { readonly prepared: Prepared },
-): Result<TeamLayoutPlan, UpgradeStop> => {
-  const layouts = request.versionOneTeamLayoutsOf(request.prepared.read.reading.selection);
+): Promise<Result<TeamLayoutPlan, UpgradeStop>> => {
+  const layouts = request.versionOneTeamLayoutsOf({
+    selection: request.prepared.read.reading.selection,
+    toolRecordKinds: toolRecordKindsOf(request.prepared),
+  });
   if (layouts.outcome === "failed") {
     return stoppedByLoad({ failure: layouts.error });
+  }
+  const importsRewrittenOf = await request.importsRewriterOf();
+  if (importsRewrittenOf.outcome === "failed") {
+    return stoppedByLoad({ failure: importsRewrittenOf.error });
   }
   const plan = teamLayoutPlanOf({
     layouts: layouts.value,
@@ -291,7 +306,7 @@ const teamLayoutPlanFor = (
       .filter(({ ruleSet }) => ruleSet === TOOL_RULE_SET)
       .flatMap(({ catalogue }) => catalogue.checks.map((check) => checkAddressOf({ check }))),
     itemTextOf: request.itemTextOf,
-    importsRewrittenOf: request.importsRewrittenOf,
+    importsRewrittenOf: importsRewrittenOf.value,
   });
   return plan.outcome === "failed"
     ? {
@@ -311,7 +326,7 @@ export const upgradeOf = async (
   if (prepared.outcome === "failed") {
     return prepared;
   }
-  const plan = teamLayoutPlanFor({ ...request, prepared: prepared.value });
+  const plan = await teamLayoutPlanFor({ ...request, prepared: prepared.value });
   if (plan.outcome === "failed") {
     return plan;
   }
@@ -321,7 +336,10 @@ export const upgradeOf = async (
     repoRoot: request.located.repoRoot,
     plan: plan.value,
     cataloguesAfterWriting: () => {
-      const external = request.externalCataloguesOf(selection);
+      const external = request.externalCataloguesOf({
+        selection,
+        toolRecordKinds: toolRecordKindsOf(prepared.value),
+      });
       return external.outcome === "failed"
         ? external
         : { outcome: "ok", value: [...prepared.value.catalogues, ...external.value] };

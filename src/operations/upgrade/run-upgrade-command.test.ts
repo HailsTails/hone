@@ -10,6 +10,7 @@ import type {
 import type { RunSettingsOf } from "../../application/ports/selection/selection-repository.ts";
 import type { ProofCarriedOver } from "../../application/ports/upgrade/proof-outcome.ts";
 import type { ProofRuns, ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
+import type { ImportsRewrittenOf } from "../../application/ports/upgrade/version-one-team-layout.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
 import type { VersionTwoStages } from "../../application/run/version-two-run.ts";
 import type { LoadFailure } from "../../domain/report/load-failure.ts";
@@ -89,7 +90,9 @@ const inputWith = (request: Partial<UpgradeInput> & { readonly git: GitPort }): 
   externalCataloguesOf: () => ({ outcome: "ok", value: [] }),
   versionOneTeamLayoutsOf: () => ({ outcome: "ok", value: [] }),
   itemTextOf: vi.fn<UpgradeInput["itemTextOf"]>(),
-  importsRewrittenOf: vi.fn<UpgradeInput["importsRewrittenOf"]>(),
+  importsRewriterOf: vi
+    .fn<UpgradeInput["importsRewriterOf"]>()
+    .mockResolvedValue({ outcome: "ok", value: vi.fn<ImportsRewrittenOf>() }),
   recordsOnDiskOf: vi.fn<RecordsOnDiskOf>(),
   versionOneReadOf: vi.fn<VersionOneReadOf>(),
   proofRunsOf: vi.fn(),
@@ -220,6 +223,25 @@ describe("upgradeOf", () => {
           recordsOnDiskOf: RECORDS_ON_DISK,
           versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
           versionOneTeamLayoutsOf: () => ({ outcome: "failed", error: SELECTION_ABSENT }),
+          proofOf,
+        }),
+      ),
+    ).toEqual({ outcome: "failed", error: { stopped: "load-failed", failure: SELECTION_ABSENT } });
+    expect(proofOf).not.toHaveBeenCalled();
+  });
+
+  it("stops on the load failure of the TypeScript that rewrites moved imports, before the proof", async () => {
+    const proofOf = vi.fn<UpgradeInput["proofOf"]>();
+
+    expect(
+      await upgradeOf(
+        inputWith({
+          git: gitListing({ tracked: TRACKED }),
+          recordsOnDiskOf: RECORDS_ON_DISK,
+          versionOneReadOf: VERSION_ONE_READ_EXCLUDING_VENDOR,
+          importsRewriterOf: vi
+            .fn<UpgradeInput["importsRewriterOf"]>()
+            .mockResolvedValue({ outcome: "failed", error: SELECTION_ABSENT }),
           proofOf,
         }),
       ),

@@ -102,6 +102,8 @@ const loadFailureFields = (request: { readonly failure: LoadFailure }): readonly
       return [request.failure.address, request.failure.prefixedAddress];
     case "rule-set-name-collision":
       return [request.failure.name, request.failure.other];
+    case "rule-sets-share-a-check":
+      return [request.failure.check, ...request.failure.ruleSets];
     case "unknown-discipline":
     case "unknown-clause":
     case "judgement-clause-selected":

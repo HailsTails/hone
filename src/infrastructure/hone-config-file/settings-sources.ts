@@ -7,9 +7,11 @@ import type {
   SettingsDocument,
   SettingsSources,
 } from "../../application/ports/settings-sources.ts";
+import type { RecordKind } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
 import { parsedJson } from "../content-files/parsed-json.ts";
 import { readBoundCatalogue } from "../content-files/symptom-catalogues/bound-catalogue.ts";
@@ -24,6 +26,7 @@ type SourcesOptions = {
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
+  readonly toolRecordKinds: readonly RecordKind[];
 };
 
 const failed = (
@@ -68,11 +71,12 @@ export const createSettingsSources = (options: SourcesOptions): SettingsSources 
       ruleSetRoot: request.ruleSetRoot,
       ruleSet: request.ruleSet,
       installRoot: options.installRoot,
+      inheritedRecordKinds: request.ruleSet === TOOL_RULE_SET ? [] : options.toolRecordKinds,
     }),
 });
 
 export const createCheckPieceSource =
-  (options: Omit<SourcesOptions, "directory" | "repoRoot">): CheckPieceSource =>
+  (options: Omit<SourcesOptions, "directory" | "repoRoot" | "toolRecordKinds">): CheckPieceSource =>
   (request) => {
     const runnerPath = options.path.join({
       segments: runnerModuleSegmentsOf({

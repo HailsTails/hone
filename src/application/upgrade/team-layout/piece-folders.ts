@@ -2,7 +2,7 @@ import type { CheckNames } from "../../../domain/language-layer/check-address-te
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import { isRepoPath } from "../../../domain/repository/repo-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { ClauseId } from "../../../domain/rule-set/identifier-types.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import type { PlanRefusal } from "../../ports/upgrade/plan-refusal.ts";
 import type {
   ImportsRewrittenOf,
@@ -12,7 +12,7 @@ import type {
 import type { PlannedRepoFile } from "../proof/planned-repo-file.ts";
 
 export type PieceMember = {
-  readonly clause: ClauseId;
+  readonly clause: ClauseAddress;
   readonly check: CheckNames;
   readonly piece: VersionOnePiece;
 };
@@ -97,7 +97,11 @@ const rewrittenOf = (request: {
         error: {
           kind: "piece-folder-unsplittable",
           folder: request.folder,
-          file: destination.from,
+          split: {
+            fault: rewritten.error.reason,
+            file: destination.from,
+            line: rewritten.error.line,
+          },
         },
       }
     : { outcome: "ok", value: { file: destination.to, text: rewritten.value } };
@@ -116,7 +120,26 @@ const firstFailureOf = <Value>(
 };
 
 const byClauseName = (left: PieceMember, right: PieceMember): number =>
-  left.clause.localeCompare(right.clause);
+  left.clause.clause.localeCompare(right.clause.clause);
+
+const sharedModuleOf = (request: {
+  readonly folder: RepoPath;
+  readonly members: readonly PieceMember[];
+}): Result<undefined, PlanRefusal> => {
+  const [shared] = [...Map.groupBy(request.members, ({ piece }) => piece.module)].filter(
+    ([, members]) => members.length > 1,
+  );
+  if (shared === undefined) return { outcome: "ok", value: undefined };
+  const [module, members] = shared;
+  return {
+    outcome: "failed",
+    error: {
+      kind: "piece-folder-unsplittable",
+      folder: request.folder,
+      split: { fault: "module-shared", module, clauses: members.map(({ clause }) => clause) },
+    },
+  };
+};
 
 const folderFilesOf = (request: {
   readonly rootSegments: readonly string[];
@@ -127,16 +150,12 @@ const folderFilesOf = (request: {
   const members = request.members.toSorted(byClauseName);
   const [first] = members;
   if (first === undefined) return { outcome: "ok", value: [] };
+  const shared = sharedModuleOf({ folder: request.folder, members });
+  if (shared.outcome === "failed") return shared;
   const destinations = firstFailureOf(
     first.piece.files.map((file) => destinationOf({ ...request, members, first, file })),
   );
   if (destinations.outcome === "failed") return destinations;
-  if (members.length === 1) {
-    return {
-      outcome: "ok",
-      value: destinations.value.map(({ to, text }) => ({ file: to, text })),
-    };
-  }
   const moved = new Map(destinations.value.map(({ from, to }) => [from, to]));
   return firstFailureOf(
     destinations.value.map((destination) => rewrittenOf({ ...request, destination, moved })),

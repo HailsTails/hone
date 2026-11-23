@@ -311,7 +311,7 @@ const plannedLayoutOf = (request: {
   const folderFiles = pieceFolderFilesOf({
     rootSegments: rootSegmentsOf(request.layout),
     members: clauses.flatMap(({ clause, check, pieces }) =>
-      pieces.map((piece) => ({ clause: clause.clause, check, piece })),
+      pieces.map((piece) => ({ clause, check, piece })),
     ),
     importsRewrittenOf: request.importsRewrittenOf,
   });

@@ -566,10 +566,9 @@ describe("readNamedSettings", () => {
     expect(readSelectedSettings({ sources, settingsFormat })).toEqual({
       outcome: "failed",
       error: {
-        kind: "file-malformed",
-        path: SETTINGS_PATH,
-        detail:
-          "rule sets hone and acme both hold the check loop-keyword#loops, and a check address names one check across rule sets; rename the check in one of them",
+        kind: "rule-sets-share-a-check",
+        check: "loop-keyword#loops",
+        ruleSets: ["hone", "acme"],
       },
     });
   });

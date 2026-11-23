@@ -52,6 +52,7 @@ const sourcesOver = (request: {
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
   repoRoot: absoluteRootOf("/repo"),
   installRoot: absoluteRootOf("/install"),
+  toolRecordKinds: [],
 });
 
 describe("upgradeRuleSetCataloguesOf", () => {

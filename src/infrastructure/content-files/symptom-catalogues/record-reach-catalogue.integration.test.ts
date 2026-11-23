@@ -32,6 +32,7 @@ const REPO_ROOT = absolutePathSchema.parse(
 
 const reading = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),

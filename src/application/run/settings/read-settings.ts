@@ -243,11 +243,9 @@ const selectedCheckOf = (
   };
 };
 
-type SharedCheck = { readonly address: string; readonly ruleSets: readonly [string, string] };
-
 const checkSharedAcrossRuleSetsOf = (request: {
   readonly catalogues: readonly RuleSetCatalogue[];
-}): SharedCheck | undefined => {
+}): VersionTwoLoadFailure | undefined => {
   const held = request.catalogues.flatMap(({ ruleSet, catalogue }) =>
     catalogue.checks.map((check) => ({
       address: checkAddressTextOf({ check }),
@@ -257,8 +255,9 @@ const checkSharedAcrossRuleSetsOf = (request: {
   const [shared] = held.flatMap((each) =>
     held
       .filter((other) => other.address === each.address && other.owner !== each.owner)
-      .map((other): SharedCheck => ({
-        address: each.address,
+      .map((other): VersionTwoLoadFailure => ({
+        kind: "rule-sets-share-a-check",
+        check: each.address,
         ruleSets: [each.owner, other.owner],
       })),
   );
@@ -276,14 +275,7 @@ export const readNamedSettingsFile = (
   if (catalogues.outcome === "failed") return catalogues;
   const shared = checkSharedAcrossRuleSetsOf({ catalogues: catalogues.value });
   if (shared !== undefined) {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "file-malformed",
-        path,
-        detail: `rule sets ${shared.ruleSets.join(" and ")} both hold the check ${shared.address}, and a check address names one check across rule sets; rename the check in one of them`,
-      },
-    };
+    return { outcome: "failed", error: shared };
   }
   const named = catalogues.value.map((held) => withNamedSource({ held, ruleSets: file.ruleSets }));
   const choices = namedCheckChoicesOf({

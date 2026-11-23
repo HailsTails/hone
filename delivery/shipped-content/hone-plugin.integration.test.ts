@@ -25,6 +25,7 @@ const REPOSITORY_ROOT = absolutePathSchema.parse(
 
 const CATALOGUE_HOLDING = readBoundCatalogue({
   ruleSet: "hone",
+  inheritedRecordKinds: [],
   directory: createDefaultDirectoryPort({}),
   fileText: createDefaultFileTextPort({}),
   path: createDefaultPathPort({}),

@@ -277,6 +277,14 @@ describe("runLoadFailureLine, failures version 2 names first", () => {
     },
     {
       failure: {
+        kind: "rule-sets-share-a-check",
+        check: "loop-keyword#loops",
+        ruleSets: ["hone", "acme"],
+      },
+      line: "load failure: rule-sets-share-a-check loop-keyword#loops: rule sets hone and acme both hold this check, so its findings and records would be credited to the wrong one; rename the check in one of them",
+    },
+    {
+      failure: {
         kind: "rule-set-half-upgraded",
         path: "/work/shop/tools/acme",
         files: ["/work/shop/tools/acme/rules/ACME-1/discipline.json"],
