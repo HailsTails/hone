@@ -432,6 +432,8 @@ const recordedFile = (request: { readonly file: string }): Result<RepoPath, Entr
 
 const LEGACY_CHAIN_NEW_OR_EDITED = `a new or edited entry's whyChain follows the causal contract (docs/why-chain-contract.md in the ${TOOL_IDENTITY.packageName} package); a chain without rootCheck and readback is accepted only while --base-revision holds its entry unchanged`;
 
+const WHY_CHAIN_REQUIRED = `missing whyChain: this repository's disciplines.json has fileExceptionWhyChains "required", the default, so an authorised-location needs a whyChain beside its reason; write one to the why-chain contract (docs/why-chain-contract.md in the ${TOOL_IDENTITY.packageName} package)`;
+
 const chainRefused = (request: { readonly detail: string }): Result<never, EntryProblem> => ({
   outcome: "failed",
   error: { kind: "why-chain-refused", detail: request.detail },
@@ -577,7 +579,12 @@ const parsedRecord = (request: {
           })
         : {
             outcome: "failed",
-            error: { kind: "evidence-refused", detail: z.prettifyError(evidence.error) },
+            error: {
+              kind: "evidence-refused",
+              detail: reasonedAuthorisedLocationSchema.safeParse(entry).success
+                ? WHY_CHAIN_REQUIRED
+                : z.prettifyError(evidence.error),
+            },
           };
     }
     case "file-carve-out": {
