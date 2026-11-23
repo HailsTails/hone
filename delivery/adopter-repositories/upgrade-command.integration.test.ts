@@ -1427,7 +1427,7 @@ describe("hone upgrade over a real repository with a team rule set in the versio
         writes: [
           [
             {
-              text: "findings (1)\nacme/scratch-file#scratch-files walker src/draft.scratch.ts:1:0 src/draft.scratch.ts may indicate: repository-ready\nanswered (1)\nacme/direct-console#console-calls eslint src/legacy.ts:1:0 console.log(1); answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nsymptoms (1)\nscratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the commit that adds the file. Known debt: debt. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nverdict: fail (partial assessment)\n",
+              text: "findings (1)\nacme/scratch-file#scratch-files walker src/draft.scratch.ts:1:0 src/draft.scratch.ts symptom: scratch-file (tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md) may indicate: repository-ready\nanswered (1)\nacme/direct-console#console-calls eslint src/legacy.ts:1:0 console.log(1); answered by debt\nassessment (1)\nforfeiture elsewhere: 1 debt record not checked for forfeiture in this run\nsymptoms (1)\nscratch-file: Scratch file. May indicate: changes a repository → Repository ready. The breach usually sits in the commit that adds the file. Read tools/disciplines/acme/rules/typescript/symptoms/scratch-file.md\nverdict: fail (partial assessment)\n",
             },
           ],
         ],

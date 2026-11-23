@@ -258,7 +258,6 @@ describe("createSymptomCatalogueRepository over a team's rule set", () => {
         held: "catalogue",
         content: {
           recordKinds: [AUTHORISED_LOCATION, DEBT],
-          alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
           symptoms: [{ name: "rebinding", sourceFile: "rules/sql/symptoms/rebinding.md" }],
           checks: [
             {

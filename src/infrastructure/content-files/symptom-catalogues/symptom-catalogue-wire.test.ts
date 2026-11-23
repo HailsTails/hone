@@ -991,7 +991,6 @@ describe("catalogueContentFromFile", () => {
       outcome: "ok",
       value: {
         recordKinds: [AUTHORISED_LOCATION, DEBT],
-        alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
       },
     });
   });
