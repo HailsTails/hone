@@ -101,19 +101,22 @@ describe("committed-lock-file", () => {
     ).toEqual([]);
   });
 
+  const missingLock = [
+    { file: MANIFEST, check: ADDRESS, anchor: { line: 1, column: 2 }, snippet: '"dependencies"' },
+  ];
   it.each([
-    { path: "packages/pnpm-lock.yaml", checks: [] },
-    { path: "packages/orders/package-lock.json", checks: [] },
-    { path: "packages/order/pnpm-lock.yaml", checks: [ADDRESS] },
-    { path: "packages/orders/tools/pnpm-lock.yaml", checks: [ADDRESS] },
-  ])("applies ancestry for a lock at $path", ({ path, checks }) => {
+    { path: "packages/pnpm-lock.yaml", expected: [] },
+    { path: "packages/orders/package-lock.json", expected: [] },
+    { path: "packages/order/pnpm-lock.yaml", expected: missingLock },
+    { path: "packages/orders/tools/pnpm-lock.yaml", expected: missingLock },
+  ])("applies ancestry for a lock at $path", ({ path, expected }) => {
     const findings = findingsIn({
       file: MANIFEST,
       source: '{ "dependencies": { "some-tool": "1.2.3" } }',
       trackedLock: repoPathSchema.parse(path),
     });
 
-    expect(findings.map(({ check }) => check)).toEqual(checks);
+    expect(findings).toEqual(expected);
   });
 
   it("passes a published dependency range when a lock is tracked", () => {

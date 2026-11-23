@@ -2,11 +2,11 @@
 
 ```json
 {
-  "misses": "Package managers with an unrecognised lock file.",
+  "misses": "Package managers with an unrecognised lock file. Workspace membership is not verified.",
   "settingsTracedTo": "None."
 }
 ```
 
 Dependencies declared without an applicable tracked lock file.
 
-A recognised lock file covers manifests in its own directory and every directory below it. A tracked lock at the repository root therefore covers all nested manifests. The check uses directory ancestry and does not check whether the package manager lists a nested package as a workspace member.
+A recognised lock file tracked at the repository root covers nested manifests.
