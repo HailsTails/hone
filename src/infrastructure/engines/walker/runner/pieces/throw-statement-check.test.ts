@@ -1,43 +1,57 @@
-import { describe, expect, it } from "vitest";
+import syntaxApi from "typescript";
+import { assert, describe, expect, it } from "vitest";
 
-import { throwSnippetOf, throwSourceScopeOf } from "./throw-statement-check.ts";
+import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import { FIRST_EDITION } from "../../../../content-files/edition.ts";
+import { throwStatementCheck } from "./throw-statement-check.ts";
+import { textsDisk } from "./walker-disk.ts";
 
-describe("throw observation source scope", () => {
-  it.each([
-    ["src/order.ts", "production"],
-    ["src/order.tsx", "production"],
-    ["src/order.mts", "production"],
-    ["src/order.cts", "production"],
-    ["src/order.spec.ts", "test"],
-    ["src/order.spec.tsx", "test"],
-    ["src/order.spec.mts", "test"],
-    ["src/order.spec.cts", "test"],
-    ["src/order.test.ts", "test"],
-    ["src/order.test.tsx", "test"],
-    ["src/order.test.mts", "test"],
-    ["src/order.test.cts", "test"],
-    ["src/order.test.js", "skipped"],
-    ["src/order.d.ts", "skipped"],
-    ["src/order.d.mts", "skipped"],
-    ["src/order.d.cts", "skipped"],
-    ["src/build/order.spec.ts", "skipped"],
-    ["vendor/order.mts", "skipped"],
-  ])("classifies %s as %s", (file, scope) => {
-    expect(throwSourceScopeOf(file)).toBe(scope);
-  });
-});
+const FILE = repoPathOf("src/orders.spec.mts");
+const BINDING: CheckBinding = {
+  address: "throw-or-catch-in-a-test#throw-statement",
+  engine: "walker",
+  anchor: { kind: "file" },
+  pieceRoot: "/repo/pieces/throw-statement",
+  checkSettings: {},
+  edition: FIRST_EDITION,
+  settings: { module: "throws-in-tests.ts" },
+};
 
-describe("throw observation snippet", () => {
-  it("renders a multiline throw on one line", () => {
-    expect(throwSnippetOf('throw new Error(\r\n  "missing  order",\r\n);')).toBe(
-      'throw new Error( "missing  order", );',
-    );
-  });
-
-  it("caps a long statement to eighty characters before the ellipsis", () => {
-    const messageStart = "x".repeat(63);
-    expect(throwSnippetOf(`throw new Error("${messageStart} remainder");`)).toBe(
-      `throw new Error("${messageStart}…`,
-    );
+describe("throwStatementCheck", () => {
+  it("observes a test throw at its keyword with a bounded snippet", () => {
+    const source =
+      'throw new Error(\r\n  "1234567890123456789012345678901234567890123456789012345678901234567890",\r\n);';
+    const prepared = throwStatementCheck("test").prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [FILE],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+      },
+      syntaxApi,
+    });
+    assert(prepared.outcome === "ok");
+    const selected = prepared.value.prepareFile({
+      file: FILE,
+      readText: () => ({ outcome: "ok", value: source }),
+    });
+    assert(selected.outcome === "ok" && selected.value.kind === "syntax");
+    const tree = syntaxApi.createSourceFile(FILE, source, syntaxApi.ScriptTarget.Latest, true);
+    const [node] = tree.statements;
+    assert(node !== undefined);
+    const observations = selected.value.begin({
+      sourceFile: tree,
+      anchorAt: () => ({ line: 1, column: 0 }),
+    });
+    observations.enter?.({ node });
+    expect(observations.finish()).toEqual([
+      {
+        check: BINDING.address,
+        anchor: { line: 1, column: 0 },
+        snippet:
+          'throw new Error( "12345678901234567890123456789012345678901234567890123456789012…',
+      },
+    ]);
   });
 });

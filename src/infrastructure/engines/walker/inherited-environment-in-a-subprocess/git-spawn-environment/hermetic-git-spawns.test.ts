@@ -205,6 +205,12 @@ describe("CD-47 existing raw Git spawn guard", () => {
       readCount: 1,
     },
     {
+      name: "TypeScript esm spec",
+      fileName: "src/git.spec.mts",
+      expected: { outcome: "ok", value: { kind: "complete", hits: [] } },
+      readCount: 1,
+    },
+    {
       name: "ordinary source",
       fileName: "src/git.ts",
       expected: { outcome: "ok", value: { kind: "skipped" } },

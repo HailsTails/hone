@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { folderScope, testFileEligibility } from "./source-scope.ts";
+import {
+  folderScope,
+  javaScriptTestEligibility,
+  testFileEligibility,
+  typeScriptSourceEligibility,
+  typeScriptSourceKindOf,
+} from "./source-scope.ts";
 
 describe("folderScope", () => {
   it.each([
@@ -29,10 +35,43 @@ describe("testFileEligibility", () => {
   it.each([
     { file: "src/order.test.ts", expected: "eligible" },
     { file: "src/order.test.tsx", expected: "eligible" },
-    { file: "src/order.spec.ts", expected: "skipped" },
-    { file: "src/order.test.mts", expected: "skipped" },
+    { file: "src/order.spec.ts", expected: "eligible" },
+    { file: "src/order.spec.tsx", expected: "eligible" },
+    { file: "src/order.spec.mts", expected: "eligible" },
+    { file: "src/order.spec.cts", expected: "eligible" },
+    { file: "src/order.test.mts", expected: "eligible" },
+    { file: "src/order.test.cts", expected: "eligible" },
+    { file: "src/order.d.ts", expected: "skipped" },
     { file: "node_modules/order.test.ts", expected: "skipped" },
   ])("scopes $file as $expected", ({ file, expected }) => {
     expect(testFileEligibility({ file })).toBe(expected);
+  });
+});
+
+describe("javaScriptTestEligibility", () => {
+  it.each([
+    { file: "src/order.test.js", expected: "eligible" },
+    { file: "src/order.test.mjs", expected: "eligible" },
+    { file: "src/order.spec.mjs", expected: "eligible" },
+    { file: "src/order.spec.js", expected: "skipped" },
+    { file: "build/order.test.js", expected: "skipped" },
+  ])("classifies $file as $expected", ({ file, expected }) => {
+    expect(javaScriptTestEligibility({ file })).toBe(expected);
+  });
+});
+
+describe("TypeScript source eligibility", () => {
+  it.each([
+    { file: "src/route.ts", kind: "production", eligibility: "eligible" },
+    { file: "src/route.spec.tsx", kind: "test", eligibility: "eligible" },
+    { file: "src/route.test.mts", kind: "test", eligibility: "eligible" },
+    { file: "src/route.test.cts", kind: "test", eligibility: "eligible" },
+    { file: "src/route.cts", kind: "production", eligibility: "eligible" },
+    { file: "src/route.d.mts", kind: "skipped", eligibility: "skipped" },
+    { file: "dist/route.spec.ts", kind: "skipped", eligibility: "skipped" },
+    { file: "src/route.js", kind: "skipped", eligibility: "skipped" },
+  ])("classifies $file as $kind", ({ file, kind, eligibility }) => {
+    expect(typeScriptSourceKindOf({ file })).toBe(kind);
+    expect(typeScriptSourceEligibility({ file })).toBe(eligibility);
   });
 });

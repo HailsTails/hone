@@ -1,21 +1,8 @@
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import {
+  javaScriptTestEligibility,
+  testFileEligibility,
+} from "../../runner/pieces/source-scope.ts";
 import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
-
-const TEST_FILE_SUFFIXES: readonly string[] = [
-  ".test.ts",
-  ".test.tsx",
-  ".test.mjs",
-  ".test.js",
-  ".spec.ts",
-  ".spec.mjs",
-];
-
-const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
-  if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return TEST_FILE_SUFFIXES.some((suffix) => request.file.endsWith(suffix))
-    ? "eligible"
-    : "skipped";
-};
 
 const GIT_SPAWN_PATTERN =
   /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exec|execa|execaSync)\s*\(\s*(?:"git"|'git'|`git`)/;
@@ -28,7 +15,10 @@ export const check: WalkerPiece = {
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
-        if (testFileEligibility({ file }) === "skipped") {
+        if (
+          testFileEligibility({ file }) === "skipped" &&
+          javaScriptTestEligibility({ file }) === "skipped"
+        ) {
           return { outcome: "ok", value: { kind: "skipped" } };
         }
         const text = readText();
