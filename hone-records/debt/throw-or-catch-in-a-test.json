@@ -3,10 +3,6 @@
   "records": [
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/self-check/self-check.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/application/upgrade/command/planned-projection.test.ts"
     },
     {

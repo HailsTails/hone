@@ -43,10 +43,6 @@
     },
     {
       "answers": "process-global-used-in-place#direct-global-use",
-      "file": "delivery/self-check/self-check.integration.test.ts"
-    },
-    {
-      "answers": "process-global-used-in-place#direct-global-use",
       "file": "src/composition/projection-pair.integration.test.ts"
     },
     {

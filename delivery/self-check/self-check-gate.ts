@@ -14,9 +14,11 @@ import type { ToolPorts } from "../../src/composition/tool-ports.ts";
 import { namedSettingsCommandOf } from "../../src/composition/version-chosen-command.ts";
 import {
   RUN_SECTION_NAMES,
-  type RunSectionName,
   runSectionRoleOf,
+  type RunVerdict,
+  runVerdictOf,
 } from "../../src/domain/report/report-sections.ts";
+import type { RunReport } from "../../src/domain/report/run-report.ts";
 import type { CommandOutcome } from "../../src/infrastructure/command-line/outcomes/command-outcome.ts";
 import {
   type AssessmentScope,
@@ -24,33 +26,29 @@ import {
   renderRunSectionsText,
 } from "../../src/infrastructure/printed-report/run-report-text.ts";
 
-const REPORTED_NOT_GATED: readonly RunSectionName[] = ["findings", "unrecorded"];
-
-export const VERSION_TWO_GATED_SECTIONS: readonly RunSectionName[] = RUN_SECTION_NAMES.filter(
-  (section) => runSectionRoleOf({ section }) === "failing" && !REPORTED_NOT_GATED.includes(section),
-);
+const failingSectionsOf = (request: { readonly report: RunReport }): readonly string[] =>
+  RUN_SECTION_NAMES.filter(
+    (section) => runSectionRoleOf({ section }) === "failing" && request.report[section].length > 0,
+  ).map((section) => `${section} (${request.report[section].length})`);
 
 const gateLineOf = (request: {
-  readonly findings: number;
-  readonly unrecorded: number;
+  readonly verdict: RunVerdict;
   readonly scope: AssessmentScope;
-  readonly failing: readonly string[];
+  readonly report: RunReport;
 }): string =>
-  request.failing.length > 0
-    ? `self-check: fail${request.scope}, gated sections hold entries: ${request.failing.join(", ")}\n`
-    : `self-check: pass${request.scope}, the selection, records and projection are sound; findings (${request.findings}) and unrecorded (${request.unrecorded}) are reported above and not gated\n`;
+  request.verdict === "fail"
+    ? `self-check: fail${request.scope}, failing sections hold entries: ${failingSectionsOf(request).join(", ")}\n`
+    : `self-check: pass${request.scope}, no failing section holds an entry\n`;
 
 export const versionTwoSelfCheckOutcomeOf = (request: {
   readonly ports: Pick<ToolPorts, "path" | "fileText">;
   readonly produced: VersionTwoCheckRun;
 }): CommandOutcome => {
   const { report } = request.produced.run;
-  const failing = VERSION_TWO_GATED_SECTIONS.filter((section) => report[section].length > 0).map(
-    (section) => `${section} (${report[section].length})`,
-  );
+  const verdict = runVerdictOf({ report });
   return {
-    code: failing.length > 0 ? 1 : 0,
-    text: `${renderRunSectionsText(versionTwoReportRequestOf(request))}${gateLineOf({ findings: report.findings.length, unrecorded: report.unrecorded.length, scope: assessmentScopeOf({ report }), failing })}`,
+    code: verdict === "pass" ? 0 : 1,
+    text: `${renderRunSectionsText(versionTwoReportRequestOf(request))}${gateLineOf({ verdict, scope: assessmentScopeOf({ report }), report })}`,
   };
 };
 
