@@ -17,12 +17,7 @@ import type {
 } from "../../../../application/ports/engine/runner-module.ts";
 import { reportedChecksRefusal } from "../../../../domain/language-layer/reported-checks.ts";
 import type { RunFailureSource } from "../../../../domain/report/run-failure.ts";
-import type { RepoPath } from "../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../domain/result.ts";
-import {
-  clauseAddressText,
-  sameClauseAddress,
-} from "../../../../domain/rule-set/clause-address.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
 import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 import {
@@ -39,6 +34,11 @@ import {
 import type { ChecksRunFailure, ChecksRunReport } from "../checks/checks-runner-types.ts";
 import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
 import { runMechanism } from "./standalone-mechanism-dispatch.ts";
+import {
+  requestHeldOf,
+  unrequestedClauseDetailOf,
+  unrequestedDetailOf,
+} from "./unrequested-entries.ts";
 
 type Outcome<Value> = Result<Value, RunFailureSource>;
 
@@ -120,70 +120,25 @@ const standaloneRunOf = async (request: {
     : { outcome: "ok", value: { ...ran.value, slices: [], misnamedRuleIds: [] } };
 };
 
-type Filed = {
-  readonly clause: ChecksRunRequest["bindings"][number]["clause"]["address"];
-  readonly file: RepoPath;
-};
-
-const unrequestedDetail = (request: {
-  readonly noun: string;
-  readonly entries: readonly Filed[];
-  readonly files: readonly RepoPath[];
-  readonly clauses: readonly Filed["clause"][];
-}): readonly string[] => {
-  const entry = request.entries.find(
-    (candidate) =>
-      !request.files.includes(candidate.file) ||
-      !request.clauses.some(
-        (clause) => sameClauseAddress({ left: clause, right: candidate.clause }) === "same",
-      ),
-  );
-  return entry === undefined
-    ? []
-    : [
-        `${request.noun} names ${clauseAddressText({ address: entry.clause })} in ${entry.file}, which the request did not hold`,
-      ];
-};
-
-const unrequestedNativeDetail = (request: {
-  readonly report: ChecksRunReport;
-  readonly clauses: readonly Filed["clause"][];
-}): readonly string[] => {
-  const entry = request.report.nativeExceptions.find(
-    (native) =>
-      !request.clauses.some(
-        (clause) => sameClauseAddress({ left: clause, right: native.clause }) === "same",
-      ),
-  );
-  return entry === undefined
-    ? []
-    : [
-        `a native exception names ${clauseAddressText({ address: entry.clause })}, which the request did not hold`,
-      ];
-};
-
 const invalidReport = (request: {
   readonly report: ChecksRunReport;
   readonly run: EngineRunRequest;
   readonly mechanism: EngineId;
 }): readonly string[] => {
-  const clauses = clausesOf({ request: request.run, mechanism: request.mechanism }).map(
-    (clause) => clause.address,
-  );
+  const held = requestHeldOf({
+    files: request.run.files,
+    clauses: clausesOf({ request: request.run, mechanism: request.mechanism }).map(
+      (clause) => clause.address,
+    ),
+  });
   return [
-    ...unrequestedDetail({
-      noun: "a hit",
-      entries: request.report.hits,
-      files: request.run.files,
-      clauses,
+    ...unrequestedDetailOf({ noun: "a hit", entries: request.report.hits, held }),
+    ...unrequestedDetailOf({ noun: "a measured pair", entries: request.report.measured, held }),
+    ...unrequestedClauseDetailOf({
+      noun: "a native exception",
+      entries: request.report.nativeExceptions,
+      held,
     }),
-    ...unrequestedDetail({
-      noun: "a measured pair",
-      entries: request.report.measured,
-      files: request.run.files,
-      clauses,
-    }),
-    ...unrequestedNativeDetail({ report: request.report, clauses }),
   ];
 };
 

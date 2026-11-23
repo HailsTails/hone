@@ -85,3 +85,17 @@ export const sameRecordIdentity = (request: {
         : "different";
   }
 };
+
+export const identityPlaceOf = (request: { readonly record: HoneRecord }): string => {
+  const { record } = request;
+  switch (record.kind) {
+    case "debt":
+    case "authorised-location":
+    case "deviation":
+      return record.file;
+    case "boundary-record":
+      return record.module;
+    case "dependency-record":
+      return record.dependency;
+  }
+};
