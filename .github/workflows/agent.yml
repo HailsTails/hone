@@ -3,7 +3,7 @@ name: Agent
 on:
   issues:
     types: [labeled]
-  pull_request:
+  pull_request_target:
     types: [opened, ready_for_review, synchronize, labeled]
 
 permissions: {}
@@ -17,7 +17,7 @@ env:
   ANTHROPIC_VERSION: 2026-10-21
   ANTHROPIC_BETA: managed-agents-2026-04-01
   BUDGET_CENTS: '1500'
-  MODE: ${{ github.event_name == 'pull_request' && 'claude-review' || github.event.label.name }}
+  MODE: ${{ github.event_name == 'pull_request_target' && 'claude-review' || github.event.label.name }}
   NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
   AGENT_BRANCH: agent/issue-${{ github.event.issue.number }}
   CHECKOUT_BRANCH: ${{ github.event.pull_request.head.ref || 'main' }}
@@ -31,7 +31,7 @@ jobs:
       (github.event_name == 'issues' &&
         contains(fromJSON('["claude", "claude-triage"]'), github.event.label.name) &&
         (github.event.sender.login == github.repository_owner || github.event.sender.login == 'rin-author[bot]')) ||
-      (github.event_name == 'pull_request' &&
+      (github.event_name == 'pull_request_target' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
         (github.event.action == 'opened' ||
           github.event.action == 'ready_for_review' ||
@@ -103,7 +103,8 @@ jobs:
             claude)
               agent_name="Hone builder"; kind=Issue
               if [ -n "$follow_up_pr" ]; then
-                review=$(gh api "repos/$GITHUB_REPOSITORY/issues/$follow_up_pr/comments" --jq '[.[] | select(.body | startswith("**Agent review**"))] | last | .body // ""')
+                review=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$follow_up_pr/reviews" --jq '[.[] | select(.body | startswith("**Agent review**"))] | last | .body // ""')
+                [ -n "$review" ] || review=$(gh api "repos/$GITHUB_REPOSITORY/issues/$follow_up_pr/comments" --jq '[.[] | select(.body | startswith("**Agent review**"))] | last | .body // ""')
                 run_note="This is follow-up work. The branch $AGENT_BRANCH, open as pull request #$follow_up_pr, is checked out instead of main. Continue on it: address the review below, keep pnpm run check green, and push to the same branch."$'\n\n'"$review"
               else
                 run_note="Push your work to the branch $AGENT_BRANCH."
@@ -184,10 +185,23 @@ jobs:
           permission-pull-requests: write
           permission-issues: write
 
+      - name: Mint the reviewer token
+        id: reviewer-token
+        if: always() && env.MODE == 'claude-review' && steps.session.outputs.session_id != ''
+        continue-on-error: true
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23liZ4Z4iNu2j2LrOT
+          private-key: ${{ secrets.RIN_REVIEWER_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: read
+          permission-pull-requests: write
+
       - name: Report the outcome
         if: always() && steps.report-token.outputs.token != ''
         env:
           GH_TOKEN: ${{ steps.report-token.outputs.token }}
+          REVIEWER_TOKEN: ${{ steps.reviewer-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           STATUS: ${{ steps.outcome.outputs.status }}
           STOP_REASON: ${{ steps.outcome.outputs.stop_reason }}
@@ -217,7 +231,11 @@ jobs:
             esac
             comment_file="$RUNNER_TEMP/comment.md"
             { echo "$heading"; echo; cat "$RUNNER_TEMP/summary.md"; echo; cat "$RUNNER_TEMP/errors.txt"; echo; echo "$outcome"; } > "$comment_file"
-            gh issue comment "$NUMBER" --body-file "$comment_file"
+            if [ "$MODE" = claude-review ] && [ -n "$REVIEWER_TOKEN" ]; then
+              GH_TOKEN="$REVIEWER_TOKEN" gh pr review "$NUMBER" --comment --body-file "$comment_file"
+            else
+              gh issue comment "$NUMBER" --body-file "$comment_file"
+            fi
           fi
           if [ "$STARTED_BY_LABEL" = true ]; then
             gh issue edit "$NUMBER" --remove-label "$MODE"
