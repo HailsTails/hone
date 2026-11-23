@@ -114,7 +114,9 @@ describe("queriedFilesOf", () => {
         error: { kind: "team-config-unloadable", detail: "broken" },
       }),
       ruleState: vi.fn<QueryInstance["ruleState"]>(),
-      configFileOf: vi.fn<QueryInstance["configFileOf"]>().mockResolvedValue({ kind: "unknown" }),
+      configFileOf: vi
+        .fn<QueryInstance["configFileOf"]>()
+        .mockResolvedValue({ kind: "unknown", detail: "broken" }),
     };
     expect(
       await queriedFilesOf({

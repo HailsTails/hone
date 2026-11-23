@@ -403,7 +403,7 @@ const failingQuery = (failure: RunnerFailure): QueryInstance => ({
   configFileOf: () => Promise.resolve(CONFIG_UNKNOWN),
 });
 
-const CONFIG_UNKNOWN: ConfigFileSearch = { kind: "unknown" };
+const CONFIG_UNKNOWN: ConfigFileSearch = { kind: "unknown", detail: "ENOENT" };
 
 const configFailingQuery = (request: {
   readonly search: ConfigFileSearch;
@@ -3402,6 +3402,22 @@ describe("package projection slices, a folder holding its own disciplines.json",
     });
   });
 
+  it("names nothing when the config the folder's files load has no repo-relative path, though it lies under the folder", async () => {
+    await expect(
+      runnerOver({
+        eslint: eslintOver({
+          query: nestedQuery({
+            old: OFF,
+            config: { kind: "found", path: "/repo/packages/b/odd\\name/eslint.config.mjs" },
+          }),
+        }),
+      }).run(NESTED_RUN),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { slices: [], unprojectedFolders: [] },
+    });
+  });
+
   it("names nothing when the config the folder's files load lies on another drive from the repository", async () => {
     await expect(
       runnerOver({
@@ -3429,13 +3445,19 @@ describe("package projection slices, a folder holding its own disciplines.json",
   it("is team-config-unloadable, naming the file, when ESLint cannot name the config the folder's file loads", async () => {
     await expect(
       runnerOver({
-        eslint: eslintOver({ query: nestedQuery({ old: OFF, config: { kind: "unknown" } }) }),
+        eslint: eslintOver({
+          query: nestedQuery({
+            old: OFF,
+            config: { kind: "unknown", detail: "Cannot read config file" },
+          }),
+        }),
       }).run(NESTED_RUN),
     ).resolves.toEqual({
       outcome: "failed",
       error: {
         kind: "team-config-unloadable",
-        detail: "ESLint could not name the config packages/b/src/old.ts loads. Fix that config.",
+        detail:
+          "ESLint could not name the config packages/b/src/old.ts loads (Cannot read config file). Fix the nearest eslint.config.* at or above packages/b/src/old.ts.",
       },
     });
   });

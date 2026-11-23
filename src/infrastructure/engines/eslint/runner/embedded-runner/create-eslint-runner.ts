@@ -746,7 +746,7 @@ const loadedConfigOf = (request: {
       outcome: "failed",
       error: {
         kind: "team-config-unloadable",
-        detail: `ESLint could not name the config ${request.file} loads. Fix that config.`,
+        detail: `ESLint could not name the config ${request.file} loads (${request.search.detail}). Fix the nearest eslint.config.* at or above ${request.file}.`,
       },
     };
   }

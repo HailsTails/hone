@@ -558,7 +558,7 @@ describe("createQueryInstance", () => {
       .createQueryInstance({ repoRoot })
       .configFileOf({ file: fileA });
 
-    expect(configFile).toEqual({ kind: "unknown" });
+    expect(configFile).toEqual({ kind: "unknown", detail: "ENOENT" });
   });
 
   it("reports ESLint failing to build as tool-failed", async () => {

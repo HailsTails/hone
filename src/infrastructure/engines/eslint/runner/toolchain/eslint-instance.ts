@@ -134,15 +134,15 @@ export type IgnoredState = "ignored" | "checked";
 export type ConfigFileSearch =
   | { readonly kind: "found"; readonly path: string }
   | { readonly kind: "none" }
-  | { readonly kind: "unknown" };
+  | { readonly kind: "unknown"; readonly detail: string };
 
-const CONFIG_UNKNOWN: ConfigFileSearch = { kind: "unknown" };
+type ToolFailure = Extract<RunnerFailure, { readonly kind: "tool-failed" }>;
 
 const searchedConfigFile = (request: {
-  readonly found: Result<string | undefined, RunnerFailure>;
+  readonly found: Result<string | undefined, ToolFailure>;
 }): ConfigFileSearch => {
   if (request.found.outcome === "failed") {
-    return CONFIG_UNKNOWN;
+    return { kind: "unknown", detail: request.found.error.detail };
   }
   return request.found.value === undefined
     ? { kind: "none" }
@@ -350,7 +350,7 @@ const governanceOptions = (request: {
 const thrownDetail = (thrown: unknown): string =>
   thrown instanceof Error ? thrown.message : String(thrown);
 
-const toolFailed = (thrown: unknown): Result<never, RunnerFailure> => ({
+const toolFailed = (thrown: unknown): Result<never, ToolFailure> => ({
   outcome: "failed",
   error: { kind: "tool-failed", detail: thrownDetail(thrown) },
 });
@@ -373,32 +373,29 @@ type LintedCase = {
 const builtSurface = (request: {
   readonly createEslint: CreateEslint;
   readonly options: EslintSurfaceOptions;
-}): Promise<Result<EslintSurface, RunnerFailure>> =>
+}): Promise<Result<EslintSurface, ToolFailure>> =>
   Promise.resolve()
     .then(() => request.createEslint({ options: request.options }))
     .then(
-      (surface): Result<EslintSurface, RunnerFailure> => ({ outcome: "ok", value: surface }),
+      (surface): Result<EslintSurface, ToolFailure> => ({ outcome: "ok", value: surface }),
       toolFailed,
     );
 
-const actedOn = <T>(request: {
+const actedOn = <T, F extends RunnerFailure>(request: {
   readonly surface: EslintSurface;
   readonly act: (surface: EslintSurface) => Promise<T>;
-  readonly onRejected: (thrown: unknown) => Result<never, RunnerFailure>;
-}): Promise<Result<T, RunnerFailure>> =>
+  readonly onRejected: (thrown: unknown) => Result<never, F>;
+}): Promise<Result<T, F>> =>
   Promise.resolve()
     .then(() => request.act(request.surface))
-    .then(
-      (acted): Result<T, RunnerFailure> => ({ outcome: "ok", value: acted }),
-      request.onRejected,
-    );
+    .then((acted): Result<T, F> => ({ outcome: "ok", value: acted }), request.onRejected);
 
-const onSurface = <T>(request: {
-  readonly surface: Promise<Result<EslintSurface, RunnerFailure>>;
+const onSurface = <T, F extends RunnerFailure>(request: {
+  readonly surface: Promise<Result<EslintSurface, ToolFailure>>;
   readonly act: (surface: EslintSurface) => Promise<T>;
-  readonly onRejected: (thrown: unknown) => Result<never, RunnerFailure>;
-}): Promise<Result<T, RunnerFailure>> =>
-  request.surface.then((built) =>
+  readonly onRejected: (thrown: unknown) => Result<never, F>;
+}): Promise<Result<T, ToolFailure | F>> =>
+  request.surface.then((built): Result<T, ToolFailure | F> | Promise<Result<T, F>> =>
     built.outcome === "failed"
       ? built
       : actedOn({ surface: built.value, act: request.act, onRejected: request.onRejected }),
@@ -430,7 +427,7 @@ const resolvedRuleState = (request: {
 };
 
 const queryInstanceOf = (request: {
-  readonly surface: Promise<Result<EslintSurface, RunnerFailure>>;
+  readonly surface: Promise<Result<EslintSurface, ToolFailure>>;
 }): QueryInstance => ({
   ignoredState: (query) =>
     onSurface({
