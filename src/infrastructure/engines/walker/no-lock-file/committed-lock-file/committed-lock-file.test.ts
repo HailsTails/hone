@@ -69,14 +69,14 @@ describe("committed-lock-file", () => {
       findingsIn({
         file: MANIFEST,
         source:
-          '{ "private": true, "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }, "scripts": { "check": "pnpm dlx some-tool" } }',
+          '{\n  "private": true,\n  "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }\n}',
       }),
     ).toEqual([
       {
         file: MANIFEST,
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "dependencies declared without a tracked lock file",
+        anchor: { line: 3, column: 2 },
+        snippet: '"dependencies"',
       },
     ]);
   });
