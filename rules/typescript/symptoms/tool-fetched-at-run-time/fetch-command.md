@@ -8,5 +8,3 @@
 ```
 
 Direct fetch-and-run commands in package scripts, CI workflows, and shell scripts.
-
-The check includes `pnpx` and reads each command line in a multiline workflow `run` block.
