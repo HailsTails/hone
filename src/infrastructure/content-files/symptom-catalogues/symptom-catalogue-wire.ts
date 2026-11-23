@@ -3,7 +3,6 @@ import { z } from "zod";
 import { CATALOGUE_NAME } from "../../../domain/language-layer/catalogue-name.ts";
 import { checksOf } from "../../../domain/language-layer/check-address.ts";
 import type {
-  AlwaysRecordable,
   Case,
   CatalogueContent,
   CataloguedClause,
@@ -239,7 +238,6 @@ type Definitions = Pointable & {
   readonly cases: readonly Case[];
   readonly recipes: readonly Recipe[];
   readonly recordKinds: readonly RecordKind[];
-  readonly alwaysRecordable: AlwaysRecordable;
   readonly engines: readonly Engine[];
 };
 
@@ -324,25 +322,12 @@ const caseOf = (request: {
     }),
   });
 
-const alwaysRecordableKindOf = (request: {
-  readonly recordKinds: readonly RecordKind[];
-  readonly name: string;
-}): Resolution<RecordKind> =>
-  entryNamed({
-    entries: request.recordKinds,
-    name: request.name,
-    refusal: `recordKinds holds no ${request.name}, which every symptom takes`,
-  });
-
-const alwaysRecordableOf = (request: {
-  readonly recordKinds: readonly RecordKind[];
-}): Resolution<AlwaysRecordable> => {
-  const debt = alwaysRecordableKindOf({ ...request, name: "debt" });
-  const authorisedLocation = alwaysRecordableKindOf({ ...request, name: "authorised-location" });
-  return debt.outcome === "failed" || authorisedLocation.outcome === "failed"
-    ? { outcome: "failed", error: [...faultsOf(debt), ...faultsOf(authorisedLocation)] }
-    : resolved({ debt: debt.value, authorisedLocation: authorisedLocation.value });
-};
+const requiredRecordKindFaultsOf = (recordKinds: readonly RecordKind[]): readonly string[] =>
+  ["debt", "authorised-location"].flatMap((name) =>
+    recordKinds.some((kind) => kind.name === name)
+      ? []
+      : [`recordKinds holds no ${name}, which every symptom takes`],
+  );
 
 const pointableOf = (request: { readonly file: CatalogueFile }): Resolution<Pointable> => {
   const principles = request.file.principles.map(principleOf);
@@ -361,25 +346,22 @@ const definitionsOf = (request: { readonly file: CatalogueFile }): Resolution<De
   const cases = allResolved(
     request.file.cases.map((wire) => caseOf({ wire, pointable: pointable.value })),
   );
-  const alwaysRecordable = alwaysRecordableOf({ recordKinds });
+  const recordKindFaults = requiredRecordKindFaultsOf(recordKinds);
   const served = allResolved(
     request.file.recipes.map((wire) =>
       pointedOf({ listing: "recipes", point: wire.serves, pointable: pointable.value }),
     ),
   );
-  return cases.outcome === "failed" ||
-    alwaysRecordable.outcome === "failed" ||
-    served.outcome === "failed"
+  return cases.outcome === "failed" || recordKindFaults.length > 0 || served.outcome === "failed"
     ? {
         outcome: "failed",
-        error: [...faultsOf(cases), ...faultsOf(alwaysRecordable), ...faultsOf(served)],
+        error: [...faultsOf(cases), ...recordKindFaults, ...faultsOf(served)],
       }
     : resolved({
         ...pointable.value,
         cases: cases.value,
         recipes: request.file.recipes.map(recipeOf),
         recordKinds,
-        alwaysRecordable: alwaysRecordable.value,
         engines: request.file.engines.map(engineOf),
       });
 };

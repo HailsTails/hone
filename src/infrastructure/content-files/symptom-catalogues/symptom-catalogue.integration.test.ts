@@ -295,7 +295,6 @@ describe("the catalogue guards over written-out pages and catalogues, so each ca
     cases: [],
     recipes: [],
     recordKinds: [AUTHORISED_LOCATION, DEBT],
-    alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
     engines: [],
     symptoms: [],
     clauses: [],

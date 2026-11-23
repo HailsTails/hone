@@ -90,7 +90,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [],
   recipes: [],
   recordKinds: [DEBT_KIND, AUTHORISED_LOCATION_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [{ name: "eslint" }],
   symptoms: [],
   clauses: [],
