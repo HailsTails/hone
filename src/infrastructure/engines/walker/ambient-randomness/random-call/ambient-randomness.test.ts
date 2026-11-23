@@ -255,6 +255,23 @@ describe("ambient randomness", () => {
     ).toEqual([]);
   });
 
+  it("only follows runtime bindings imported from Node crypto", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'import { type randomUUID as typeUUID, randomUUID as nodeUUID } from "node:crypto";\nimport { randomUUID as adapterUUID } from "./runtime";\ntypeUUID();\nadapterUUID();\nnodeUUID();',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 5, column: 0 },
+        snippet: "nodeUUID",
+      },
+    ]);
+  });
+
   it("does not treat a declare statement as a locally supplied crypto value", () => {
     expect(
       findingsIn({
