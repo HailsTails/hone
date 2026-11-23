@@ -141,36 +141,6 @@ const WALKER_PIECE = {
   editions: { declared: [FIRST], default: FIRST, latest: FIRST },
 } as const;
 
-const walkerPassOver = (request: {
-  readonly catalogues: NamedVersionOnePassRequest["catalogues"];
-}) => {
-  const measureVersionOne = vi
-    .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
-    .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
-  const engine: NamedVersionOnePassRequest["engine"] = {
-    load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
-    run: vi.fn(),
-    project: vi.fn(),
-  };
-  const pass = createNamedVersionOneEnginePass({
-    ...INPUT,
-    catalogues: request.catalogues,
-    sources: {
-      ...INPUT.sources,
-      ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
-      catalogue: vi.fn().mockReturnValue({
-        outcome: "ok",
-        value: { held: "catalogue", catalogue: CATALOGUE },
-      }),
-    },
-    readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
-    engine,
-    checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
-    measureVersionOne,
-  });
-  return { pass, engine, measureVersionOne };
-};
-
 describe("createNamedVersionOneEnginePass", () => {
   it("refuses a legacy selection whose clause cannot be matched to a named check", async () => {
     const pass = createNamedVersionOneEnginePass(INPUT);
@@ -186,8 +156,29 @@ describe("createNamedVersionOneEnginePass", () => {
   });
 
   it("sends a selected Walker check through the upgrade measurement port with the inspected projection", async () => {
-    const { pass, engine, measureVersionOne } = walkerPassOver({
+    const measureVersionOne = vi
+      .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
+      .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
+    const engine: NamedVersionOnePassRequest["engine"] = {
+      load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
+      run: vi.fn(),
+      project: vi.fn(),
+    };
+    const pass = createNamedVersionOneEnginePass({
+      ...INPUT,
       catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE }],
+      sources: {
+        ...INPUT.sources,
+        ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
+        catalogue: vi.fn().mockReturnValue({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: CATALOGUE },
+        }),
+      },
+      readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
+      engine,
+      checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
+      measureVersionOne,
     });
     await expect(pass.findingsFor({ records: [] })).resolves.toEqual({
       outcome: "ok",
@@ -213,7 +204,16 @@ describe("createNamedVersionOneEnginePass", () => {
   it("sends a team rule set's checks with their own rule set", async () => {
     const acme = { name: ruleSetNameOf("acme") };
     const teamLoop: Check = { ...LOOP, symptom: { ...LOOP.symptom, ruleSet: acme } };
-    const { pass, measureVersionOne } = walkerPassOver({
+    const measureVersionOne = vi
+      .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
+      .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
+    const engine: NamedVersionOnePassRequest["engine"] = {
+      load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
+      run: vi.fn(),
+      project: vi.fn(),
+    };
+    const pass = createNamedVersionOneEnginePass({
+      ...INPUT,
       catalogues: [
         { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
         {
@@ -221,14 +221,54 @@ describe("createNamedVersionOneEnginePass", () => {
           catalogue: { ...CATALOGUE, symptoms: [teamLoop.symptom], checks: [teamLoop] },
         },
       ],
+      sources: {
+        ...INPUT.sources,
+        ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
+        catalogue: vi.fn().mockReturnValue({
+          outcome: "ok",
+          value: { held: "catalogue", catalogue: CATALOGUE },
+        }),
+      },
+      readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
+      engine,
+      checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
+      measureVersionOne,
     });
     await pass.findingsFor({ records: [] });
-    expect(measureVersionOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        call: expect.objectContaining({
-          request: expect.objectContaining({ checks: [LOOP, teamLoop] }),
-        }),
-      }),
-    );
+    expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
+      call: {
+        mechanism: "walker",
+        runner: RUNNER,
+        request: {
+          repoRoot: REPO,
+          installRoot: INSTALL,
+          files: [],
+          trackedPaths: [],
+          bindings: [
+            {
+              address: "loop-keyword#loops",
+              engine: "walker",
+              anchor: { kind: "file" },
+              pieceRoot: "/install/walker/loop-keyword/loops",
+              settings: {},
+              forms: {},
+              checkSettings: {},
+              edition: FIRST,
+            },
+          ],
+          checks: [LOOP, teamLoop],
+          answered: [],
+          declaredConfigRoots: [],
+        },
+      },
+      projection: PROJECTION,
+      location: {
+        installRoot: INSTALL,
+        mechanism: "walker",
+        moduleExtension: ".ts",
+        path: INPUT.path,
+        modules: INPUT.modules,
+      },
+    });
   });
 });
