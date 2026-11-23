@@ -1,5 +1,8 @@
 import type { EngineBindings } from "../../../src/domain/language-layer/catalogue-binding.ts";
-import { checkAddressTextOf } from "../../../src/domain/language-layer/check-address-text.ts";
+import {
+  type AddressedCheck,
+  checkAddressTextOf,
+} from "../../../src/domain/language-layer/check-address-text.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import {
   blocksOf,
@@ -29,10 +32,13 @@ const MARGIN_LABELS: readonly FactLabel<
   { key: "settingsTracedTo", label: "Settings traced to" },
 ];
 
+export const addressedCheckOf = (check: Check): AddressedCheck => ({
+  name: check.name,
+  symptom: { name: check.symptom },
+});
+
 const enginesOf = (request: ChecksSource & { readonly check: Check }): string | undefined => {
-  const address = checkAddressTextOf({
-    check: { name: request.check.name, symptom: { name: request.check.symptom } },
-  });
+  const address = checkAddressTextOf({ check: addressedCheckOf(request.check) });
   const engines = request.bindings.get(address) ?? [];
   return engines.length === 0 ? undefined : engines.map(({ name }) => `\`${name}\``).join(", ");
 };

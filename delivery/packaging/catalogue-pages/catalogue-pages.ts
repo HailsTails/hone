@@ -21,7 +21,7 @@ import { ENGINE_REGISTRY } from "../../../src/infrastructure/engines/engine-regi
 import { loadFailureText } from "../../../src/infrastructure/printed-report/load-failures/load-failure-text.ts";
 import { casesPageOf } from "./cases-page.ts";
 import type { CataloguePage, ItemPathPort, Rendered } from "./catalogue-page.ts";
-import { checksPageOf } from "./checks-page.ts";
+import { addressedCheckOf, checksPageOf } from "./checks-page.ts";
 import { principlesPageOf } from "./principles-page.ts";
 import { recipesPageOf } from "./recipes-page.ts";
 import { rulesPageOf } from "./rules-page.ts";
@@ -94,10 +94,7 @@ const bindingsOf = (request: {
   readonly engineBindings: EngineBindingsRepository;
 }): Rendered<EngineBindings> => {
   const bindings = request.engineBindings.read({
-    checks: request.file.checks.map((check) => ({
-      name: check.name,
-      symptom: { name: check.symptom },
-    })),
+    checks: request.file.checks.map(addressedCheckOf),
   });
   return bindings.outcome === "failed"
     ? { outcome: "failed", error: loadFailureText({ failure: bindings.error }) }

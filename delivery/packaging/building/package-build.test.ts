@@ -774,6 +774,33 @@ describe("buildPackage", () => {
     });
   });
 
+  it("fails naming a package root it cannot resolve, writing nothing", async () => {
+    const files = inMemoryFiles({ initial: { ...SOURCE, "/out/stale.js": "stale\n" } });
+
+    const built = await buildPackage({
+      ports: {
+        path: {
+          ...posixPath,
+          resolve: () => ({
+            outcome: "failed",
+            error: { kind: "working-directory-unusable", path: "/package" },
+          }),
+        },
+        fileText: files.fileText,
+        scratch: files.scratch,
+        bundler: bundlerReturning({ outcome: "ok", value: BUNDLE }),
+        declarations: emittingDeclarations({ declarations: ENTRY_DECLARATIONS }),
+      },
+      packageRoot: "/package",
+      outputRoot: "/out",
+    });
+
+    expect({ result: built, written: files.textsUnder({ folder: "/out" }) }).toEqual({
+      result: { outcome: "failed", error: "FAIL: resolve the package root: /package" },
+      written: NOTHING_WRITTEN,
+    });
+  });
+
   it("fails naming an item the catalogue pages cannot be rendered from, writing nothing", async () => {
     const { files, built } = builtWith({
       source: {

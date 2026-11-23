@@ -5,7 +5,7 @@ import { clauseIdOf } from "../../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../src/domain/rule-set/discipline-id-of.ts";
 import type { CatalogueFile } from "../../../src/infrastructure/content-files/symptom-catalogues/symptom-catalogue-wire.ts";
 import { createPathPort } from "../../../src/infrastructure/node/path-port.ts";
-import { checksPageOf } from "./checks-page.ts";
+import { addressedCheckOf, checksPageOf } from "./checks-page.ts";
 
 const PATH = createPathPort({ flavour: "posix", workingDirectory: () => "/install/rules" });
 
@@ -129,6 +129,15 @@ describe("checksPageOf", () => {
     ).toEqual({
       path: "rules/typescript/checks.md",
       text: "# Checks in TypeScript\n\n## Claimed type\n\n### cast-to-any\n\n- **Engines:** `walker`, `eslint`\n\n### non-null-assertions\n",
+    });
+  });
+});
+
+describe("addressedCheckOf", () => {
+  it("addresses a check by its name and its symptom's name", () => {
+    expect(addressedCheckOf({ symptom: "claimed-type", name: "cast-to-any" })).toEqual({
+      name: "cast-to-any",
+      symptom: { name: "claimed-type" },
     });
   });
 });
