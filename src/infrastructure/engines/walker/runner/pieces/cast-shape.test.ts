@@ -259,6 +259,24 @@ describe("JSDoc type assertions", () => {
     expect(assertionOf({ node, syntaxApi: SYNTAX_API })).toBeUndefined();
   });
 
+  it.each<{ readonly type: string; readonly bearing: AnyBearing }>([
+    { type: "{any}", bearing: "any-bearing" },
+    { type: "{*}", bearing: "any-bearing" },
+    { type: "{?}", bearing: "any-bearing" },
+    { type: "{Array<*>}", bearing: "any-bearing" },
+    { type: "{Profile}", bearing: "any-free" },
+    { type: "{?Profile}", bearing: "any-free" },
+  ])("reads a JSDoc cast to $type as $bearing", ({ type, bearing }) => {
+    const { node } = argumentOf({
+      fileName: "src/casts.js",
+      source: `use(/** @type ${type} */ (candidate));\n`,
+    });
+    const assertion = assertionOf({ node, syntaxApi: SYNTAX_API });
+    assert(assertion !== undefined);
+
+    expect(anyBearingOf({ typeNode: assertion.type, syntaxApi: SYNTAX_API })).toBe(bearing);
+  });
+
   it.each<{ readonly source: string; readonly shape: CastShape }>([
     { source: "use(/** @type {const} */ (['a']));\n", shape: "const-assertion" },
     { source: "use(/** @type {unknown} */ (candidate));\n", shape: "unknown-widening" },

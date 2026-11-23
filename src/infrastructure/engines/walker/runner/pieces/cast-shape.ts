@@ -52,6 +52,8 @@ export const assertionOf = (request: {
   return jsDocAssertionOf(request);
 };
 
+const ANY_SPELLINGS = ["AnyKeyword", "JSDocAllType", "JSDocUnknownType"] as const;
+
 const anyBearingFound = (request: {
   readonly typeNode: SyntaxNode;
   readonly syntaxApi: SyntaxApi;
@@ -63,7 +65,8 @@ export const anyBearingOf = (request: {
   readonly syntaxApi: SyntaxApi;
 }): AnyBearing => {
   const { typeNode, syntaxApi } = request;
-  if (typeNode.kind === syntaxApi.SyntaxKind.AnyKeyword) return "any-bearing";
+  if (ANY_SPELLINGS.some((spelling) => typeNode.kind === syntaxApi.SyntaxKind[spelling]))
+    return "any-bearing";
   return (
     syntaxApi.forEachChild(typeNode, (child) => anyBearingFound({ typeNode: child, syntaxApi })) ??
     "any-free"

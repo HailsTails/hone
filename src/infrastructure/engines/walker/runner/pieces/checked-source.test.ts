@@ -131,6 +131,56 @@ describe("checkedSourceOf", () => {
     ]);
   });
 
+  it("fails a JavaScript file whose nearest config does not resolve, naming the config", () => {
+    const file = repoPathOf("packages/app/src/route.js");
+    const readText = vi.fn<WalkerFile["readText"]>();
+    const checkedSource = checkedSourceOf({
+      syntaxApi: SYNTAX_API,
+      disk: textsDisk({
+        root: "/repo",
+        texts: { "packages/app/tsconfig.json": '{"extends":"./missing.json"}' },
+      }),
+    });
+
+    expect(checkedSource({ file, readText })).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "file-unparseable",
+        file,
+        detail:
+          "packages/app/tsconfig.json does not resolve: TS5083 Cannot read file 'packages/app/missing.json'.",
+      },
+    });
+    expect(readText).not.toHaveBeenCalled();
+  });
+
+  it("finds the nearest config under a root written with backslashes", () => {
+    const texts = new Map([["C:/repo/tsconfig.json", '{"compilerOptions":{"checkJs":true}}']]);
+    const checkedSource = checkedSourceOf({
+      syntaxApi: SYNTAX_API,
+      disk: {
+        root: "C:\\repo",
+        kindAt: ({ path }) => {
+          if (texts.has(path)) return "file";
+          return path === "C:/repo" || path === "C:/repo/src" ? "directory" : "absent";
+        },
+        textAt: ({ path }) => {
+          const text = texts.get(path);
+          return text === undefined
+            ? { outcome: "failed", error: { detail: `${path} is not a file` } }
+            : { outcome: "ok", value: text };
+        },
+      },
+    });
+
+    expect(
+      checkedSource({
+        file: repoPathOf("src/route.js"),
+        readText: () => ({ outcome: "ok", value: "export const a = 1;\n" }),
+      }),
+    ).toEqual({ outcome: "ok", value: "checked" });
+  });
+
   it("passes on the failure of a JavaScript file it cannot read", () => {
     const file = repoPathOf("src/route.js");
     const checkedSource = checkedSourceOf({

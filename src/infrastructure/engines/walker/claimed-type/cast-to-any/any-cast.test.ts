@@ -94,10 +94,11 @@ describe("CD-1 existing any-cast capability", () => {
     { name: "root-only excluded directory", fileName: "vendor/example.ts", kind: "skipped" },
     { name: "nested root-only directory", fileName: "src/vendor/example.ts", kind: "syntax" },
     { name: "TSX source", fileName: "src/example.tsx", kind: "syntax" },
+    { name: "ES module TypeScript source", fileName: "src/example.mts", kind: "syntax" },
+    { name: "CommonJS TypeScript source", fileName: "src/example.cts", kind: "syntax" },
     { name: "test source", fileName: "src/example.test.ts", kind: "syntax" },
     { name: "test helper source", fileName: "tests/test-support.ts", kind: "syntax" },
     { name: "proof script source", fileName: "scripts/install-proof-plan.ts", kind: "syntax" },
-    { name: "non-TypeScript union candidate", fileName: "src/example.test.js", kind: "skipped" },
   ])("preserves source-family eligibility for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
@@ -115,6 +116,110 @@ describe("CD-1 existing any-cast capability", () => {
 
     expect(selected).toMatchObject({ outcome: "ok", value: { kind } });
     expect(readText).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "a pragma-free file", source: "export const a = 1;\n", kind: "skipped" },
+    {
+      name: "a file under @ts-check",
+      source: "// @ts-check\nexport const a = 1;\n",
+      kind: "syntax",
+    },
+  ])(
+    "judges a JavaScript source by whether the compiler checks it: $kind for $name",
+    ({ source, kind }) => {
+      const file = repoPathOf("src/example.js");
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+        syntaxApi: SYNTAX_API,
+      });
+      assert(prepared.outcome === "ok");
+
+      expect(
+        prepared.value.prepareFile({
+          file,
+          readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+        }),
+      ).toMatchObject({ outcome: "ok", value: { kind } });
+    },
+  );
+
+  it.each([
+    { type: "{any}", snippet: "/** @type {any} */ (rawText)); " },
+    { type: "{*}", snippet: "/** @type {*} */ (rawText)); " },
+    { type: "{?}", snippet: "/** @type {?} */ (rawText)); " },
+    { type: "{Array<any>}", snippet: "/** @type {Array<any>} */ (rawText)); " },
+  ])(
+    "emits a JSDoc cast to $type in a checked JavaScript file from the start of its JSDoc",
+    ({ type, snippet }) => {
+      const file = repoPathOf("src/casts.js");
+      const source = `// @ts-check\nuse(/** @type ${type} */ (rawText));\n`;
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+        syntaxApi: SYNTAX_API,
+      });
+      assert(prepared.outcome === "ok");
+      const selected = prepared.value.prepareFile({
+        file,
+        readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+      });
+      assert(selected.outcome === "ok");
+      assert(selected.value.kind === "syntax");
+      const tree = SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true);
+      const anchorAt = vi
+        .fn<(request: { readonly position: number }) => Anchor>()
+        .mockReturnValue({ line: 2, column: 4 });
+      const observers = selected.value.begin({ sourceFile: tree, anchorAt });
+
+      observers.enter?.({
+        node: tree
+          .getChildAt(0, tree)
+          .getChildAt(0, tree)
+          .getChildAt(0, tree)
+          .getChildAt(2, tree)
+          .getChildAt(0, tree),
+      });
+
+      expect(observers.finish()).toEqual([
+        { check: ADDRESS, anchor: { line: 2, column: 4 }, snippet },
+      ]);
+      expect(anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 17 });
+    },
+  );
+
+  it("leaves an any-free JSDoc cast in a checked JavaScript file to unlisted-cast-site", () => {
+    const file = repoPathOf("src/casts.js");
+    const source = "// @ts-check\nuse(/** @type {Category} */ (rawText));\n";
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+    const selected = prepared.value.prepareFile({
+      file,
+      readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selected.outcome === "ok");
+    assert(selected.value.kind === "syntax");
+    const tree = SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true);
+    const observers = selected.value.begin({
+      sourceFile: tree,
+      anchorAt: vi.fn().mockReturnValue({ line: 2, column: 4 }),
+    });
+
+    observers.enter?.({
+      node: tree
+        .getChildAt(0, tree)
+        .getChildAt(0, tree)
+        .getChildAt(0, tree)
+        .getChildAt(2, tree)
+        .getChildAt(0, tree),
+    });
+
+    expect(observers.finish()).toEqual([]);
   });
 
   it("emits an any-cast using the supplied anchor and the existing eighty-character snippet", () => {

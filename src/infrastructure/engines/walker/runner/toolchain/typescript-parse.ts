@@ -13,6 +13,8 @@ export type ExportAssignment = typescript.ExportAssignment;
 export type Diagnostic = typescript.Diagnostic;
 export type CompilerOptions = typescript.CompilerOptions;
 export type ParseConfigHost = typescript.ParseConfigHost;
+export type TsConfigSourceFile = typescript.TsConfigSourceFile;
+export type ParsedCommandLine = typescript.ParsedCommandLine;
 export type CustomTransformers = typescript.CustomTransformers;
 
 export type TypeScriptParsePort = {

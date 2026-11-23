@@ -158,7 +158,7 @@ describe("CD-5 existing annotation capability", () => {
       kind: "syntax",
     },
   ])(
-    "reads a JavaScript source only when the compiler checks it, skipping $name",
+    "judges a JavaScript source by whether the compiler checks it: $kind for $name",
     ({ source, kind }) => {
       const file = repoPathOf("src/example.jsx");
       const prepared = check.prepare({

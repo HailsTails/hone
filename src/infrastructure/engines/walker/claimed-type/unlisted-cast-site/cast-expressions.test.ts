@@ -126,7 +126,7 @@ describe("CD-2 existing cast capability", () => {
       kind: "syntax",
     },
   ])(
-    "reads a JavaScript source only when the compiler checks it, skipping $name",
+    "judges a JavaScript source by whether the compiler checks it: $kind for $name",
     ({ source, kind }) => {
       const file = repoPathOf("src/example.js");
       const prepared = check.prepare({
@@ -203,6 +203,37 @@ describe("CD-2 existing cast capability", () => {
     ]);
     expect(anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 17 });
   });
+
+  it.each(["{any}", "{*}", "{?}", "{Array<any>}"])(
+    "leaves a JSDoc cast to %s in a checked JavaScript file to cast-to-any",
+    (type) => {
+      const file = repoPathOf("src/casts.js");
+      const source = `// @ts-check\nuse(/** @type ${type} */ (rawText));\n`;
+      const prepared = check.prepare({
+        bindings: [CLAUSE],
+        repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+        syntaxApi: SYNTAX_API,
+      });
+      assert(prepared.outcome === "ok");
+      const selected = prepared.value.prepareFile({
+        file,
+        readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+      });
+      assert(selected.outcome === "ok");
+      assert(selected.value.kind === "syntax");
+      const tree = SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true);
+      const observers = selected.value.begin({
+        sourceFile: tree,
+        anchorAt: vi.fn().mockReturnValue({ line: 2, column: 4 }),
+      });
+
+      observers.enter?.({
+        node: statementCast({ tree, index: 0 }).getChildAt(2, tree).getChildAt(0, tree),
+      });
+
+      expect(observers.finish()).toEqual([]);
+    },
+  );
 
   it("emits an arbitrary cast with its owned clause, supplied anchor and eighty-character snippet", () => {
     const observed = sourceObservations({

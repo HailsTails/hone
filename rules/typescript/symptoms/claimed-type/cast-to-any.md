@@ -10,8 +10,8 @@
 A type assertion whose type contains `any`.
 
 ## Flags
-- `.ts` and `.tsx` files; generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
-- A type assertion (`x as T` or `<T>x`) whose type contains the `any` keyword at any depth: `as any`, `<any>x`, `as Array<any>`, `as Record<string, any>`, `as Map<string, any>` or `as { field: any }`. The check reads the syntax tree, so an `any` elsewhere on the line is not attributed to the cast.
+- `.ts`, `.tsx`, `.mts` and `.cts` files, and `.js`, `.jsx`, `.mjs` and `.cjs` files the compiler checks: under `// @ts-check`, or with `checkJs` on in the nearest `tsconfig.json`. A nearest `tsconfig.json` that does not resolve stops the check on the JavaScript files under it with an error. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
+- A type assertion (`x as T`, `<T>x` or, in JavaScript, `/** @type {T} */ (x)`) whose type contains `any` at any depth: `as any`, `<any>x`, `as Array<any>`, `as Record<string, any>`, `as Map<string, any>`, `as { field: any }`, or JSDoc's `{*}` and `{?}`. The check reads the syntax tree, so an `any` elsewhere on the line is not attributed to the cast.
 - This check judges these before [unlisted-cast-site](unlisted-cast-site.md) and has no settings; every other assertion is [unlisted-cast-site](unlisted-cast-site.md)'s.
 - A bare annotation such as `let value: any` is not flagged by this check; [explicit-any](../untyped-value/explicit-any.md) covers it.
 

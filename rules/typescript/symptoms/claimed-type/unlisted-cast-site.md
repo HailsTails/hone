@@ -10,7 +10,7 @@
 A type assertion that is not on the permitted list.
 
 ## Flags
-- `.ts`, `.tsx`, `.mts` and `.cts` files, and `.js`, `.jsx`, `.mjs` and `.cjs` files the compiler checks: under `// @ts-check`, or with `checkJs` on in the nearest `tsconfig.json`. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
+- `.ts`, `.tsx`, `.mts` and `.cts` files, and `.js`, `.jsx`, `.mjs` and `.cjs` files the compiler checks: under `// @ts-check`, or with `checkJs` on in the nearest `tsconfig.json`. A nearest `tsconfig.json` that does not resolve stops the check on the JavaScript files under it with an error. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
 - Every `x as T` and `<T>x` assertion, and in JavaScript every `/** @type {T} */ (x)`, except a const assertion, `as const`, `<const>x` or `/** @type {const} */ (x)`. Assertions whose type contains `any` are [cast-to-any](cast-to-any.md)'s and are not repeated here.
 - `as unknown` and `<unknown>x` are flagged. Widening never needs an assertion: annotate instead, `const parsed: unknown = JSON.parse(text)`.
 - A cast through `unknown`, such as `raw as unknown as User`, `(<unknown>raw) as User` or one wrapped in `!` or `satisfies`, is flagged with its own message, and so is its `unknown` half. It is the escape hatch that turns any value into any type; check the value's shape at runtime at the boundary instead.
