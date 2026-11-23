@@ -17,6 +17,13 @@
       "fileName": "src/worker.ts",
       "source": "declare const process: ProcessPort;\nprocess.env.MODE;",
       "expectedLines": [2]
+    },
+    {
+      "name": "ambient browser dialog calls",
+      "edition": "2",
+      "fileName": "src/session.ts",
+      "source": "alert(\"ready\");\nwindow.confirm(\"continue?\");\nwindow[\"prompt\"](\"name\");",
+      "expectedLines": [1, 2, 3]
     }
   ],
   "allow": [
@@ -36,6 +43,20 @@
       "name": "destructured process alias is outside the syntax check",
       "fileName": "src/worker.ts",
       "source": "const { env: settings } = process;\nsettings.MODE;",
+      "expectedLines": []
+    },
+    {
+      "name": "edition one leaves browser dialogs outside the check",
+      "edition": "1",
+      "fileName": "src/session.ts",
+      "source": "alert(\"ready\");\nwindow.confirm(\"continue?\");",
+      "expectedLines": []
+    },
+    {
+      "name": "locally bound browser dialog names",
+      "edition": "2",
+      "fileName": "src/session.ts",
+      "source": "const work = (alert: Notify, window: WindowPort) => { alert(\"ready\"); window.confirm(\"continue?\"); };",
       "expectedLines": []
     }
   ]
