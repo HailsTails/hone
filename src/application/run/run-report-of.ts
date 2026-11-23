@@ -1,7 +1,5 @@
 import { findingSiteOf } from "../../domain/finding/check-site.ts";
-import { checkOfFinding } from "../../domain/finding/finding-check.ts";
-import type { Finding } from "../../domain/finding/governance.ts";
-import { checkAddressOf } from "../../domain/language-layer/check-address.ts";
+import type { CheckFinding } from "../../domain/finding/governance.ts";
 import type {
   Check,
   Symptom,
@@ -22,79 +20,33 @@ import {
 import type { AssessmentLeftElsewhere, RunReport } from "../../domain/report/run-report.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
 import { baseJudgementOf, type TouchedSet } from "../../domain/repository/touched-set.ts";
-import { checksOfClauses, editionsOf } from "../../domain/settings/selection/selection-checks.ts";
-import type { VersionTwoSelection } from "../../domain/settings/selection/selection.ts";
 import type { SettingsNote } from "../../domain/settings/settings-note.ts";
-import type { EngineRun } from "../ports/engine/engine-run.ts";
+import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import {
   engineProblemsOf,
   engineUnmeasuredOf,
   runMeasurementsOf,
 } from "./engines/engine-states.ts";
+import type { NamedSettingsReading } from "./settings/read-settings.ts";
 
-export type RunReportRequest = {
+type ReportInputs = {
   readonly catalogue: SymptomCatalogue;
-  readonly selection: VersionTwoSelection;
   readonly excluded: readonly RepoPath[];
   readonly notes: readonly SettingsNote[];
   readonly records: RecordsReading;
   readonly touched: TouchedSet;
-  readonly runs: readonly EngineRun[];
   readonly tracked: readonly RepoPath[];
   readonly available: readonly Check[];
 };
 
-const namingItsCheck = (request: {
-  readonly catalogue: SymptomCatalogue;
-  readonly finding: Finding;
-}): Finding => {
-  const resolved = checkOfFinding(request);
-  return resolved.resolved === "check"
-    ? { ...request.finding, check: checkAddressOf({ check: resolved.check }) }
-    : request.finding;
-};
-
-const findingsOf = (request: {
-  readonly catalogue: SymptomCatalogue;
-  readonly runs: readonly EngineRun[];
-}): readonly Finding[] =>
-  request.runs.flatMap((run) =>
-    run.hits.map((hit) =>
-      namingItsCheck({
-        catalogue: request.catalogue,
-        finding: { ...hit, mechanism: run.mechanism },
-      }),
-    ),
-  );
-
-const partyOf = (request: { readonly finding: Finding }): PartyReport =>
+const partyOf = (request: { readonly finding: CheckFinding }): PartyReport =>
   request.finding.importSpecifier === undefined
     ? { reported: "not-reported" }
     : { reported: "specifier", specifier: request.finding.importSpecifier };
 
-const answeringOf = (request: RunReportRequest): Answering => {
-  const raised: readonly RaisedFinding[] = findingsOf(request).map((finding) => ({
-    finding,
-    party: partyOf({ finding }),
-  }));
-  return answerFindings({
-    catalogue: request.catalogue,
-    records: request.records.records,
-    findings: raised,
-    touched: request.touched,
-    runs: request.runs,
-    measurements: runMeasurementsOf({
-      runs: request.runs,
-      selected: request.selection.selected,
-      tracked: request.tracked,
-      excluded: request.excluded,
-    }),
-  });
-};
-
 const symptomsOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly findings: readonly Finding[];
+  readonly findings: readonly CheckFinding[];
 }): readonly Symptom[] => {
   const named = request.findings.flatMap((finding) => {
     const site = findingSiteOf({ catalogue: request.catalogue, finding });
@@ -105,7 +57,7 @@ const symptomsOf = (request: {
   );
 };
 
-const forfeitureLeftElsewhereOf = (request: RunReportRequest): readonly AssessmentLeftElsewhere[] =>
+const forfeitureLeftElsewhereOf = (request: ReportInputs): readonly AssessmentLeftElsewhere[] =>
   baseJudgementOf({ touched: request.touched }) === "left-to-another-run"
     ? [
         {
@@ -117,7 +69,7 @@ const forfeitureLeftElsewhereOf = (request: RunReportRequest): readonly Assessme
     : [];
 
 const carriedStandingLeftElsewhereOf = (
-  request: RunReportRequest,
+  request: ReportInputs,
 ): readonly AssessmentLeftElsewhere[] => {
   const judgement = carriedJudgementOf({
     records: request.records.records,
@@ -129,19 +81,25 @@ const carriedStandingLeftElsewhereOf = (
     : [];
 };
 
-const assessmentOf = (request: RunReportRequest): readonly AssessmentLeftElsewhere[] => [
+const assessmentOf = (request: ReportInputs): readonly AssessmentLeftElsewhere[] => [
   ...forfeitureLeftElsewhereOf(request),
   ...carriedStandingLeftElsewhereOf(request),
 ];
 
-export const runReportOf = (request: RunReportRequest): RunReport => {
-  const answering = answeringOf(request);
-  const { catalogue, selection, records, runs } = request;
+type ReportStatus = Pick<RunReport, "not-adopted" | "not-run" | "editions" | "projection-problems">;
+
+const reportAfterAnswering = (
+  request: ReportInputs & {
+    readonly answering: Answering;
+    readonly status: ReportStatus;
+    readonly runs: readonly NamedEngineRun[];
+    readonly selected: Parameters<typeof engineUnmeasuredOf>[0]["selected"];
+  },
+): RunReport => {
+  const { answering, catalogue, records, runs } = request;
   return {
+    ...request.status,
     excluded: request.excluded,
-    "not-adopted": checksOfClauses({ catalogue, clauses: selection.notAdopted }),
-    "not-run": checksOfClauses({ catalogue, clauses: selection.notRun }),
-    editions: editionsOf({ catalogue, readings: selection.editions }),
     findings: answering.findings,
     answered: answering.answered,
     available: request.available,
@@ -160,15 +118,51 @@ export const runReportOf = (request: RunReportRequest): RunReport => {
       ...engineUnmeasuredOf({
         catalogue,
         runs,
-        selected: selection.selected,
+        selected: request.selected,
         tracked: request.tracked,
       }),
     ],
-    "projection-problems": engineProblemsOf({ catalogue, runs }),
     assessment: assessmentOf(request),
     "settings-notes": request.notes,
     "record-notes": records.notes,
     carried: carriedListingOf({ records: records.records }),
     symptoms: symptomsOf({ catalogue, findings: answering.findings }),
   };
+};
+
+export type RunReportRequest = ReportInputs & {
+  readonly selection: NamedSettingsReading["selection"];
+  readonly runs: readonly NamedEngineRun[];
+};
+
+export const namedRunReportOf = (request: RunReportRequest): RunReport => {
+  const { catalogue, records, runs, selection } = request;
+  const selected = selection.selected.map(({ binding }) => binding);
+  const status = {
+    "not-adopted": selection.notAdopted.map(({ check }) => check),
+    "not-run": selection.notRun.map(({ check }) => check),
+    editions: selection.selected
+      .filter(({ editions }) => editions.declared.length > 1)
+      .map(({ check, binding, editions }) => ({
+        check,
+        engine: { name: binding.engine },
+        edition: binding.edition,
+        latest: editions.latest,
+      })),
+    "projection-problems": engineProblemsOf({ catalogue, runs }),
+  };
+  const findings = runs.flatMap(({ hits, mechanism }) =>
+    hits.map((hit): RaisedFinding => {
+      const finding = { ...hit, mechanism };
+      return { finding, party: partyOf({ finding }) };
+    }),
+  );
+  const measurements = runMeasurementsOf({ ...request, selected });
+  const answering = answerFindings({
+    ...request,
+    records: records.records,
+    findings,
+    measurements,
+  });
+  return reportAfterAnswering({ ...request, selected, answering, status });
 };

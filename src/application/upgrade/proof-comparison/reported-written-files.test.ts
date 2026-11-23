@@ -1,17 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { reportedWrittenFilesOf } from "./reported-written-files.ts";
 
-const LOOPS_CLAUSE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-15"),
-  clause: clauseIdOf("loops"),
-};
+const ASSERTION_CHECK: CheckFinding["check"] = "claimed-type#non-null-assertions";
 
 const DECLARATION = repoPathOf("hone.eslint.d.mts");
 
@@ -21,11 +14,11 @@ const SETTINGS = repoPathOf("hone.config.json");
 
 const SOURCE = repoPathOf("src/a.ts");
 
-const findingIn = (request: { readonly file: typeof SOURCE }): Finding => ({
-  clause: LOOPS_CLAUSE,
+const findingIn = (request: { readonly file: typeof SOURCE }): CheckFinding => ({
+  check: ASSERTION_CHECK,
   file: request.file,
   anchor: { line: 1, column: 1 },
-  snippet: "for (;;) {}",
+  snippet: "value!",
   mechanism: "eslint",
 });
 
@@ -38,7 +31,7 @@ describe("reportedWrittenFilesOf", () => {
           findings: [findingIn({ file: SOURCE })],
           answered: [{ finding: findingIn({ file: PROJECTION }), by: [] }],
           unrecorded: [
-            { kind: "ignore", clause: LOOPS_CLAUSE, file: DECLARATION, mechanism: "eslint" },
+            { kind: "ignore", check: ASSERTION_CHECK, file: DECLARATION, mechanism: "eslint" },
           ],
         },
       }),
@@ -55,7 +48,7 @@ describe("reportedWrittenFilesOf", () => {
           unrecorded: [
             {
               kind: "command-line-option",
-              clause: LOOPS_CLAUSE,
+              check: ASSERTION_CHECK,
               location: SETTINGS,
               script: "lint",
               option: "--no-config-lookup",

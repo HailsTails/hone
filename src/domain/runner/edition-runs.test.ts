@@ -1,26 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
-import { clauseIdOf } from "../rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { editionOf } from "../rule-set/edition-of.ts";
 import type { SourceCase } from "../rule-set/rule-set-types.ts";
-import { editionRunsOf } from "./edition-runs.ts";
-import type { RunnerClause } from "./runner-module-types.ts";
+import { casesByEdition } from "./edition-runs.ts";
 
-const CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-27"),
-    clause: clauseIdOf("test-body-logic"),
-  },
-  anchor: { kind: "file" },
-  pieceRoot: "/install/mechanisms/audit/CD-27",
-  settings: { module: "test-body-logic.ts" },
-  clauseSettings: {},
-  edition: editionOf("1"),
-};
+const DEFAULT_EDITION = editionOf("1");
 const SECOND = editionOf("2");
 const UNSTATED: SourceCase = {
   name: "if statement",
@@ -43,23 +28,25 @@ const LATER: SourceCase = {
   edition: SECOND,
 };
 
-describe("editionRunsOf", () => {
-  it("runs every case under the clause's own edition when no case names another", () => {
-    expect(editionRunsOf({ clause: CLAUSE, cases: [UNSTATED, FIRST] })).toEqual([
-      { clause: CLAUSE, cases: [UNSTATED, FIRST] },
+describe("casesByEdition", () => {
+  it("runs every case under the default edition when no case names another", () => {
+    expect(casesByEdition({ defaultEdition: DEFAULT_EDITION, cases: [UNSTATED, FIRST] })).toEqual([
+      { edition: DEFAULT_EDITION, cases: [UNSTATED, FIRST] },
     ]);
   });
 
-  it("runs each named edition's cases apart, the clause's own edition first", () => {
-    expect(editionRunsOf({ clause: CLAUSE, cases: [LATER, UNSTATED, FIRST] })).toEqual([
-      { clause: CLAUSE, cases: [UNSTATED, FIRST] },
-      { clause: { ...CLAUSE, edition: "2" }, cases: [LATER] },
+  it("runs each named edition's cases apart, the default edition first", () => {
+    expect(
+      casesByEdition({ defaultEdition: DEFAULT_EDITION, cases: [LATER, UNSTATED, FIRST] }),
+    ).toEqual([
+      { edition: DEFAULT_EDITION, cases: [UNSTATED, FIRST] },
+      { edition: SECOND, cases: [LATER] },
     ]);
   });
 
-  it("runs nothing under the clause's own edition when every case names another", () => {
-    expect(editionRunsOf({ clause: CLAUSE, cases: [LATER] })).toEqual([
-      { clause: { ...CLAUSE, edition: "2" }, cases: [LATER] },
+  it("runs nothing under the default edition when every case names another", () => {
+    expect(casesByEdition({ defaultEdition: DEFAULT_EDITION, cases: [LATER] })).toEqual([
+      { edition: SECOND, cases: [LATER] },
     ]);
   });
 });

@@ -8,14 +8,13 @@ import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { FilePresence } from "../domain/repository/file-presence.ts";
 import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import type { CommandHandler } from "./composed-command.ts";
 import {
+  namedSettingsCommandOf,
   notReadyCommandOf,
   settingsRequiringCommandOf,
   type VersionChoice,
-  versionChosenCommandOf,
 } from "./version-chosen-command.ts";
 
 type Presences = { readonly versionOne: FilePresence; readonly versionTwo: FilePresence };
@@ -49,7 +48,6 @@ const commandOver = (request: {
     read: vi.fn<FileTextPort["read"]>(),
     write: vi.fn<FileTextPort["write"]>(),
   },
-  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
@@ -82,72 +80,60 @@ const notReadyRan = (request: {
 }): Promise<void> =>
   notReadyCommandOf({ ports: request.command, command: request.subcommand })(request.command);
 
-describe("versionChosenCommandOf", () => {
+describe("namedSettingsCommandOf", () => {
   it.each([
-    { repo: "versionOne", present: VERSION_ONE_ONLY, ran: { versionOne: 1, versionTwo: 0 } },
-    { repo: "versionTwo", present: VERSION_TWO_ONLY, ran: { versionOne: 0, versionTwo: 1 } },
-    { repo: "neither", present: NEITHER, ran: { versionOne: 0, versionTwo: 1 } },
+    { repo: "versionOne", present: VERSION_ONE_ONLY, ran: 0 },
+    { repo: "versionTwo", present: VERSION_TWO_ONLY, ran: 1 },
+    { repo: "neither", present: NEITHER, ran: 1 },
   ])(
-    "runs the handler for the settings file the repository holds, given $repo",
+    "routes a request to the named handler when supported, given $repo",
     async ({ present, ran }) => {
-      const chosen = handlers();
+      const run = vi.fn<CommandHandler>().mockResolvedValue(undefined);
       const command = commandOver({
         process: processWith({ arguments: ["--repo", "/repo"] }),
         present,
       });
 
-      await chosenRan({ chooser: versionChosenCommandOf, chosen, command: command });
-
-      expect({
-        versionOne: vi.mocked(chosen.versionOne).mock.calls.length,
-        versionTwo: vi.mocked(chosen.versionTwo).mock.calls.length,
-      }).toEqual(ran);
+      const handle = namedSettingsCommandOf({ ports: command, run });
+      await handle(command);
+      expect(run).toHaveBeenCalledTimes(ran);
     },
   );
 
-  it("hands the version 1 handler the very request it was given, unchanged", async () => {
+  it("hands the migration handler the original request for a version one repository", async () => {
     const chosen = handlers();
     const command = commandOver({
       process: processWith({ arguments: ["--repo", "/repo"] }),
       present: VERSION_ONE_ONLY,
     });
 
-    await chosenRan({ chooser: versionChosenCommandOf, chosen, command: command });
+    await chosenRan({ chooser: settingsRequiringCommandOf, chosen, command });
 
     expect(vi.mocked(chosen.versionOne).mock.calls).toEqual([[command]]);
   });
 
-  it("leaves a request with no repository to the version 1 handler, which refuses it as it does today", async () => {
-    const chosen = handlers();
-
-    await chosenRan({
-      chooser: versionChosenCommandOf,
-      chosen,
-      command: commandOver({ process: processWith({ arguments: [] }), present: NEITHER }),
-    });
-
-    expect(vi.mocked(chosen.versionOne).mock.calls.length).toBe(1);
+  it("delegates a request with no repository to the named handler for its argument check", async () => {
+    const run = vi.fn<CommandHandler>().mockResolvedValue(undefined);
+    const command = commandOver({ process: processWith({ arguments: [] }), present: NEITHER });
+    const handle = namedSettingsCommandOf({ ports: command, run });
+    await handle(command);
+    expect(run).toHaveBeenCalledExactlyOnceWith(command);
   });
 
-  it("prints the settings-in-both-versions line and exits 2, running neither handler, when the repository holds both settings files", async () => {
-    const chosen = handlers();
+  it("prints the settings-in-both-versions line and exits 2 before calling the named handler", async () => {
+    const run = vi.fn<CommandHandler>();
     const processPort = processWith({ arguments: ["--repo", "/repo"] });
 
-    await chosenRan({
-      chooser: versionChosenCommandOf,
-      chosen,
-      command: commandOver({ process: processPort, present: BOTH }),
-    });
+    const command = commandOver({ process: processPort, present: BOTH });
+    const handle = namedSettingsCommandOf({ ports: command, run });
+    await handle(command);
 
     expect({
-      ran: [
-        vi.mocked(chosen.versionOne).mock.calls.length,
-        vi.mocked(chosen.versionTwo).mock.calls.length,
-      ],
+      ran: run.mock.calls.length,
       writes: vi.mocked(processPort.writeOut).mock.calls,
       exits: vi.mocked(processPort.exitWith).mock.calls,
     }).toEqual({
-      ran: [0, 0],
+      ran: 0,
       writes: [
         [
           {
@@ -234,6 +220,25 @@ describe("notReadyCommandOf", () => {
         ],
       ],
       exits: [[{ code: 2 }]],
+    });
+  });
+});
+
+describe("namedSettingsCommandOf", () => {
+  it("asks a version one repository to upgrade before starting an engine command", async () => {
+    const run = vi.fn<CommandHandler>();
+    const command = commandOver({
+      process: processWith({ arguments: ["--repo", "/repo"] }),
+      present: VERSION_ONE_ONLY,
+    });
+    const handler = namedSettingsCommandOf({ ports: command, run });
+
+    await handler(command);
+
+    expect(run).not.toHaveBeenCalled();
+    expect(command.process.exitWith).toHaveBeenCalledExactlyOnceWith({ code: 2 });
+    expect(command.process.writeOut).toHaveBeenCalledExactlyOnceWith({
+      text: expect.stringContaining("upgrade-needed disciplines.json"),
     });
   });
 });

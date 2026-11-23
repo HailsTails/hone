@@ -37,7 +37,7 @@ const FORBIDDEN_FOLDERS: readonly string[] = [
 ];
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
@@ -54,8 +54,8 @@ export const check: WalkerPiece = {
           ...(folder === undefined ? [] : [`forbidden categorical folder: ${folder}`]),
         ];
         const hits = snippets.flatMap((snippet) =>
-          clauses.map((clause) => ({
-            clause: clause.address,
+          bindings.map((binding) => ({
+            check: binding.address,
             anchor: { line: 1, column: 0 },
             snippet,
           })),

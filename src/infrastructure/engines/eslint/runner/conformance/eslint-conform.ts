@@ -9,6 +9,7 @@ import type { AbsolutePath } from "../../../../../domain/repository/absolute-pat
 import type { Result } from "../../../../../domain/result.ts";
 import type { SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import type { CaseVerdict } from "../../../../../domain/runner/runner-result-types.ts";
@@ -113,18 +114,11 @@ export const pluginOf = <Clause extends ConfiguredClause>(request: {
   return { outcome: "ok", value: { ...request.configured, plugin: request.parsed.value } };
 };
 
-export const loadedPieceClauseOf = (request: {
-  readonly configured: ConfiguredClause;
-  readonly modules: ModuleLoaderPort;
-}): Promise<Outcome<LoadedClause<ConfiguredClause>>> =>
-  request.modules
-    .load({ path: request.configured.modulePath })
-    .then((loaded) =>
-      pluginOf({ parsed: parsedPluginOf({ loaded }), configured: request.configured }),
-    );
-
 const lintedSourceCases = (request: {
-  readonly selected: Outcome<LoadedClause<ConfiguredClause>>;
+  readonly selected: Outcome<{
+    readonly plugin: LoadedEslintPlugin;
+    readonly settings: EslintPieceSettings;
+  }>;
   readonly cwd: AbsolutePath;
   readonly cases: readonly SourceCase[];
   readonly eslint: Pick<EslintPort, "lintSourceCases">;
@@ -166,4 +160,39 @@ export const conformedCases = (request: {
     .then((selected) =>
       lintedSourceCases({ selected, cwd: cwd.data, cases: request.cases, eslint: request.eslint }),
     );
+};
+
+export const conformedNamedCases = async (request: {
+  readonly binding: CheckBinding;
+  readonly cases: readonly SourceCase[];
+  readonly path: PathPort;
+  readonly eslint: Pick<EslintPort, "lintSourceCases">;
+  readonly modules: ModuleLoaderPort;
+}): Promise<Outcome<readonly CaseVerdict[]>> => {
+  const { binding } = request;
+  const settings = eslintPieceSettingsSchema.safeParse(binding.settings);
+  if (!settings.success) {
+    return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: z.prettifyError(settings.error) });
+  }
+  const cwd = absolutePathSchema.safeParse(binding.pieceRoot);
+  if (!cwd.success) {
+    return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: z.prettifyError(cwd.error) });
+  }
+  const source = request.path.join({ segments: [binding.pieceRoot, settings.data.pluginModule] });
+  const parsed = parsedPluginOf({ loaded: await request.modules.load({ path: source }) });
+  if (parsed.outcome === "failed") {
+    return pieceInvalid({ pieceRoot: binding.pieceRoot, detail: parsed.error.detail });
+  }
+  if (!Object.hasOwn(parsed.value.rules, settings.data.rule)) {
+    return pieceInvalid({
+      pieceRoot: binding.pieceRoot,
+      detail: `the plugin has no rule named ${settings.data.rule}`,
+    });
+  }
+  return lintedSourceCases({
+    selected: { outcome: "ok", value: { plugin: parsed.value, settings: settings.data } },
+    cwd: cwd.data,
+    cases: request.cases,
+    eslint: request.eslint,
+  });
 };

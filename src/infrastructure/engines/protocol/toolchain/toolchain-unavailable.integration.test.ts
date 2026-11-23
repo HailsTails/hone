@@ -25,7 +25,7 @@ import { loadParsePort } from "../../walker/runner/toolchain/typescript-toolchai
 import type { EmbeddedRunRequest } from "../embedded/embedded-runner-module-schema.ts";
 import {
   toolchainBoundEmbeddedRunner,
-  toolchainBoundStandaloneRunner,
+  toolchainBoundNamedChecksRunner,
 } from "./toolchain-bound-runner.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../..`);
@@ -110,7 +110,9 @@ const eslintRunnerLocatingBy = (request: {
   });
 
 const auditRunnerWithoutTypescript = (request: { readonly pieces: ModuleLoaderPort }) =>
-  toolchainBoundStandaloneRunner({
+  toolchainBoundNamedChecksRunner({
+    fileScope: "tracked",
+    projectedKinds: [],
     toolchain: loadParsePort({
       peers: {
         modules: defaultTypeScriptModules,
@@ -170,7 +172,13 @@ describe("a run whose adopter has not installed a toolchain peer the selected me
 
   it("fails the audit mechanism as toolchain-unavailable naming typescript, before loading any piece", async () => {
     const pieces = pieceLoads();
-    const ran = await auditRunnerWithoutTypescript({ pieces }).run(RUN);
+    const ran = await auditRunnerWithoutTypescript({ pieces }).run({
+      ...RUN,
+      bindings: [],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+    });
     expect({ ran, pieceLoads: vi.mocked(pieces.load).mock.calls }).toEqual({
       ran: {
         outcome: "failed",
@@ -210,8 +218,17 @@ describe("a run whose adopter has not installed a toolchain peer the selected me
 
 describe("a run whose adopter's install is missing the required peer typescript", () => {
   it("prints a missing typescript as an incomplete install, since typescript is a required peer", async () => {
-    const ran = await auditRunnerWithoutTypescript({ pieces: pieceLoads() }).run(RUN);
-    assert(ran.outcome === "failed", "the run fails to load");
+    const ran = await auditRunnerWithoutTypescript({ pieces: pieceLoads() }).run({
+      ...RUN,
+      bindings: [],
+      answered: [],
+      declaredConfigRoots: [],
+      declaredConfigLookup: undefined,
+    });
+    assert(
+      ran.outcome === "failed" && ran.error.kind === "toolchain-unavailable",
+      "the TypeScript toolchain fails to load",
+    );
     expect(
       loadFailureText({ failure: { kind: "runner-failed", mechanism: AUDIT, failure: ran.error } }),
     ).toBe(

@@ -50,12 +50,6 @@ const EMPTY_REPOSITORY_COMMAND: VersionOneCommandRequest = {
     }),
     write: () => ({ outcome: "ok", value: undefined }),
   },
-  engine: {
-    load: notUsed,
-    run: { checks: notUsed, withRecords: notUsed },
-    project: { checks: notUsed, withRecords: notUsed },
-    conform: notUsed,
-  },
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,
@@ -89,6 +83,8 @@ describe("plannedProjectionOf", () => {
       boundCatalogueOf: NO_CATALOGUE,
       settingsFormat: { fileOf: notUsed, documentOf: notUsed, textOf: notUsed },
       settingsSourcesOf: notUsed,
+      checkPieceSourceOf: notUsed,
+      namedEngine: { load: notUsed, run: notUsed, project: notUsed },
     })({
       settings: SETTINGS,
       documents: [],

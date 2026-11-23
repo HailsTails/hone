@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -31,11 +29,7 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/items.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-15"),
-  clause: clauseIdOf("loops"),
-};
+const ADDRESS: CheckAddressText = "loop-keyword#loop-statement";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const FOR = "f" + "or";
 const WHILE = "wh" + "ile";
@@ -43,18 +37,19 @@ const SWITCH = "sw" + "itch";
 const DEFAULT = "def" + "ault";
 const LINE_COMMENT = "/" + "/";
 const BLOCK_OPEN = "/" + "*";
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-15",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "loops.ts" },
 };
 
 const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -80,27 +75,27 @@ describe("CD-15 existing raw loop observations and counted-for redirect", () => 
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${FOR} (const item of items) consume(item);`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `${FOR} await (const chunk of stream) consume(chunk);`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `${FOR} (let index = 0; index < size; index++) consume(index);`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 4, column: 0 },
             snippet: `${WHILE} (ready) consume();`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 5, column: 0 },
             snippet: `do consume(); ${WHILE} (ready);`,
           },
@@ -123,22 +118,22 @@ describe("CD-15 existing raw loop observations and counted-for redirect", () => 
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${FOR} (x of xs); ${FOR} (i=0;i<n;i++); ${WHILE} (ready);`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${FOR} (x of xs); ${FOR} (i=0;i<n;i++); ${WHILE} (ready);`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${FOR} (x of xs); ${FOR} (i=0;i<n;i++); ${WHILE} (ready);`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `${FOR} (x of xs); ${FOR} (y of ys);`,
           },
@@ -159,12 +154,12 @@ describe("CD-15 existing raw loop observations and counted-for redirect", () => 
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `const literal = '${WHILE} (ready)';`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `const stable = 1; ${LINE_COMMENT} ${FOR} (i=0;i<n;i++);`,
           },
@@ -185,12 +180,12 @@ describe("CD-15 existing raw loop observations and counted-for redirect", () => 
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${WHILE} (ready) { } abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `${WHILE} (ready) { } abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij…`,
           },

@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../domain/language-layer/check-address-text.ts";
 import type { Result } from "../../../../domain/result.ts";
-import type { ClauseAddress } from "../../../../domain/rule-set/clause-address-types.ts";
-import { sameClauseAddress } from "../../../../domain/rule-set/clause-address.ts";
+import type {
+  CheckHit,
+  CheckNativeException,
+} from "../../../../domain/runner/check-observations.ts";
 import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type { Hit, InlineDisable } from "../../../../domain/runner/runner-result-types.ts";
-import {
-  hitSchema,
-  runnerResultSchema,
-} from "../../protocol/runner-module/runner-result-schema.ts";
+import { checkHitSchema } from "../../protocol/checks/check-wire.ts";
+import { runnerResultSchema } from "../../protocol/runner-module/runner-result-schema.ts";
 import { type DirectiveEscape, directiveEscapesIn, escapesOf } from "./pieces/type-directives.ts";
 import type { PieceHit, WalkerFile } from "./pieces/walker-piece.ts";
 import type { PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
@@ -21,10 +21,12 @@ import type {
   TypeScriptParsePort,
 } from "./toolchain/typescript-parse.ts";
 
+type WalkerDirectiveException = Extract<CheckNativeException, { readonly kind: "inline-disable" }>;
+
 export type WalkerFileObservations = {
-  readonly hits: readonly Hit[];
-  readonly nativeExceptions: readonly InlineDisable[];
-  readonly applicable: readonly ClauseAddress[];
+  readonly hits: readonly CheckHit[];
+  readonly nativeExceptions: readonly WalkerDirectiveException[];
+  readonly applicable: readonly CheckAddressText[];
 };
 
 export type ObserveWalkerFileRequest = {
@@ -38,7 +40,7 @@ export type ObserveWalkerFileResult = Result<WalkerFileObservations, RunnerFailu
 
 type Outcome<Value> = Result<Value, RunnerFailure>;
 
-const pieceHitsSchema = z.array(hitSchema.unwrap().omit({ file: true }).readonly());
+const pieceHitsSchema = z.array(checkHitSchema.unwrap().omit({ file: true }).readonly());
 type PieceCall = (argument: unknown) => unknown;
 type PieceFinish = () => unknown;
 
@@ -93,7 +95,7 @@ const pieceInvalid = (request: {
   outcome: "failed",
   error: {
     kind: "piece-invalid",
-    pieceRoot: request.piece.clauses[0]?.pieceRoot ?? request.piece.modulePath,
+    pieceRoot: request.piece.bindings[0]?.pieceRoot ?? request.piece.modulePath,
     detail: request.detail,
   },
 });
@@ -276,15 +278,12 @@ const attributedHits = (request: {
 }): Outcome<readonly PieceHit[]> => {
   if (
     request.hits.some(
-      (hit) =>
-        !request.piece.clauses.some(
-          (clause) => sameClauseAddress({ left: hit.clause, right: clause.address }) === "same",
-        ),
+      (hit) => !request.piece.bindings.some((binding) => hit.check === binding.address),
     )
   ) {
     return pieceInvalid({
       piece: request.piece,
-      detail: "the piece emitted a hit for a clause outside its selected clauses",
+      detail: "the piece emitted a hit for a binding outside its selected bindings",
     });
   }
   return { outcome: "ok", value: request.hits };
@@ -309,7 +308,7 @@ const finishFile = (request: {
 const completedFile = (request: {
   readonly file: WalkerFile;
   readonly active: readonly ActiveFilePiece[];
-  readonly nativeExceptions: readonly InlineDisable[];
+  readonly nativeExceptions: readonly WalkerDirectiveException[];
 }): ObserveWalkerFileResult => {
   const finished = collect({ outcomes: request.active.map((active) => finishFile({ active })) });
   if (finished.outcome === "failed") return finished;
@@ -321,17 +320,19 @@ const completedFile = (request: {
       ),
       nativeExceptions: request.nativeExceptions,
       applicable: request.active.flatMap((active) =>
-        active.piece.clauses.map((clause) => clause.address),
+        active.piece.bindings.map((binding) => binding.address),
       ),
     },
   };
 };
 
-const syntaxClausesOf = (request: {
+const syntaxChecksOf = (request: {
   readonly active: readonly ActiveFilePiece[];
-}): readonly ClauseAddress[] =>
+}): readonly CheckAddressText[] =>
   request.active.flatMap((active) =>
-    active.completion.kind === "syntax" ? active.piece.clauses.map((clause) => clause.address) : [],
+    active.completion.kind === "syntax"
+      ? active.piece.bindings.map((binding) => binding.address)
+      : [],
   );
 
 export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWalkerFileResult => {
@@ -382,7 +383,7 @@ export const observeWalkerFile = (request: ObserveWalkerFileRequest): ObserveWal
       comments: observed.value,
       escapes: escapesOf({
         escapes: request.escapes,
-        clauses: syntaxClausesOf({ active: active.value }),
+        checks: syntaxChecksOf({ active: active.value }),
       }),
       anchorAt: ({ position }) => anchorAt({ tree: parsed.value, position }),
     }),

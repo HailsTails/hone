@@ -17,7 +17,7 @@ import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { checkOfFinding, type FindingCheck } from "./finding-check.ts";
-import type { Finding } from "./governance.ts";
+import type { CheckFinding } from "./governance.ts";
 
 const AUDIT = "walker" as const;
 
@@ -276,8 +276,8 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 const FILE = repoPathOf("src/orders/charge-order.ts");
 
 const findingOf = (
-  request: Pick<Finding, "clause" | "mechanism"> & Partial<Pick<Finding, "check" | "remedy">>,
-): Finding => ({
+  request: Pick<CheckFinding, "check" | "mechanism" | "remedy">,
+): CheckFinding => ({
   file: FILE,
   anchor: { line: 3, column: 4 },
   snippet: "snippet",
@@ -297,7 +297,7 @@ const TWO_CAST_CHECKS: SymptomCatalogue = {
   checks: [...REPORT_CATALOGUE.checks, ANGLE_BRACKETS_CHECK],
 };
 
-const BRANCH_REMEDY: Finding["remedy"] = {
+const BRANCH_REMEDY: CheckFinding["remedy"] = {
   fix: "write one test per case",
   page: CHECKS_PAGE,
   section: "branching-with-if",
@@ -306,7 +306,7 @@ const BRANCH_REMEDY: Finding["remedy"] = {
 type Row = {
   readonly name: string;
   readonly catalogue: SymptomCatalogue;
-  readonly finding: Finding;
+  readonly finding: CheckFinding;
   readonly resolved: FindingCheck;
 };
 
@@ -315,7 +315,6 @@ const ROWS: readonly Row[] = [
     name: "a finding naming a check its engine measures resolves to that check",
     catalogue: REPORT_CATALOGUE,
     finding: findingOf({
-      clause: CAST_EXPRESSIONS,
       mechanism: ESLINT,
       check: "claimed-type#cast-expressions",
     }),
@@ -325,7 +324,6 @@ const ROWS: readonly Row[] = [
     name: "a finding naming one of two checks of a symptom resolves to the one it names",
     catalogue: TWO_CAST_CHECKS,
     finding: findingOf({
-      clause: CAST_EXPRESSIONS,
       mechanism: ESLINT,
       check: "claimed-type#angle-brackets",
     }),
@@ -335,51 +333,53 @@ const ROWS: readonly Row[] = [
     name: "a finding naming a check its engine does not measure resolves to nothing",
     catalogue: REPORT_CATALOGUE,
     finding: findingOf({
-      clause: CAST_EXPRESSIONS,
       mechanism: AUDIT,
       check: "claimed-type#cast-expressions",
     }),
     resolved: { resolved: "none" },
   },
   {
-    name: "a finding naming a check the clause lacks resolves to nothing",
+    name: "a finding naming an unregistered check resolves to nothing",
     catalogue: REPORT_CATALOGUE,
     finding: findingOf({
-      clause: CAST_EXPRESSIONS,
       mechanism: ESLINT,
       check: "claimed-type#loops",
     }),
     resolved: { resolved: "none" },
   },
   {
-    name: "a finding naming no check, of a clause that sees one symptom, resolves to the one check of that symptom on its engine",
+    name: "a Walker finding with a named check resolves to its catalogue entry",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: CLOCK_SOURCES, mechanism: AUDIT }),
+    finding: findingOf({ check: "date-used-directly#clock-sources", mechanism: AUDIT }),
     resolved: { resolved: "check", check: CLOCK_CHECK, engine: WALKER },
   },
   {
-    name: "a finding naming no check, read by its remedy's form, resolves to the check of that form's symptom",
+    name: "a finding with a remedy resolves by its check address",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: TEST_BODY_LOGIC, mechanism: AUDIT, remedy: BRANCH_REMEDY }),
+    finding: findingOf({
+      check: "branch-in-a-test#test-body",
+      mechanism: AUDIT,
+      remedy: BRANCH_REMEDY,
+    }),
     resolved: { resolved: "check", check: TEST_BODY_CHECK, engine: WALKER },
   },
   {
-    name: "a finding naming no check, whose clause sees no symptom in it, resolves to nothing",
+    name: "a finding naming a missing check for a known symptom resolves to nothing",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: TEST_BODY_LOGIC, mechanism: AUDIT }),
+    finding: findingOf({ check: "branch-in-a-test#missing", mechanism: AUDIT }),
     resolved: { resolved: "none" },
   },
   {
-    name: "a finding naming no check, whose symptom has no check on its engine, resolves to the symptom alone",
+    name: "a finding from the wrong engine does not resolve by its symptom alone",
     catalogue: REPORT_CATALOGUE,
-    finding: findingOf({ clause: CLOCK_SOURCES, mechanism: ESLINT }),
-    resolved: { resolved: "symptom-only", symptom: DATE_USED_DIRECTLY },
+    finding: findingOf({ check: "date-used-directly#clock-sources", mechanism: ESLINT }),
+    resolved: { resolved: "none" },
   },
   {
-    name: "a finding naming no check, whose symptom has two checks on its engine, resolves to the symptom alone rather than guess between them",
+    name: "a missing check does not resolve to another check of the same symptom",
     catalogue: TWO_CAST_CHECKS,
-    finding: findingOf({ clause: CAST_EXPRESSIONS, mechanism: ESLINT }),
-    resolved: { resolved: "symptom-only", symptom: CLAIMED_TYPE },
+    finding: findingOf({ check: "claimed-type#unknown", mechanism: ESLINT }),
+    resolved: { resolved: "none" },
   },
 ];
 

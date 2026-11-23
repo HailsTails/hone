@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 
+import { catalogueNameOf } from "../../../../../domain/language-layer/catalogue-name.ts";
+import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
+import { createDefaultPathPort } from "../../../../node/path-port.ts";
+import { readNamedPiece } from "../../../named-piece.ts";
 import { eslintPieceSettingsSchema } from "../../runner/pieces/eslint-piece-settings-schema.ts";
-import staticMembersOnly from "../static-members-only/piece.json" with { type: "json" };
 import classKeyword from "./piece.json" with { type: "json" };
 
 describe("authored class ESLint declarations", () => {
@@ -17,11 +20,22 @@ describe("authored class ESLint declarations", () => {
   });
 
   it("reuses the class plugin for the check for classes with only static members", () => {
-    expect(staticMembersOnly.implementation).toEqual({
-      symptom: "authored-class-or-this",
-      check: "class-keyword",
+    const path = createDefaultPathPort({});
+    const installRoot = path.join({ segments: [import.meta.dirname, "../../../../../../"] });
+    const piece = readNamedPiece({
+      mechanism: "eslint",
+      fileText: createDefaultFileTextPort({}),
+      path,
+      installRoot,
+      ruleSetRoot: installRoot,
+      symptom: catalogueNameOf("authored-class-or-this"),
+      check: catalogueNameOf("static-members-only"),
     });
-    expect(eslintPieceSettingsSchema.safeParse(staticMembersOnly.settings)).toEqual({
+    assert(piece.outcome === "ok", JSON.stringify(piece));
+    expect(piece.value.pieceRoot.replaceAll("\\", "/")).toBe(
+      import.meta.dirname.replaceAll("\\", "/"),
+    );
+    expect(eslintPieceSettingsSchema.safeParse(piece.value.settings)).toEqual({
       success: true,
       data: {
         pluginNamespace: "hone",

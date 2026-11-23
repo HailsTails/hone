@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { SourceObservers, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
@@ -31,17 +29,14 @@ assert(
 );
 const defaultParsePort = loadedParsePort.value;
 
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-10"),
-  clause: clauseIdOf("throws-in-tests"),
-};
+const ADDRESS: CheckAddressText = "throw-or-catch-in-a-test#throw-statement";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-10",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "throws-in-tests.ts" },
 };
@@ -62,7 +57,7 @@ const sourceObservations = (request: {
     exists: vi.fn().mockReturnValue("present"),
     disk: EMPTY_DISK,
   };
-  const prepared = check.prepare({ clauses: [CLAUSE], repository, syntaxApi: SYNTAX_API });
+  const prepared = check.prepare({ bindings: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
   const selected = prepared.value.prepareFile({
     file,
@@ -98,8 +93,8 @@ describe("CD-10 existing test throw observation", () => {
     observed.observers.enter?.({ node: second });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "throw first; throw second; " },
-      { clause: ADDRESS, anchor: { line: 6, column: 0 }, snippet: "throw second; " },
+      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "throw first; throw second; " },
+      { check: ADDRESS, anchor: { line: 6, column: 0 }, snippet: "throw second; " },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 0 }], [{ position: 13 }]]);
   });
@@ -126,7 +121,7 @@ describe("CD-10 existing test throw observation", () => {
   ])("preserves the existing test-family exclusion for %s", (fileName) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -142,7 +137,7 @@ describe("CD-10 existing test throw observation", () => {
   it("retains an eligible test under a nested root-only directory without reading during preparation", () => {
     const file = repoPathOf("src/vendor/example.test.ts");
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });

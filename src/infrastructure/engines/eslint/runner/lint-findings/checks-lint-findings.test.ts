@@ -6,9 +6,9 @@ import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts"
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
-import type { MisnamedRuleId, SelectedCheck } from "../checks-runner/checks-run-types.ts";
+import type { MisnamedRuleId, SelectedNamedCheck } from "../checks-runner/checks-run-types.ts";
 import type { LintedFile } from "../toolchain/eslint-instance.ts";
-import { lintedFindingsOf, measuredOn, parseableFile } from "./checks-lint-findings.ts";
+import { namedLintedFindingsOf, measuredOn, parseableFile } from "./checks-lint-findings.ts";
 import type { LinesReader } from "./source-lines.ts";
 
 const CLAUSE = {
@@ -17,18 +17,17 @@ const CLAUSE = {
   clause: clauseIdOf("explicit-any"),
 };
 
-const EXPLICIT_ANY: SelectedCheck = {
+const EXPLICIT_ANY: SelectedNamedCheck = {
   address: "untyped-value#explicit-any",
   symptom: "untyped-value",
   ruleId: "hone/untyped-value#explicit-any",
-  clause: CLAUSE,
   options: [],
 };
 
 const POSIX = createPathPort({ flavour: "posix", workingDirectory: () => "/repo" });
 
 const findingsOf = (request: { readonly linted: LintedFile }) =>
-  lintedFindingsOf({
+  namedLintedFindingsOf({
     linted: request.linted,
     path: POSIX,
     repoRoot: absoluteRootOf("/repo"),
@@ -42,8 +41,8 @@ const findingsOf = (request: { readonly linted: LintedFile }) =>
 
 const NO_MISNAMED: readonly MisnamedRuleId[] = [];
 
-describe("lintedFindingsOf", () => {
-  it("gives a rule's message as a hit at its line and column, its snippet cut from the source line, naming the check, and measures the clause on the file", () => {
+describe("namedLintedFindingsOf", () => {
+  it("gives a rule's message as a named hit at its line and column, cuts its source snippet, and measures the check", () => {
     expect(
       findingsOf({
         linted: {
@@ -56,7 +55,6 @@ describe("lintedFindingsOf", () => {
       value: {
         hits: [
           {
-            clause: CLAUSE,
             file: "src/a.ts",
             anchor: { line: 3, column: 9 },
             snippet: "const a: any = 1;",
@@ -64,7 +62,7 @@ describe("lintedFindingsOf", () => {
           },
         ],
         nativeExceptions: [],
-        measured: [{ clause: CLAUSE, file: "src/a.ts" }],
+        measured: [{ check: "untyped-value#explicit-any", file: "src/a.ts" }],
         misnamedRuleIds: NO_MISNAMED,
       },
     });

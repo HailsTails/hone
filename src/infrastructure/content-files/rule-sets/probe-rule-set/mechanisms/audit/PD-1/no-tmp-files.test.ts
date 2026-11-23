@@ -1,10 +1,7 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
-import { clauseIdOf } from "../../../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../../../domain/rule-set/edition-of.ts";
-import { ruleSetNameOf } from "../../../../../../../domain/rule-set/rule-set-name-of.ts";
-import type { RunnerClause } from "../../../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../../../domain/runner/check-binding.ts";
 import { textsDisk } from "../../../../../../engines/walker/runner/pieces/walker-disk.ts";
 import {
   defaultTypeScriptPeers,
@@ -28,16 +25,13 @@ const SYNTAX_API = loadedParsePort.value.syntaxApi;
 
 const EMPTY_DISK = textsDisk({ root: "/repo", texts: {} });
 
-const ADDRESS = {
-  ruleSet: { name: ruleSetNameOf("probe") },
-  discipline: disciplineIdOf("PD-1"),
-  clause: clauseIdOf("no-tmp-files"),
-};
-const CLAUSE: RunnerClause = {
+const ADDRESS = "temporary-file#no-tmp-files";
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/probe/mechanisms/audit/PD-1",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "no-tmp-files.ts" },
 };
@@ -45,7 +39,7 @@ const CLAUSE: RunnerClause = {
 const fileCheckOf = (request: { readonly file: string }) => {
   const file = repoPathSchema.parse(request.file);
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
     syntaxApi: SYNTAX_API,
   });
@@ -59,7 +53,7 @@ describe("probe PD-1 no-tmp-files path check", () => {
       outcome: "ok",
       value: {
         kind: "complete",
-        hits: [{ clause: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "src/scratch.tmp.ts" }],
+        hits: [{ check: ADDRESS, anchor: { line: 1, column: 0 }, snippet: "src/scratch.tmp.ts" }],
       },
     });
   });

@@ -17,10 +17,15 @@ import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../../domain/settings/conventions.ts";
+import type { ListedAddress } from "../../../domain/settings/listed-address.ts";
 import type { SettingsFile, SettingsFileFault } from "../../../domain/settings/settings-file.ts";
-import type { PieceClause, SettingsSources } from "../../ports/settings-sources.ts";
+import type {
+  CheckPieceSource,
+  PieceClause,
+  SettingsSources,
+} from "../../ports/settings-sources.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
-import { type SettingsReading, readSettings } from "./read-settings.ts";
+import { type NamedSettingsReading, readNamedSettings } from "./read-settings.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
 
@@ -144,7 +149,7 @@ const LOOPS_PIECE: PieceClause = {
 
 const DOCUMENT = { version: 2 };
 
-const LOOPS_ADDRESS = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#loops" };
+const LOOPS_ADDRESS: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#loops" };
 
 const SETTINGS_FILE: SettingsFile = {
   exclude: [],
@@ -194,55 +199,69 @@ const sourcesHolding = (request: {
   pieceClause: vi.fn<SettingsSources["pieceClause"]>().mockReturnValue(request.piece),
 });
 
-describe("readSettings", () => {
-  it("gives the reading version 1 gives for the same choices, with every record's why-chain required", () => {
+const readSelectedSettings = (request: {
+  readonly sources: SettingsSources;
+  readonly settingsFormat: Pick<SettingsFileFormat, "fileOf">;
+  readonly readPiece?: CheckPieceSource;
+}) =>
+  readNamedSettings({
+    ...request,
+    readPiece:
+      request.readPiece ??
+      vi.fn<CheckPieceSource>().mockReturnValue({
+        outcome: "ok",
+        value: { ...LOOPS_PIECE, forms: {} },
+      }),
+  });
+
+describe("readNamedSettings and the settings document", () => {
+  it("gives the check choices, binding, edition, and reporting settings from the document", () => {
     expect(
-      readSettings({
+      readSelectedSettings({
         settingsFormat: SETTINGS_FORMAT,
         sources: sourcesHolding({
           document: DOCUMENT,
           piece: { outcome: "ok", value: LOOPS_PIECE },
         }),
       }),
-    ).toEqual<{
-      readonly outcome: "ok";
-      readonly value: SettingsReading;
-    }>({
+    ).toEqual<{ readonly outcome: "ok"; readonly value: NamedSettingsReading }>({
       outcome: "ok",
       value: {
         available: [],
         selection: {
-          selection: {
-            selected: [{ address: LOOPS_CLAUSE, mechanism: AUDIT, exceptions: "allowed" }],
-            notAdopted: [TEST_BODY_CLAUSE],
-            notRun: [],
-            editions: [
-              { address: LOOPS_CLAUSE, mechanism: AUDIT, edition: SECOND, latest: SECOND },
-            ],
-          },
-          bindings: [
+          selected: [
             {
-              mechanism: AUDIT,
-              clause: {
-                address: LOOPS_CLAUSE,
+              address: LOOPS_ADDRESS,
+              check: LOOP_KEYWORD_LOOPS,
+              exceptions: "allowed",
+              editions: { declared: [FIRST, SECOND], default: FIRST, latest: SECOND },
+              binding: {
+                address: "loop-keyword#loops",
+                engine: "walker",
                 anchor: { kind: "file" },
                 pieceRoot: "/install/mechanisms/audit/CD-15",
                 settings: { keywords: ["for", "while"] },
-                clauseSettings: {},
+                forms: {},
+                checkSettings: {},
                 edition: SECOND,
               },
             },
           ],
-          clauseRoots: [
+          notAdopted: [
             {
-              clause: LOOPS_CLAUSE,
-              ruleSetRoot: INSTALL_ROOT,
-              checks: [{ name: "loops", symptom: { name: "loop-keyword" } }],
+              address: { ruleSet: TOOL_RULE_SET, check: "loop-keyword#test-body" },
+              check: LOOP_KEYWORD_TEST_BODY,
+              choice: { state: "not-adopted" },
+            },
+            {
+              address: { ruleSet: TOOL_RULE_SET, check: "rebinding#test-body" },
+              check: REBINDING_TEST_BODY,
+              choice: { state: "not-adopted" },
             },
           ],
+          notRun: [],
           excluded: [],
           eslintConfigRoots: [],
-          fileExceptionWhyChains: "required",
         },
         runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
         eslintConfigLookup: { lookup: "detected" },
@@ -254,29 +273,34 @@ describe("readSettings", () => {
 
   it("reads the settings file's document through the settings format", () => {
     const settingsFormat = formatGiving({ outcome: "ok", value: SETTINGS_FILE });
-    readSettings({
+    readSelectedSettings({
       settingsFormat,
       sources: sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
     });
     expect(vi.mocked(settingsFormat.fileOf).mock.calls).toEqual([[{ document: DOCUMENT }]]);
   });
 
-  it("asks for the piece of each run clause from the root of its rule set", () => {
+  it("asks for each selected named piece at its rule-set root", () => {
     const sources = sourcesHolding({
       document: DOCUMENT,
       piece: { outcome: "ok", value: LOOPS_PIECE },
     });
-    readSettings({ settingsFormat: SETTINGS_FORMAT, sources });
-    expect(sources.pieceClause).toHaveBeenCalledWith({
-      ruleSetRoot: INSTALL_ROOT,
-      clause: LOOPS_CLAUSE,
-      mechanism: AUDIT,
+    const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
+      outcome: "ok",
+      value: { ...LOOPS_PIECE, forms: {} },
     });
+    readSelectedSettings({ settingsFormat: SETTINGS_FORMAT, sources, readPiece });
+    expect(readPiece).toHaveBeenCalledExactlyOnceWith({
+      ruleSetRoot: INSTALL_ROOT,
+      names: { symptom: "loop-keyword", check: "loops" },
+      mechanism: "walker",
+    });
+    expect(sources.pieceClause).not.toHaveBeenCalled();
   });
 
   it("notes each declared convention no check reads yet", () => {
     expect(
-      readSettings({
+      readSelectedSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
           value: {
@@ -308,7 +332,7 @@ describe("readSettings", () => {
 
   it("refuses a file its wire refuses, naming the file", () => {
     expect(
-      readSettings({
+      readSelectedSettings({
         settingsFormat: formatGiving({
           outcome: "failed",
           error: {
@@ -335,7 +359,7 @@ describe("readSettings", () => {
 
   it("refuses a check the catalogue does not hold, in the new words", () => {
     expect(
-      readSettings({
+      readSelectedSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
           value: {
@@ -362,7 +386,7 @@ describe("readSettings", () => {
 
   it("refuses an edition the piece does not declare, naming the check it was given on", () => {
     expect(
-      readSettings({
+      readSelectedSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
           value: {
@@ -387,19 +411,124 @@ describe("readSettings", () => {
 
   it("passes on the failure of a piece it cannot read", () => {
     expect(
-      readSettings({
+      readSelectedSettings({
         settingsFormat: SETTINGS_FORMAT,
         sources: sourcesHolding({
           document: DOCUMENT,
-          piece: {
-            outcome: "failed",
-            error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT },
-          },
+          piece: { outcome: "ok", value: LOOPS_PIECE },
+        }),
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "failed",
+          error: { kind: "piece-missing", address: "loop-keyword#loops", mechanism: "walker" },
         }),
       }),
     ).toEqual({
       outcome: "failed",
-      error: { kind: "piece-missing", address: "CD-15#loops", mechanism: AUDIT },
+      error: { kind: "piece-missing", address: "loop-keyword#loops", mechanism: "walker" },
     });
+  });
+});
+
+describe("readNamedSettings", () => {
+  it("resolves an opt-in check which has no version one clause", () => {
+    const address: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#new-loop-check" };
+    const catalogue: SymptomCatalogue = {
+      ...SETTINGS_CATALOGUE,
+      checks: [
+        { name: "new-loop-check", symptom: LOOP_KEYWORD, engines: [{ name: "walker" }], forms: [] },
+      ],
+    };
+    const sources = {
+      ...sourcesHolding({ document: DOCUMENT, piece: { outcome: "ok", value: LOOPS_PIECE } }),
+      catalogue: vi
+        .fn<SettingsSources["catalogue"]>()
+        .mockReturnValue({ outcome: "ok", value: { held: "catalogue", catalogue } }),
+    };
+    const readPiece = vi
+      .fn<CheckPieceSource>()
+      .mockReturnValue({ outcome: "ok", value: { ...LOOPS_PIECE, forms: {} } });
+    const settingsFormat = formatGiving({
+      outcome: "ok",
+      value: {
+        ...SETTINGS_FILE,
+        checks: [{ address, state: { state: "run", engine: "walker" } }],
+        checkSettings: [],
+      },
+    });
+    expect(readNamedSettings({ sources, readPiece, settingsFormat })).toMatchObject({
+      outcome: "ok",
+      value: {
+        selection: {
+          selected: [
+            {
+              address,
+              binding: { address: "loop-keyword#new-loop-check", engine: "walker", edition: FIRST },
+            },
+          ],
+        },
+      },
+    });
+    expect(readPiece).toHaveBeenCalledExactlyOnceWith({
+      names: { symptom: "loop-keyword", check: "new-loop-check" },
+      ruleSetRoot: INSTALL_ROOT,
+      mechanism: "walker",
+    });
+    expect(sources.pieceClause).not.toHaveBeenCalled();
+  });
+
+  it("loads the selected check's piece and keeps a sibling off even when both share a legacy clause", () => {
+    const source = sourcesHolding({
+      document: DOCUMENT,
+      piece: { outcome: "ok", value: LOOPS_PIECE },
+    });
+    const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
+      outcome: "ok",
+      value: {
+        ...LOOPS_PIECE,
+        pieceRoot: "/install/pieces/test-body",
+        forms: { "a-let": "rebinding#test-body" },
+      },
+    });
+    const rebinding: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "rebinding#test-body" };
+    const loop: ListedAddress = { ruleSet: TOOL_RULE_SET, check: "loop-keyword#test-body" };
+    const settingsFormat = formatGiving({
+      outcome: "ok",
+      value: {
+        ...SETTINGS_FILE,
+        checks: [
+          { address: rebinding, state: { state: "run", engine: "walker" } },
+          { address: loop, state: { state: "not-run" } },
+        ],
+        checkSettings: [{ address: rebinding, values: { edition: "2" } }],
+      },
+    });
+
+    const reading = readNamedSettings({ sources: source, readPiece, settingsFormat });
+
+    expect(reading).toMatchObject({
+      outcome: "ok",
+      value: {
+        selection: {
+          selected: [
+            {
+              address: rebinding,
+              binding: {
+                address: "rebinding#test-body",
+                forms: { "a-let": "rebinding#test-body" },
+                edition: SECOND,
+              },
+            },
+          ],
+          notRun: [{ address: loop }],
+          notAdopted: [],
+        },
+      },
+    });
+    expect(readPiece).toHaveBeenCalledExactlyOnceWith({
+      names: { symptom: "rebinding", check: "test-body" },
+      ruleSetRoot: INSTALL_ROOT,
+      mechanism: "walker",
+    });
+    expect(source.pieceClause).not.toHaveBeenCalled();
   });
 });

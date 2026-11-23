@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   checksProjectResultSchema,
-  checksRunnerModuleSchema,
-  checksRunResultSchema,
-  isChecksModuleKeySetEqual,
-  isChecksRunReportSchemaEqual,
+  namedChecksRunnerModuleSchema,
+  namedChecksRunResultSchema,
   isChecksSliceProblemSchemaEqual,
   isMisnamedRuleIdSchemaEqual,
   isNotReadyYetFailureSchemaEqual,
@@ -13,12 +11,9 @@ import {
   misnamedRuleIdSchema,
 } from "./checks-runner-module-schema.ts";
 
-const CLASS_SYNTAX = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
-
 const REPORT = {
   hits: [
     {
-      clause: CLASS_SYNTAX,
       file: "src/a.ts",
       anchor: { line: 1, column: 7 },
       snippet: "export class A {}",
@@ -29,11 +24,10 @@ const REPORT = {
     {
       kind: "ignore",
       check: "authored-class-or-this#class-keyword",
-      clause: CLASS_SYNTAX,
       file: "src/gen.ts",
     },
   ],
-  measured: [{ clause: CLASS_SYNTAX, file: "src/a.ts" }],
+  measured: [{ check: "authored-class-or-this#class-keyword", file: "src/a.ts" }],
   projection: "current",
   slices: [{ slice: "packages/web/hone.eslint.mjs", state: "out-of-date" }],
   misnamedRuleIds: [
@@ -49,18 +43,23 @@ const REPORT = {
 };
 
 describe("the checks runner's ties to its module schema", () => {
-  it("holds the same key set as the module schema", () => {
-    expect(isChecksModuleKeySetEqual).toBe(true);
+  it("declares each required runner capability and its projected kinds", () => {
+    expect(Object.keys(namedChecksRunnerModuleSchema.shape).sort()).toEqual([
+      "conform",
+      "fileScope",
+      "project",
+      "projectedKinds",
+      "run",
+    ]);
   });
 
-  it("holds the same report, slice problem, misnamed rule id, not-ready-yet failure and projected file as the types", () => {
+  it("holds the same slice problem, misnamed rule id, not-ready-yet failure and projected file as the types", () => {
     expect([
-      isChecksRunReportSchemaEqual,
       isChecksSliceProblemSchemaEqual,
       isMisnamedRuleIdSchemaEqual,
       isNotReadyYetFailureSchemaEqual,
       isProjectedFileSchemaEqual,
-    ]).toEqual([true, true, true, true, true]);
+    ]).toEqual([true, true, true, true]);
   });
 });
 
@@ -104,20 +103,22 @@ describe("misnamedRuleIdSchema", () => {
   });
 });
 
-describe("checksRunnerModuleSchema", () => {
+describe("namedChecksRunnerModuleSchema", () => {
   it("accepts a module exporting the native exception kinds it projects, a run, a conform and a project", () => {
     const module = {
+      fileScope: "tracked",
       projectedKinds: ["config-override", "inline-disable"],
       run: () => Promise.resolve(undefined),
       conform: () => Promise.resolve(undefined),
       project: () => Promise.resolve(undefined),
     };
-    expect(checksRunnerModuleSchema.safeParse(module).success).toBe(true);
+    expect(namedChecksRunnerModuleSchema.safeParse(module).success).toBe(true);
   });
 
   it("rejects a module whose run is not a function", () => {
     expect(
-      checksRunnerModuleSchema.safeParse({
+      namedChecksRunnerModuleSchema.safeParse({
+        fileScope: "tracked",
         projectedKinds: [],
         run: "run",
         conform: () => Promise.resolve(undefined),
@@ -128,11 +129,12 @@ describe("checksRunnerModuleSchema", () => {
 
   it("rejects a module with no conform, at the conform key", () => {
     const module = {
+      fileScope: "tracked",
       projectedKinds: [],
       run: () => Promise.resolve(undefined),
       project: () => Promise.resolve(undefined),
     };
-    expect(checksRunnerModuleSchema.safeParse(module)).toMatchObject({
+    expect(namedChecksRunnerModuleSchema.safeParse(module)).toMatchObject({
       success: false,
       error: { issues: [{ path: ["conform"] }] },
     });
@@ -140,7 +142,8 @@ describe("checksRunnerModuleSchema", () => {
 
   it("rejects a module whose conform is not a function", () => {
     expect(
-      checksRunnerModuleSchema.safeParse({
+      namedChecksRunnerModuleSchema.safeParse({
+        fileScope: "tracked",
         projectedKinds: [],
         run: () => Promise.resolve(undefined),
         conform: "conform",
@@ -151,11 +154,12 @@ describe("checksRunnerModuleSchema", () => {
 
   it("rejects a module with no project, at the project key", () => {
     const module = {
+      fileScope: "tracked",
       projectedKinds: [],
       run: () => Promise.resolve(undefined),
       conform: () => Promise.resolve(undefined),
     };
-    expect(checksRunnerModuleSchema.safeParse(module)).toMatchObject({
+    expect(namedChecksRunnerModuleSchema.safeParse(module)).toMatchObject({
       success: false,
       error: { issues: [{ path: ["project"] }] },
     });
@@ -163,7 +167,8 @@ describe("checksRunnerModuleSchema", () => {
 
   it("rejects a module whose project is not a function", () => {
     expect(
-      checksRunnerModuleSchema.safeParse({
+      namedChecksRunnerModuleSchema.safeParse({
+        fileScope: "tracked",
         projectedKinds: [],
         run: () => Promise.resolve(undefined),
         conform: () => Promise.resolve(undefined),
@@ -211,9 +216,9 @@ describe("checksProjectResultSchema", () => {
   });
 });
 
-describe("checksRunResultSchema", () => {
+describe("namedChecksRunResultSchema", () => {
   it("accepts a report naming checks and misnamed rule ids, keeping every field", () => {
-    expect(checksRunResultSchema.safeParse({ outcome: "ok", value: REPORT })).toEqual({
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: REPORT })).toEqual({
       success: true,
       data: { outcome: "ok", value: REPORT },
     });
@@ -221,7 +226,7 @@ describe("checksRunResultSchema", () => {
 
   it("accepts a runner failure", () => {
     const failed = { outcome: "failed", error: { kind: "tool-failed", detail: "ESLint stopped" } };
-    expect(checksRunResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
+    expect(namedChecksRunResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
   });
 
   it("accepts the not-ready-yet failure the ESLint runner gives for config roots", () => {
@@ -232,7 +237,7 @@ describe("checksRunResultSchema", () => {
         what: { thing: "eslint-config-roots", paths: ["packages/web"] },
       },
     };
-    expect(checksRunResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
+    expect(namedChecksRunResultSchema.safeParse(failed)).toEqual({ success: true, data: failed });
   });
 
   it("rejects a not-ready-yet failure that names no path", () => {
@@ -240,7 +245,7 @@ describe("checksRunResultSchema", () => {
       outcome: "failed",
       error: { kind: "not-ready-yet", what: { thing: "eslint-config-roots", paths: [] } },
     };
-    expect(checksRunResultSchema.safeParse(failed).success).toBe(false);
+    expect(namedChecksRunResultSchema.safeParse(failed).success).toBe(false);
   });
 
   it("rejects a misnamed rule id of an unknown kind", () => {
@@ -248,21 +253,23 @@ describe("checksRunResultSchema", () => {
       ...REPORT,
       misnamedRuleIds: [{ ...REPORT.misnamedRuleIds[0], kind: "misspelt" }],
     };
-    expect(checksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(false);
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(
+      false,
+    );
   });
 
   it("rejects a report that leaves out the misnamed rule ids", () => {
     const { misnamedRuleIds: _left, ...withoutMisnamed } = REPORT;
-    expect(checksRunResultSchema.safeParse({ outcome: "ok", value: withoutMisnamed }).success).toBe(
-      false,
-    );
+    expect(
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: withoutMisnamed }).success,
+    ).toBe(false);
   });
 
   it("rejects a report that leaves out the slice problems", () => {
     const { slices: _left, ...withoutSlices } = REPORT;
-    expect(checksRunResultSchema.safeParse({ outcome: "ok", value: withoutSlices }).success).toBe(
-      false,
-    );
+    expect(
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: withoutSlices }).success,
+    ).toBe(false);
   });
 
   it("rejects a slice problem in a state that is not a slice state", () => {
@@ -270,7 +277,9 @@ describe("checksRunResultSchema", () => {
       ...REPORT,
       slices: [{ slice: "packages/web/hone.eslint.mjs", state: "stale" }],
     };
-    expect(checksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(false);
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report }).success).toBe(
+      false,
+    );
   });
 
   it("rejects the slice states that only a version 1 runner reports", () => {
@@ -283,8 +292,8 @@ describe("checksRunResultSchema", () => {
       slices: [{ slice: "packages/web/hone.eslint.mjs", state: "nested-configuration" }],
     };
     expect([
-      checksRunResultSchema.safeParse({ outcome: "ok", value: notApplied }).success,
-      checksRunResultSchema.safeParse({ outcome: "ok", value: nested }).success,
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: notApplied }).success,
+      namedChecksRunResultSchema.safeParse({ outcome: "ok", value: nested }).success,
     ]).toEqual([false, false]);
   });
 
@@ -297,7 +306,7 @@ describe("checksRunResultSchema", () => {
         { slice: "packages/c/hone.eslint.mjs", state: "unconfigured" },
       ],
     };
-    expect(checksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({
+    expect(namedChecksRunResultSchema.safeParse({ outcome: "ok", value: report })).toEqual({
       success: true,
       data: { outcome: "ok", value: report },
     });

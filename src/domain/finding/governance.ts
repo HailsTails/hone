@@ -1,4 +1,5 @@
 import type { EngineId } from "../rule-set/identifier-types.ts";
+import type { CheckHit, CheckNativeException } from "../runner/check-observations.ts";
 import type { Hit, NativeException } from "../runner/runner-result-types.ts";
 
 export type Finding = Hit & { readonly mechanism: EngineId };
@@ -12,3 +13,13 @@ export type GovernedRun = {
 export type AttributedNativeException = NativeException & {
   readonly mechanism: EngineId;
 };
+
+export type CheckFinding = CheckHit & { readonly mechanism: EngineId };
+
+export type NamedGovernedRun = {
+  readonly mechanism: EngineId;
+  readonly nativeExceptions: readonly CheckNativeException[];
+  readonly coverableKinds: readonly CheckNativeException["kind"][];
+};
+
+export type AttributedCheckException = CheckNativeException & { readonly mechanism: EngineId };

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { VERSION_TWO_NEEDED } from "./commands.ts";
 import { commandOf } from "./composed-command.ts";
@@ -45,7 +44,6 @@ const commandOver = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,

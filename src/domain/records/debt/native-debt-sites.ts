@@ -1,7 +1,6 @@
-import type { AttributedNativeException, GovernedRun } from "../../finding/governance.ts";
+import type { AttributedCheckException, NamedGovernedRun } from "../../finding/governance.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
-import { clauseAddressText } from "../../rule-set/clause-address.ts";
 import { nativeSitesOf } from "../answering/answering.ts";
 import { type DebtSite, debtSiteOf, inSiteOrder } from "./debt-sites.ts";
 import type { UnrecordableBecause, UnrecordableSite } from "./unrecordable-site.ts";
@@ -11,7 +10,7 @@ export type NativeDebtSites = {
   readonly unrecordable: readonly UnrecordableSite[];
 };
 
-type ExceptionRequest = { readonly exception: AttributedNativeException };
+type ExceptionRequest = { readonly exception: AttributedCheckException };
 
 const placeOf = (request: ExceptionRequest): RepoPath => {
   const { exception } = request;
@@ -26,14 +25,14 @@ const becauseOf = (request: ExceptionRequest): UnrecordableBecause => {
 };
 
 const unrecordableOf = (request: ExceptionRequest): UnrecordableSite => ({
-  address: request.exception.check ?? clauseAddressText({ address: request.exception.clause }),
+  address: request.exception.check,
   file: placeOf(request),
   because: becauseOf(request),
 });
 
 const sitesOf = (
   request: ExceptionRequest & {
-    readonly runs: readonly GovernedRun[];
+    readonly runs: readonly NamedGovernedRun[];
     readonly catalogue: SymptomCatalogue;
   },
 ): NativeDebtSites => {
@@ -53,8 +52,8 @@ const sitesOf = (
 
 export const nativeDebtSitesOf = (request: {
   readonly catalogue: SymptomCatalogue;
-  readonly unrecorded: readonly AttributedNativeException[];
-  readonly runs: readonly GovernedRun[];
+  readonly unrecorded: readonly AttributedCheckException[];
+  readonly runs: readonly NamedGovernedRun[];
 }): NativeDebtSites => {
   const classified = request.unrecorded.map((exception) => sitesOf({ ...request, exception }));
   return {

@@ -11,6 +11,7 @@ import {
   type OptionEffect,
   type SelectedRule,
   scanPackageJson,
+  scannedScriptsFor,
   type Settlement,
   scriptCommandsOf,
   suppressionsLocationValuesOf,
@@ -654,6 +655,40 @@ describe("scanPackageJson", () => {
       value: {
         scriptOptions: [],
         suppressionsLocations: [{ location: "packages/x/suppressions.json", script: "lint" }],
+        unreadableScripts: [],
+      },
+    });
+  });
+});
+
+describe("scannedScriptsFor", () => {
+  it("credits a script option to the named check whose rule it disables", () => {
+    expect(
+      scannedScriptsFor({
+        path: rootPackageJson,
+        scripts: { lint: "eslint --rule 'hone/no-class-authoring: off'" },
+        selectedRules: [
+          { ruleId: noClassAuthoring, subject: { check: "authored-class-or-this#class-keyword" } },
+        ],
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        scriptOptions: [
+          {
+            location: "package.json",
+            exceptions: [
+              {
+                kind: "command-line-option",
+                check: "authored-class-or-this#class-keyword",
+                location: "package.json",
+                script: "lint",
+                option: "--rule hone/no-class-authoring: off",
+              },
+            ],
+          },
+        ],
+        suppressionsLocations: [],
         unreadableScripts: [],
       },
     });

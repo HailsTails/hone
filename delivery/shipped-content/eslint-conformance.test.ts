@@ -5,7 +5,7 @@ import type { ModuleLoaderPort } from "../../src/application/ports/host/module-l
 import type { Result } from "../../src/domain/result.ts";
 import type { EngineId } from "../../src/domain/rule-set/identifier-types.ts";
 import type { DisciplineFile, SourceCase } from "../../src/domain/rule-set/rule-set-types.ts";
-import { editionRunsOf } from "../../src/domain/runner/edition-runs.ts";
+import { casesByEdition } from "../../src/domain/runner/edition-runs.ts";
 import type { RunnerFailure } from "../../src/domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../src/domain/runner/runner-module-types.ts";
 import { defaultClauseSettings } from "../../src/domain/settings/clause-settings/default-clause-settings.ts";
@@ -18,7 +18,6 @@ import {
   createEslintRunner,
   ESLINT_PROJECTED_KINDS,
 } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
-import * as eslintRunnerModule from "../../src/infrastructure/engines/eslint/runner/runner.ts";
 import {
   eslint9PieceModules,
   eslint9ToolchainModules,
@@ -170,15 +169,16 @@ const rowsOf = (request: {
       clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
       edition: entry.editions.default,
     };
-    return editionRunsOf({
-      clause,
+    return casesByEdition({
+      defaultEdition: clause.edition,
       cases: [...definition.cases.flag, ...definition.cases.allow],
-    }).map((run) => ({
+    }).map(({ edition, cases }) => ({
       name:
-        run.clause.edition === entry.editions.default
+        edition === entry.editions.default
           ? `${request.discipline}#${entry.clause}`
-          : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
-      ...run,
+          : `${request.discipline}#${entry.clause} edition ${edition}`,
+      clause: { ...clause, edition },
+      cases,
     }));
   });
 };
@@ -230,9 +230,9 @@ const CONFORMANCE_ROWS = conformanceRows({
   mechanism: "eslint",
 });
 
-const eslintRunner = runnerModuleSchema.parse(eslintRunnerModule.runner);
+const eslintRunner = runnerModuleSchema.parse(eslintRunnerOn({ line: "eslint-10" }));
 
-describe("the ESLint runner, loaded as core loads it, conforms to every registered ESLint clause's shared cases on real ESLint (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
+describe("the version 1 ESLint adapter conforms to the old clause cases on real ESLint (CD-47: the shipped runner and its pieces are the assertion's subject; nothing is spawned or written)", () => {
   it.each(CONFORMANCE_ROWS)(
     "$name has no conformance failure over its flag and allow cases",
     async (row) => {

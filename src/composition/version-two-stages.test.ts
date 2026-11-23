@@ -4,7 +4,7 @@ import type { DirectoryPort } from "../application/ports/file-system/directory-p
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
-import type { SettingsReading } from "../application/run/settings/read-settings.ts";
+import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type {
   Case,
   Check,
@@ -24,7 +24,6 @@ import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
@@ -308,7 +307,7 @@ const gitListing = (request: { readonly tracked: GitPort["trackedPaths"] }): Git
 const portsOver = (request: { readonly git: GitPort }): VersionTwoPorts => ({
   fileText: { ...NOTHING_PRESENT, write: vi.fn<FileTextPort["write"]>() },
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/repo" }),
-  engine: createDefaultEnginePort({}),
+  namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: request.git,
   gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
@@ -334,15 +333,14 @@ const stagesOver = (request: {
     },
   });
 
-const SETTINGS: SettingsReading = {
+const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-    bindings: [],
-    clauseRoots: [],
+    selected: [],
+    notAdopted: [],
+    notRun: [],
     excluded: [],
     eslintConfigRoots: [],
-    fileExceptionWhyChains: "required",
   },
   runSettings: { reportOutput: "full", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },

@@ -1,13 +1,14 @@
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
 import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type {
-  Hit,
-  InlineReach,
-  NativeException,
-} from "../../../../../domain/runner/runner-result-types.ts";
+  CheckHit,
+  CheckNativeException,
+} from "../../../../../domain/runner/check-observations.ts";
+import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import type { Hit, NativeException } from "../../../../../domain/runner/runner-result-types.ts";
 import { CUT_MARK, SNIPPET_LIMIT } from "../../../protocol/runner-module/snippet.ts";
 import { parseInlineConfigComment } from "../native-exceptions/inline-config-parser.ts";
 import { INLINE_CONFIG_RULE_ID, type LintedMessage } from "../toolchain/eslint-instance.ts";
@@ -35,54 +36,76 @@ const INLINE_DISABLE = "inline-disable";
 
 const INLINE_RULE_CONFIG = "inline-rule-config";
 
-type InlineReading = { readonly clauses: readonly LintedClause[]; readonly reach: InlineReach };
+type RuleTarget<Identity> = { readonly ruleId: string; readonly identity: Identity };
+type RuleLocation = { readonly line: number; readonly column: number };
+type LocatedRule<Identity> = RuleLocation & { readonly identity: Identity };
 
-const namedClauses = (request: {
+type InlineLocation<Identity> = {
+  readonly identity: Identity;
+  readonly file: RepoPath;
+  readonly line: number;
+  readonly text: string;
+};
+
+type InlineRule<Identity> = InlineLocation<Identity> &
+  (
+    | { readonly kind: typeof INLINE_DISABLE; readonly reach: "selected-rule" | "all-rules" }
+    | { readonly kind: typeof INLINE_RULE_CONFIG }
+  );
+
+type RuleReading<Identity> = {
+  readonly ruleHits: readonly LocatedRule<Identity>[];
+  readonly nativeExceptions: readonly InlineRule<Identity>[];
+};
+
+type InlineReading<Identity> = {
+  readonly rules: readonly RuleTarget<Identity>[];
+  readonly reach: "selected-rule" | "all-rules";
+};
+
+const namedRules = <Identity>(request: {
   readonly ruleIds: readonly string[];
-  readonly selected: readonly LintedClause[];
-}): InlineReading => ({
-  clauses: request.selected.filter((entry) => request.ruleIds.includes(entry.ruleId)),
-  reach: "one-clause",
+  readonly selected: readonly RuleTarget<Identity>[];
+}): InlineReading<Identity> => ({
+  rules: request.selected.filter((entry) => request.ruleIds.includes(entry.ruleId)),
+  reach: "selected-rule",
 });
 
-const inlineReadingOf = (request: {
+const inlineReadingOf = <Identity>(request: {
   readonly text: string;
-  readonly selected: readonly LintedClause[];
-}): InlineReading => {
+  readonly selected: readonly RuleTarget<Identity>[];
+}): InlineReading<Identity> => {
   const parsed = parseInlineConfigComment({ text: commentValueOf({ text: request.text }) });
   switch (parsed.kind) {
     case "disable":
       return parsed.ruleIds.length === 0
-        ? { clauses: request.selected, reach: "every-selected-clause" }
-        : namedClauses({ ruleIds: parsed.ruleIds, selected: request.selected });
+        ? { rules: request.selected, reach: "all-rules" }
+        : namedRules({ ruleIds: parsed.ruleIds, selected: request.selected });
     case "rule-config":
-      return namedClauses({ ruleIds: parsed.ruleIds, selected: request.selected });
+      return namedRules({ ruleIds: parsed.ruleIds, selected: request.selected });
     case "unparseable-rule-config":
-      return { clauses: request.selected, reach: "every-selected-clause" };
+      return { rules: request.selected, reach: "all-rules" };
     case "not-an-exception":
-      return { clauses: [], reach: "one-clause" };
+      return { rules: [], reach: "selected-rule" };
   }
 };
 
-const inlineNativeException = (request: {
+const inlineNativeException = <Identity>(request: {
   readonly kind: typeof INLINE_DISABLE | typeof INLINE_RULE_CONFIG;
-  readonly reach: InlineReach;
-  readonly clause: LintedClause;
+  readonly reach: InlineReading<Identity>["reach"];
+  readonly identity: Identity;
   readonly file: RepoPath;
   readonly message: LintedMessage;
-}): NativeException => {
+}): InlineRule<Identity> => {
   const located = {
-    clause: request.clause.clause.address,
+    identity: request.identity,
     file: request.file,
     line: request.message.line,
     text: request.message.message,
   };
-  switch (request.kind) {
-    case INLINE_DISABLE:
-      return { kind: request.kind, ...located, reach: request.reach };
-    case INLINE_RULE_CONFIG:
-      return { kind: request.kind, ...located };
-  }
+  return request.kind === INLINE_DISABLE
+    ? { kind: request.kind, ...located, reach: request.reach }
+    : { kind: request.kind, ...located };
 };
 
 const inlineExceptionKindOf = (request: {
@@ -92,11 +115,11 @@ const inlineExceptionKindOf = (request: {
     ? request.messageId
     : "not-inline";
 
-const inlineException = (request: {
+const inlineException = <Identity>(request: {
   readonly message: LintedMessage;
   readonly file: RepoPath;
-  readonly selected: readonly LintedClause[];
-}): Outcome<readonly NativeException[]> => {
+  readonly selected: readonly RuleTarget<Identity>[];
+}): Outcome<readonly InlineRule<Identity>[]> => {
   const message = request.message;
   const kind = inlineExceptionKindOf({ messageId: message.messageId });
   if (kind === "not-inline") {
@@ -108,25 +131,25 @@ const inlineException = (request: {
   const reading = inlineReadingOf({ text: message.message, selected: request.selected });
   return {
     outcome: "ok",
-    value: reading.clauses.map((clause) =>
-      inlineNativeException({ kind, reach: reading.reach, clause, file: request.file, message }),
+    value: reading.rules.map(({ identity }) =>
+      inlineNativeException({ kind, reach: reading.reach, identity, file: request.file, message }),
     ),
   };
 };
 
-const messageReadings = (request: {
+const messageReadings = <Identity>(request: {
   readonly message: LintedMessage;
   readonly file: RepoPath;
-  readonly selected: readonly LintedClause[];
-}): Outcome<readonly MessageReading[]> => {
+  readonly selected: readonly RuleTarget<Identity>[];
+}): Outcome<readonly RuleReading<Identity>[]> => {
   if (request.message.ruleId === INLINE_CONFIG_RULE_ID) {
     const nativeExceptions = inlineException(request);
     return nativeExceptions.outcome === "failed"
       ? nativeExceptions
       : { outcome: "ok", value: [{ ruleHits: [], nativeExceptions: nativeExceptions.value }] };
   }
-  const clause = request.selected.find((entry) => entry.ruleId === request.message.ruleId);
-  if (clause === undefined) {
+  const rule = request.selected.find((entry) => entry.ruleId === request.message.ruleId);
+  if (rule === undefined) {
     return { outcome: "ok", value: [] };
   }
   return {
@@ -134,11 +157,7 @@ const messageReadings = (request: {
     value: [
       {
         ruleHits: [
-          {
-            clause: clause.clause.address,
-            line: request.message.line,
-            column: request.message.column,
-          },
+          { identity: rule.identity, line: request.message.line, column: request.message.column },
         ],
         nativeExceptions: [],
       },
@@ -146,11 +165,11 @@ const messageReadings = (request: {
   };
 };
 
-export const messageReadingOf = (request: {
+const ruleReadingOf = <Identity>(request: {
   readonly file: RepoPath;
   readonly messages: readonly LintedMessage[];
-  readonly selected: readonly LintedClause[];
-}): Outcome<MessageReading> => {
+  readonly selected: readonly RuleTarget<Identity>[];
+}): Outcome<RuleReading<Identity>> => {
   const readings = gatheredOutcomes({
     outcomes: request.messages.map((message) =>
       messageReadings({ message, file: request.file, selected: request.selected }),
@@ -167,6 +186,75 @@ export const messageReadingOf = (request: {
       };
 };
 
+export const messageReadingOf = (request: {
+  readonly file: RepoPath;
+  readonly messages: readonly LintedMessage[];
+  readonly selected: readonly LintedClause[];
+}): Outcome<MessageReading> => {
+  const read = ruleReadingOf({
+    ...request,
+    selected: request.selected.map(({ ruleId, clause }) => ({ ruleId, identity: clause.address })),
+  });
+  if (read.outcome === "failed") return read;
+  const nativeExceptions = read.value.nativeExceptions.map(
+    ({ identity, ...native }): NativeException =>
+      native.kind === INLINE_DISABLE
+        ? {
+            ...native,
+            clause: identity,
+            reach: native.reach === "all-rules" ? "every-selected-clause" : "one-clause",
+          }
+        : { ...native, clause: identity },
+  );
+  return {
+    outcome: "ok",
+    value: {
+      ruleHits: read.value.ruleHits.map(({ identity, ...location }) => ({
+        ...location,
+        clause: identity,
+      })),
+      nativeExceptions,
+    },
+  };
+};
+
+type NamedMessageReading = {
+  readonly ruleHits: readonly (RuleLocation & { readonly check: CheckAddressText })[];
+  readonly nativeExceptions: readonly CheckNativeException[];
+};
+
+export const namedMessageReadingOf = (request: {
+  readonly file: RepoPath;
+  readonly messages: readonly LintedMessage[];
+  readonly selected: readonly { readonly ruleId: string; readonly check: CheckAddressText }[];
+}): Outcome<NamedMessageReading> => {
+  const read = ruleReadingOf({
+    ...request,
+    selected: request.selected.map(({ ruleId, check }) => ({ ruleId, identity: check })),
+  });
+  if (read.outcome === "failed") return read;
+  const nativeExceptions = read.value.nativeExceptions.map(
+    ({ identity, ...native }): CheckNativeException =>
+      native.kind === INLINE_DISABLE
+        ? {
+            ...native,
+            check: identity,
+            reach: native.reach === "all-rules" ? "every-selected-check" : "one-check",
+          }
+        : { ...native, check: identity },
+  );
+  return {
+    outcome: "ok",
+    value: {
+      ruleHits: read.value.ruleHits.map(({ identity, ...location }) => ({
+        ...location,
+        check: identity,
+      })),
+      nativeExceptions,
+    },
+  };
+};
+
 export const lineSnippet = (request: {
   readonly line: string;
   readonly column: number;
@@ -177,14 +265,35 @@ export const lineSnippet = (request: {
     : trimmed;
 };
 
+const anchoredHit = (request: {
+  readonly file: RepoPath;
+  readonly location: RuleLocation;
+  readonly lines: readonly string[];
+}) => ({
+  file: request.file,
+  anchor: { line: request.location.line, column: request.location.column - 1 },
+  snippet: lineSnippet({
+    line: request.lines[request.location.line - 1] ?? "",
+    column: request.location.column,
+  }),
+});
+
 export const hitsCutFrom = (request: {
   readonly file: RepoPath;
   readonly ruleHits: readonly RuleHit[];
   readonly lines: readonly string[];
 }): readonly Hit[] =>
-  request.ruleHits.map((ruleHit) => ({
-    clause: ruleHit.clause,
-    file: request.file,
-    anchor: { line: ruleHit.line, column: ruleHit.column - 1 },
-    snippet: lineSnippet({ line: request.lines[ruleHit.line - 1] ?? "", column: ruleHit.column }),
+  request.ruleHits.map(({ clause, ...location }) => ({
+    ...anchoredHit({ ...request, location }),
+    clause,
+  }));
+
+export const namedHitsCutFrom = (request: {
+  readonly file: RepoPath;
+  readonly ruleHits: NamedMessageReading["ruleHits"];
+  readonly lines: readonly string[];
+}): readonly CheckHit[] =>
+  request.ruleHits.map(({ check, ...location }) => ({
+    ...anchoredHit({ ...request, location }),
+    check,
   }));

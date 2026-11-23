@@ -10,8 +10,6 @@ import type { RepositoryLocated } from "../application/ports/command/repository-
 import type { RecordsSplit } from "../application/ports/records/exception-repository.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
 import type { PrunableDebt } from "../domain/records/debt/prunable-debt.ts";
-import type { DebtPair } from "../domain/records/discipline-exceptions/debt-pair.ts";
-import type { InheritedDebtOutcome } from "../domain/records/discipline-exceptions/inherited-debt.ts";
 import type { LoadFailure } from "../domain/report/load-failure.ts";
 import type { Result } from "../domain/result.ts";
 import type { ProjectionWrite } from "../domain/runner/runner-result-types.ts";
@@ -30,11 +28,7 @@ import {
   type CommandOutcome,
   projectCommandOutcome,
 } from "../infrastructure/command-line/outcomes/command-outcome.ts";
-import {
-  pruneDebtCommandOutcome,
-  recordDebtCommandOutcome,
-  splitRecordsCommandOutcome,
-} from "../infrastructure/command-line/outcomes/record-command-outcomes.ts";
+import { splitRecordsCommandOutcome } from "../infrastructure/command-line/outcomes/record-command-outcomes.ts";
 import { createRecordsStore } from "../infrastructure/hone-records-folder/writing/records-store.ts";
 import { repoRootOf } from "../infrastructure/printed-report/check-locations.ts";
 import {
@@ -43,10 +37,7 @@ import {
   projectNextLine,
   prunedDebtLine,
 } from "../infrastructure/printed-report/records/record-command-lines.ts";
-import { projectionsIn } from "../operations/project/run-project-command.ts";
 import { versionTwoProjectedOf } from "../operations/project/version-two-project-command.ts";
-import { debtPruned } from "../operations/prune-debt/run-prune-debt-command.ts";
-import { adoptionDebt } from "../operations/record-debt/run-record-debt-command.ts";
 import {
   type VersionTwoRecordInput,
   versionTwoAuthoriseOf,
@@ -54,8 +45,8 @@ import {
   versionTwoRecordDebtOf,
 } from "../operations/version-two-record-commands.ts";
 import { loadFailed, loadResultOf, runFailed, type ToolCommand } from "./composed-command.ts";
-import type { ToolInvocation, ToolPorts, VersionOneToolPorts } from "./tool-ports.ts";
-import { runSettingsOver, versionOneRunAt, withShownPaths } from "./version-one-runs.ts";
+import { withShownPaths } from "./shown-command-paths.ts";
+import type { ToolInvocation, ToolPorts } from "./tool-ports.ts";
 import {
   repoRootOf as resolvedRepoRootOf,
   repositoryLocatedOf,
@@ -127,66 +118,6 @@ const parseAuthorise = (request: {
   return authorising.outcome === "failed"
     ? authorising
     : { outcome: "ok", value: { repo: parsed.value.repo, authorising: authorising.value } };
-};
-
-export const PROJECT: ToolCommand<
-  ProjectArguments,
-  readonly ProjectionWrite[],
-  VersionOneToolPorts
-> = {
-  parse: parseProjectArguments,
-  run: ({ command, ports, parsed }) =>
-    versionOneRunAt({
-      ports,
-      moduleUrl: command.moduleUrl,
-      repo: parsed.repo,
-      run: (located) => projectionsIn({ ...ports, moduleUrl: command.moduleUrl, ...located }),
-    }),
-  print: ({ produced }) => projectCommandOutcome({ result: { outcome: "ok", value: produced } }),
-};
-
-export const PRUNE_DEBT: ToolCommand<PruneDebtArguments, readonly DebtPair[], VersionOneToolPorts> =
-  {
-    parse: parsePruneDebtArguments,
-    run: ({ command, ports, parsed }) =>
-      versionOneRunAt({
-        ports,
-        moduleUrl: command.moduleUrl,
-        repo: parsed.repo,
-        run: (located) =>
-          debtPruned({
-            ...ports,
-            moduleUrl: command.moduleUrl,
-            ...located,
-            arguments: parsed,
-            runSettingsOf: runSettingsOver(ports),
-          }),
-      }),
-    print: ({ produced }) =>
-      pruneDebtCommandOutcome({ result: { outcome: "ok", value: produced } }),
-  };
-
-export const RECORD_DEBT: ToolCommand<
-  RecordDebtArguments,
-  readonly InheritedDebtOutcome[],
-  VersionOneToolPorts & Pick<ToolPorts, "gitTree">
-> = {
-  parse: parseRecordDebtArguments,
-  run: ({ command, ports, parsed }) =>
-    versionOneRunAt({
-      ports,
-      moduleUrl: command.moduleUrl,
-      repo: parsed.repo,
-      run: (located) =>
-        adoptionDebt({
-          ...ports,
-          moduleUrl: command.moduleUrl,
-          ...located,
-          arguments: parsed,
-          exceptionRepository: ports.exceptionRepositoryOf({ repoRoot: located.repoRoot }),
-        }),
-    }),
-  print: ({ produced }) => recordDebtCommandOutcome({ result: { outcome: "ok", value: produced } }),
 };
 
 export const SPLIT_RECORDS: ToolCommand<

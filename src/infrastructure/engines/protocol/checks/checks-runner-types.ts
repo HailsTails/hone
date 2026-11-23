@@ -1,39 +1,30 @@
-import type { ChecksRunRequest } from "../../../../application/ports/engine/runner-module.ts";
-import type { Result } from "../../../../domain/result.ts";
 import type {
-  ChecksSliceProblem,
-  MisnamedRuleId,
+  NamedEngineRun,
+  NamedEngineRunRequest,
+} from "../../../../application/ports/engine/engine-run.ts";
+import type { Result } from "../../../../domain/result.ts";
+import type { SourceCase } from "../../../../domain/rule-set/rule-set-types.ts";
+import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
+import type {
   NotReadyYetFailure,
   ProjectedFile,
 } from "../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
-import type {
-  Hit,
-  MeasuredPair,
-  NativeException,
-  ProjectionState,
-} from "../../../../domain/runner/runner-result-types.ts";
-import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
-
-export type ChecksRunReport = {
-  readonly hits: readonly Hit[];
-  readonly nativeExceptions: readonly NativeException[];
-  readonly measured: readonly MeasuredPair[];
-  readonly projection: ProjectionState;
-  readonly slices: readonly ChecksSliceProblem[];
-  readonly misnamedRuleIds: readonly MisnamedRuleId[];
-};
+import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
 
 export type ChecksRunFailure = RunnerFailure | NotReadyYetFailure;
 
-export type ChecksRunner = {
-  readonly run: (request: ChecksRunRequest) => Promise<Result<ChecksRunReport, ChecksRunFailure>>;
-  readonly conform: StandaloneRunner["conform"];
-  readonly project: (
-    request: ChecksRunRequest,
-  ) => Promise<Result<readonly ProjectedFile[], ChecksRunFailure>>;
-};
+export type NamedChecksRunReport = Omit<NamedEngineRun, "mechanism" | "coverableKinds">;
 
-export type LoadedChecksRunner = ChecksRunner & {
-  readonly projectedKinds: readonly NativeException["kind"][];
+export type NamedChecksRunner = {
+  readonly run: (
+    request: NamedEngineRunRequest,
+  ) => Promise<Result<NamedChecksRunReport, ChecksRunFailure>>;
+  readonly conform: (request: {
+    readonly binding: CheckBinding;
+    readonly cases: readonly SourceCase[];
+  }) => Promise<Result<readonly CaseVerdict[], RunnerFailure>>;
+  readonly project: (
+    request: NamedEngineRunRequest,
+  ) => Promise<Result<readonly ProjectedFile[], ChecksRunFailure>>;
 };

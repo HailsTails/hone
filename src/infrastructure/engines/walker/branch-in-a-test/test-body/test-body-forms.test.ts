@@ -429,6 +429,13 @@ const CALL = SYNTAX_API.SyntaxKind.CallExpression;
 
 const DOUBLE_SITES = [
   {
+    name: "a callback passed to the unit",
+    source: "runWith(() => rows.map(idOf));",
+    text: "rows.map",
+    kind: CALL,
+    edition: "1",
+  },
+  {
     name: "an arrow property",
     source: "const port = { isFile: (path) => files.includes(path) };",
     text: "files.includes",

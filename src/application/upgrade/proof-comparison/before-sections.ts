@@ -1,4 +1,8 @@
-import type { AttributedNativeException, Finding } from "../../../domain/finding/governance.ts";
+import type {
+  AttributedNativeException,
+  Finding,
+  AttributedCheckException,
+} from "../../../domain/finding/governance.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { CheckReport } from "../../../domain/report/check-report.ts";
 import { verdictOf } from "../../../domain/report/verdict.ts";
@@ -35,7 +39,9 @@ export const answeredKeyOf = (request: {
     ],
   });
 
-const placeOfNative = (request: { readonly exception: AttributedNativeException }): string => {
+type NativeReading = AttributedNativeException | AttributedCheckException;
+
+const placeOfNative = (request: { readonly exception: NativeReading }): string => {
   const { exception } = request;
   switch (exception.kind) {
     case "command-line-option":
@@ -50,14 +56,23 @@ const placeOfNative = (request: { readonly exception: AttributedNativeException 
   }
 };
 
-export const nativeKeyOf = (request: { readonly exception: AttributedNativeException }): string =>
+export const nativeReadingKeyOf = (request: {
+  readonly exception: NativeReading;
+  readonly clauseText: string;
+}): string =>
   joinedKey({
     parts: [
       request.exception.mechanism,
       request.exception.kind,
-      clauseAddressText({ address: request.exception.clause }),
+      request.clauseText,
       placeOfNative(request),
     ],
+  });
+
+export const nativeKeyOf = (request: { readonly exception: AttributedNativeException }): string =>
+  nativeReadingKeyOf({
+    ...request,
+    clauseText: clauseAddressText({ address: request.exception.clause }),
   });
 
 const recordFileKeyOf = (request: { readonly record: ExceptionRecord }): string =>

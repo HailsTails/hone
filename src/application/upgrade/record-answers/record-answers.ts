@@ -1,11 +1,16 @@
 import type { Finding, GovernedRun } from "../../../domain/finding/governance.ts";
-import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
-import { nativeSitesOf } from "../../../domain/records/answering/answering.ts";
-import { sitesOfFinding } from "../../../domain/records/debt/debt-sites.ts";
+import { checkNamedAt, checksOf } from "../../../domain/language-layer/check-address.ts";
+import {
+  type Check,
+  type SymptomCatalogue,
+  symptomReadingOf,
+} from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import type { GovernanceResult } from "../../../domain/records/discipline-exceptions/governance.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText, sameClauseAddress } from "../../../domain/rule-set/clause-address.ts";
+import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { catalogueOf, type RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type {
   AuthorisedLocationRecord,
@@ -30,17 +35,36 @@ const attributionFailureOf = (request: { readonly finding: Finding }): OracleFai
   check: request.finding.check,
 });
 
+const measuredChecksOf = (request: {
+  readonly catalogue: SymptomCatalogue;
+  readonly clause: ClauseAddress;
+  readonly address: string | undefined;
+  readonly mechanism: EngineId;
+}): readonly Check[] => {
+  const named = checkNamedAt(request);
+  const checks =
+    named.named === "unnamed" ? checksOf(request) : named.named === "check" ? [named.check] : [];
+  return checks.filter(({ engines }) => engines.some(({ name }) => name === request.mechanism));
+};
+
 const checksOfFinding = (request: {
   readonly finding: Finding;
   readonly catalogues: readonly RuleSetCatalogue[];
 }): readonly Check[] => {
   const { finding, catalogues } = request;
   const catalogue = catalogueOf({ catalogues, ruleSet: finding.clause.ruleSet });
-  return catalogue === undefined
-    ? []
-    : sitesOfFinding({ catalogue, finding }).flatMap((site) =>
-        site.check.found === "check" ? [site.check.check] : [],
-      );
+  if (catalogue === undefined) return [];
+  const measured = measuredChecksOf({
+    catalogue,
+    clause: finding.clause,
+    address: finding.check,
+    mechanism: finding.mechanism,
+  });
+  if (finding.check !== undefined) return measured;
+  const reading = symptomReadingOf({ catalogue, finding });
+  if (reading.reading !== "named") return [];
+  const matches = measured.filter(({ symptom }) => symptom.name === reading.symptom.name);
+  return matches.length === 1 ? matches : [];
 };
 
 const checksOfFindings = (request: {
@@ -98,11 +122,18 @@ const checksOfHeldSuppressions = (request: {
               (exception) =>
                 exception.kind !== "config-override" &&
                 exception.kind !== "command-line-option" &&
+                run.coverableKinds.includes(exception.kind) &&
                 exception.file === record.file &&
                 sameClauseAddress({ left: exception.clause, right: record.clause }) === "same",
             )
-            .flatMap((exception) => nativeSitesOf({ exception, run, catalogue }))
-            .flatMap((site) => (site.check.found === "check" ? [site.check.check] : [])),
+            .flatMap((exception) =>
+              measuredChecksOf({
+                catalogue,
+                clause: exception.clause,
+                address: exception.check,
+                mechanism: run.mechanism,
+              }),
+            ),
         );
 };
 

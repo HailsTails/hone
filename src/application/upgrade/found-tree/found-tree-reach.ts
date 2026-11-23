@@ -6,16 +6,16 @@ import type {
 } from "../../ports/records/records-source-of.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type { VersionOneCommandRequest } from "../../ports/version-one-command-request.ts";
-import type { CheckRequest } from "../../run/check/run-check.ts";
+import type { VersionOneCheckInput } from "../record-answers/version-one-check-input.ts";
 import { foundTreeExceptionsOf } from "./found-tree-exceptions.ts";
 import { foundTreeGitOf } from "./found-tree-git.ts";
 
 export const FOUND_TREE_REVISION = "the tree the upgrade found";
 
 export const foundTreeCheckReachOf = (request: {
-  readonly check: Pick<CheckRequest, "git" | "fileText" | "path" | "exceptionRepository">;
+  readonly check: Pick<VersionOneCheckInput, "git" | "fileText" | "path" | "exceptionRepository">;
   readonly loadFailureDetail: LoadFailureDetail;
-}): Pick<CheckRequest, "baseRevision" | "git" | "exceptionRepository"> => ({
+}): Pick<VersionOneCheckInput, "baseRevision" | "git" | "exceptionRepository"> => ({
   baseRevision: FOUND_TREE_REVISION,
   git: foundTreeGitOf({
     git: request.check.git,

@@ -3,19 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { type LinesReader, linesReaderOf, sourceLinesFor } from "./source-lines.ts";
 
 const FILE = repoPathOf("src/a.ts");
-
-const classSyntax = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-14"),
-  clause: clauseIdOf("class-syntax"),
-};
 
 const path = createPathPort({ flavour: "posix", workingDirectory: () => "/elsewhere" });
 
@@ -37,11 +28,7 @@ describe("sourceLinesFor", () => {
     expect(
       sourceLinesFor({
         file: FILE,
-        ruleHits: [
-          { clause: classSyntax, line: 1, column: 1 },
-          { clause: classSyntax, line: 2, column: 1 },
-          { clause: classSyntax, line: 3, column: 1 },
-        ],
+        ruleHits: [{ line: 1 }, { line: 2 }, { line: 3 }],
         readLines,
       }),
     ).toEqual({ outcome: "ok", value: ["first;", "second;", "third;"] });
@@ -53,13 +40,7 @@ describe("sourceLinesFor", () => {
       outcome: "failed",
       error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
     });
-    expect(
-      sourceLinesFor({
-        file: FILE,
-        ruleHits: [{ clause: classSyntax, line: 1, column: 1 }],
-        readLines,
-      }),
-    ).toEqual({
+    expect(sourceLinesFor({ file: FILE, ruleHits: [{ line: 1 }], readLines })).toEqual({
       outcome: "failed",
       error: { kind: "file-unreadable", file: FILE, detail: "EACCES" },
     });

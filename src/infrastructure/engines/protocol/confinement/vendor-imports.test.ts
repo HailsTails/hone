@@ -638,7 +638,7 @@ describe("Vendor confinement over what this repository's own Hone source imports
       testSources,
     }).toEqual({
       sourcesOutsideMechanisms: expect.objectContaining({
-        "./src/application/run/check/run-check.ts": expect.any(String),
+        "./src/application/run/version-two-run.ts": expect.any(String),
         "./delivery/install-proof/install-proof.ts": expect.any(String),
         "./delivery/install-proof/run-install-proof.ts": expect.any(String),
       }),
@@ -652,7 +652,7 @@ describe("Vendor confinement over what this repository's own Hone source imports
         "./src/infrastructure/node/process/execution-port.ts": expect.any(String),
       }),
       coreSources: expect.objectContaining({
-        "./src/application/run/check/run-check.ts": expect.any(String),
+        "./src/application/run/version-two-run.ts": expect.any(String),
       }),
       installProofPortSources: {
         "./delivery/install-proof/install-proof-ports.ts": expect.any(String),
@@ -671,7 +671,7 @@ describe("Vendor confinement over what this repository's own Hone source imports
           expect.any(String),
       }),
       testSources: expect.objectContaining({
-        "./src/application/run/check/run-check.test.ts": expect.any(String),
+        "./src/application/upgrade/record-answers/measurement.test.ts": expect.any(String),
         "./src/infrastructure/node/file-system/file-system-port.test.ts": expect.any(String),
         "./src/infrastructure/node/process/execution-port.test.ts": expect.any(String),
         "./src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.test.ts":

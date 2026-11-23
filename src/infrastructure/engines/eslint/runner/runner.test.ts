@@ -1,41 +1,37 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
-import { checksRunnerModuleSchema } from "../../protocol/checks/checks-runner-module-schema.ts";
-import { runnerModuleSchema } from "../../protocol/runner-module/runner-module-schema.ts";
-import { checksRunner, runner } from "./runner.ts";
+import { namedChecksRunnerModuleSchema } from "../../protocol/checks/checks-runner-module-schema.ts";
+import * as runnerModule from "./runner.ts";
+
+const { namedChecksRunner } = runnerModule;
 
 describe("runner", () => {
-  it("is an embedded runner module core accepts, projecting config overrides and inline disables", () => {
-    expect(runnerModuleSchema.safeParse(runner)).toMatchObject({
-      success: true,
-      data: { exceptionPath: "embedded", projectedKinds: ["config-override", "inline-disable"] },
-    });
+  it("exposes the named runner and the two upgrade projection operations", () => {
+    expect(Object.keys(runnerModule).sort()).toEqual([
+      "measureVersionOne",
+      "namedChecksRunner",
+      "versionOneProjectionOver",
+    ]);
   });
 
   it("exports a checks runner module core accepts, projecting config overrides and inline disables", () => {
-    expect(checksRunnerModuleSchema.safeParse(checksRunner)).toMatchObject({
+    expect(namedChecksRunnerModuleSchema.safeParse(namedChecksRunner)).toMatchObject({
       success: true,
-      data: { projectedKinds: ["config-override", "inline-disable"] },
+      data: { fileScope: "typescript", projectedKinds: ["config-override", "inline-disable"] },
     });
   });
 
-  it("refuses a clause whose settings name a plugin module outside the piece folder before loading anything", async () => {
+  it("refuses a check whose settings name a plugin module outside the piece folder before loading anything", async () => {
     expect(
-      await runner.conform({
-        clause: {
-          address: {
-            ruleSet: TOOL_RULE_SET,
-            discipline: disciplineIdOf("XX-1"),
-            clause: clauseIdOf("first-check"),
-          },
+      await namedChecksRunner.conform({
+        binding: {
+          address: "first-symptom#first-check",
+          engine: "eslint",
           anchor: { kind: "file" },
-          pieceRoot: "/install/mechanisms/eslint/XX-1",
-          clauseSettings: {},
+          pieceRoot: "/install/checks/eslint/first-symptom/first-check",
+          checkSettings: {},
           edition: editionOf("1"),
           settings: { pluginNamespace: "xx", pluginModule: "../x.ts", rule: "first-check" },
         },
@@ -52,7 +48,7 @@ describe("runner", () => {
       outcome: "failed",
       error: {
         kind: "piece-invalid",
-        pieceRoot: "/install/mechanisms/eslint/XX-1",
+        pieceRoot: "/install/checks/eslint/first-symptom/first-check",
         detail: expect.any(String),
       },
     });

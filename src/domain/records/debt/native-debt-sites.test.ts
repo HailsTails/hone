@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { AttributedNativeException, GovernedRun } from "../../finding/governance.ts";
+import type { AttributedCheckException, NamedGovernedRun } from "../../finding/governance.ts";
 import type {
   Case,
   Check,
@@ -275,53 +275,53 @@ const FILE = repoPathOf("src/a.ts");
 
 const OTHER_FILE = repoPathOf("src/b.ts");
 
-const ESLINT_RUN: GovernedRun = {
+const ESLINT_RUN: NamedGovernedRun = {
   mechanism: ESLINT,
   nativeExceptions: [],
   coverableKinds: ["config-override", "inline-disable"],
 };
 
-const INLINE_DISABLE: AttributedNativeException = {
+const INLINE_DISABLE: AttributedCheckException = {
   kind: "inline-disable",
   mechanism: ESLINT,
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: FILE,
   line: 3,
   text: "// eslint-disable-next-line x",
-  reach: "one-clause",
+  reach: "one-check",
 };
 
-const CONFIG_OVERRIDE: AttributedNativeException = {
+const CONFIG_OVERRIDE: AttributedCheckException = {
   kind: "config-override",
   mechanism: ESLINT,
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: OTHER_FILE,
 };
 
-const IGNORE: AttributedNativeException = {
+const IGNORE: AttributedCheckException = {
   kind: "ignore",
   mechanism: ESLINT,
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   file: FILE,
 };
 
-const NAMED_IGNORE: AttributedNativeException = {
+const NAMED_IGNORE: AttributedCheckException = {
   ...IGNORE,
   check: "claimed-type#cast-expressions",
   file: OTHER_FILE,
 };
 
-const OPTION: AttributedNativeException = {
+const OPTION: AttributedCheckException = {
   kind: "command-line-option",
   mechanism: ESLINT,
-  clause: CAST_EXPRESSIONS,
+  check: "claimed-type#cast-expressions",
   location: repoPathOf("package.json"),
   script: "lint",
   option: "--no-inline-config",
   cause: { kind: "weakens-run" },
 };
 
-const UNRUN_MECHANISM_EXCEPTION: AttributedNativeException = {
+const UNRUN_MECHANISM_EXCEPTION: AttributedCheckException = {
   ...INLINE_DISABLE,
   mechanism: AUDIT,
 };
@@ -353,7 +353,7 @@ describe("nativeDebtSitesOf", () => {
       recordable: [],
       unrecordable: [
         {
-          address: "CD-2#cast-expressions",
+          address: "claimed-type#cast-expressions",
           file: OTHER_FILE,
           because: { kind: "config-override" },
         },
@@ -362,7 +362,7 @@ describe("nativeDebtSitesOf", () => {
   });
 
   it("keeps the cause of a script option, since the advice depends on it", () => {
-    const wrapped: AttributedNativeException = {
+    const wrapped: AttributedCheckException = {
       ...OPTION,
       cause: { kind: "wrapped", command: "eslint", wrapper: "env" },
     };
@@ -374,12 +374,12 @@ describe("nativeDebtSitesOf", () => {
       }).unrecordable,
     ).toEqual([
       {
-        address: "CD-2#cast-expressions",
+        address: "claimed-type#cast-expressions",
         file: "package.json",
         because: { kind: "command-line-option", cause: { kind: "weakens-run" } },
       },
       {
-        address: "CD-2#cast-expressions",
+        address: "claimed-type#cast-expressions",
         file: "package.json",
         because: {
           kind: "command-line-option",
@@ -389,7 +389,7 @@ describe("nativeDebtSitesOf", () => {
     ]);
   });
 
-  it("names, by its kind, each exception no record can hold, with the check it names or else its clause", () => {
+  it("names, by its kind, each exception no record can hold, with its check address", () => {
     expect(
       nativeDebtSitesOf({
         catalogue: REPORT_CATALOGUE,
@@ -400,11 +400,11 @@ describe("nativeDebtSitesOf", () => {
       recordable: [],
       unrecordable: [
         {
-          address: "CD-2#cast-expressions",
+          address: "claimed-type#cast-expressions",
           file: "package.json",
           because: { kind: "command-line-option", cause: { kind: "weakens-run" } },
         },
-        { address: "CD-2#cast-expressions", file: FILE, because: { kind: "ignore" } },
+        { address: "claimed-type#cast-expressions", file: FILE, because: { kind: "ignore" } },
         { address: "claimed-type#cast-expressions", file: OTHER_FILE, because: { kind: "ignore" } },
       ],
     });
@@ -420,7 +420,11 @@ describe("nativeDebtSitesOf", () => {
     ).toEqual({
       recordable: [],
       unrecordable: [
-        { address: "CD-2#cast-expressions", file: FILE, because: { kind: "inline-disable" } },
+        {
+          address: "claimed-type#cast-expressions",
+          file: FILE,
+          because: { kind: "inline-disable" },
+        },
       ],
     });
   });
@@ -435,7 +439,11 @@ describe("nativeDebtSitesOf", () => {
     ).toEqual({
       recordable: [],
       unrecordable: [
-        { address: "CD-2#cast-expressions", file: FILE, because: { kind: "inline-disable" } },
+        {
+          address: "claimed-type#cast-expressions",
+          file: FILE,
+          because: { kind: "inline-disable" },
+        },
       ],
     });
   });

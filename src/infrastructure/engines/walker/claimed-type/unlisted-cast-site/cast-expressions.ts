@@ -25,7 +25,7 @@ const reportedSnippet = (request: {
     : request.snippet;
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, syntaxApi }) => ({
+  prepare: ({ bindings, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
@@ -53,7 +53,7 @@ export const check: WalkerPiece = {
                   });
                   const anchor = anchorAt({ position });
                   hits.push(
-                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                    ...bindings.map((binding) => ({ check: binding.address, anchor, snippet })),
                   );
                 },
                 finish: () => hits,

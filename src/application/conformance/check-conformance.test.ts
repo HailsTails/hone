@@ -8,6 +8,49 @@ import type { NamedCheckExamplesRepository } from "../ports/rule-set/named-check
 import { checkUnderTestOf } from "./check-conformance.ts";
 
 describe("checkUnderTestOf", () => {
+  it("rejects an invalid address before opening a declaration", () => {
+    const examples: NamedCheckExamplesRepository = {
+      read: vi.fn<NamedCheckExamplesRepository["read"]>(),
+    };
+    expect(
+      checkUnderTestOf({
+        check: "../example#sample",
+        engine: "walker",
+        installRoot: absoluteRootOf("/install"),
+        examples,
+        loadFailureDetail: vi.fn<LoadFailureDetail>(),
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "address-invalid", detail: "../example#sample" },
+    });
+    expect(examples.read).not.toHaveBeenCalled();
+  });
+
+  it("reports an absent named check separately from a malformed address", () => {
+    const examples: NamedCheckExamplesRepository = {
+      read: vi.fn<NamedCheckExamplesRepository["read"]>().mockReturnValueOnce({
+        outcome: "failed",
+        error: { kind: "piece-missing", address: "example#absent", mechanism: "walker" },
+      }),
+    };
+    const loadFailureDetail = vi
+      .fn<LoadFailureDetail>()
+      .mockReturnValueOnce("example#absent has no walker piece");
+    expect(
+      checkUnderTestOf({
+        check: "example#absent",
+        engine: "walker",
+        installRoot: absoluteRootOf("/install"),
+        examples,
+        loadFailureDetail,
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "check-missing", detail: "example#absent has no walker piece" },
+    });
+  });
+
   it("uses the piece's default edition and preserves an explicit example edition", () => {
     const examples: NamedCheckExamplesRepository = {
       read: vi.fn<NamedCheckExamplesRepository["read"]>().mockReturnValueOnce({
@@ -18,6 +61,7 @@ describe("checkUnderTestOf", () => {
             pieceRoot: "/install/piece",
             exceptions: "allowed",
             settings: {},
+            forms: {},
             declarations: {},
             editions: {
               declared: [editionOf("1"), editionOf("2")],
@@ -42,7 +86,6 @@ describe("checkUnderTestOf", () => {
           ],
         },
       }),
-      runnerAddress: vi.fn<NamedCheckExamplesRepository["runnerAddress"]>(),
     };
     expect(
       checkUnderTestOf({
@@ -68,6 +111,5 @@ describe("checkUnderTestOf", () => {
         ],
       },
     });
-    expect(examples.runnerAddress).not.toHaveBeenCalled();
   });
 });

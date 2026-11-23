@@ -17,7 +17,7 @@ import {
   type AnsweredFile,
   checksProjectionText,
 } from "../infrastructure/engines/eslint/runner/projection/checks-projection.ts";
-import { projectedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
+import { projectedNamedChecksOf } from "../infrastructure/engines/eslint/runner/projection/projected-checks.ts";
 import { eslint9ToolchainModules } from "../infrastructure/engines/eslint/runner/toolchain/eslint-9/eslint-9-engine.ts";
 import { resolvedConfigSchema } from "../infrastructure/engines/eslint/runner/toolchain/eslint-config-schema.ts";
 import { createEslintPort } from "../infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
@@ -27,7 +27,7 @@ import {
   defaultEslintToolchainPeers,
   type EslintToolchainModules,
 } from "../infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { createNamedEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultDirectoryTreePort } from "../infrastructure/node/file-system/directory-tree-port.ts";
 import { createDefaultFileRemovalPort } from "../infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
@@ -267,7 +267,7 @@ const versionTwoStages = versionTwoStagesOver({
     fileText,
     path,
     modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
-    engine: createDefaultEnginePort({}),
+    namedEngine: createNamedEnginePort({}),
     git: {
       trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
       changedSince: vi.fn<GitPort["changedSince"]>(),
@@ -290,9 +290,9 @@ const versionTwoStages = versionTwoStagesOver({
 const versionTwoSettings = versionTwoStages.settings({ catalogue: toolCatalogue() });
 assert(versionTwoSettings.outcome === "ok", "the pair's version 2 settings file loads");
 
-const versionTwoChecks = projectedChecksOf({
+const versionTwoChecks = projectedNamedChecksOf({
   checks: toolCatalogue().checks,
-  bindings: versionTwoSettings.value.selection.bindings,
+  bindings: versionTwoSettings.value.selection.selected.map(({ binding }) => binding),
 });
 assert(versionTwoChecks.outcome === "ok", "the pair's version 2 checks project");
 

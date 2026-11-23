@@ -1,6 +1,7 @@
 import * as editionReach from "./domain/rule-set/edition-reach.ts";
 import * as sourceScope from "./infrastructure/engines/walker/runner/pieces/source-scope.ts";
 
+export type { CheckBinding } from "./domain/runner/check-binding.ts";
 export type { PieceFailure } from "./domain/runner/piece-failure-types.ts";
 export type { ClauseSettingValues, RunnerClause } from "./domain/runner/runner-module-types.ts";
 export type { ReadonlyJsonValue } from "./domain/settings/json-values/json-value.ts";

@@ -16,9 +16,8 @@ import { repoPathOf } from "../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
-import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
 import { checkSiteText, findingSiteOf, nativeSitesOf } from "./check-site.ts";
-import type { Finding } from "./governance.ts";
+import type { CheckFinding } from "./governance.ts";
 
 const AUDIT = "walker" as const;
 
@@ -220,12 +219,6 @@ const CAST_EXPRESSIONS = {
   clause: clauseIdOf("cast-expressions"),
 };
 
-const TEAM_CLAUSE = {
-  ruleSet: { name: ruleSetNameOf("acme") },
-  discipline: disciplineIdOf("AC-1"),
-  clause: clauseIdOf("no-moment"),
-};
-
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
@@ -282,16 +275,16 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const FILE = repoPathOf("src/orders/charge-order.ts");
 
-const CLOCK_FINDING: Finding = {
-  clause: CLOCK_SOURCES,
+const CLOCK_FINDING: CheckFinding = {
+  check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: FILE,
   anchor: { line: 14, column: 0 },
   snippet: "clock.now()",
 };
 
-const BRANCH_FINDING: Finding = {
-  clause: TEST_BODY_LOGIC,
+const BRANCH_FINDING: CheckFinding = {
+  check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: FILE,
   anchor: { line: 22, column: 2 },
@@ -299,16 +292,16 @@ const BRANCH_FINDING: Finding = {
   remedy: { fix: "write one test per case", page: CHECKS_PAGE, section: "branching-with-if" },
 };
 
-const UNFORMED_FINDING: Finding = {
-  clause: TEST_BODY_LOGIC,
+const UNFORMED_FINDING: CheckFinding = {
+  check: "branch-in-a-test#missing",
   mechanism: AUDIT,
   file: FILE,
   anchor: { line: 22, column: 2 },
   snippet: "if (result.ok) {",
 };
 
-const TEAM_FINDING: Finding = {
-  clause: TEAM_CLAUSE,
+const TEAM_FINDING: CheckFinding = {
+  check: "outside-import-past-a-boundary#no-moment",
   mechanism: ESLINT,
   file: FILE,
   anchor: { line: 1, column: 0 },
@@ -328,8 +321,8 @@ const TWO_CAST_CHECKS: SymptomCatalogue = {
   checks: [...REPORT_CATALOGUE.checks, ANGLE_BRACKETS_CHECK],
 };
 
-const CAST_FINDING: Finding = {
-  clause: CAST_EXPRESSIONS,
+const CAST_FINDING: CheckFinding = {
+  check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: FILE,
   anchor: { line: 3, column: 4 },
@@ -350,15 +343,15 @@ describe("findingSiteOf, a finding that names its check", () => {
     });
   });
 
-  it("names the clause and mechanism when the clause has no such check", () => {
+  it("names the address and mechanism when the catalogue has no such check", () => {
     expect(
       findingSiteOf({
         catalogue: TWO_CAST_CHECKS,
         finding: { ...CAST_FINDING, check: "claimed-type#loops" },
       }),
     ).toEqual({
-      sited: "unchecked",
-      clause: CAST_EXPRESSIONS,
+      sited: "unchecked-check",
+      address: "claimed-type#loops",
       mechanism: ESLINT,
     });
   });
@@ -371,7 +364,6 @@ describe("nativeSitesOf, an exception that names its check", () => {
         catalogue: TWO_CAST_CHECKS,
         exception: {
           kind: "ignore",
-          clause: CAST_EXPRESSIONS,
           file: FILE,
           mechanism: ESLINT,
           check: "claimed-type#angle-brackets",
@@ -380,36 +372,37 @@ describe("nativeSitesOf, an exception that names its check", () => {
     ).toEqual([{ sited: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE }]);
   });
 
-  it("names every check of the clause on that engine when it names none", () => {
-    expect(
-      nativeSitesOf({
-        catalogue: TWO_CAST_CHECKS,
-        exception: { kind: "ignore", clause: CAST_EXPRESSIONS, file: FILE, mechanism: ESLINT },
-      }),
-    ).toEqual([
-      { sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE },
-      { sited: "check", check: ANGLE_BRACKETS_CHECK, engine: ESLINT_ENGINE },
-    ]);
-  });
-
-  it("names the clause and mechanism when the clause has no such check", () => {
+  it("limits an exception to its named check when another check shares its symptom", () => {
     expect(
       nativeSitesOf({
         catalogue: TWO_CAST_CHECKS,
         exception: {
           kind: "ignore",
-          clause: CAST_EXPRESSIONS,
+          check: "claimed-type#cast-expressions",
+          file: FILE,
+          mechanism: ESLINT,
+        },
+      }),
+    ).toEqual([{ sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE }]);
+  });
+
+  it("names the address and mechanism when the catalogue has no such check", () => {
+    expect(
+      nativeSitesOf({
+        catalogue: TWO_CAST_CHECKS,
+        exception: {
+          kind: "ignore",
           file: FILE,
           mechanism: ESLINT,
           check: "claimed-type#loops",
         },
       }),
-    ).toEqual([{ sited: "unchecked", clause: CAST_EXPRESSIONS, mechanism: ESLINT }]);
+    ).toEqual([{ sited: "unchecked-check", address: "claimed-type#loops", mechanism: ESLINT }]);
   });
 });
 
 describe("findingSiteOf", () => {
-  it("names the check and engine that saw a finding of a clause with one symptom", () => {
+  it("names the check and engine that saw a finding", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: CLOCK_FINDING })).toEqual({
       sited: "check",
       check: CLOCK_CHECK,
@@ -417,7 +410,7 @@ describe("findingSiteOf", () => {
     });
   });
 
-  it("names the check of the form a split clause's finding flagged", () => {
+  it("names the selected check when the finding carries a remedy", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: BRANCH_FINDING })).toEqual({
       sited: "check",
       check: TEST_BODY_CHECK,
@@ -425,53 +418,69 @@ describe("findingSiteOf", () => {
     });
   });
 
-  it("names the clause and mechanism of a split clause's finding that names no form", () => {
+  it("names the unregistered check on a known symptom", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: UNFORMED_FINDING })).toEqual({
-      sited: "unchecked",
-      clause: TEST_BODY_LOGIC,
+      sited: "unchecked-check",
+      address: "branch-in-a-test#missing",
       mechanism: AUDIT,
     });
   });
 
-  it("names the clause and mechanism of a finding the catalogue has no check for", () => {
+  it("names the address and mechanism of a finding the catalogue has no check for", () => {
     expect(findingSiteOf({ catalogue: REPORT_CATALOGUE, finding: TEAM_FINDING })).toEqual({
-      sited: "unchecked",
-      clause: TEAM_CLAUSE,
+      sited: "unchecked-check",
+      address: "outside-import-past-a-boundary#no-moment",
       mechanism: ESLINT,
     });
   });
 
-  it("names the clause and mechanism of a finding from a mechanism its check does not run on", () => {
+  it("names the address and mechanism when the check runs on another engine", () => {
     expect(
       findingSiteOf({
         catalogue: REPORT_CATALOGUE,
         finding: { ...CLOCK_FINDING, mechanism: ESLINT },
       }),
     ).toEqual({
-      sited: "unchecked",
-      clause: CLOCK_SOURCES,
+      sited: "unchecked-check",
+      address: "date-used-directly#clock-sources",
       mechanism: ESLINT,
     });
   });
 });
 
 describe("nativeSitesOf", () => {
-  it("names each check of the suppressed clause that runs on the suppressing engine", () => {
+  it("names the check on the suppressing engine", () => {
     expect(
       nativeSitesOf({
         catalogue: REPORT_CATALOGUE,
-        exception: { kind: "ignore", clause: CAST_EXPRESSIONS, file: FILE, mechanism: ESLINT },
+        exception: {
+          kind: "ignore",
+          check: "claimed-type#cast-expressions",
+          file: FILE,
+          mechanism: ESLINT,
+        },
       }),
     ).toEqual([{ sited: "check", check: CAST_CHECK, engine: ESLINT_ENGINE }]);
   });
 
-  it("names the clause and mechanism when no check of the clause runs on that engine", () => {
+  it("names the address and mechanism when the exception is unregistered", () => {
     expect(
       nativeSitesOf({
         catalogue: REPORT_CATALOGUE,
-        exception: { kind: "ignore", clause: TEAM_CLAUSE, file: FILE, mechanism: ESLINT },
+        exception: {
+          kind: "ignore",
+          check: "outside-import-past-a-boundary#no-moment",
+          file: FILE,
+          mechanism: ESLINT,
+        },
       }),
-    ).toEqual([{ sited: "unchecked", clause: TEAM_CLAUSE, mechanism: ESLINT }]);
+    ).toEqual([
+      {
+        sited: "unchecked-check",
+        address: "outside-import-past-a-boundary#no-moment",
+        mechanism: ESLINT,
+      },
+    ]);
   });
 });
 
@@ -482,9 +491,15 @@ describe("checkSiteText", () => {
     ).toBe("branch-in-a-test#test-body walker");
   });
 
-  it("prints a clause the catalogue has no check for by its address and mechanism", () => {
+  it("prints the address and mechanism of an unregistered check", () => {
     expect(
-      checkSiteText({ site: { sited: "unchecked", clause: TEAM_CLAUSE, mechanism: ESLINT } }),
-    ).toBe("acme/AC-1#no-moment eslint");
+      checkSiteText({
+        site: {
+          sited: "unchecked-check",
+          address: "outside-import-past-a-boundary#no-moment",
+          mechanism: ESLINT,
+        },
+      }),
+    ).toBe("outside-import-past-a-boundary#no-moment eslint");
   });
 });

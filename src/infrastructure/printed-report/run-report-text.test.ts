@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../domain/finding/governance.ts";
 import type {
   Case,
   Check,
@@ -336,16 +336,16 @@ const WEBHOOK_FILE = repoPathOf("src/adapters/stripe-webhook.ts");
 
 const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const CLOCK_FINDING: Finding = {
-  clause: CLOCK_SOURCES,
+const CLOCK_FINDING: CheckFinding = {
+  check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: ORDER_FILE,
   anchor: { line: 14, column: 0 },
   snippet: "clock.now()",
 };
 
-const CAST_FINDING: Finding = {
-  clause: CAST_EXPRESSIONS,
+const CAST_FINDING: CheckFinding = {
+  check: "claimed-type#cast-expressions",
   mechanism: ESLINT,
   file: WEBHOOK_FILE,
   anchor: { line: 4, column: 9 },
@@ -416,7 +416,14 @@ const EVERY_SECTION: RunReport = {
   available: [CLOCK_CHECK],
   stale: [{ placed: NOTED_LOCATION, reason: "credited-nothing" }],
   forfeited: [DEBT],
-  unrecorded: [{ kind: "ignore", clause: CAST_EXPRESSIONS, file: WEBHOOK_FILE, mechanism: ESLINT }],
+  unrecorded: [
+    {
+      kind: "ignore",
+      check: "claimed-type#cast-expressions",
+      file: WEBHOOK_FILE,
+      mechanism: ESLINT,
+    },
+  ],
   misnamed: [
     {
       kind: "version-1-id",

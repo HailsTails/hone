@@ -1,20 +1,18 @@
 import { assert, describe, expect, it } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { createDefaultEntryKindPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import type { StandaloneRunner } from "../../../protocol/runner-module/runner-module-schema.ts";
-import { toolchainBoundStandaloneRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
+import type { NamedChecksRunner } from "../../../protocol/checks/checks-runner-types.ts";
+import { toolchainBoundNamedChecksRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
 import type { TypeScriptParsePort } from "../../runner/toolchain/typescript-parse.ts";
 import {
@@ -56,8 +54,10 @@ const parsePortOn = async (request: {
   return loaded.value;
 };
 
-const auditRunnerOn = (request: { readonly line: TypeScriptLine }): StandaloneRunner =>
-  toolchainBoundStandaloneRunner({
+const auditRunnerOn = (request: { readonly line: TypeScriptLine }): NamedChecksRunner =>
+  toolchainBoundNamedChecksRunner({
+    fileScope: "tracked",
+    projectedKinds: [],
     toolchain: parsePortOn(request).then((parse): Result<TypeScriptParsePort, RunnerFailure> => ({
       outcome: "ok",
       value: parse,
@@ -89,52 +89,25 @@ const BROKEN = repoPathOf("packages/broken/tsconfig.json");
 const LAYERED = repoPathOf("packages/layered/tsconfig.json");
 const SOLUTION = repoPathOf("tsconfig.json");
 
-const STRICT = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("strict"),
-};
-const UNCHECKED = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-unchecked-indexed-access"),
-};
-const EXACT = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("exact-optional-property-types"),
-};
-const OVERRIDE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-implicit-override"),
-};
-const FALLTHROUGH = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-fallthrough-cases-in-switch"),
-};
-const PROPERTY = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-property-access-from-index-signature"),
-};
-const CATCH = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("use-unknown-in-catch-variables"),
-};
+const STRICT: CheckAddressText = "strictness-weakened#strict";
+const UNCHECKED: CheckAddressText = "strictness-weakened#no-unchecked-indexed-access";
+const EXACT: CheckAddressText = "strictness-weakened#exact-optional-property-types";
+const OVERRIDE: CheckAddressText = "strictness-weakened#no-implicit-override";
+const FALLTHROUGH: CheckAddressText = "strictness-weakened#no-fallthrough-cases-in-switch";
+const PROPERTY: CheckAddressText = "strictness-weakened#no-property-access-from-index-signature";
+const CATCH: CheckAddressText = "strictness-weakened#use-unknown-in-catch-variables";
 
-const secondEditionClause = (request: { readonly address: typeof STRICT }): RunnerClause => ({
+const secondEditionClause = (request: { readonly address: CheckAddressText }): CheckBinding => ({
   address: request.address,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/strictness-weakened/strict`,
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("2"),
   settings: { module: "compiler-overrides.ts" },
 });
 
-const CLAUSES: readonly RunnerClause[] = [
+const CLAUSES: readonly CheckBinding[] = [
   secondEditionClause({ address: STRICT }),
   secondEditionClause({ address: UNCHECKED }),
   secondEditionClause({ address: EXACT }),
@@ -150,80 +123,80 @@ const MISSING_BASE = "unknown: TS5083 Cannot read file 'configs/missing.json'.";
 
 const SHARED_HITS = [
   {
-    clause: UNCHECKED,
+    check: UNCHECKED,
     file: LOOSENED,
     anchor: AT_FILE,
     snippet: "compilerOptions.noUncheckedIndexedAccess = false, inherited from configs/loose.json",
   },
   {
-    clause: UNCHECKED,
+    check: UNCHECKED,
     file: UNSET,
     anchor: AT_FILE,
     snippet: "compilerOptions.noUncheckedIndexedAccess unset here and in configs/partial.json",
   },
   {
-    clause: EXACT,
+    check: EXACT,
     file: UNSET,
     anchor: AT_FILE,
     snippet: "compilerOptions.exactOptionalPropertyTypes unset here and in configs/partial.json",
   },
   {
-    clause: OVERRIDE,
+    check: OVERRIDE,
     file: UNSET,
     anchor: AT_FILE,
     snippet: "compilerOptions.noImplicitOverride unset here and in configs/partial.json",
   },
   {
-    clause: FALLTHROUGH,
+    check: FALLTHROUGH,
     file: UNSET,
     anchor: AT_FILE,
     snippet: "compilerOptions.noFallthroughCasesInSwitch unset here and in configs/partial.json",
   },
   {
-    clause: PROPERTY,
+    check: PROPERTY,
     file: UNSET,
     anchor: AT_FILE,
     snippet:
       "compilerOptions.noPropertyAccessFromIndexSignature unset here and in configs/partial.json",
   },
   {
-    clause: STRICT,
+    check: STRICT,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.strict ${MISSING_BASE}`,
   },
   {
-    clause: UNCHECKED,
+    check: UNCHECKED,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.noUncheckedIndexedAccess ${MISSING_BASE}`,
   },
   {
-    clause: EXACT,
+    check: EXACT,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.exactOptionalPropertyTypes ${MISSING_BASE}`,
   },
   {
-    clause: OVERRIDE,
+    check: OVERRIDE,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.noImplicitOverride ${MISSING_BASE}`,
   },
   {
-    clause: FALLTHROUGH,
+    check: FALLTHROUGH,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.noFallthroughCasesInSwitch ${MISSING_BASE}`,
   },
   {
-    clause: PROPERTY,
+    check: PROPERTY,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.noPropertyAccessFromIndexSignature ${MISSING_BASE}`,
   },
   {
-    clause: CATCH,
+    check: CATCH,
     file: BROKEN,
     anchor: AT_FILE,
     snippet: `compilerOptions.useUnknownInCatchVariables ${MISSING_BASE}`,
@@ -231,48 +204,48 @@ const SHARED_HITS = [
 ] as const;
 
 const EVERY_CLAUSE_ON_EVERY_TSCONFIG = [
-  { clause: STRICT, file: INHERITS },
-  { clause: UNCHECKED, file: INHERITS },
-  { clause: EXACT, file: INHERITS },
-  { clause: OVERRIDE, file: INHERITS },
-  { clause: FALLTHROUGH, file: INHERITS },
-  { clause: PROPERTY, file: INHERITS },
-  { clause: CATCH, file: INHERITS },
-  { clause: STRICT, file: LOOSENED },
-  { clause: UNCHECKED, file: LOOSENED },
-  { clause: EXACT, file: LOOSENED },
-  { clause: OVERRIDE, file: LOOSENED },
-  { clause: FALLTHROUGH, file: LOOSENED },
-  { clause: PROPERTY, file: LOOSENED },
-  { clause: CATCH, file: LOOSENED },
-  { clause: STRICT, file: UNSET },
-  { clause: UNCHECKED, file: UNSET },
-  { clause: EXACT, file: UNSET },
-  { clause: OVERRIDE, file: UNSET },
-  { clause: FALLTHROUGH, file: UNSET },
-  { clause: PROPERTY, file: UNSET },
-  { clause: CATCH, file: UNSET },
-  { clause: STRICT, file: BROKEN },
-  { clause: UNCHECKED, file: BROKEN },
-  { clause: EXACT, file: BROKEN },
-  { clause: OVERRIDE, file: BROKEN },
-  { clause: FALLTHROUGH, file: BROKEN },
-  { clause: PROPERTY, file: BROKEN },
-  { clause: CATCH, file: BROKEN },
-  { clause: STRICT, file: LAYERED },
-  { clause: UNCHECKED, file: LAYERED },
-  { clause: EXACT, file: LAYERED },
-  { clause: OVERRIDE, file: LAYERED },
-  { clause: FALLTHROUGH, file: LAYERED },
-  { clause: PROPERTY, file: LAYERED },
-  { clause: CATCH, file: LAYERED },
-  { clause: STRICT, file: SOLUTION },
-  { clause: UNCHECKED, file: SOLUTION },
-  { clause: EXACT, file: SOLUTION },
-  { clause: OVERRIDE, file: SOLUTION },
-  { clause: FALLTHROUGH, file: SOLUTION },
-  { clause: PROPERTY, file: SOLUTION },
-  { clause: CATCH, file: SOLUTION },
+  { check: STRICT, file: INHERITS },
+  { check: UNCHECKED, file: INHERITS },
+  { check: EXACT, file: INHERITS },
+  { check: OVERRIDE, file: INHERITS },
+  { check: FALLTHROUGH, file: INHERITS },
+  { check: PROPERTY, file: INHERITS },
+  { check: CATCH, file: INHERITS },
+  { check: STRICT, file: LOOSENED },
+  { check: UNCHECKED, file: LOOSENED },
+  { check: EXACT, file: LOOSENED },
+  { check: OVERRIDE, file: LOOSENED },
+  { check: FALLTHROUGH, file: LOOSENED },
+  { check: PROPERTY, file: LOOSENED },
+  { check: CATCH, file: LOOSENED },
+  { check: STRICT, file: UNSET },
+  { check: UNCHECKED, file: UNSET },
+  { check: EXACT, file: UNSET },
+  { check: OVERRIDE, file: UNSET },
+  { check: FALLTHROUGH, file: UNSET },
+  { check: PROPERTY, file: UNSET },
+  { check: CATCH, file: UNSET },
+  { check: STRICT, file: BROKEN },
+  { check: UNCHECKED, file: BROKEN },
+  { check: EXACT, file: BROKEN },
+  { check: OVERRIDE, file: BROKEN },
+  { check: FALLTHROUGH, file: BROKEN },
+  { check: PROPERTY, file: BROKEN },
+  { check: CATCH, file: BROKEN },
+  { check: STRICT, file: LAYERED },
+  { check: UNCHECKED, file: LAYERED },
+  { check: EXACT, file: LAYERED },
+  { check: OVERRIDE, file: LAYERED },
+  { check: FALLTHROUGH, file: LAYERED },
+  { check: PROPERTY, file: LAYERED },
+  { check: CATCH, file: LAYERED },
+  { check: STRICT, file: SOLUTION },
+  { check: UNCHECKED, file: SOLUTION },
+  { check: EXACT, file: SOLUTION },
+  { check: OVERRIDE, file: SOLUTION },
+  { check: FALLTHROUGH, file: SOLUTION },
+  { check: PROPERTY, file: SOLUTION },
+  { check: CATCH, file: SOLUTION },
 ] as const;
 
 const SINGLE_BASE_ONLY =
@@ -284,7 +257,7 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
       line: "typescript",
       layeredHits: [
         {
-          clause: OVERRIDE,
+          check: OVERRIDE,
           file: LAYERED,
           anchor: AT_FILE,
           snippet:
@@ -296,43 +269,43 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
       line: "typescript-floor",
       layeredHits: [
         {
-          clause: STRICT,
+          check: STRICT,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.strict ${SINGLE_BASE_ONLY}`,
         },
         {
-          clause: UNCHECKED,
+          check: UNCHECKED,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.noUncheckedIndexedAccess ${SINGLE_BASE_ONLY}`,
         },
         {
-          clause: EXACT,
+          check: EXACT,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.exactOptionalPropertyTypes ${SINGLE_BASE_ONLY}`,
         },
         {
-          clause: OVERRIDE,
+          check: OVERRIDE,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.noImplicitOverride ${SINGLE_BASE_ONLY}`,
         },
         {
-          clause: FALLTHROUGH,
+          check: FALLTHROUGH,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.noFallthroughCasesInSwitch ${SINGLE_BASE_ONLY}`,
         },
         {
-          clause: PROPERTY,
+          check: PROPERTY,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.noPropertyAccessFromIndexSignature ${SINGLE_BASE_ONLY}`,
         },
         {
-          clause: CATCH,
+          check: CATCH,
           file: LAYERED,
           anchor: AT_FILE,
           snippet: `compilerOptions.useUnknownInCatchVariables ${SINGLE_BASE_ONLY}`,
@@ -347,7 +320,10 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
         installRoot: INSTALL_ROOT,
         files: [INHERITS, LOOSENED, UNSET, BROKEN, LAYERED, SOLUTION],
         trackedPaths: [INHERITS, LOOSENED, UNSET, BROKEN, LAYERED, SOLUTION],
-        clauses: CLAUSES,
+        bindings: CLAUSES,
+        answered: [],
+        declaredConfigRoots: [],
+        declaredConfigLookup: undefined,
       });
 
       expect(report).toEqual({
@@ -356,6 +332,9 @@ describe("CD-3 edition 2 over a real extends chain on disk, through the shipped 
           hits: [...SHARED_HITS, ...layeredHits],
           nativeExceptions: [],
           measured: EVERY_CLAUSE_ON_EVERY_TSCONFIG,
+          projection: "none",
+          slices: [],
+          misnamedRuleIds: [],
         },
       });
     },

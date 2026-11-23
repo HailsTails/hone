@@ -26,7 +26,9 @@ const reviewedBy = (request: {
   readonly symptom: Symptom;
 }): "a review clause" | "no review clause" => {
   const checkedClauses = new Set(
-    request.file.checks.map((check) => clauseAddressText({ address: check.clause })),
+    request.file.checks.flatMap(({ clause }) =>
+      clause === undefined ? [] : [clauseAddressText({ address: clause })],
+    ),
   );
   return request.file.clauses.some(
     (entry) =>

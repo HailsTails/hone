@@ -3,7 +3,8 @@ import { afterAll, assert, describe, expect, it } from "vitest";
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
 import { readHoneRecords } from "../../src/application/records/read-hone-records.ts";
-import type { Finding } from "../../src/domain/finding/governance.ts";
+import type { CheckFinding } from "../../src/domain/finding/governance.ts";
+import type { CheckAddressText } from "../../src/domain/language-layer/check-address-text.ts";
 import type { Recipe } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import {
   answerFindings,
@@ -16,7 +17,6 @@ import type { Result } from "../../src/domain/result.ts";
 import type { ReadonlyJsonValue } from "../../src/domain/settings/json-values/json-value.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
-import { clauseAddressSchema } from "../../src/infrastructure/discipline-exceptions-folder/clause-address.ts";
 import {
   createDefaultGitPort,
   createDefaultGitTreePort,
@@ -370,8 +370,11 @@ const source = createRecordsFolder({
 
 const AUDIT = "walker" as const;
 
-const findingAt = (request: { readonly clause: string; readonly file: string }): Finding => ({
-  clause: clauseAddressSchema.parse(request.clause),
+const findingAt = (request: {
+  readonly check: CheckAddressText;
+  readonly file: string;
+}): CheckFinding => ({
+  check: request.check,
   file: repoPathSchema.parse(request.file),
   anchor: { line: 1, column: 0 },
   snippet: "a site",
@@ -379,52 +382,52 @@ const findingAt = (request: { readonly clause: string; readonly file: string }):
 });
 
 const formFindingAt = (request: {
-  readonly clause: string;
+  readonly check: CheckAddressText;
   readonly file: string;
   readonly section: string;
-}): Finding => ({
+}): CheckFinding => ({
   ...findingAt(request),
   remedy: { fix: "Fix it.", page: "CHECKS.md", section: request.section },
 });
 
 const CAST_IN_WEBHOOK = findingAt({
-  clause: "CD-2#cast-expressions",
+  check: "claimed-type#unlisted-cast-site",
   file: "src/adapters/stripe-webhook.ts",
 });
 
 const CAST_IN_ORDERS = findingAt({
-  clause: "CD-2#cast-expressions",
+  check: "claimed-type#unlisted-cast-site",
   file: "src/orders/charge-order.ts",
 });
 
 const JSON_IN_ORDER_TEST = formFindingAt({
-  clause: "CD-27#test-body-logic",
+  check: "text-past-its-reader#test-body",
   file: "src/orders/charge-order.test.ts",
   section: "serialising-or-parsing-json",
 });
 
 const DATE_IN_SYSTEM_CLOCK = findingAt({
-  clause: "CD-17#clock-sources",
+  check: "date-used-directly#clock-sources",
   file: "src/adapters/system-clock.ts",
 });
 
 const FS_IMPORT_IN_FILES = findingAt({
-  clause: "CD-19#import-boundaries",
+  check: "outside-import-past-a-boundary#import-or-require",
   file: "src/adapters/files/read-text.ts",
 });
 
 const UUID_IMPORT_IN_IDS = findingAt({
-  clause: "CD-19#import-boundaries",
+  check: "outside-import-past-a-boundary#import-or-require",
   file: "src/adapters/ids.ts",
 });
 
 const DATE_FNS_IMPORT_IN_CLOCK_SOURCE = findingAt({
-  clause: "CD-19#import-boundaries",
+  check: "outside-import-past-a-boundary#import-or-require",
   file: "src/adapters/clock-source.ts",
 });
 
 const FAKE_IN_REPLAY = findingAt({
-  clause: "CD-25#dependency-isolation",
+  check: "double-with-a-body#stub-implementation",
   file: "src/sync/replay.test.ts",
 });
 

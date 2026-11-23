@@ -1,11 +1,14 @@
 import { checkOfFinding } from "../../finding/finding-check.ts";
-import type { AttributedNativeException, Finding, GovernedRun } from "../../finding/governance.ts";
-import { checkNamedAt, checksOf } from "../../language-layer/check-address.ts";
-import type { Check, SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
+import type {
+  AttributedCheckException,
+  CheckFinding,
+  NamedGovernedRun,
+} from "../../finding/governance.ts";
+import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { EngineId } from "../../rule-set/identifier-types.ts";
-import type { NativeException } from "../../runner/runner-result-types.ts";
+import type { CheckNativeException } from "../../runner/check-observations.ts";
 import { debtForfeitureAt } from "../debt/debt-forfeiture.ts";
 import type { HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import {
@@ -22,9 +25,12 @@ import {
   recordsReachingSites,
 } from "./records-by-place.ts";
 
-export type RaisedFinding = { readonly finding: Finding; readonly party: PartyReport };
+export type RaisedFinding = { readonly finding: CheckFinding; readonly party: PartyReport };
 
-export type AnsweredFinding = { readonly finding: Finding; readonly by: readonly PlacedRecord[] };
+export type AnsweredFinding = {
+  readonly finding: CheckFinding;
+  readonly by: readonly PlacedRecord[];
+};
 
 export type PaidDebt = {
   readonly debt: PlacedRecord;
@@ -42,17 +48,17 @@ export type AnsweringRequest = {
   readonly records: readonly PlacedRecord[];
   readonly findings: readonly RaisedFinding[];
   readonly touched: TouchedSet;
-  readonly runs: readonly GovernedRun[];
+  readonly runs: readonly NamedGovernedRun[];
   readonly measurements: RunMeasurements;
 };
 
 export type Answering = {
-  readonly findings: readonly Finding[];
+  readonly findings: readonly CheckFinding[];
   readonly answered: readonly AnsweredFinding[];
   readonly stale: readonly StaleRecord[];
   readonly forfeited: readonly PlacedRecord[];
   readonly paid: readonly PaidDebt[];
-  readonly unrecorded: readonly AttributedNativeException[];
+  readonly unrecorded: readonly AttributedCheckException[];
 };
 
 const NOT_REPORTED: PartyReport = { reported: "not-reported" };
@@ -146,9 +152,9 @@ export const findingSitesOf = (request: {
 }): readonly Site[] => {
   const { finding, party } = request.raised;
   const resolved = checkOfFinding({ catalogue: request.catalogue, finding });
-  switch (resolved.resolved) {
-    case "check":
-      return [
+  return resolved.resolved === "none"
+    ? []
+    : [
         {
           symptom: resolved.check.symptom,
           check: { found: "check", check: resolved.check },
@@ -156,14 +162,11 @@ export const findingSitesOf = (request: {
           party,
         },
       ];
-    case "symptom-only":
-      return [{ symptom: resolved.symptom, check: { found: "none" }, file: finding.file, party }];
-    case "none":
-      return [];
-  }
 };
 
-const fileOfNative = (request: { readonly exception: NativeException }): readonly RepoPath[] => {
+const fileOfNative = (request: {
+  readonly exception: CheckNativeException;
+}): readonly RepoPath[] => {
   switch (request.exception.kind) {
     case "command-line-option":
       return [];
@@ -176,57 +179,42 @@ const fileOfNative = (request: { readonly exception: NativeException }): readonl
   }
 };
 
-const checksReachedBy = (request: {
-  readonly exception: NativeException;
-  readonly catalogue: SymptomCatalogue;
-}): readonly Check[] => {
-  const { exception, catalogue } = request;
-  const named = checkNamedAt({ catalogue, clause: exception.clause, address: exception.check });
-  switch (named.named) {
-    case "unnamed":
-      return checksOf({ catalogue, clause: exception.clause });
-    case "check":
-      return [named.check];
-    case "not-of-the-clause":
-      return [];
-  }
-};
-
 export const nativeSitesOf = (request: {
-  readonly exception: NativeException;
-  readonly run: GovernedRun;
+  readonly exception: CheckNativeException;
+  readonly run: NamedGovernedRun;
   readonly catalogue: SymptomCatalogue;
 }): readonly Site[] => {
   if (!request.run.coverableKinds.includes(request.exception.kind)) {
     return [];
   }
-  const checks = checksReachedBy(request).filter((check) =>
-    check.engines.some((engine) => engine.name === request.run.mechanism),
-  );
-  return fileOfNative(request).flatMap((file) =>
-    checks.map((check) => ({
-      symptom: check.symptom,
-      check: { found: "check", check },
-      file,
-      party: NOT_REPORTED,
-    })),
-  );
+  const resolved = checkOfFinding({
+    catalogue: request.catalogue,
+    finding: { check: request.exception.check, mechanism: request.run.mechanism },
+  });
+  if (resolved.resolved === "none") return [];
+  const { check } = resolved;
+  return fileOfNative(request).map((file) => ({
+    symptom: check.symptom,
+    check: { found: "check", check },
+    file,
+    party: NOT_REPORTED,
+  }));
 };
 
 const attributed = (request: {
-  readonly exception: NativeException;
+  readonly exception: CheckNativeException;
   readonly mechanism: EngineId;
-}): AttributedNativeException => ({
+}): AttributedCheckException => ({
   ...request.exception,
   mechanism: request.mechanism,
 });
 
 const nativeHoldings = (request: {
-  readonly runs: readonly GovernedRun[];
+  readonly runs: readonly NamedGovernedRun[];
   readonly byPlace: RecordsByPlace;
   readonly catalogue: SymptomCatalogue;
 }): readonly {
-  readonly exception: AttributedNativeException;
+  readonly exception: AttributedCheckException;
   readonly holders: readonly PlacedRecord[];
 }[] =>
   request.runs.flatMap((run) =>

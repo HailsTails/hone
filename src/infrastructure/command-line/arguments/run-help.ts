@@ -9,6 +9,9 @@ import {
   type CommandOption,
   type CommandSpec,
   HELP_FLAGS,
+  type HelpTopic,
+  SPLIT_RECORDS_SUBCOMMAND,
+  type Subcommand,
   UPGRADE_SUBCOMMAND,
   VERSION_FLAG,
 } from "./command-line.ts";
@@ -20,8 +23,6 @@ export type RunSubcommand =
   | "prune-debt"
   | "authorise"
   | "upgrade";
-
-export type RunHelpTopic = "tool" | RunSubcommand;
 
 type HelpEntry = { readonly term: string; readonly text: string };
 
@@ -101,7 +102,7 @@ const LEAVE_OPTION: CommandOption = {
     "a file or folder, relative to --repo, that gets no debt because a person records it as an authorised location; give it once for each path",
 };
 
-export const RUN_COMMANDS: Readonly<Record<RunSubcommand, CommandSpec>> = {
+export const RUN_COMMANDS: Readonly<Record<Subcommand, CommandSpec>> = {
   check: {
     summary: `check the repository against the checks ${SETTINGS_FILE_NAME} lists and print the report, ending in its verdict`,
     options: [REPO_OPTION, BASE_REVISION_OPTION, REPORT_OUTPUT_OPTION, FORFEITURE_OPTION],
@@ -161,7 +162,8 @@ export const RUN_COMMANDS: Readonly<Record<RunSubcommand, CommandSpec>> = {
       },
     ],
   },
-  upgrade: COMMANDS[UPGRADE_SUBCOMMAND],
+  [UPGRADE_SUBCOMMAND]: COMMANDS[UPGRADE_SUBCOMMAND],
+  [SPLIT_RECORDS_SUBCOMMAND]: COMMANDS[SPLIT_RECORDS_SUBCOMMAND],
 };
 
 const alignedEntries = (request: { readonly entries: readonly HelpEntry[] }): readonly string[] => {
@@ -181,7 +183,7 @@ const usageTerm = (request: { readonly option: CommandOption }): string => {
   return request.option.occurrence === "repeated" ? `${given}...` : given;
 };
 
-const commandUsage = (request: { readonly subcommand: RunSubcommand }): string =>
+const commandUsage = (request: { readonly subcommand: Subcommand }): string =>
   `${COMMAND} ${request.subcommand} ${RUN_COMMANDS[request.subcommand].options.map((option) => usageTerm({ option })).join(" ")}`;
 
 const helpLines = (request: { readonly blocks: readonly (readonly string[])[] }): string =>
@@ -220,7 +222,7 @@ const toolHelp = (): string =>
     ],
   });
 
-const subcommandHelp = (request: { readonly subcommand: RunSubcommand }): string => {
+const subcommandHelp = (request: { readonly subcommand: Subcommand }): string => {
   const spec = RUN_COMMANDS[request.subcommand];
   return helpLines({
     blocks: [
@@ -248,7 +250,7 @@ const subcommandHelp = (request: { readonly subcommand: RunSubcommand }): string
   });
 };
 
-export const runHelpText = (request: { readonly topic: RunHelpTopic }): string =>
+export const runHelpText = (request: { readonly topic: HelpTopic }): string =>
   request.topic === "tool" ? toolHelp() : subcommandHelp({ subcommand: request.topic });
 
 export const RUN_SYNOPSIS = `${[...RUN_SUBCOMMANDS.map((subcommand) => commandUsage({ subcommand })), `${COMMAND} ${HELP_FLAGS[0]}`, `${COMMAND} ${VERSION_FLAG}`].join("\n")}\n`;

@@ -1,4 +1,5 @@
 import type { Engine, SymptomCatalogue } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { answeredFilesOf } from "../../../domain/records/answering/answered-files.ts";
 import type {
   RecordsAtBase,
   RecordsReading,
@@ -13,16 +14,21 @@ import type { ProjectedFile } from "../../../domain/runner/checks-run-report.ts"
 import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
 import { SETTINGS_FILE_NAME } from "../../../domain/settings/settings-file.ts";
 import type { CommandRequest } from "../../ports/command-request.ts";
+import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import { moduleExtensionOf } from "../../ports/host/module-extension.ts";
 import type { RecordsReader } from "../../ports/records/records-reader.ts";
-import type { SettingsSourcesOf } from "../../ports/settings-sources.ts";
+import type { CheckPieceSourceOf, SettingsSourcesOf } from "../../ports/settings-sources.ts";
 import type { SettingsFileFormat } from "../../ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../../ports/symptom-catalogue-repository.ts";
 import type { ProjectionFailure } from "../../ports/upgrade/plan-refusal.ts";
 import { type CheckedTree, checkedTreeOf } from "../../run/checked-tree-of.ts";
-import { enginesProjectionOf } from "../../run/engines/engines-run.ts";
-import { type SettingsReading, readSettings } from "../../run/settings/read-settings.ts";
+import { namedEngineProjectionsOf } from "../../run/engines/named-engines-run.ts";
+import {
+  catalogueWithExternalChecks,
+  type NamedSettingsReading,
+  readNamedSettingsFile,
+} from "../../run/settings/read-settings.ts";
 import { toolCatalogueOf } from "../../run/tool-catalogue.ts";
 import type { ProjectionFilesOf } from "../proof/upgrade-plan.ts";
 
@@ -34,10 +40,12 @@ export type PlannedProjectionPorts = {
   readonly boundCatalogueOf: BoundCatalogueOf;
   readonly settingsFormat: SettingsFileFormat;
   readonly settingsSourcesOf: SettingsSourcesOf;
+  readonly checkPieceSourceOf: CheckPieceSourceOf;
+  readonly namedEngine: NamedEnginePort;
 };
 
 type Context = PlannedProjectionPorts & {
-  readonly command: Omit<CommandRequest, "process">;
+  readonly command: Pick<CommandRequest, "fileText" | "git" | "moduleUrl" | "modules" | "path">;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
 };
@@ -51,25 +59,21 @@ const refusedBy = (request: {
 
 const settingsReadingOf = (
   request: Context & { readonly settings: SettingsFile; readonly catalogue: SymptomCatalogue },
-): Result<SettingsReading, ProjectionFailure> => {
-  const { command, repoRoot, installRoot, settings, catalogue, settingsFormat } = request;
-  const real = request.settingsSourcesOf({
+): Result<NamedSettingsReading, ProjectionFailure> => {
+  const { command, repoRoot, installRoot, settings, catalogue } = request;
+  const at = {
     fileText: command.fileText,
     directory: request.directory,
     path: command.path,
     repoRoot,
     installRoot,
     moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
-  });
-  const read = readSettings({
-    sources: {
-      ...real,
-      settingsFile: () => ({
-        outcome: "ok",
-        value: { path: SETTINGS_FILE_NAME, document: settingsFormat.documentOf({ settings }) },
-      }),
-    },
-    settingsFormat,
+  };
+  const read = readNamedSettingsFile({
+    sources: request.settingsSourcesOf(at),
+    readPiece: request.checkPieceSourceOf(at),
+    file: settings,
+    path: SETTINGS_FILE_NAME,
   });
   return read.outcome === "failed"
     ? refusedBy({ failure: runFailureOf({ engines: catalogue.engines, source: read.error }) })
@@ -100,7 +104,7 @@ const recordsReadingFor = (request: {
 };
 
 const treeOf = (
-  request: Context & { readonly settings: SettingsReading },
+  request: Context & { readonly settings: NamedSettingsReading },
 ): Result<CheckedTree, ProjectionFailure> => {
   const { command, repoRoot, settings } = request;
   const tree = checkedTreeOf({
@@ -146,10 +150,14 @@ export const plannedProjectionOf =
     if (planned.outcome === "failed") {
       return planned;
     }
+    const effectiveCatalogue = catalogueWithExternalChecks({
+      catalogue: catalogue.value,
+      settings: planned.value,
+    });
     const records = recordsReadingFor({
       recordsReader: context.recordsReader,
       documents,
-      catalogue: catalogue.value,
+      catalogue: effectiveCatalogue,
     });
     if (records.outcome === "failed") {
       return records;
@@ -158,20 +166,22 @@ export const plannedProjectionOf =
     if (tree.outcome === "failed") {
       return tree;
     }
-    const projected = await enginesProjectionOf({
-      catalogue: catalogue.value,
+    const projected = await namedEngineProjectionsOf({
+      checks: effectiveCatalogue.checks,
       settings: planned.value,
-      records: records.value,
+      answered: answeredFilesOf({ records: records.value.records }),
       tree: tree.value,
       repoRoot,
       installRoot,
       moduleExtension: moduleExtensionOf({ moduleUrl: command.moduleUrl }),
       path: command.path,
       modules: command.modules,
-      engine: command.engine,
+      engine: context.namedEngine,
     });
     return projected.outcome === "failed"
-      ? refusedBy({ failure: projected.error })
+      ? refusedBy({
+          failure: runFailureOf({ engines: catalogue.value.engines, source: projected.error }),
+        })
       : {
           outcome: "ok",
           value: {

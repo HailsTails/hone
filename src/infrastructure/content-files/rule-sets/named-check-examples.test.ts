@@ -18,7 +18,7 @@ const OWNER_PATH =
   "/install/src/infrastructure/engines/walker/branch-in-a-test/test-body/piece.json";
 
 const OWNER_DECLARATION =
-  '{"version":2,"anchor":{"kind":"file"},"settings":{},"forms":{"a-let":{"symptom":"rebinding","check":"test-body"}}}';
+  '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"test-body.ts"},"forms":{"a-let":{"symptom":"rebinding","check":"test-body"}}}';
 
 describe("createNamedCheckExamplesRepository", () => {
   it("selects only the requested check's rows from its shared examples", () => {
@@ -32,7 +32,7 @@ describe("createNamedCheckExamplesRepository", () => {
         .mockReturnValueOnce({
           outcome: "ok",
           value:
-            '{"version":2,"anchor":{"kind":"file"},"settings":{"module":"test-body.ts"},"implementation":{"symptom":"branch-in-a-test","check":"test-body"},"examples":"with-implementation"}',
+            '{"version":2,"implementation":{"symptom":"branch-in-a-test","check":"test-body"},"examples":"with-implementation"}',
         })
         .mockReturnValueOnce({ outcome: "ok", value: OWNER_DECLARATION })
         .mockReturnValueOnce({
@@ -46,8 +46,6 @@ describe("createNamedCheckExamplesRepository", () => {
       join: vi
         .fn<PathPort["join"]>()
         .mockReturnValueOnce(PIECE_PATH)
-        .mockReturnValueOnce(EXAMPLES_PATH)
-        .mockReturnValueOnce(SHARED_ROOT)
         .mockReturnValueOnce(OWNER_PATH)
         .mockReturnValueOnce(EXAMPLES_PATH)
         .mockReturnValueOnce(SHARED_ROOT),

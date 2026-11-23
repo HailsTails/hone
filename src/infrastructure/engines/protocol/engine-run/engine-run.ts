@@ -1,24 +1,22 @@
 import { z } from "zod";
 
-import type { EngineCall } from "../../../../application/ports/engine/engine-port.ts";
 import type {
-  EngineRun,
-  EngineRunRequest,
-  LoadedEngine,
-  ParsedChecksRunner,
+  NamedEngineCall,
+  NamedEngineFailure,
+} from "../../../../application/ports/engine/engine-port.ts";
+import type {
+  NamedEngineRun,
+  NamedEngineRunRequest,
+  ParsedNamedRunner,
 } from "../../../../application/ports/engine/engine-run.ts";
 import type {
   RunnerInvalid,
   RunnerLocation,
 } from "../../../../application/ports/engine/runner-location.ts";
-import type {
-  ChecksRunRequest,
-  LoadedStandaloneRunner,
-} from "../../../../application/ports/engine/runner-module.ts";
-import { reportedChecksRefusal } from "../../../../domain/language-layer/reported-checks.ts";
-import type { RunFailureSource } from "../../../../domain/report/run-failure.ts";
+import type { MeasureVersionOneProjection } from "../../../../application/ports/upgrade/version-one-measurement.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { EngineId } from "../../../../domain/rule-set/identifier-types.ts";
+import { checkedObservations } from "../../../../domain/runner/checked-observations.ts";
 import type { ProjectedFile } from "../../../../domain/runner/checks-run-report.ts";
 import {
   rejectedCall,
@@ -28,27 +26,14 @@ import {
 import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
 import {
   checksProjectResultSchema,
-  checksRunnerModuleSchema,
-  checksRunResultSchema,
+  measurementResultSchema,
+  namedChecksRunReportSchema,
+  namedChecksRunResultSchema,
+  namedChecksRunnerModuleSchema,
 } from "../checks/checks-runner-module-schema.ts";
-import type { ChecksRunFailure, ChecksRunReport } from "../checks/checks-runner-types.ts";
-import { runnerModuleSchema } from "../runner-module/runner-module-schema.ts";
-import { runMechanism } from "./standalone-mechanism-dispatch.ts";
-import {
-  requestHeldOf,
-  unrequestedClauseDetailOf,
-  unrequestedDetailOf,
-} from "./unrequested-entries.ts";
-
-type Outcome<Value> = Result<Value, RunFailureSource>;
-
-const TYPESCRIPT_RUNNER_MODULE = z.object({
-  runner: runnerModuleSchema,
-  checksRunner: checksRunnerModuleSchema.optional(),
-});
-
-const NO_CHECKS_RUNNER_DETAIL =
-  "the runner module exports no checksRunner, which a version 2 run needs of an engine that runs through a native tool";
+import type { ChecksRunFailure } from "../checks/checks-runner-types.ts";
+import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
+type NamedOutcome<Value> = Result<Value, NamedEngineFailure>;
 
 const invalid = (request: {
   readonly mechanism: EngineId;
@@ -61,15 +46,13 @@ const invalid = (request: {
 const runnerFailed = (request: {
   readonly mechanism: EngineId;
   readonly failure: RunnerFailure;
-}): Outcome<never> => ({
+}): NamedOutcome<never> => ({
   outcome: "failed",
   error: { kind: "runner-failed", mechanism: request.mechanism, failure: request.failure },
 });
 
-export const loadedEngineOf = async (
-  request: RunnerLocation,
-): Promise<Result<LoadedEngine, RunnerInvalid>> => {
-  const loaded = await request.modules.load({
+const runnerModuleAt = (request: RunnerLocation) =>
+  request.modules.load({
     path: request.path.join({
       segments: runnerModuleSegmentsOf({
         installRoot: request.installRoot,
@@ -78,111 +61,6 @@ export const loadedEngineOf = async (
       }),
     }),
   });
-  if (loaded.outcome === "failed") {
-    return invalid({ mechanism: request.mechanism, detail: loaded.error.detail });
-  }
-  const parsed = TYPESCRIPT_RUNNER_MODULE.safeParse(loaded.value);
-  return parsed.success
-    ? {
-        outcome: "ok",
-        value: {
-          mechanism: request.mechanism,
-          runner: parsed.data.runner,
-          checksRunner: parsed.data.checksRunner,
-        },
-      }
-    : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
-};
-
-const clausesOf = (request: { readonly request: EngineRunRequest; readonly mechanism: EngineId }) =>
-  request.request.bindings
-    .filter((binding) => binding.mechanism === request.mechanism)
-    .map((binding) => binding.clause);
-
-const standaloneRunOf = async (request: {
-  readonly runner: LoadedStandaloneRunner;
-  readonly mechanism: EngineId;
-  readonly run: EngineRunRequest;
-}): Promise<Outcome<EngineRun>> => {
-  const ran = await runMechanism({
-    runner: request.runner,
-    mechanism: request.mechanism,
-    run: {
-      repoRoot: request.run.repoRoot,
-      installRoot: request.run.installRoot,
-      files: request.run.files,
-      trackedPaths: request.run.trackedPaths,
-      clauses: clausesOf({ request: request.run, mechanism: request.mechanism }),
-    },
-  });
-  return ran.outcome === "failed"
-    ? runnerFailed({ mechanism: request.mechanism, failure: ran.error })
-    : { outcome: "ok", value: { ...ran.value, slices: [], misnamedRuleIds: [] } };
-};
-
-const invalidReport = (request: {
-  readonly report: ChecksRunReport;
-  readonly run: EngineRunRequest;
-  readonly mechanism: EngineId;
-}): readonly string[] => {
-  const held = requestHeldOf({
-    files: request.run.files,
-    clauses: clausesOf({ request: request.run, mechanism: request.mechanism }).map(
-      (clause) => clause.address,
-    ),
-  });
-  return [
-    ...unrequestedDetailOf({ noun: "a hit", entries: request.report.hits, held }),
-    ...unrequestedDetailOf({ noun: "a measured pair", entries: request.report.measured, held }),
-    ...unrequestedClauseDetailOf({
-      noun: "a native exception",
-      entries: request.report.nativeExceptions,
-      held,
-    }),
-  ];
-};
-
-const engineRunOfReport = (request: {
-  readonly report: ChecksRunReport;
-  readonly run: EngineRunRequest;
-  readonly mechanism: EngineId;
-  readonly projectedKinds: ParsedChecksRunner["projectedKinds"];
-}): Outcome<EngineRun> => {
-  const [unrequested] = invalidReport(request);
-  if (unrequested !== undefined) {
-    return runnerFailed({
-      mechanism: request.mechanism,
-      failure: runnerInvalidOutput({ detail: unrequested }).error,
-    });
-  }
-  const refusal = reportedChecksRefusal({
-    catalogue: { checks: request.run.checks },
-    reported: [...request.report.hits, ...request.report.nativeExceptions],
-  });
-  if (refusal.outcome === "failed") {
-    return runnerFailed({ mechanism: request.mechanism, failure: refusal.error });
-  }
-  return {
-    outcome: "ok",
-    value: {
-      mechanism: request.mechanism,
-      hits: request.report.hits,
-      nativeExceptions: request.report.nativeExceptions,
-      coverableKinds: request.projectedKinds,
-      projection: request.report.projection,
-      slices: request.report.slices,
-      unprojectedFolders: [],
-      measured: request.report.measured,
-      misnamedRuleIds: request.report.misnamedRuleIds,
-    },
-  };
-};
-
-type ChecksCall = {
-  readonly checksRunner: ParsedChecksRunner;
-  readonly mechanism: EngineId;
-  readonly run: EngineRunRequest;
-};
 
 const returnedBy = (request: { readonly call: () => Promise<unknown> }): Promise<unknown> =>
   Promise.resolve()
@@ -192,7 +70,7 @@ const returnedBy = (request: { readonly call: () => Promise<unknown> }): Promise
 const invalidChecksOutput = (request: {
   readonly mechanism: EngineId;
   readonly error: z.ZodError;
-}): Outcome<never> =>
+}): NamedOutcome<never> =>
   runnerFailed({
     mechanism: request.mechanism,
     failure: runnerInvalidOutput({ detail: z.prettifyError(request.error) }).error,
@@ -201,73 +79,129 @@ const invalidChecksOutput = (request: {
 const failedChecksCall = (request: {
   readonly mechanism: EngineId;
   readonly error: ChecksRunFailure;
-}): Outcome<never> =>
+}): NamedOutcome<never> =>
   request.error.kind === "not-ready-yet"
     ? { outcome: "failed", error: request.error }
     : runnerFailed({ mechanism: request.mechanism, failure: request.error });
 
-const checksRunOf = async (request: ChecksCall): Promise<Outcome<EngineRun>> => {
-  const parsed = checksRunResultSchema.safeParse(
-    await returnedBy({ call: () => request.checksRunner.run(request.run) }),
+const NAMED_RUNNER_MODULE = z.object({ namedChecksRunner: namedChecksRunnerModuleSchema });
+
+export const loadedNamedRunnerOf = async (
+  request: RunnerLocation,
+): Promise<Result<ParsedNamedRunner, RunnerInvalid>> => {
+  const loaded = await runnerModuleAt(request);
+  if (loaded.outcome === "failed")
+    return invalid({ mechanism: request.mechanism, detail: loaded.error.detail });
+  const parsed = NAMED_RUNNER_MODULE.safeParse(loaded.value);
+  return parsed.success
+    ? { outcome: "ok", value: parsed.data.namedChecksRunner }
+    : invalid({ mechanism: request.mechanism, detail: z.prettifyError(parsed.error) });
+};
+
+const namedRequestOf = (call: NamedEngineCall): NamedEngineRunRequest => ({
+  ...call.request,
+  bindings: call.request.bindings.filter(({ engine }) => engine === call.mechanism),
+});
+
+const verifiedNamedRun = (request: {
+  readonly call: NamedEngineCall;
+  readonly requested: NamedEngineRunRequest;
+  readonly report: z.output<typeof namedChecksRunReportSchema>;
+}): NamedOutcome<NamedEngineRun> => {
+  const { call, requested, report } = request;
+  const files = call.runner.fileScope === "tracked" ? requested.trackedPaths : requested.files;
+  const checked = checkedObservations({ requested: { ...requested, files }, report });
+  return checked.outcome === "failed"
+    ? runnerFailed({ mechanism: call.mechanism, failure: checked.error })
+    : {
+        outcome: "ok",
+        value: {
+          ...checked.value,
+          mechanism: call.mechanism,
+          coverableKinds: call.runner.projectedKinds,
+        },
+      };
+};
+
+export const namedEngineRunOf = async (
+  call: NamedEngineCall,
+): Promise<NamedOutcome<NamedEngineRun>> => {
+  const requested = namedRequestOf(call);
+  const parsed = namedChecksRunResultSchema.safeParse(
+    await returnedBy({ call: () => call.runner.run(requested) }),
   );
   if (!parsed.success) {
-    return invalidChecksOutput({ mechanism: request.mechanism, error: parsed.error });
+    return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
   }
   if (parsed.data.outcome === "failed") {
-    return failedChecksCall({ mechanism: request.mechanism, error: parsed.data.error });
+    return failedChecksCall({ mechanism: call.mechanism, error: parsed.data.error });
   }
-  return engineRunOfReport({
-    report: parsed.data.value,
-    run: request.run,
-    mechanism: request.mechanism,
-    projectedKinds: request.checksRunner.projectedKinds,
-  });
+  return verifiedNamedRun({ call, requested, report: parsed.data.value });
 };
 
-const checksProjectionOf = async (
-  request: ChecksCall,
-): Promise<Outcome<readonly ProjectedFile[]>> => {
-  const parsed = checksProjectResultSchema.safeParse(
-    await returnedBy({ call: () => request.checksRunner.project(request.run) }),
+const versionOneMeasurementModuleSchema = z.object({
+  measureVersionOne: runnerCallSchema.optional(),
+});
+
+const measureNamedRun = async (call: NamedEngineCall): ReturnType<MeasureVersionOneProjection> => {
+  const report = await namedEngineRunOf(call);
+  return report.outcome === "failed"
+    ? report
+    : { outcome: "ok", value: { report: report.value, unappliedSlices: [] } };
+};
+
+export const measureVersionOneProjection: MeasureVersionOneProjection = async ({
+  call,
+  location,
+  projection,
+}) => {
+  if (projection === undefined) return measureNamedRun(call);
+  const loaded = await runnerModuleAt(location);
+  if (loaded.outcome === "failed")
+    return invalid({ mechanism: call.mechanism, detail: loaded.error.detail });
+  const module = versionOneMeasurementModuleSchema.safeParse(loaded.value);
+  if (!module.success)
+    return invalid({ mechanism: call.mechanism, detail: z.prettifyError(module.error) });
+  const measureVersionOne = module.data.measureVersionOne;
+  if (measureVersionOne === undefined) return measureNamedRun(call);
+  const requested = namedRequestOf(call);
+  const parsed = measurementResultSchema.safeParse(
+    await returnedBy({ call: () => measureVersionOne({ run: requested, projection }) }),
   );
-  if (!parsed.success) {
-    return invalidChecksOutput({ mechanism: request.mechanism, error: parsed.error });
+  if (!parsed.success)
+    return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
+  if (parsed.data.outcome === "failed") {
+    return failedChecksCall({ mechanism: call.mechanism, error: parsed.data.error });
   }
-  return parsed.data.outcome === "failed"
-    ? failedChecksCall({ mechanism: request.mechanism, error: parsed.data.error })
-    : parsed.data;
-};
-
-export const engineRunOf = (request: EngineCall): Promise<Outcome<EngineRun>> => {
-  const { engine } = request;
-  if (engine.runner.exceptionPath === "standalone") {
-    return standaloneRunOf({
-      runner: engine.runner,
-      mechanism: engine.mechanism,
-      run: request.request,
+  const allowedSlices = new Set(projection.packageFiles);
+  const unrequested = parsed.data.value.unappliedSlices.find((slice) => !allowedSlices.has(slice));
+  if (unrequested !== undefined) {
+    return runnerFailed({
+      mechanism: call.mechanism,
+      failure: runnerInvalidOutput({
+        detail: `unrequested version one projection slice ${unrequested}`,
+      }).error,
     });
   }
-  return engine.checksRunner === undefined
-    ? Promise.resolve(invalid({ mechanism: engine.mechanism, detail: NO_CHECKS_RUNNER_DETAIL }))
-    : checksRunOf({
-        checksRunner: engine.checksRunner,
-        mechanism: engine.mechanism,
-        run: request.request,
-      });
+  const report = verifiedNamedRun({ call, requested, report: parsed.data.value.report });
+  return report.outcome === "failed"
+    ? report
+    : {
+        outcome: "ok",
+        value: { report: report.value, unappliedSlices: parsed.data.value.unappliedSlices },
+      };
 };
 
-export const engineProjectionOf = (
-  request: EngineCall,
-): Promise<Outcome<readonly ProjectedFile[]>> => {
-  const { engine } = request;
-  if (engine.runner.exceptionPath === "standalone") {
-    return Promise.resolve({ outcome: "ok", value: [] });
+export const namedEngineProjectionOf = async (
+  call: NamedEngineCall,
+): Promise<NamedOutcome<readonly ProjectedFile[]>> => {
+  const parsed = checksProjectResultSchema.safeParse(
+    await returnedBy({ call: () => call.runner.project(namedRequestOf(call)) }),
+  );
+  if (!parsed.success) {
+    return invalidChecksOutput({ mechanism: call.mechanism, error: parsed.error });
   }
-  return engine.checksRunner === undefined
-    ? Promise.resolve(invalid({ mechanism: engine.mechanism, detail: NO_CHECKS_RUNNER_DETAIL }))
-    : checksProjectionOf({
-        checksRunner: engine.checksRunner,
-        mechanism: engine.mechanism,
-        run: request.request,
-      });
+  return parsed.data.outcome === "failed"
+    ? failedChecksCall({ mechanism: call.mechanism, error: parsed.data.error })
+    : parsed.data;
 };

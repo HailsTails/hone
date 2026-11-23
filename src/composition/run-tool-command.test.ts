@@ -11,10 +11,11 @@ import type { ExceptionEntryParser } from "../application/ports/records/exceptio
 import type { ExceptionRepositoryOf } from "../application/ports/records/exception-repository.ts";
 import type { SelectionRepositoryOf } from "../application/ports/selection/selection-repository.ts";
 import type { VersionOneCommandRequest } from "../application/ports/version-one-command-request.ts";
-import { helpText } from "../infrastructure/command-line/arguments/command-help.ts";
-import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
+import type {
+  HelpTopic,
+  Subcommand,
+} from "../infrastructure/command-line/arguments/command-line.ts";
 import { runHelpText } from "../infrastructure/command-line/arguments/run-help.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { type CommandHandler, type Subcommands, toolCommandOf } from "./composed-command.ts";
 import { INSTALLED_PORTS, toolSubcommandsOf } from "./run-tool-command.ts";
@@ -89,7 +90,6 @@ const commandOver = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: notUsed },
   git: {
     trackedPaths: notUsed,
@@ -197,7 +197,6 @@ const commandRequest = (request: { readonly process: ProcessPort }): VersionOneC
   process: request.process,
   path: UNUSED_PATH,
   fileText: UNUSED_FILE_TEXT,
-  engine: createDefaultEnginePort({}),
   modules: UNUSED_MODULES,
   git: UNUSED_GIT,
   exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),
@@ -400,22 +399,31 @@ describe("toolCommandOf printing help", () => {
   );
 
   it.each([
+    { given: ["--help"], topic: "tool" },
     { given: ["check", "--repo", "/repo", "--help"], topic: "check" },
+    { given: ["project", "--repo", "/repo", "--help"], topic: "project" },
     { given: ["record-debt", "--repo", "/repo", "-h"], topic: "record-debt" },
-  ] as const)(
-    "prints version 1's $topic help for a repository holding disciplines.json, given $given",
+    { given: ["prune-debt", "--repo", "/repo", "--help"], topic: "prune-debt" },
+    { given: ["authorise", "--repo", "/repo", "--help"], topic: "authorise" },
+    { given: ["upgrade", "--repo", "/repo", "--help"], topic: "upgrade" },
+    { given: ["split-records", "--repo", "/repo", "--help"], topic: "split-records" },
+  ] satisfies readonly { readonly given: readonly string[]; readonly topic: HelpTopic }[])(
+    "prints current $topic help for a repository holding disciplines.json without running a command, given $given",
     async ({ given, topic }) => {
+      const subcommands = subcommandsSpied();
       const processPort = processWith({ arguments: given });
 
       await dispatchedOver({
-        subcommands: subcommandsSpied(),
+        subcommands,
         command: helpRequest({ process: processPort, files: VERSION_ONE_FILES }),
       });
 
-      expect(outputOf({ process: processPort })).toEqual({
-        writes: [[{ text: helpText({ topic }) }]],
-        exits: [[{ code: 0 }]],
-      });
+      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
+        {
+          output: { writes: [[{ text: runHelpText({ topic }) }]], exits: [[{ code: 0 }]] },
+          ran: ranNothing,
+        },
+      );
     },
   );
 
@@ -433,7 +441,7 @@ describe("toolCommandOf printing help", () => {
     });
   });
 
-  it("prints version 1's split-records help, the only help split-records has, for a version 2 repository", async () => {
+  it("prints migration help for split-records for a version 2 repository", async () => {
     const processPort = processWith({ arguments: ["split-records", "--repo", "/repo", "--help"] });
 
     await dispatchedOver({
@@ -442,7 +450,7 @@ describe("toolCommandOf printing help", () => {
     });
 
     expect(outputOf({ process: processPort })).toEqual({
-      writes: [[{ text: helpText({ topic: "split-records" }) }]],
+      writes: [[{ text: runHelpText({ topic: "split-records" }) }]],
       exits: [[{ code: 0 }]],
     });
   });

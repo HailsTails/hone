@@ -1,26 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
+import type { ParsedNamedRunner } from "../../../application/ports/engine/engine-run.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
-import type { RunnerClause } from "../../../domain/runner/runner-module-types.ts";
-import { checkConformance } from "./conformance.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
+import { namedCheckConformance } from "./conformance.ts";
 
-const CLASS_SYNTAX_OBJECT = { ruleSet: "hone", discipline: "CD-14", clause: "class-syntax" };
-
-const CLASS_SYNTAX_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-14"),
-    clause: clauseIdOf("class-syntax"),
-  },
+const CLASS_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
-  pieceRoot: "/install/mechanisms/audit/CD-14",
-  clauseSettings: {},
+  pieceRoot: "/install/walker/authored-class-or-this/class-keyword",
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
@@ -41,16 +33,18 @@ const NO_CLASS: SourceCase = {
 
 const CASES: readonly SourceCase[] = [CLASS_ON_LINES_1_AND_3, NO_CLASS];
 
-const conformingWith = (returned: unknown): LoadedRunner => ({
-  exceptionPath: "standalone",
-  run: vi.fn<LoadedRunner["run"]>().mockResolvedValue({ outcome: "ok", value: [] }),
-  conform: vi.fn<LoadedRunner["conform"]>().mockResolvedValue(returned),
+const conformingWith = (returned: unknown): ParsedNamedRunner => ({
+  fileScope: "tracked",
+  projectedKinds: [],
+  project: vi.fn(),
+  run: vi.fn<ParsedNamedRunner["run"]>().mockResolvedValue({ outcome: "ok", value: [] }),
+  conform: vi.fn<ParsedNamedRunner["conform"]>().mockResolvedValue(returned),
 });
 
-const conformanceOf = (request: { readonly runner: LoadedRunner }) =>
-  checkConformance({ clause: CLASS_SYNTAX_CLAUSE, cases: CASES, runner: request.runner });
+const conformanceOf = (request: { readonly runner: ParsedNamedRunner }) =>
+  namedCheckConformance({ binding: CLASS_BINDING, cases: CASES, runner: request.runner });
 
-describe("checkConformance", () => {
+describe("namedCheckConformance", () => {
   it("has no failures when every case's flagged lines equal its expected lines", async () => {
     await expect(
       conformanceOf({
@@ -65,7 +59,7 @@ describe("checkConformance", () => {
     ).resolves.toEqual({ outcome: "ok", value: [] });
   });
 
-  it("calls conform once with the clause and the cases and never calls run", async () => {
+  it("calls conform once with the check binding and cases and never calls run", async () => {
     const runner = conformingWith({
       outcome: "ok",
       value: [
@@ -80,7 +74,7 @@ describe("checkConformance", () => {
       runCalls: vi.mocked(runner.run).mock.calls,
     }).toEqual({
       conformance: { outcome: "ok", value: [] },
-      conformCalls: [[{ clause: CLASS_SYNTAX_CLAUSE, cases: CASES }]],
+      conformCalls: [[{ binding: CLASS_BINDING, cases: CASES }]],
       runCalls: [],
     });
   });
@@ -128,7 +122,7 @@ describe("checkConformance", () => {
       outcome: "ok",
       value: [
         {
-          clause: CLASS_SYNTAX_OBJECT,
+          check: CLASS_BINDING.address,
           caseName: "two classes",
           expectedLines: [1, 3],
           flaggedLines: [1],
@@ -151,15 +145,20 @@ describe("checkConformance", () => {
     ).resolves.toEqual({
       outcome: "ok",
       value: [
-        { clause: CLASS_SYNTAX_OBJECT, caseName: "no class", expectedLines: [], flaggedLines: [1] },
+        {
+          check: CLASS_BINDING.address,
+          caseName: "no class",
+          expectedLines: [],
+          flaggedLines: [1],
+        },
       ],
     });
   });
 
   it("reports a failing case's expected and flagged lines as sorted, de-duplicated sets", async () => {
     await expect(
-      checkConformance({
-        clause: CLASS_SYNTAX_CLAUSE,
+      namedCheckConformance({
+        binding: CLASS_BINDING,
         cases: [{ ...CLASS_ON_LINES_1_AND_3, expectedLines: [3, 1, 3] }],
         runner: conformingWith({
           outcome: "ok",
@@ -170,7 +169,7 @@ describe("checkConformance", () => {
       outcome: "ok",
       value: [
         {
-          clause: CLASS_SYNTAX_OBJECT,
+          check: CLASS_BINDING.address,
           caseName: "two classes",
           expectedLines: [1, 3],
           flaggedLines: [1, 2, 5],
@@ -259,9 +258,9 @@ describe("checkConformance", () => {
   });
 
   it("is runner-invalid-output when conform throws synchronously", async () => {
-    const runner: LoadedRunner = {
+    const runner: ParsedNamedRunner = {
       ...conformingWith({ outcome: "ok", value: [] }),
-      conform: vi.fn<LoadedRunner["conform"]>().mockThrow(new Error("the runner threw")),
+      conform: vi.fn<ParsedNamedRunner["conform"]>().mockThrow(new Error("the runner threw")),
     };
     await expect(conformanceOf({ runner })).resolves.toMatchObject({
       outcome: "failed",
@@ -273,9 +272,11 @@ describe("checkConformance", () => {
   });
 
   it("is runner-invalid-output when conform rejects", async () => {
-    const runner: LoadedRunner = {
+    const runner: ParsedNamedRunner = {
       ...conformingWith({ outcome: "ok", value: [] }),
-      conform: vi.fn<LoadedRunner["conform"]>().mockRejectedValue(new Error("the runner rejected")),
+      conform: vi
+        .fn<ParsedNamedRunner["conform"]>()
+        .mockRejectedValue(new Error("the runner rejected")),
     };
     await expect(conformanceOf({ runner })).resolves.toMatchObject({
       outcome: "failed",
@@ -293,7 +294,7 @@ describe("checkConformance", () => {
           outcome: "failed",
           error: {
             kind: "piece-invalid",
-            pieceRoot: "/install/mechanisms/audit/CD-14",
+            pieceRoot: "/install/walker/authored-class-or-this/class-keyword",
             detail: "no check export",
           },
         }),
@@ -302,7 +303,7 @@ describe("checkConformance", () => {
       outcome: "failed",
       error: {
         kind: "piece-invalid",
-        pieceRoot: "/install/mechanisms/audit/CD-14",
+        pieceRoot: "/install/walker/authored-class-or-this/class-keyword",
         detail: "no check export",
       },
     });

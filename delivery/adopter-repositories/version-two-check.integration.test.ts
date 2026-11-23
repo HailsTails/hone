@@ -18,7 +18,6 @@ import {
   checksProjectionText,
 } from "../../src/infrastructure/engines/eslint/runner/projection/checks-projection.ts";
 import { installedEslintBoundary } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
 import { createDefaultGitPort } from "../../src/infrastructure/git/git-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
@@ -170,7 +169,6 @@ const runCommandIn = async (request: {
       process: processPort,
       path: createDefaultPathPort({}),
       fileText,
-      engine: createDefaultEnginePort({}),
       modules: createDefaultModuleLoaderPort({}),
       git: createDefaultGitPort({}),
       exceptionRepositoryOf: vi.fn<ExceptionRepositoryOf>(),

@@ -3,12 +3,9 @@ import { assert, describe, expect, it, vi } from "vitest";
 import type { ModuleLoaderPort } from "../../../../application/ports/host/module-loader-port.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../../domain/result.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
 import { textsDisk } from "./pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerPiece, WalkerRepository } from "./pieces/walker-piece.ts";
 import { prepareWalkerPieces } from "./prepare-walker-pieces.ts";
@@ -38,41 +35,32 @@ const REPOSITORY: WalkerRepository = {
   disk: textsDisk({ root: "/repo", texts: {} }),
 };
 
-const FIRST_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("XX-1"),
-    clause: clauseIdOf("first-check"),
-  },
+const FIRST_CLAUSE: CheckBinding = {
+  address: "example#first-check",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "first.ts" },
 };
 
-const SECOND_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("XX-1"),
-    clause: clauseIdOf("second-check"),
-  },
+const SECOND_CLAUSE: CheckBinding = {
+  address: "example#second-check",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "second.ts" },
 };
 
-const THIRD_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("XX-1"),
-    clause: clauseIdOf("third-check"),
-  },
+const THIRD_CLAUSE: CheckBinding = {
+  address: "example#third-check",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: PIECE_ROOT,
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "first.ts" },
 };
@@ -89,7 +77,7 @@ const preparedCheck = (): PreparedWalkerCheck => ({
 });
 
 describe("prepareWalkerPieces", () => {
-  it("loads and prepares each distinct module once with its ordered clauses and returns every prepared piece in first-module encounter order", async () => {
+  it("loads and prepares each distinct module once with its ordered bindings and returns every prepared piece in first-module encounter order", async () => {
     const firstCheck = preparedCheck();
     const secondCheck = preparedCheck();
     const firstPreparation = vi.fn<WalkerPiece["prepare"]>().mockReturnValue({
@@ -113,9 +101,9 @@ describe("prepareWalkerPieces", () => {
 
     const preparation = await prepareWalkerPieces({
       selected: [
-        { modulePath: FIRST_MODULE, clause: FIRST_CLAUSE },
-        { modulePath: SECOND_MODULE, clause: SECOND_CLAUSE },
-        { modulePath: FIRST_MODULE, clause: THIRD_CLAUSE },
+        { modulePath: FIRST_MODULE, binding: FIRST_CLAUSE },
+        { modulePath: SECOND_MODULE, binding: SECOND_CLAUSE },
+        { modulePath: FIRST_MODULE, binding: THIRD_CLAUSE },
       ],
       repository: REPOSITORY,
       syntaxApi: SYNTAX_API,
@@ -127,7 +115,7 @@ describe("prepareWalkerPieces", () => {
       value: [
         {
           modulePath: FIRST_MODULE,
-          clauses: [FIRST_CLAUSE, THIRD_CLAUSE],
+          bindings: [FIRST_CLAUSE, THIRD_CLAUSE],
           check: {
             prepareFile: expect.any(Function),
             finish: expect.any(Function),
@@ -135,7 +123,7 @@ describe("prepareWalkerPieces", () => {
         },
         {
           modulePath: SECOND_MODULE,
-          clauses: [SECOND_CLAUSE],
+          bindings: [SECOND_CLAUSE],
           check: {
             prepareFile: expect.any(Function),
             finish: expect.any(Function),
@@ -149,7 +137,7 @@ describe("prepareWalkerPieces", () => {
     expect(firstPreparation.mock.calls).toEqual([
       [
         {
-          clauses: [FIRST_CLAUSE, THIRD_CLAUSE],
+          bindings: [FIRST_CLAUSE, THIRD_CLAUSE],
           repository: REPOSITORY,
           syntaxApi: SYNTAX_API,
         },
@@ -158,7 +146,7 @@ describe("prepareWalkerPieces", () => {
     expect(secondPreparation.mock.calls).toEqual([
       [
         {
-          clauses: [SECOND_CLAUSE],
+          bindings: [SECOND_CLAUSE],
           repository: REPOSITORY,
           syntaxApi: SYNTAX_API,
         },
@@ -177,7 +165,7 @@ describe("prepareWalkerPieces", () => {
     });
 
     const preparation = await prepareWalkerPieces({
-      selected: [{ modulePath: FIRST_MODULE, clause: FIRST_CLAUSE }],
+      selected: [{ modulePath: FIRST_MODULE, binding: FIRST_CLAUSE }],
       repository: REPOSITORY,
       syntaxApi: SYNTAX_API,
       modules: { load },
@@ -206,7 +194,7 @@ describe("prepareWalkerPieces", () => {
     });
 
     const preparation = await prepareWalkerPieces({
-      selected: [{ modulePath: FIRST_MODULE, clause: FIRST_CLAUSE }],
+      selected: [{ modulePath: FIRST_MODULE, binding: FIRST_CLAUSE }],
       repository: REPOSITORY,
       syntaxApi: SYNTAX_API,
       modules: { load },
@@ -238,7 +226,7 @@ describe("prepareWalkerPieces", () => {
     });
 
     const preparation = await prepareWalkerPieces({
-      selected: [{ modulePath: FIRST_MODULE, clause: FIRST_CLAUSE }],
+      selected: [{ modulePath: FIRST_MODULE, binding: FIRST_CLAUSE }],
       repository: REPOSITORY,
       syntaxApi: SYNTAX_API,
       modules: { load },
@@ -268,7 +256,7 @@ describe("prepareWalkerPieces", () => {
     });
 
     const preparation = await prepareWalkerPieces({
-      selected: [{ modulePath: FIRST_MODULE, clause: FIRST_CLAUSE }],
+      selected: [{ modulePath: FIRST_MODULE, binding: FIRST_CLAUSE }],
       repository: REPOSITORY,
       syntaxApi: SYNTAX_API,
       modules: { load },
@@ -287,7 +275,7 @@ describe("prepareWalkerPieces", () => {
     });
 
     const preparation = await prepareWalkerPieces({
-      selected: [{ modulePath: FIRST_MODULE, clause: FIRST_CLAUSE }],
+      selected: [{ modulePath: FIRST_MODULE, binding: FIRST_CLAUSE }],
       repository: REPOSITORY,
       syntaxApi: SYNTAX_API,
       modules: { load },

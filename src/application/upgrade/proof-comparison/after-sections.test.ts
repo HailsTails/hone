@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   Check,
   Engine,
@@ -15,6 +15,7 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import { afterSectionsOf } from "./after-sections.ts";
 
@@ -154,8 +155,7 @@ const EMPTY_AFTER: RunReport = {
   symptoms: [],
 };
 
-const NAMED_LOOP_FINDING: Finding = {
-  clause: LOOPS_CLAUSE,
+const NAMED_LOOP_FINDING: CheckFinding = {
   file: SRC_A,
   anchor: { line: 3, column: 1 },
   snippet: "the loop line",
@@ -185,6 +185,23 @@ const sectionsOfWithoutCatalogues = (request: { readonly report: RunReport }) =>
   afterSectionsOf({ report: request.report, catalogues: [] });
 
 describe("afterSectionsOf", () => {
+  it("keys a named edition using the clause held only in the upgrade catalogue", () => {
+    const editions = sectionsOf({
+      report: {
+        ...EMPTY_AFTER,
+        editions: [
+          {
+            check: { ...LOOP_KEYWORD_LOOPS, clause: undefined },
+            engine: WALKER,
+            edition: editionOf("1"),
+            latest: editionOf("2"),
+          },
+        ],
+      },
+    }).editions;
+    expect(editions).toEqual(["CD-15#loops walker 1 2"]);
+  });
+
   it("holds nothing but a passing verdict for a report that holds nothing", () => {
     expect(sectionsOf({ report: EMPTY_AFTER })).toEqual({
       excluded: [],
@@ -264,12 +281,15 @@ describe("afterSectionsOf", () => {
     });
   });
 
-  it("keys a finding naming no check as an unknown check, never at its own clause", () => {
+  it("keys an unmapped check as unknown without guessing a version one clause", () => {
     expect(
       sectionsOf({
-        report: { ...EMPTY_AFTER, findings: [{ ...NAMED_LOOP_FINDING, check: undefined }] },
+        report: {
+          ...EMPTY_AFTER,
+          findings: [{ ...NAMED_LOOP_FINDING, check: "missing#unassigned" }],
+        },
       }).findings,
-    ).toEqual(["unknown-check none src/a.ts 3:1"]);
+    ).toEqual(["unknown-check missing#unassigned src/a.ts 3:1"]);
   });
 
   it("keys a finding naming a check the catalogue does not hold as that unknown check", () => {

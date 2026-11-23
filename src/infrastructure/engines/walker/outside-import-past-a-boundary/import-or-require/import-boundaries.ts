@@ -1,8 +1,8 @@
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { stringListClauseSettings } from "../../runner/pieces/piece-clause-settings.ts";
+import { stringListCheckSettings } from "../../runner/pieces/piece-check-settings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
@@ -15,8 +15,8 @@ const sourceEligibility = (request: { readonly file: string }): "eligible" | "ex
 
 type ConfinedPattern = { readonly pattern: RegExp };
 
-type ConfinedClause = {
-  readonly clause: RunnerClause;
+type ConfinedCheck = {
+  readonly binding: CheckBinding;
   readonly anywhere: RegExp | undefined;
   readonly patterns: readonly ConfinedPattern[];
 };
@@ -29,11 +29,11 @@ const confinedImportPattern = (request: { readonly packageNames: readonly string
     `from\\s+["']((?:${request.packageNames.map((packageName) => escapedPackage({ packageName })).join("|")})(?:/[^"']*)?)["']`,
   );
 
-const confinedClauseOf = (request: {
-  readonly clause: RunnerClause;
+const confinedCheckOf = (request: {
+  readonly binding: CheckBinding;
   readonly packageNames: readonly string[];
-}): ConfinedClause => ({
-  clause: request.clause,
+}): ConfinedCheck => ({
+  binding: request.binding,
   anywhere:
     request.packageNames.length === 0
       ? undefined
@@ -45,7 +45,7 @@ const confinedClauseOf = (request: {
 
 const confinedImportsIn = (request: {
   readonly text: string;
-  readonly confined: ConfinedClause;
+  readonly confined: ConfinedCheck;
 }): readonly { readonly line: number; readonly specifier: string }[] => {
   if (request.confined.anywhere === undefined || !request.confined.anywhere.test(request.text))
     return [];
@@ -59,11 +59,11 @@ const confinedImportsIn = (request: {
 
 const confinedImportHits = (request: {
   readonly text: string;
-  readonly confined: readonly ConfinedClause[];
+  readonly confined: readonly ConfinedCheck[];
 }): readonly PieceHit[] =>
   request.confined.flatMap((confined) =>
     confinedImportsIn({ text: request.text, confined }).map(({ line, specifier }) => ({
-      clause: confined.clause.address,
+      check: confined.binding.address,
       anchor: { line, column: 0 },
       snippet: `banned third-party import: ${specifier} — use its recorded wrapping boundary`,
       importSpecifier: specifier,
@@ -120,36 +120,38 @@ const nodeSchemeImportOf = (request: {
 };
 
 const nodeSchemeHits = (request: {
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly anchor: PieceHit["anchor"];
   readonly specifier: string;
 }): readonly PieceHit[] => {
   const snippet = `bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: ${request.specifier}`;
-  return request.clauses.map((clause) => ({
-    clause: clause.address,
+  return request.bindings.map((binding) => ({
+    check: binding.address,
     anchor: request.anchor,
     snippet,
     importSpecifier: request.specifier,
   }));
 };
 
-const confinedClausesOf = (request: {
-  readonly clauses: readonly RunnerClause[];
-}): Result<readonly ConfinedClause[], PieceFailure> =>
+const confinedChecksOf = (request: {
+  readonly bindings: readonly CheckBinding[];
+}): Result<readonly ConfinedCheck[], PieceFailure> =>
   gatheredOutcomes({
-    outcomes: request.clauses.map((clause): Result<readonly ConfinedClause[], PieceFailure> => {
-      const settings = stringListClauseSettings({ clause, keys: ["confinedPackages"] });
+    outcomes: request.bindings.map((binding): Result<readonly ConfinedCheck[], PieceFailure> => {
+      const settings = stringListCheckSettings({ binding, keys: ["confinedOutsideDependencies"] });
       if (settings.outcome === "failed") return settings;
       return {
         outcome: "ok",
-        value: [confinedClauseOf({ clause, packageNames: settings.value.confinedPackages })],
+        value: [
+          confinedCheckOf({ binding, packageNames: settings.value.confinedOutsideDependencies }),
+        ],
       };
     }),
   });
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, syntaxApi }) => {
-    const settled = confinedClausesOf({ clauses });
+  prepare: ({ bindings, syntaxApi }) => {
+    const settled = confinedChecksOf({ bindings });
     if (settled.outcome === "failed") return settled;
     const confined = settled.value;
     return {
@@ -171,7 +173,7 @@ export const check: WalkerPiece = {
                     if (imported === undefined) return;
                     nodeHits.push(
                       ...nodeSchemeHits({
-                        clauses,
+                        bindings,
                         anchor: anchorAt({ position: imported.position }),
                         specifier: imported.specifier,
                       }),

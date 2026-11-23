@@ -1,0 +1,20 @@
+{
+  "flag": [
+    {
+      "name": "console.log",
+      "fileName": "src/a.ts",
+      "source": "console.log(1);\n",
+      "expectedLines": [
+        1
+      ]
+    }
+  ],
+  "allow": [
+    {
+      "name": "no console",
+      "fileName": "src/b.ts",
+      "source": "export const b = 1;\n",
+      "expectedLines": []
+    }
+  ]
+}

@@ -32,7 +32,7 @@ const offIn = (request: {
   return state?.state === "configured" && state.severity === 0 ? "in-effect" : "not-in-effect";
 };
 
-const enforcedIn = (request: {
+export const enforcedIn = (request: {
   readonly checked: CheckedFile;
   readonly ruleId: string;
 }): Holding => {

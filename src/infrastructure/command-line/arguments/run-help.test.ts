@@ -116,3 +116,45 @@ exit codes:
 `);
   });
 });
+
+const SPLIT_RECORDS_HELP = `usage: hone split-records --repo <dir>
+
+move the exception records from discipline-exceptions.json into the discipline-exceptions folder, one file for each record kind and discipline, printing each file as written or removed
+
+options:
+  --repo <dir>
+      the folder that holds disciplines.json, usually the repository root
+  --help, -h
+      print this help
+
+exit codes:
+  0  the records were split, or there was nothing to split
+  2  a load failure: the records could not be read, placed or written, or Hone failed unexpectedly
+`;
+
+const UPGRADE_HELP = `usage: hone upgrade --repo <dir>
+
+move a version 1 repository to version 2: write hone.config.json, the hone-records folder and the projection, check that version 2 reports what version 1 reported, then remove the version 1 files
+
+options:
+  --repo <dir>
+      the folder that holds disciplines.json, usually the repository root
+  --help, -h
+      print this help
+
+exit codes:
+  0  the repository was upgraded, or is already on version 2
+  1  the upgrade was refused; it changed nothing, or named each file it could not put back
+  2  a load failure: an input could not be loaded, or Hone failed unexpectedly
+  3  version 2 is in place, but some version 1 files could not be removed; delete the files printed, then commit
+`;
+
+describe("runHelpText for migration commands", () => {
+  it("gives the upgrade command its usage, its one option and its four exit codes", () => {
+    expect(runHelpText({ topic: "upgrade" })).toBe(UPGRADE_HELP);
+  });
+
+  it("gives the split-records command its usage, what it does, its one option and its exit codes", () => {
+    expect(runHelpText({ topic: "split-records" })).toBe(SPLIT_RECORDS_HELP);
+  });
+});

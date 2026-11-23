@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
-import type { EngineRun } from "../application/ports/engine/engine-run.ts";
+import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type { RecordKind, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
@@ -98,14 +98,13 @@ const CATALOGUE: SymptomCatalogue = {
   checks: [],
 };
 
-const OUT_OF_DATE_ESLINT_RUN: EngineRun = {
+const OUT_OF_DATE_ESLINT_RUN: NamedEngineRun = {
   mechanism: "eslint",
   hits: [],
   nativeExceptions: [],
   coverableKinds: [],
   projection: "out-of-date",
   slices: [],
-  unprojectedFolders: [],
   measured: [],
   misnamedRuleIds: [],
 };
@@ -122,12 +121,11 @@ const inputWithOutOfDateProjection = (): VersionTwoRecordInput => ({
       value: {
         available: [],
         selection: {
-          selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-          bindings: [],
-          clauseRoots: [],
+          selected: [],
+          notAdopted: [],
+          notRun: [],
           excluded: [],
           eslintConfigRoots: [],
-          fileExceptionWhyChains: "required",
         },
         runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
         eslintConfigLookup: { lookup: "detected" },

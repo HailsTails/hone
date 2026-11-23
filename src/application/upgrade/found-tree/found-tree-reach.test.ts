@@ -25,7 +25,7 @@ import type {
 } from "../../ports/records/records-source-of.ts";
 import type { RecordsSource } from "../../ports/records/records-source.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
-import type { CheckRequest } from "../../run/check/run-check.ts";
+import type { VersionOneCheckInput } from "../record-answers/version-one-check-input.ts";
 import {
   FOUND_TREE_REVISION,
   foundTreeCheckReachOf,
@@ -189,9 +189,9 @@ const git = (): GitPort => ({
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 });
 
-const fileText = (): CheckRequest["fileText"] => ({
-  read: vi.fn<CheckRequest["fileText"]["read"]>(),
-  exists: vi.fn<CheckRequest["fileText"]["exists"]>(),
+const fileText = (): VersionOneCheckInput["fileText"] => ({
+  read: vi.fn<VersionOneCheckInput["fileText"]["read"]>(),
+  exists: vi.fn<VersionOneCheckInput["fileText"]["exists"]>(),
 });
 
 const exceptions = (): ExceptionRepository => ({

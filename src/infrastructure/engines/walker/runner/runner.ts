@@ -5,11 +5,12 @@ import { installFormOf } from "../../../node/modules/install-layout.ts";
 import { createDefaultModuleLoaderPort } from "../../../node/modules/module-loader-port.ts";
 import { installRootOfRunnerEntry } from "../../../node/modules/package-location-port.ts";
 import { createDefaultPathPort } from "../../../node/path-port.ts";
-import { toolchainBoundStandaloneRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
+import { toolchainBoundNamedChecksRunner } from "../../protocol/toolchain/toolchain-bound-runner.ts";
 import { createWalkerRunner } from "./create-walker-runner.ts";
 import { defaultTypeScriptPeers, loadParsePort } from "./toolchain/typescript-toolchain.ts";
 
-export const runner = toolchainBoundStandaloneRunner({
+export const namedChecksRunner = toolchainBoundNamedChecksRunner({
+  fileScope: "tracked",
   toolchain: loadParsePort({
     peers: defaultTypeScriptPeers({
       installRoot: installRootOfRunnerEntry({ entryFile: import.meta.filename }),
@@ -18,6 +19,7 @@ export const runner = toolchainBoundStandaloneRunner({
       }),
     }),
   }),
+  projectedKinds: ["inline-disable"],
   runnerOf: (parse) =>
     createWalkerRunner({
       fileText: createDefaultFileTextPort({}),

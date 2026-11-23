@@ -7,12 +7,11 @@ import type {
 } from "../language-layer/symptom-catalogue.ts";
 import type { Result } from "../result.ts";
 import type { ClauseAddress } from "../rule-set/clause-address-types.ts";
-import { sameClauseAddress, TOOL_RULE_SET } from "../rule-set/clause-address.ts";
+import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import type { EngineId } from "../rule-set/identifier-types.ts";
 import { everyOk } from "./every-ok.ts";
-import { sameJsonValue } from "./json-values/json-kind.ts";
 import { type ListedAddress, listedAddressText, sameListedAddress } from "./listed-address.ts";
-import type { CheckState, GivenCheckSettings, ListedCheck } from "./settings-file.ts";
+import type { GivenCheckSettings, ListedCheck } from "./settings-file.ts";
 
 export type RuleSetCatalogue = {
   readonly ruleSet: ClauseAddress["ruleSet"];
@@ -28,14 +27,14 @@ export type ClauseChoice =
   | { readonly state: "not-run" }
   | { readonly state: "not-adopted" };
 
-export type ChosenClause = {
-  readonly clause: ClauseAddress;
-  readonly checks: readonly ListedAddress[];
+export type ChosenCheck = {
+  readonly address: ListedAddress;
+  readonly check: Check;
   readonly choice: ClauseChoice;
 };
 
-export type CheckChoices = {
-  readonly clauses: readonly ChosenClause[];
+export type NamedCheckChoices = {
+  readonly checks: readonly ChosenCheck[];
   readonly available: readonly Check[];
 };
 
@@ -194,143 +193,6 @@ const duplicateRefusalOf = (request: {
   };
 };
 
-const sameState = (request: {
-  readonly left: CheckState;
-  readonly right: CheckState;
-}): "same" | "different" =>
-  request.left.state === request.right.state &&
-  (request.left.state !== "run" ||
-    request.right.state !== "run" ||
-    request.left.engine === request.right.engine)
-    ? "same"
-    : "different";
-
-const checkTextOf = (request: {
-  readonly ruleSet: ClauseAddress["ruleSet"];
-  readonly check: Check;
-}): string =>
-  listedAddressText({
-    address: { ruleSet: request.ruleSet, check: checkAddressOf({ check: request.check }) },
-  });
-
-const runTogetherRefusalOf = (request: {
-  readonly resolved: readonly ResolvedCheck[];
-}): CheckChoiceRefusal | undefined =>
-  request.resolved
-    .map((listed): CheckChoiceRefusal | undefined => {
-      const ruleSet = listed.listed.address.ruleSet;
-      const others = checksOf({ catalogue: listed.catalogue, clause: listed.check.clause })
-        .filter((other) => other !== listed.check)
-        .filter(
-          (other) =>
-            !request.resolved.some(
-              (candidate) =>
-                candidate.check === other &&
-                sameState({ left: candidate.listed.state, right: listed.listed.state }) === "same",
-            ),
-        )
-        .map((other) => checkTextOf({ ruleSet, check: other }));
-      return others.length === 0
-        ? undefined
-        : {
-            kind: "checks-run-together",
-            address: listedAddressText({ address: listed.listed.address }),
-            others,
-          };
-    })
-    .find((refusal) => refusal !== undefined);
-
-const chosenClausesOf = (request: {
-  readonly resolved: readonly ResolvedCheck[];
-}): readonly ChosenClause[] =>
-  request.resolved
-    .filter(
-      (resolved, index) =>
-        request.resolved.findIndex(
-          (earlier) =>
-            sameClauseAddress({ left: earlier.check.clause, right: resolved.check.clause }) ===
-            "same",
-        ) === index,
-    )
-    .map((first) => ({
-      clause: first.check.clause,
-      checks: request.resolved
-        .filter(
-          (resolved) =>
-            sameClauseAddress({ left: resolved.check.clause, right: first.check.clause }) ===
-            "same",
-        )
-        .map((resolved) => resolved.listed.address),
-      choice: first.choice,
-    }));
-
-type SettledSettings = { readonly given: GivenCheckSettings; readonly clause: ClauseAddress };
-
-const settingsOnRunCheck = (
-  request: CatalogueRequest & {
-    readonly given: GivenCheckSettings;
-    readonly clauses: readonly ChosenClause[];
-  },
-): Result<SettledSettings, CheckChoiceRefusal> => {
-  const found = checkOf({ catalogues: request.catalogues, address: request.given.address });
-  if (found.outcome === "failed") {
-    return found;
-  }
-  const address = listedAddressText({ address: request.given.address });
-  const chosen = request.clauses.find(
-    (clause) =>
-      sameClauseAddress({ left: clause.clause, right: found.value.check.clause }) === "same",
-  );
-  if (chosen === undefined) {
-    return {
-      outcome: "failed",
-      error: { kind: "check-settings-refused", address, listing: "unlisted" },
-    };
-  }
-  if (chosen.choice.state !== "run") {
-    return {
-      outcome: "failed",
-      error: { kind: "check-settings-refused", address, listing: chosen.choice.state },
-    };
-  }
-  return { outcome: "ok", value: { given: request.given, clause: chosen.clause } };
-};
-
-const differingSettingsRefusalOf = (request: {
-  readonly settled: readonly SettledSettings[];
-}): CheckChoiceRefusal | undefined => {
-  const pairs = request.settled.flatMap((later, index) =>
-    request.settled
-      .slice(0, index)
-      .filter(
-        (earlier) => sameClauseAddress({ left: earlier.clause, right: later.clause }) === "same",
-      )
-      .filter(
-        (earlier) =>
-          sameJsonValue({ left: earlier.given.values, right: later.given.values }) === "different",
-      )
-      .map((earlier): CheckChoiceRefusal => ({
-        kind: "check-settings-differ",
-        address: listedAddressText({ address: later.given.address }),
-        other: listedAddressText({ address: earlier.given.address }),
-      })),
-  );
-  return pairs[0];
-};
-
-const withSettings = (request: {
-  readonly clause: ChosenClause;
-  readonly settled: readonly SettledSettings[];
-}): ChosenClause => {
-  const given = request.settled.find(
-    (settled) =>
-      sameClauseAddress({ left: settled.clause, right: request.clause.clause }) === "same",
-  )?.given;
-  return request.clause.choice.state === "run" && given !== undefined
-    ? { ...request.clause, choice: { ...request.clause.choice, settings: given } }
-    : request.clause;
-};
-
 const availableOf = (
   request: CatalogueRequest & { readonly checks: readonly Check[] },
 ): readonly Check[] => {
@@ -348,12 +210,14 @@ const failedWith = (
   error: refusal,
 });
 
-export const checkChoicesOf = (
-  request: CatalogueRequest & {
-    readonly checks: readonly ListedCheck[];
-    readonly checkSettings: readonly GivenCheckSettings[];
-  },
-): Result<CheckChoices, CheckChoiceRefusal> => {
+type ChoicesRequest = CatalogueRequest & {
+  readonly checks: readonly ListedCheck[];
+  readonly checkSettings: readonly GivenCheckSettings[];
+};
+
+const resolvedChecksOf = (
+  request: ChoicesRequest,
+): Result<readonly ResolvedCheck[], CheckChoiceRefusal> => {
   const duplicate =
     duplicateRefusalOf({
       key: "checks",
@@ -366,37 +230,69 @@ export const checkChoicesOf = (
   if (duplicate !== undefined) {
     return failedWith(duplicate);
   }
-  const resolved = everyOk({
+  return everyOk({
     entries: request.checks,
     resolve: (listed) => resolvedCheckOf({ catalogues: request.catalogues, listed }),
   });
-  if (resolved.outcome === "failed") {
-    return resolved;
+};
+
+const validGivenSettingsOf = (
+  request: CatalogueRequest & {
+    readonly given: GivenCheckSettings;
+    readonly resolved: readonly ResolvedCheck[];
+  },
+): Result<GivenCheckSettings, CheckChoiceRefusal> => {
+  const found = checkOf({ catalogues: request.catalogues, address: request.given.address });
+  if (found.outcome === "failed") return found;
+  const chosen = request.resolved.find(
+    ({ listed }) =>
+      sameListedAddress({ left: listed.address, right: request.given.address }) === "same",
+  );
+  const address = listedAddressText({ address: request.given.address });
+  if (chosen === undefined) {
+    return failedWith({ kind: "check-settings-refused", address, listing: "unlisted" });
   }
-  const together = runTogetherRefusalOf({ resolved: resolved.value });
-  if (together !== undefined) {
-    return failedWith(together);
-  }
-  const clauses = chosenClausesOf({ resolved: resolved.value });
-  const settled = everyOk({
-    entries: request.checkSettings,
-    resolve: (given) => settingsOnRunCheck({ catalogues: request.catalogues, given, clauses }),
-  });
-  if (settled.outcome === "failed") {
-    return settled;
-  }
-  const differing = differingSettingsRefusalOf({ settled: settled.value });
-  if (differing !== undefined) {
-    return failedWith(differing);
-  }
+  return chosen.choice.state === "run"
+    ? { outcome: "ok", value: request.given }
+    : failedWith({ kind: "check-settings-refused", address, listing: chosen.choice.state });
+};
+
+const namedChoiceOf = (request: {
+  readonly resolved: ResolvedCheck;
+  readonly given: readonly GivenCheckSettings[];
+}): ChosenCheck => {
+  const { listed, check, choice } = request.resolved;
+  const settings = request.given.find(
+    (given) => sameListedAddress({ left: given.address, right: listed.address }) === "same",
+  );
   return {
-    outcome: "ok",
-    value: {
-      clauses: clauses.map((clause) => withSettings({ clause, settled: settled.value })),
-      available: availableOf({
-        catalogues: request.catalogues,
-        checks: resolved.value.map((each) => each.check),
-      }),
-    },
+    address: listed.address,
+    check,
+    choice: choice.state === "run" ? { ...choice, settings } : choice,
   };
+};
+
+export const namedCheckChoicesOf = (
+  request: ChoicesRequest,
+): Result<NamedCheckChoices, CheckChoiceRefusal> => {
+  const resolved = resolvedChecksOf(request);
+  if (resolved.outcome === "failed") return resolved;
+  const given = everyOk({
+    entries: request.checkSettings,
+    resolve: (given) => validGivenSettingsOf({ ...request, given, resolved: resolved.value }),
+  });
+  return given.outcome === "failed"
+    ? given
+    : {
+        outcome: "ok",
+        value: {
+          checks: resolved.value.map((each) =>
+            namedChoiceOf({ resolved: each, given: given.value }),
+          ),
+          available: availableOf({
+            catalogues: request.catalogues,
+            checks: resolved.value.map(({ check }) => check),
+          }),
+        },
+      };
 };

@@ -1,4 +1,4 @@
-import type { AttributedNativeException, Finding } from "../finding/governance.ts";
+import type { AttributedCheckException, CheckFinding } from "../finding/governance.ts";
 import type { Check, Engine, Symptom } from "../language-layer/symptom-catalogue.ts";
 import type { AnsweredFinding, PaidDebt, StaleRecord } from "../records/answering/answering.ts";
 import type {
@@ -66,12 +66,12 @@ export type RunReport = {
   readonly "not-adopted": readonly Check[];
   readonly "not-run": readonly Check[];
   readonly editions: readonly CheckEdition[];
-  readonly findings: readonly Finding[];
+  readonly findings: readonly CheckFinding[];
   readonly answered: readonly AnsweredFinding[];
   readonly available: readonly Check[];
   readonly stale: readonly StaleRecord[];
   readonly forfeited: readonly PlacedRecord[];
-  readonly unrecorded: readonly AttributedNativeException[];
+  readonly unrecorded: readonly AttributedCheckException[];
   readonly misnamed: readonly MisnamedRuleId[];
   readonly paid: readonly PaidDebt[];
   readonly refused: readonly RefusedRecord[];

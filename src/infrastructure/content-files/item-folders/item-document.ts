@@ -10,6 +10,7 @@ import type { ItemFacts } from "./item-facts.ts";
 
 export type PlacedItem = {
   readonly name: string;
+  readonly sourceFile?: string;
   readonly within: string | undefined;
   readonly title: string;
   readonly item: ItemFacts;
@@ -72,16 +73,16 @@ const ruleOf = (placed: OfKind<"rule">): CatalogueFile["rules"][number] => ({
 const checkOf = (request: {
   readonly placed: OfKind<"check">;
   readonly clauseOfCheck: ReadonlyMap<string, ClauseAddress>;
-}): Assembled<CatalogueFile["checks"][number]> => {
+}): CatalogueFile["checks"][number] => {
   const symptom = request.placed.within ?? "";
-  const address = `${symptom}#${request.placed.name}`;
-  const clause = request.clauseOfCheck.get(address);
-  return clause === undefined
-    ? { outcome: "failed", error: `${address} is named by no clause in the version 1 names` }
-    : {
-        outcome: "ok",
-        value: { symptom, name: request.placed.name, clause, ...request.placed.item.facts },
-      };
+  const name = request.placed.name;
+  const clause = request.clauseOfCheck.get(`${symptom}#${name}`);
+  return {
+    symptom,
+    name,
+    ...(clause === undefined ? {} : { clause }),
+    ...request.placed.item.facts,
+  };
 };
 
 const unheldChecksOf = (request: {
@@ -105,15 +106,10 @@ export const catalogueFileOf = (request: {
   if (recordKinds.outcome === "failed") {
     return recordKinds;
   }
-  const checks = allAssembled(
-    items
-      .filter(ofKind("check"))
-      .map((placed) => checkOf({ placed, clauseOfCheck: beside.clauseOfCheck })),
-  );
-  if (checks.outcome === "failed") {
-    return checks;
-  }
-  const [unheld] = unheldChecksOf({ checks: checks.value, clauseOfCheck: beside.clauseOfCheck });
+  const checks = items
+    .filter(ofKind("check"))
+    .map((placed) => checkOf({ placed, clauseOfCheck: beside.clauseOfCheck }));
+  const [unheld] = unheldChecksOf({ checks, clauseOfCheck: beside.clauseOfCheck });
   if (unheld !== undefined) {
     return { outcome: "failed", error: `the version 1 names give ${unheld}, which no item holds` };
   }
@@ -138,7 +134,7 @@ export const catalogueFileOf = (request: {
         .filter(ofKind("symptom"))
         .map((placed) => ({ name: placed.name, title: placed.title, ...placed.item.facts })),
       clauses: beside.clauses,
-      checks: checks.value,
+      checks,
       namedBans: rules
         .flatMap((placed) => placed.item.facts.namedBans ?? [])
         .map((outsideDependency) => ({ outsideDependency })),

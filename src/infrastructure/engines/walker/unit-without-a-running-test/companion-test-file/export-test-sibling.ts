@@ -21,7 +21,7 @@ const testSiblingOf = (request: { readonly file: string }): string =>
     : request.file.replace(/\.ts$/, ".test.ts");
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, repository, syntaxApi }) => ({
+  prepare: ({ bindings, repository, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
@@ -64,8 +64,8 @@ export const check: WalkerPiece = {
               return {
                 finish: () =>
                   hasRuntimeExport && !hasSibling
-                    ? clauses.map((clause) => ({
-                        clause: clause.address,
+                    ? bindings.map((binding) => ({
+                        check: binding.address,
                         anchor: anchorAt({ position: 0 }),
                         snippet: "missing co-located *.test.ts(x) sibling",
                       }))

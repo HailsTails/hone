@@ -1,3 +1,4 @@
+import type { NamedEnginePort } from "../application/ports/engine/engine-port.ts";
 import type { DirectoryPort } from "../application/ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../application/ports/file-system/directory-removal-port.ts";
 import type { EntryKindPort } from "../application/ports/file-system/entry-kind-port.ts";
@@ -12,9 +13,13 @@ import type {
   RecordsSourceOf,
 } from "../application/ports/records/records-source-of.ts";
 import type { LoadFailureDetail } from "../application/ports/report/load-failure-detail.ts";
-import type { SettingsSourcesOf } from "../application/ports/settings-sources.ts";
+import type {
+  CheckPieceSourceOf,
+  SettingsSourcesOf,
+} from "../application/ports/settings-sources.ts";
 import type { SettingsFileFormat } from "../application/ports/settings/settings-file-format.ts";
 import type { BoundCatalogueOf } from "../application/ports/symptom-catalogue-repository.ts";
+import type { VersionOneProjectionPortOf } from "../application/ports/upgrade/version-one-projection-port.ts";
 import type { VersionOneCommandPorts } from "../application/ports/version-one-command-request.ts";
 import type { StagesOver } from "./version-two-stages.ts";
 
@@ -27,6 +32,7 @@ export type VersionOneToolPorts = Omit<VersionOneCommandPorts, "moduleUrl">;
 
 export type ToolPorts = VersionOneToolPorts & {
   readonly gitTree: GitTreePort;
+  readonly namedEngine: NamedEnginePort;
   readonly directory: DirectoryPort;
   readonly stagesOver: StagesOver;
   readonly recordsSourceOf: RecordsSourceOf;
@@ -41,4 +47,6 @@ export type ToolPorts = VersionOneToolPorts & {
   readonly boundCatalogueOf: BoundCatalogueOf;
   readonly settingsFormat: SettingsFileFormat;
   readonly settingsSourcesOf: SettingsSourcesOf;
+  readonly checkPieceSourceOf: CheckPieceSourceOf;
+  readonly versionOneProjectionOf: VersionOneProjectionPortOf;
 };

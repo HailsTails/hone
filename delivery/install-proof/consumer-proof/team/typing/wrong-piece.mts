@@ -1,7 +1,7 @@
 import type { PieceHit, WalkerPiece } from "@hailstails/hone/audit";
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: () => ({
@@ -13,7 +13,7 @@ export const check: WalkerPiece = {
             return {
               enter: ({ node }) => {
                 const position = node.getStart(sourceFile);
-                hits.push(...clauses.map((clause) => ({ clause: clause.address, anchor: anchorAt({ position }), snippet: position })));
+                hits.push(...bindings.map((binding) => ({ check: binding.address, anchor: anchorAt({ position }), snippet: position })));
               },
               finish: () => hits,
             };

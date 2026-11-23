@@ -1,11 +1,9 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -29,24 +27,21 @@ assert(
 );
 const defaultParsePort = loadedParsePort.value;
 
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-7"),
-  clause: clauseIdOf("categorical-paths"),
-};
+const ADDRESS: CheckAddressText = "drawer-path#drawer-names";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-7",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "categorical-paths.ts" },
 };
 
 const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -75,12 +70,12 @@ describe("CD-7 existing categorical path checks", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: "forbidden categorical filename: types.ts",
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: "forbidden categorical folder: common",
           },
@@ -128,7 +123,7 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical filename: types.ts",
             },
@@ -145,12 +140,12 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical filename: types.ts",
             },
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical folder: scripts",
             },
@@ -167,7 +162,7 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical folder: values",
             },
@@ -184,7 +179,7 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical folder: tests",
             },
@@ -201,7 +196,7 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical folder: test",
             },
@@ -218,7 +213,7 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical folder: __tests__",
             },
@@ -235,7 +230,7 @@ describe("CD-7 existing categorical path checks", () => {
           kind: "complete",
           hits: [
             {
-              clause: ADDRESS,
+              check: ADDRESS,
               anchor: { line: 1, column: 0 },
               snippet: "forbidden categorical folder: scripts",
             },

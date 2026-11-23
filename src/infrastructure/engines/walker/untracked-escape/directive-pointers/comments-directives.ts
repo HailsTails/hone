@@ -1,10 +1,9 @@
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import { clauseAddressText } from "../../../../../domain/rule-set/clause-address.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import { stringListClauseSettings } from "../../runner/pieces/piece-clause-settings.ts";
+import { stringListCheckSettings } from "../../runner/pieces/piece-check-settings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import { typeDirectiveReaderFor } from "../../runner/pieces/type-directives.ts";
 import type { PieceHit, SourceObservers, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
@@ -22,15 +21,15 @@ const LINTER_DIRECTIVE_PATTERN =
 const TRACKED_REFERENCE_PATTERN = /\([^()\s]*\d[^()\s]*\)/g;
 const LEADING_TRACKED_REFERENCE_PATTERN = /^\s*(\([^()\s]*\d[^()\s]*\))/;
 
-type TrackedClause = {
-  readonly clause: RunnerClause;
+type TrackedCheck = {
+  readonly binding: CheckBinding;
   readonly trackers: readonly RegExp[];
 };
 
 type Tracking = "tracked" | "untracked";
 
 const compiledTracker = (request: {
-  readonly clause: RunnerClause;
+  readonly binding: CheckBinding;
   readonly source: string;
 }): Result<readonly RegExp[], PieceFailure> => {
   try {
@@ -40,35 +39,35 @@ const compiledTracker = (request: {
       outcome: "failed",
       error: {
         kind: "piece-invalid",
-        pieceRoot: request.clause.pieceRoot,
-        detail: `the clauseSettings of ${clauseAddressText({ address: request.clause.address })} are malformed: trackerPatterns entry ${JSON.stringify(request.source)} is not a regular expression: ${thrown instanceof Error ? thrown.message : String(thrown)}`,
+        pieceRoot: request.binding.pieceRoot,
+        detail: `the checkSettings of ${request.binding.address} are malformed: trackerPatterns entry ${JSON.stringify(request.source)} is not a regular expression: ${thrown instanceof Error ? thrown.message : String(thrown)}`,
       },
     };
   }
 };
 
-const trackedClauseOf = (request: {
-  readonly clause: RunnerClause;
-}): Result<readonly TrackedClause[], PieceFailure> => {
-  const settings = stringListClauseSettings({ clause: request.clause, keys: ["trackerPatterns"] });
+const trackedCheckOf = (request: {
+  readonly binding: CheckBinding;
+}): Result<readonly TrackedCheck[], PieceFailure> => {
+  const settings = stringListCheckSettings({ binding: request.binding, keys: ["trackerPatterns"] });
   if (settings.outcome === "failed") return settings;
   const trackers = gatheredOutcomes({
     outcomes: settings.value.trackerPatterns.map((source) =>
-      compiledTracker({ clause: request.clause, source }),
+      compiledTracker({ binding: request.binding, source }),
     ),
   });
   if (trackers.outcome === "failed") return trackers;
-  return { outcome: "ok", value: [{ clause: request.clause, trackers: trackers.value }] };
+  return { outcome: "ok", value: [{ binding: request.binding, trackers: trackers.value }] };
 };
 
-const trackedClausesOf = (request: {
-  readonly clauses: readonly RunnerClause[];
-}): Result<readonly TrackedClause[], PieceFailure> =>
-  gatheredOutcomes({ outcomes: request.clauses.map((clause) => trackedClauseOf({ clause })) });
+const trackedChecksOf = (request: {
+  readonly bindings: readonly CheckBinding[];
+}): Result<readonly TrackedCheck[], PieceFailure> =>
+  gatheredOutcomes({ outcomes: request.bindings.map((binding) => trackedCheckOf({ binding })) });
 
 const chosenReference = (request: {
   readonly references: readonly string[];
-  readonly tracked: TrackedClause;
+  readonly tracked: TrackedCheck;
 }): Tracking =>
   request.references.some((reference) =>
     request.tracked.trackers.some((tracker) => tracker.test(reference)),
@@ -78,7 +77,7 @@ const chosenReference = (request: {
 
 const trackingAnywhere = (request: {
   readonly text: string;
-  readonly tracked: TrackedClause;
+  readonly tracked: TrackedCheck;
 }): Tracking =>
   chosenReference({
     references: Array.from(request.text.matchAll(TRACKED_REFERENCE_PATTERN), (match) => match[0]),
@@ -87,7 +86,7 @@ const trackingAnywhere = (request: {
 
 const trackingAtStart = (request: {
   readonly text: string;
-  readonly tracked: TrackedClause;
+  readonly tracked: TrackedCheck;
 }): Tracking => {
   const reference = LEADING_TRACKED_REFERENCE_PATTERN.exec(request.text)?.[1];
   return chosenReference({
@@ -104,15 +103,15 @@ const textAfter = (request: {
   return marker === null ? undefined : request.text.slice(marker.index + marker[0].length);
 };
 
-const untrackedClauses = (request: {
-  readonly trackedClauses: readonly TrackedClause[];
+const untrackedChecks = (request: {
+  readonly trackedChecks: readonly TrackedCheck[];
   readonly text: string;
   readonly tracking: (request: {
     readonly text: string;
-    readonly tracked: TrackedClause;
+    readonly tracked: TrackedCheck;
   }) => Tracking;
-}): readonly TrackedClause[] =>
-  request.trackedClauses.filter(
+}): readonly TrackedCheck[] =>
+  request.trackedChecks.filter(
     (tracked) => request.tracking({ text: request.text, tracked }) === "untracked",
   );
 
@@ -121,11 +120,11 @@ type AnchorAt = (request: { readonly position: number }) => Anchor;
 type FileContext = {
   readonly sourceFile: SyntaxTree;
   readonly anchorAt: AnchorAt;
-  readonly trackedClauses: readonly TrackedClause[];
+  readonly trackedChecks: readonly TrackedCheck[];
 };
 
 const hitsFor = (request: {
-  readonly untracked: readonly TrackedClause[];
+  readonly untracked: readonly TrackedCheck[];
   readonly anchorAt: AnchorAt;
   readonly position: number;
   readonly snippet: string;
@@ -133,7 +132,7 @@ const hitsFor = (request: {
   if (request.untracked.length === 0) return [];
   const anchor = request.anchorAt({ position: request.position });
   return request.untracked.map((tracked) => ({
-    clause: tracked.clause.address,
+    check: tracked.binding.address,
     anchor,
     snippet: request.snippet,
   }));
@@ -147,8 +146,8 @@ const taskHits = (request: FileContext): readonly PieceHit[] => {
     const afterTodo = textAfter({ pattern: TODO_PATTERN, text: line });
     if (afterTodo === undefined) return [];
     return hitsFor({
-      untracked: untrackedClauses({
-        trackedClauses: request.trackedClauses,
+      untracked: untrackedChecks({
+        trackedChecks: request.trackedChecks,
         text: afterTodo,
         tracking: trackingAtStart,
       }),
@@ -162,7 +161,7 @@ const taskHits = (request: FileContext): readonly PieceHit[] => {
 const sourceObserversFor = (
   request: FileContext & { readonly syntaxApi: SyntaxApi },
 ): SourceObservers => {
-  const { sourceFile, anchorAt, trackedClauses, syntaxApi } = request;
+  const { sourceFile, anchorAt, trackedChecks, syntaxApi } = request;
   const typeDirectiveOf = typeDirectiveReaderFor({ sourceFile, syntaxApi });
   const todoHits = taskHits(request);
   const directiveHits: PieceHit[] = [];
@@ -173,11 +172,7 @@ const sourceObserversFor = (
     readonly position: number;
   }): readonly PieceHit[] =>
     hitsFor({
-      untracked: untrackedClauses({
-        trackedClauses,
-        text: comment.text,
-        tracking: trackingAnywhere,
-      }),
+      untracked: untrackedChecks({ trackedChecks, text: comment.text, tracking: trackingAnywhere }),
       anchorAt,
       position: comment.position,
       snippet: comment.whole.trim(),
@@ -200,10 +195,10 @@ const sourceObserversFor = (
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, syntaxApi }) => {
-    const settled = trackedClausesOf({ clauses });
+  prepare: ({ bindings, syntaxApi }) => {
+    const settled = trackedChecksOf({ bindings });
     if (settled.outcome === "failed") return settled;
-    const trackedClauses = settled.value;
+    const trackedChecks = settled.value;
     return {
       outcome: "ok",
       value: {
@@ -216,7 +211,7 @@ export const check: WalkerPiece = {
             value: {
               kind: "syntax",
               begin: ({ sourceFile, anchorAt }) =>
-                sourceObserversFor({ sourceFile, anchorAt, trackedClauses, syntaxApi }),
+                sourceObserversFor({ sourceFile, anchorAt, trackedChecks, syntaxApi }),
             },
           };
         },

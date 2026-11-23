@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, SourceObservers } from "../../runner/pieces/walker-piece.ts";
@@ -32,17 +30,14 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/modules.test.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-26"),
-  clause: clauseIdOf("module-mocking"),
-};
+const ADDRESS: CheckAddressText = "module-or-global-patched#module-mock-call";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-26",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "module-mocking.ts" },
 };
@@ -56,7 +51,7 @@ const sourceObservations = (request: {
   readonly finish: PreparedWalkerCheck["finish"];
 } => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
     syntaxApi: SYNTAX_API,
   });
@@ -102,7 +97,7 @@ describe("CD-26 existing literal module-mock observations", () => {
   ])("preserves test-family eligibility without a read for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -138,13 +133,13 @@ describe("CD-26 existing literal module-mock observations", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet:
           "vi.mock('module'); vi.mock(); const marker = 'abcdefghijklmnopqrstuvwxyzabcdefgh…",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet:
           "vi.mock(); const marker = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz'…",
@@ -163,7 +158,7 @@ describe("CD-26 existing literal module-mock observations", () => {
     });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "vi.mock('module'); " },
+      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "vi.mock('module'); " },
     ]);
     expect(observed.anchorAt).toHaveBeenCalledExactlyOnceWith({ position: 18 });
   });

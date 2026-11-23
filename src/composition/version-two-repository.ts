@@ -10,7 +10,7 @@ import { installRootOf } from "../infrastructure/command-line/installation/insta
 import type { ToolPorts } from "./tool-ports.ts";
 import type { VersionTwoPorts } from "./version-two-stages.ts";
 
-export type VersionTwoRepositoryPorts = Pick<ToolPorts, keyof VersionTwoPorts | "stagesOver">;
+export type VersionTwoRepositoryPorts = VersionTwoPorts & Pick<ToolPorts, "stagesOver">;
 
 export const repoRootOf = (request: {
   readonly path: PathPort;

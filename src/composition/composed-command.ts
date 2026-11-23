@@ -6,12 +6,8 @@ import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
 import type { Result } from "../domain/result.ts";
 import { parseInvocation } from "../infrastructure/command-line/arguments/command-arguments.ts";
-import { helpText } from "../infrastructure/command-line/arguments/command-help.ts";
-import type {
-  HelpTopic,
-  Subcommand,
-} from "../infrastructure/command-line/arguments/command-line.ts";
-import { RUN_SUBCOMMANDS, runHelpText } from "../infrastructure/command-line/arguments/run-help.ts";
+import type { Subcommand } from "../infrastructure/command-line/arguments/command-line.ts";
+import { runHelpText } from "../infrastructure/command-line/arguments/run-help.ts";
 import { installedVersionOf } from "../infrastructure/command-line/installation/installed-version.ts";
 import {
   type CommandOutcome,
@@ -19,7 +15,6 @@ import {
   versionCommandOutcome,
 } from "../infrastructure/command-line/outcomes/command-outcome.ts";
 import { printOutcome } from "../infrastructure/command-line/outcomes/print-outcome.ts";
-import { commandRunPathOf } from "../infrastructure/command-line/run-path/command-run-path.ts";
 import {
   runLoadFailureOutcomeOf,
   upgradeCommandFor,
@@ -140,34 +135,7 @@ export const commandOf =
 const thrownMessage = (request: { readonly thrown: unknown }): string =>
   request.thrown instanceof Error ? request.thrown.message : String(request.thrown);
 
-type HelpEdition = "version-1" | "version-2";
-
 type Dispatching = { readonly ports: DispatchPorts; readonly command: ToolInvocation };
-
-const helpEditionOf = (request: Dispatching): HelpEdition => {
-  const located = commandRunPathOf({
-    command: {
-      process: request.command.process,
-      path: request.ports.path,
-      fileText: request.ports.fileText,
-    },
-  });
-  return located.kind === "repository" &&
-    located.chosen.outcome === "ok" &&
-    located.chosen.value === "version-1"
-    ? "version-1"
-    : "version-2";
-};
-
-const helpOf = (request: Dispatching & { readonly topic: HelpTopic }): string => {
-  const runTopic =
-    request.topic === "tool"
-      ? request.topic
-      : RUN_SUBCOMMANDS.find((subcommand) => subcommand === request.topic);
-  return runTopic === undefined || helpEditionOf(request) === "version-1"
-    ? helpText({ topic: request.topic })
-    : runHelpText({ topic: runTopic });
-};
 
 const dispatched = (
   request: Dispatching & { readonly subcommands: Subcommands },
@@ -185,7 +153,7 @@ const dispatched = (
     case "help":
       printOutcome({
         process: command.process,
-        outcome: { code: 0, text: helpOf({ ...request, topic: invocation.value.topic }) },
+        outcome: { code: 0, text: runHelpText({ topic: invocation.value.topic }) },
       });
       return Promise.resolve();
     case "version":

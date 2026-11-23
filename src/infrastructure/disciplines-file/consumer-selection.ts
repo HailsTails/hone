@@ -36,6 +36,7 @@ import type {
   ClauseEditionReading,
   SelectionReading,
 } from "../../domain/settings/selection/selection.ts";
+import { RENAMED_SETTINGS } from "../../domain/settings/settings-file.ts";
 import {
   createRuleSetFiles,
   type RuleSetFiles,
@@ -565,6 +566,22 @@ const givenClauseSettings = (request: {
     ([address]) => sameClauseAddress({ left: address, right: request.address }) === "same",
   )?.[1];
 
+const currentClauseSettingNames = (request: {
+  readonly given: ClauseSettingValues;
+  readonly declarations: ClauseSettingDeclarations;
+}): ClauseSettingValues =>
+  Object.fromEntries(
+    Object.entries(request.given).map(([name, value]) => {
+      const renamed = RENAMED_SETTINGS.find(({ pieceName }) => pieceName === name);
+      return [
+        renamed !== undefined && Object.hasOwn(request.declarations, renamed.name)
+          ? renamed.name
+          : name,
+        value,
+      ];
+    }),
+  );
+
 const settledClause = (request: {
   readonly clause: ResolvedClause;
   readonly file: ConsumerSelectionFile;
@@ -586,7 +603,10 @@ const settledClause = (request: {
   const clauseSettings = settledClauseSettings({
     address,
     declarations: request.clause.declarations,
-    given: rest,
+    given:
+      rest === undefined
+        ? undefined
+        : currentClauseSettingNames({ given: rest, declarations: request.clause.declarations }),
   });
   if (clauseSettings.outcome === "failed") {
     return failed({ kind: "file-malformed", path: request.path, detail: clauseSettings.error });

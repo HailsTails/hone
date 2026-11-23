@@ -1,15 +1,13 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type {
-  ClauseSettingValues,
-  RunnerClause,
-} from "../../../../../domain/runner/runner-module-types.ts";
+  CheckSettingValues,
+  CheckBinding,
+} from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
@@ -39,11 +37,7 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/import-source.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-19"),
-  clause: clauseIdOf("import-boundaries"),
-};
+const ADDRESS: CheckAddressText = "outside-import-past-a-boundary#import-or-require";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const FROM = "fr" + "om";
 const IMPORT = "im" + "port";
@@ -64,23 +58,24 @@ const CONFIGURED_PACKAGES: readonly string[] = [
   "uuid",
 ];
 
-const CLAUSE_WITH_NO_SETTINGS: RunnerClause = {
+const CLAUSE_WITH_NO_SETTINGS: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-19",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "import-boundaries.ts" },
 };
-const clauseWith = (request: { readonly clauseSettings: ClauseSettingValues }): RunnerClause => ({
+const clauseWith = (request: { readonly checkSettings: CheckSettingValues }): CheckBinding => ({
   ...CLAUSE_WITH_NO_SETTINGS,
-  clauseSettings: request.clauseSettings,
+  checkSettings: request.checkSettings,
 });
-const CLAUSE = clauseWith({ clauseSettings: { confinedPackages: CONFIGURED_PACKAGES } });
-const NEUTRAL_CLAUSE = clauseWith({ clauseSettings: { confinedPackages: [] } });
+const CLAUSE = clauseWith({ checkSettings: { confinedOutsideDependencies: CONFIGURED_PACKAGES } });
+const NEUTRAL_CLAUSE = clauseWith({ checkSettings: { confinedOutsideDependencies: [] } });
 
 const bannedHit = (request: { readonly line: number; readonly specifier: string }) => ({
-  clause: ADDRESS,
+  check: ADDRESS,
   anchor: { line: request.line, column: 0 },
   snippet: `banned third-party import: ${request.specifier} — use its recorded wrapping boundary`,
   importSpecifier: request.specifier,
@@ -97,10 +92,10 @@ type ObservationFixture = {
 
 const preparedFor = (request: {
   readonly file: WalkerFile["file"];
-  readonly clause: RunnerClause;
+  readonly clause: CheckBinding;
 }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [request.clause],
+    bindings: [request.clause],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -114,7 +109,7 @@ const preparedFor = (request: {
 
 const sourceObservations = (request: {
   readonly source: string;
-  readonly clause: RunnerClause;
+  readonly clause: CheckBinding;
 }): ObservationFixture => {
   const prepared = preparedFor({ file: FILE, clause: request.clause });
   const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({
@@ -148,31 +143,31 @@ describe("CD-19 existing third-party and redirected stdlib import observations",
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "banned third-party import: eslint — use its recorded wrapping boundary",
         importSpecifier: "eslint",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "banned third-party import: winston — use its recorded wrapping boundary",
         importSpecifier: "winston",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "banned third-party import: hono — use its recorded wrapping boundary",
         importSpecifier: "hono",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 0 },
         snippet: "banned third-party import: uuid — use its recorded wrapping boundary",
         importSpecifier: "uuid",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 4, column: 0 },
         snippet: "banned third-party import: hono/client — use its recorded wrapping boundary",
         importSpecifier: "hono/client",
@@ -288,20 +283,20 @@ describe("CD-19 existing third-party and redirected stdlib import observations",
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "banned third-party import: winston — use its recorded wrapping boundary",
         importSpecifier: "winston",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 15 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:fs",
         importSpecifier: "node:fs",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 14 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:path",
@@ -344,28 +339,28 @@ describe("CD-19 existing third-party and redirected stdlib import observations",
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 20 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:fs",
         importSpecifier: "node:fs",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 22 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:path",
         importSpecifier: "node:path",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 7 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:url",
         importSpecifier: "node:url",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 4, column: 8 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:crypto",
@@ -415,7 +410,7 @@ describe("CD-19 existing third-party and redirected stdlib import observations",
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 8 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:fs",
@@ -462,7 +457,7 @@ describe("CD-19 confined packages come from the clause settings", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 15 },
         snippet:
           "bare node: stdlib import - confined; only a wrapping file this repository records as an authorised location may import it: node:fs",
@@ -473,7 +468,7 @@ describe("CD-19 confined packages come from the clause settings", () => {
 
   it("flags only the packages a repository confines", () => {
     const observed = sourceObservations({
-      clause: clauseWith({ clauseSettings: { confinedPackages: ["@acme/payments"] } }),
+      clause: clauseWith({ checkSettings: { confinedOutsideDependencies: ["@acme/payments"] } }),
       source: `${IMPORT} a ${FROM} "@acme/payments";\n${IMPORT} b ${FROM} "winston";\n`,
     });
 
@@ -486,19 +481,21 @@ describe("CD-19 confined packages come from the clause settings", () => {
 describe("CD-19 names, as data on each hit, the import that raised it", () => {
   it("gives a confined package's specifier exactly as the source wrote it, subpath and scope included", () => {
     const observed = sourceObservations({
-      clause: clauseWith({ clauseSettings: { confinedPackages: ["lodash", "@scope/pkg"] } }),
+      clause: clauseWith({
+        checkSettings: { confinedOutsideDependencies: ["lodash", "@scope/pkg"] },
+      }),
       source: `${IMPORT} fp ${FROM} "lodash/fp";\n${IMPORT} sub ${FROM} '@scope/pkg/sub';\n`,
     });
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "banned third-party import: lodash/fp — use its recorded wrapping boundary",
         importSpecifier: "lodash/fp",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 2, column: 0 },
         snippet: "banned third-party import: @scope/pkg/sub — use its recorded wrapping boundary",
         importSpecifier: "@scope/pkg/sub",
@@ -524,7 +521,7 @@ describe("CD-19 package matching", () => {
     },
   ])("flags $name, reporting the imported specifier", ({ packageName, specifier }) => {
     const observed = sourceObservations({
-      clause: clauseWith({ clauseSettings: { confinedPackages: [packageName] } }),
+      clause: clauseWith({ checkSettings: { confinedOutsideDependencies: [packageName] } }),
       source: `${IMPORT} a ${FROM} "${specifier}";\n`,
     });
 
@@ -556,7 +553,7 @@ describe("CD-19 package matching", () => {
     { name: "the scope alone", packageName: "@acme/payments", specifier: "@acme" },
   ])("does not flag $name", ({ packageName, specifier }) => {
     const observed = sourceObservations({
-      clause: clauseWith({ clauseSettings: { confinedPackages: [packageName] } }),
+      clause: clauseWith({ checkSettings: { confinedOutsideDependencies: [packageName] } }),
       source: `${IMPORT} a ${FROM} "${specifier}";\n`,
     });
 
@@ -567,32 +564,32 @@ describe("CD-19 package matching", () => {
 describe("CD-19 confined package settings", () => {
   it("matches a confined package holding regular expression characters literally", () => {
     const observed = sourceObservations({
-      clause: clauseWith({ clauseSettings: { confinedPackages: ["lib(x)+"] } }),
+      clause: clauseWith({ checkSettings: { confinedOutsideDependencies: ["lib(x)+"] } }),
       source: `${IMPORT} a ${FROM} "lib(x)+";\n${IMPORT} b ${FROM} "libxx";\n`,
     });
 
     expect(observed.observers.finish()).toEqual([bannedHit({ line: 1, specifier: "lib(x)+" })]);
   });
 
-  it.each<{ readonly name: string; readonly clause: RunnerClause }>([
+  it.each<{ readonly name: string; readonly clause: CheckBinding }>([
     { name: "no confined list", clause: CLAUSE_WITH_NO_SETTINGS },
     {
       name: "a package list that is not an array",
-      clause: clauseWith({ clauseSettings: { confinedPackages: "eslint" } }),
+      clause: clauseWith({ checkSettings: { confinedOutsideDependencies: "eslint" } }),
     },
     {
       name: "an empty package name",
-      clause: clauseWith({ clauseSettings: { confinedPackages: [""] } }),
+      clause: clauseWith({ checkSettings: { confinedOutsideDependencies: [""] } }),
     },
     {
       name: "an unknown setting",
       clause: clauseWith({
-        clauseSettings: { confinedPackages: [], confinedSpecifiers: ["eslint"] },
+        checkSettings: { confinedOutsideDependencies: [], confinedSpecifiers: ["eslint"] },
       }),
     },
   ])("refuses to prepare with $name, naming the clause", ({ clause }) => {
     const prepared = check.prepare({
-      clauses: [clause],
+      bindings: [clause],
       repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -603,7 +600,7 @@ describe("CD-19 confined package settings", () => {
         kind: "piece-invalid",
         pieceRoot: "/install/mechanisms/audit/CD-19",
         detail: expect.stringContaining(
-          "the clauseSettings of CD-19#import-boundaries are malformed",
+          "the checkSettings of outside-import-past-a-boundary#import-or-require are malformed",
         ),
       },
     });

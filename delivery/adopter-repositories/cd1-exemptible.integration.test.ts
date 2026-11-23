@@ -2,131 +2,25 @@ import { afterAll, assert, describe, expect, it, vi } from "vitest";
 
 import type { FileTextPort } from "../../src/application/ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../src/application/ports/git-port.ts";
-import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
-import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
-import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
-import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
-import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
-import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
-import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
-import { runCheck } from "../../src/application/run/check/run-check.ts";
-import type { CheckReport } from "../../src/domain/report/check-report.ts";
-import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
+import { versionTwoRunOver } from "../../src/application/run/version-two-run.ts";
+import { INSTALLED_PORTS } from "../../src/composition/run-tool-command.ts";
+import type { ToolPorts } from "../../src/composition/tool-ports.ts";
+import type { RecordsDocument } from "../../src/domain/records/hone-records/hone-record.ts";
+import { runVerdictOf } from "../../src/domain/report/report-sections.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
-import type { Result } from "../../src/domain/result.ts";
-import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
-import { checkCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
-import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
-import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
-import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
-import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../src/infrastructure/node/path-port.ts";
+import { versionTwoProjectedOf } from "../../src/operations/project/version-two-project-command.ts";
 import {
   createDefaultScratchFilesPort,
   type ListedEntry,
   type ScratchFilesPort,
 } from "../install-proof/install-proof-ports.ts";
-
-const SINGLE_FILE_RECORDS = repoPathOf("discipline-exceptions.json");
-
-const SPLIT_FOLDER_NAME = "discipline-exceptions";
-
-type DiskRequest = {
-  readonly repoRoot: AbsolutePath;
-  readonly installRoot: AbsolutePath;
-  readonly moduleExtension: ModuleExtension;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-};
-
-const singleFileRepositoryOver = (request: {
-  readonly repoRoot: AbsolutePath;
-  readonly fileText: FileTextPort;
-  readonly path: PathPort;
-  readonly git: GitPort;
-}): ExceptionRepository =>
-  createExceptionRepository({
-    ...request,
-    fileText: {
-      ...request.fileText,
-      exists: (query) =>
-        query.path.endsWith(SPLIT_FOLDER_NAME) ? "absent" : request.fileText.exists(query),
-    },
-    directory: {
-      list: ({ path: folder }) => ({
-        outcome: "failed",
-        error: {
-          kind: "directory-unreadable",
-          path: folder,
-          detail: "the single-file fake holds no folders",
-        },
-      }),
-      create: ({ path: folder }) => ({
-        outcome: "failed",
-        error: {
-          kind: "directory-uncreatable",
-          path: folder,
-          detail: "the single-file fake holds no folders",
-        },
-      }),
-    },
-    fileRemoval: {
-      remove: ({ path: file }) => ({
-        outcome: "failed",
-        error: { kind: "unremovable", path: file, detail: "the single-file fake removes nothing" },
-      }),
-    },
-    gitTree: { pathsAt: () => ({ outcome: "ok", value: [SINGLE_FILE_RECORDS] }) },
-  });
-
-type SingleFileRecords = {
-  readonly selectionRepository: SelectionRepository;
-  readonly selectionRepositoryOf: SelectionRepositoryOf;
-  readonly exceptionRepository: ExceptionRepository;
-  readonly exceptionEntryParser: ExceptionEntryParser;
-  readonly shownPathOf: ShownPathOf;
-};
-
-const withSingleFileRecords = <Request extends DiskRequest>(
-  request: Request,
-): Request & SingleFileRecords => ({
-  ...request,
-  selectionRepository: createSelectionRepository(request),
-  selectionRepositoryOf: createSelectionRepository,
-  exceptionRepository: singleFileRepositoryOver(request),
-  exceptionEntryParser,
-  shownPathOf: shownPathOfRepository(request),
-});
-
-const PROJECT_COMMAND = "node src/hone.ts project --repo .";
-
-const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
-
-const fullReportExitCode = (request: {
-  readonly checked: Result<CheckReport, LoadFailure>;
-}): ExitCode =>
-  checkCommandOutcome({
-    result:
-      request.checked.outcome === "failed"
-        ? request.checked
-        : {
-            outcome: "ok",
-            value: {
-              report: request.checked.value,
-              output: "full",
-              projectCommand: PROJECT_COMMAND,
-              pruneCommand: PRUNE_COMMAND,
-            },
-          },
-  }).code;
+import authorisedFixture from "./cd1-exempted/discipline-exceptions.json" with { type: "json" };
 
 type ScratchRepositories = {
   readonly repositoryWith: (request: {
@@ -341,15 +235,59 @@ const resolvedPath = (request: { readonly path: string }): AbsolutePath => {
   return resolved.value;
 };
 
+const INSTALL_ROOT = resolvedPath({ path: `${import.meta.dirname}/../..` });
+
+type FixtureRun = {
+  readonly repoRoot: AbsolutePath;
+  readonly git: GitPort;
+  readonly config: string;
+  readonly records: readonly RecordsDocument[];
+  readonly baseRevision: string | undefined;
+};
+
+const fixtureStages = (request: FixtureRun) => {
+  const base = INSTALLED_PORTS;
+  const configPath = path.join({ segments: [request.repoRoot, "hone.config.json"] });
+  const ports: ToolPorts = {
+    ...base,
+    git: request.git,
+    fileText: {
+      ...base.fileText,
+      exists: (entry) => (entry.path === configPath ? "present" : base.fileText.exists(entry)),
+      read: (entry) =>
+        entry.path === configPath
+          ? { outcome: "ok", value: request.config }
+          : base.fileText.read(entry),
+    },
+    recordsSourceOf: () => ({
+      read: () => ({ outcome: "ok", value: request.records }),
+      readAt: () => ({ outcome: "ok", value: request.records }),
+    }),
+  };
+  return base.stagesOver({
+    ports,
+    locations: {
+      repoRoot: request.repoRoot,
+      installRoot: INSTALL_ROOT,
+      moduleExtension: ".ts",
+      baseRevision: request.baseRevision,
+    },
+  });
+};
+
+const argumentsOf: Parameters<typeof versionTwoRunOver>[0]["arguments"] = {
+  forfeiture: undefined,
+  reportOutput: undefined,
+  measuring: "when-debt-held",
+};
+
+const RECORD_ROOT = "hone-records";
+const AUTH_FILE = repoPathOf(`${RECORD_ROOT}/authorised-locations/claimed-type.json`);
+
 const git: GitPort = {
   trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
     outcome: "ok",
-    value: [
-      repoPathOf("discipline-exceptions.json"),
-      repoPathOf("disciplines.json"),
-      repoPathOf("src/fresh.ts"),
-      repoPathOf("src/parse.ts"),
-    ],
+    value: [repoPathOf("hone.config.json"), repoPathOf("src/fresh.ts"), repoPathOf("src/parse.ts")],
   }),
   changedSince: vi.fn<GitPort["changedSince"]>(),
   contentInBase: vi.fn<GitPort["contentInBase"]>(),
@@ -357,28 +295,44 @@ const git: GitPort = {
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 };
 
-describe("the shipped CD-1 rule, read through the install's discipline reader in a full check (CD-47: the shipped rule file is the assertion's subject; nothing is spawned or written)", () => {
-  it("accepts an authorised location for CD-1 and still flags an unrecorded any cast", async () => {
-    const report = await runCheck(
-      withSingleFileRecords({
-        repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),
-        installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
-        moduleExtension: ".ts",
-        baseRevision: undefined,
-        assessment: DEFAULT_ASSESSMENT,
-        fileText: createDefaultFileTextPort({}),
-        engine: createDefaultEnginePort({}),
-        modules: createDefaultModuleLoaderPort({}),
-        path,
-        git,
-      }),
-    );
-    expect(report).toMatchObject({
+describe("the named any-cast check with an authorised location carried from version one", () => {
+  it("answers the cast in the authorised adapter and reports a cast elsewhere", async () => {
+    const stages = fixtureStages({
+      repoRoot: resolvedPath({ path: `${import.meta.dirname}/cd1-exempted` }),
+      git,
+      config:
+        '{"version":2,"ruleSets":{},"checks":{"claimed-type#cast-to-any":"walker"},"forfeiture":"elsewhere"}',
+      records: [
+        {
+          file: AUTH_FILE,
+          document: {
+            version: 2,
+            records: [
+              {
+                answers: "claimed-type#cast-to-any",
+                file: "src/parse.ts",
+                carried: authorisedFixture.exceptions[0],
+              },
+            ],
+          },
+        },
+      ],
+      baseRevision: undefined,
+    });
+    const checked = await versionTwoRunOver({ stages, arguments: argumentsOf });
+    expect(checked).toMatchObject({
       outcome: "ok",
       value: {
-        invalidRecords: [],
-        findings: [{ clause: { discipline: "CD-1", clause: "any-cast" }, file: "src/fresh.ts" }],
-        exempted: [{ finding: { file: "src/parse.ts" }, by: [{ kind: "authorised-location" }] }],
+        report: {
+          refused: [],
+          findings: [{ check: "claimed-type#cast-to-any", file: "src/fresh.ts" }],
+          answered: [
+            {
+              finding: { file: "src/parse.ts" },
+              by: [{ record: { kind: "authorised-location" } }],
+            },
+          ],
+        },
       },
     });
   });
@@ -405,16 +359,34 @@ const CASCADE_REPO = restoredFixture({
 });
 
 const LEGACY_FILE = repoPathOf("src/legacy.ts");
+const CASCADE_SETTINGS =
+  '{"version":2,"ruleSets":{},"checks":{"claimed-type#cast-to-any":"walker","untyped-value#explicit-any":"eslint","untyped-value#implicit-any-let":"eslint","loop-keyword#loop-statement":"walker"}}';
+const CASCADE_DEBT: readonly RecordsDocument[] = [
+  {
+    file: repoPathOf("hone-records/debt/claimed-type.json"),
+    document: { version: 2, records: [{ answers: "claimed-type#cast-to-any", file: LEGACY_FILE }] },
+  },
+  {
+    file: repoPathOf("hone-records/debt/loop-keyword.json"),
+    document: {
+      version: 2,
+      records: [{ answers: "loop-keyword#loop-statement", file: LEGACY_FILE }],
+    },
+  },
+  {
+    file: repoPathOf("hone-records/debt/untyped-value.json"),
+    document: {
+      version: 2,
+      records: [{ answers: "untyped-value#explicit-any", file: LEGACY_FILE }],
+    },
+  },
+];
 
-const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
+const cascadeCheck = async (request: { readonly changed: readonly RepoPath[] }) => {
   const cascadeGit: GitPort = {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>().mockReturnValue({
       outcome: "ok",
-      value: [
-        repoPathOf("discipline-exceptions.json"),
-        repoPathOf("disciplines.json"),
-        LEGACY_FILE,
-      ],
+      value: [repoPathOf("hone.config.json"), LEGACY_FILE],
     }),
     changedSince: vi
       .fn<GitPort["changedSince"]>()
@@ -423,56 +395,60 @@ const cascadeCheck = (request: { readonly changed: readonly RepoPath[] }) => {
     textInBase: vi.fn<GitPort["textInBase"]>(),
     renamedSince: vi.fn<GitPort["renamedSince"]>(),
   };
-  return runCheck(
-    withSingleFileRecords({
-      repoRoot: CASCADE_REPO,
-      installRoot: resolvedPath({ path: `${import.meta.dirname}/../..` }),
-      moduleExtension: ".ts",
-      baseRevision: "origin/main",
-      assessment: DEFAULT_ASSESSMENT,
-      fileText: createDefaultFileTextPort({}),
-      engine: createDefaultEnginePort({}),
-      modules: createDefaultModuleLoaderPort({}),
-      path,
-      git: cascadeGit,
-    }),
-  );
+  const stages = fixtureStages({
+    repoRoot: CASCADE_REPO,
+    git: cascadeGit,
+    config: CASCADE_SETTINGS,
+    records: CASCADE_DEBT,
+    baseRevision: "origin/main",
+  });
+  const fileText = createDefaultFileTextPort({});
+  const configured = fileText.write({
+    path: path.join({ segments: [CASCADE_REPO, "eslint.config.mjs"] }),
+    text: 'import projection from "./hone.eslint.mjs";\nexport default [...projection];\n',
+  });
+  assert(configured.outcome === "ok");
+  const projected = await versionTwoProjectedOf({ stages, fileText, path, repoRoot: CASCADE_REPO });
+  assert(projected.outcome === "ok");
+  return versionTwoRunOver({ stages, arguments: argumentsOf });
 };
 
-describe("adopting a repository whose legacy file holds CD-1 debt beside another discipline's debt (CD-47: the shipped rules and the fixture's own files are the assertion's subject; nothing is spawned or written)", () => {
-  it("passes with the file untouched and every carve-out, the CD-1 ones included, still in force", async () => {
-    const cascadeReport = await cascadeCheck({ changed: [] });
-    expect(cascadeReport).toMatchObject({
-      outcome: "ok",
-      value: {
-        findings: [],
-        invalidRecords: [],
-        forfeited: [],
-        exempted: expect.arrayContaining([
-          expect.objectContaining({
-            finding: expect.objectContaining({
-              clause: { ruleSet: "hone", discipline: "CD-1", clause: "any-cast" },
-            }),
+describe("named debt on a file holding type claims, untyped values and a loop", () => {
+  it("answers all three findings until the file is touched", async () => {
+    const checked = await cascadeCheck({ changed: [] });
+    assert(checked.outcome === "ok");
+    expect(checked.value.report).toMatchObject({
+      findings: [],
+      refused: [],
+      forfeited: [],
+      answered: expect.arrayContaining([
+        expect.objectContaining({
+          finding: expect.objectContaining({
+            check: "claimed-type#cast-to-any",
+            file: LEGACY_FILE,
           }),
-          expect.objectContaining({
-            finding: expect.objectContaining({
-              clause: { ruleSet: "hone", discipline: "CD-1", clause: "explicit-any" },
-            }),
+        }),
+        expect.objectContaining({
+          finding: expect.objectContaining({
+            check: "untyped-value#explicit-any",
+            file: LEGACY_FILE,
           }),
-          expect.objectContaining({
-            finding: expect.objectContaining({
-              clause: { ruleSet: "hone", discipline: "CD-15", clause: "loops" },
-            }),
+        }),
+        expect.objectContaining({
+          finding: expect.objectContaining({
+            check: "loop-keyword#loop-statement",
+            file: LEGACY_FILE,
           }),
-        ]),
-      },
+        }),
+      ]),
     });
-    expect(fullReportExitCode({ checked: cascadeReport })).toBe(0);
+    expect(runVerdictOf({ report: checked.value.report })).toBe("pass");
   });
 
-  it("forfeits all three carve-outs once the file is touched, the ordinary touch-and-own for any discipline", async () => {
-    const cascadeReport = await cascadeCheck({ changed: [LEGACY_FILE] });
-    expect(cascadeReport).toMatchObject({ outcome: "ok", value: { forfeited: [{}, {}, {}] } });
-    expect(fullReportExitCode({ checked: cascadeReport })).toBe(1);
+  it("forfeits all three debts when the file is touched", async () => {
+    const checked = await cascadeCheck({ changed: [LEGACY_FILE] });
+    assert(checked.outcome === "ok");
+    expect(checked.value.report.forfeited).toHaveLength(3);
+    expect(runVerdictOf({ report: checked.value.report })).toBe("fail");
   });
 });

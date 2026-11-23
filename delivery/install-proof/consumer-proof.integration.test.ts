@@ -6,38 +6,51 @@ import type { GitPort } from "../../src/application/ports/git-port.ts";
 import type { ModuleExtension } from "../../src/application/ports/host/module-extension.ts";
 import type { ModuleLoaderPort } from "../../src/application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../../src/application/ports/host/path-port.ts";
-import type { ExitCode } from "../../src/application/ports/host/process-port.ts";
-import type { ShownPathOf } from "../../src/application/ports/installation/shown-path-of.ts";
 import type { ExceptionEntryParser } from "../../src/application/ports/records/exception-entries.ts";
 import type { ExceptionRepository } from "../../src/application/ports/records/exception-repository.ts";
 import type { SelectionRepository } from "../../src/application/ports/selection/selection-repository.ts";
 import type { SelectionRepositoryOf } from "../../src/application/ports/selection/selection-repository.ts";
-import { runProject } from "../../src/application/projection/run-project.ts";
-import { runCheck } from "../../src/application/run/check/run-check.ts";
-import type { CheckReport } from "../../src/domain/report/check-report.ts";
-import type { LoadFailure } from "../../src/domain/report/load-failure.ts";
+import { versionTwoRunOver } from "../../src/application/run/version-two-run.ts";
+import { createUpgradeBefore } from "../../src/application/upgrade/record-answers/upgrade-before.ts";
+import { INSTALLED_PORTS } from "../../src/composition/run-tool-command.ts";
+import { runVerdictOf } from "../../src/domain/report/report-sections.ts";
+import { verdictOf } from "../../src/domain/report/verdict.ts";
 import type { AbsolutePath } from "../../src/domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
-import type { Result } from "../../src/domain/result.ts";
-import { shownPathOfRepository } from "../../src/infrastructure/command-line/installation/shown-path.ts";
-import { checkCommandOutcome } from "../../src/infrastructure/command-line/outcomes/check-command-outcome.ts";
+import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
+import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { createExceptionRepository } from "../../src/infrastructure/discipline-exceptions-folder/exception-layout.ts";
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
-import { createEslintRunner } from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
+import {
+  readSelectionFile,
+  selectionFilePathOf,
+} from "../../src/infrastructure/disciplines-file/selection-reader.ts";
+import {
+  bindEslintChecksModule,
+  createChecksRunner,
+} from "../../src/infrastructure/engines/eslint/runner/checks-runner/checks-runner.ts";
+import {
+  ESLINT_PROJECTED_KINDS,
+  versionOneProjectionOver,
+} from "../../src/infrastructure/engines/eslint/runner/embedded-runner/create-eslint-runner.ts";
 import { createEslintPort } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.ts";
 import {
   defaultEslintToolchainPeers,
   loadEslintToolchain,
 } from "../../src/infrastructure/engines/eslint/runner/toolchain/eslint-toolchain.ts";
-import { createDefaultEnginePort } from "../../src/infrastructure/engines/protocol/engine-port.ts";
+import { measureVersionOneProjection } from "../../src/infrastructure/engines/protocol/engine-run/engine-run.ts";
 import { createWalkerRunner } from "../../src/infrastructure/engines/walker/runner/create-walker-runner.ts";
 import {
   defaultTypeScriptPeers,
   loadParsePort,
 } from "../../src/infrastructure/engines/walker/runner/toolchain/typescript-toolchain.ts";
 import { DEFAULT_ASSESSMENT } from "../../src/infrastructure/hone-config-file/assessment.ts";
+import {
+  createCheckPieceSource,
+  createSettingsSources,
+} from "../../src/infrastructure/hone-config-file/settings-sources.ts";
 import { createDefaultFileRemovalPort } from "../../src/infrastructure/node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../src/infrastructure/node/modules/module-loader-port.ts";
@@ -101,7 +114,6 @@ type SingleFileRecords = {
   readonly selectionRepositoryOf: SelectionRepositoryOf;
   readonly exceptionRepository: ExceptionRepository;
   readonly exceptionEntryParser: ExceptionEntryParser;
-  readonly shownPathOf: ShownPathOf;
 };
 
 const withSingleFileRecords = <Request extends DiskRequest>(
@@ -112,30 +124,7 @@ const withSingleFileRecords = <Request extends DiskRequest>(
   selectionRepositoryOf: createSelectionRepository,
   exceptionRepository: singleFileRepositoryOver(request),
   exceptionEntryParser,
-  shownPathOf: shownPathOfRepository(request),
 });
-
-const PROJECT_COMMAND = "node src/hone.ts project --repo .";
-
-const PRUNE_COMMAND = "node src/hone.ts prune-debt --repo .";
-
-const fullReportExitCode = (request: {
-  readonly checked: Result<CheckReport, LoadFailure>;
-}): ExitCode =>
-  checkCommandOutcome({
-    result:
-      request.checked.outcome === "failed"
-        ? request.checked
-        : {
-            outcome: "ok",
-            value: {
-              report: request.checked.value,
-              output: "full",
-              projectCommand: PROJECT_COMMAND,
-              pruneCommand: PRUNE_COMMAND,
-            },
-          },
-  }).code;
 
 const ABSENT_ENTRY_KIND: EntryKindPort = { kindOf: () => "absent" };
 
@@ -199,16 +188,18 @@ const ESLINT_INSTALLED = String.raw`(?:(?:src\/(?:domain|application|operations|
 
 const WALKER_INSTALL_LIST = new RegExp(`^${WALKER_INSTALLED}$`);
 
-const ESLINT_INSTALL_LIST = new RegExp(`^${ESLINT_INSTALLED}$`);
+const ESLINT_PLUGIN_ENTRIES = String.raw`src\/infrastructure\/engines\/eslint\/[^/]+\/[^/]+\/eslint-plugin\.ts`;
+const ESLINT_INSTALL_LIST = new RegExp(`^(?:${ESLINT_INSTALLED}|${ESLINT_PLUGIN_ENTRIES})$`);
 
 const INSTALLED_MANIFEST = String.raw`package\.json`;
+const NAMED_CATALOGUE = String.raw`(?:rules\/(?:[^/]+\/)*[^/]+\.md|src\/infrastructure\/engines\/(?:walker|eslint)\/[^/]+\/[^/]+\/piece\.json)`;
 
 const WALKER_READABLE = new RegExp(
-  String.raw`^(?:${WALKER_INSTALLED}|${INSTALLED_MANIFEST}|delivery\/install-proof\/consumer-proof\/audit\/.*)$`,
+  String.raw`^(?:${WALKER_INSTALLED}|${NAMED_CATALOGUE}|rules|${INSTALLED_MANIFEST}|delivery\/install-proof\/consumer-proof\/audit\/.*)$`,
 );
 
 const ESLINT_READABLE = new RegExp(
-  String.raw`^(?:${ESLINT_INSTALLED}|${INSTALLED_MANIFEST}|delivery\/install-proof\/consumer-proof\/eslint\/.*)$`,
+  String.raw`^(?:${ESLINT_INSTALLED}|${NAMED_CATALOGUE}|rules|${INSTALLED_MANIFEST}|delivery\/install-proof\/consumer-proof\/eslint\/.*)$`,
 );
 
 const NO_HARNESS_SEGMENT =
@@ -240,33 +231,52 @@ type ObservedPorts = {
 
 const observedPorts = (): ObservedPorts => {
   const realFileText = createDefaultFileTextPort({});
+  const namedSettingsPath = path.join({ segments: [WALKER_CONSUMER, "hone.config.json"] });
   const fileText: FileTextPort = {
-    read: realFileText.read,
-    exists: realFileText.exists,
+    read: (entry) =>
+      entry.path === namedSettingsPath
+        ? {
+            outcome: "ok",
+            value:
+              '{"version":2,"ruleSets":{},"checks":{"unit-without-a-running-test#companion-test-file":"walker"}}',
+          }
+        : realFileText.read(entry),
+    exists: (entry) => (entry.path === namedSettingsPath ? "present" : realFileText.exists(entry)),
     write: vi.fn<FileTextPort["write"]>(),
   };
   const pieceModules: ModuleLoaderPort = { load: createDefaultModuleLoaderPort({}).load };
   const runners: Readonly<Record<string, unknown>> = {
     [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/walker/runner/runner.ts` })]:
       {
-        runner: createWalkerRunner({
-          fileText,
-          modules: pieceModules,
-          path,
-          parse: defaultParsePort,
-          entryKind: ABSENT_ENTRY_KIND,
-        }),
+        namedChecksRunner: {
+          fileScope: "tracked",
+          ...createWalkerRunner({
+            fileText,
+            modules: pieceModules,
+            path,
+            parse: defaultParsePort,
+            entryKind: ABSENT_ENTRY_KIND,
+          }),
+          projectedKinds: ["inline-disable"],
+        },
       },
     [resolvedPath({ path: `${INSTALL_ROOT}/src/infrastructure/engines/eslint/runner/runner.ts` })]:
       {
-        runner: createEslintRunner({
-          fileText,
-          fileRemoval: createDefaultFileRemovalPort({}),
-          modules: pieceModules,
-          path,
-          eslint: defaultEslintPort,
-          moduleExtension: ".ts",
+        ...bindEslintChecksModule({
+          projectedKinds: ESLINT_PROJECTED_KINDS,
+          runner: Promise.resolve({
+            outcome: "ok",
+            value: createChecksRunner({
+              fileText,
+              fileRemoval: createDefaultFileRemovalPort({}),
+              modules: pieceModules,
+              path,
+              eslint: defaultEslintPort,
+              moduleExtension: ".ts",
+            }),
+          }),
         }),
+        versionOneProjectionOver,
       },
   };
   const runnerModules: ModuleLoaderPort = {
@@ -292,48 +302,86 @@ const gitTracking = (request: { readonly tracked: readonly RepoPath[] }): GitPor
   renamedSince: vi.fn<GitPort["renamedSince"]>(),
 });
 
-const checkOf = (request: {
+const upgradeBeforeOver = (request: {
   readonly repo: AbsolutePath;
   readonly tracked: readonly RepoPath[];
   readonly ports: ObservedPorts;
-}) =>
-  runCheck(
-    withSingleFileRecords({
-      repoRoot: request.repo,
-      installRoot: INSTALL_ROOT,
-      moduleExtension: ".ts",
+}) => {
+  const { fileText, runnerModules: modules } = request.ports;
+  const { directory, loadFailureDetail, namedEngine, versionOneProjectionOf } = INSTALLED_PORTS;
+  const context = {
+    repoRoot: request.repo,
+    installRoot: INSTALL_ROOT,
+    moduleExtension: ".ts",
+    path,
+    fileText,
+    directory,
+  } satisfies Parameters<typeof createSettingsSources>[0];
+  const selection = readSelectionFile({
+    fileText,
+    path: selectionFilePathOf({ path, repoRoot: request.repo }),
+  });
+  const catalogue = readBoundCatalogue({ ...context, ruleSetRoot: INSTALL_ROOT });
+  assert(selection.outcome === "ok");
+  assert(catalogue.outcome === "ok" && catalogue.value.held === "catalogue");
+  return createUpgradeBefore({
+    check: {
+      ...withSingleFileRecords({ ...context, git: gitTracking({ tracked: request.tracked }) }),
+      modules,
       baseRevision: undefined,
       assessment: DEFAULT_ASSESSMENT,
-      fileText: request.ports.fileText,
-      engine: createDefaultEnginePort({}),
-      modules: request.ports.runnerModules,
-      path,
-      git: gitTracking({ tracked: request.tracked }),
+    },
+    engine: namedEngine,
+    sources: createSettingsSources(context),
+    readPiece: createCheckPieceSource(context),
+    selection: selection.value,
+    catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: catalogue.value.catalogue }],
+    loadFailureDetail,
+    measureVersionOne: measureVersionOneProjection,
+    projection: versionOneProjectionOf({
+      ...context,
+      modules,
+      fileRemoval: createDefaultFileRemovalPort({}),
     }),
-  );
+  });
+};
+
+const checkOf = (request: Parameters<typeof upgradeBeforeOver>[0]) =>
+  upgradeBeforeOver(request).report();
 
 const projectOf = (request: { readonly repo: AbsolutePath; readonly ports: ObservedPorts }) =>
-  runProject(
-    withSingleFileRecords({
-      repoRoot: request.repo,
-      installRoot: INSTALL_ROOT,
-      moduleExtension: ".ts",
-      fileText: request.ports.fileText,
-      engine: createDefaultEnginePort({}),
-      modules: request.ports.runnerModules,
-      path,
-      git: gitTracking({ tracked: [] }),
+  upgradeBeforeOver({ ...request, tracked: [] }).prepareProjections([]);
+
+const namedCheckOf = (request: {
+  readonly tracked: readonly RepoPath[];
+  readonly ports: ObservedPorts;
+}) =>
+  versionTwoRunOver({
+    stages: INSTALLED_PORTS.stagesOver({
+      ports: {
+        ...INSTALLED_PORTS,
+        fileText: request.ports.fileText,
+        modules: request.ports.runnerModules,
+        git: gitTracking({ tracked: request.tracked }),
+      },
+      locations: {
+        repoRoot: WALKER_CONSUMER,
+        installRoot: INSTALL_ROOT,
+        moduleExtension: ".ts",
+        baseRevision: undefined,
+      },
     }),
-  );
+    arguments: { reportOutput: undefined, forfeiture: undefined, measuring: "when-debt-held" },
+  });
 
 const SIBLINGED_TRACKED: readonly RepoPath[] = [
-  repoPathOf("disciplines.json"),
+  repoPathOf("hone.config.json"),
   repoPathOf("src/plain.ts"),
   repoPathOf("src/plain.test.ts"),
 ];
 
 const UNSIBLINGED_TRACKED: readonly RepoPath[] = [
-  repoPathOf("disciplines.json"),
+  repoPathOf("hone.config.json"),
   repoPathOf("src/plain.ts"),
   repoPathOf("src/plain.test.ts"),
   repoPathOf("src/kept.ts"),
@@ -355,33 +403,11 @@ const ESLINT_CLASS_TRACKED: readonly RepoPath[] = [
 ];
 
 const UNSIBLINGED_FINDING = {
-  clause: { ruleSet: "hone", discipline: "CD-23", clause: "export-test-sibling" },
+  check: "unit-without-a-running-test#companion-test-file",
   file: "src/kept.ts",
   anchor: { line: 1, column: 0 },
   snippet: "missing co-located *.test.ts(x) sibling",
   mechanism: "walker",
-};
-
-const readingOf = (request: {
-  readonly clause: { readonly discipline: string };
-  readonly checkPage: string;
-}) => ({
-  kind: "clause",
-  clause: request.clause,
-  assessmentSection: "unread",
-  pages: [
-    {
-      path: `../../../../rules/typescript/symptoms/${request.checkPage}`,
-      presence: "present",
-      section: "fix",
-    },
-  ],
-});
-
-const ASSESSMENT_NOT_WRITTEN = {
-  kind: "assessment-file",
-  state: "not-written",
-  guide: "../../../../ADOPTING.md",
 };
 
 const CLASS_FINDING = {
@@ -408,7 +434,6 @@ const CLEAN_REPORT = {
   unmeasured: [],
   projectionProblems: [],
   assessment: [],
-  readFirst: [],
 };
 
 describe("installCallsOutside over written-out calls, so the path confinement can fail", () => {
@@ -445,37 +470,24 @@ describe("installCallsOutside over written-out calls, so the path confinement ca
   });
 });
 
-describe("a consumer with no harness directory selecting CD-23 through the audit, run against the install", () => {
-  it("passes when every tracked unit has its test sibling, exiting 0", async () => {
-    const ports = observedPorts();
-    const checked = await checkOf({ repo: WALKER_CONSUMER, tracked: SIBLINGED_TRACKED, ports });
-    expect(checked).toEqual({ outcome: "ok", value: CLEAN_REPORT });
-    expect(fullReportExitCode({ checked })).toBe(0);
+describe("a consumer with no harness directory selecting the named companion-test check", () => {
+  it("passes when every tracked unit has its test sibling", async () => {
+    const checked = await namedCheckOf({ tracked: SIBLINGED_TRACKED, ports: observedPorts() });
+    assert(checked.outcome === "ok");
+    expect(checked.value.report.findings).toEqual([]);
+    expect(runVerdictOf({ report: checked.value.report })).toBe("pass");
   });
 
-  it("fails when a tracked unit has no test sibling, exiting 1 with the unit as an audit finding", async () => {
-    const ports = observedPorts();
-    const checked = await checkOf({ repo: WALKER_CONSUMER, tracked: UNSIBLINGED_TRACKED, ports });
-    expect(checked).toEqual({
-      outcome: "ok",
-      value: {
-        ...CLEAN_REPORT,
-        findings: [UNSIBLINGED_FINDING],
-        readFirst: [
-          ASSESSMENT_NOT_WRITTEN,
-          readingOf({
-            clause: UNSIBLINGED_FINDING.clause,
-            checkPage: "unit-without-a-running-test/companion-test-file.md",
-          }),
-        ],
-      },
-    });
-    expect(fullReportExitCode({ checked })).toBe(1);
+  it("fails when a tracked unit has no test sibling and reports its named check", async () => {
+    const checked = await namedCheckOf({ tracked: UNSIBLINGED_TRACKED, ports: observedPorts() });
+    assert(checked.outcome === "ok");
+    expect(checked.value.report.findings).toEqual([UNSIBLINGED_FINDING]);
+    expect(runVerdictOf({ report: checked.value.report })).toBe("fail");
   });
 
-  it("reads, probes and loads only paths in the audit mechanism's install path list or the consumer repo", async () => {
+  it("reads, probes and loads only paths in the walker's install path list or the consumer repo", async () => {
     const ports = observedPorts();
-    await checkOf({ repo: WALKER_CONSUMER, tracked: UNSIBLINGED_TRACKED, ports });
+    await namedCheckOf({ tracked: UNSIBLINGED_TRACKED, ports });
     expect(installCallsOutside({ calls: ports.reads.mock.calls, paths: WALKER_READABLE })).toEqual(
       EVERY_CALL_WITHIN,
     );
@@ -492,7 +504,7 @@ describe("a consumer with no harness directory selecting CD-23 through the audit
 
   it("reads, probes and loads no path carrying a harness segment", async () => {
     const ports = observedPorts();
-    await checkOf({ repo: WALKER_CONSUMER, tracked: UNSIBLINGED_TRACKED, ports });
+    await namedCheckOf({ tracked: UNSIBLINGED_TRACKED, ports });
     expect(
       installCallsOutside({ calls: ports.reads.mock.calls, paths: NO_HARNESS_SEGMENT }),
     ).toEqual(EVERY_CALL_WITHIN);
@@ -518,14 +530,15 @@ describe("a consumer with no harness directory selecting CD-14 through ESLint, r
     expect(ports.fileText.write).not.toHaveBeenCalled();
   });
 
-  it("passes when its tracked files hold no class, exiting 0", async () => {
+  it("passes when its tracked files hold no class", async () => {
     const ports = observedPorts();
     const checked = await checkOf({ repo: ESLINT_CONSUMER, tracked: ESLINT_CLEAN_TRACKED, ports });
     expect(checked).toEqual({ outcome: "ok", value: CLEAN_REPORT });
-    expect(fullReportExitCode({ checked })).toBe(0);
+    assert(checked.outcome === "ok");
+    expect(verdictOf({ report: checked.value })).toBe("pass");
   });
 
-  it("fails when a tracked file holds a class, exiting 1 with the class as an ESLint finding", async () => {
+  it("fails when a tracked file holds a class and reports it as an ESLint finding", async () => {
     const ports = observedPorts();
     const checked = await checkOf({ repo: ESLINT_CONSUMER, tracked: ESLINT_CLASS_TRACKED, ports });
     expect(checked).toEqual({
@@ -533,16 +546,10 @@ describe("a consumer with no harness directory selecting CD-14 through ESLint, r
       value: {
         ...CLEAN_REPORT,
         findings: [CLASS_FINDING],
-        readFirst: [
-          ASSESSMENT_NOT_WRITTEN,
-          readingOf({
-            clause: CLASS_FINDING.clause,
-            checkPage: "authored-class-or-this/class-keyword.md",
-          }),
-        ],
       },
     });
-    expect(fullReportExitCode({ checked })).toBe(1);
+    assert(checked.outcome === "ok");
+    expect(verdictOf({ report: checked.value })).toBe("fail");
   });
 
   it("reads, probes and loads only paths in the ESLint install path list or the consumer repo, check and project alike", async () => {

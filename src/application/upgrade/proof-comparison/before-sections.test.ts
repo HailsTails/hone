@@ -78,7 +78,6 @@ const EMPTY_BEFORE: CheckReport = {
   unmeasured: [],
   projectionProblems: [],
   assessment: [],
-  readFirst: [],
 };
 
 const LOOP_FINDING: Finding = {

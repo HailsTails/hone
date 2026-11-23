@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
@@ -37,17 +35,14 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/signatures.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-43"),
-  clause: clauseIdOf("boolean-signatures"),
-};
+const ADDRESS: CheckAddressText = "boolean-in-a-signature#boolean-annotation";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-43",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "boolean-signatures.ts" },
 };
@@ -65,7 +60,7 @@ const sourceObservations = (request: { readonly source: string }): ObservationFi
     exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"),
     disk: EMPTY_DISK,
   };
-  const prepared = check.prepare({ clauses: [CLAUSE], repository, syntaxApi: SYNTAX_API });
+  const prepared = check.prepare({ bindings: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
   const readText = vi
     .fn<WalkerFile["readText"]>()
@@ -101,7 +96,7 @@ describe("CD43 existing authored boolean signatures", () => {
   ])("admits $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -122,7 +117,7 @@ describe("CD43 existing authored boolean signatures", () => {
   ])("excludes $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -151,11 +146,11 @@ describe("CD43 existing authored boolean signatures", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 0 },
         snippet: "function f(flag: boolean): boolean {} ",
       },
-      { clause: ADDRESS, anchor: { line: 1, column: 11 }, snippet: "flag: boolean): boolean {} " },
+      { check: ADDRESS, anchor: { line: 1, column: 11 }, snippet: "flag: boolean): boolean {} " },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 0 }], [{ position: 11 }]]);
     expect(observed.finish()).toEqual({ outcome: "ok", value: [] });
@@ -174,7 +169,7 @@ describe("CD43 existing authored boolean signatures", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "enabled: boolean | null | undefined }",
       },
@@ -197,12 +192,12 @@ describe("CD43 existing authored boolean signatures", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "enabled(): boolean; (value): boolean | undefined; }",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "(value): boolean | undefined; }",
       },
@@ -267,7 +262,7 @@ describe("CD43 existing authored boolean signatures", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet:
           "function f(): boolean {} 0123456789012345678901234567890123456789012345678901234…",

@@ -4,7 +4,7 @@ import type { FileTextPort } from "../../../../../application/ports/file-system/
 import type { Result } from "../../../../../domain/result.ts";
 import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
 import type { DisciplineFile, SourceCase } from "../../../../../domain/rule-set/rule-set-types.ts";
-import { editionRunsOf } from "../../../../../domain/runner/edition-runs.ts";
+import { casesByEdition } from "../../../../../domain/runner/edition-runs.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { defaultClauseSettings } from "../../../../../domain/settings/clause-settings/default-clause-settings.ts";
@@ -136,15 +136,16 @@ const rowsOf = (request: {
       clauseSettings: defaultClauseSettings({ declarations: entry.clauseSettings }),
       edition: entry.editions.default,
     };
-    return editionRunsOf({
-      clause,
+    return casesByEdition({
+      defaultEdition: clause.edition,
       cases: [...definition.cases.flag, ...definition.cases.allow],
-    }).map((run) => ({
+    }).map(({ edition, cases }) => ({
       name:
-        run.clause.edition === entry.editions.default
+        edition === entry.editions.default
           ? `${request.discipline}#${entry.clause}`
-          : `${request.discipline}#${entry.clause} edition ${run.clause.edition}`,
-      ...run,
+          : `${request.discipline}#${entry.clause} edition ${edition}`,
+      clause: { ...clause, edition },
+      cases,
     }));
   });
 };

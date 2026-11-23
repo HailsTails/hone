@@ -22,7 +22,6 @@ const BEFORE: CheckReport = {
   unmeasured: [],
   projectionProblems: [],
   assessment: [],
-  readFirst: [],
 };
 
 const AFTER: RunReport = {

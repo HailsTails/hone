@@ -9,7 +9,11 @@ import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.
 import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import type { SelectedRule } from "./package-script-scanner.ts";
-import { scriptSuppressionEntries, suppressionEntriesOf } from "./suppressions-scanner.ts";
+import {
+  scriptSuppressionEntries,
+  suppressionEntriesFor,
+  suppressionEntriesOf,
+} from "./suppressions-scanner.ts";
 
 const classSyntax = {
   ruleSet: TOOL_RULE_SET,
@@ -290,5 +294,32 @@ describe("scriptSuppressionEntries on Windows", () => {
     });
 
     expect(read.mock.calls).toEqual([[{ path: "C:\\repo\\ci\\lint-suppressions.json" }]]);
+  });
+});
+
+describe("suppressionEntriesFor", () => {
+  it("keeps the check address and resolves package-relative suppressions", () => {
+    expect(
+      suppressionEntriesFor({
+        location: nestedLocation,
+        keysRelativeTo: packageDirectory,
+        suppressions: {
+          "src/app.ts": { "hone/no-class-authoring": { count: 1 }, "no-console": { count: 3 } },
+        },
+        selectedRules: [
+          { ruleId: classRule.ruleId, subject: { check: "authored-class-or-this#class-keyword" } },
+        ],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          kind: "suppression-entry",
+          check: "authored-class-or-this#class-keyword",
+          file: "packages/a/src/app.ts",
+          location: "packages/a/eslint-suppressions.json",
+        },
+      ],
+    });
   });
 });

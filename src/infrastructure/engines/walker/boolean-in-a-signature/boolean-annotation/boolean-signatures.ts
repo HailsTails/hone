@@ -32,7 +32,7 @@ const booleanTypeOf = (request: {
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, syntaxApi }) => ({
+  prepare: ({ bindings, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
@@ -73,7 +73,7 @@ export const check: WalkerPiece = {
                     .replace(/\n/g, " ");
                   const snippet = rawSnippet.length === 80 ? `${rawSnippet}…` : rawSnippet;
                   hits.push(
-                    ...clauses.map((clause) => ({ clause: clause.address, anchor, snippet })),
+                    ...bindings.map((binding) => ({ check: binding.address, anchor, snippet })),
                   );
                 },
                 finish: () => hits,

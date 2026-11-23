@@ -1,5 +1,6 @@
 import { checkAddressTextOf } from "../../language-layer/check-address-text.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { AnsweredFile } from "../../runner/checks-run-report.ts";
 import type { AuthorisedReach, HoneRecord, PlacedRecord } from "../hone-records/hone-record.ts";
 import { reachOf, type Site } from "./record-reach.ts";
 
@@ -24,6 +25,35 @@ const symptomKey = (request: { readonly symptom: string }): ReachKey =>
 
 const checkKey = (request: { readonly symptom: string; readonly check: string }): ReachKey =>
   `check:${checkAddressTextOf({ check: { name: request.check, symptom: { name: request.symptom } } })}`;
+
+export type AnsweredByPlace = ReadonlyMap<RepoPath, ReadonlySet<ReachKey>>;
+
+export const answeredByPlaceOf = (request: {
+  readonly answered: readonly AnsweredFile[];
+}): AnsweredByPlace =>
+  new Map(
+    [...Map.groupBy(request.answered, ({ file }) => file)].map(([file, answers]) => [
+      file,
+      new Set(
+        answers.map(({ symptom, check }) =>
+          check === undefined ? symptomKey({ symptom }) : checkKey({ symptom, check }),
+        ),
+      ),
+    ]),
+  );
+
+export const answeredAt = (request: {
+  readonly byPlace: AnsweredByPlace;
+  readonly file: RepoPath;
+  readonly symptom: string;
+  readonly address: string;
+}): boolean => {
+  const answers = request.byPlace.get(request.file);
+  return (
+    answers !== undefined &&
+    (answers.has(symptomKey(request)) || answers.has(`check:${request.address}`))
+  );
+};
 
 const recipeKey = (request: { readonly recipe: string }): ReachKey => `recipe:${request.recipe}`;
 

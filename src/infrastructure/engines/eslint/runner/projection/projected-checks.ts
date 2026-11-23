@@ -2,16 +2,16 @@ import { z } from "zod";
 
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
 import { gatheredOutcomes } from "../../../../../domain/gathered-outcomes.ts";
+import {
+  type AddressedCheck,
+  checkAddressTextOf,
+} from "../../../../../domain/language-layer/check-address-text.ts";
 import type { AbsolutePath } from "../../../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import {
-  clauseAddressText,
-  sameClauseAddress,
-  TOOL_RULE_SET,
-} from "../../../../../domain/rule-set/clause-address.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
 import {
+  CHECKS_PLUGIN_NAMESPACE,
   checkRuleIdOf,
   ESLINT_MECHANISM,
   type RuledCheck,
@@ -27,78 +27,79 @@ import { type PluginImport, pluginImportOf } from "./projection.ts";
 
 export type ProjectionFailure =
   | Extract<PieceFailure, { readonly kind: "piece-invalid" }>
-  | { readonly kind: "check-unknown"; readonly address: string }
-  | { readonly kind: "check-outside-rule-set"; readonly address: string };
-
-export type ProjectedBinding = {
-  readonly mechanism: string;
-  readonly clause: {
-    readonly address: ClauseAddress;
-    readonly pieceRoot: string;
-    readonly settings: unknown;
-  };
-};
+  | { readonly kind: "check-unknown"; readonly address: string };
 
 const PLUGIN_EXPORT = "eslint-plugin";
 
 const PLUGIN_SOURCE = "src/eslint-plugin.ts";
 
-const projectedChecksOfBinding = (request: {
-  readonly checks: readonly RuledCheck[];
-  readonly binding: ProjectedBinding;
-}): Result<readonly ProjectedCheck[], ProjectionFailure> => {
-  const settings = eslintPieceSettingsSchema.safeParse(request.binding.clause.settings);
-  if (!settings.success) {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "piece-invalid",
-        pieceRoot: request.binding.clause.pieceRoot,
-        detail: z.prettifyError(settings.error),
-      },
-    };
-  }
-  const address = request.binding.clause.address;
-  const checks = request.checks.filter(
-    (check) =>
-      runsOnEslint({ check }) === "eslint" &&
-      sameClauseAddress({ left: check.clause, right: address }) === "same",
-  );
-  if (checks.length === 0) {
-    return {
-      outcome: "failed",
-      error: { kind: "check-unknown", address: clauseAddressText({ address }) },
-    };
-  }
-  if (address.ruleSet !== TOOL_RULE_SET) {
-    return {
-      outcome: "failed",
-      error: { kind: "check-outside-rule-set", address: clauseAddressText({ address }) },
-    };
-  }
-  return {
-    outcome: "ok",
-    value: checks.map((check) => ({
-      symptom: check.symptom.name,
-      check: check.name,
-      ruleId: checkRuleIdOf({ check }),
-      options: ruleOptionsOf({ settings: settings.data }),
-    })),
-  };
-};
+const projectedRuleOf = (request: {
+  readonly check: AddressedCheck;
+  readonly settings: z.output<typeof eslintPieceSettingsSchema>;
+}): ProjectedCheck => ({
+  symptom: request.check.symptom.name,
+  check: request.check.name,
+  ruleId: checkRuleIdOf({ check: request.check }),
+  options: ruleOptionsOf({ settings: request.settings }),
+});
 
-export const projectedChecksOf = (request: {
-  readonly checks: readonly RuledCheck[];
-  readonly bindings: readonly ProjectedBinding[];
+export const projectedNamedChecksOf = (request: {
+  readonly checks: readonly (AddressedCheck & Pick<RuledCheck, "engines">)[];
+  readonly bindings: readonly CheckBinding[];
 }): Result<readonly ProjectedCheck[], ProjectionFailure> => {
-  const projected = gatheredOutcomes({
+  const registered = new Map(
+    request.checks
+      .filter((check) => runsOnEslint({ check }) === "eslint")
+      .map((check) => [checkAddressTextOf({ check }), check]),
+  );
+  return gatheredOutcomes({
     outcomes: request.bindings
-      .filter((binding) => binding.mechanism === ESLINT_MECHANISM)
-      .map((binding) => projectedChecksOfBinding({ checks: request.checks, binding })),
+      .filter(({ engine }) => engine === ESLINT_MECHANISM)
+      .map((binding): Result<readonly ProjectedCheck[], ProjectionFailure> => {
+        const settings = eslintPieceSettingsSchema.safeParse(binding.settings);
+        if (!settings.success) {
+          return {
+            outcome: "failed",
+            error: {
+              kind: "piece-invalid",
+              pieceRoot: binding.pieceRoot,
+              detail: z.prettifyError(settings.error),
+            },
+          };
+        }
+        const check = registered.get(binding.address);
+        if (check === undefined) {
+          return { outcome: "failed", error: { kind: "check-unknown", address: binding.address } };
+        }
+        const projected = projectedRuleOf({ check, settings: settings.data });
+        if (binding.ruleSet === undefined) return { outcome: "ok", value: [projected] };
+        const { pluginNamespace, pluginModule, rule } = settings.data;
+        if (pluginNamespace === CHECKS_PLUGIN_NAMESPACE) {
+          return {
+            outcome: "failed",
+            error: {
+              kind: "piece-invalid",
+              pieceRoot: binding.pieceRoot,
+              detail: `the plugin namespace ${pluginNamespace} is reserved for Hone's own rules`,
+            },
+          };
+        }
+        return {
+          outcome: "ok",
+          value: [
+            {
+              ...projected,
+              ruleId: `${pluginNamespace}/${rule}`,
+              plugin: {
+                namespace: pluginNamespace,
+                module: pluginModule,
+                pieceRoot: binding.pieceRoot,
+              },
+            },
+          ],
+        };
+      }),
   });
-  return projected.outcome === "failed"
-    ? projected
-    : { outcome: "ok", value: projected.value.flat() };
 };
 
 export const checksPluginImportOf = (request: {

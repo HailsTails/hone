@@ -2,11 +2,8 @@ import { assert, describe, expect, it, vi } from "vitest";
 
 import type { Anchor } from "../../../../domain/finding/anchor.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import { observeWalkerFile } from "./observe-walker-file.ts";
 import type { PieceHit, SourceObservers, WalkerFile } from "./pieces/walker-piece.ts";
 import type { LoadedPreparedWalkerCheck, PreparedWalkerPiece } from "./prepare-walker-pieces.ts";
@@ -36,65 +33,56 @@ const TREE = SYNTAX_API.createSourceFile(FILE, SOURCE, SYNTAX_API.ScriptTarget.L
 const OUTER_BLOCK = TREE.getChildAt(0, TREE).getChildAt(0, TREE);
 const INNER_BLOCK = OUTER_BLOCK.getChildAt(1, TREE).getChildAt(0, TREE);
 
-const FIRST_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("XX-1"),
-    clause: clauseIdOf("first-check"),
-  },
+const FIRST_CLAUSE: CheckBinding = {
+  address: "example#first-check",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "first.ts" },
 };
-const SECOND_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("XX-1"),
-    clause: clauseIdOf("second-check"),
-  },
+const SECOND_CLAUSE: CheckBinding = {
+  address: "example#second-check",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "second.ts" },
 };
-const THIRD_CLAUSE: RunnerClause = {
-  address: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("XX-1"),
-    clause: clauseIdOf("third-check"),
-  },
+const THIRD_CLAUSE: CheckBinding = {
+  address: "example#third-check",
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "third.ts" },
 };
 const FIRST_HIT: PieceHit = {
-  clause: FIRST_CLAUSE.address,
+  check: FIRST_CLAUSE.address,
   anchor: { line: 1, column: 2 },
   snippet: "first",
 };
 const SECOND_HIT: PieceHit = {
-  clause: SECOND_CLAUSE.address,
+  check: SECOND_CLAUSE.address,
   anchor: { line: 1, column: 4 },
   snippet: "second",
 };
 const THIRD_HIT: PieceHit = {
-  clause: THIRD_CLAUSE.address,
+  check: THIRD_CLAUSE.address,
   anchor: { line: 1, column: 15 },
   snippet: "third",
 };
 
 const preparedPiece = (request: {
   readonly modulePath: string;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly prepareFile: LoadedPreparedWalkerCheck["prepareFile"];
 }): PreparedWalkerPiece => ({
   modulePath: request.modulePath,
-  clauses: request.clauses,
+  bindings: request.bindings,
   check: {
     prepareFile: request.prepareFile,
     finish: vi.fn().mockReturnValue({ outcome: "ok", value: [] }),
@@ -183,14 +171,14 @@ describe("observeWalkerFile", () => {
     });
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: vi
         .fn()
         .mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [FIRST_HIT] } }),
     });
     const skipped = preparedPiece({
       modulePath: "second.ts",
-      clauses: [SECOND_CLAUSE],
+      bindings: [SECOND_CLAUSE],
       prepareFile: vi.fn().mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
     });
     const parse = parseFixture();
@@ -222,7 +210,7 @@ describe("observeWalkerFile", () => {
     const begin = vi.fn().mockReturnValue({ finish: () => [] });
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: vi.fn().mockReturnValue({
         outcome: "failed",
         error: { kind: "team-config-unloadable", detail: "invalid piece configuration" },
@@ -230,7 +218,7 @@ describe("observeWalkerFile", () => {
     });
     const second = preparedPiece({
       modulePath: "second.ts",
-      clauses: [SECOND_CLAUSE],
+      bindings: [SECOND_CLAUSE],
       prepareFile: vi.fn().mockReturnValue({ outcome: "ok", value: { kind: "syntax", begin } }),
     });
     const parse = parseFixture();
@@ -251,14 +239,14 @@ describe("observeWalkerFile", () => {
     expect(begin).not.toHaveBeenCalled();
   });
 
-  it("reuses text across complete pieces, excludes skipped clauses and emits every complete hit without parsing", () => {
+  it("reuses text across complete pieces, excludes skipped bindings and emits every complete hit without parsing", () => {
     const readText = vi.fn<WalkerFile["readText"]>().mockReturnValue({
       outcome: "ok",
       value: SOURCE,
     });
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE, SECOND_CLAUSE],
+      bindings: [FIRST_CLAUSE, SECOND_CLAUSE],
       prepareFile: ({ readText: read }) => {
         read();
         read();
@@ -267,12 +255,12 @@ describe("observeWalkerFile", () => {
     });
     const skipped = preparedPiece({
       modulePath: "skipped.ts",
-      clauses: [SECOND_CLAUSE],
+      bindings: [SECOND_CLAUSE],
       prepareFile: vi.fn().mockReturnValue({ outcome: "ok", value: { kind: "skipped" } }),
     });
     const third = preparedPiece({
       modulePath: "third.ts",
-      clauses: [THIRD_CLAUSE],
+      bindings: [THIRD_CLAUSE],
       prepareFile: ({ readText: read }) => {
         read();
         return { outcome: "ok", value: { kind: "complete", hits: [THIRD_HIT] } };
@@ -316,7 +304,7 @@ describe("observeWalkerFile", () => {
     const recordSource = vi.fn<(request: { readonly sourceFile: SyntaxTree }) => void>();
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: () => ({
         outcome: "ok",
         value: {
@@ -337,14 +325,14 @@ describe("observeWalkerFile", () => {
     });
     const complete = preparedPiece({
       modulePath: "second.ts",
-      clauses: [SECOND_CLAUSE],
+      bindings: [SECOND_CLAUSE],
       prepareFile: vi
         .fn()
         .mockReturnValue({ outcome: "ok", value: { kind: "complete", hits: [SECOND_HIT] } }),
     });
     const third = preparedPiece({
       modulePath: "third.ts",
-      clauses: [THIRD_CLAUSE],
+      bindings: [THIRD_CLAUSE],
       prepareFile: () => ({
         outcome: "ok",
         value: {
@@ -412,7 +400,7 @@ describe("observeWalkerFile", () => {
     const begin = vi.fn().mockReturnValue({ finish: () => [] });
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: ({ readText: read }) => {
         read();
         read();
@@ -458,7 +446,7 @@ describe("observeWalkerFile", () => {
       }),
     },
   ])("refuses malformed actual output from $boundary as piece-invalid", ({ prepareFile }) => {
-    const first = preparedPiece({ modulePath: "first.ts", clauses: [FIRST_CLAUSE], prepareFile });
+    const first = preparedPiece({ modulePath: "first.ts", bindings: [FIRST_CLAUSE], prepareFile });
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
@@ -485,7 +473,7 @@ describe("observeWalkerFile", () => {
     (observer) => {
       const first = preparedPiece({
         modulePath: "first.ts",
-        clauses: [FIRST_CLAUSE],
+        bindings: [FIRST_CLAUSE],
         prepareFile: () => ({
           outcome: "ok",
           value: { kind: "syntax", begin: () => ({ finish: () => [], [observer]: 7 }) },
@@ -518,7 +506,7 @@ describe("observeWalkerFile", () => {
     const entered = vi.fn();
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: () => ({
         outcome: "ok",
         value: { kind: "syntax", begin: () => ({ enter: entered, finish: () => [FIRST_HIT] }) },
@@ -543,7 +531,7 @@ describe("observeWalkerFile", () => {
     const finish = vi.fn().mockReturnValue([FIRST_HIT]);
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: () => ({
         outcome: "ok",
         value: {
@@ -581,7 +569,7 @@ describe("observeWalkerFile", () => {
     const begin = vi.fn().mockReturnValue({ finish: () => [] });
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: () => ({ outcome: "ok", value: { kind: "syntax", begin } }),
     });
     const readText = vi
@@ -618,7 +606,7 @@ describe("observeWalkerFile", () => {
       });
       const first = preparedPiece({
         modulePath: "first.ts",
-        clauses: [FIRST_CLAUSE],
+        bindings: [FIRST_CLAUSE],
         prepareFile: ({ readText: read }) => {
           read();
           return { outcome: "ok", value: completion };
@@ -645,12 +633,12 @@ describe("observeWalkerFile", () => {
   it("refuses a piece emitting another selected piece's clause", () => {
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: () => ({ outcome: "ok", value: { kind: "complete", hits: [SECOND_HIT] } }),
     });
     const second = preparedPiece({
       modulePath: "second.ts",
-      clauses: [SECOND_CLAUSE],
+      bindings: [SECOND_CLAUSE],
       prepareFile: () => ({ outcome: "ok", value: { kind: "complete", hits: [] } }),
     });
     const readText = vi
@@ -680,7 +668,7 @@ describe("observeWalkerFile", () => {
     const recordAnchor = vi.fn<(anchor: Anchor) => void>();
     const first = preparedPiece({
       modulePath: "first.ts",
-      clauses: [FIRST_CLAUSE],
+      bindings: [FIRST_CLAUSE],
       prepareFile: () => ({
         outcome: "ok",
         value: {

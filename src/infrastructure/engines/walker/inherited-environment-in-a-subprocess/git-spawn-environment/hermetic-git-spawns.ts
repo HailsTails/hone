@@ -24,7 +24,7 @@ const HERMETIC_ENVIRONMENT_PATTERN =
 const AMBIENT_ENVIRONMENT_PATTERN = /\benv\s*:\s*[^,\n]*\bprocess\.env\b/;
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses }) => ({
+  prepare: ({ bindings }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file, readText }) => {
@@ -42,8 +42,8 @@ export const check: WalkerPiece = {
             span.some((nearby) => HERMETIC_ENVIRONMENT_PATTERN.test(nearby))
           )
             return [];
-          return clauses.map((clause) => ({
-            clause: clause.address,
+          return bindings.map((binding) => ({
+            check: binding.address,
             anchor: { line: index + 1, column: 0 },
             snippet: line.trim(),
           }));

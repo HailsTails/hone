@@ -3,9 +3,10 @@ import { assert, describe, expect, it, vi } from "vitest";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
+import { checkAddressTextOf } from "../domain/language-layer/check-address-text.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { AbsolutePath } from "../domain/repository/absolute-path-types.ts";
-import { TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
+import { sameClauseAddress, TOOL_RULE_SET } from "../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import { readBoundCatalogue } from "../infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
@@ -13,7 +14,8 @@ import {
   createSelectionRepository,
   readRunSettings,
 } from "../infrastructure/disciplines-file/consumer-selection.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { createNamedEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
+import { statedAuthorisedLocationWireSchema } from "../infrastructure/hone-records-folder/records-wire.ts";
 import { createDefaultDirectoryPort } from "../infrastructure/node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../infrastructure/node/file-system/file-text-port.ts";
 import { createDefaultPathPort } from "../infrastructure/node/path-port.ts";
@@ -76,7 +78,7 @@ const readAfter = () => {
       fileText,
       path,
       modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
-      engine: createDefaultEnginePort({}),
+      namedEngine: createNamedEnginePort({}),
       git: {
         trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
         changedSince: vi.fn<GitPort["changedSince"]>(),
@@ -102,27 +104,76 @@ const readAfter = () => {
 
 describe("the plan's version 1 and version 2 files through the settings pipeline", () => {
   it("give the same bindings, each with its clause settings, edition, anchor and piece root", () => {
-    expect(readAfter().selection.bindings).toEqual(readBefore().bindings);
+    const before = readBefore();
+    const expected = before.bindings.flatMap(({ mechanism, clause }) => {
+      const root = before.clauseRoots.find(
+        ({ clause: address }) =>
+          sameClauseAddress({ left: address, right: clause.address }) === "same",
+      );
+      assert.isDefined(root);
+      return root.checks.map((check) => ({
+        address: checkAddressTextOf({ check }),
+        engine: mechanism,
+        anchor: clause.anchor,
+        pieceRoot: clause.pieceRoot,
+        settings: clause.settings,
+        checkSettings: clause.clauseSettings ?? {},
+        edition: clause.edition,
+      }));
+    });
+    const bindings = readAfter().selection.selected.map(({ binding }) => ({
+      address: binding.address,
+      engine: binding.engine,
+      anchor: binding.anchor,
+      pieceRoot: binding.pieceRoot,
+      settings: binding.settings,
+      checkSettings: binding.checkSettings,
+      edition: binding.edition,
+    }));
+    expect(bindings.toSorted((left, right) => left.address.localeCompare(right.address))).toEqual(
+      expected.toSorted((left, right) => left.address.localeCompare(right.address)),
+    );
   });
 
   it("give the same selected clauses, clause roots, not-adopted clauses, not-run clauses, editions and excluded paths", () => {
     const before = readBefore();
     const after = readAfter();
+    const represented = after.selection.selected.filter(
+      ({ check }, index, all) =>
+        all.findIndex(
+          ({ check: earlier }) =>
+            earlier.clause !== undefined &&
+            check.clause !== undefined &&
+            sameClauseAddress({ left: earlier.clause, right: check.clause }) === "same",
+        ) === index,
+    );
     expect({
-      selected: after.selection.selection.selected,
-      clauseRoots: after.selection.clauseRoots,
-      notAdopted: after.selection.selection.notAdopted,
-      notRun: after.selection.selection.notRun,
-      editions: after.selection.selection.editions,
+      selected: represented.map(({ check, binding, exceptions }) => ({
+        address: check.clause,
+        mechanism: binding.engine,
+        exceptions,
+      })),
+      notAdopted: after.selection.notAdopted.map(({ check }) => check.clause),
+      notRun: after.selection.notRun.map(({ check }) => check.clause),
+      editions: represented
+        .filter(({ editions }) => editions.declared.length > 1)
+        .map(({ check, binding, editions }) => ({
+          address: check.clause,
+          mechanism: binding.engine,
+          edition: binding.edition,
+          latest: editions.latest,
+        })),
       excluded: after.selection.excluded,
     }).toEqual({
       selected: before.selection.selected,
-      clauseRoots: before.clauseRoots,
       notAdopted: before.selection.notAdopted,
       notRun: before.selection.notRun,
       editions: before.selection.editions,
       excluded: before.excluded,
     });
+    expect(represented.map(({ check }) => check.clause)).toEqual(
+      before.clauseRoots.map(({ clause }) => clause),
+    );
   });
 
   it("give the same run settings", () => {
@@ -131,7 +182,7 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
 
   it("offers as available every check of a listed symptom that is listed nowhere, and leaves the selection without an uncovered field", () => {
     const after = readAfter();
-    expect(after.selection.selection).not.toHaveProperty("uncovered");
+    expect(after.selection).not.toHaveProperty("uncovered");
     expect({ available: after.available }).toMatchObject({
       available: [
         {
@@ -171,12 +222,14 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
   });
 
   it("requires every record's why-chain in version 2, where version 1 left it optional", () => {
-    expect({
-      before: readBefore().fileExceptionWhyChains,
-      after: readAfter().selection.fileExceptionWhyChains,
-    }).toEqual({
-      before: "optional",
-      after: "required",
+    expect(readBefore().fileExceptionWhyChains).toBe("optional");
+    const result = statedAuthorisedLocationWireSchema.safeParse({
+      answers: "claimed-type#unlisted-cast-site",
+      file: "src/authorised.ts",
+      case: "gives-a-value-its-type",
+      owes: "declared-not-asserted",
     });
+    assert(result.success === false);
+    expect(result.error.issues.map(({ path }) => path)).toEqual([["whyChain"]]);
   });
 });

@@ -732,12 +732,22 @@ const expressionForm = (request: BodyRequest): TestBodyForm | undefined => {
 type Enclosure = "passed-on-function" | "elsewhere";
 
 const IMPLEMENTATION_TAKERS: readonly string[] = ["mockImplementation", "mockImplementationOnce"];
+const TEST_REGISTRATION: ReadonlySet<string> = new Set([
+  "it",
+  "test",
+  "describe",
+  "suite",
+  "beforeAll",
+  "beforeEach",
+  "afterEach",
+  "afterAll",
+]);
 
 const takesImplementation = (request: FormRequest): "takes" | "other" => {
   const { syntaxApi, node } = request;
-  if (!syntaxApi.isCallExpression(node) || !syntaxApi.isPropertyAccessExpression(node.expression))
-    return "other";
+  if (!syntaxApi.isCallExpression(node)) return "other";
   const callee = node.expression;
+  if (!syntaxApi.isPropertyAccessExpression(callee)) return "other";
   const isViFn =
     callee.name.text === "fn" &&
     syntaxApi.isIdentifier(callee.expression) &&
@@ -751,6 +761,25 @@ const enclosingFunctionOf = (request: FormRequest): SyntaxNode | undefined => {
   return enclosingFunctionOf({ syntaxApi: request.syntaxApi, node: request.node.parent });
 };
 
+const directCallbackIsPassedOn = (request: FormRequest): boolean => {
+  const { syntaxApi, node } = request;
+  if (
+    !syntaxApi.isCallExpression(node) ||
+    !syntaxApi.isIdentifier(node.expression) ||
+    TEST_REGISTRATION.has(node.expression.text)
+  ) {
+    return false;
+  }
+  const enclosing = enclosingFunctionOf({ syntaxApi, node: node.parent });
+  if (enclosing === undefined) return true;
+  const registration = enclosing.parent;
+  return (
+    syntaxApi.isCallExpression(registration) &&
+    syntaxApi.isIdentifier(registration.expression) &&
+    TEST_REGISTRATION.has(registration.expression.text)
+  );
+};
+
 const enclosureOf = (request: FormRequest): Enclosure => {
   const { syntaxApi } = request;
   const enclosing = enclosingFunctionOf({ syntaxApi, node: request.node.parent });
@@ -760,7 +789,8 @@ const enclosureOf = (request: FormRequest): Enclosure => {
     : enclosing.parent;
   const passedOn =
     syntaxApi.isObjectLiteralExpression(holder) ||
-    takesImplementation({ syntaxApi, node: holder }) === "takes";
+    takesImplementation({ syntaxApi, node: holder }) === "takes" ||
+    directCallbackIsPassedOn({ syntaxApi, node: holder });
   return passedOn ? "passed-on-function" : "elsewhere";
 };
 
@@ -778,7 +808,7 @@ const snippetAt = (request: { readonly source: string; readonly position: number
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ clauses, syntaxApi }) => ({
+  prepare: ({ bindings, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
@@ -796,25 +826,16 @@ export const check: WalkerPiece = {
                 enter: ({ node }) => {
                   const form = testBodyFormOf({ syntaxApi, declarations, node });
                   if (form === undefined) return;
-                  const reaching = clauses.filter(
-                    (clause) =>
-                      editionReaches({
-                        edition: clause.edition,
-                        introducedIn: form.introducedIn,
-                      }) === "reached",
+                  const binding = bindings.find(
+                    ({ address, forms, edition }) =>
+                      forms?.[form.remedy.section] === address &&
+                      editionReaches({ edition, introducedIn: form.introducedIn }) === "reached",
                   );
-                  if (reaching.length === 0) return;
+                  if (binding === undefined) return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
                   const snippet = snippetAt({ source: sourceFile.text, position });
-                  hits.push(
-                    ...reaching.map((clause) => ({
-                      clause: clause.address,
-                      anchor,
-                      snippet,
-                      remedy: form.remedy,
-                    })),
-                  );
+                  hits.push({ check: binding.address, anchor, snippet, remedy: form.remedy });
                 },
                 finish: () => hits,
               };

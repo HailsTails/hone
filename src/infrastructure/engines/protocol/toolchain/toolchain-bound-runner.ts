@@ -1,7 +1,8 @@
+import type { RunnerFileScope } from "../../../../application/ports/engine/engine-run.ts";
 import type { Result } from "../../../../domain/result.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { NativeException } from "../../../../domain/runner/runner-result-types.ts";
-import type { ChecksRunner, LoadedChecksRunner } from "../checks/checks-runner-types.ts";
+import type { NamedChecksRunner } from "../checks/checks-runner-types.ts";
 import type { EmbeddedRunner } from "../embedded/embedded-runner-module-schema.ts";
 import type { StandaloneRunner } from "../runner-module/runner-module-schema.ts";
 
@@ -48,13 +49,18 @@ export const toolchainBoundEmbeddedRunner = <Toolchain>(request: {
   };
 };
 
-export const toolchainBoundChecksRunner = <Toolchain>(request: {
+export const toolchainBoundNamedChecksRunner = <Toolchain>(request: {
   readonly toolchain: ToolchainLoad<Toolchain>;
+  readonly fileScope: RunnerFileScope;
   readonly projectedKinds: readonly NativeException["kind"][];
-  readonly runnerOf: (toolchain: Toolchain) => ChecksRunner;
-}): LoadedChecksRunner => {
+  readonly runnerOf: (toolchain: Toolchain) => NamedChecksRunner;
+}): NamedChecksRunner & {
+  readonly fileScope: RunnerFileScope;
+  readonly projectedKinds: readonly NativeException["kind"][];
+} => {
   const runner = builtOnce(request);
   return {
+    fileScope: request.fileScope,
     projectedKinds: request.projectedKinds,
     run: (run) =>
       runner.then((built) => (built.outcome === "failed" ? built : built.value.run(run))),

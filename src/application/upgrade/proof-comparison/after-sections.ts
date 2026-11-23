@@ -1,36 +1,41 @@
-import type { Finding } from "../../../domain/finding/governance.ts";
-import { checkAt } from "../../../domain/language-layer/check-address.ts";
+import type { CheckFinding } from "../../../domain/finding/governance.ts";
+import {
+  type CheckAddressText,
+  checkAddressTextOf,
+} from "../../../domain/language-layer/check-address-text.ts";
+import { checkAddressOf } from "../../../domain/language-layer/check-address.ts";
 import type { Check } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { PlacedRecord } from "../../../domain/records/hone-records/hone-record.ts";
 import { runVerdictOf } from "../../../domain/report/report-sections.ts";
 import type { RunReport } from "../../../domain/report/run-report.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import { catalogueOf, type RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import { answeredKeyOf, findingKeyOf, nativeKeyOf } from "./before-sections.ts";
+import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
+import { versionOneClauseAt } from "../record-answers/version-one-observations.ts";
+import { answeredKeyOf, findingKeyOf, nativeReadingKeyOf } from "./before-sections.ts";
 import { joinedKey, type SectionKeys, uniqueKeys } from "./section-keys.ts";
 
-const NO_CHECK_NAMED = "none";
-
-const unknownCheckKeyOf = (request: { readonly finding: Finding }): string =>
-  joinedKey({ parts: ["unknown-check", request.finding.check ?? NO_CHECK_NAMED] });
+const unknownCheckKeyOf = (request: { readonly finding: CheckFinding }): string =>
+  joinedKey({ parts: ["unknown-check", request.finding.check] });
 
 const clauseTextOfFinding = (request: {
-  readonly finding: Finding;
+  readonly finding: CheckFinding;
   readonly catalogues: readonly RuleSetCatalogue[];
 }): string => {
   const { finding, catalogues } = request;
-  const catalogue = catalogueOf({ catalogues, ruleSet: finding.clause.ruleSet });
-  if (finding.check === undefined || catalogue === undefined) {
-    return unknownCheckKeyOf({ finding });
-  }
-  const found = checkAt({ catalogue, address: finding.check });
-  return found.found === "check"
-    ? clauseAddressText({ address: found.check.clause })
-    : unknownCheckKeyOf({ finding });
+  const mapped = versionOneClauseAt({ catalogues, observation: finding });
+  return mapped === undefined
+    ? unknownCheckKeyOf({ finding })
+    : clauseAddressText({ address: mapped });
 };
 
-const clauseTextOfCheck = (request: { readonly check: Check }): string =>
-  clauseAddressText({ address: request.check.clause });
+const clauseTextOfCheck = (request: {
+  readonly check: Check;
+  readonly clauses: ReadonlyMap<CheckAddressText, ClauseAddress>;
+}): string => {
+  const mapped = request.check.clause ?? request.clauses.get(checkAddressTextOf(request));
+  return mapped === undefined ? checkAddressOf(request) : clauseAddressText({ address: mapped });
+};
 
 const recordFileKeyOf = (request: { readonly placed: PlacedRecord }): string =>
   "file" in request.placed.record ? request.placed.record.file : request.placed.record.kind;
@@ -40,6 +45,12 @@ export const afterSectionsOf = (request: {
   readonly catalogues: readonly RuleSetCatalogue[];
 }): SectionKeys => {
   const { report, catalogues } = request;
+  const clauses = new Map<CheckAddressText, ClauseAddress>();
+  for (const { catalogue } of catalogues) {
+    for (const check of catalogue.checks) {
+      if (check.clause !== undefined) clauses.set(checkAddressTextOf({ check }), check.clause);
+    }
+  }
   return {
     excluded: report.excluded,
     findings: report.findings.map((finding) =>
@@ -54,7 +65,13 @@ export const afterSectionsOf = (request: {
         kinds: by.map((placed) => placed.record.kind),
       }),
     ),
-    unrecorded: report.unrecorded.map((exception) => nativeKeyOf({ exception })),
+    unrecorded: report.unrecorded.map((exception) => {
+      const mapped = versionOneClauseAt({ catalogues, observation: exception });
+      return nativeReadingKeyOf({
+        exception,
+        clauseText: mapped === undefined ? exception.check : clauseAddressText({ address: mapped }),
+      });
+    }),
     misnamed: report.misnamed.map(({ kind, ruleId, file, line }) =>
       joinedKey({ parts: [kind, ruleId, file, line] }),
     ),
@@ -66,12 +83,14 @@ export const afterSectionsOf = (request: {
       joinedKey({ parts: [place.file, place.index] }),
     ),
     "not-adopted": uniqueKeys({
-      keys: report["not-adopted"].map((check) => clauseTextOfCheck({ check })),
+      keys: report["not-adopted"].map((check) => clauseTextOfCheck({ check, clauses })),
     }),
-    "not-run": uniqueKeys({ keys: report["not-run"].map((check) => clauseTextOfCheck({ check })) }),
+    "not-run": uniqueKeys({
+      keys: report["not-run"].map((check) => clauseTextOfCheck({ check, clauses })),
+    }),
     editions: uniqueKeys({
       keys: report.editions.map(({ check, engine, edition, latest }) =>
-        joinedKey({ parts: [clauseTextOfCheck({ check }), engine.name, edition, latest] }),
+        joinedKey({ parts: [clauseTextOfCheck({ check, clauses }), engine.name, edition, latest] }),
       ),
     }),
     unmeasured: report.unmeasured.map((unmeasured) =>

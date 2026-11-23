@@ -1,8 +1,7 @@
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import type { ClauseAddress } from "../../../../../domain/rule-set/clause-address-types.ts";
-import { sameClauseAddress } from "../../../../../domain/rule-set/clause-address.ts";
-import type { InlineDisable } from "../../../../../domain/runner/runner-result-types.ts";
+import type { CheckNativeException } from "../../../../../domain/runner/check-observations.ts";
 import type {
   CommentRange,
   SyntaxApi,
@@ -137,20 +136,18 @@ export const typeDirectiveReaderFor = (request: {
         });
 };
 
+type InlineDisable = Extract<CheckNativeException, { readonly kind: "inline-disable" }>;
+
 export type DirectiveEscape = {
-  readonly clause: ClauseAddress;
+  readonly check: CheckAddressText;
   readonly directives: readonly TypeDirective[];
 };
 
 export const escapesOf = (request: {
   readonly escapes: readonly DirectiveEscape[];
-  readonly clauses: readonly ClauseAddress[];
+  readonly checks: readonly CheckAddressText[];
 }): readonly DirectiveEscape[] =>
-  request.escapes.filter((directiveEscape) =>
-    request.clauses.some(
-      (clause) => sameClauseAddress({ left: clause, right: directiveEscape.clause }) === "same",
-    ),
-  );
+  request.escapes.filter((directiveEscape) => request.checks.includes(directiveEscape.check));
 
 export const directiveEscapesIn = (request: {
   readonly sourceFile: SyntaxTree;
@@ -173,11 +170,11 @@ export const directiveEscapesIn = (request: {
         .filter((directiveEscape) => directiveEscape.directives.includes(reading.directive))
         .map((directiveEscape): InlineDisable => ({
           kind: "inline-disable",
-          clause: directiveEscape.clause,
+          check: directiveEscape.check,
           file: request.file,
           line,
           text,
-          reach: "one-clause",
+          reach: "one-check",
         }));
     });
 };

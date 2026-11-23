@@ -5,8 +5,6 @@
     "keyword": "skip"
   },
   "settings": {
-    "pluginNamespace": "hone-cd27",
-    "pluginModule": "eslint-plugin.ts",
     "rule": "skipped-tests"
   },
   "implementation": {

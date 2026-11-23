@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -31,28 +29,25 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/state.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-8"),
-  clause: clauseIdOf("switch-defaults"),
-};
+const ADDRESS: CheckAddressText = "default-on-a-closed-union#default-arm";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const SWITCH = "sw" + "itch";
 const DEFAULT = "def" + "ault";
 const LINE_COMMENT = "/" + "/";
 const BLOCK_OPEN = "/" + "*";
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-8",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "switch-defaults.ts" },
 };
 
 const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -77,9 +72,9 @@ describe("CD-8 existing raw switch state", () => {
       value: {
         kind: "complete",
         hits: [
-          { clause: ADDRESS, anchor: { line: 3, column: 0 }, snippet: `${DEFAULT}: first;` },
+          { check: ADDRESS, anchor: { line: 3, column: 0 }, snippet: `${DEFAULT}: first;` },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 5, column: 0 },
             snippet: `${SWITCH} (second) { ${DEFAULT}: second; }`,
           },
@@ -102,11 +97,11 @@ describe("CD-8 existing raw switch state", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${DEFAULT}: before; ${SWITCH} (value) { ${DEFAULT}: twice; }`,
           },
-          { clause: ADDRESS, anchor: { line: 8, column: 0 }, snippet: `${DEFAULT}: final; }` },
+          { check: ADDRESS, anchor: { line: 8, column: 0 }, snippet: `${DEFAULT}: final; }` },
         ],
       },
     });
@@ -124,17 +119,17 @@ describe("CD-8 existing raw switch state", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 4, column: 0 },
             snippet: `const literal = '${SWITCH} (value) { ${DEFAULT}: string; }';`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 5, column: 0 },
             snippet: `const stable = 1; ${LINE_COMMENT} ${SWITCH} (value) { ${DEFAULT}: inline; }`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 11, column: 0 },
             snippet: `${DEFAULT}: still observed; }`,
           },
@@ -155,12 +150,12 @@ describe("CD-8 existing raw switch state", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `${DEFAULT}: abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrs`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `${DEFAULT}: abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrs…`,
           },

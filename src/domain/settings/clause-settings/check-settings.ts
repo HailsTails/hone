@@ -8,7 +8,7 @@ import type { ClauseSettingValues } from "../../runner/runner-module-types.ts";
 import { JSON_KIND_NAMES, jsonKindOf, sameJsonValue } from "../json-values/json-kind.ts";
 import type { ReadonlyJsonValue } from "../json-values/json-value.ts";
 import { listedAddressText } from "../listed-address.ts";
-import { type GivenCheckSettings, RENAMED_SETTINGS } from "../settings-file.ts";
+import type { GivenCheckSettings } from "../settings-file.ts";
 import type { CheckEditions } from "./check-editions.ts";
 import { defaultClauseSettings } from "./default-clause-settings.ts";
 import { editionPinOf } from "./edition-pin.ts";
@@ -24,13 +24,6 @@ type SettingsRequest = {
   readonly editions: ClauseEditions;
   readonly checkEditions: CheckEditions;
 };
-
-const pieceNameOf = (request: { readonly name: string }): string =>
-  RENAMED_SETTINGS.find((renamed) => renamed.name === request.name)?.pieceName ?? request.name;
-
-const fileNameOf = (request: { readonly pieceName: string }): string =>
-  RENAMED_SETTINGS.find((renamed) => renamed.pieceName === request.pieceName)?.name ??
-  request.pieceName;
 
 const listed = (request: { readonly values: readonly ReadonlyJsonValue[] }): string =>
   request.values.map((choice) => JSON.stringify(choice)).join(", ");
@@ -78,7 +71,7 @@ const settingRefusalOf = (request: {
   readonly declarations: ClauseSettingDeclarations;
 }): string | undefined => {
   if (request.declaration === undefined) {
-    const taken = Object.keys(request.declarations).map((pieceName) => fileNameOf({ pieceName }));
+    const taken = Object.keys(request.declarations);
     return `its check takes no ${request.name}; it takes ${taken.join(", ")}`;
   }
   const kind = jsonKindOf({ value: request.declaration.default });
@@ -105,31 +98,21 @@ const pieceSettingsOf = (
   if (Object.keys(request.declarations).length === 0) {
     return refused({ given: request.given, detail: "its check takes no settings" });
   }
-  const given = Object.entries(request.rest).map(([name, setting]) => ({
-    name,
-    pieceName: pieceNameOf({ name }),
-    setting,
-  }));
+  const given = Object.entries(request.rest);
   const detail = given
-    .map(({ name, pieceName, setting }) =>
+    .map(([name, setting]) =>
       settingRefusalOf({
         name,
         given: setting,
-        declaration: Object.hasOwn(request.declarations, pieceName)
-          ? request.declarations[pieceName]
+        declaration: Object.hasOwn(request.declarations, name)
+          ? request.declarations[name]
           : undefined,
         declarations: request.declarations,
       }),
     )
     .find((refusal) => refusal !== undefined);
   return detail === undefined
-    ? {
-        outcome: "ok",
-        value: {
-          ...defaults,
-          ...Object.fromEntries(given.map(({ pieceName, setting }) => [pieceName, setting])),
-        },
-      }
+    ? { outcome: "ok", value: { ...defaults, ...request.rest } }
     : refused({ given: request.given, detail });
 };
 

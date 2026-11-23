@@ -108,14 +108,10 @@ describe("readBoundCatalogue", () => {
       },
     });
   });
-  it("reads a team's content from its rules folder and its pieces from its mechanisms folder", () => {
+  it("reports an unreadable catalogue in the team's own rules folder", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi
-        .fn<FileTextPort["exists"]>()
-        .mockReturnValueOnce("absent")
-        .mockReturnValueOnce("present")
-        .mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
@@ -123,7 +119,7 @@ describe("readBoundCatalogue", () => {
         outcome: "failed",
         error: {
           kind: "directory-unreadable",
-          path: absoluteRootOf("/repo/team-rules/mechanisms/audit"),
+          path: absoluteRootOf("/repo/team-rules/rules"),
           detail: "EACCES",
         },
       }),
@@ -142,14 +138,11 @@ describe("readBoundCatalogue", () => {
       outcome: "failed",
       error: {
         kind: "file-unreadable",
-        path: "/repo/team-rules/mechanisms/audit",
+        path: "/repo/team-rules/rules",
         detail: "EACCES",
       },
     });
-    expect(fileText.exists).toHaveBeenNthCalledWith(1, { path: "/repo/team-rules/rules" });
-    expect(fileText.exists).toHaveBeenNthCalledWith(2, {
-      path: "/repo/team-rules/mechanisms/audit",
-    });
+    expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/rules" });
     expect(fileText.read).not.toHaveBeenCalled();
   });
 
@@ -173,9 +166,8 @@ describe("readBoundCatalogue", () => {
         installRoot: INSTALL_ROOT,
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });
-    expect(fileText.exists).toHaveBeenNthCalledWith(2, {
-      path: "/repo/team-rules/mechanisms/audit",
-    });
+    expect(fileText.exists).toHaveBeenCalledExactlyOnceWith({ path: "/repo/team-rules/rules" });
+    expect(directory.list).not.toHaveBeenCalled();
   });
 });
 
@@ -183,11 +175,7 @@ describe("createBoundCatalogueOf", () => {
   it("reads through the directory it was built with", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>(),
-      exists: vi
-        .fn<FileTextPort["exists"]>()
-        .mockReturnValueOnce("absent")
-        .mockReturnValueOnce("present")
-        .mockReturnValueOnce("absent"),
+      exists: vi.fn<FileTextPort["exists"]>().mockReturnValueOnce("present"),
       write: vi.fn<FileTextPort["write"]>(),
     };
     const directory: DirectoryPort = {
@@ -204,7 +192,7 @@ describe("createBoundCatalogueOf", () => {
       }),
     ).toEqual({ outcome: "ok", value: { held: "none" } });
     expect(directory.list).toHaveBeenCalledExactlyOnceWith({
-      path: "/repo/team-rules/mechanisms/audit",
+      path: "/repo/team-rules/rules",
     });
   });
 });

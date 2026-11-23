@@ -1,15 +1,11 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
-import type { RunRequest } from "../../../application/ports/engine/runner-module.ts";
+import type { NamedEngineRunRequest } from "../../../application/ports/engine/engine-run.ts";
 import type { EntryKindPort } from "../../../application/ports/file-system/entry-kind-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../application/ports/host/module-loader-port.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { selectionFrom } from "../../disciplines-file/consumer-selection.ts";
 import { selectionFileOf } from "../../disciplines-file/selection-file.ts";
 import { createWalkerRunner } from "../../engines/walker/runner/create-walker-runner.ts";
@@ -131,16 +127,8 @@ const pieceModules: ModuleLoaderPort = {
     Promise.resolve({ outcome: "ok", value: PIECE_MODULES[modulePath] }),
 };
 
-const PROBE_ADDRESS = {
-  ruleSet: { name: ruleSetNameOf("probe") },
-  discipline: disciplineIdOf("PD-1"),
-  clause: clauseIdOf("no-tmp-files"),
-};
-const EXPORT_TEST_SIBLING_ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-23"),
-  clause: clauseIdOf("export-test-sibling"),
-};
+const PROBE_ADDRESS = "temporary-file#no-tmp-files";
+const EXPORT_TEST_SIBLING_ADDRESS = "unit-without-a-running-test#companion-test-file";
 
 const TRACKED = [
   repoPathOf("src/scratch.tmp.ts"),
@@ -150,12 +138,34 @@ const TRACKED = [
   repoPathOf("README.md"),
 ];
 
-const RUN: RunRequest = {
+const RUN: NamedEngineRunRequest = {
   repoRoot: REPO_ROOT,
   installRoot: INSTALL_ROOT,
   files: TRACKED,
   trackedPaths: TRACKED,
-  clauses: [PROBE_BINDING.clause, EXPORT_TEST_SIBLING_BINDING.clause],
+  bindings: [
+    {
+      address: PROBE_ADDRESS,
+      engine: "walker",
+      checkSettings: PROBE_BINDING.clause.clauseSettings,
+      pieceRoot: PROBE_BINDING.clause.pieceRoot,
+      anchor: PROBE_BINDING.clause.anchor,
+      edition: PROBE_BINDING.clause.edition,
+      settings: PROBE_BINDING.clause.settings,
+    },
+    {
+      address: EXPORT_TEST_SIBLING_ADDRESS,
+      engine: "walker",
+      checkSettings: EXPORT_TEST_SIBLING_BINDING.clause.clauseSettings,
+      pieceRoot: EXPORT_TEST_SIBLING_BINDING.clause.pieceRoot,
+      anchor: EXPORT_TEST_SIBLING_BINDING.clause.anchor,
+      edition: EXPORT_TEST_SIBLING_BINDING.clause.edition,
+      settings: EXPORT_TEST_SIBLING_BINDING.clause.settings,
+    },
+  ],
+  answered: [],
+  declaredConfigRoots: [],
+  declaredConfigLookup: undefined,
 };
 
 const probeRun = () => {
@@ -177,13 +187,13 @@ describe("a run selecting the probe rule set's PD-1 beside CD-23 through the aud
     assert(ran.outcome === "ok", "the run measures the tracked files");
     expect(ran.value.hits).toEqual([
       {
-        clause: PROBE_ADDRESS,
+        check: PROBE_ADDRESS,
         file: "src/scratch.tmp.ts",
         anchor: { line: 1, column: 0 },
         snippet: "src/scratch.tmp.ts",
       },
       {
-        clause: EXPORT_TEST_SIBLING_ADDRESS,
+        check: EXPORT_TEST_SIBLING_ADDRESS,
         file: "src/kept.ts",
         anchor: { line: 1, column: 0 },
         snippet: "missing co-located *.test.ts(x) sibling",

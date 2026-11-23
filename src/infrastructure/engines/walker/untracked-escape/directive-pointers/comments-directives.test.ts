@@ -1,15 +1,13 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type {
-  ClauseSettingValues,
-  RunnerClause,
-} from "../../../../../domain/runner/runner-module-types.ts";
+  CheckSettingValues,
+  CheckBinding,
+} from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, SourceObservers } from "../../runner/pieces/walker-piece.ts";
@@ -34,11 +32,7 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/annotations.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-5"),
-  clause: clauseIdOf("comments-directives"),
-};
+const ADDRESS: CheckAddressText = "untracked-escape#directive-pointers";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const TODO_ANNOTATION = "TO" + "DO";
 const TYPE_EXPECTATION = "@ts-expect-" + "error";
@@ -52,31 +46,32 @@ const BLOCK_COMMENT = SYNTAX_API.SyntaxKind.MultiLineCommentTrivia;
 type CommentKind = typeof LINE_COMMENT | typeof BLOCK_COMMENT;
 type CommentCase = { readonly name: string; readonly comment: string; readonly kind: CommentKind };
 
-const CLAUSE_WITH_NO_SETTINGS: RunnerClause = {
+const CLAUSE_WITH_NO_SETTINGS: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-5",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "comments-directives.ts" },
 };
-const clauseWith = (request: { readonly clauseSettings: ClauseSettingValues }): RunnerClause => ({
+const clauseWith = (request: { readonly checkSettings: CheckSettingValues }): CheckBinding => ({
   ...CLAUSE_WITH_NO_SETTINGS,
-  clauseSettings: request.clauseSettings,
+  checkSettings: request.checkSettings,
 });
-const CLAUSE = clauseWith({ clauseSettings: { trackerPatterns: ANY_TOKEN_PATTERNS } });
-const SPEC_CLAUSE = clauseWith({ clauseSettings: { trackerPatterns: SPEC_TRACKER_PATTERNS } });
+const CLAUSE = clauseWith({ checkSettings: { trackerPatterns: ANY_TOKEN_PATTERNS } });
+const SPEC_CLAUSE = clauseWith({ checkSettings: { trackerPatterns: SPEC_TRACKER_PATTERNS } });
 
 const sourceObservations = (request: {
   readonly source: string;
-  readonly clause?: RunnerClause;
+  readonly clause?: CheckBinding;
 }): {
   readonly observers: SourceObservers;
   readonly anchorAt: Mock<(request: { readonly position: number }) => Anchor>;
   readonly finish: PreparedWalkerCheck["finish"];
 } => {
   const prepared = check.prepare({
-    clauses: [request.clause ?? CLAUSE],
+    bindings: [request.clause ?? CLAUSE],
     repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
     syntaxApi: SYNTAX_API,
   });
@@ -108,7 +103,7 @@ const sourceObservations = (request: {
 const singleCommentHits = (request: {
   readonly comment: string;
   readonly kind?: CommentKind;
-  readonly clause?: RunnerClause;
+  readonly clause?: CheckBinding;
 }): ReturnType<SourceObservers["finish"]> => {
   const observed = sourceObservations({
     source: `${request.comment}\nexport const marker = 1;\n`,
@@ -137,7 +132,7 @@ describe("CD-5 existing annotation capability", () => {
   ])("preserves source eligibility without a read for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -174,10 +169,10 @@ describe("CD-5 existing annotation capability", () => {
     });
 
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: firstTask },
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: `// ${TODO_ANNOTATION} second` },
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: directive },
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: expectation },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: firstTask },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: `// ${TODO_ANNOTATION} second` },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: directive },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: expectation },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([
       [{ position: expectation.length + directive.length + 2 }],
@@ -197,7 +192,7 @@ describe("CD-5 existing annotation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 7, column: 2 },
         snippet: "/* eslint no-console: off\nreason */",
       },
@@ -212,7 +207,7 @@ describe("CD-5 existing annotation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 7, column: 2 },
         snippet: `const note = '// ${TODO_ANNOTATION} later';`,
       },
@@ -260,7 +255,7 @@ describe("CD-5 type directives", () => {
     },
   ])("flags $name without a tracked reference", ({ comment, kind }) => {
     expect(singleCommentHits({ comment, kind })).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: comment },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: comment },
     ]);
   });
 
@@ -315,13 +310,13 @@ describe("CD-5 tracked references with the default patterns", () => {
     const observed = sourceObservations({ source: `${task}\n` });
 
     expect(singleCommentHits({ comment: directive })).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: directive },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: directive },
     ]);
     expect(singleCommentHits({ comment: expectation })).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: expectation },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: expectation },
     ]);
     expect(observed.observers.finish()).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: task },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: task },
     ]);
   });
 });
@@ -354,16 +349,16 @@ describe("CD-5 configured tracker patterns", () => {
 
     expect(singleCommentHits({ comment: tracked, clause: SPEC_CLAUSE })).toEqual([]);
     expect(singleCommentHits({ comment: untracked, clause: SPEC_CLAUSE })).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: untracked },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: untracked },
     ]);
     expect(
       sourceObservations({ source: `${task}\n`, clause: SPEC_CLAUSE }).observers.finish(),
-    ).toEqual([{ clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: task }]);
+    ).toEqual([{ check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: task }]);
   });
 
   it("accepts a reference any one of several configured patterns chooses", () => {
     const clause = clauseWith({
-      clauseSettings: { trackerPatterns: [...SPEC_TRACKER_PATTERNS, "^\\(ABC-\\d+\\)$"] },
+      checkSettings: { trackerPatterns: [...SPEC_TRACKER_PATTERNS, "^\\(ABC-\\d+\\)$"] },
     });
 
     expect(singleCommentHits({ comment: `// ${TYPE_IGNORE} reason (ABC-12)`, clause })).toEqual([]);
@@ -374,39 +369,39 @@ describe("CD-5 configured tracker patterns", () => {
     { name: "empty parentheses", tracker: "()" },
     { name: "a reference with a space", tracker: "(issue 42)" },
   ])("cannot loosen the default shape to accept $name", ({ tracker }) => {
-    const clause = clauseWith({ clauseSettings: { trackerPatterns: [".*"] } });
+    const clause = clauseWith({ checkSettings: { trackerPatterns: [".*"] } });
     const directive = `// biome-ignore lint/example: rationale ${tracker}`;
 
     expect(singleCommentHits({ comment: directive, clause })).toEqual([
-      { clause: ADDRESS, anchor: { line: 7, column: 2 }, snippet: directive },
+      { check: ADDRESS, anchor: { line: 7, column: 2 }, snippet: directive },
     ]);
   });
 
-  it.each<{ readonly name: string; readonly clause: RunnerClause; readonly detail: string }>([
+  it.each<{ readonly name: string; readonly clause: CheckBinding; readonly detail: string }>([
     {
       name: "no tracker patterns",
       clause: CLAUSE_WITH_NO_SETTINGS,
-      detail: "the clauseSettings of CD-5#comments-directives are malformed",
+      detail: "the checkSettings of untracked-escape#directive-pointers are malformed",
     },
     {
       name: "a pattern list that is not an array",
-      clause: clauseWith({ clauseSettings: { trackerPatterns: "\\(#\\d+\\)" } }),
-      detail: "the clauseSettings of CD-5#comments-directives are malformed",
+      clause: clauseWith({ checkSettings: { trackerPatterns: "\\(#\\d+\\)" } }),
+      detail: "the checkSettings of untracked-escape#directive-pointers are malformed",
     },
     {
       name: "an empty pattern",
-      clause: clauseWith({ clauseSettings: { trackerPatterns: [""] } }),
-      detail: "the clauseSettings of CD-5#comments-directives are malformed",
+      clause: clauseWith({ checkSettings: { trackerPatterns: [""] } }),
+      detail: "the checkSettings of untracked-escape#directive-pointers are malformed",
     },
     {
       name: "a pattern that does not compile",
-      clause: clauseWith({ clauseSettings: { trackerPatterns: ["(spec-"] } }),
+      clause: clauseWith({ checkSettings: { trackerPatterns: ["(spec-"] } }),
       detail:
-        'the clauseSettings of CD-5#comments-directives are malformed: trackerPatterns entry "(spec-" is not a regular expression',
+        'the checkSettings of untracked-escape#directive-pointers are malformed: trackerPatterns entry "(spec-" is not a regular expression',
     },
   ])("refuses to prepare with $name, naming the clause", ({ clause, detail }) => {
     const prepared = check.prepare({
-      clauses: [clause],
+      bindings: [clause],
       repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });

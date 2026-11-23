@@ -2,13 +2,11 @@ import { assert, describe, expect, it } from "vitest";
 
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import { createWalkerRunner } from "../../runner/create-walker-runner.ts";
@@ -32,17 +30,14 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const CLASS_ON_LINE_THREE = "const a = 1;\n\n  class Alpha {}\n";
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-14"),
-  clause: clauseIdOf("class-syntax"),
-};
+const ADDRESS: CheckAddressText = "authored-class-or-this#class-keyword";
 
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: "/install/mechanisms/audit/CD-14",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "class-syntax.ts" },
 };
@@ -73,7 +68,7 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
   ])("flags nothing in $name, a generated folder the audit skips", async ({ name, fileName }) => {
     expect(
       await walkerRunner.conform({
-        clause: CLAUSE,
+        binding: CLAUSE,
         cases: [
           {
             name,
@@ -93,21 +88,27 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
         installRoot: absoluteRootOf("/install"),
         files: [repoPathOf("src/alpha.ts")],
         trackedPaths: [repoPathOf("src/alpha.ts")],
-        clauses: [CLAUSE],
+        bindings: [CLAUSE],
+        answered: [],
+        declaredConfigRoots: [],
+        declaredConfigLookup: undefined,
       }),
     ).toEqual({
       outcome: "ok",
       value: {
+        projection: "none",
+        slices: [],
+        misnamedRuleIds: [],
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             file: "src/alpha.ts",
             anchor: { line: 3, column: 2 },
             snippet: "class Alpha {}",
           },
         ],
         nativeExceptions: [],
-        measured: [{ clause: ADDRESS, file: "src/alpha.ts" }],
+        measured: [{ check: ADDRESS, file: "src/alpha.ts" }],
       },
     });
   });

@@ -6,12 +6,12 @@ import type { ClauseAddress } from "../../../../../domain/rule-set/clause-addres
 import type { EngineId } from "../../../../../domain/rule-set/identifier-types.ts";
 import { TOOL_IDENTITY } from "../../../../../domain/rule-set/tool-identity.ts";
 
-export type RuledCheck = {
-  readonly name: string;
+export type PluginCheck = AddressedCheck & {
   readonly symptom: { readonly name: string; readonly title: string };
-  readonly clause: ClauseAddress;
   readonly engines: readonly { readonly name: EngineId }[];
 };
+
+export type RuledCheck = PluginCheck & { readonly clause?: ClauseAddress };
 
 export type CheckOfRuleId<Checked> =
   | { readonly found: "check"; readonly check: Checked }
@@ -30,11 +30,11 @@ export const checkRuleIdOf = (request: { readonly check: AddressedCheck }): stri
   `${RULE_ID_PREFIX}${checkRuleNameOf(request)}`;
 
 export const runsOnEslint = (request: {
-  readonly check: Pick<RuledCheck, "engines">;
+  readonly check: Pick<PluginCheck, "engines">;
 }): "eslint" | "elsewhere" =>
   request.check.engines.some((engine) => engine.name === ESLINT_MECHANISM) ? "eslint" : "elsewhere";
 
-export const checkOfRuleId = <Checked extends RuledCheck>(request: {
+export const checkOfRuleId = <Checked extends PluginCheck>(request: {
   readonly checks: readonly Checked[];
   readonly ruleId: string;
 }): CheckOfRuleId<Checked> => {
@@ -47,7 +47,7 @@ export const checkOfRuleId = <Checked extends RuledCheck>(request: {
 };
 
 export const eslintRuleIdsOf = (request: {
-  readonly checks: readonly RuledCheck[];
+  readonly checks: readonly PluginCheck[];
 }): readonly string[] =>
   request.checks
     .filter((check) => runsOnEslint({ check }) === "eslint")

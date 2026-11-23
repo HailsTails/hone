@@ -1,6 +1,6 @@
 import { afterAll, assert, describe, expect, it } from "vitest";
 
-import type { LoadedRunner } from "../../../../../application/ports/engine/runner-module.ts";
+import type { ParsedNamedRunner } from "../../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import type { PathPort } from "../../../../../application/ports/host/path-port.ts";
@@ -15,6 +15,7 @@ import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts"
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import type { ClauseDefinition } from "../../../../../domain/rule-set/rule-set-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
@@ -32,11 +33,15 @@ import { createDefaultDirectoryPort } from "../../../../node/file-system/file-sy
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
-import { checkConformance } from "../../../protocol/conformance.ts";
+import { namedCheckConformance } from "../../../protocol/conformance.ts";
 import type { EmbeddedRunner } from "../../../protocol/embedded/embedded-runner-module-schema.ts";
-import { loadedEngineOf } from "../../../protocol/engine-run/engine-run.ts";
-import { toolchainBoundEmbeddedRunner } from "../../../protocol/toolchain/toolchain-bound-runner.ts";
-import { runner as walkerRunner } from "../../../walker/runner/runner.ts";
+import { loadedNamedRunnerOf } from "../../../protocol/engine-run/engine-run.ts";
+import {
+  toolchainBoundEmbeddedRunner,
+  toolchainBoundNamedChecksRunner,
+} from "../../../protocol/toolchain/toolchain-bound-runner.ts";
+import { namedChecksRunner as walkerRunner } from "../../../walker/runner/runner.ts";
+import { createChecksRunner } from "../checks-runner/checks-runner.ts";
 import {
   createEslintRunner,
   ESLINT_PROJECTED_KINDS,
@@ -133,6 +138,24 @@ const eslintRunnerOn = (request: { readonly line: EslintLine }): EmbeddedRunner 
       }),
   });
 
+const namedRunnerOn = (request: { readonly line: EslintLine }) =>
+  toolchainBoundNamedChecksRunner({
+    toolchain: loadedEslintToolchain(request).then(
+      (toolchain): Result<EslintToolchain, RunnerFailure> => ({ outcome: "ok", value: toolchain }),
+    ),
+    fileScope: "typescript",
+    projectedKinds: ESLINT_PROJECTED_KINDS,
+    runnerOf: (toolchain) =>
+      createChecksRunner({
+        fileText: createDefaultFileTextPort({}),
+        fileRemoval: createDefaultFileRemovalPort({}),
+        modules: pieceModulesOn({ line: request.line, base: createDefaultModuleLoaderPort({}) }),
+        path: createDefaultPathPort({}),
+        eslint: createEslintPort({ toolchain }),
+        moduleExtension: ".ts",
+      }),
+  });
+
 const runnerModulesOn = (request: {
   readonly line: EslintLine;
   readonly base: ModuleLoaderPort;
@@ -141,7 +164,7 @@ const runnerModulesOn = (request: {
     load.path.replaceAll("\\", "/").endsWith(RUNNER_MODULE_SUFFIX)
       ? Promise.resolve({
           outcome: "ok",
-          value: { runner: eslintRunnerOn({ line: request.line }) },
+          value: { namedChecksRunner: namedRunnerOn({ line: request.line }) },
         })
       : request.base.load(load),
 });
@@ -493,11 +516,12 @@ const ESLINT_CLAUSE: RunnerClause = {
   },
 };
 
-const WALKER_CLAUSE: RunnerClause = {
-  address: CLAUSE,
+const WALKER_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  engine: "walker",
   anchor: { kind: "keyword", keyword: "class" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/authored-class-or-this/class-keyword`,
-  clauseSettings: {},
+  checkSettings: {},
   edition: FIRST_EDITION,
   settings: { module: "class-syntax.ts" },
 };
@@ -1051,7 +1075,12 @@ describe.each(ESLINT_LINES)(
         records: [],
         clauses: [ESLINT_CLAUSE],
       });
-      const walkerRun = await walkerRunner.run({ ...SHARED_CASES_RUN, clauses: [WALKER_CLAUSE] });
+      const walkerRun = await walkerRunner.run({
+        ...SHARED_CASES_RUN,
+        bindings: [WALKER_BINDING],
+        answered: [],
+        declaredConfigLookup: undefined,
+      });
       expect({ eslint: eslintRun, audit: walkerRun }).toEqual({
         eslint: {
           outcome: "ok",
@@ -1067,9 +1096,20 @@ describe.each(ESLINT_LINES)(
         audit: {
           outcome: "ok",
           value: {
-            hits: EXPECTED_SHARED_HITS,
+            hits: EXPECTED_SHARED_HITS.map(({ file, anchor, snippet }) => ({
+              check: "authored-class-or-this#class-keyword",
+              file,
+              anchor,
+              snippet,
+            })),
             nativeExceptions: [],
-            measured: CLASS_SYNTAX_MEASURED_ON_SHARED_CASES,
+            measured: CLASS_SYNTAX_MEASURED_ON_SHARED_CASES.map(({ file }) => ({
+              check: "authored-class-or-this#class-keyword",
+              file,
+            })),
+            projection: "none",
+            slices: [],
+            misnamedRuleIds: [],
           },
         },
       });
@@ -1115,12 +1155,22 @@ const classSyntaxCases = (): MechanicalCases => {
   return classSyntax.cases;
 };
 
+const ESLINT_CLASS_BINDING: CheckBinding = {
+  address: "authored-class-or-this#class-keyword",
+  engine: "eslint",
+  anchor: ESLINT_CLAUSE.anchor,
+  pieceRoot: ESLINT_CLAUSE.pieceRoot,
+  edition: ESLINT_CLAUSE.edition,
+  checkSettings: ESLINT_CLAUSE.clauseSettings,
+  settings: ESLINT_CLAUSE.settings,
+};
+
 const CLASS_SYNTAX_CASES = classSyntaxCases();
 
 const coreLoadedEslintRunner = async (request: {
   readonly line: EslintLine;
-}): Promise<LoadedRunner> => {
-  const loaded = await loadedEngineOf({
+}): Promise<ParsedNamedRunner> => {
+  const loaded = await loadedNamedRunnerOf({
     installRoot: INSTALL_ROOT,
     moduleExtension: ".ts",
     modules: runnerModulesOn({ line: request.line, base: modules }),
@@ -1128,16 +1178,16 @@ const coreLoadedEslintRunner = async (request: {
     mechanism: "eslint",
   });
   assert(loaded.outcome === "ok", "core loads the ESLint runner module");
-  return loaded.value.runner;
+  return loaded.value;
 };
 
 describe.each(ESLINT_LINES)(
-  "checkConformance over the ESLint runner as core loads it, on real %s",
+  "named check conformance over the loaded ESLint runner, on real %s",
   (line) => {
     it("has no failures for CD-14#class-syntax over every CD-14 shared case", async () => {
       await expect(
-        checkConformance({
-          clause: ESLINT_CLAUSE,
+        namedCheckConformance({
+          binding: ESLINT_CLASS_BINDING,
           cases: [...CLASS_SYNTAX_CASES.flag, ...CLASS_SYNTAX_CASES.allow],
           runner: await coreLoadedEslintRunner({ line }),
         }),

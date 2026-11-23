@@ -3,7 +3,12 @@ import { z } from "zod";
 import type { LoadedRunner } from "../../../application/ports/engine/runner-module.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { SourceCase } from "../../../domain/rule-set/rule-set-types.ts";
-import type { ConformanceFailure } from "../../../domain/runner/conformance-types.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
+import type {
+  CaseMismatch,
+  CheckConformanceFailure,
+  ConformanceFailure,
+} from "../../../domain/runner/conformance-types.ts";
 import {
   type RunnerFailure,
   rejectedCall,
@@ -46,8 +51,7 @@ const unmatchedVerdict = (request: {
 const caseConformance = (request: {
   readonly sourceCase: SourceCase;
   readonly verdicts: readonly CaseVerdict[];
-  readonly clause: RunnerClause;
-}): readonly ConformanceFailure[] => {
+}): readonly CaseMismatch[] => {
   const { sourceCase } = request;
   const expectedLines = lineSet({ lines: sourceCase.expectedLines });
   const flaggedLines = lineSet({
@@ -58,16 +62,13 @@ const caseConformance = (request: {
   if (expectedLines.join(" ") === flaggedLines.join(" ")) {
     return [];
   }
-  return [
-    { clause: request.clause.address, caseName: sourceCase.name, expectedLines, flaggedLines },
-  ];
+  return [{ caseName: sourceCase.name, expectedLines, flaggedLines }];
 };
 
 const conformanceOf = (request: {
   readonly returned: unknown;
-  readonly clause: RunnerClause;
   readonly cases: readonly SourceCase[];
-}): Result<readonly ConformanceFailure[], RunnerFailure> => {
+}): Result<readonly CaseMismatch[], RunnerFailure> => {
   const parsed = caseVerdictsResultSchema.safeParse(request.returned);
   if (!parsed.success) {
     return runnerInvalidOutput({ detail: z.prettifyError(parsed.error) });
@@ -82,20 +83,56 @@ const conformanceOf = (request: {
   }
   return {
     outcome: "ok",
-    value: request.cases.flatMap((sourceCase) =>
-      caseConformance({ sourceCase, verdicts, clause: request.clause }),
-    ),
+    value: request.cases.flatMap((sourceCase) => caseConformance({ sourceCase, verdicts })),
   };
 };
 
-export const checkConformance = (request: {
+const compareCases = async (request: {
+  readonly act: () => Promise<unknown>;
+  readonly cases: readonly SourceCase[];
+}): Promise<Result<readonly CaseMismatch[], RunnerFailure>> =>
+  Promise.resolve()
+    .then(request.act)
+    .then(
+      (returned) => conformanceOf({ returned, cases: request.cases }),
+      (thrown: unknown) => rejectedCall({ thrown }),
+    );
+
+export const checkConformance = async (request: {
   readonly clause: RunnerClause;
   readonly cases: readonly SourceCase[];
   readonly runner: Pick<LoadedRunner, "conform">;
-}): Promise<Result<readonly ConformanceFailure[], RunnerFailure>> =>
-  Promise.resolve()
-    .then(() => request.runner.conform({ clause: request.clause, cases: request.cases }))
-    .then(
-      (returned) => conformanceOf({ returned, clause: request.clause, cases: request.cases }),
-      (thrown: unknown) => rejectedCall({ thrown }),
-    );
+}): Promise<Result<readonly ConformanceFailure[], RunnerFailure>> => {
+  const compared = await compareCases({
+    ...request,
+    act: () => request.runner.conform({ clause: request.clause, cases: request.cases }),
+  });
+  return compared.outcome === "failed"
+    ? compared
+    : {
+        outcome: "ok",
+        value: compared.value.map((failure) => ({ ...failure, clause: request.clause.address })),
+      };
+};
+
+export const namedCheckConformance = async (request: {
+  readonly binding: CheckBinding;
+  readonly cases: readonly SourceCase[];
+  readonly runner: {
+    readonly conform: (request: {
+      readonly binding: CheckBinding;
+      readonly cases: readonly SourceCase[];
+    }) => Promise<unknown>;
+  };
+}): Promise<Result<readonly CheckConformanceFailure[], RunnerFailure>> => {
+  const compared = await compareCases({
+    ...request,
+    act: () => request.runner.conform({ binding: request.binding, cases: request.cases }),
+  });
+  return compared.outcome === "failed"
+    ? compared
+    : {
+        outcome: "ok",
+        value: compared.value.map((failure) => ({ ...failure, check: request.binding.address })),
+      };
+};

@@ -100,7 +100,7 @@ const legacyPieceFileSchema = z.looseObject({
 const namedPieceFileSchema = z.looseObject({
   version: z.literal(2),
   implementation: namedPieceImplementationSchema.optional(),
-  settings: pieceModuleSettingsSchema,
+  settings: pieceModuleSettingsSchema.optional(),
 });
 
 const pieceFileSchema = z.union([
@@ -196,7 +196,9 @@ const pieceModuleEntries = (request: ParsedPiece): readonly string[] => {
     implementation === undefined
       ? folder
       : `${mechanismFolder}/${implementation.symptom}/${implementation.check}`;
-  return modulesNamedIn({ settings }).map((module) => `${moduleFolder}/${module}`);
+  return settings === undefined
+    ? []
+    : modulesNamedIn({ settings }).map((module) => `${moduleFolder}/${module}`);
 };
 
 type MechanismImport = "by-package-name" | "by-path";

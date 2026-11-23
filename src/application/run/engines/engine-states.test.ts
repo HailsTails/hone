@@ -7,16 +7,16 @@ import type {
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { RunMeasurement } from "../../../domain/records/measurement/measured-at.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import type { EngineRun } from "../../ports/engine/engine-run.ts";
+import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
+import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import {
   engineMeasurementOf,
   engineProblemsOf,
   engineUnmeasuredOf,
   refreshableProjectionOf,
 } from "./engine-states.ts";
+
+const CAST = "claimed-type#cast-expressions";
 
 const AUDIT = "walker" as const;
 
@@ -55,16 +55,15 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 };
 
 const runWith = (request: {
-  readonly mechanism: EngineRun["mechanism"];
-  readonly projection: EngineRun["projection"];
-}): EngineRun => ({
+  readonly mechanism: NamedEngineRun["mechanism"];
+  readonly projection: NamedEngineRun["projection"];
+}): NamedEngineRun => ({
   mechanism: request.mechanism,
   hits: [],
   nativeExceptions: [],
   coverableKinds: [],
   projection: request.projection,
   slices: [],
-  unprojectedFolders: [],
   measured: [],
   misnamedRuleIds: [],
 });
@@ -129,13 +128,9 @@ describe("engineUnmeasuredOf", () => {
 });
 
 describe("engineUnmeasuredOf, an engine that measured nothing", () => {
-  const CLAUSE = {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-2"),
-    clause: clauseIdOf("cast-expressions"),
-  };
-
-  const SELECTED = [{ address: CLAUSE, mechanism: ESLINT, exceptions: "allowed" as const }];
+  const SELECTED: readonly Pick<CheckBinding, "address" | "engine">[] = [
+    { address: CAST, engine: ESLINT },
+  ];
 
   const MEASURED_NOTHING = {
     kind: "engine-not-run",
@@ -186,15 +181,12 @@ describe("engineUnmeasuredOf, an engine that measured nothing", () => {
         runs: [
           {
             ...runWith({ mechanism: ESLINT, projection: "current" }),
-            measured: [{ clause: CLAUSE, file: repoPathOf("src/a.ts") }],
+            measured: [{ check: CAST, file: repoPathOf("src/a.ts") }],
           },
           runWith({ mechanism: AUDIT, projection: "none" }),
         ],
         tracked: TRACKED,
-        selected: [
-          ...SELECTED,
-          { address: CLAUSE, mechanism: AUDIT, exceptions: "allowed" as const },
-        ],
+        selected: [...SELECTED, { address: CAST, engine: AUDIT }],
       }),
     ).toEqual([]);
     expect(
@@ -217,19 +209,13 @@ const eslintRun = (request: Pick<RunMeasurement, "selected" | "measured">): RunM
   ...request,
 });
 
-const CLAUSE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-2"),
-  clause: clauseIdOf("cast-expressions"),
-};
-
 const IN_REACH = [FILE_A, FILE_B];
 
 describe("engineMeasurementOf", () => {
-  it("says measured-nothing for a run with selected clauses that reported no measured pair", () => {
+  it("says measured-nothing for a run with selected checks that reported no measured pair", () => {
     expect(
       engineMeasurementOf({
-        run: eslintRun({ selected: [CLAUSE], measured: [] }),
+        run: eslintRun({ selected: [CAST], measured: [] }),
         inReach: IN_REACH,
       }),
     ).toBe("measured-nothing");
@@ -238,15 +224,15 @@ describe("engineMeasurementOf", () => {
   it("says measured-something for a run that reported a measured pair", () => {
     expect(
       engineMeasurementOf({
-        run: eslintRun({ selected: [CLAUSE], measured: [{ clause: CLAUSE, file: FILE_A }] }),
+        run: eslintRun({ selected: [CAST], measured: [{ check: CAST, file: FILE_A }] }),
         inReach: IN_REACH,
       }),
     ).toBe("measured-something");
   });
 
-  it("says nothing-to-measure for a run with selected clauses when no file is in its reach", () => {
+  it("says nothing-to-measure for a run with selected checks when no file is in its reach", () => {
     expect(
-      engineMeasurementOf({ run: eslintRun({ selected: [CLAUSE], measured: [] }), inReach: [] }),
+      engineMeasurementOf({ run: eslintRun({ selected: [CAST], measured: [] }), inReach: [] }),
     ).toBe("nothing-to-measure");
   });
 
@@ -268,7 +254,7 @@ describe("engineProblemsOf", () => {
   });
 
   it("names each package file a run found missing, out of date or not loaded, beside a current root projection", () => {
-    const run: EngineRun = {
+    const run: NamedEngineRun = {
       ...runWith({ mechanism: ESLINT, projection: "current" }),
       slices: [
         { slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "missing" },
@@ -299,7 +285,7 @@ describe("engineProblemsOf", () => {
   });
 
   it("names the root projection first, then the package files, when both differ", () => {
-    const run: EngineRun = {
+    const run: NamedEngineRun = {
       ...runWith({ mechanism: ESLINT, projection: "out-of-date" }),
       slices: [{ slice: repoPathOf("packages/a/hone.eslint.mjs"), state: "out-of-date" }],
     };

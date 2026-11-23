@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, type Mock, vi } from "vitest";
 
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
@@ -37,17 +35,14 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("src/mutation.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-44"),
-  clause: clauseIdOf("parameter-mutation"),
-};
+const ADDRESS: CheckAddressText = "write-into-a-parameter#parameter-mutation";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-44",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "parameter-mutation.ts" },
 };
@@ -65,7 +60,7 @@ const sourceObservations = (request: { readonly source: string }): ObservationFi
     exists: vi.fn<WalkerRepository["exists"]>().mockReturnValue("present"),
     disk: EMPTY_DISK,
   };
-  const prepared = check.prepare({ clauses: [CLAUSE], repository, syntaxApi: SYNTAX_API });
+  const prepared = check.prepare({ bindings: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
   const readText = vi
     .fn<WalkerFile["readText"]>()
@@ -101,7 +96,7 @@ describe("CD44 existing parameter mutation capability", () => {
   ])("admits $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -122,7 +117,7 @@ describe("CD44 existing parameter mutation capability", () => {
   ])("excludes $name without requesting text", ({ fileName }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      clauses: [CLAUSE],
+      bindings: [CLAUSE],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -158,11 +153,11 @@ describe("CD44 existing parameter mutation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 1, column: 20 },
         snippet: "later.x = 1), { later }) { later.y = 2; }",
       },
-      { clause: ADDRESS, anchor: { line: 1, column: 47 }, snippet: "later.y = 2; }" },
+      { check: ADDRESS, anchor: { line: 1, column: 47 }, snippet: "later.y = 2; }" },
     ]);
     expect(observed.anchorAt.mock.calls).toEqual([[{ position: 20 }], [{ position: 47 }]]);
     expect(observed.finish()).toEqual({ outcome: "ok", value: [] });
@@ -202,16 +197,16 @@ describe("CD44 existing parameter mutation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "outer.x = 1; local.y = 2; }; outer.z = 3; local.z = 4; }",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "local.y = 2; }; outer.z = 3; local.z = 4; }",
       },
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "outer.z = 3; local.z = 4; }" },
+      { check: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "outer.z = 3; local.z = 4; }" },
     ]);
     expect(observed.anchorAt).toHaveBeenCalledTimes(3);
   });
@@ -241,16 +236,16 @@ describe("CD44 existing parameter mutation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "input.x = 1; item.push(1); rest.sort(); key.x = 2; }",
       },
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "item.push(1); rest.sort(); key.x = 2; }",
       },
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "rest.sort(); key.x = 2; }" },
+      { check: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "rest.sort(); key.x = 2; }" },
     ]);
   });
 
@@ -272,11 +267,11 @@ describe("CD44 existing parameter mutation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet: "input.deep[0].x = 1; delete input.deep[0].x; }",
       },
-      { clause: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "delete input.deep[0].x; }" },
+      { check: ADDRESS, anchor: { line: 3, column: 2 }, snippet: "delete input.deep[0].x; }" },
     ]);
   });
 
@@ -335,7 +330,7 @@ describe("CD44 existing parameter mutation capability", () => {
 
     expect(observed.observers.finish()).toEqual([
       {
-        clause: ADDRESS,
+        check: ADDRESS,
         anchor: { line: 3, column: 2 },
         snippet:
           "input.a = 1; } 01234567890123456789012345678901234567890123456789012345678901234…",

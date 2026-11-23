@@ -9,10 +9,10 @@ import {
 } from "../pieces/eslint-plugin-schema.ts";
 import type { Rule } from "../toolchain/eslint-instance.ts";
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
-import { checkRuleNameOf, type RuledCheck } from "./check-rule-id.ts";
+import { checkRuleNameOf, type PluginCheck } from "./check-rule-id.ts";
 
 export type PieceSource = {
-  readonly check: RuledCheck;
+  readonly check: PluginCheck;
   readonly pieceFile: string;
   readonly pluginModule: string;
   readonly ruleName: string;

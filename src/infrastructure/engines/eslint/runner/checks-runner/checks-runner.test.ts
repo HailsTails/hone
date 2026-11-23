@@ -1,20 +1,19 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { NamedEngineRunRequest } from "../../../../../application/ports/engine/engine-run.ts";
 import type { FileTextPort } from "../../../../../application/ports/file-system/file-text-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
+import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
 import ESLINT_CD_14_PIECE from "../../authored-class-or-this/class-keyword/piece.json" with { type: "json" };
-import type { RuledCheck } from "../hone-plugin/check-rule-id.ts";
+import type { PluginCheck } from "../hone-plugin/check-rule-id.ts";
 import {
   CHECKS_DECLARATION_PATH,
   CHECKS_PROJECTION_PATH,
@@ -30,7 +29,6 @@ import type {
 import type { EslintMajorBoundary } from "../toolchain/eslint-major-boundary.ts";
 import type { ChecksRunnerPorts } from "./checks-ports.ts";
 import type { ChecksRepository } from "./checks-repository.ts";
-import type { ChecksRunRequest } from "./checks-run-types.ts";
 import { checksRunnerOver } from "./checks-runner.ts";
 
 const DECLARATION_TEXT =
@@ -92,7 +90,7 @@ const runner = checksRunnerOver({
   },
 });
 
-const REQUEST: ChecksRunRequest = {
+const REQUEST: NamedEngineRunRequest = {
   repoRoot: absoluteRootOf("/repo"),
   installRoot: absoluteRootOf("/install"),
   files: [repoPathOf("src/a.ts")],
@@ -160,14 +158,9 @@ const INSTALLED_ESLINT_PACKAGE_JSON = path.join({
   segments: [SCRATCH_REPO_ROOT, "node_modules", "eslint", "package.json"],
 });
 
-const CLASS_KEYWORD_CHECK: RuledCheck = {
+const CLASS_KEYWORD_CHECK: PluginCheck = {
   name: "class-keyword",
   symptom: { name: "authored-class-or-this", title: "Authored class or this" },
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-14"),
-    clause: clauseIdOf("class-syntax"),
-  },
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
@@ -184,22 +177,19 @@ const CURRENT_PROJECTION_TEXT = checksProjectionText({
   answered: [],
 });
 
-const CLASS_BINDINGS: ChecksRunRequest["bindings"] = [
+const CLASS_BINDINGS: NamedEngineRunRequest["bindings"] = [
   {
-    mechanism: "eslint",
-    clause: {
-      address: {
-        ruleSet: TOOL_RULE_SET,
-        discipline: disciplineIdOf("CD-14"),
-        clause: clauseIdOf("class-syntax"),
-      },
-      pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
-      settings: ESLINT_CD_14_PIECE.settings,
-    },
+    address: "authored-class-or-this#class-keyword",
+    engine: "eslint",
+    pieceRoot: `${REAL_INSTALL_ROOT}/src/infrastructure/engines/eslint/authored-class-or-this/class-keyword`,
+    settings: ESLINT_CD_14_PIECE.settings,
+    anchor: { kind: "keyword", keyword: "class" },
+    checkSettings: {},
+    edition: editionOf("1"),
   },
 ];
 
-const SELECTING_THE_CLASS_CHECK: ChecksRunRequest = {
+const SELECTING_THE_CLASS_CHECK: NamedEngineRunRequest = {
   repoRoot: SCRATCH_REPO_ROOT,
   installRoot: REAL_INSTALL_ROOT,
   files: [repoPathOf("kept.ts")],
@@ -317,6 +307,48 @@ const runnerOverProjectionReading = (
 
 const runnerOverProjection = (stubs: ProjectionStubs) =>
   runnerOverProjectionReading({ ...stubs, fileText: createDefaultFileTextPort({}) });
+
+describe("checksRunnerOver, measuring an inspected version one projection", () => {
+  it("reports the unapplied package to upgrade separately from the named check report", async () => {
+    const webSource = repoPathOf("packages/web/src/a.ts");
+    const webProjection = repoPathOf("packages/web/disciplines.eslint.mjs");
+    const runner = runnerOverProjection({
+      currents: rootOnly(PROJECTION_NOT_WRITTEN),
+      ruleState: RULE_ABSENT,
+      governance: lintingNothing(),
+    });
+    const run: NamedEngineRunRequest = {
+      ...SELECTING_THE_CLASS_CHECK,
+      files: [webSource],
+      trackedPaths: [webSource],
+    };
+
+    await expect(
+      runner.measureVersionOne({
+        run,
+        projection: {
+          settingsFile: "disciplines.json",
+          projectionFile: repoPathOf("disciplines.eslint.mjs"),
+          packageFiles: [webProjection],
+          rules: new Map([["authored-class-or-this#class-keyword", "cd14/no-class"]]),
+        },
+      }),
+    ).resolves.toEqual({
+      outcome: "ok",
+      value: {
+        report: {
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+          misnamedRuleIds: [],
+          projection: "not-included",
+          slices: [],
+        },
+        unappliedSlices: [webProjection],
+      },
+    });
+  });
+});
 
 describe("checksRunnerOver, reporting the state of hone.eslint.mjs from the repository's reader", () => {
   it("reports a missing projection, and lints nothing, when hone.eslint.mjs is not written", async () => {
@@ -454,7 +486,7 @@ const PACKAGE_PROJECTION_PRESENT: CurrentProjection = {
   text: PACKAGE_PROJECTION_TEXT,
 };
 
-const WITH_A_PACKAGE_CONFIG: ChecksRunRequest = {
+const WITH_A_PACKAGE_CONFIG: NamedEngineRunRequest = {
   ...SELECTING_THE_CLASS_CHECK,
   trackedPaths: [repoPathOf("kept.ts"), repoPathOf("packages/web/eslint.config.mjs")],
 };

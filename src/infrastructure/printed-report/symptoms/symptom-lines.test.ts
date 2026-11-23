@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Finding } from "../../../domain/finding/governance.ts";
+import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
   Case,
   Check,
@@ -17,7 +17,6 @@ import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import { findingSymptomsOf, symptomLine } from "./symptom-lines.ts";
 
 const AUDIT = "walker" as const;
@@ -224,12 +223,6 @@ const CAST_EXPRESSIONS = {
   clause: clauseIdOf("cast-expressions"),
 };
 
-const TEAM_CLAUSE = {
-  ruleSet: { name: ruleSetNameOf("acme") },
-  discipline: disciplineIdOf("AC-1"),
-  clause: clauseIdOf("no-moment"),
-};
-
 const CLOCK_CHECK: Check = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
@@ -286,16 +279,16 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
 
 const FILE = repoPathOf("src/orders/charge-order.ts");
 
-const CLOCK_FINDING: Finding = {
-  clause: CLOCK_SOURCES,
+const CLOCK_FINDING: CheckFinding = {
+  check: "date-used-directly#clock-sources",
   mechanism: AUDIT,
   file: FILE,
   anchor: { line: 14, column: 0 },
   snippet: "clock.now()",
 };
 
-const BRANCH_FINDING: Finding = {
-  clause: TEST_BODY_LOGIC,
+const BRANCH_FINDING: CheckFinding = {
+  check: "branch-in-a-test#test-body",
   mechanism: AUDIT,
   file: FILE,
   anchor: { line: 22, column: 2 },
@@ -303,8 +296,8 @@ const BRANCH_FINDING: Finding = {
   remedy: { fix: "write one test per case", page: CHECKS_PAGE, section: "branching-with-if" },
 };
 
-const TEAM_FINDING: Finding = {
-  clause: TEAM_CLAUSE,
+const TEAM_FINDING: CheckFinding = {
+  check: "outside-import-past-a-boundary#moment",
   mechanism: ESLINT,
   file: FILE,
   anchor: { line: 1, column: 0 },

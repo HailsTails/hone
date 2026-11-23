@@ -1,13 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { Edition } from "../../../../../domain/rule-set/edition-types.ts";
-import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import type { JsoncParsePort } from "../../runner/pieces/jsonc-parse.ts";
 import { createDefaultJsoncParsePort } from "../../runner/pieces/jsonc-parse.ts";
@@ -46,98 +43,77 @@ const defaultParsePort = loadedParsePort.value;
 const FILE = repoPathOf("tsconfig.json");
 const SOURCE = '{"compilerOptions":{"strict":true}}';
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const STRICT = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("strict"),
-};
-const UNCHECKED = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-unchecked-indexed-access"),
-};
-const EXACT = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("exact-optional-property-types"),
-};
-const OVERRIDE = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-implicit-override"),
-};
-const FALLTHROUGH = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-fallthrough-cases-in-switch"),
-};
-const PROPERTY = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("no-property-access-from-index-signature"),
-};
-const CATCH = {
-  ruleSet: { name: ruleSetNameOf("consumer") },
-  discipline: disciplineIdOf("CD-3"),
-  clause: clauseIdOf("use-unknown-in-catch-variables"),
-};
-const STRICT_CLAUSE: RunnerClause = {
+const STRICT: CheckAddressText = "strictness-weakened#strict";
+const UNCHECKED: CheckAddressText = "strictness-weakened#no-unchecked-indexed-access";
+const EXACT: CheckAddressText = "strictness-weakened#exact-optional-property-types";
+const OVERRIDE: CheckAddressText = "strictness-weakened#no-implicit-override";
+const FALLTHROUGH: CheckAddressText = "strictness-weakened#no-fallthrough-cases-in-switch";
+const PROPERTY: CheckAddressText = "strictness-weakened#no-property-access-from-index-signature";
+const CATCH: CheckAddressText = "strictness-weakened#use-unknown-in-catch-variables";
+const STRICT_CLAUSE: CheckBinding = {
   address: STRICT,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const UNCHECKED_CLAUSE: RunnerClause = {
+const UNCHECKED_CLAUSE: CheckBinding = {
   address: UNCHECKED,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const EXACT_CLAUSE: RunnerClause = {
+const EXACT_CLAUSE: CheckBinding = {
   address: EXACT,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const OVERRIDE_CLAUSE: RunnerClause = {
+const OVERRIDE_CLAUSE: CheckBinding = {
   address: OVERRIDE,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const FALLTHROUGH_CLAUSE: RunnerClause = {
+const FALLTHROUGH_CLAUSE: CheckBinding = {
   address: FALLTHROUGH,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const PROPERTY_CLAUSE: RunnerClause = {
+const PROPERTY_CLAUSE: CheckBinding = {
   address: PROPERTY,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const CATCH_CLAUSE: RunnerClause = {
+const CATCH_CLAUSE: CheckBinding = {
   address: CATCH,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "compiler-overrides.ts" },
 };
-const CLAUSES: readonly RunnerClause[] = [
+const CLAUSES: readonly CheckBinding[] = [
   STRICT_CLAUSE,
   UNCHECKED_CLAUSE,
   EXACT_CLAUSE,
@@ -153,7 +129,7 @@ const UNRESOLVING: CompilerOptionsResolutionOf = () => ({
 
 const prepareCheck = (request: {
   readonly jsonc: JsoncParsePort;
-  readonly clauses: readonly RunnerClause[];
+  readonly bindings: readonly CheckBinding[];
   readonly file?: WalkerFile["file"];
   readonly resolutionOf?: CompilerOptionsResolutionOf;
 }): PreparedWalkerCheck => {
@@ -166,7 +142,7 @@ const prepareCheck = (request: {
     jsonc: request.jsonc,
     resolutionOf: request.resolutionOf ?? UNRESOLVING,
   }).prepare({
-    clauses: request.clauses,
+    bindings: request.bindings,
     repository,
     syntaxApi: SYNTAX_API,
   });
@@ -197,7 +173,7 @@ describe("CD3 existing explicit compiler overrides", () => {
       .mockReturnValue({ outcome: "ok", value: source });
     const prepared = prepareCheck({
       jsonc: { parse },
-      clauses: [
+      bindings: [
         CATCH_CLAUSE,
         PROPERTY_CLAUSE,
         FALLTHROUGH_CLAUSE,
@@ -214,37 +190,37 @@ describe("CD3 existing explicit compiler overrides", () => {
         kind: "complete",
         hits: [
           {
-            clause: STRICT,
+            check: STRICT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.strict = true",
           },
           {
-            clause: UNCHECKED,
+            check: UNCHECKED,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.noUncheckedIndexedAccess = false",
           },
           {
-            clause: EXACT,
+            check: EXACT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.exactOptionalPropertyTypes = false",
           },
           {
-            clause: OVERRIDE,
+            check: OVERRIDE,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.noImplicitOverride = true",
           },
           {
-            clause: FALLTHROUGH,
+            check: FALLTHROUGH,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.noFallthroughCasesInSwitch = false",
           },
           {
-            clause: PROPERTY,
+            check: PROPERTY,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.noPropertyAccessFromIndexSignature = true",
           },
           {
-            clause: CATCH,
+            check: CATCH,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.useUnknownInCatchVariables = false",
           },
@@ -267,7 +243,10 @@ describe("CD3 existing explicit compiler overrides", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: [STRICT_CLAUSE, UNCHECKED_CLAUSE] });
+    const prepared = prepareCheck({
+      jsonc: { parse },
+      bindings: [STRICT_CLAUSE, UNCHECKED_CLAUSE],
+    });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual({
       outcome: "ok",
@@ -275,7 +254,7 @@ describe("CD3 existing explicit compiler overrides", () => {
         kind: "complete",
         hits: [
           {
-            clause: STRICT,
+            check: STRICT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.strict = true",
           },
@@ -302,7 +281,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual({
       outcome: "ok",
@@ -310,27 +289,27 @@ describe("CD3 existing explicit compiler overrides", () => {
         kind: "complete",
         hits: [
           {
-            clause: STRICT,
+            check: STRICT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.strict = null",
           },
           {
-            clause: UNCHECKED,
+            check: UNCHECKED,
             anchor: { line: 1, column: 0 },
             snippet: 'compilerOptions.noUncheckedIndexedAccess = ["inherited"]',
           },
           {
-            clause: EXACT,
+            check: EXACT,
             anchor: { line: 1, column: 0 },
             snippet: 'compilerOptions.exactOptionalPropertyTypes = {"mode":"same"}',
           },
           {
-            clause: OVERRIDE,
+            check: OVERRIDE,
             anchor: { line: 1, column: 0 },
             snippet: 'compilerOptions.noImplicitOverride = "inherited"',
           },
           {
-            clause: FALLTHROUGH,
+            check: FALLTHROUGH,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.noFallthroughCasesInSwitch = 0",
           },
@@ -354,7 +333,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual({
       outcome: "ok",
@@ -374,7 +353,7 @@ describe("CD3 existing explicit compiler overrides", () => {
       error: { kind: "file-unreadable", file: FILE, detail: "fixture read refused" },
     });
     const parse = vi.fn<JsoncParsePort["parse"]>();
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual(failure);
     expect(readText).toHaveBeenCalledExactlyOnceWith();
@@ -389,7 +368,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual({
       outcome: "failed",
@@ -416,7 +395,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES });
 
     expect(prepared.prepareFile({ file: FILE, readText })).toEqual({
       outcome: "failed",
@@ -436,7 +415,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     const readText = vi
       .fn<WalkerFile["readText"]>()
       .mockReturnValue({ outcome: "ok", value: SOURCE });
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES, file });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES, file });
 
     expect(prepared.prepareFile({ file, readText })).toEqual({
       outcome: "ok",
@@ -456,7 +435,7 @@ describe("CD3 existing explicit compiler overrides", () => {
     const file = repoPathSchema.parse(fileName);
     const parse = vi.fn<JsoncParsePort["parse"]>();
     const readText = vi.fn<WalkerFile["readText"]>();
-    const prepared = prepareCheck({ jsonc: { parse }, clauses: CLAUSES, file });
+    const prepared = prepareCheck({ jsonc: { parse }, bindings: CLAUSES, file });
 
     expect(prepared.prepareFile({ file, readText })).toEqual({
       outcome: "ok",
@@ -471,7 +450,7 @@ const SECOND_EDITION: Edition = editionOf("2");
 
 const JSONC = createDefaultJsoncParsePort({ trailingCommas: "refused" });
 
-const SECOND_EDITION_CLAUSES: readonly RunnerClause[] = [
+const SECOND_EDITION_CLAUSES: readonly CheckBinding[] = [
   { ...STRICT_CLAUSE, edition: SECOND_EDITION },
   { ...UNCHECKED_CLAUSE, edition: SECOND_EDITION },
   { ...EXACT_CLAUSE, edition: SECOND_EDITION },
@@ -482,8 +461,8 @@ const SECOND_EDITION_CLAUSES: readonly RunnerClause[] = [
 ];
 
 const EITHER_EDITION = [
-  { edition: editionOf("1"), clauses: CLAUSES },
-  { edition: SECOND_EDITION, clauses: SECOND_EDITION_CLAUSES },
+  { edition: editionOf("1"), bindings: CLAUSES },
+  { edition: SECOND_EDITION, bindings: SECOND_EDITION_CLAUSES },
 ];
 
 const UNSET: OptionSettings = {
@@ -536,11 +515,11 @@ const EVERY_OPTION_SOURCE =
 describe("CD3 in either edition", () => {
   it.each(EITHER_EDITION)(
     "flags each selected option a tsconfig.json sets itself under edition $edition",
-    ({ clauses }) => {
+    ({ bindings }) => {
       const { resolve, resolutionOf } = resolvingTo({
         resolved: { kind: "resolved", effective: ALL_ON, bases: [] },
       });
-      const prepared = prepareCheck({ jsonc: JSONC, clauses, resolutionOf });
+      const prepared = prepareCheck({ jsonc: JSONC, bindings, resolutionOf });
 
       expect(prepared.prepareFile(fileWith({ source: EVERY_OPTION_SOURCE }))).toEqual({
         outcome: "ok",
@@ -548,37 +527,37 @@ describe("CD3 in either edition", () => {
           kind: "complete",
           hits: [
             {
-              clause: STRICT,
+              check: STRICT,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.strict = true",
             },
             {
-              clause: UNCHECKED,
+              check: UNCHECKED,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.noUncheckedIndexedAccess = false",
             },
             {
-              clause: EXACT,
+              check: EXACT,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.exactOptionalPropertyTypes = true",
             },
             {
-              clause: OVERRIDE,
+              check: OVERRIDE,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.noImplicitOverride = true",
             },
             {
-              clause: FALLTHROUGH,
+              check: FALLTHROUGH,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.noFallthroughCasesInSwitch = true",
             },
             {
-              clause: PROPERTY,
+              check: PROPERTY,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.noPropertyAccessFromIndexSignature = true",
             },
             {
-              clause: CATCH,
+              check: CATCH,
               anchor: { line: 1, column: 0 },
               snippet: "compilerOptions.useUnknownInCatchVariables = true",
             },
@@ -591,12 +570,12 @@ describe("CD3 in either edition", () => {
 
   it.each(EITHER_EDITION)(
     "skips a config not named tsconfig.json without resolving it under edition $edition",
-    ({ clauses }) => {
+    ({ bindings }) => {
       const { resolutionOf, resolve } = resolvingTo({
         resolved: { kind: "resolved", effective: ALL_OFF, bases: [] },
       });
       const file = repoPathOf("tsconfig.base.json");
-      const prepared = prepareCheck({ jsonc: JSONC, clauses, file, resolutionOf });
+      const prepared = prepareCheck({ jsonc: JSONC, bindings, file, resolutionOf });
 
       expect(
         prepared.prepareFile({ file, readText: () => ({ outcome: "ok", value: "{}" }) }),
@@ -615,7 +594,7 @@ describe("CD3 edition 1", () => {
         bases: [{ file: "tsconfig.base.json", settings: ALL_OFF }],
       },
     });
-    const prepared = prepareCheck({ jsonc: JSONC, clauses: CLAUSES, resolutionOf });
+    const prepared = prepareCheck({ jsonc: JSONC, bindings: CLAUSES, resolutionOf });
 
     expect(prepared.prepareFile(fileWith({ source: EXTENDING_SOURCE }))).toEqual({
       outcome: "ok",
@@ -634,7 +613,7 @@ describe("CD3 edition 2 judging the options a tsconfig.json resolves to", () => 
         bases: [{ file: "tsconfig.base.json", settings: ALL_ON }],
       },
     });
-    const prepared = prepareCheck({ jsonc: JSONC, clauses: SECOND_EDITION_CLAUSES, resolutionOf });
+    const prepared = prepareCheck({ jsonc: JSONC, bindings: SECOND_EDITION_CLAUSES, resolutionOf });
 
     expect(prepared.prepareFile(fileWith({ source: EXTENDING_SOURCE }))).toEqual({
       outcome: "ok",
@@ -642,11 +621,11 @@ describe("CD3 edition 2 judging the options a tsconfig.json resolves to", () => 
     });
   });
 
-  it("resolves the walked tsconfig.json once over the piece's syntax API and disk, however many clauses it judges", () => {
+  it("resolves the walked tsconfig.json once over the piece's syntax API and disk, however many bindings it judges", () => {
     const { resolve, resolutionOf } = resolvingTo({
       resolved: { kind: "resolved", effective: ALL_ON, bases: [] },
     });
-    const prepared = prepareCheck({ jsonc: JSONC, clauses: SECOND_EDITION_CLAUSES, resolutionOf });
+    const prepared = prepareCheck({ jsonc: JSONC, bindings: SECOND_EDITION_CLAUSES, resolutionOf });
 
     prepared.prepareFile(fileWith({ source: EXTENDING_SOURCE }));
 
@@ -670,7 +649,7 @@ describe("CD3 edition 2 judging the options a tsconfig.json resolves to", () => 
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [{ ...UNCHECKED_CLAUSE, edition: SECOND_EDITION }],
+      bindings: [{ ...UNCHECKED_CLAUSE, edition: SECOND_EDITION }],
       resolutionOf,
     });
 
@@ -680,7 +659,7 @@ describe("CD3 edition 2 judging the options a tsconfig.json resolves to", () => 
         kind: "complete",
         hits: [
           {
-            clause: UNCHECKED,
+            check: UNCHECKED,
             anchor: { line: 1, column: 0 },
             snippet:
               "compilerOptions.noUncheckedIndexedAccess = false, inherited from configs/loose.json",
@@ -703,7 +682,7 @@ describe("CD3 edition 2 judging the options a tsconfig.json resolves to", () => 
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [{ ...EXACT_CLAUSE, edition: SECOND_EDITION }],
+      bindings: [{ ...EXACT_CLAUSE, edition: SECOND_EDITION }],
       resolutionOf,
     });
 
@@ -713,7 +692,7 @@ describe("CD3 edition 2 judging the options a tsconfig.json resolves to", () => 
         kind: "complete",
         hits: [
           {
-            clause: EXACT,
+            check: EXACT,
             anchor: { line: 1, column: 0 },
             snippet:
               "compilerOptions.exactOptionalPropertyTypes unset here and in tsconfig.base.json, node_modules/@tsconfig/node20/tsconfig.json",
@@ -735,7 +714,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [{ ...OVERRIDE_CLAUSE, edition: SECOND_EDITION }],
+      bindings: [{ ...OVERRIDE_CLAUSE, edition: SECOND_EDITION }],
       resolutionOf,
     });
 
@@ -747,7 +726,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
         kind: "complete",
         hits: [
           {
-            clause: OVERRIDE,
+            check: OVERRIDE,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.noImplicitOverride unset, and this file extends no base",
           },
@@ -766,7 +745,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [{ ...CATCH_CLAUSE, edition: SECOND_EDITION }],
+      bindings: [{ ...CATCH_CLAUSE, edition: SECOND_EDITION }],
       resolutionOf,
     });
 
@@ -776,7 +755,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
         kind: "complete",
         hits: [
           {
-            clause: CATCH,
+            check: CATCH,
             anchor: { line: 1, column: 0 },
             snippet:
               "compilerOptions.useUnknownInCatchVariables = false, inherited from tsconfig.base.json",
@@ -796,7 +775,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [
+      bindings: [
         { ...STRICT_CLAUSE, edition: SECOND_EDITION },
         { ...CATCH_CLAUSE, edition: SECOND_EDITION },
       ],
@@ -815,12 +794,12 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
         kind: "complete",
         hits: [
           {
-            clause: STRICT,
+            check: STRICT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.strict = false",
           },
           {
-            clause: CATCH,
+            check: CATCH,
             anchor: { line: 1, column: 0 },
             snippet:
               "compilerOptions.useUnknownInCatchVariables = false, turned off in tsconfig.json",
@@ -836,7 +815,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [
+      bindings: [
         { ...STRICT_CLAUSE, edition: SECOND_EDITION },
         { ...UNCHECKED_CLAUSE, edition: SECOND_EDITION },
       ],
@@ -855,12 +834,12 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
         kind: "complete",
         hits: [
           {
-            clause: STRICT,
+            check: STRICT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.strict = true",
           },
           {
-            clause: UNCHECKED,
+            check: UNCHECKED,
             anchor: { line: 1, column: 0 },
             snippet:
               "compilerOptions.noUncheckedIndexedAccess unknown: TS5083 Cannot read file 'missing.json'.",
@@ -870,13 +849,13 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
     });
   });
 
-  it("judges only the clauses selected under edition 2 when the editions differ", () => {
+  it("judges only the bindings selected under edition 2 when the editions differ", () => {
     const { resolutionOf } = resolvingTo({
       resolved: { kind: "resolved", effective: ALL_OFF, bases: [] },
     });
     const prepared = prepareCheck({
       jsonc: JSONC,
-      clauses: [STRICT_CLAUSE, { ...UNCHECKED_CLAUSE, edition: SECOND_EDITION }],
+      bindings: [STRICT_CLAUSE, { ...UNCHECKED_CLAUSE, edition: SECOND_EDITION }],
       resolutionOf,
     });
 
@@ -886,7 +865,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
         kind: "complete",
         hits: [
           {
-            clause: UNCHECKED,
+            check: UNCHECKED,
             anchor: { line: 1, column: 0 },
             snippet:
               "compilerOptions.noUncheckedIndexedAccess unset, and this file extends no base",
@@ -900,7 +879,7 @@ describe("CD3 edition 2 naming where an option is left unset or turned off", () 
 describe("CD3 edition 2 over a tsconfig.json that compiles no files", () => {
   it("leaves the options of a solution-style tsconfig.json unjudged, since they apply to no file", () => {
     const { resolutionOf } = resolvingTo({ resolved: { kind: "compiles-nothing" } });
-    const prepared = prepareCheck({ jsonc: JSONC, clauses: SECOND_EDITION_CLAUSES, resolutionOf });
+    const prepared = prepareCheck({ jsonc: JSONC, bindings: SECOND_EDITION_CLAUSES, resolutionOf });
 
     expect(
       prepared.prepareFile(
@@ -914,7 +893,7 @@ describe("CD3 edition 2 over a tsconfig.json that compiles no files", () => {
 
   it("still flags an option such a tsconfig.json sets itself, as edition 1 does", () => {
     const { resolutionOf } = resolvingTo({ resolved: { kind: "compiles-nothing" } });
-    const prepared = prepareCheck({ jsonc: JSONC, clauses: SECOND_EDITION_CLAUSES, resolutionOf });
+    const prepared = prepareCheck({ jsonc: JSONC, bindings: SECOND_EDITION_CLAUSES, resolutionOf });
 
     expect(
       prepared.prepareFile(
@@ -926,7 +905,7 @@ describe("CD3 edition 2 over a tsconfig.json that compiles no files", () => {
         kind: "complete",
         hits: [
           {
-            clause: STRICT,
+            check: STRICT,
             anchor: { line: 1, column: 0 },
             snippet: "compilerOptions.strict = false",
           },

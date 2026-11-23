@@ -1,9 +1,9 @@
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import type { CheckHit } from "../../../../../domain/runner/check-observations.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
-import type { Hit } from "../../../../../domain/runner/runner-result-types.ts";
 import type {
   CommentRange,
   SyntaxApi,
@@ -11,7 +11,7 @@ import type {
   SyntaxTree,
 } from "../toolchain/typescript-parse.ts";
 
-export type PieceHit = Omit<Hit, "file">;
+export type PieceHit = Omit<CheckHit, "file">;
 
 export type WalkerFile = {
   readonly file: RepoPath;
@@ -38,7 +38,7 @@ export type PreparedFileCheck =
 
 export type PreparedWalkerCheck = {
   readonly prepareFile: (request: WalkerFile) => Result<PreparedFileCheck, PieceFailure>;
-  readonly finish: () => Result<readonly Hit[], PieceFailure>;
+  readonly finish: () => Result<readonly CheckHit[], PieceFailure>;
 };
 
 export type WalkerDisk = {
@@ -57,7 +57,7 @@ export type WalkerRepository = {
 
 export type WalkerPiece = {
   readonly prepare: (request: {
-    readonly clauses: readonly RunnerClause[];
+    readonly bindings: readonly CheckBinding[];
     readonly repository: WalkerRepository;
     readonly syntaxApi: SyntaxApi;
   }) => Result<PreparedWalkerCheck, PieceFailure>;

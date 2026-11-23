@@ -10,7 +10,7 @@ import {
   type RecordDebtRequest,
   recordDebtOf,
 } from "../../src/application/records/record-commands.ts";
-import type { Finding } from "../../src/domain/finding/governance.ts";
+import type { CheckFinding } from "../../src/domain/finding/governance.ts";
 import {
   answerFindings,
   type RaisedFinding,
@@ -287,16 +287,12 @@ const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.json");
 
-const CAST_IN_ORDERS: Finding = {
-  clause: {
-    ruleSet: TOOL_RULE_SET,
-    discipline: disciplineIdOf("CD-2"),
-    clause: clauseIdOf("cast-expressions"),
-  },
+const CAST_IN_ORDERS: CheckFinding = {
+  check: "claimed-type#unlisted-cast-site",
   file: ORDER_FILE,
   anchor: { line: 3, column: 9 },
   snippet: "body as Event",
-  mechanism: "eslint",
+  mechanism: "walker",
 };
 
 const RAISED: readonly RaisedFinding[] = [
@@ -315,7 +311,7 @@ const authorise = (request: AuthoriseRequest) =>
   authoriseOf({ ports: { catalogue, source, store, recordsReader, recordsEditor }, request });
 
 const DEBT_TEXT =
-  '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "claimed-type",\n      "file": "src/orders/charge-order.ts"\n    }\n  ]\n}\n';
+  '{\n  "version": 2,\n  "records": [\n    {\n      "answers": "claimed-type#unlisted-cast-site",\n      "file": "src/orders/charge-order.ts"\n    }\n  ]\n}\n';
 
 const textOf = (request: { readonly file: string }): string => {
   const read = fileText.read({ path: `${made.value}/${request.file}` });

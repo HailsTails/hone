@@ -5,7 +5,14 @@ import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts"
 import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { CUT_MARK } from "../../../protocol/runner-module/snippet.ts";
-import { hitsCutFrom, type LintedClause, lineSnippet, messageReadingOf } from "./lint-hits.ts";
+import {
+  hitsCutFrom,
+  type LintedClause,
+  lineSnippet,
+  messageReadingOf,
+  namedHitsCutFrom,
+  namedMessageReadingOf,
+} from "./lint-hits.ts";
 
 const FILE = repoPathOf("src/a.ts");
 
@@ -307,5 +314,45 @@ describe("hitsCutFrom", () => {
         lines: ["first;"],
       }),
     ).toEqual([{ clause: classSyntax, file: FILE, anchor: { line: 3, column: 0 }, snippet: "" }]);
+  });
+});
+
+describe("namedMessageReadingOf", () => {
+  it("keeps each selected rule’s named identity and leaves an unrelated rule out", () => {
+    expect(
+      namedMessageReadingOf({
+        file: FILE,
+        messages: [
+          { ruleId: CLASS_SYNTAX.ruleId, line: 2, column: 5, message: "class found" },
+          { ruleId: "no-console", line: 3, column: 1, message: "console found" },
+        ],
+        selected: [{ ruleId: CLASS_SYNTAX.ruleId, check: "authored-class-or-this#class-keyword" }],
+      }),
+    ).toEqual({
+      outcome: "ok",
+      value: {
+        ruleHits: [{ check: "authored-class-or-this#class-keyword", line: 2, column: 5 }],
+        nativeExceptions: [],
+      },
+    });
+  });
+});
+
+describe("namedHitsCutFrom", () => {
+  it("attaches the source line and zero-based column to the named hit", () => {
+    expect(
+      namedHitsCutFrom({
+        file: FILE,
+        ruleHits: [{ check: "authored-class-or-this#class-keyword", line: 2, column: 3 }],
+        lines: ["", "  class Example {}"],
+      }),
+    ).toEqual([
+      {
+        check: "authored-class-or-this#class-keyword",
+        file: FILE,
+        anchor: { line: 2, column: 2 },
+        snippet: "class Example {}",
+      },
+    ]);
   });
 });

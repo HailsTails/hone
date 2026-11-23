@@ -1,12 +1,10 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
-import type { RunnerClause } from "../../../../../domain/runner/runner-module-types.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -31,27 +29,24 @@ assert(
 const defaultParsePort = loadedParsePort.value;
 
 const FILE = repoPathOf("tests/git.test.ts");
-const ADDRESS = {
-  ruleSet: TOOL_RULE_SET,
-  discipline: disciplineIdOf("CD-47"),
-  clause: clauseIdOf("hermetic-git-spawns"),
-};
+const ADDRESS: CheckAddressText = "inherited-environment-in-a-subprocess#git-spawn-environment";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const GIT = "g" + "it";
 const SPAWN = "spawn" + "Sync";
 const LINE_COMMENT = "/" + "/";
-const CLAUSE: RunnerClause = {
+const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-47",
-  clauseSettings: {},
+  checkSettings: {},
   edition: editionOf("1"),
   settings: { module: "hermetic-git-spawns.ts" },
 };
 
 const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWalkerCheck => {
   const prepared = check.prepare({
-    clauses: [CLAUSE],
+    bindings: [CLAUSE],
     repository: {
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
@@ -77,12 +72,12 @@ describe("CD-47 existing raw Git spawn guard", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `${SPAWN}("${GIT}", ["status"]); ${SPAWN}("${GIT}", ["diff"]);  abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 3, column: 0 },
             snippet: `execFile('${GIT}', ['status']);`,
           },
@@ -104,7 +99,7 @@ describe("CD-47 existing raw Git spawn guard", () => {
       value: {
         kind: "complete",
         hits: [
-          { clause: ADDRESS, anchor: { line: 9, column: 0 }, snippet: `${SPAWN}("${GIT}", []);` },
+          { check: ADDRESS, anchor: { line: 9, column: 0 }, snippet: `${SPAWN}("${GIT}", []);` },
         ],
       },
     });
@@ -120,7 +115,7 @@ describe("CD-47 existing raw Git spawn guard", () => {
       name: "ambient override after the recognized shape",
       suffix: "env: hermeticGitEnvironment({});\nenv: process.env",
       hits: [
-        { clause: ADDRESS, anchor: { line: 1, column: 0 }, snippet: `${SPAWN}("${GIT}", []);` },
+        { check: ADDRESS, anchor: { line: 1, column: 0 }, snippet: `${SPAWN}("${GIT}", []);` },
       ],
     },
   ])("preserves the lexical environment approximation for $name", ({ suffix, hits }) => {
@@ -146,16 +141,16 @@ describe("CD-47 existing raw Git spawn guard", () => {
         kind: "complete",
         hits: [
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 1, column: 0 },
             snippet: `const literal = "${SPAWN}('${GIT}', [])";`,
           },
           {
-            clause: ADDRESS,
+            check: ADDRESS,
             anchor: { line: 2, column: 0 },
             snippet: `${LINE_COMMENT} exec("${GIT}", []);`,
           },
-          { clause: ADDRESS, anchor: { line: 8, column: 0 }, snippet: `execa(\`${GIT}\`, []);` },
+          { check: ADDRESS, anchor: { line: 8, column: 0 }, snippet: `execa(\`${GIT}\`, []);` },
         ],
       },
     });

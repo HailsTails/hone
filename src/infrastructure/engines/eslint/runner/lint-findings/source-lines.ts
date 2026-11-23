@@ -33,7 +33,7 @@ export const linesReaderOf =
 
 export const sourceLinesFor = (request: {
   readonly file: RepoPath;
-  readonly ruleHits: readonly RuleHit[];
+  readonly ruleHits: readonly Pick<RuleHit, "line">[];
   readonly readLines: LinesReader;
 }): Outcome<readonly string[]> =>
   request.ruleHits.length === 0

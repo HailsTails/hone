@@ -1,4 +1,8 @@
 import type { AnchorKind } from "../../domain/finding/anchor.ts";
+import type {
+  CheckAddressText,
+  CheckNames,
+} from "../../domain/language-layer/check-address-text.ts";
 import type { CatalogueHolding } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { VersionTwoLoadFailure } from "../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../domain/repository/absolute-path-types.ts";
@@ -27,6 +31,16 @@ export type PieceClause = {
   readonly editions: ClauseEditions;
 };
 
+export type CheckPiece = PieceClause & {
+  readonly forms: Readonly<Record<string, CheckAddressText>>;
+};
+
+export type CheckPieceSource = (request: {
+  readonly ruleSetRoot: AbsolutePath;
+  readonly names: CheckNames;
+  readonly mechanism: EngineId;
+}) => Result<CheckPiece, VersionTwoLoadFailure>;
+
 export type SettingsSources = {
   readonly settingsFile: (
     request: Record<string, never>,
@@ -45,11 +59,17 @@ export type SettingsSources = {
   }) => Result<PieceClause, VersionTwoLoadFailure>;
 };
 
-export type SettingsSourcesOf = (request: {
+export type SettingsSourceContext = {
   readonly fileText: FileTextPort;
   readonly directory: DirectoryPort;
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
   readonly installRoot: AbsolutePath;
   readonly moduleExtension: ModuleExtension;
-}) => SettingsSources;
+};
+
+export type SettingsSourcesOf = (request: SettingsSourceContext) => SettingsSources;
+
+export type CheckPieceSourceOf = (
+  request: Pick<SettingsSourceContext, "fileText" | "path" | "installRoot" | "moduleExtension">,
+) => CheckPieceSource;

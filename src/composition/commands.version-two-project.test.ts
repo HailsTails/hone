@@ -7,7 +7,7 @@ import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
 import type { RecordsSourceOf } from "../application/ports/records/records-source-of.ts";
-import type { SettingsReading } from "../application/run/settings/read-settings.ts";
+import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Case,
@@ -29,7 +29,6 @@ import { clauseIdOf } from "../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../domain/rule-set/discipline-id-of.ts";
 import type { ProjectedFile } from "../domain/runner/checks-run-report.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
-import { createDefaultEnginePort } from "../infrastructure/engines/protocol/engine-port.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
 import { VERSION_TWO_PROJECT } from "./commands.ts";
 import { commandOf } from "./composed-command.ts";
@@ -294,15 +293,14 @@ type Command = CommandRequest;
 
 const FILE: ProjectedFile = { file: repoPathOf("hone.eslint.mjs"), text: "export default [];\n" };
 
-const SETTINGS: SettingsReading = {
+const SETTINGS: NamedSettingsReading = {
   available: [],
   selection: {
-    selection: { selected: [], notAdopted: [], notRun: [], editions: [] },
-    bindings: [],
-    clauseRoots: [],
+    selected: [],
+    notAdopted: [],
+    notRun: [],
     excluded: [],
     eslintConfigRoots: [],
-    fileExceptionWhyChains: "required",
   },
   runSettings: { reportOutput: "actionable", assessment: { forfeiture: "this-run" } },
   eslintConfigLookup: { lookup: "detected" },
@@ -359,7 +357,6 @@ const commandWith = (request: {
   process: request.process,
   path: createPathPort({ flavour: "posix", workingDirectory: () => "/work" }),
   fileText: request.fileText,
-  engine: createDefaultEnginePort({}),
   modules: { load: vi.fn<ModuleLoaderPort["load"]>() },
   git: {
     trackedPaths: vi.fn<GitPort["trackedPaths"]>(),
@@ -380,6 +377,7 @@ const ranWith = async (request: {
   const processPort = processWith({ arguments: request.arguments });
   const { fileText } = request;
   await versionTwoProjectCommandOf({
+    namedEngine: { load: vi.fn(), run: vi.fn(), project: vi.fn() },
     gitTree: { pathsAt: vi.fn<GitTreePort["pathsAt"]>() },
     directory: { list: vi.fn<DirectoryPort["list"]>(), create: vi.fn<DirectoryPort["create"]>() },
     recordsSourceOf: vi.fn<RecordsSourceOf>(),
