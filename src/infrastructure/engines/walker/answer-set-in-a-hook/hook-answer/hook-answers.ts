@@ -1,11 +1,11 @@
 import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetOf } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
 const HOOKS = new Set(["beforeAll", "beforeEach", "afterEach", "afterAll"]);
-const SNIPPET_LENGTH = 80;
 const ANSWER_SETTERS = new Set([
   "mockReturnValue",
   "mockReturnValueOnce",
@@ -66,9 +66,7 @@ export const check: WalkerPiece = {
                   )
                     return;
                   const anchor = anchorAt({ position: setter.getStart(sourceFile) });
-                  const text = setter.getText(sourceFile).replace(/\r?\n[ \t]*/g, " ");
-                  const snippet =
-                    text.length > SNIPPET_LENGTH ? `${text.slice(0, SNIPPET_LENGTH)}…` : text;
+                  const snippet = sourceSnippetOf(setter.getText(sourceFile));
                   hits.push(
                     ...bindings.map(({ address }) => ({ check: address, anchor, snippet })),
                   );
