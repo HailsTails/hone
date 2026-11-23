@@ -3,11 +3,13 @@ import { assert, describe, expect, it, type Mock, vi } from "vitest";
 import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type {
+  PieceHit,
   PreparedWalkerCheck,
   SourceObservers,
   WalkerFile,
@@ -471,5 +473,96 @@ describe("CD-27 second-edition logic observations", () => {
     observed.enter({ node: expression });
 
     expect(observed.observers.finish()).toEqual([]);
+  });
+});
+
+const ownPackageHits = (request: {
+  readonly files: readonly RepoPath[];
+  readonly texts: Readonly<Record<string, string>>;
+  readonly source: string;
+}): readonly PieceHit[] => {
+  const prepared = check.prepare({
+    bindings: [CLAUSE],
+    repository: {
+      files: request.files,
+      exists: vi.fn().mockReturnValue("present"),
+      disk: textsDisk({ root: "/repo", texts: request.texts }),
+    },
+    syntaxApi: SYNTAX_API,
+  });
+  assert(prepared.outcome === "ok");
+  const selected = prepared.value.prepareFile({
+    file: FILE,
+    readText: vi
+      .fn<WalkerFile["readText"]>()
+      .mockReturnValue({ outcome: "ok", value: request.source }),
+  });
+  assert(selected.outcome === "ok");
+  assert(selected.value.kind === "syntax");
+  const tree = SYNTAX_API.createSourceFile(
+    FILE,
+    request.source,
+    SYNTAX_API.ScriptTarget.Latest,
+    true,
+  );
+  const observers = selected.value.begin({
+    sourceFile: tree,
+    anchorAt: vi
+      .fn<(request: { readonly position: number }) => Anchor>()
+      .mockReturnValue({ line: 2, column: 0 }),
+  });
+  const { enter } = observers;
+  assert.isDefined(enter);
+  const call = tree.statements[1];
+  assert.isDefined(call);
+  assert(SYNTAX_API.isExpressionStatement(call));
+  enter({ node: call.expression });
+  return observers.finish();
+};
+
+const FLAGGED_JOIN: readonly PieceHit[] = [
+  {
+    check: ADDRESS,
+    anchor: { line: 2, column: 0 },
+    snippet: 'paths.join({ segments: ["a"] });',
+    remedy: expect.objectContaining({ section: "a-method-that-computes-a-value" }),
+  },
+];
+
+describe("own API imported through a package of the repository", () => {
+  it("names no form for a port imported from a package the repository holds", () => {
+    expect(
+      ownPackageHits({
+        files: [repoPathOf("package.json"), repoPathOf("packages/paths/package.json"), FILE],
+        texts: {
+          "package.json": '{ "name": "app" }',
+          "packages/paths/package.json": '{ "name": "@app/paths" }',
+        },
+        source: 'import { paths } from "@app/paths";\npaths.join({ segments: ["a"] });',
+      }),
+    ).toEqual([]);
+  });
+
+  it("names no form for a port imported through a subpath import", () => {
+    expect(
+      ownPackageHits({
+        files: [repoPathOf("package.json"), FILE],
+        texts: { "package.json": '{ "name": "app" }' },
+        source: 'import { paths } from "#src/paths";\npaths.join({ segments: ["a"] });',
+      }),
+    ).toEqual([]);
+  });
+
+  it("still flags a port imported from a package the repository does not hold", () => {
+    expect(
+      ownPackageHits({
+        files: [repoPathOf("package.json"), repoPathOf("packages/paths/package.json"), FILE],
+        texts: {
+          "package.json": '{ "name": "app" }',
+          "packages/paths/package.json": '{ "name": "@app/paths" }',
+        },
+        source: 'import { paths } from "path-kit";\npaths.join({ segments: ["a"] });',
+      }),
+    ).toEqual(FLAGGED_JOIN);
   });
 });

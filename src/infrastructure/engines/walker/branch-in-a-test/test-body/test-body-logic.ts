@@ -10,6 +10,7 @@ import type {
   SyntaxApi,
   SyntaxNode,
 } from "../../runner/toolchain/typescript-parse.ts";
+import { type OwnPackageNames, moduleOriginOf, ownPackageNamesOf } from "./own-modules.ts";
 
 const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
   if (folderScope({ file: request.file }) === "generated") return "skipped";
@@ -29,7 +30,10 @@ type FormRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
 export type Declarations = ReadonlyMap<string, readonly SyntaxNode[]>;
 
-type BodyRequest = FormRequest & { readonly declarations: Declarations };
+type BodyRequest = FormRequest & {
+  readonly declarations: Declarations;
+  readonly ownPackageNames: OwnPackageNames;
+};
 
 const SECOND_EDITION: Edition = editionOf("2");
 
@@ -462,8 +466,10 @@ const objectFitsBuiltIn = (request: {
   return fits ? "fits" : "never-fits";
 };
 
-const moduleTarget = (request: { readonly specifier: string }): CallTarget =>
-  request.specifier.startsWith(".") ? "own-api" : "built-in-or-library";
+const moduleTarget = (request: {
+  readonly specifier: string;
+  readonly ownPackageNames: OwnPackageNames;
+}): CallTarget => (moduleOriginOf(request) === "own" ? "own-api" : "built-in-or-library");
 
 const loadedModuleOf = (request: FormRequest): string | undefined => {
   const { syntaxApi, node } = request;
@@ -524,28 +530,38 @@ const declarationsNamed = (request: {
 type OriginRequest = BodyRequest & { readonly visited: readonly string[] };
 
 const declarationTarget = (request: OriginRequest): CallTarget => {
-  const { syntaxApi, declarations, node, visited } = request;
+  const { syntaxApi, declarations, ownPackageNames, node, visited } = request;
   if (syntaxApi.isImportEqualsDeclaration(node)) {
     const reference = node.moduleReference;
     return syntaxApi.isExternalModuleReference(reference) &&
       syntaxApi.isStringLiteralLike(reference.expression)
-      ? moduleTarget({ specifier: reference.expression.text })
+      ? moduleTarget({ specifier: reference.expression.text, ownPackageNames })
       : "own-api";
   }
   if (!syntaxApi.isVariableDeclaration(node) || node.initializer === undefined) return "own-api";
-  return originTarget({ syntaxApi, declarations, node: node.initializer, visited });
+  return originTarget({
+    syntaxApi,
+    declarations,
+    ownPackageNames,
+    node: node.initializer,
+    visited,
+  });
 };
 
 const nameTarget = (request: OriginRequest & { readonly name: string }): CallTarget => {
-  const { syntaxApi, declarations, node, name, visited } = request;
+  const { syntaxApi, declarations, ownPackageNames, node, name, visited } = request;
   if (visited.includes(name)) return "own-api";
-  if (BUILT_IN_NAMESPACES.includes(name) || packageBindingsOf({ syntaxApi, node }).includes(name))
+  if (
+    BUILT_IN_NAMESPACES.includes(name) ||
+    packageBindingsOf({ syntaxApi, ownPackageNames, node }).includes(name)
+  )
     return "built-in-or-library";
   const fromLibrary = declarationsNamed({ declarations, name }).some(
     (declaration) =>
       declarationTarget({
         syntaxApi,
         declarations,
+        ownPackageNames,
         node: declaration,
         visited: [...visited, name],
       }) === "built-in-or-library",
@@ -554,17 +570,28 @@ const nameTarget = (request: OriginRequest & { readonly name: string }): CallTar
 };
 
 const memberTarget = (request: OriginRequest & { readonly member: SyntaxNode }): CallTarget => {
-  const { syntaxApi, declarations, member, visited } = request;
+  const { syntaxApi, declarations, ownPackageNames, member, visited } = request;
   if (syntaxApi.isShorthandPropertyAssignment(member)) {
-    return nameTarget({ syntaxApi, declarations, node: member, name: member.name.text, visited });
+    return nameTarget({
+      syntaxApi,
+      declarations,
+      ownPackageNames,
+      node: member,
+      name: member.name.text,
+      visited,
+    });
   }
   return syntaxApi.isPropertyAssignment(member)
-    ? originTarget({ syntaxApi, declarations, node: member.initializer, visited })
+    ? originTarget({ syntaxApi, declarations, ownPackageNames, node: member.initializer, visited })
     : "own-api";
 };
 
 const heldMembersNamed = (
-  request: BodyRequest & { readonly holder: string; readonly member: string },
+  request: FormRequest & {
+    readonly declarations: Declarations;
+    readonly holder: string;
+    readonly member: string;
+  },
 ): readonly SyntaxNode[] => {
   const { syntaxApi, declarations, holder, member } = request;
   return declarationsNamed({ declarations, name: holder }).flatMap((declaration) => {
@@ -582,7 +609,7 @@ const heldMembersNamed = (
 };
 
 const heldValueTarget = (request: OriginRequest): CallTarget | undefined => {
-  const { syntaxApi, declarations, node, visited } = request;
+  const { syntaxApi, declarations, ownPackageNames, node, visited } = request;
   if (!syntaxApi.isPropertyAccessExpression(node) || !syntaxApi.isIdentifier(node.expression))
     return undefined;
   const members = heldMembersNamed({
@@ -595,19 +622,20 @@ const heldValueTarget = (request: OriginRequest): CallTarget | undefined => {
   if (members.length === 0) return undefined;
   const fromLibrary = members.some(
     (member) =>
-      memberTarget({ syntaxApi, declarations, node, member, visited }) === "built-in-or-library",
+      memberTarget({ syntaxApi, declarations, ownPackageNames, node, member, visited }) ===
+      "built-in-or-library",
   );
   return fromLibrary ? "built-in-or-library" : "own-api";
 };
 
 const originTarget = (request: OriginRequest): CallTarget => {
-  const { syntaxApi, declarations, node, visited } = request;
+  const { syntaxApi, declarations, ownPackageNames, node, visited } = request;
   const loadedModule = loadedModuleOf({ syntaxApi, node });
-  if (loadedModule !== undefined) return moduleTarget({ specifier: loadedModule });
+  if (loadedModule !== undefined) return moduleTarget({ specifier: loadedModule, ownPackageNames });
   const held = heldValueTarget(request);
   if (held !== undefined) return held;
   if (syntaxApi.isIdentifier(node))
-    return nameTarget({ syntaxApi, declarations, node, name: node.text, visited });
+    return nameTarget({ syntaxApi, declarations, ownPackageNames, node, name: node.text, visited });
   if (
     syntaxApi.isStringLiteralLike(node) ||
     syntaxApi.isArrayLiteralExpression(node) ||
@@ -625,11 +653,13 @@ const originTarget = (request: OriginRequest): CallTarget => {
     syntaxApi.isAsExpression(node) ||
     syntaxApi.isSatisfiesExpression(node);
   return isChain
-    ? originTarget({ syntaxApi, declarations, node: node.expression, visited })
+    ? originTarget({ syntaxApi, declarations, ownPackageNames, node: node.expression, visited })
     : "own-api";
 };
 
-const packageBindingsOf = (request: FormRequest): readonly string[] =>
+const packageBindingsOf = (
+  request: FormRequest & { readonly ownPackageNames: OwnPackageNames },
+): readonly string[] =>
   request.node.getSourceFile().statements.flatMap((statement) => {
     const { syntaxApi } = request;
     if (
@@ -637,7 +667,13 @@ const packageBindingsOf = (request: FormRequest): readonly string[] =>
       !syntaxApi.isStringLiteral(statement.moduleSpecifier)
     )
       return [];
-    if (statement.moduleSpecifier.text.startsWith(".") || statement.importClause === undefined)
+    if (
+      moduleTarget({
+        specifier: statement.moduleSpecifier.text,
+        ownPackageNames: request.ownPackageNames,
+      }) === "own-api" ||
+      statement.importClause === undefined
+    )
       return [];
     const { name, namedBindings } = statement.importClause;
     const named =
@@ -670,11 +706,18 @@ const argumentsTarget = (request: {
 const callTargetOf = (request: {
   readonly syntaxApi: SyntaxApi;
   readonly declarations: Declarations;
+  readonly ownPackageNames: OwnPackageNames;
   readonly call: CallExpression;
   readonly method: PropertyAccessExpression;
 }): CallTarget => {
-  const { syntaxApi, declarations, call, method } = request;
-  const target = originTarget({ syntaxApi, declarations, node: method.expression, visited: [] });
+  const { syntaxApi, declarations, ownPackageNames, call, method } = request;
+  const target = originTarget({
+    syntaxApi,
+    declarations,
+    ownPackageNames,
+    node: method.expression,
+    visited: [],
+  });
   if (target === "built-in-or-library") return "built-in-or-library";
   return argumentsTarget({ syntaxApi, call, name: method.name.text });
 };
@@ -682,6 +725,7 @@ const callTargetOf = (request: {
 const listedMethodForm = (request: {
   readonly syntaxApi: SyntaxApi;
   readonly declarations: Declarations;
+  readonly ownPackageNames: OwnPackageNames;
   readonly call: CallExpression;
   readonly method: PropertyAccessExpression;
 }): TestBodyForm | undefined => {
@@ -691,10 +735,16 @@ const listedMethodForm = (request: {
 };
 
 const callForm = (request: BodyRequest): TestBodyForm | undefined => {
-  const { syntaxApi, declarations, node } = request;
+  const { syntaxApi, declarations, ownPackageNames, node } = request;
   if (!syntaxApi.isCallExpression(node)) return undefined;
   const calledForm = syntaxApi.isPropertyAccessExpression(node.expression)
-    ? (listedMethodForm({ syntaxApi, declarations, call: node, method: node.expression }) ??
+    ? (listedMethodForm({
+        syntaxApi,
+        declarations,
+        ownPackageNames,
+        call: node,
+        method: node.expression,
+      }) ??
       namespaceForm({
         syntaxApi,
         node: node.expression.expression,
@@ -804,42 +854,50 @@ export const testBodyFormOf = (request: BodyRequest): TestBodyForm | undefined =
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => ({
-    outcome: "ok",
-    value: {
-      prepareFile: ({ file }) => {
-        if (testFileEligibility({ file }) === "skipped") {
-          return { outcome: "ok", value: { kind: "skipped" } };
-        }
-        return {
-          outcome: "ok",
-          value: {
-            kind: "syntax",
-            begin: ({ sourceFile, anchorAt }) => {
-              const hits: PieceHit[] = [];
-              const declarations = declarationsOf({ syntaxApi, sourceFile });
-              return {
-                enter: ({ node }) => {
-                  const form = testBodyFormOf({ syntaxApi, declarations, node });
-                  if (form === undefined) return;
-                  const binding = bindings.find(
-                    ({ address, forms, edition }) =>
-                      forms?.[form.remedy.section] === address &&
-                      editionReaches({ edition, introducedIn: form.introducedIn }) === "reached",
-                  );
-                  if (binding === undefined) return;
-                  const position = node.getStart(sourceFile);
-                  const anchor = anchorAt({ position });
-                  const snippet = sourceSnippetAt({ source: sourceFile.text, position });
-                  hits.push({ check: binding.address, anchor, snippet, remedy: form.remedy });
-                },
-                finish: () => hits,
-              };
+  prepare: ({ bindings, repository, syntaxApi }) => {
+    const ownPackageNames = ownPackageNamesOf({ repository });
+    return {
+      outcome: "ok",
+      value: {
+        prepareFile: ({ file }) => {
+          if (testFileEligibility({ file }) === "skipped") {
+            return { outcome: "ok", value: { kind: "skipped" } };
+          }
+          return {
+            outcome: "ok",
+            value: {
+              kind: "syntax",
+              begin: ({ sourceFile, anchorAt }) => {
+                const hits: PieceHit[] = [];
+                const declarations = declarationsOf({ syntaxApi, sourceFile });
+                return {
+                  enter: ({ node }) => {
+                    const form = testBodyFormOf({
+                      syntaxApi,
+                      declarations,
+                      ownPackageNames,
+                      node,
+                    });
+                    if (form === undefined) return;
+                    const binding = bindings.find(
+                      ({ address, forms, edition }) =>
+                        forms?.[form.remedy.section] === address &&
+                        editionReaches({ edition, introducedIn: form.introducedIn }) === "reached",
+                    );
+                    if (binding === undefined) return;
+                    const position = node.getStart(sourceFile);
+                    const anchor = anchorAt({ position });
+                    const snippet = sourceSnippetAt({ source: sourceFile.text, position });
+                    hits.push({ check: binding.address, anchor, snippet, remedy: form.remedy });
+                  },
+                  finish: () => hits,
+                };
+              },
             },
-          },
-        };
+          };
+        },
+        finish: () => ({ outcome: "ok", value: [] }),
       },
-      finish: () => ({ outcome: "ok", value: [] }),
-    },
-  }),
+    };
+  },
 };
