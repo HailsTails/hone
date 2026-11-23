@@ -1,11 +1,9 @@
 import { type BuiltInImport, builtInImportOf } from "../../runner/pieces/node-built-in-import.ts";
 import { sourceValueLookupOf } from "../../runner/pieces/source-bindings.ts";
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { typeScriptSourceEligibility } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
-const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
-const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
 const CRYPTO_RANDOM_METHODS = new Set(["randomUUID", "getRandomValues"]);
 
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
@@ -107,11 +105,7 @@ export const check: WalkerPiece = {
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        if (
-          folderScope({ file }) === "generated" ||
-          !SOURCE_ENDINGS.some((ending) => file.endsWith(ending)) ||
-          DECLARATION_ENDINGS.some((ending) => file.endsWith(ending))
-        )
+        if (typeScriptSourceEligibility({ file }) === "skipped")
           return { outcome: "ok", value: { kind: "skipped" } };
         return {
           outcome: "ok",

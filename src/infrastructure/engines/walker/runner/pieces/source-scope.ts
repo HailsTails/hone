@@ -34,3 +34,8 @@ export const typeScriptSourceKindOf = (request: {
     return "skipped";
   return TEST_FILE.test(file) ? "test" : "production";
 };
+
+export const typeScriptSourceEligibility = (request: {
+  readonly file: string;
+}): "eligible" | "skipped" =>
+  typeScriptSourceKindOf(request) === "skipped" ? "skipped" : "eligible";
