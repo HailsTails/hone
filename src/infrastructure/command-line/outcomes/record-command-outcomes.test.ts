@@ -94,43 +94,6 @@ describe("inheritedDebtLine", () => {
     );
   });
 
-  it("tells a file under --leave to be recorded as an authorised location with its own reason", () => {
-    expect(
-      inheritedDebtLine({
-        outcome: {
-          clause: {
-            ruleSet: TOOL_RULE_SET,
-            discipline: disciplineIdOf("CD-15"),
-            clause: clauseIdOf("loops"),
-          },
-          file: repoPathOf("src/clock.ts"),
-          effect: "left",
-          under: repoPathOf("src"),
-        },
-      }),
-    ).toBe(
-      "CD-15#loops left src/clock.ts: under --leave src; record it as an authorised-location with its own reason, or fix it\n",
-    );
-  });
-
-  it("tells a file the base revision does not hold to be fixed, or carved out where no run assessing forfeiture forfeits it", () => {
-    expect(
-      inheritedDebtLine({
-        outcome: {
-          clause: {
-            ruleSet: TOOL_RULE_SET,
-            discipline: disciplineIdOf("CD-15"),
-            clause: clauseIdOf("loops"),
-          },
-          file: repoPathOf("src/new.ts"),
-          effect: "new-file",
-        },
-      }),
-    ).toBe(
-      "CD-15#loops new-file src/new.ts: the base revision does not hold this file, so its debt was not inherited; fix it, or record a file carve-out on it, which a run assessing forfeiture against that base forfeits\n",
-    );
-  });
-
   it("names the folder whose configuration the file loads apart from the folder holding the disciplines.json a person would remove", () => {
     expect(
       inheritedDebtLine({

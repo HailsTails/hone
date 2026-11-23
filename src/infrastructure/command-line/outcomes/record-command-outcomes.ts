@@ -20,7 +20,7 @@ const inheritedDebtNote = (request: { readonly outcome: InheritedDebtOutcome }):
     case "left":
       return `: under ${LEAVE_OPTION.name} ${outcome.under}; record it as an authorised-location with its own reason, or fix it`;
     case "new-file":
-      return ": the base revision does not hold this file, so its debt was not inherited; fix it, or record a file carve-out on it, which a run assessing forfeiture against that base forfeits";
+      return ": the base revision does not hold this file, so its debt was not inherited; fix it, or record it with its own reason";
     case "refused":
       return ": the clause's discipline refuses exceptions; fix it";
     case "nested-configuration":
