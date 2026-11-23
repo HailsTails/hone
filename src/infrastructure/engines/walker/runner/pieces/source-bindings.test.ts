@@ -1,12 +1,7 @@
 import { assert, describe, expect, it } from "vitest";
 
 import { defaultTypeScriptPeers, loadParsePort } from "../toolchain/typescript-toolchain.ts";
-import {
-  runtimeDeclarationsOf,
-  sourceBindingsOf,
-  sourceValueDeclarationsOf,
-  sourceValueLookupOf,
-} from "./source-bindings.ts";
+import { sourceBindingsOf, sourceValueLookupOf } from "./source-bindings.ts";
 
 const loaded = await loadParsePort({
   peers: defaultTypeScriptPeers({
@@ -17,13 +12,19 @@ const loaded = await loadParsePort({
 assert(loaded.outcome === "ok");
 const { parse, syntaxApi } = loaded.value;
 
-describe("runtimeDeclarationsOf", () => {
+describe("sourceValueLookupOf", () => {
   it("treats declarations from a TypeScript declaration file as ambient", () => {
     const sourceFile = parse({
       fileName: "src/runtime.d.ts",
       source: "export const port: object;",
     });
-    expect(runtimeDeclarationsOf({ syntaxApi, declarations: sourceFile.statements })).toEqual([]);
+    const [statement] = sourceFile.statements;
+    assert.isDefined(statement);
+    assert(syntaxApi.isVariableStatement(statement));
+    const [declaration] = statement.declarationList.declarations;
+    assert.isDefined(declaration);
+    const lookup = sourceValueLookupOf({ syntaxApi, sourceFile });
+    expect(lookup(declaration.name)).toEqual([]);
   });
 
   it("retains declarations that supply local values", () => {
@@ -40,11 +41,11 @@ describe("runtimeDeclarationsOf", () => {
     const [local] = localStatement.declarationList.declarations;
     assert.isDefined(ambient);
     assert.isDefined(local);
-    expect(runtimeDeclarationsOf({ syntaxApi, declarations: [ambient, local] })).toEqual([local]);
+    const lookup = sourceValueLookupOf({ syntaxApi, sourceFile });
+    expect(lookup(ambient.name)).toEqual([]);
+    expect(lookup(local.name)).toEqual([local]);
   });
-});
 
-describe("sourceValueLookupOf", () => {
   it.each([
     'import type { console } from "./ports";\nconsole();',
     'import { type console } from "./ports";\nconsole();',
@@ -131,10 +132,10 @@ describe("sourceBindingsOf", () => {
     assert.isDefined(global);
     assert(syntaxApi.isShorthandPropertyAssignment(global));
 
-    const bindings = sourceBindingsOf({ syntaxApi, sourceFile });
-    expect(sourceValueDeclarationsOf({ syntaxApi, bindings, node: present.name })).toEqual([
+    const lookup = sourceValueLookupOf({ syntaxApi, sourceFile });
+    expect(lookup(present.name)).toEqual([
       expect.objectContaining({ kind: syntaxApi.SyntaxKind.VariableDeclaration }),
     ]);
-    expect(sourceValueDeclarationsOf({ syntaxApi, bindings, node: global.name })).toEqual([]);
+    expect(lookup(global.name)).toEqual([]);
   });
 });

@@ -6,7 +6,7 @@ import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-pa
 type SyntaxRequest = {
   readonly syntaxApi: SyntaxApi;
   readonly node: SyntaxNode;
-  readonly locallyBound: (node: SyntaxNode) => boolean;
+  readonly declarationsOf: (node: SyntaxNode) => readonly SyntaxNode[];
 };
 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
@@ -16,7 +16,7 @@ const PROCESS_MEMBERS = new Set(["env", "argv", "exit", "on"]);
 const processOrConsole = ({
   syntaxApi,
   node,
-  locallyBound,
+  declarationsOf,
 }: SyntaxRequest): SyntaxNode | undefined => {
   if (!syntaxApi.isPropertyAccessExpression(node) && !syntaxApi.isElementAccessExpression(node))
     return undefined;
@@ -26,7 +26,7 @@ const processOrConsole = ({
     (receiver.text !== "process" && receiver.text !== "console")
   )
     return undefined;
-  if (locallyBound(receiver)) return undefined;
+  if (declarationsOf(receiver).length > 0) return undefined;
   if (receiver.text === "console") return node;
   if (syntaxApi.isPropertyAccessExpression(node))
     return PROCESS_MEMBERS.has(node.name.text) ? node : undefined;
@@ -39,7 +39,7 @@ const processOrConsole = ({
 const globalThisRead = ({
   syntaxApi,
   node,
-  locallyBound,
+  declarationsOf,
 }: SyntaxRequest): SyntaxNode | undefined => {
   if (!syntaxApi.isIdentifier(node) || node.text !== "globalThis") return undefined;
   const parent = node.parent;
@@ -59,7 +59,7 @@ const globalThisRead = ({
   if ("label" in parent && parent.label === node) return undefined;
   if ("name" in parent && parent.name === node && !syntaxApi.isShorthandPropertyAssignment(parent))
     return undefined;
-  return locallyBound(node) ? undefined : node;
+  return declarationsOf(node).length > 0 ? undefined : node;
 };
 
 export const check: WalkerPiece = {
@@ -80,12 +80,11 @@ export const check: WalkerPiece = {
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
               const declarationsOf = sourceValueLookupOf({ syntaxApi, sourceFile });
-              const locallyBound = (node: SyntaxNode): boolean => declarationsOf(node).length > 0;
               return {
                 enter: ({ node }) => {
                   const use =
-                    processOrConsole({ syntaxApi, node, locallyBound }) ??
-                    globalThisRead({ syntaxApi, node, locallyBound });
+                    processOrConsole({ syntaxApi, node, declarationsOf }) ??
+                    globalThisRead({ syntaxApi, node, declarationsOf });
                   if (use === undefined) return;
                   const anchor = anchorAt({ position: use.getStart(sourceFile) });
                   const snippet = use.getText(sourceFile).replace(/\r?\n/g, " ");

@@ -10,6 +10,7 @@ const CRYPTO_RANDOM_METHODS = new Set(["randomUUID", "getRandomValues"]);
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 type DeclarationsOf = (node: SyntaxNode) => readonly SyntaxNode[];
 type CryptoKind = "node-module" | "node-namespace" | "web-crypto" | "random-function";
+type CryptoReceiver = Exclude<CryptoKind, "random-function">;
 type CryptoBinding = { readonly declaration: SyntaxNode; readonly kind: CryptoKind };
 type CryptoEntry = readonly [name: string, binding: CryptoBinding];
 type CryptoBindings = ReadonlyMap<string, CryptoBinding>;
@@ -101,27 +102,32 @@ const importedCryptoKindOf = (
     : undefined;
 };
 
-const qualifiedCrypto = (request: CallContext & { readonly receiver: SyntaxNode }): boolean => {
+const qualifiedCryptoOf = (
+  request: CallContext & { readonly receiver: SyntaxNode },
+): CryptoReceiver | undefined => {
   const { syntaxApi, declarationsOf, receiver } = request;
   const member = memberOf({ syntaxApi, node: receiver });
-  if (member === undefined || !syntaxApi.isIdentifier(member.receiver)) return false;
+  if (member === undefined || !syntaxApi.isIdentifier(member.receiver)) return undefined;
   if (member.name === "webcrypto" || member.name === "default") {
     const kind = importedCryptoKindOf({ ...request, node: member.receiver });
-    return kind === "node-namespace" || (member.name === "webcrypto" && kind === "node-module");
+    if (member.name === "default") return kind === "node-namespace" ? "node-module" : undefined;
+    return kind === "node-namespace" || kind === "node-module" ? "web-crypto" : undefined;
   }
-  return (
-    member.name === "crypto" &&
+  return member.name === "crypto" &&
     (member.receiver.text === "globalThis" || member.receiver.text === "window") &&
     declarationsOf(member.receiver).length === 0
-  );
+    ? "web-crypto"
+    : undefined;
 };
 
-const cryptoReceiver = (request: CallContext & { readonly receiver: SyntaxNode }): boolean => {
+const cryptoReceiverOf = (
+  request: CallContext & { readonly receiver: SyntaxNode },
+): CryptoReceiver | undefined => {
   const { syntaxApi, declarationsOf, receiver } = request;
-  if (!syntaxApi.isIdentifier(receiver)) return qualifiedCrypto(request);
-  if (receiver.text === "crypto" && declarationsOf(receiver).length === 0) return true;
+  if (!syntaxApi.isIdentifier(receiver)) return qualifiedCryptoOf(request);
+  if (receiver.text === "crypto" && declarationsOf(receiver).length === 0) return "web-crypto";
   const kind = importedCryptoKindOf({ ...request, node: receiver });
-  return kind === "node-module" || kind === "node-namespace" || kind === "web-crypto";
+  return kind === "random-function" ? undefined : kind;
 };
 
 const randomCall = (
@@ -141,7 +147,7 @@ const randomCall = (
   if (name === "random" && syntaxApi.isIdentifier(receiver) && receiver.text === "Math") {
     return declarationsOf(receiver).length === 0 ? callee : undefined;
   }
-  return CRYPTO_RANDOM_METHODS.has(name) && cryptoReceiver({ ...request, receiver })
+  return CRYPTO_RANDOM_METHODS.has(name) && cryptoReceiverOf({ ...request, receiver }) !== undefined
     ? callee
     : undefined;
 };
