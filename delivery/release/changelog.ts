@@ -80,15 +80,6 @@ const sectionOfLines = (request: {
     ...GROUPS_IN_ORDER.flatMap((group) => groupBlock({ group, lines: request.lines })),
   ].join("\n");
 
-export const changelogSectionOf = (request: {
-  readonly version: string;
-  readonly entries: readonly ChangeEntry[];
-}): string =>
-  sectionOfLines({
-    version: request.version,
-    lines: request.entries.map((entry) => changeLineOf({ entry })),
-  });
-
 export const changelogWithSection = (request: {
   readonly changelog: string;
   readonly version: string;
