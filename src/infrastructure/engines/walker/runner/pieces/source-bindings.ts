@@ -30,6 +30,20 @@ export const sourceBindingsOf = ({
     )
     .getTypeChecker();
 
+export const sourceBindingsPerFile = (): ((request: {
+  readonly syntaxApi: SyntaxApi;
+  readonly sourceFile: SyntaxTree;
+}) => TypeChecker) => {
+  const bound = new WeakMap<SyntaxTree, TypeChecker>();
+  return (request) => {
+    const previous = bound.get(request.sourceFile);
+    if (previous !== undefined) return previous;
+    const bindings = sourceBindingsOf(request);
+    bound.set(request.sourceFile, bindings);
+    return bindings;
+  };
+};
+
 const declarationKindOf = ({
   syntaxApi,
   node,

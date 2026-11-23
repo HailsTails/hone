@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from "vitest";
 
 import { defaultTypeScriptPeers, loadParsePort } from "../toolchain/typescript-toolchain.ts";
-import { sourceBindingsOf, sourceValueLookupOf } from "./source-bindings.ts";
+import { sourceBindingsOf, sourceBindingsPerFile, sourceValueLookupOf } from "./source-bindings.ts";
 
 const loaded = await loadParsePort({
   peers: defaultTypeScriptPeers({
@@ -150,5 +150,18 @@ describe("sourceBindingsOf", () => {
       expect.objectContaining({ kind: syntaxApi.SyntaxKind.VariableDeclaration }),
     ]);
     expect(lookup(global.name)).toEqual([]);
+  });
+});
+
+describe("sourceBindingsPerFile", () => {
+  it("binds each parsed file once and keeps other files apart", () => {
+    const first = parse({ fileName: "src/a.test.ts", source: "test();" });
+    const second = parse({ fileName: "src/b.test.ts", source: "test();" });
+    const bindingsOf = sourceBindingsPerFile();
+
+    const firstBindings = bindingsOf({ syntaxApi, sourceFile: first });
+
+    expect(bindingsOf({ syntaxApi, sourceFile: first })).toBe(firstBindings);
+    expect(bindingsOf({ syntaxApi, sourceFile: second })).not.toBe(firstBindings);
   });
 });

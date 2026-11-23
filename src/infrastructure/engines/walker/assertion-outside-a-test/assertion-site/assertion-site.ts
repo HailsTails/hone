@@ -1,4 +1,4 @@
-import { sourceBindingsOf } from "../../runner/pieces/source-bindings.ts";
+import { sourceBindingsPerFile } from "../../runner/pieces/source-bindings.ts";
 import {
   testFileEligibility,
   typeScriptSourceEligibility,
@@ -136,7 +136,7 @@ const assertsAt = (request: {
 export const check: WalkerPiece = {
   prepare: (request) => {
     const sourceImports = new WeakMap<SyntaxTree, ReturnType<typeof vitestAssertionsOf>>();
-    const sourceBindings = new WeakMap<SyntaxTree, TypeChecker>();
+    const fileBindingsOf = sourceBindingsPerFile();
     return syntaxNodeCheck({
       eligibility: typeScriptSourceEligibility,
       found: (visit) => {
@@ -144,13 +144,7 @@ export const check: WalkerPiece = {
         if (target === undefined) return undefined;
         const { root, method } = target;
         const { syntaxApi, sourceFile } = visit;
-        const bindingsOf = (): TypeChecker => {
-          const bound = sourceBindings.get(sourceFile);
-          if (bound !== undefined) return bound;
-          const bindings = sourceBindingsOf({ syntaxApi, sourceFile });
-          sourceBindings.set(sourceFile, bindings);
-          return bindings;
-        };
+        const bindingsOf = (): TypeChecker => fileBindingsOf({ syntaxApi, sourceFile });
         const test = testFileEligibility({ file: sourceFile.fileName }) === "eligible";
         if (
           test &&
