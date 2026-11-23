@@ -1099,6 +1099,8 @@ It never prints `why-chains-required`, `records-in-both-layouts` or `records-uns
 
 `catalogue-not-read` is printed when the tool's own symptom catalogue is absent or cannot be read, since every record resolves against it. A team rule set with no catalogue is not a load failure. `upgrade-needed` is printed when a version 2 run finds version 1 files. It names the `hone upgrade` command that rewrites them, with the repository's own invocation when the install can be located, and plain `hone upgrade` otherwise.
 
+`projection-stale` is printed by `hone record-debt` when the projection is out of date or not written, since the run could not see every finding and would record only part of the debt. It prints the line `check` prints under `projection-problems`, so `<project command>` is the repair.
+
 `settings-in-both-versions` is printed when the folder holds both `disciplines.json` and `hone.config.json`, since no run can tell which one the repository means. `not-ready-yet` is printed when a version 2 repository asks for something this release does not yet run on version 2 files: a command, named by the command, or other version 2 repositories inside this one, named `eslint-config-roots`, for which it names the first three folders and a count of the rest. A release that runs them stops printing it.
 
 | Kind | Line |
@@ -1118,6 +1120,10 @@ It never prints `why-chains-required`, `records-in-both-layouts` or `records-uns
 | `unexpected-error` | `load failure: unexpected-error <detail>` |
 | `config-absent` | `load failure: config-absent <dir> holds no hone.config.json; give the folder that holds it, usually the repository root` |
 | `settings-in-both-versions` | `load failure: settings-in-both-versions <dir>: it holds both disciplines.json and hone.config.json; keep the one this repository runs on and remove the other` |
+| `projection-stale` | `load failure: projection-stale <engine> out-of-date: hone.<engine>.mjs differs from what hone project writes now; run <project command> and commit every file it writes` |
+| `projection-stale` | `load failure: projection-stale <engine> out-of-date <slice>: that slice differs from what hone project writes now; run <project command> and commit every file it writes` |
+| `projection-stale` | `load failure: projection-stale <engine> missing <slice>: that slice is not written; run <project command> and commit every file it writes` |
+| `projection-stale` | `load failure: projection-stale engine-not-run <engine> missing: hone.<engine>.mjs is not written; run <project command> and commit every file it writes` |
 | `not-ready-yet` | `load failure: not-ready-yet <command>: this release runs <command> on version 1 files only, and this repository holds hone.config.json` |
 | `not-ready-yet` | `load failure: not-ready-yet eslint-config-roots: this release does not run a repository that holds other version 2 repositories yet; folders holding hone.config.json: <folders>; move them out of this repository, and run each on its own with --repo` |
 | `unknown-check` | `load failure: unknown-check <check>` |

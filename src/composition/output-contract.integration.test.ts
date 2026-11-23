@@ -4062,6 +4062,9 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
   const UPGRADE_COMMAND =
     "node /work/shop/node_modules/@hailstails/hone/src/hone.js upgrade --repo /work/shop";
 
+  const PROJECT_COMMAND =
+    "node /work/shop/node_modules/@hailstails/hone/src/hone.js project --repo /work/shop";
+
   const CATALOGUE_PATH = "node_modules/@hailstails/hone/rules/typescript/symptoms.json";
 
   const DEBT_FILE = repoPathOf("hone-records/debt/claimed-type.json");
@@ -4169,6 +4172,58 @@ const { RUN_FAILURE_LINES, RUN_PRINTED_BLOCKS } = (() => {
       {
         entry: { kind: "settings-in-both-versions", repo: "/work/shop" },
         fills: { dir: "/work/shop" },
+      },
+    ],
+    "projection-stale": [
+      {
+        entry: {
+          kind: "projection-stale",
+          problem: { scope: "projection", engine: { name: "eslint" }, state: "out-of-date" },
+          projectCommand: PROJECT_COMMAND,
+        },
+        fills: { engine: "eslint", "project command": PROJECT_COMMAND },
+      },
+      {
+        entry: {
+          kind: "projection-stale",
+          problem: {
+            scope: "slice",
+            engine: { name: "eslint" },
+            state: "out-of-date",
+            slice: repoPathOf("packages/ui/hone.eslint.mjs"),
+          },
+          projectCommand: PROJECT_COMMAND,
+        },
+        fills: {
+          engine: "eslint",
+          slice: "packages/ui/hone.eslint.mjs",
+          "project command": PROJECT_COMMAND,
+        },
+      },
+      {
+        entry: {
+          kind: "projection-stale",
+          problem: {
+            scope: "slice",
+            engine: { name: "eslint" },
+            state: "missing",
+            slice: repoPathOf("packages/ui/hone.eslint.mjs"),
+          },
+          projectCommand: PROJECT_COMMAND,
+        },
+        fills: {
+          engine: "eslint",
+          slice: "packages/ui/hone.eslint.mjs",
+          "project command": PROJECT_COMMAND,
+        },
+      },
+      {
+        entry: {
+          kind: "projection-stale",
+          problem: { kind: "engine-not-run", engine: { name: "eslint" }, projection: "missing" },
+          projectCommand: PROJECT_COMMAND,
+        },
+        fills: { engine: "eslint", "project command": PROJECT_COMMAND },
       },
     ],
     "not-ready-yet": [
