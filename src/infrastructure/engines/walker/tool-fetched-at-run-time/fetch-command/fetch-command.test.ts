@@ -147,6 +147,37 @@ describe("fetch-command", () => {
     ]);
   });
 
+  it("reports quoted GitLab launchers and script keys inside YAML sequences", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source:
+          'build:\n  script:\n    - "npx.cmd" "tool"\n  commands:\n    - script: npx next-tool',
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 3, column: 0 }, snippet: '- "npx.cmd" "tool"' },
+      { file, check: ADDRESS, anchor: { line: 5, column: 0 }, snippet: "- script: npx next-tool" },
+    ]);
+  });
+
+  it("preserves quoted command tokens inside a workflow run block", () => {
+    expect(
+      findingsIn({
+        file: WORKFLOW,
+        source: '- run: |\n    "npx" "tool"\n    "npx other-tool"\n- run: \'npx inline-tool\'',
+      }),
+    ).toEqual([
+      { file: WORKFLOW, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: '"npx" "tool"' },
+      {
+        file: WORKFLOW,
+        check: ADDRESS,
+        anchor: { line: 4, column: 0 },
+        snippet: "- run: 'npx inline-tool'",
+      },
+    ]);
+  });
+
   it("passes a local script", () => {
     expect(
       findingsIn({

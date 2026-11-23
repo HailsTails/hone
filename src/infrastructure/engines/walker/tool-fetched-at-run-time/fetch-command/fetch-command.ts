@@ -17,9 +17,19 @@ const COMMAND_START =
   /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?<quote>['"]?)(?:(?:npx|pnpx|bunx)(?:\.(?:cmd|bat|exe|ps1))?|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\k<quote>(?=$|[\s;&|])/i;
 const DOWNLOAD_PIPE =
   /(?:^|[;&|])\s*(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^|\r\n]*\|\s*(?:sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\b/i;
-const GITLAB_SCRIPT = /^(?:before_script|script|after_script|pre_get_sources_script)\s*:\s*/;
+const GITLAB_SCRIPT =
+  /^(?:-\s+)?(?:before_script|script|after_script|pre_get_sources_script)\s*:\s*/;
 const SEQUENCE_ITEM = /^-\s+/;
-const unquote = (source: string): string => source.replace(/^(?:'|")|(?:'|")$/g, "");
+const WORKFLOW_COMMAND = /^(?:-\s+)?(?:run|script)\s*:\s*/;
+const YAML_BLOCK = /^(?:&\S+\s*)?(?:[|>][+\d-]*)?(?:\s*#.*)?$/;
+const YAML_STRING = /^(?:"(?<double>(?:[^"\\]|\\.)*)"|'(?<single>(?:[^']|'')*)')$/;
+
+const yamlCommandOf = (source: string): string => {
+  const quoted = YAML_STRING.exec(source)?.groups;
+  if (quoted?.double !== undefined) return quoted.double.replaceAll('\\"', '"');
+  if (quoted?.single !== undefined) return quoted.single.replaceAll("''", "'");
+  return source;
+};
 
 type ScriptScan = { readonly scriptIndent: number | undefined; readonly commands: Command[] };
 
@@ -32,14 +42,18 @@ const gitlabCommandsOf = (source: string): readonly Command[] =>
       const { scriptIndent, commands } = scan;
       const anchor = { line: index + 1, column: 0 };
       if (GITLAB_SCRIPT.test(snippet)) {
-        commands.push({ text: unquote(snippet.replace(GITLAB_SCRIPT, "")), anchor, snippet });
-        return { scriptIndent: indent, commands };
+        const command = snippet.replace(GITLAB_SCRIPT, "");
+        commands.push({ text: yamlCommandOf(command), anchor, snippet });
+        return { scriptIndent: YAML_BLOCK.test(command) ? indent : undefined, commands };
       }
       if (scriptIndent === undefined) return scan;
       if (indent < scriptIndent || (indent === scriptIndent && !SEQUENCE_ITEM.test(snippet))) {
         return { scriptIndent: undefined, commands };
       }
-      commands.push({ text: unquote(snippet.replace(SEQUENCE_ITEM, "")), anchor, snippet });
+      const text = SEQUENCE_ITEM.test(snippet)
+        ? yamlCommandOf(snippet.replace(SEQUENCE_ITEM, ""))
+        : snippet;
+      commands.push({ text, anchor, snippet });
       return scan;
     },
     { scriptIndent: undefined, commands: [] },
@@ -52,8 +66,10 @@ const sourceCommandsOf = (request: {
   request.source.split(/\r?\n/).flatMap((line, index) => {
     const snippet = line.trim();
     if (snippet.startsWith("#") || snippet.startsWith("::")) return [];
-    const workflowCommand = snippet.replace(/^(?:-\s+)?(?:run|script)\s*:\s*/, "");
-    const text = request.kind === "shell" ? snippet : unquote(workflowCommand);
+    const text =
+      request.kind === "workflow" && WORKFLOW_COMMAND.test(snippet)
+        ? yamlCommandOf(snippet.replace(WORKFLOW_COMMAND, ""))
+        : snippet;
     return [{ text, anchor: { line: index + 1, column: 0 }, snippet }];
   });
 
