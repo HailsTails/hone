@@ -11,6 +11,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import type { ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
 import {
   createNamedVersionOneEnginePass,
@@ -99,6 +100,77 @@ const CATALOGUE: SymptomCatalogue = {
   namedBans: [],
 };
 
+const RUNNER: ParsedNamedRunner = {
+  fileScope: "tracked",
+  projectedKinds: [],
+  run: vi.fn(),
+  conform: vi.fn(),
+  project: vi.fn(),
+};
+
+const PROJECTION = {
+  settingsFile: "disciplines.json",
+  projectionFile: repoPathOf("disciplines.eslint.mjs"),
+  packageFiles: [],
+  rules: new Map(),
+};
+
+const FIRST = editionOf("1");
+
+const WALKER_MEASURED = {
+  report: {
+    mechanism: "walker",
+    coverableKinds: [],
+    hits: [],
+    measured: [],
+    nativeExceptions: [],
+    projection: "none",
+    slices: [],
+    misnamedRuleIds: [],
+  },
+  unappliedSlices: [],
+} as const;
+
+const WALKER_PIECE = {
+  exceptions: "allowed",
+  anchor: { kind: "file" },
+  pieceRoot: "/install/walker/loop-keyword/loops",
+  settings: {},
+  declarations: {},
+  forms: {},
+  editions: { declared: [FIRST], default: FIRST, latest: FIRST },
+} as const;
+
+const walkerPassOver = (request: {
+  readonly catalogues: NamedVersionOnePassRequest["catalogues"];
+}) => {
+  const measureVersionOne = vi
+    .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
+    .mockResolvedValue({ outcome: "ok", value: WALKER_MEASURED });
+  const engine: NamedVersionOnePassRequest["engine"] = {
+    load: vi.fn().mockResolvedValue({ outcome: "ok", value: RUNNER }),
+    run: vi.fn(),
+    project: vi.fn(),
+  };
+  const pass = createNamedVersionOneEnginePass({
+    ...INPUT,
+    catalogues: request.catalogues,
+    sources: {
+      ...INPUT.sources,
+      ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
+      catalogue: vi.fn().mockReturnValue({
+        outcome: "ok",
+        value: { held: "catalogue", catalogue: CATALOGUE },
+      }),
+    },
+    readPiece: vi.fn().mockReturnValue({ outcome: "ok", value: WALKER_PIECE }),
+    engine,
+    checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: PROJECTION }),
+    measureVersionOne,
+  });
+  return { pass, engine, measureVersionOne };
+};
+
 describe("createNamedVersionOneEnginePass", () => {
   it("refuses a legacy selection whose clause cannot be matched to a named check", async () => {
     const pass = createNamedVersionOneEnginePass(INPUT);
@@ -114,71 +186,9 @@ describe("createNamedVersionOneEnginePass", () => {
   });
 
   it("sends a selected Walker check through the upgrade measurement port with the inspected projection", async () => {
-    const runner: ParsedNamedRunner = {
-      fileScope: "tracked",
-      projectedKinds: [],
-      run: vi.fn(),
-      conform: vi.fn(),
-      project: vi.fn(),
-    };
-    const projection = {
-      settingsFile: "disciplines.json",
-      projectionFile: repoPathOf("disciplines.eslint.mjs"),
-      packageFiles: [],
-      rules: new Map(),
-    };
-    const first = editionOf("1");
-    const measureVersionOne = vi
-      .fn<NamedVersionOnePassRequest["measureVersionOne"]>()
-      .mockResolvedValue({
-        outcome: "ok",
-        value: {
-          report: {
-            mechanism: "walker",
-            coverableKinds: [],
-            hits: [],
-            measured: [],
-            nativeExceptions: [],
-            projection: "none",
-            slices: [],
-            misnamedRuleIds: [],
-          },
-          unappliedSlices: [],
-        },
-      });
-    const engine: NamedVersionOnePassRequest["engine"] = {
-      load: vi.fn().mockResolvedValue({ outcome: "ok", value: runner }),
-      run: vi.fn(),
-      project: vi.fn(),
-    };
-    const pass = createNamedVersionOneEnginePass({
-      ...INPUT,
+    const { pass, engine, measureVersionOne } = walkerPassOver({
       catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE }],
-      sources: {
-        ...INPUT.sources,
-        ruleSetRoot: vi.fn().mockReturnValue({ outcome: "ok", value: INSTALL }),
-        catalogue: vi.fn().mockReturnValue({
-          outcome: "ok",
-          value: { held: "catalogue", catalogue: CATALOGUE },
-        }),
-      },
-      readPiece: vi.fn().mockReturnValue({
-        outcome: "ok",
-        value: {
-          exceptions: "allowed",
-          anchor: { kind: "file" },
-          pieceRoot: "/install/walker/loop-keyword/loops",
-          settings: {},
-          declarations: {},
-          forms: {},
-          editions: { declared: [first], default: first, latest: first },
-        },
-      }),
-      engine,
-      checkProjection: vi.fn().mockResolvedValue({ outcome: "ok", value: projection }),
-      measureVersionOne,
     });
-
     await expect(pass.findingsFor({ records: [] })).resolves.toEqual({
       outcome: "ok",
       value: {
@@ -187,8 +197,8 @@ describe("createNamedVersionOneEnginePass", () => {
       },
     });
     expect(measureVersionOne).toHaveBeenCalledExactlyOnceWith({
-      call: { mechanism: "walker", runner, request: expect.anything() },
-      projection,
+      call: { mechanism: "walker", runner: RUNNER, request: expect.anything() },
+      projection: PROJECTION,
       location: {
         installRoot: INSTALL,
         mechanism: "walker",
@@ -198,5 +208,27 @@ describe("createNamedVersionOneEnginePass", () => {
       },
     });
     expect(engine.run).not.toHaveBeenCalled();
+  });
+
+  it("sends a team rule set's checks with their own rule set", async () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamLoop: Check = { ...LOOP, symptom: { ...LOOP.symptom, ruleSet: acme } };
+    const { pass, measureVersionOne } = walkerPassOver({
+      catalogues: [
+        { ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE },
+        {
+          ruleSet: acme,
+          catalogue: { ...CATALOGUE, symptoms: [teamLoop.symptom], checks: [teamLoop] },
+        },
+      ],
+    });
+    await pass.findingsFor({ records: [] });
+    expect(measureVersionOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        call: expect.objectContaining({
+          request: expect.objectContaining({ checks: [LOOP, teamLoop] }),
+        }),
+      }),
+    );
   });
 });

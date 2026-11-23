@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
-import { createPathPort } from "../../node/path-port.ts";
+import {
+  createDefaultDirectoryPort,
+  createDefaultFileTextPort,
+} from "../../node/file-system/file-system-port.ts";
+import { createDefaultPathPort, createPathPort } from "../../node/path-port.ts";
+import { absolutePathSchema } from "../absolute-path.ts";
 import { shippedCataloguesOf } from "./shipped-catalogues.ts";
 
 const INSTALL_ROOT = absoluteRootOf("/install");
@@ -15,7 +20,32 @@ const UNLISTED: DirectoryPort = {
   create: vi.fn<DirectoryPort["create"]>(),
 };
 
+const HONE_INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../..`);
+
 describe("shippedCataloguesOf", () => {
+  it("reads the install's catalogue as Hone's own, each symptom owned by Hone", () => {
+    expect(
+      shippedCataloguesOf({
+        fileText: createDefaultFileTextPort({}),
+        directory: createDefaultDirectoryPort({}),
+        path: createDefaultPathPort({}),
+        installRoot: HONE_INSTALL_ROOT,
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: [
+        {
+          ruleSet: "hone",
+          catalogue: {
+            symptoms: expect.arrayContaining([
+              expect.objectContaining({ ruleSet: "hone", name: "loop-keyword" }),
+            ]),
+          },
+        },
+      ],
+    });
+  });
+
   it("fails naming the catalogue's path when the install holds none", () => {
     const fileText: FileTextPort = {
       read: vi.fn<FileTextPort["read"]>().mockReturnValueOnce({
