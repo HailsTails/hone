@@ -1,4 +1,4 @@
-import { fieldsOf, packageManifestOf } from "../../runner/pieces/dependency-files.ts";
+import { locatedPackageManifestOf } from "../../runner/pieces/dependency-files.ts";
 import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies"];
@@ -16,20 +16,20 @@ export const check: WalkerPiece = {
       outcome: "ok",
       value: {
         prepareFile: (file) => {
-          const manifest = packageManifestOf(file);
+          const manifest = locatedPackageManifestOf(file);
           if (manifest.outcome === "failed") return manifest;
           const { value } = manifest;
           if (value === undefined) return { outcome: "ok", value: { kind: "skipped" } };
-          const dependencies = DEPENDENCY_SECTIONS.some(
-            (section) => fieldsOf(value.get(section)).length > 0,
+          const site = DEPENDENCY_SECTIONS.map((section) => value.get(section)).find(
+            (field) => field !== undefined && field.fields.size > 0,
           );
           const covered = lockDirectories.some((directory) => file.file.startsWith(directory));
           const hits =
-            dependencies && !covered
+            site !== undefined && !covered
               ? bindings.map(({ address }) => ({
                   check: address,
-                  anchor: { line: 1, column: 0 },
-                  snippet: "dependencies declared without a tracked lock file",
+                  anchor: site.anchor,
+                  snippet: site.snippet,
                 }))
               : [];
           return { outcome: "ok", value: { kind: "complete", hits } };

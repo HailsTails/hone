@@ -1,21 +1,21 @@
-import { parse, type ParseError } from "jsonc-parser";
+import { type Node, parse, type ParseError, parseTree } from "jsonc-parser";
 
 import type { Result } from "../../../../../domain/result.ts";
 
-export type JsoncParsePort = {
+export type JsoncParsePort<Value> = {
   readonly parse: (request: {
     readonly source: string;
-  }) => Result<unknown, { readonly detail: string }>;
+  }) => Result<Value, { readonly detail: string }>;
 };
 
-export type JsoncProviderCall = (request: { readonly source: string }) => {
-  readonly value: unknown;
+export type JsoncProviderCall<Value> = (request: { readonly source: string }) => {
+  readonly value: Value;
   readonly errors: readonly ParseError[];
 };
 
-export const createJsoncParsePort = (options: {
-  readonly parseProvider: JsoncProviderCall;
-}): JsoncParsePort => ({
+export const createJsoncParsePort = <Value>(options: {
+  readonly parseProvider: JsoncProviderCall<Value>;
+}): JsoncParsePort<Value> => ({
   parse: (request) => {
     try {
       const providerParse = options.parseProvider({ source: request.source });
@@ -41,10 +41,13 @@ export const createJsoncParsePort = (options: {
 export type TrailingCommas = "allowed" | "refused";
 
 const defaultProviderCallOf =
-  (options: { readonly trailingCommas: TrailingCommas }): JsoncProviderCall =>
+  <Value>(options: {
+    readonly trailingCommas: TrailingCommas;
+    readonly read: (...arguments_: Parameters<typeof parseTree>) => Value;
+  }): JsoncProviderCall<Value> =>
   (request) => {
     const errors: ParseError[] = [];
-    const parsedValue: unknown = parse(request.source, errors, {
+    const parsedValue = options.read(request.source, errors, {
       allowTrailingComma: options.trailingCommas === "allowed",
     });
     return { value: parsedValue, errors };
@@ -52,7 +55,16 @@ const defaultProviderCallOf =
 
 export const createDefaultJsoncParsePort = (options: {
   readonly trailingCommas: TrailingCommas;
-}): JsoncParsePort =>
+}): JsoncParsePort<unknown> =>
   createJsoncParsePort({
-    parseProvider: defaultProviderCallOf(options),
+    parseProvider: defaultProviderCallOf<unknown>({ ...options, read: parse }),
+  });
+
+export type JsoncNode = Node;
+
+export const createDefaultJsoncTreePort = (options: {
+  readonly trailingCommas: TrailingCommas;
+}): JsoncParsePort<JsoncNode | undefined> =>
+  createJsoncParsePort({
+    parseProvider: defaultProviderCallOf({ ...options, read: parseTree }),
   });

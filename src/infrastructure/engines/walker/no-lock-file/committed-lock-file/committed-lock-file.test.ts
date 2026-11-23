@@ -69,14 +69,14 @@ describe("committed-lock-file", () => {
       findingsIn({
         file: MANIFEST,
         source:
-          '{ "private": true, "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }, "scripts": { "check": "pnpm dlx some-tool" } }',
+          '{\n  "private": true,\n  "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }\n}',
       }),
     ).toEqual([
       {
         file: MANIFEST,
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "dependencies declared without a tracked lock file",
+        anchor: { line: 3, column: 2 },
+        snippet: '"dependencies"',
       },
     ]);
   });
@@ -90,6 +90,22 @@ describe("committed-lock-file", () => {
         trackedLock: repoPathSchema.parse("pnpm-lock.yaml"),
       }),
     ).toEqual([]);
+  });
+
+  it("anchors a missing lock to non-empty dev dependencies when dependencies is empty", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source: '{\n  "dependencies": {},\n  "devDependencies": { "some-tool": "1.2.3" }\n}',
+      }),
+    ).toEqual([
+      {
+        file: MANIFEST,
+        check: ADDRESS,
+        anchor: { line: 3, column: 2 },
+        snippet: '"devDependencies"',
+      },
+    ]);
   });
 
   it("passes peer ranges without requiring a lock", () => {

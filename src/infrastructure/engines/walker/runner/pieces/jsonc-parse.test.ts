@@ -2,6 +2,7 @@ import { assert, describe, expect, it, vi } from "vitest";
 
 import {
   createDefaultJsoncParsePort,
+  createDefaultJsoncTreePort,
   createJsoncParsePort,
   type JsoncProviderCall,
 } from "./jsonc-parse.ts";
@@ -11,7 +12,7 @@ describe("createJsoncParsePort", () => {
     const source = ' { "value": false } \r\n';
     const parsedValue = { marker: "unchanged" };
     const parseProvider = vi
-      .fn<JsoncProviderCall>()
+      .fn<JsoncProviderCall<unknown>>()
       .mockReturnValue({ value: parsedValue, errors: [] });
 
     const parseOutcome = createJsoncParsePort({ parseProvider }).parse({ source });
@@ -22,7 +23,7 @@ describe("createJsoncParsePort", () => {
   });
 
   it("refuses a recovered provider value when parsing returned diagnostics", () => {
-    const parseProvider = vi.fn<JsoncProviderCall>().mockReturnValue({
+    const parseProvider = vi.fn<JsoncProviderCall<unknown>>().mockReturnValue({
       value: { recovered: true },
       errors: [{ error: 3, offset: 8, length: 1 }],
     });
@@ -38,7 +39,7 @@ describe("createJsoncParsePort", () => {
   });
 
   it("maps only the first diagnostic's code, offset and length to deterministic failure detail", () => {
-    const parseProvider = vi.fn<JsoncProviderCall>().mockReturnValue({
+    const parseProvider = vi.fn<JsoncProviderCall<unknown>>().mockReturnValue({
       value: undefined,
       errors: [
         { error: 4, offset: 12, length: 2 },
@@ -57,7 +58,7 @@ describe("createJsoncParsePort", () => {
   });
 
   it("returns unexpected provider failure as owned detail without escaping the result", () => {
-    const parseProvider: JsoncProviderCall = () => assert.fail("provider failed");
+    const parseProvider: JsoncProviderCall<unknown> = () => assert.fail("provider failed");
 
     const parseOutcome = createJsoncParsePort({ parseProvider }).parse({
       source: "provider input",
@@ -79,6 +80,47 @@ describe("createDefaultJsoncParsePort", () => {
         error: { detail: expect.stringContaining("JSONC parse error") },
       },
       allowed: { outcome: "ok", value: { packages: { zod: ["zod@4.4.3"] } } },
+    });
+  });
+});
+
+describe("createDefaultJsoncTreePort", () => {
+  it("keeps the offsets of property names and values in a parsed document", () => {
+    expect(
+      createDefaultJsoncTreePort({ trailingCommas: "refused" }).parse({
+        source: '{"tool": "1.2"}',
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        type: "object",
+        children: [
+          {
+            type: "property",
+            children: [
+              { type: "string", offset: 1, value: "tool" },
+              { type: "string", offset: 9, value: "1.2" },
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it("refuses a recovered tree unless its trailing comma is allowed", () => {
+    const source = '{"tool": "1.2",}';
+    expect({
+      refused: createDefaultJsoncTreePort({ trailingCommas: "refused" }).parse({ source }),
+      allowed: createDefaultJsoncTreePort({ trailingCommas: "allowed" }).parse({ source }),
+    }).toMatchObject({
+      refused: {
+        outcome: "failed",
+        error: { detail: expect.stringContaining("JSONC parse error") },
+      },
+      allowed: {
+        outcome: "ok",
+        value: { type: "object", children: [{ type: "property", offset: 1 }] },
+      },
     });
   });
 });
