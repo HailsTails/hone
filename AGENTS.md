@@ -30,8 +30,9 @@ These rules hold for every session and subagent working in this repository. They
 
 ## Records and guards
 
-- Never add, widen, remove, reorder or re-reason an exemption, carve-out, `exclude` entry or authorised location by hand. Changes come from `record-debt`, `prune-debt` and `project`. `record-debt` and `project` run with Helen's OK.
-- `prune-debt` may run without asking. It removes only what the tool itself judges stale or paid; never edit or filter its result.
+- Never add, widen, remove, reorder or re-reason an exemption, carve-out, `exclude` entry or authorised location by hand. Changes come from `record-debt`, `prune-debt` and `project`.
+- `record-debt`, `prune-debt` and `project` are mechanical and run without asking. Never edit or filter what they write.
+- A new or widened authorised location needs Helen's OK.
 - Deleting or weakening a guard or policy test is Helen's call, test by test.
 
 ## Working
