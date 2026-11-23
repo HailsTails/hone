@@ -97,6 +97,33 @@ describe("fetch-command", () => {
     ]);
   });
 
+  it("ignores GitLab metadata and matches whole shell command names", () => {
+    const file = repoPathSchema.parse(".gitlab-ci.yml");
+    expect(
+      findingsIn({
+        file,
+        source: [
+          "build:",
+          "  before_script: npx setup",
+          "  needs:",
+          "    - npx-cache",
+          "  script:",
+          "  - npx-cache local",
+          "  - pnpx some-tool",
+          "  variables:",
+          "    PNPX: 1",
+          "  after_script:",
+          "    - |",
+          "      npx cleanup",
+        ].join("\n"),
+      }),
+    ).toEqual([
+      { file, check: ADDRESS, anchor: { line: 2, column: 0 }, snippet: "before_script: npx setup" },
+      { file, check: ADDRESS, anchor: { line: 7, column: 0 }, snippet: "- pnpx some-tool" },
+      { file, check: ADDRESS, anchor: { line: 12, column: 0 }, snippet: "npx cleanup" },
+    ]);
+  });
+
   it("passes a local script", () => {
     expect(
       findingsIn({
