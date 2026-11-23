@@ -107,13 +107,14 @@ const qualifiedCryptoOf = (
 ): CryptoReceiver | undefined => {
   const { syntaxApi, declarationsOf, receiver } = request;
   const member = memberOf({ syntaxApi, node: receiver });
-  if (member === undefined || !syntaxApi.isIdentifier(member.receiver)) return undefined;
+  if (member === undefined) return undefined;
   if (member.name === "webcrypto" || member.name === "default") {
-    const kind = importedCryptoKindOf({ ...request, node: member.receiver });
+    const kind = cryptoReceiverOf({ ...request, receiver: member.receiver });
     if (member.name === "default") return kind === "node-namespace" ? "node-module" : undefined;
     return kind === "node-namespace" || kind === "node-module" ? "web-crypto" : undefined;
   }
   return member.name === "crypto" &&
+    syntaxApi.isIdentifier(member.receiver) &&
     (member.receiver.text === "globalThis" || member.receiver.text === "window") &&
     declarationsOf(member.receiver).length === 0
     ? "web-crypto"

@@ -210,7 +210,7 @@ describe("ambient randomness", () => {
       findingsIn({
         file: SOURCE_FILE,
         source:
-          'import * as nodeCrypto from "node:crypto";\nimport moduleCrypto from "node:crypto";\nimport { default as legacyCrypto } from "crypto";\nnodeCrypto.webcrypto.getRandomValues(bytes);\nmoduleCrypto["webcrypto"].getRandomValues(bytes);\nlegacyCrypto.randomUUID();\nnodeCrypto.default.randomUUID();\nnodeCrypto["default"].getRandomValues(bytes);\nmoduleCrypto.default.randomUUID();',
+          'import * as nodeCrypto from "node:crypto";\nimport moduleCrypto from "node:crypto";\nimport { default as legacyCrypto } from "crypto";\nnodeCrypto.webcrypto.getRandomValues(bytes);\nmoduleCrypto["webcrypto"].getRandomValues(bytes);\nlegacyCrypto.randomUUID();\nnodeCrypto.default.randomUUID();\nnodeCrypto["default"].getRandomValues(bytes);\nmoduleCrypto.default.randomUUID();\nnodeCrypto.default.webcrypto.getRandomValues(bytes);',
       }),
     ).toEqual([
       {
@@ -242,6 +242,12 @@ describe("ambient randomness", () => {
         check: BINDING.address,
         anchor: { line: 8, column: 0 },
         snippet: 'nodeCrypto["default"].getRandomValues',
+      },
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 10, column: 0 },
+        snippet: "nodeCrypto.default.webcrypto.getRandomValues",
       },
     ]);
   });
