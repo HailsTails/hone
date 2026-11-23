@@ -16,7 +16,7 @@ import type {
   ProofCarriedOver,
   ProofRefusal,
 } from "../../application/ports/upgrade/proof-outcome.ts";
-import type { ProofRunsOf } from "../../application/ports/upgrade/proof-runs.ts";
+import type { ProofRunsOf, ProofWritten } from "../../application/ports/upgrade/proof-runs.ts";
 import type { UpgradeCarriedOver } from "../../application/ports/upgrade/upgrade-carried-over.ts";
 import type { UpgradeStop } from "../../application/ports/upgrade/upgrade-stop.ts";
 import type { VersionOneCommandPorts } from "../../application/ports/version-one-command-request.ts";
@@ -60,7 +60,7 @@ export type UpgradeInput = {
   readonly proofOf: (
     request: UpgradeProofRequest,
   ) => Promise<Result<ProofCarriedOver, ProofRefusal>>;
-  readonly foundTreeStages: () => VersionTwoStages;
+  readonly foundTreeStages: (request: ProofWritten) => VersionTwoStages;
 };
 
 type Prepared = {
@@ -183,9 +183,9 @@ const proofRequestOf = (
             loadFailureDetail: ports.loadFailureDetail,
           }),
         }),
-      versionTwo: () =>
+      versionTwo: (proofWritten) =>
         versionTwoRunOver({
-          stages: request.foundTreeStages(),
+          stages: request.foundTreeStages(proofWritten),
           arguments: {
             forfeiture: undefined,
             reportOutput: undefined,
@@ -230,7 +230,6 @@ const withMentions = (request: {
   ...request.carried,
   ...versionOneMentionsOf({
     tracked: request.prepared.trackedPaths,
-    excluded: request.prepared.read.reading.selection.exclude,
     removed: request.carried.removed.files,
     repoRoot: request.input.located.repoRoot,
     fileText: request.input.command.fileText,

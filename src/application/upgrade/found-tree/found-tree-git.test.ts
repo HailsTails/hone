@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { GitPort } from "../../ports/git-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
@@ -11,6 +12,8 @@ import { FOUND_TREE_REVISION } from "./found-tree-reach.ts";
 const REPO_ROOT = absoluteRootOf("/repo");
 
 const FILE = repoPathOf("src/a.ts");
+
+const WRITTEN = repoPathOf("hone.eslint.d.mts");
 
 const PATH: PathPort = {
   join: vi.fn<PathPort["join"]>().mockReturnValue("/repo/src/a.ts"),
@@ -50,16 +53,27 @@ const treeUnreadable = (): Tree => ({
   exists: vi.fn<FileTextPort["exists"]>().mockReturnValue("present"),
 });
 
-const foundTreeOver = (request: { readonly fileText: Tree }) => {
+const foundTreeOver = (request: {
+  readonly fileText: Tree;
+  readonly written: readonly RepoPath[];
+}) => {
   const git = underlyingGit();
-  return { git, found: foundTreeGitOf({ git, fileText: request.fileText, path: PATH }) };
+  return {
+    git,
+    found: foundTreeGitOf({
+      git,
+      fileText: request.fileText,
+      path: PATH,
+      written: request.written,
+    }),
+  };
 };
 
 const QUERY = { repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION, file: FILE };
 
 describe("foundTreeGitOf, git with the tree the upgrade found as its base", () => {
   it("reports nothing changed since the base, which is the tree itself, and never asks git", () => {
-    const { found, git } = foundTreeOver({ fileText: treeLacking() });
+    const { found, git } = foundTreeOver({ fileText: treeLacking(), written: [] });
     expect({
       changed: found.changedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
       asked: vi.mocked(git.changedSince).mock.calls,
@@ -70,7 +84,7 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
   });
 
   it("reports nothing renamed since the base, which is the tree itself, and never asks git", () => {
-    const { found, git } = foundTreeOver({ fileText: treeLacking() });
+    const { found, git } = foundTreeOver({ fileText: treeLacking(), written: [] });
     expect({
       renamed: found.renamedSince({ repoRoot: REPO_ROOT, baseRevision: FOUND_TREE_REVISION }),
       asked: vi.mocked(git.renamedSince).mock.calls,
@@ -82,7 +96,7 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
 
   it("reads a file's text in the base from the working tree, at the file's place in the repository", () => {
     const fileText = treeHolding({ text: "export const a = 1;\n" });
-    const { found } = foundTreeOver({ fileText });
+    const { found } = foundTreeOver({ fileText, written: [] });
     expect({ text: found.textInBase(QUERY), read: vi.mocked(fileText.read).mock.calls }).toEqual({
       text: {
         outcome: "ok",
@@ -93,7 +107,7 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
   });
 
   it("reports a file the working tree lacks as absent from the base", () => {
-    const { found } = foundTreeOver({ fileText: treeLacking() });
+    const { found } = foundTreeOver({ fileText: treeLacking(), written: [] });
     expect(found.textInBase(QUERY)).toEqual({
       outcome: "ok",
       value: { presence: "absent-from-base" },
@@ -101,7 +115,7 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
   });
 
   it("fails, naming the tree, when a file the working tree holds cannot be read, rather than calling it absent", () => {
-    const { found } = foundTreeOver({ fileText: treeUnreadable() });
+    const { found } = foundTreeOver({ fileText: treeUnreadable(), written: [] });
     expect(found.textInBase(QUERY)).toEqual({
       outcome: "failed",
       error: { kind: "git-failed", command: "read the tree the upgrade found", detail: "EACCES" },
@@ -109,8 +123,8 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
   });
 
   it("reports a file's membership in the base from the working tree", () => {
-    const present = foundTreeOver({ fileText: treeHolding({ text: "x" }) });
-    const absent = foundTreeOver({ fileText: treeLacking() });
+    const present = foundTreeOver({ fileText: treeHolding({ text: "x" }), written: [] });
+    const absent = foundTreeOver({ fileText: treeLacking(), written: [] });
     expect({
       present: present.found.contentInBase(QUERY),
       absent: absent.found.contentInBase(QUERY),
@@ -120,8 +134,26 @@ describe("foundTreeGitOf, git with the tree the upgrade found as its base", () =
     });
   });
 
-  it("leaves the tracked paths to the git it wraps", () => {
-    const { found } = foundTreeOver({ fileText: treeLacking() });
+  it("leaves the tracked paths to the git it wraps when the upgrade has written nothing", () => {
+    const { found } = foundTreeOver({ fileText: treeLacking(), written: [] });
     expect(found.trackedPaths({ repoRoot: REPO_ROOT })).toEqual({ outcome: "ok", value: [FILE] });
+  });
+
+  it("counts each file the upgrade wrote as tracked, once, as committing the upgrade will", () => {
+    const { found } = foundTreeOver({ fileText: treeLacking(), written: [WRITTEN, FILE] });
+    expect(found.trackedPaths({ repoRoot: REPO_ROOT })).toEqual({
+      outcome: "ok",
+      value: [FILE, WRITTEN],
+    });
+  });
+
+  it("hands back the wrapped git's failure to list tracked paths, adding nothing", () => {
+    const { found, git } = foundTreeOver({ fileText: treeLacking(), written: [WRITTEN] });
+    const failure = {
+      outcome: "failed",
+      error: { kind: "git-failed", command: "git ls-files", detail: "not a repository" },
+    } as const;
+    vi.mocked(git.trackedPaths).mockReturnValue(failure);
+    expect(found.trackedPaths({ repoRoot: REPO_ROOT })).toEqual(failure);
   });
 });

@@ -264,6 +264,13 @@ const removalLineOf = (request: {
     ? `${request.failure.path} could not be removed (${request.failure.detail})`
     : `${request.failure.path} is outside ${request.failure.root}`;
 
+const differenceCauseLineOf = (request: {
+  readonly failure: Extract<ProofRefusal, { readonly kind: "differences" }>;
+}): string =>
+  request.failure.writtenReported.length === 0
+    ? `Nothing in the two runs shows the cause. Check whether something in your repository explains it; if nothing does, report it at ${UPGRADE_ISSUES_URL}, with this output.`
+    : `version 2 reports files the upgrade writes: ${request.failure.writtenReported.join(", ")}. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.`;
+
 const differenceLinesOf = (request: {
   readonly failure: Extract<ProofRefusal, { readonly kind: "differences" }>;
 }): readonly string[] =>
@@ -404,7 +411,7 @@ const proofLinesOf = (request: {
         lines: [
           "version 2 does not report what version 1 reported:",
           ...differenceLinesOf({ failure }),
-          FAULT_IN_HONE,
+          differenceCauseLineOf({ failure }),
           ...unrestoredLinesOf({ ...failure, placement }),
         ],
       };

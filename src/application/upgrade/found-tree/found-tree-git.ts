@@ -1,4 +1,5 @@
 import type { GitFailure } from "../../../domain/repository/git-failure.ts";
+import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { BaseFileText, GitContentQuery, GitPort } from "../../ports/git-port.ts";
@@ -32,8 +33,22 @@ const textInTreeOf = (
       };
 };
 
-export const foundTreeGitOf = (request: { readonly git: GitPort } & TreeReach): GitPort => ({
-  trackedPaths: request.git.trackedPaths,
+const trackedWithWrittenOf = (request: {
+  readonly tracked: Result<readonly RepoPath[], GitFailure>;
+  readonly written: readonly RepoPath[];
+}): Result<readonly RepoPath[], GitFailure> =>
+  request.tracked.outcome === "failed"
+    ? request.tracked
+    : { outcome: "ok", value: [...new Set([...request.tracked.value, ...request.written])] };
+
+export const foundTreeGitOf = (
+  request: {
+    readonly git: GitPort;
+    readonly written: readonly RepoPath[];
+  } & TreeReach,
+): GitPort => ({
+  trackedPaths: (query) =>
+    trackedWithWrittenOf({ tracked: request.git.trackedPaths(query), written: request.written }),
   changedSince: () => ({ outcome: "ok", value: [] }),
   contentInBase: (query) => ({
     outcome: "ok",

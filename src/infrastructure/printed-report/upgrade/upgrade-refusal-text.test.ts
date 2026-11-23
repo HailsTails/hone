@@ -13,6 +13,8 @@ const ISSUES = "https://github.com/HailsTails/hone/issues";
 
 const FAULT = `This is a fault in hone, not in your repository. Report it at ${ISSUES}, with this output.`;
 
+const CAUSE_NOT_SHOWN = `Nothing in the two runs shows the cause. Check whether something in your repository explains it; if nothing does, report it at ${ISSUES}, with this output.`;
+
 const SETTINGS = absoluteRootOf("/repo/hone.config.json");
 
 const OLD_FILE = absoluteRootOf("/repo/disciplines.eslint.mjs");
@@ -466,12 +468,33 @@ Nothing was changed.
       differences: [
         { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
       ],
+      writtenReported: [],
       unrestored: [],
       removedByVersionOne: [],
     },
     outcome: {
       code: 1,
-      text: `upgrade refused:\nversion 2 does not report what version 1 reported:\n  findings:\n    only after: CD-15#loops src/a.ts 3:1\n${FAULT}\nNothing was changed.\n`,
+      text: `upgrade refused:\nversion 2 does not report what version 1 reported:\n  findings:\n    only after: CD-15#loops src/a.ts 3:1\n${CAUSE_NOT_SHOWN}\nNothing was changed.\n`,
+    },
+  },
+  {
+    name: "the two runs differ on files the upgrade writes",
+    failure: {
+      kind: "differences",
+      differences: [
+        {
+          section: "unrecorded",
+          onlyBefore: [],
+          onlyAfter: ["eslint ignore CD-14#class-syntax hone.eslint.d.mts"],
+        },
+      ],
+      writtenReported: [repoPathOf("hone.eslint.d.mts")],
+      unrestored: [],
+      removedByVersionOne: [],
+    },
+    outcome: {
+      code: 1,
+      text: "upgrade refused:\nversion 2 does not report what version 1 reported:\n  unrecorded:\n    only after: eslint ignore CD-14#class-syntax hone.eslint.d.mts\nversion 2 reports files the upgrade writes: hone.eslint.d.mts. Something in your repository may treat them differently, such as an ESLint config that ignores them; let it check them, then run the upgrade again.\nNothing was changed.\n",
     },
   },
   {
@@ -487,12 +510,13 @@ Nothing was changed.
           onlyAfter: ["hone-records/debt/loop-keyword.json 0"],
         },
       ],
+      writtenReported: [],
       unrestored: [],
       removedByVersionOne: [],
     },
     outcome: {
       code: 1,
-      text: `upgrade refused:\nversion 2 does not report what version 1 reported:\n  not-adopted:\n    only before: CD-6#naming-convention\n  doubly-held:\n    only before: CD-15#loops src/a.ts audit\n  invalid-records:\n    only after: hone-records/debt/loop-keyword.json 0\n${FAULT}\nNothing was changed.\n`,
+      text: `upgrade refused:\nversion 2 does not report what version 1 reported:\n  not-adopted:\n    only before: CD-6#naming-convention\n  doubly-held:\n    only before: CD-15#loops src/a.ts audit\n  invalid-records:\n    only after: hone-records/debt/loop-keyword.json 0\n${CAUSE_NOT_SHOWN}\nNothing was changed.\n`,
     },
   },
   {

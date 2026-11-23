@@ -5,6 +5,7 @@ import type { Result } from "../../../domain/result.ts";
 import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
 import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
 import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
+import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
 import type { OutsideRoot, RemovalFailure, Removed } from "../../ports/upgrade/proof-outcome.ts";
 
@@ -22,8 +23,35 @@ export type VersionOneRemoval = {
   readonly recordsFolders: readonly AbsolutePath[];
   readonly recordsRoot: RecordsRoot;
   readonly projections: readonly AbsolutePath[];
+  readonly declarations: readonly AbsolutePath[];
   readonly settings: AbsolutePath;
 };
+
+const PROJECTION_MODULE_SUFFIX = ".mjs";
+
+const PROJECTION_DECLARATION_SUFFIX = ".d.mts";
+
+const declarationBesideOf = (request: {
+  readonly projection: AbsolutePath;
+}): AbsolutePath | undefined => {
+  const { projection } = request;
+  if (!projection.endsWith(PROJECTION_MODULE_SUFFIX)) {
+    return undefined;
+  }
+  const declaration = `${projection.slice(0, -PROJECTION_MODULE_SUFFIX.length)}${PROJECTION_DECLARATION_SUFFIX}`;
+  return isAbsolutePath(declaration) ? declaration : undefined;
+};
+
+export const projectionDeclarationsOf = (request: {
+  readonly projections: readonly AbsolutePath[];
+  readonly fileText: Pick<FileTextPort, "exists">;
+}): readonly AbsolutePath[] =>
+  request.projections.flatMap((projection) => {
+    const declaration = declarationBesideOf({ projection });
+    return declaration !== undefined && request.fileText.exists({ path: declaration }) === "present"
+      ? [declaration]
+      : [];
+  });
 
 const PATH_SEPARATOR = /[\\/]/;
 
@@ -164,6 +192,7 @@ const stepsOf = (request: {
   ...fileStepsOf({ paths: request.removal.recordsFiles }),
   ...foldersToTryOf(request).map((path): RemovalStep => ({ kind: "folder-if-empty", path })),
   ...fileStepsOf({ paths: request.removal.projections }),
+  ...fileStepsOf({ paths: request.removal.declarations }),
   ...fileStepsOf({ paths: [request.removal.settings] }),
 ];
 
@@ -206,9 +235,12 @@ export const filesStillPresentOf = (request: {
 }): readonly AbsolutePath[] => {
   const { removal, failure } = request;
   const removedFiles = failure.kind === "unremovable" ? failure.removed.files : [];
-  const files = [...removal.recordsFiles, ...removal.projections, removal.settings].filter(
-    (file) => !removedFiles.includes(file),
-  );
+  const files = [
+    ...removal.recordsFiles,
+    ...removal.projections,
+    ...removal.declarations,
+    removal.settings,
+  ].filter((file) => !removedFiles.includes(file));
   return failure.kind === "unremovable" && !files.includes(failure.path)
     ? [...files, failure.path]
     : files;

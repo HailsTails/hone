@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProofRunSources } from "../../application/ports/upgrade/proof-runs.ts";
 import type { CheckReport } from "../../domain/report/check-report.ts";
 import type { RunReport } from "../../domain/report/run-report.ts";
+import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { proofRunsOf } from "./proof-runs.ts";
 
 const BEFORE: CheckReport = {
@@ -47,6 +48,8 @@ const AFTER: RunReport = {
   symptoms: [],
 };
 
+const WRITTEN = { written: [repoPathOf("hone.eslint.d.mts")] };
+
 const sourcesOver = (overrides: Partial<ProofRunSources>): ProofRunSources => ({
   versionOne: vi
     .fn<ProofRunSources["versionOne"]>()
@@ -58,10 +61,12 @@ const sourcesOver = (overrides: Partial<ProofRunSources>): ProofRunSources => ({
 });
 
 describe("proofRunsOf", () => {
-  it("hands back the version 1 report and the version 2 run's report", async () => {
-    const runs = proofRunsOf(sourcesOver({}));
+  it("hands back the version 1 report and the version 2 run's report, handing the version 2 run the files the upgrade wrote", async () => {
+    const sources = sourcesOver({});
+    const runs = proofRunsOf(sources);
     await expect(runs.versionOne()).resolves.toEqual({ outcome: "ok", value: BEFORE });
-    await expect(runs.versionTwo()).resolves.toEqual({ outcome: "ok", value: AFTER });
+    await expect(runs.versionTwo(WRITTEN)).resolves.toEqual({ outcome: "ok", value: AFTER });
+    expect(vi.mocked(sources.versionTwo).mock.calls).toEqual([[WRITTEN]]);
   });
 
   it("names a version 1 load failure as a failed run", async () => {
@@ -92,7 +97,7 @@ describe("proofRunsOf", () => {
         }),
       }),
     );
-    await expect(runs.versionTwo()).resolves.toEqual({
+    await expect(runs.versionTwo(WRITTEN)).resolves.toEqual({
       outcome: "failed",
       error: {
         kind: "run-failed",

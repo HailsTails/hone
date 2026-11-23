@@ -21,6 +21,18 @@ describe("mentionsInText", () => {
     ]);
   });
 
+  it("names every version 1 ESLint file, its declaration file included", () => {
+    expect(
+      mentionsInText({
+        file: CI,
+        text: "ignores: ['disciplines.eslint.d.mts']\nimport './disciplines.eslint.mjs'\n",
+      }),
+    ).toEqual([
+      { file: CI, line: 1 },
+      { file: CI, line: 2 },
+    ]);
+  });
+
   it("names the assessment page", () => {
     expect(mentionsInText({ file: CI, text: "see disciplines.assessment.md" })).toEqual([
       { file: CI, line: 1 },
@@ -39,10 +51,11 @@ describe("mentionsInText", () => {
 describe("versionOneMentionsOf", () => {
   const REPO = absoluteRootOf("/repo");
 
-  it("reads each tracked file outside the excluded folders, drops a file the upgrade removed without reading it, and names a file it cannot read", () => {
+  it("reads each tracked file, dot-folders included, drops a file the upgrade removed without reading it, and names a file it cannot read", () => {
     const read = vi
       .fn<FileTextPort["read"]>()
       .mockReturnValueOnce({ outcome: "ok", value: '{ "files": ["disciplines.json"] }' })
+      .mockReturnValueOnce({ outcome: "ok", value: "reads disciplines.eslint.mjs" })
       .mockReturnValueOnce({
         outcome: "failed",
         error: {
@@ -54,28 +67,32 @@ describe("versionOneMentionsOf", () => {
     const join = vi
       .fn<PathPort["join"]>()
       .mockReturnValueOnce("/repo/package.json")
+      .mockReturnValueOnce("/repo/.claude/agents/reviewer.md")
       .mockReturnValueOnce("/repo/disciplines.json")
       .mockReturnValueOnce("/repo/vendor-sub");
     expect(
       versionOneMentionsOf({
         tracked: [
           repoPathOf("package.json"),
-          repoPathOf("vendor/x.md"),
+          repoPathOf(".claude/agents/reviewer.md"),
           repoPathOf("disciplines.json"),
           repoPathOf("vendor-sub"),
         ],
-        excluded: [repoPathOf("vendor")],
         removed: [absoluteRootOf("/repo/disciplines.json")],
         repoRoot: REPO,
         fileText: { read },
         path: { join },
       }),
     ).toEqual({
-      mentions: [{ file: "package.json", line: 1 }],
+      mentions: [
+        { file: "package.json", line: 1 },
+        { file: ".claude/agents/reviewer.md", line: 1 },
+      ],
       unread: [{ file: "vendor-sub", detail: "EISDIR: illegal operation on a directory, read" }],
     });
     expect(read.mock.calls).toEqual([
       [{ path: "/repo/package.json" }],
+      [{ path: "/repo/.claude/agents/reviewer.md" }],
       [{ path: "/repo/vendor-sub" }],
     ]);
   });

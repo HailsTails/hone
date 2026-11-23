@@ -591,7 +591,16 @@ const WRITING = [
   },
 ];
 
-const RUNNING_VERSION_TWO = [{ port: "versionTwo", arguments: [] }];
+const RUNNING_VERSION_TWO = [
+  {
+    port: "versionTwo",
+    arguments: [
+      {
+        written: ["hone.config.json", "hone-records/debt/loop-keyword.json", "hone.eslint.mjs"],
+      },
+    ],
+  },
+];
 
 const ROLLING_BACK = [
   { port: "write", arguments: [{ path: CONFIG_PATH, text: ORIGINAL_CONFIG }] },
@@ -611,7 +620,7 @@ const REMOVING_VERSION_ONE = [
 ];
 
 describe("upgradeProof", () => {
-  it("writes the version 2 files, finds the two runs equal and removes the version 1 files, in that order", async () => {
+  it("writes the version 2 files, runs version 2 with them counted as tracked, finds the two runs equal and removes the version 1 files, in that order", async () => {
     const doubles = doublesOver({
       kindOf: kindsOfEveryPlannedFileNew(),
       path: recordsFolderPath(),
@@ -641,6 +650,29 @@ describe("upgradeProof", () => {
       ...RUNNING_VERSION_TWO,
       ...REMOVING_VERSION_ONE,
     ]);
+  });
+
+  it("removes the declaration file beside a version 1 projection with the projection", async () => {
+    const doubles = doublesOver({
+      kindOf: kindsOfEveryPlannedFileNew(),
+      path: recordsFolderPath(),
+    });
+    doubles.ports.fileText.exists.mockImplementation(({ path }) =>
+      path === "/repo/disciplines.eslint.d.mts" ? "present" : "absent",
+    );
+    await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
+      outcome: "ok",
+      value: {
+        removed: {
+          files: [
+            "/repo/discipline-exceptions/cd-15.json",
+            "/repo/disciplines.eslint.mjs",
+            "/repo/disciplines.eslint.d.mts",
+            "/repo/disciplines.json",
+          ],
+        },
+      },
+    });
   });
 
   it("refuses, before writing anything, a repository version 1 already reports uncovered", async () => {
@@ -793,6 +825,24 @@ describe("upgradeProof", () => {
     });
   });
 
+  it("names the written files version 2 reports when the two runs do not agree on them", async () => {
+    const doubles = doublesOver({
+      kindOf: kindsOfEveryPlannedFileNew(),
+      path: recordsFolderPath(),
+    });
+    doubles.runs.versionTwo.mockResolvedValue({
+      outcome: "ok",
+      value: {
+        ...EMPTY_AFTER,
+        findings: [{ ...LOOP_FINDING, file: repoPathOf("hone.eslint.mjs") }],
+      },
+    });
+    await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
+      outcome: "failed",
+      error: { kind: "differences", writtenReported: ["hone.eslint.mjs"] },
+    });
+  });
+
   it("restores what it wrote and names the difference when the two runs do not agree, removing nothing", async () => {
     const doubles = doublesOver({
       kindOf: kindsOfEveryPlannedFileNew(),
@@ -810,6 +860,7 @@ describe("upgradeProof", () => {
           { section: "findings", onlyBefore: [], onlyAfter: ["CD-15#loops src/a.ts 3:1"] },
           { section: "verdict", onlyBefore: ["pass"], onlyAfter: ["fail"] },
         ],
+        writtenReported: [],
         unrestored: [],
         removedByVersionOne: [],
       },
@@ -1246,6 +1297,31 @@ describe("upgradeProof", () => {
         },
         records: [DEBT_LINE],
         findings: 0,
+      },
+    });
+  });
+
+  it("removes the declaration file beside a slice projection version 1's own project removed", async () => {
+    const doubles = doublesOver({ kindOf: kindsOfEveryPlannedFileNew(), path: sliceFirstPath() });
+    doubles.projections.mockResolvedValue({
+      removed: [ORPHAN],
+      outcome: { outcome: "ok", value: [ROOT_PROJECTION] },
+    });
+    doubles.ports.fileText.exists.mockImplementation(({ path }) =>
+      path === "/repo/old/disciplines.eslint.d.mts" ? "present" : "absent",
+    );
+    await expect(upgradeProof(requestOver({ doubles }))).resolves.toMatchObject({
+      outcome: "ok",
+      value: {
+        removed: {
+          files: [
+            "/repo/old/disciplines.eslint.mjs",
+            "/repo/discipline-exceptions/cd-15.json",
+            "/repo/disciplines.eslint.mjs",
+            "/repo/old/disciplines.eslint.d.mts",
+            "/repo/disciplines.json",
+          ],
+        },
       },
     });
   });

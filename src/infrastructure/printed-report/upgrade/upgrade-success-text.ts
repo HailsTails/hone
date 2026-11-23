@@ -59,7 +59,7 @@ export const upgradeSuccessOutcomeOf = (request: {
       ...carriedLinesOf({ records: carried.records }),
       ...carried.mentions.map(({ file, line }) => `mention ${file}:${line}`),
       ...carried.unread.map(({ file, detail }) => `mention-unread ${file} ${detail}`),
-      `upgrade: same findings (${carried.findings}), same verdict`,
+      `upgrade: same findings (${carried.findings}) and verdict as this Hone's version 1 check, not your installed 1.x`,
     ]
       .map((line) => `${line}\n`)
       .join(""),

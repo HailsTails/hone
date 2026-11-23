@@ -24,6 +24,7 @@ import {
   restoredOriginalProjections,
 } from "../patching/projection-patching.ts";
 import { proofDifferencesOf } from "../proof-comparison/proof-differences.ts";
+import { reportedWrittenFilesOf } from "../proof-comparison/reported-written-files.ts";
 import {
   type PlannedFile,
   type ProofWritePorts,
@@ -34,6 +35,7 @@ import {
 import {
   type RecordsRoot,
   filesStillPresentOf,
+  projectionDeclarationsOf,
   recordsOutsideRoot,
   removedVersionOneFiles,
   type VersionOneRemoval,
@@ -123,7 +125,10 @@ const recordsRootOf = (request: UpgradeProofRequest): Result<RecordsRoot, ProofR
 };
 
 const removalOf = (
-  request: UpgradeProofRequest & { readonly projections: readonly VersionOneProjection[] },
+  request: UpgradeProofRequest & {
+    readonly projections: readonly VersionOneProjection[];
+    readonly removed: readonly AbsolutePath[];
+  },
 ): Result<VersionOneRemoval, ProofRefusal> => {
   const { ports, repoRoot, versionOneFiles } = request;
   const recordsFiles = allOf({
@@ -151,6 +156,10 @@ const removalOf = (
       recordsFolders: recordsFolders.value,
       recordsRoot: recordsRoot.value,
       projections: projections.value,
+      declarations: projectionDeclarationsOf({
+        projections: [...projections.value, ...request.removed],
+        fileText: ports.fileText,
+      }),
       settings: settings.value,
     },
   };
@@ -159,6 +168,7 @@ const removalOf = (
 type ToPlace = UpgradeProofRequest & {
   readonly plan: UpgradePlan;
   readonly projections: readonly VersionOneProjection[];
+  readonly removed: readonly AbsolutePath[];
   readonly replacements: readonly PlannedRepoFile[];
 };
 
@@ -227,7 +237,8 @@ const rolledBackWith = (request: UpgradeProofRequest & Written): readonly Unrest
 const comparedAfterWriting = async (
   request: UpgradeProofRequest & Written,
 ): Promise<Result<null, ProofRefusal>> => {
-  const after = await request.runs.versionTwo();
+  const written = request.plan.files.map(({ file }) => file);
+  const after = await request.runs.versionTwo({ written });
   if (after.outcome === "failed") {
     return {
       outcome: "failed",
@@ -262,6 +273,7 @@ const comparedAfterWriting = async (
         error: {
           kind: "differences",
           differences,
+          writtenReported: reportedWrittenFilesOf({ written, after: after.value }),
           unrestored: rolledBackWith(request),
           removedByVersionOne: [],
         },

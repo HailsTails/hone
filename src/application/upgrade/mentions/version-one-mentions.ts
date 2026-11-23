@@ -1,5 +1,4 @@
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
-import { exclusionOf } from "../../../domain/repository/exclusion.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
@@ -9,10 +8,10 @@ import type {
   VersionOneMentions,
 } from "../../ports/upgrade/upgrade-mentions.ts";
 
-const VERSION_ONE_FILE_NAMES = [
+const VERSION_ONE_NAME_FRAGMENTS = [
   "disciplines.json",
   "discipline-exceptions",
-  "disciplines.eslint.mjs",
+  "disciplines.eslint.",
   "disciplines.assessment.md",
 ] as const;
 
@@ -24,7 +23,9 @@ const contentOf = (request: { readonly text: string }): Content =>
   request.text.includes(NUL) ? "binary" : "text";
 
 const namesVersionOneFile = (request: { readonly line: string }): "names" | "does-not-name" =>
-  VERSION_ONE_FILE_NAMES.some((name) => request.line.includes(name)) ? "names" : "does-not-name";
+  VERSION_ONE_NAME_FRAGMENTS.some((name) => request.line.includes(name))
+    ? "names"
+    : "does-not-name";
 
 export const mentionsInText = (request: {
   readonly file: RepoPath;
@@ -63,15 +64,12 @@ const readOf = (request: {
 
 export const versionOneMentionsOf = (request: {
   readonly tracked: readonly RepoPath[];
-  readonly excluded: readonly RepoPath[];
   readonly removed: readonly AbsolutePath[];
   readonly repoRoot: AbsolutePath;
   readonly fileText: Pick<FileTextPort, "read">;
   readonly path: Pick<PathPort, "join">;
 }): VersionOneMentions => {
-  const reads = request.tracked
-    .filter((file) => exclusionOf({ path: file, excluded: request.excluded }) === "checked")
-    .map((file) => readOf({ ...request, file }));
+  const reads = request.tracked.map((file) => readOf({ ...request, file }));
   return {
     mentions: reads.flatMap((read) => (read.outcome === "mentions" ? read.mentions : [])),
     unread: reads.flatMap((read) => (read.outcome === "unread" ? [read.unread] : [])),
