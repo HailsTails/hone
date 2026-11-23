@@ -13,6 +13,19 @@ assert(loaded.outcome === "ok");
 const { parse, syntaxApi } = loaded.value;
 
 describe("sourceValueLookupOf", () => {
+  it("ignores a global declaration supplied inside an ambient module block", () => {
+    const sourceFile = parse({
+      fileName: "src/a.ts",
+      source: "export {};\ndeclare global { var console: LogPort; }\nconsole();",
+    });
+    const use = sourceFile.statements[2];
+    assert.isDefined(use);
+    assert(syntaxApi.isExpressionStatement(use));
+    assert(syntaxApi.isCallExpression(use.expression));
+    const lookup = sourceValueLookupOf({ syntaxApi, sourceFile });
+    expect(lookup(use.expression.expression)).toEqual([]);
+  });
+
   it("treats declarations from a TypeScript declaration file as ambient", () => {
     const sourceFile = parse({
       fileName: "src/runtime.d.ts",
