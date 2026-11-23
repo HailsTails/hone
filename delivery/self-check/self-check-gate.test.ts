@@ -24,11 +24,7 @@ import { absoluteRootOf } from "../../src/domain/repository/absolute-root-of.ts"
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 import type { VersionTwoReportOutput } from "../../src/domain/settings/report-output.ts";
 import { createPathPort } from "../../src/infrastructure/node/path-port.ts";
-import {
-  runSelfCheck,
-  VERSION_TWO_GATED_SECTIONS,
-  versionTwoSelfCheckOutcomeOf,
-} from "./self-check-gate.ts";
+import { runSelfCheck, versionTwoSelfCheckOutcomeOf } from "./self-check-gate.ts";
 
 const PROJECT_COMMAND = "node src/hone.ts project --repo .";
 
@@ -72,21 +68,6 @@ const IGNORED_IN_A: AttributedCheckException = {
   file: repoPathOf("src/a.ts"),
   mechanism: "eslint",
 };
-
-describe("VERSION_TWO_GATED_SECTIONS", () => {
-  it("names every failing section of a version 2 run, findings and unrecorded native exceptions included", () => {
-    expect(VERSION_TWO_GATED_SECTIONS).toEqual([
-      "findings",
-      "stale",
-      "forfeited",
-      "unrecorded",
-      "misnamed",
-      "refused",
-      "unmeasured",
-      "projection-problems",
-    ]);
-  });
-});
 
 const DEBT_KIND: RecordKind = {
   name: "debt",
@@ -170,7 +151,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 1,
-      text: "findings (1)\nunrecorded (2)\nself-check: fail, gated sections hold entries: findings (1), unrecorded (2)\n",
+      text: "findings (1)\nunrecorded (2)\nself-check: fail, failing sections hold entries: findings (1), unrecorded (2)\n",
     });
   });
 
@@ -192,7 +173,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
     });
   });
 
-  it("fails naming each gated section that holds an entry, in the order the report lists them", () => {
+  it("fails naming each failing section that holds an entry, in the order the report lists them", () => {
     expect(
       versionTwoSelfCheckOutcomeOf({
         ports: SELF_CHECK_PORTS,
@@ -222,7 +203,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 1,
-      text: "findings (1)\nmisnamed (1)\nrefused (1)\nunmeasured (1)\nself-check: fail, gated sections hold entries: findings (1), misnamed (1), refused (1), unmeasured (1)\n",
+      text: "findings (1)\nmisnamed (1)\nrefused (1)\nunmeasured (1)\nself-check: fail, failing sections hold entries: findings (1), misnamed (1), refused (1), unmeasured (1)\n",
     });
   });
 
@@ -241,7 +222,7 @@ describe("versionTwoSelfCheckOutcomeOf", () => {
       }),
     ).toEqual({
       code: 1,
-      text: "self-check: fail (partial assessment), gated sections hold entries: unmeasured (1)\n",
+      text: "self-check: fail (partial assessment), failing sections hold entries: unmeasured (1)\n",
     });
   });
 });
