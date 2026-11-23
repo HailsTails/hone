@@ -1,15 +1,7 @@
-import {
-  sourceBindingsOf,
-  sourceValueDeclarationsOf,
-} from "../../runner/pieces/source-bindings.ts";
+import { sourceValueLookupOf } from "../../runner/pieces/source-bindings.ts";
 import { folderScope } from "../../runner/pieces/source-scope.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
-import type {
-  SyntaxApi,
-  SyntaxNode,
-  SyntaxTree,
-  TypeChecker,
-} from "../../runner/toolchain/typescript-parse.ts";
+import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../../runner/toolchain/typescript-parse.ts";
 
 const SOURCE_ENDINGS = [".ts", ".tsx", ".mts", ".cts"];
 const DECLARATION_ENDINGS = [".d.ts", ".d.mts", ".d.cts"];
@@ -167,11 +159,7 @@ export const check: WalkerPiece = {
             begin: ({ sourceFile, anchorAt }) => {
               const hits: PieceHit[] = [];
               const cryptoBindings = cryptoBindingsOf({ syntaxApi, sourceFile });
-              let bindingsInSource: TypeChecker | undefined;
-              const declarationsOf: DeclarationsOf = (node) => {
-                bindingsInSource ??= sourceBindingsOf({ syntaxApi, sourceFile });
-                return sourceValueDeclarationsOf({ syntaxApi, bindings: bindingsInSource, node });
-              };
+              const declarationsOf = sourceValueLookupOf({ syntaxApi, sourceFile });
               return {
                 enter: ({ node }) => {
                   const callee = randomCall({ syntaxApi, node, declarationsOf, cryptoBindings });
