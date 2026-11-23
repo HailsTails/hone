@@ -28,6 +28,7 @@ import {
   checkLine,
   editionLine,
   findingLine,
+  heldLine,
   notRunLine,
   unrecordedLines,
 } from "./finding-lines.ts";
@@ -492,6 +493,52 @@ describe("answeredLine", () => {
       }),
     ).toBe(
       'branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; answered by authorised-location carried note: the catalogue has no check "test-bodies" of branch-in-a-test',
+    );
+  });
+});
+
+describe("heldLine", () => {
+  it("prints a held inline disable that names its rule by its check, place and text without fix advice, then names each record that holds it, by its kind", () => {
+    expect(
+      heldLine({
+        catalogue: REPORT_CATALOGUE,
+        held: {
+          exception: {
+            kind: "inline-disable",
+            check: "claimed-type#cast-expressions",
+            file: WEBHOOK_FILE,
+            line: 8,
+            text: "// eslint-disable-next-line @typescript-eslint/consistent-type-assertions",
+            reach: "one-check",
+            mechanism: ESLINT,
+          },
+          by: [DEBT, CLOCK_BOUNDARY],
+        },
+      }),
+    ).toBe(
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by debt held by boundary-record runtime:clock",
+    );
+  });
+
+  it("notes that a held inline disable naming no rule escapes every selected check", () => {
+    expect(
+      heldLine({
+        catalogue: REPORT_CATALOGUE,
+        held: {
+          exception: {
+            kind: "inline-disable",
+            check: "claimed-type#cast-expressions",
+            file: WEBHOOK_FILE,
+            line: 8,
+            text: "// eslint-disable-next-line",
+            reach: "every-selected-check",
+            mechanism: ESLINT,
+          },
+          by: [DEBT, CLOCK_BOUNDARY],
+        },
+      }),
+    ).toBe(
+      "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line names no rule and escapes every selected check held by debt held by boundary-record runtime:clock",
     );
   });
 });

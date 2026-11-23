@@ -281,6 +281,9 @@ run ${projectCommandIn({ repo: request.repo })} to put the recorded debt into ef
 const ADOPTED_TEXT = `${NOT_ADOPTED}answered (2)
 authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} answered by debt
 authored-class-or-this#class-keyword eslint src/legacy-class.ts:1:7 export class Legacy {} answered by debt
+held (2)
+authored-class-or-this#class-keyword eslint inline-disable src/disabled.ts:1 // eslint-disable-next-line hone/authored-class-or-this#class-keyword held by debt
+claimed-type#unlisted-cast-site walker inline-disable src/directive.ts:1 // @ts-expect-error held by debt
 verdict: pass
 `;
 

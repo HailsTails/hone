@@ -1,6 +1,11 @@
 import type { AttributedCheckException, CheckFinding } from "../finding/governance.ts";
 import type { Check, Engine, Symptom } from "../language-layer/symptom-catalogue.ts";
-import type { AnsweredFinding, PaidDebt, StaleRecord } from "../records/answering/answering.ts";
+import type {
+  AnsweredFinding,
+  HeldException,
+  PaidDebt,
+  StaleRecord,
+} from "../records/answering/answering.ts";
 import type {
   CarriedListing,
   PlacedRecord,
@@ -68,6 +73,7 @@ export type RunReport = {
   readonly editions: readonly CheckEdition[];
   readonly findings: readonly CheckFinding[];
   readonly answered: readonly AnsweredFinding[];
+  readonly held: readonly HeldException[];
   readonly available: readonly Check[];
   readonly stale: readonly StaleRecord[];
   readonly forfeited: readonly PlacedRecord[];

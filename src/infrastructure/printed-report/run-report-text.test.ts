@@ -397,6 +397,7 @@ const EMPTY_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
+  held: [],
   available: [],
   stale: [],
   forfeited: [],
@@ -422,6 +423,20 @@ const EVERY_SECTION: RunReport = {
   ],
   findings: [CLOCK_FINDING],
   answered: [{ finding: CAST_FINDING, by: [NOTED_LOCATION] }],
+  held: [
+    {
+      exception: {
+        kind: "inline-disable",
+        check: "claimed-type#cast-expressions",
+        file: WEBHOOK_FILE,
+        line: 8,
+        text: "// eslint-disable-next-line @typescript-eslint/consistent-type-assertions",
+        reach: "one-check",
+        mechanism: ESLINT,
+      },
+      by: [NOTED_LOCATION],
+    },
+  ],
   available: [CLOCK_CHECK],
   stale: [{ placed: NOTED_LOCATION, reason: "credited-nothing" }],
   forfeited: [DEBT],
@@ -475,6 +490,7 @@ const LINES = {
   editions: "date-used-directly#clock-sources walker edition 1 of 2",
   findings: `date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 clock.now() symptom: date-used-directly (${SYMPTOM_PAGE}#date-used-directly) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator`,
   answered: `claimed-type#cast-expressions eslint src/adapters/stripe-webhook.ts:4:9 body as Event answered by authorised-location ${NOTE}`,
+  held: `claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:8 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions held by authorised-location ${NOTE}`,
   available: "date-used-directly#clock-sources",
   stale: `claimed-type authorised-location src/adapters/stripe-webhook.ts ${NOTE}`,
   forfeited: `claimed-type debt src/adapters/stripe-webhook.ts; this change touched its file, so it no longer answers: fix what it held, then run ${PRUNE_COMMAND} to remove it`,
@@ -514,7 +530,7 @@ describe("renderRunReportText", () => {
 
   it("prints every non-empty section in order, each headed by its count, then the verdict", () => {
     expect(rendered({ report: EVERY_SECTION, output: "full" })).toBe(
-      `excluded (1)\n${LINES.excluded}\nnot-adopted (1)\n${LINES.notAdopted}\nnot-run (1)\n${LINES.notRun}\neditions (1)\n${LINES.editions}\nfindings (1)\n${LINES.findings}\nanswered (1)\n${LINES.answered}\navailable (1)\n${LINES.available}\nstale (1)\n${LINES.stale}\nforfeited (1)\n${LINES.forfeited}\nunrecorded (1)\n${LINES.unrecorded}\nmisnamed (1)\n${LINES.misnamed}\npaid (1)\n${LINES.paid}\nrefused (1)\n${LINES.refused}\nunmeasured (1)\n${LINES.unmeasured}\nprojection-problems (1)\n${LINES.projectionProblems}\nassessment (1)\n${LINES.assessment}\nsettings-notes (1)\n${LINES.notes}\nrecord-notes (1)\n${LINES.recordNotes}\ncarried (1)\n${LINES.carried}\nsymptoms (1)\n${LINES.symptoms}\nverdict: fail (partial assessment)\n`,
+      `excluded (1)\n${LINES.excluded}\nnot-adopted (1)\n${LINES.notAdopted}\nnot-run (1)\n${LINES.notRun}\neditions (1)\n${LINES.editions}\nfindings (1)\n${LINES.findings}\nanswered (1)\n${LINES.answered}\nheld (1)\n${LINES.held}\navailable (1)\n${LINES.available}\nstale (1)\n${LINES.stale}\nforfeited (1)\n${LINES.forfeited}\nunrecorded (1)\n${LINES.unrecorded}\nmisnamed (1)\n${LINES.misnamed}\npaid (1)\n${LINES.paid}\nrefused (1)\n${LINES.refused}\nunmeasured (1)\n${LINES.unmeasured}\nprojection-problems (1)\n${LINES.projectionProblems}\nassessment (1)\n${LINES.assessment}\nsettings-notes (1)\n${LINES.notes}\nrecord-notes (1)\n${LINES.recordNotes}\ncarried (1)\n${LINES.carried}\nsymptoms (1)\n${LINES.symptoms}\nverdict: fail (partial assessment)\n`,
     );
   });
 
@@ -526,7 +542,7 @@ describe("renderRunReportText", () => {
 
   it("prints each section's heading alone, naming the role of each that does not fail the run, when it prints counts", () => {
     expect(rendered({ report: EVERY_SECTION, output: "counts" })).toBe(
-      `excluded (1) informational\nnot-adopted (1) informational\nnot-run (1) informational\neditions (1) informational\nfindings (1)\nanswered (1) informational\navailable (1) informational\nstale (1)\nforfeited (1)\nunrecorded (1)\nmisnamed (1)\npaid (1) next-step\nrefused (1)\nunmeasured (1)\nprojection-problems (1)\nassessment (1) informational\nsettings-notes (1) informational\nrecord-notes (1) informational\ncarried (1) informational\nsymptoms (1) guidance\nverdict: fail (partial assessment)\n`,
+      `excluded (1) informational\nnot-adopted (1) informational\nnot-run (1) informational\neditions (1) informational\nfindings (1)\nanswered (1) informational\nheld (1) informational\navailable (1) informational\nstale (1)\nforfeited (1)\nunrecorded (1)\nmisnamed (1)\npaid (1) next-step\nrefused (1)\nunmeasured (1)\nprojection-problems (1)\nassessment (1) informational\nsettings-notes (1) informational\nrecord-notes (1) informational\ncarried (1) informational\nsymptoms (1) guidance\nverdict: fail (partial assessment)\n`,
     );
   });
 
@@ -536,12 +552,13 @@ describe("renderRunReportText", () => {
     );
   });
 
-  it("passes a run whose answered finding carries a catalogue note, with its notes, carried records and symptoms", () => {
+  it("passes a run whose answered finding and held inline disable carry a catalogue note, with its notes, carried records and symptoms", () => {
     expect(
       rendered({
         report: {
           ...EMPTY_REPORT,
           answered: EVERY_SECTION.answered,
+          held: EVERY_SECTION.held,
           "settings-notes": EVERY_SECTION["settings-notes"],
           carried: EVERY_SECTION.carried,
           symptoms: EVERY_SECTION.symptoms,

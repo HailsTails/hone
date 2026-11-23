@@ -105,6 +105,7 @@ const reportAfterAnswering = (
     excluded: request.excluded,
     findings: answering.findings,
     answered: answering.answered,
+    held: answering.held,
     available: request.available,
     stale: answering.stale,
     forfeited: answering.forfeited,

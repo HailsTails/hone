@@ -11,7 +11,10 @@ import {
   indicatedNamesOf,
   type SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
-import type { AnsweredFinding } from "../../../domain/records/answering/answering.ts";
+import type {
+  AnsweredFinding,
+  HeldException,
+} from "../../../domain/records/answering/answering.ts";
 import type { CheckEdition } from "../../../domain/report/run-report.ts";
 import type { ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
 import { onOneLine } from "../printed-text.ts";
@@ -82,6 +85,10 @@ const inlineDetail = (request: {
 }): string =>
   `${request.exception.file}:${request.exception.line} ${onOneLine({ text: request.exception.text })}`;
 
+const inlineDisableDetail = (request: {
+  readonly exception: Extract<AttributedCheckException, { readonly kind: "inline-disable" }>;
+}): string => `${inlineDetail(request)}${INLINE_REACH_NOTE[request.exception.reach]}`;
+
 const unrecordedDetail = (request: { readonly exception: AttributedCheckException }): string => {
   const { exception } = request;
   switch (exception.kind) {
@@ -91,7 +98,7 @@ const unrecordedDetail = (request: { readonly exception: AttributedCheckExceptio
     case "suppression-entry":
       return `${exception.file} ${exception.location}`;
     case "inline-disable":
-      return `${inlineDetail({ exception })}${INLINE_REACH_NOTE[exception.reach]}`;
+      return inlineDisableDetail({ exception });
     case "inline-rule-config":
       return inlineDetail({ exception });
     case "command-line-option":
@@ -105,3 +112,8 @@ export const unrecordedLines = (
   nativeSitesOf(request).map(
     (site) => `${checkSiteText({ site })} ${request.exception.kind} ${unrecordedDetail(request)}`,
   );
+
+export const heldLine = (request: CatalogueRequest & { readonly held: HeldException }): string => {
+  const { exception, by } = request.held;
+  return `${checkSiteText({ site: findingSiteOf({ catalogue: request.catalogue, finding: exception }) })} ${exception.kind} ${inlineDisableDetail({ exception })}${referencesText({ lead: "held by", records: by })}`;
+};

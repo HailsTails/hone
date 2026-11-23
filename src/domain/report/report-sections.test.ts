@@ -74,6 +74,7 @@ const EMPTY_REPORT: RunReport = {
   editions: [],
   findings: [],
   answered: [],
+  held: [],
   available: [],
   stale: [],
   forfeited: [],
@@ -99,6 +100,7 @@ describe("RUN_SECTION_NAMES", () => {
       "editions",
       "findings",
       "answered",
+      "held",
       "available",
       "stale",
       "forfeited",
@@ -121,6 +123,7 @@ describe("runSectionRoleOf", () => {
   it.each<{ readonly section: RunSectionName; readonly role: RunSectionRole }>([
     { section: "findings", role: "failing" },
     { section: "answered", role: "informational" },
+    { section: "held", role: "informational" },
     { section: "available", role: "informational" },
     { section: "paid", role: "next-step" },
     { section: "refused", role: "failing" },
