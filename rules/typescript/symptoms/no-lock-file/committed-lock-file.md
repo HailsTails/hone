@@ -9,4 +9,4 @@
 
 Dependencies declared without an applicable tracked lock file.
 
-A recognised lock file tracked at the repository root covers nested manifests.
+A recognised tracked lock file covers manifests in its directory and below, including a root lock.

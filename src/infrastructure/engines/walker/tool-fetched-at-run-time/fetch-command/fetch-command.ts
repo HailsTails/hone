@@ -10,23 +10,25 @@ import {
 import type { WalkerFile, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 type Command = { readonly text: string; readonly anchor: Anchor; readonly snippet: string };
+type CommandFile = "shell" | "workflow" | "gitlab";
 
 const SHELL = /\.(?:sh|bash|zsh|ps1|cmd|bat)$/;
 const COMMAND_START =
-  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|pnpx|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\b/i;
+  /(?:^|[;&|])\s*(?:exec\s+|call\s+)?(?:corepack\s+)?(?:npx|pnpx(?!=)|bunx|bun\s+x|pnpm\s+dlx|yarn\s+dlx|npm\s+exec)\b/i;
 const DOWNLOAD_PIPE =
   /(?:^|[;&|])\s*(?:curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^|\r\n]*\|\s*(?:sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\b/i;
 
 const sourceCommandsOf = (request: {
   readonly source: string;
-  readonly workflow: boolean;
+  readonly kind: CommandFile;
 }): readonly Command[] =>
   request.source.split(/\r?\n/).flatMap((line, index) => {
     const snippet = line.trim();
     if (snippet.startsWith("#") || snippet.startsWith("::")) return [];
-    const text = request.workflow
-      ? snippet.replace(/^(?:-\s+)?(?:run|script)\s*:\s*/, "").replace(/^(?:'|")|(?:'|")$/g, "")
-      : snippet;
+    const workflowCommand = snippet.replace(/^(?:-\s+)?(?:run|script)\s*:\s*/, "");
+    const command =
+      request.kind === "gitlab" ? workflowCommand.replace(/^-\s+/, "") : workflowCommand;
+    const text = request.kind === "shell" ? snippet : command.replace(/^(?:'|")|(?:'|")$/g, "");
     return [{ text, anchor: { line: index + 1, column: 0 }, snippet }];
   });
 
@@ -46,8 +48,13 @@ const manifestCommandsOf = (file: WalkerFile): Commands => {
   };
 };
 
-const fileCommandsOf = (file: WalkerFile & { readonly workflow: boolean }): Commands => {
-  const source = dependencySourceOf({ ...file, accepts: file.workflow ? WORKFLOW : SHELL });
+const commandFileOf = (file: WalkerFile["file"]): CommandFile => {
+  if (/^\.gitlab-ci\.ya?ml$/.test(file)) return "gitlab";
+  return WORKFLOW.test(file) ? "workflow" : "shell";
+};
+
+const fileCommandsOf = (file: WalkerFile & { readonly kind: CommandFile }): Commands => {
+  const source = dependencySourceOf({ ...file, accepts: file.kind === "shell" ? SHELL : WORKFLOW });
   return source.outcome === "failed"
     ? source
     : {
@@ -55,7 +62,7 @@ const fileCommandsOf = (file: WalkerFile & { readonly workflow: boolean }): Comm
         value:
           source.value === undefined
             ? undefined
-            : sourceCommandsOf({ source: source.value, workflow: file.workflow }),
+            : sourceCommandsOf({ source: source.value, kind: file.kind }),
       };
 };
 
@@ -65,10 +72,9 @@ export const check: WalkerPiece = {
     value: {
       prepareFile: (file) => {
         const manifest = PACKAGE_MANIFEST.test(file.file);
-        const workflow = WORKFLOW.test(file.file);
         const commands = manifest
           ? manifestCommandsOf(file)
-          : fileCommandsOf({ ...file, workflow });
+          : fileCommandsOf({ ...file, kind: commandFileOf(file.file) });
         if (commands.outcome === "failed") return commands;
         if (commands.value === undefined) return { outcome: "ok", value: { kind: "skipped" } };
         const hits = commands.value
