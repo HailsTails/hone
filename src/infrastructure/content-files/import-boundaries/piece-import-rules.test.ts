@@ -153,6 +153,36 @@ describe("pieceFilesOf", () => {
   });
 
   it.each([
+    {
+      file: "tools/acme/engines/walker/Scratch_File/scratch-files/scratch-files.ts",
+      folder: "walker/Scratch_File/scratch-files",
+    },
+    {
+      file: "tools/acme/engines/walker/scratch-file/scratch-files.ts",
+      folder: "walker/scratch-file",
+    },
+  ])(
+    "refuses $file under a team's engines folder, which sits in no symptom and check folder",
+    ({ file, folder }) => {
+      expect(
+        pieceFilesOf({
+          trackedPaths: [file],
+          ruleSetRoots: [TEAM_ROOT],
+          installRoot: INSTALL_ROOT,
+        }),
+      ).toEqual({ outcome: "failed", error: { kind: "not-a-named-piece", file, folder } });
+    },
+  );
+
+  it("refuses a file under a team's engines folder for an engine Hone does not have", () => {
+    const file = "tools/acme/engines/oxlint/scratch-file/scratch-files/scratch-files.ts";
+
+    expect(
+      pieceFilesOf({ trackedPaths: [file], ruleSetRoots: [TEAM_ROOT], installRoot: INSTALL_ROOT }),
+    ).toEqual({ outcome: "failed", error: { kind: "unknown-engine", file, engine: "oxlint" } });
+  });
+
+  it.each([
     "packages/hone/src/infrastructure/engines/protocol/checks/checks-runner.ts",
     "packages/hone/src/infrastructure/engines/walker/runner/runner.ts",
   ])("does not list %s, which is no piece's file", (file) => {

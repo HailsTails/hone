@@ -40,7 +40,9 @@ export type PieceImportFindingsFailure =
   | { readonly kind: "type-packages-missing"; readonly path: string }
   | { readonly kind: "type-packages-malformed"; readonly path: string; readonly detail: string }
   | { readonly kind: "unknown-mechanism"; readonly file: string; readonly mechanism: string }
-  | { readonly kind: "not-a-discipline"; readonly file: string; readonly folder: string };
+  | { readonly kind: "not-a-discipline"; readonly file: string; readonly folder: string }
+  | { readonly kind: "unknown-engine"; readonly file: string; readonly engine: string }
+  | { readonly kind: "not-a-named-piece"; readonly file: string; readonly folder: string };
 
 export type ImportForm = "type-only" | "value" | "dynamic";
 
@@ -122,6 +124,29 @@ const namedLocationOf = (request: {
     : undefined;
 };
 
+const teamEngineFileRefusal = (request: {
+  readonly file: string;
+  readonly segments: readonly string[];
+}): PieceLocations => {
+  const [engineText, folder] = request.segments;
+  if (!engineIdSchema.safeParse(engineText).success) {
+    return {
+      outcome: "failed",
+      error: { kind: "unknown-engine", file: request.file, engine: engineText },
+    };
+  }
+  return folder === RUNNER_FOLDER
+    ? NO_PIECES
+    : {
+        outcome: "failed",
+        error: {
+          kind: "not-a-named-piece",
+          file: request.file,
+          folder: request.segments.slice(0, -1).join("/"),
+        },
+      };
+};
+
 const versionOneLocationOf = (request: {
   readonly file: string;
   readonly ruleSetRoot: string;
@@ -187,6 +212,9 @@ const pieceLocationOf = (request: {
       : namedLocationOf({ ...request, segments: namedSegments });
   if (named !== undefined) {
     return { outcome: "ok", value: [named] };
+  }
+  if (namedSegments !== undefined && place.ruleSetRoot !== place.installRoot) {
+    return teamEngineFileRefusal({ file: request.file, segments: namedSegments });
   }
   const versionOneSegments = pieceSegmentsUnder({
     file,
