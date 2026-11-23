@@ -122,6 +122,24 @@ describe("answers set in a hook", () => {
     ).toEqual([]);
   });
 
+  it("caps a multiline stub answer at eighty characters", () => {
+    const messageStart = "x".repeat(57);
+
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source: `beforeEach(() => {\r\n  stub.mockReturnValue(\r\n    "${messageStart} remainder",\r\n  );\r\n});`,
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 2 },
+        snippet: `stub.mockReturnValue( "${messageStart}…`,
+      },
+    ]);
+  });
+
   it("skips a spec suffix outside the test-file scope", () => {
     expect(
       findingsIn({

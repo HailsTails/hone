@@ -11,6 +11,12 @@
       "fileName": "src/order.test.ts",
       "source": "beforeEach(() => { stub = vi.fn(() => 'x'); });",
       "expectedLines": [1]
+    },
+    {
+      "name": "a long answer set across lines inside a hook",
+      "fileName": "src/order.test.ts",
+      "source": "beforeEach(() => {\n  stub.mockReturnValue(\n    'an answer long enough to shorten its source snippet without changing the line',\n  );\n});",
+      "expectedLines": [2]
     }
   ],
   "allow": [

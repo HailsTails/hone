@@ -5,6 +5,7 @@ import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-pa
 type SyntaxRequest = { readonly syntaxApi: SyntaxApi; readonly node: SyntaxNode };
 
 const HOOKS = new Set(["beforeAll", "beforeEach", "afterEach", "afterAll"]);
+const SNIPPET_LENGTH = 80;
 const ANSWER_SETTERS = new Set([
   "mockReturnValue",
   "mockReturnValueOnce",
@@ -65,7 +66,9 @@ export const check: WalkerPiece = {
                   )
                     return;
                   const anchor = anchorAt({ position: setter.getStart(sourceFile) });
-                  const snippet = setter.getText(sourceFile).replace(/\r?\n/g, " ");
+                  const text = setter.getText(sourceFile).replace(/\r?\n[ \t]*/g, " ");
+                  const snippet =
+                    text.length > SNIPPET_LENGTH ? `${text.slice(0, SNIPPET_LENGTH)}…` : text;
                   hits.push(
                     ...bindings.map(({ address }) => ({ check: address, anchor, snippet })),
                   );
