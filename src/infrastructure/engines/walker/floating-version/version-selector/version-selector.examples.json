@@ -3,8 +3,8 @@
     {
       "name": "floating lock-independent version",
       "fileName": "package.json",
-      "source": "{\"devDependencies\":{\"some-tool\":\"^1.2.3\"}}",
-      "expectedLines": [1]
+      "source": "{\n  \"devDependencies\": {\n    \"some-tool\": \"^1.2.3\"\n  }\n}",
+      "expectedLines": [3]
     },
     {
       "name": "unpinned action and runtime",
@@ -15,8 +15,8 @@
     {
       "name": "package manager major selector",
       "fileName": "package.json",
-      "source": "{\"packageManager\":\"pnpm@10\"}",
-      "expectedLines": [1]
+      "source": "{\n  \"packageManager\": \"pnpm@10\"\n}",
+      "expectedLines": [2]
     }
   ],
   "allow": [
@@ -36,6 +36,12 @@
       "name": "exact package manager with a hash suffix",
       "fileName": "package.json",
       "source": "{\"packageManager\":\"pnpm@10.34.9+sha512.0123456789abcdef\"}",
+      "expectedLines": []
+    },
+    {
+      "name": "workspace, file and exact prerelease selectors",
+      "fileName": "package.json",
+      "source": "{\"devDependencies\":{\"workspace-tool\":\"workspace:*\",\"file-tool\":\"file:../tool\",\"preview\":\"1.2.3-rc.1+build\"}}",
       "expectedLines": []
     },
     {

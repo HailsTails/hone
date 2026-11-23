@@ -71,20 +71,20 @@ describe("version-selector", () => {
       findingsIn({
         file: MANIFEST,
         source:
-          '{ "private": true, "dependencies": { "some-tool": "^1.2.3", "other-tool": "latest" }, "scripts": { "check": "pnpm dlx some-tool" } }',
+          '{\n  "private": true,\n  "dependencies": {\n    "some-tool": "^1.2.3",\n    "other-tool": "latest"\n  }\n}',
       }),
     ).toEqual([
       {
         file: MANIFEST,
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "some-tool: ^1.2.3",
+        anchor: { line: 4, column: 4 },
+        snippet: '"some-tool": "^1.2.3"',
       },
       {
         file: MANIFEST,
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "other-tool: latest",
+        anchor: { line: 5, column: 4 },
+        snippet: '"other-tool": "latest"',
       },
     ]);
   });
@@ -95,6 +95,16 @@ describe("version-selector", () => {
         file: MANIFEST,
         source:
           '{ "private": true, "dependencies": { "some-tool": "1.2.3", "other-tool": "npm:@scope/tool@4.5.6" }, "scripts": { "check": "pnpm run lint" } }',
+      }),
+    ).toEqual([]);
+  });
+
+  it("passes local references, commit pins and prerelease versions", () => {
+    expect(
+      findingsIn({
+        file: MANIFEST,
+        source:
+          '{"devDependencies":{"local":"file:../local","link":"link:../tool","workspace":"workspace:*","git":"git+https://example.test/tool#0123456789abcdef0123456789abcdef01234567","preview":"v1.2.3-rc.1+build","equal":"=1.2.3"}}',
       }),
     ).toEqual([]);
   });
@@ -121,14 +131,14 @@ describe("version-selector", () => {
     expect(
       findingsIn({
         file: MANIFEST,
-        source: '{ "packageManager": "pnpm@10" }',
+        source: '{\n  "packageManager": "pnpm@10"\n}',
       }),
     ).toEqual([
       {
         file: MANIFEST,
         check: ADDRESS,
-        anchor: { line: 1, column: 0 },
-        snippet: "packageManager: pnpm@10",
+        anchor: { line: 2, column: 2 },
+        snippet: '"packageManager": "pnpm@10"',
       },
     ]);
   });

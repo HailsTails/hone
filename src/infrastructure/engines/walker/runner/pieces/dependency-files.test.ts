@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
   dependencySourceOf,
   fieldsOf,
+  locatedPackageManifestOf,
   packageManifestOf,
   PACKAGE_MANIFEST,
 } from "./dependency-files.ts";
@@ -35,6 +36,29 @@ describe("packageManifestOf", () => {
         readText: () => ({ outcome: "ok", value: '{"name": "example",}' }),
       }),
     ).toMatchObject({ outcome: "failed", error: { kind: "file-unparseable", file } });
+  });
+});
+
+describe("locatedPackageManifestOf", () => {
+  it("locates a namespaced dependency by its JSON path across CRLF lines", () => {
+    const manifest = locatedPackageManifestOf({
+      file: repoPathSchema.parse("package.json"),
+      readText: () => ({
+        outcome: "ok",
+        value:
+          '{\r\n  "devDependencies": {\r\n    "@scope/dev.tool":\r\n      "^4.0.0"\r\n  }\r\n}',
+      }),
+    });
+    assert(manifest.outcome === "ok");
+    expect(manifest.value?.fieldAt(["devDependencies", "@scope/dev.tool"])).toEqual({
+      anchor: { line: 3, column: 4 },
+      snippet: '"@scope/dev.tool": "^4.0.0"',
+    });
+    expect(manifest.value?.fieldAt(["devDependencies"])).toEqual({
+      anchor: { line: 2, column: 2 },
+      snippet: '"devDependencies"',
+    });
+    expect(manifest.value?.fieldAt(["dependencies", "@scope/dev.tool"])).toBeUndefined();
   });
 });
 
