@@ -68,7 +68,7 @@ export const sourceValueDeclarationsOf = (request: {
   readonly syntaxApi: SyntaxApi;
   readonly bindings: TypeChecker;
   readonly node: SyntaxNode;
-}) => {
+}): readonly SyntaxNode[] => {
   const { syntaxApi, bindings, node } = request;
   const parent = node.parent;
   const symbol =
