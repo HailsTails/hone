@@ -166,7 +166,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [],
   recipes: [ADAPTER_PER_OUTSIDE_PARTY],
   recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [{ name: "walker" }],
   symptoms: [AUTHORED_CLASS, LOOP_KEYWORD, OUTSIDE_IMPORT],
   clauses: [

@@ -259,7 +259,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -305,27 +304,21 @@ const TEAM_FINDING: CheckFinding = {
 };
 
 describe("symptomLine", () => {
-  it("names a symptom's title, what it may indicate, where the breach sits, its recipe, each correct use, known debt and its page", () => {
-    expect(
-      symptomLine({ catalogue: REPORT_CATALOGUE, symptom: DATE_USED_DIRECTLY, page: SYMPTOM_PAGE }),
-    ).toBe(
-      `date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Correct use: a boundary record on the clock adapter. Known debt: debt. Read ${SYMPTOM_PAGE}#date-used-directly`,
+  it("names a symptom's title, what it may indicate, where the breach sits, its recipe and its page", () => {
+    expect(symptomLine({ symptom: DATE_USED_DIRECTLY, page: SYMPTOM_PAGE })).toBe(
+      `date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Read ${SYMPTOM_PAGE}#date-used-directly`,
     );
   });
 
-  it("names several recipes, and only known debt when the symptom has no correct use", () => {
-    expect(
-      symptomLine({ catalogue: REPORT_CATALOGUE, symptom: BRANCH_IN_A_TEST, page: SYMPTOM_PAGE }),
-    ).toBe(
-      `branch-in-a-test: Branch in a test. May indicate: checks a value that may be one of several outcomes → Straight-through tests, No hidden effects. The breach usually sits in the unit's output type, where optional or loose shapes force the test to branch. Recipes: Assert to narrow; it.each over typed rows. Known debt: debt. Read ${SYMPTOM_PAGE}#branch-in-a-test`,
+  it("names several recipes when the symptom has them", () => {
+    expect(symptomLine({ symptom: BRANCH_IN_A_TEST, page: SYMPTOM_PAGE })).toBe(
+      `branch-in-a-test: Branch in a test. May indicate: checks a value that may be one of several outcomes → Straight-through tests, No hidden effects. The breach usually sits in the unit's output type, where optional or loose shapes force the test to branch. Recipes: Assert to narrow; it.each over typed rows. Read ${SYMPTOM_PAGE}#branch-in-a-test`,
     );
   });
 
   it("names no recipe when the symptom has none, and an indication's situation after its case", () => {
-    expect(
-      symptomLine({ catalogue: REPORT_CATALOGUE, symptom: CLAIMED_TYPE, page: SYMPTOM_PAGE }),
-    ).toBe(
-      `claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. A schema proves the type: an authorised location. Known debt: debt. Read ${SYMPTOM_PAGE}#claimed-type`,
+    expect(symptomLine({ symptom: CLAIMED_TYPE, page: SYMPTOM_PAGE })).toBe(
+      `claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. Read ${SYMPTOM_PAGE}#claimed-type`,
     );
   });
 });

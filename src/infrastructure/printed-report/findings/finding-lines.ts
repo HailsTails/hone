@@ -17,6 +17,7 @@ import type { ScriptOptionCause } from "../../../domain/runner/runner-result-typ
 import { onOneLine } from "../printed-text.ts";
 import { referencesText } from "../records/record-lines.ts";
 import { scriptOptionAdviceOf } from "../records/script-option-advice.ts";
+import { symptomSourceOf } from "../symptoms/symptom-lines.ts";
 
 type CatalogueRequest = { readonly catalogue: SymptomCatalogue };
 
@@ -26,10 +27,16 @@ const locatedText = (request: {
 }): string =>
   `${checkSiteText(request)} ${request.finding.file}:${request.finding.anchor.line}:${request.finding.anchor.column} ${onOneLine({ text: request.finding.snippet })}`;
 
-const indicationNote = (request: { readonly site: CheckSite }): string =>
-  request.site.sited === "check"
-    ? ` may indicate: ${indicatedNamesOf({ symptom: request.site.check.symptom }).join(", ")}`
-    : "";
+const symptomNote = (request: {
+  readonly site: CheckSite;
+  readonly symptomPage: string;
+}): string => {
+  if (request.site.sited !== "check") return "";
+  const { symptom } = request.site.check;
+  const source = symptomSourceOf({ symptom, page: request.symptomPage });
+  const indicated = indicatedNamesOf({ symptom }).join(", ");
+  return ` symptom: ${symptom.name} (${source}) may indicate: ${indicated}`;
+};
 
 const fixNote = (request: { readonly finding: CheckFinding }): string =>
   request.finding.remedy === undefined
@@ -37,10 +44,10 @@ const fixNote = (request: { readonly finding: CheckFinding }): string =>
     : ` fix: ${onOneLine({ text: request.finding.remedy.fix })} (${request.finding.remedy.page}#${request.finding.remedy.section})`;
 
 export const findingLine = (
-  request: CatalogueRequest & { readonly finding: CheckFinding },
+  request: CatalogueRequest & { readonly finding: CheckFinding; readonly symptomPage: string },
 ): string => {
   const site = findingSiteOf(request);
-  return `${locatedText({ site, finding: request.finding })}${indicationNote({ site })}${fixNote(request)}`;
+  return `${locatedText({ site, finding: request.finding })}${symptomNote({ site, symptomPage: request.symptomPage })}${fixNote(request)}`;
 };
 
 export const answeredLine = (
@@ -61,8 +68,7 @@ export const notRunLine = (request: { readonly check: Check }): string =>
 
 const INLINE_REACH_NOTE: Readonly<Record<"one-check" | "every-selected-check", string>> = {
   "one-check": "",
-  "every-selected-check":
-    " names no rule and escapes every selected check: naming the rule is the cheap fix",
+  "every-selected-check": " names no rule and escapes every selected check",
 };
 
 const scriptOptionNote = (request: { readonly cause: ScriptOptionCause }): string => {

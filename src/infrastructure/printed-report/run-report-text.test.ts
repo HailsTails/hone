@@ -306,7 +306,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -464,8 +463,7 @@ const LINES = {
   notAdopted: "claimed-type#cast-expressions",
   notRun: "branch-in-a-test#test-body adopted, engine not run: enforced by review",
   editions: "date-used-directly#clock-sources walker edition 1 of 2",
-  findings:
-    "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 clock.now() may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator",
+  findings: `date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 clock.now() symptom: date-used-directly (${SYMPTOM_PAGE}#date-used-directly) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator`,
   answered: `claimed-type#cast-expressions eslint src/adapters/stripe-webhook.ts:4:9 body as Event answered by authorised-location ${NOTE}`,
   available: "date-used-directly#clock-sources",
   stale: `claimed-type authorised-location src/adapters/stripe-webhook.ts ${NOTE}`,
@@ -484,7 +482,7 @@ const LINES = {
   recordNotes:
     'hone-records/authorised-locations/claimed-type.json records[0] owes-not-owed: gives-a-value-its-type does not owe "written-out-answers"',
   carried: "hone-records/authorised-locations/claimed-type.json records[2] established lacks case",
-  symptoms: `date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Correct use: a boundary record on the clock adapter. Known debt: debt. Read ${SYMPTOM_PAGE}#date-used-directly`,
+  symptoms: `date-used-directly: Date used directly. May indicate: needs the current time, a random value, a new id or an outside ordering → Ports declared inside, Written-out answers; does one job → Doer or orchestrator. The breach usually sits in the unit that should be passed the time, often a doer doing two jobs. Recipe: World values through a port. Read ${SYMPTOM_PAGE}#date-used-directly`,
 };
 
 const rendered = (request: {

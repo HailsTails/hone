@@ -130,7 +130,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   cases: [CLAIMED_TYPE.mayIndicate[0].case],
   recipes: [],
   recordKinds: [AUTHORISED_LOCATION, DEBT],
-  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
   engines: [ESLINT_ENGINE],
   symptoms: [CLAIMED_TYPE],
   clauses: [{ clause: CAST_EXPRESSIONS, sight: { kind: "one-symptom", symptom: CLAIMED_TYPE } }],

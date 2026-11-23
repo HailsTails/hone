@@ -96,7 +96,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [],
   recipes: [],
   recordKinds: [DEBT, LOCATION],
-  alwaysRecordable: { debt: DEBT, authorisedLocation: LOCATION },
   engines: [],
   symptoms: [SYMPTOM],
   clauses: [],

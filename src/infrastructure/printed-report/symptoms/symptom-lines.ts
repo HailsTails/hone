@@ -1,7 +1,6 @@
 import { findingSiteOf } from "../../../domain/finding/check-site.ts";
 import type { CheckFinding } from "../../../domain/finding/governance.ts";
 import type {
-  CorrectUse,
   Indication,
   Pointed,
   Recipe,
@@ -13,9 +12,6 @@ type CatalogueRequest = { readonly catalogue: SymptomCatalogue };
 
 const lowerFirst = (request: { readonly text: string }): string =>
   `${request.text.charAt(0).toLowerCase()}${request.text.slice(1)}`;
-
-const upperFirst = (request: { readonly text: string }): string =>
-  `${request.text.charAt(0).toUpperCase()}${request.text.slice(1)}`;
 
 const pointedTitleOf = (request: { readonly point: Pointed }): string =>
   request.point.kind === "rule" ? request.point.rule.title : request.point.principle.title;
@@ -38,25 +34,20 @@ const recipeSentence = (request: { readonly recipes: readonly Recipe[] }): strin
   return ` ${titles.length === 1 ? "Recipe" : "Recipes"}: ${titles.join("; ")}.`;
 };
 
-const useSentence = (request: { readonly use: CorrectUse }): string => {
-  const place = request.use.at === undefined ? "" : ` ${request.use.at}`;
-  return `${upperFirst({ text: request.use.situation })}: ${request.use.kind.phrase}${place}.`;
-};
+export const symptomSourceOf = (request: {
+  readonly symptom: Symptom;
+  readonly page: string;
+}): string => request.symptom.sourceFile ?? `${request.page}#${request.symptom.name}`;
 
-export const symptomLine = (
-  request: CatalogueRequest & { readonly symptom: Symptom; readonly page: string },
-): string => {
+export const symptomLine = (request: {
+  readonly symptom: Symptom;
+  readonly page: string;
+}): string => {
   const { symptom } = request;
-  const knownDebt: CorrectUse = {
-    situation: "known debt",
-    kind: request.catalogue.alwaysRecordable.debt,
-  };
   const indications = symptom.mayIndicate
     .map((indication) => indicationText({ indication }))
     .join("; ");
-  const uses = [...symptom.correctUses, knownDebt].map((use) => useSentence({ use })).join(" ");
-  const source = symptom.sourceFile ?? `${request.page}#${symptom.name}`;
-  return `${symptom.name}: ${symptom.title}. May indicate: ${indications}. The breach usually sits ${symptom.breachUsuallySits}.${recipeSentence(symptom)} ${uses} Read ${source}`;
+  return `${symptom.name}: ${symptom.title}. May indicate: ${indications}. The breach usually sits ${symptom.breachUsuallySits}.${recipeSentence(symptom)} Read ${symptomSourceOf(request)}`;
 };
 
 export const findingSymptomsOf = (

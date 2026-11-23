@@ -274,7 +274,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -364,9 +363,9 @@ const stagesGiving = (request: Partial<VersionTwoStages>): VersionTwoStages => (
 });
 
 const FAILING_REPORT = `findings (1)
-claimed-type#cast-expressions eslint src/a.ts:4:9 body as Event may indicate: declared-not-asserted
+claimed-type#cast-expressions eslint src/a.ts:4:9 body as Event symptom: claimed-type (../install/rules/typescript/symptoms.md#claimed-type) may indicate: declared-not-asserted
 symptoms (1)
-claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. A schema proves the type: an authorised location. Known debt: debt. Read ../install/rules/typescript/symptoms.md#claimed-type
+claimed-type: Claimed type. May indicate: gives a value its type: or needs it narrower → Declared, not asserted. The breach usually sits at the producer. Read ../install/rules/typescript/symptoms.md#claimed-type
 verdict: fail
 `;
 

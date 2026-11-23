@@ -133,14 +133,14 @@ const NOT_ADOPTED =
   "not-adopted (3)\nauthored-class-or-this#static-members-only\nclaimed-type#unlisted-cast-site\nclaimed-type#non-null-assertions\n";
 
 const CLASS_SYMPTOM =
-  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. A class an outside library requires, such as an adapter extending its base class: an authorised location in that adapter. Known debt: debt. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
+  "authored-class-or-this: Authored class or this. May indicate: keeps state or settings across calls → No hidden effects; reuses behaviour from another unit or type → One reason per module; gives a value its type (declares it, or needs it narrower) → Declared, not asserted. The breach usually sits in the unit. Recipe: Closure factory. Read ../../rules/typescript/symptoms.md#authored-class-or-this\n";
 
 const CAST_SYMPTOM =
-  "claimed-type: Claimed type. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; checks a value that may be one of several outcomes → Straight-through tests; gives a value its type (declares it, or needs it narrower): in a test, a cast to build an input → Handed what it uses. The breach usually sits in the declaration: an input too wide, a generic not bounded, a missing parse. Recipes: Fix the declaration, not the value; Assert to narrow; One argument object. Correct use: an authorised location in the adapter whose outside contract forces it. Known debt: debt. Read ../../rules/typescript/symptoms.md#claimed-type\n";
+  "claimed-type: Claimed type. May indicate: gives a value its type (declares it, or needs it narrower) → Declared, not asserted; checks a value that may be one of several outcomes → Straight-through tests; gives a value its type (declares it, or needs it narrower): in a test, a cast to build an input → Handed what it uses. The breach usually sits in the declaration: an input too wide, a generic not bounded, a missing parse. Recipes: Fix the declaration, not the value; Assert to narrow; One argument object. Read ../../rules/typescript/symptoms.md#claimed-type\n";
 
 const FINDINGS_ONLY_TEXT = `${NOT_ADOPTED}findings (2)
-authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
-claimed-type#cast-to-any walker src/cast.ts:1:22 JSON.parse(text) as any;  may indicate: declared-not-asserted, straight-through-tests, handed-what-it-uses
+authored-class-or-this#class-keyword eslint src/kept.ts:1:7 export class Kept {} symptom: authored-class-or-this (../../rules/typescript/symptoms.md#authored-class-or-this) may indicate: no-hidden-effects, one-reason-per-module, declared-not-asserted
+claimed-type#cast-to-any walker src/cast.ts:1:22 JSON.parse(text) as any;  symptom: claimed-type (../../rules/typescript/symptoms.md#claimed-type) may indicate: declared-not-asserted, straight-through-tests, handed-what-it-uses
 assessment (1)
 forfeiture elsewhere: 0 debt records not checked for forfeiture in this run
 symptoms (2)

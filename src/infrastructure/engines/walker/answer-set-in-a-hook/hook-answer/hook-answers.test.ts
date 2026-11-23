@@ -122,6 +122,24 @@ describe("answers set in a hook", () => {
     ).toEqual([]);
   });
 
+  it("caps a multiline stub answer at eighty characters", () => {
+    expect(
+      findingsIn({
+        file: SOURCE_FILE,
+        source:
+          'beforeEach(() => {\r\n  stub.mockReturnValue(\r\n    "1234567890123456789012345678901234567890123456789012345678901234",\r\n  );\r\n});',
+      }),
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 2 },
+        snippet:
+          'stub.mockReturnValue( "123456789012345678901234567890123456789012345678901234567…',
+      },
+    ]);
+  });
+
   it("skips a spec suffix outside the test-file scope", () => {
     expect(
       findingsIn({

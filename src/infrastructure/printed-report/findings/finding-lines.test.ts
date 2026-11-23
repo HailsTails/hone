@@ -22,6 +22,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
 import {
   answeredLine,
   checkLine,
@@ -40,6 +41,8 @@ const ESLINT = "eslint" as const;
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
+
+const SYMPTOM_PAGE = "node_modules/@hailstails/hone/rules/typescript/symptoms.md";
 
 const CHECKS_PAGE = "node_modules/@hailstails/hone/rules/CD-27/CHECKS.md";
 
@@ -271,7 +274,6 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, ITEACH_OVER_TYPED_ROWS],
   recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -357,19 +359,70 @@ const CLOCK_BOUNDARY: PlacedRecord = {
 
 describe("findingLine", () => {
   it("leads with the check address and engine, then the place, the snippet and what the symptom may indicate", () => {
-    expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: CLOCK_FINDING })).toBe(
-      "date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator",
+    expect(
+      findingLine({
+        catalogue: REPORT_CATALOGUE,
+        finding: CLOCK_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
+      `date-used-directly#clock-sources walker src/orders/charge-order.ts:14:0 const chargedAt = clock.now(); symptom: date-used-directly (${SYMPTOM_PAGE}#date-used-directly) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator`,
     );
   });
 
   it("ends with the fix and the page that shows it when the check names one, and keeps a line break in the snippet on one line", () => {
-    expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: BRANCH_FINDING })).toBe(
-      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; may indicate: straight-through-tests, no-hidden-effects fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
+    expect(
+      findingLine({
+        catalogue: REPORT_CATALOGUE,
+        finding: BRANCH_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
+      `branch-in-a-test#test-body walker src/orders/charge-order.test.ts:22:2 if (result.ok) {\\n  return; symptom: branch-in-a-test (${SYMPTOM_PAGE}#branch-in-a-test) may indicate: straight-through-tests, no-hidden-effects fix: write one test per case, or one it.each table (${CHECKS_PAGE}#branching-with-if)`,
+    );
+  });
+
+  it("uses the team symptom's own page in its finding", () => {
+    const symptom: Symptom = {
+      name: "outside-import-past-a-boundary",
+      sourceFile: "rules/team/symptoms/outside-import-past-a-boundary.md",
+      title: "Outside import past a boundary",
+      seen: "A domain unit imports an outside dependency.",
+      mayIndicate: DATE_USED_DIRECTLY.mayIndicate,
+      breachUsuallySits: "at the boundary",
+      recipes: [],
+      correctUses: [],
+    };
+    const check: Check = {
+      name: "no-moment",
+      ruleSet: ruleSetNameOf("acme"),
+      symptom,
+      engines: [ESLINT_ENGINE],
+      forms: [],
+    };
+    expect(
+      findingLine({
+        catalogue: {
+          ...REPORT_CATALOGUE,
+          checks: [check],
+          symptoms: [symptom],
+        },
+        finding: TEAM_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
+      "acme/outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment() symptom: outside-import-past-a-boundary (rules/team/symptoms/outside-import-past-a-boundary.md) may indicate: ports-declared-inside, written-out-answers, doer-or-orchestrator",
     );
   });
 
   it("leads with the check address and mechanism when the catalogue has no check for the finding, and names no symptom", () => {
-    expect(findingLine({ catalogue: REPORT_CATALOGUE, finding: TEAM_FINDING })).toBe(
+    expect(
+      findingLine({
+        catalogue: REPORT_CATALOGUE,
+        finding: TEAM_FINDING,
+        symptomPage: SYMPTOM_PAGE,
+      }),
+    ).toBe(
       "outside-import-past-a-boundary#no-moment eslint src/orders/charge-order.ts:1:0 moment()",
     );
   });
@@ -485,7 +538,7 @@ describe("unrecordedLines", () => {
         reach: "every-selected-check",
         mechanism: ESLINT,
       },
-      line: "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:4 // eslint-disable-next-line names no rule and escapes every selected check: naming the rule is the cheap fix",
+      line: "claimed-type#cast-expressions eslint inline-disable src/adapters/stripe-webhook.ts:4 // eslint-disable-next-line names no rule and escapes every selected check",
     },
     {
       name: "an inline rule config",

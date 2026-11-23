@@ -100,7 +100,6 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
   cases: [],
   recipes: [],
   recordKinds: [AUTHORISED_LOCATION, DEBT],
-  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
   engines: [WALKER, ESLINT],
   symptoms: [LOOP_KEYWORD, REBINDING],
   clauses: [

@@ -49,102 +49,102 @@ const firstEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: editionO
 const secondEdition = (remedy: Remedy): TestBodyForm => ({ introducedIn: SECOND_EDITION, remedy });
 
 const BRANCHING = firstEdition({
-  fix: "write one test per case, or one it.each table; to narrow a value that may be missing, assert.isDefined it",
+  fix: "The test branches because the unit can return more than one shape. Give each outcome its own test or make the return type express the one outcome callers can rely on.",
   page: BRANCH_IN_A_TEST,
   section: "branching-with-if",
 });
 const TRY_BLOCK = firstEdition({
-  fix: "assert the throw with expect(() => act()).toThrow or await expect(act()).rejects, or assert the failure the unit returns",
+  fix: "Catching inside the test can let it pass when no error occurs. Assert the failure the caller should observe, whether it is returned or thrown.",
   page: THROW_OR_CATCH_IN_A_TEST,
   section: "a-try-block",
 });
 const TERNARY = firstEdition({
-  fix: "write the value out, or give each case its own it.each row",
+  fix: "The test chooses between values at runtime. State the expected value for each case so the assertion cannot adapt to the result.",
   page: BRANCH_IN_A_TEST,
   section: "a-ternary",
 });
 const LET = firstEdition({
-  fix: "use const; record calls with vi.fn and assert them with toHaveBeenCalledWith",
+  fix: "A reassigned local makes the test depend on hidden state. Keep the expected values fixed and assert the interaction you need to observe.",
   page: REBINDING,
   section: "a-let",
 });
 const PICKING_METHOD = firstEdition({
-  fix: "assert on the whole array with toEqual, toContain, toContainEqual or expect.arrayContaining",
+  fix: "Selecting an element can discard data the caller should see. Assert the relevant membership or structure of the returned collection directly.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "a-method-that-picks-or-tests-an-element",
 });
 const COMPUTING_METHOD = firstEdition({
-  fix: "write the expected value out, or match part of it with toMatchObject, toHaveLength or expect.stringContaining",
+  fix: "Computing the expectation can repeat the mistake in the implementation. Write the expected value or the relevant properties explicitly.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "a-method-that-computes-a-value",
 });
 const MUTATING_METHOD = firstEdition({
-  fix: "write the finished array out as a literal",
+  fix: "Mutating the expected collection obscures its final state. State the finished collection so the reader can see what should be returned.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "a-method-that-mutates",
 });
 const SHORT_CIRCUIT = secondEdition({
-  fix: "write the value it gives; to narrow a value that may be missing, assert.isDefined it",
+  fix: "Short-circuiting lets the test skip a case when the unit returns an optional or falsy value. Make required output explicit in the unit's type or test each outcome separately.",
   page: BRANCH_IN_A_TEST,
   section: "a-short-circuit",
 });
 const INDEXED_OPTIONAL_CHAIN = secondEdition({
-  fix: "compare the whole element with toMatchObject, or destructure it and assert.isDefined it before reading it",
+  fix: "Optional access hides whether the expected element exists. Assert that the collection contains the required element and its relevant contents.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-chain-after-an-index",
 });
 const MOCK_CALL_OPTIONAL_CHAIN = secondEdition({
-  fix: "assert the call with toHaveBeenNthCalledWith or toHaveBeenLastCalledWith",
+  fix: "Optional access hides whether the dependency was called. Assert the expected call and its arguments.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-chain-on-a-mock-call",
 });
 const MOCK_RESULT_OPTIONAL_CHAIN = secondEdition({
-  fix: "assert what it returned with toHaveNthReturnedWith or toHaveLastReturnedWith",
+  fix: "Optional access hides whether the dependency returned a value. Assert the return from the expected call.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-chain-on-a-mock-result",
 });
 const PROPERTY_OPTIONAL_CHAIN = secondEdition({
-  fix: "compare the whole value with toMatchObject, or destructure it and assert.isDefined it before reading it",
+  fix: "The returned object can omit a property the caller needs. Make that property required in the unit's return type or test its absence as a separate outcome.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-chain-on-a-property",
 });
 const OPTIONAL_CALL = secondEdition({
-  fix: "assert.isDefined the function, then call it",
+  fix: "The unit's output makes the function optional, so callers cannot count on being able to call it. Make the function required in the return type or test the absent case separately.",
   page: BRANCH_IN_A_TEST,
   section: "an-optional-call",
 });
 const SWITCH = secondEdition({
-  fix: "write one test per case, or one it.each table",
+  fix: "The test branches on a value and can omit assertions for unexpected cases. State the expected outcome for each case separately.",
   page: BRANCH_IN_A_TEST,
   section: "a-switch",
 });
 const JSON_CALL = secondEdition({
-  fix: "assert the object the unit gives back, written out; a unit that gives back only text should hand over an object, leaving the text to the adapter at its edge",
+  fix: "Serializing or parsing inside the test can obscure the returned structure. Assert the object the caller needs and leave its wire format to the boundary adapter.",
   page: TEXT_PAST_ITS_READER,
   section: "serialising-or-parsing-json",
 });
 const OBJECT_ASSIGN = secondEdition({
-  fix: "write the object out, spreading what it copies; to give an Error a property, assign it",
+  fix: "Building the expected object by mutation obscures its final shape. State the fields the caller should see and make any copied fields explicit.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "merging-objects",
 });
 const OBJECT_FROM_ENTRIES = secondEdition({
-  fix: "write the object out as a literal",
+  fix: "Building the expected object from entries hides the shape the assertion promises. Write out the relevant fields and values.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "building-an-object-from-entries",
 });
 const ARRAY_FROM = secondEdition({
-  fix: "write a short array out as a literal; the page shows no form for a long one",
+  fix: "Generating the expected array hides the sequence being asserted. State the relevant elements, length, or ordering directly.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "building-an-array-from-a-length",
 });
 const MATH_CALL = secondEdition({
-  fix: "write the number out",
+  fix: "Calculating the expected number can reproduce the implementation's error. State the expected number directly.",
   page: COMPUTED_VALUE_IN_A_TEST,
   section: "a-math-call",
 });
 const PASSED_ON_FUNCTION: Remedy = {
-  fix: "make it a vi.fn spy with a written-out mockReturnValue, and assert what it was asked with toHaveBeenCalledExactlyOnceWith; the recipe is Stub with vi.fn",
+  fix: "A callback with its own logic makes the test depend on a second implementation. Give the collaborator a fixed answer and assert how it was used.",
   page: DOUBLE_WITH_A_BODY,
   section: "logic-inside-a-function-the-test-passes-on",
 };

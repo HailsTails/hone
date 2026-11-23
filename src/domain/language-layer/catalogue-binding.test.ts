@@ -72,7 +72,6 @@ const CONTENT: CatalogueContent = {
   cases: [],
   recipes: [],
   recordKinds: [DEBT, AUTHORISED_LOCATION],
-  alwaysRecordable: { debt: DEBT, authorisedLocation: AUTHORISED_LOCATION },
   engines: [WALKER, ESLINT],
   symptoms: [DATE_USED_DIRECTLY],
   clauses: [],

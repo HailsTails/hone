@@ -183,7 +183,6 @@ const CATALOGUE: SymptomCatalogue = {
   cases: [GIVES_A_VALUE_ITS_TYPE, STATES_WHAT_THE_UNIT_GIVES_BACK],
   recipes: [STUB_WITH_VIFN],
   recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
-  alwaysRecordable: { debt: DEBT_KIND, authorisedLocation: AUTHORISED_LOCATION_KIND },
   engines: [],
   symptoms: [CLAIMED_TYPE, TEXT_PAST_ITS_READER, BRANCH_IN_A_TEST, DOUBLE_WITH_A_BODY],
   clauses: [],

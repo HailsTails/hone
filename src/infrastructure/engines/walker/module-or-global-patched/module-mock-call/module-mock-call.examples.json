@@ -15,8 +15,8 @@
     {
       "name": "global stub and environment writes",
       "fileName": "globals.test.ts",
-      "source": "vi.stubGlobal('focus', value);\nprocess.env.MODE = 'test';\ndelete process.env.OLD;",
-      "expectedLines": [1, 2, 3],
+      "source": "vi.stubGlobal('focus', value);\nvi.stubEnv('MODE', 'test');\nprocess.env.MODE = 'test';\ndelete process.env.OLD;\nprocess.env.COUNT++;",
+      "expectedLines": [1, 2, 3, 4, 5],
       "edition": "2"
     }
   ],
@@ -42,8 +42,15 @@
     {
       "name": "edition one does not adopt global patches",
       "fileName": "globals.test.ts",
-      "source": "vi.stubGlobal('focus', value);",
+      "source": "vi.stubGlobal('focus', value);\nvi.stubEnv('MODE', 'test');",
       "expectedLines": []
+    },
+    {
+      "name": "global spies are outside this check",
+      "fileName": "globals.test.ts",
+      "source": "vi.spyOn(globalThis, 'fetch');",
+      "expectedLines": [],
+      "edition": "2"
     },
     {
       "name": "environment reads and aliases",
