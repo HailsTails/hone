@@ -16,6 +16,7 @@ import { check } from "./hook-answers.ts";
 const SOURCE_FILE = repoPathSchema.parse("src/read-order.test.ts");
 const BINDING: CheckBinding = {
   address: "answer-set-in-a-hook#hook-answer",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/answer-set-in-a-hook/hook-answer",

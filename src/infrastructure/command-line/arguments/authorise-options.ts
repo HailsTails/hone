@@ -2,6 +2,7 @@ import type { AuthoriseRequest } from "../../../application/ports/authorising.ts
 import type { Why } from "../../../domain/records/why-chain.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
+import { type OwnedName, ownedNameOf } from "../../../domain/rule-set/rule-set-identity.ts";
 import { repoPathSchema } from "../../hone-records-folder/repo-path.ts";
 
 export type AuthoriseOptionName =
@@ -100,8 +101,21 @@ type Site = Pick<AuthoriseRequest, "answers" | "case" | "owes" | "owner">;
 
 type Root = Pick<AuthoriseRequest, "rootCause" | "rootEvidence" | "readback">;
 
+const answersOf = (request: Reading): Read<OwnedName> => {
+  const given = onceOf({ ...request, option: "answers" });
+  if (given.outcome === "failed") {
+    return given;
+  }
+  const owned = ownedNameOf({ text: given.value });
+  return owned === "not-an-owned-name"
+    ? invalid({
+        detail: `takes a symptom or check address for ${AUTHORISE_OPTIONS.answers}, after its rule set and a slash when a team's rule set holds it, not ${JSON.stringify(given.value)}`,
+      })
+    : { outcome: "ok", value: owned };
+};
+
 const siteOf = (request: Reading): Read<Site> => {
-  const answers = onceOf({ ...request, option: "answers" });
+  const answers = answersOf(request);
   const caseName = onceOf({ ...request, option: "case" });
   const owes = onceOf({ ...request, option: "owes" });
   const owner = onceOf({ ...request, option: "owner" });

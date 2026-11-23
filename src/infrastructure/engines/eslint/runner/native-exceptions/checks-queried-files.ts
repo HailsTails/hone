@@ -272,14 +272,14 @@ export const queriedFilesOf = (request: {
 
 const answeredHolds = (request: {
   readonly answeredByPlace: AnsweredByPlace;
-  readonly entry: Pick<SelectedNamedCheck, "address" | "symptom">;
+  readonly entry: Pick<SelectedNamedCheck, "ruleSet" | "address" | "symptom">;
   readonly file: RepoPath;
 }): Holding =>
   answeredAt({ byPlace: request.answeredByPlace, ...request.entry, file: request.file })
     ? "holds"
     : "does-not-hold";
 
-type ProjectedRule = Pick<SelectedNamedCheck, "address" | "symptom" | "ruleId">;
+type ProjectedRule = Pick<SelectedNamedCheck, "ruleSet" | "address" | "symptom" | "ruleId">;
 
 const answeredOff = (request: {
   readonly selected: readonly ProjectedRule[];

@@ -146,6 +146,7 @@ const RUN: NamedEngineRunRequest = {
   bindings: [
     {
       address: PROBE_ADDRESS,
+      ruleSet: "hone",
       engine: "walker",
       checkSettings: PROBE_BINDING.clause.clauseSettings,
       pieceRoot: PROBE_BINDING.clause.pieceRoot,
@@ -155,6 +156,7 @@ const RUN: NamedEngineRunRequest = {
     },
     {
       address: EXPORT_TEST_SIBLING_ADDRESS,
+      ruleSet: "hone",
       engine: "walker",
       checkSettings: EXPORT_TEST_SIBLING_BINDING.clause.clauseSettings,
       pieceRoot: EXPORT_TEST_SIBLING_BINDING.clause.pieceRoot,

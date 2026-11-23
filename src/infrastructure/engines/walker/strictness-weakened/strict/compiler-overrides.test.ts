@@ -52,6 +52,7 @@ const PROPERTY: CheckAddressText = "strictness-weakened#no-property-access-from-
 const CATCH: CheckAddressText = "strictness-weakened#use-unknown-in-catch-variables";
 const STRICT_CLAUSE: CheckBinding = {
   address: STRICT,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
@@ -61,6 +62,7 @@ const STRICT_CLAUSE: CheckBinding = {
 };
 const UNCHECKED_CLAUSE: CheckBinding = {
   address: UNCHECKED,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
@@ -70,6 +72,7 @@ const UNCHECKED_CLAUSE: CheckBinding = {
 };
 const EXACT_CLAUSE: CheckBinding = {
   address: EXACT,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
@@ -79,6 +82,7 @@ const EXACT_CLAUSE: CheckBinding = {
 };
 const OVERRIDE_CLAUSE: CheckBinding = {
   address: OVERRIDE,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
@@ -88,6 +92,7 @@ const OVERRIDE_CLAUSE: CheckBinding = {
 };
 const FALLTHROUGH_CLAUSE: CheckBinding = {
   address: FALLTHROUGH,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
@@ -97,6 +102,7 @@ const FALLTHROUGH_CLAUSE: CheckBinding = {
 };
 const PROPERTY_CLAUSE: CheckBinding = {
   address: PROPERTY,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",
@@ -106,6 +112,7 @@ const PROPERTY_CLAUSE: CheckBinding = {
 };
 const CATCH_CLAUSE: CheckBinding = {
   address: CATCH,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-3",

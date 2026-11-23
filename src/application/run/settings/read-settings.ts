@@ -230,9 +230,7 @@ const selectedCheckOf = (
         editions: piece.value.editions,
         binding: {
           address: chosen.address.check,
-          ...(chosen.address.ruleSet === TOOL_RULE_SET
-            ? {}
-            : { ruleSet: chosen.address.ruleSet.name }),
+          ruleSet: chosen.address.ruleSet,
           engine: mechanism,
           anchor: piece.value.anchor,
           pieceRoot: piece.value.pieceRoot,

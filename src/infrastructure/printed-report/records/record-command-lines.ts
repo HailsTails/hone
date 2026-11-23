@@ -4,6 +4,7 @@ import {
   type DebtOutcome,
   debtAddressOf,
 } from "../../../domain/records/debt/debt-effects.ts";
+import { siteAddressText } from "../../../domain/records/debt/debt-sites.ts";
 import type { PrunableDebt, PrunedReason } from "../../../domain/records/debt/prunable-debt.ts";
 import type { UnrecordableBecause } from "../../../domain/records/debt/unrecordable-site.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
@@ -72,7 +73,7 @@ const withDetail = (request: { readonly head: string; readonly detail: string })
 
 export const debtOutcomeLine = (request: { readonly outcome: DebtOutcome }): string =>
   withDetail({
-    head: `${request.outcome.address} ${request.outcome.effect} ${request.outcome.file}`,
+    head: `${siteAddressText({ site: request.outcome })} ${request.outcome.effect} ${request.outcome.file}`,
     detail: detailOf(request),
   });
 

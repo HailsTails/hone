@@ -1,8 +1,8 @@
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
+import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import type { EslintConfigLookup } from "../../../../../domain/settings/eslint-config-lookup.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import {
-  type AnsweredFile,
   CHECKS_DECLARATION_PATH,
   CHECKS_PROJECTION_PATH,
 } from "../projection/checks-projection.ts";

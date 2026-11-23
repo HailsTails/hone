@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
-import { namedRecordsFileOf, recordsFileStandingOf } from "./records-layout.ts";
+import {
+  namedRecordsFileOf,
+  namedRecordsFolderOf,
+  recordsFileStandingOf,
+} from "./records-layout.ts";
 
 const ACME = { name: ruleSetNameOf("acme") };
 
@@ -124,4 +129,13 @@ describe("the records file a record belongs in", () => {
       });
     },
   );
+});
+
+describe("namedRecordsFolderOf", () => {
+  it.each<{ readonly ruleSet: RuleSetIdentity; readonly folder: string }>([
+    { ruleSet: "hone", folder: "hone-records/debt" },
+    { ruleSet: ACME, folder: "hone-records/acme/debt" },
+  ])("names the debt folder of $ruleSet as $folder", ({ ruleSet, folder }) => {
+    expect(namedRecordsFolderOf({ ruleSet, kind: "debt" })).toBe(folder);
+  });
 });

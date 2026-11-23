@@ -16,6 +16,7 @@ import { check } from "./prose-in-code.ts";
 const SOURCE_FILE = repoPathSchema.parse("src/build-order.ts");
 const BINDING: CheckBinding = {
   address: "prose-in-code#comment-prose",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/prose-in-code/comment-prose",

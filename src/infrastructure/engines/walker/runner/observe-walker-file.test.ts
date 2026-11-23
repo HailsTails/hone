@@ -35,6 +35,7 @@ const INNER_BLOCK = OUTER_BLOCK.getChildAt(1, TREE).getChildAt(0, TREE);
 
 const FIRST_CLAUSE: CheckBinding = {
   address: "example#first-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
@@ -44,6 +45,7 @@ const FIRST_CLAUSE: CheckBinding = {
 };
 const SECOND_CLAUSE: CheckBinding = {
   address: "example#second-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",
@@ -53,6 +55,7 @@ const SECOND_CLAUSE: CheckBinding = {
 };
 const THIRD_CLAUSE: CheckBinding = {
   address: "example#third-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/XX-1",

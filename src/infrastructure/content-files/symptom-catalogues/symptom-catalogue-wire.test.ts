@@ -142,6 +142,7 @@ const COORDINATES_OTHER_UNITS: Case = {
 };
 
 const FUNCTIONAL_ITERATION: Recipe = {
+  ruleSet: "hone",
   name: "functional-iteration",
   title: "Functional iteration",
   standing: "accepted",
@@ -238,11 +239,18 @@ const SYMPTOM_HOLDING_DOCUMENT = {
 };
 
 describe("catalogueContentOf", () => {
-  it("gives each symptom the rule set it was read for", () => {
+  it("gives each symptom and recipe the rule set it was read for", () => {
     const acme = { name: ruleSetNameOf("acme") };
+    const recipe = { ...FUNCTIONAL_ITERATION, ruleSet: acme };
     expect(
       catalogueContentOf({ ruleSet: acme, document: { ...DOCUMENT, clauses: [], checks: [] } }),
-    ).toMatchObject({ outcome: "ok", value: { symptoms: [{ ...LOOP_KEYWORD, ruleSet: acme }] } });
+    ).toMatchObject({
+      outcome: "ok",
+      value: {
+        recipes: [recipe],
+        symptoms: [{ ...LOOP_KEYWORD, ruleSet: acme, recipes: [recipe] }],
+      },
+    });
   });
 
   it("resolves every name a document gives to the entry it names, field by field", () => {

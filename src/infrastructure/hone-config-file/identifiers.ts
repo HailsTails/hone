@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { RuleSetIdentity } from "../../domain/rule-set/clause-address-types.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type {
   ClauseId,
   DisciplineId,
@@ -8,7 +10,7 @@ import type {
 } from "../../domain/rule-set/identifier-types.ts";
 import { isClauseId, isDisciplineId, isRuleSetName } from "../../domain/rule-set/identifiers.ts";
 import { brandedTextSchema } from "../content-files/branded-schema.ts";
-import type { Equal } from "../engines/protocol/runner-module/type-equality.ts";
+import type { DeepReadonly, Equal } from "../engines/protocol/runner-module/type-equality.ts";
 
 const NOT_AN_IDENTIFIER = "not an identifier of its kind";
 
@@ -17,6 +19,10 @@ export const ruleSetNameSchema = brandedTextSchema({
   isBranded: isRuleSetName,
   refusal: NOT_AN_IDENTIFIER,
 });
+export const ruleSetIdentitySchema = z.union([
+  z.literal(TOOL_RULE_SET),
+  z.strictObject({ name: ruleSetNameSchema.refine((name) => name !== TOOL_RULE_SET) }),
+]);
 export const disciplineIdSchema = brandedTextSchema({
   text: z.string(),
   isBranded: isDisciplineId,
@@ -44,3 +50,7 @@ export const isDisciplineIdSchemaEqual: Equal<
 > = true;
 export const isClauseIdSchemaEqual: Equal<z.output<typeof clauseIdSchema>, ClauseId> = true;
 export const isEngineIdSchemaEqual: Equal<z.output<typeof engineIdSchema>, EngineId> = true;
+export const isRuleSetIdentitySchemaEqual: Equal<
+  DeepReadonly<z.output<typeof ruleSetIdentitySchema>>,
+  RuleSetIdentity
+> = true;

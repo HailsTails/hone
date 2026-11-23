@@ -68,28 +68,39 @@ export type VersionTwoRequest = {
 
 type Inputs = Omit<EngineStageRequest, "tree">;
 
-export const versionTwoInputsOf = (request: {
-  readonly stages: VersionTwoStages;
-}): Result<Inputs, RunLoadFailure> => {
+export const settledCatalogueOf = (request: {
+  readonly stages: Pick<VersionTwoStages, "catalogue" | "settings">;
+}): Result<Pick<Inputs, "catalogue" | "settings">, RunLoadFailure> => {
   const catalogue = request.stages.catalogue();
   if (catalogue.outcome === "failed") {
     return catalogue;
   }
   const settings = request.stages.settings({ catalogue: catalogue.value });
-  if (settings.outcome === "failed") {
-    return settings;
-  }
-  const effectiveCatalogue = catalogueWithExternalChecks({
-    catalogue: catalogue.value,
-    settings: settings.value,
-  });
-  const records = request.stages.records({ catalogue: effectiveCatalogue });
-  return records.outcome === "failed"
-    ? records
+  return settings.outcome === "failed"
+    ? settings
     : {
         outcome: "ok",
-        value: { catalogue: effectiveCatalogue, settings: settings.value, records: records.value },
+        value: {
+          catalogue: catalogueWithExternalChecks({
+            catalogue: catalogue.value,
+            settings: settings.value,
+          }),
+          settings: settings.value,
+        },
       };
+};
+
+export const versionTwoInputsOf = (request: {
+  readonly stages: VersionTwoStages;
+}): Result<Inputs, RunLoadFailure> => {
+  const settled = settledCatalogueOf(request);
+  if (settled.outcome === "failed") {
+    return settled;
+  }
+  const records = request.stages.records({ catalogue: settled.value.catalogue });
+  return records.outcome === "failed"
+    ? records
+    : { outcome: "ok", value: { ...settled.value, records: records.value } };
 };
 
 export const versionTwoRunOver = async (request: {

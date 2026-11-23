@@ -114,6 +114,7 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
       assert.isDefined(root);
       return root.checks.map((check) => ({
         address: checkAddressTextOf({ check }),
+        ruleSet: "hone",
         engine: mechanism,
         anchor: clause.anchor,
         pieceRoot: clause.pieceRoot,
@@ -124,6 +125,7 @@ describe("the plan's version 1 and version 2 files through the settings pipeline
     });
     const bindings = readAfter().selection.selected.map(({ binding }) => ({
       address: binding.address,
+      ruleSet: "hone",
       engine: binding.engine,
       anchor: binding.anchor,
       pieceRoot: binding.pieceRoot,

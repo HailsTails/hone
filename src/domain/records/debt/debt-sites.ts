@@ -2,6 +2,8 @@ import type { CheckFinding } from "../../finding/governance.ts";
 import { checkAddressOf } from "../../language-layer/check-address.ts";
 import type { SymptomCatalogue } from "../../language-layer/symptom-catalogue.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
+import type { RuleSetIdentity } from "../../rule-set/clause-address-types.ts";
+import { ownedNameText } from "../../rule-set/rule-set-identity.ts";
 import { findingSitesOf, type RaisedFinding } from "../answering/answering.ts";
 import type { Site } from "../answering/record-reach.ts";
 import { codePointOrder } from "../code-point-order.ts";
@@ -11,7 +13,14 @@ export type DebtOrigin = "finding" | "native-exception";
 
 export type SitePlace = { readonly address: string; readonly file: RepoPath };
 
-export type DebtSite = SitePlace & { readonly origin: DebtOrigin };
+export type OwnedSitePlace = SitePlace & { readonly ruleSet: RuleSetIdentity };
+
+export type DebtSite = OwnedSitePlace & { readonly origin: DebtOrigin };
+
+export const siteAddressText = (request: { readonly site: SitePlace | OwnedSitePlace }): string =>
+  "ruleSet" in request.site
+    ? ownedNameText({ ruleSet: request.site.ruleSet, name: request.site.address })
+    : request.site.address;
 
 const NOT_REPORTED: RaisedFinding["party"] = { reported: "not-reported" };
 
@@ -24,7 +33,7 @@ const siteKey = (request: { readonly site: SitePlace | UnrecordableSite }): stri
   const { site } = request;
   return [
     site.file,
-    site.address,
+    siteAddressText({ site }),
     ...("because" in site ? [JSON.stringify(site.because)] : []),
   ].join("\n");
 };
@@ -42,6 +51,7 @@ export const debtSiteOf = (request: {
   readonly site: Site;
   readonly origin: DebtOrigin;
 }): DebtSite => ({
+  ruleSet: request.site.symptom.ruleSet,
   address: addressOf(request),
   file: request.site.file,
   origin: request.origin,

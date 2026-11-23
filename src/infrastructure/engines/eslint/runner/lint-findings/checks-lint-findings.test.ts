@@ -18,6 +18,7 @@ const CLAUSE = {
 };
 
 const EXPLICIT_ANY: SelectedNamedCheck = {
+  ruleSet: "hone",
   address: "untyped-value#explicit-any",
   symptom: "untyped-value",
   ruleId: "hone/untyped-value#explicit-any",

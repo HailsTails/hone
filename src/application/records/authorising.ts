@@ -9,7 +9,6 @@ import type { RecordAddition } from "../../domain/records/hone-records/records-e
 import { namedRecordsFileOf } from "../../domain/records/hone-records/records-layout.ts";
 import { symptomNameOf } from "../../domain/records/record-address.ts";
 import type { Result } from "../../domain/result.ts";
-import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { AuthoriseRequest, Authorising } from "../ports/authorising.ts";
 import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
@@ -40,7 +39,7 @@ const entryOf = (request: { readonly request: AuthoriseRequest }): RecordAdditio
     owner,
   } = request.request;
   return {
-    answers,
+    answers: answers.name,
     file,
     case: caseName,
     owes,
@@ -109,10 +108,11 @@ export const authorisingOf = (
     readonly catalogue: SymptomCatalogue;
   },
 ): Result<Authorising, RecordsEditFailure> => {
+  const { answers } = request.request;
   const file = namedRecordsFileOf({
-    ruleSet: TOOL_RULE_SET,
+    ruleSet: answers.ruleSet,
     kind: "authorised-locations",
-    name: symptomNameOf({ address: request.request.answers }),
+    name: symptomNameOf({ address: answers.name }),
   });
   if (file.outcome === "failed") {
     return { outcome: "ok", value: { judged: "refused", refusals: [file.error] } };

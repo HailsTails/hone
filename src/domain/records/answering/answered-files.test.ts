@@ -5,6 +5,7 @@ import { repoPathOf } from "../../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
 import type { PlacedRecord } from "../hone-records/hone-record.ts";
 import { answeredFilesOf } from "./answered-files.ts";
 
@@ -71,8 +72,8 @@ describe("answeredFilesOf", () => {
         ],
       }),
     ).toEqual([
-      { symptom: "claimed-type", file: FILE_A },
-      { symptom: "claimed-type", check: "cast-expressions", file: FILE_B },
+      { ruleSet: "hone", symptom: "claimed-type", file: FILE_A },
+      { ruleSet: "hone", symptom: "claimed-type", check: "cast-expressions", file: FILE_B },
     ]);
   });
 
@@ -92,7 +93,27 @@ describe("answeredFilesOf", () => {
           }),
         ],
       }),
-    ).toEqual([{ symptom: "claimed-type", file: FILE_A }]);
+    ).toEqual([{ ruleSet: "hone", symptom: "claimed-type", file: FILE_A }]);
+  });
+
+  it("names a team symptom's file with the team's rule set", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    expect(
+      answeredFilesOf({
+        records: [
+          placed({
+            index: 0,
+            record: {
+              kind: "debt",
+              symptom: { ...CLAIMED_TYPE, ruleSet: acme },
+              reach: { reaches: "whole-symptom" },
+              file: FILE_A,
+              holding: { held: "stated" },
+            },
+          }),
+        ],
+      }),
+    ).toEqual([{ ruleSet: acme, symptom: "claimed-type", file: FILE_A }]);
   });
 
   it("names nothing for an authorised location whose check its symptom does not have, since it answers nothing", () => {

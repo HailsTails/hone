@@ -55,6 +55,7 @@ const rowsOf = (address: CheckAddressText): readonly ConformanceRow[] => {
     );
     const binding: CheckBinding = {
       address,
+      ruleSet: "hone",
       engine: "walker",
       edition,
       anchor,

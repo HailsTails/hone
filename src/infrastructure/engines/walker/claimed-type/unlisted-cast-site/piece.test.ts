@@ -40,6 +40,7 @@ const SETTINGS = walkerPieceSettingsSchema.parse(piece.settings);
 
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-2",

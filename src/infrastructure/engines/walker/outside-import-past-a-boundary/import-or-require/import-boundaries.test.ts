@@ -60,6 +60,7 @@ const CONFIGURED_PACKAGES: readonly string[] = [
 
 const CLAUSE_WITH_NO_SETTINGS: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-19",

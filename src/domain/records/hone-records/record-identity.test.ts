@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
-import type { Debt } from "./hone-record.ts";
+import type { Debt, Deviation } from "./hone-record.ts";
 import { identityPlaceOf, sameRecordIdentity } from "./record-identity.ts";
 
 const SYMPTOM: Symptom = {
@@ -67,6 +67,32 @@ describe("sameRecordIdentity", () => {
       sameRecordIdentity({
         left: DEBT,
         right: { ...DEBT, symptom: { ...SYMPTOM, ruleSet: { name: ruleSetNameOf("acme") } } },
+      }),
+    ).toBe("different");
+  });
+
+  it("holds a team's deviation different from Hone's from a recipe of the same name at one file", () => {
+    const deviation: Deviation = {
+      kind: "deviation",
+      recipe: {
+        ruleSet: "hone",
+        name: "functional-iteration",
+        title: "Functional iteration",
+        standing: "accepted",
+        reason: { text: "Reason.", standing: "accepted" },
+      },
+      file: repoPathOf("src/a.ts"),
+      reasonFails: "Fails.",
+      evidence: "Evidence.",
+      ruleHolds: "Holds.",
+    };
+    expect(
+      sameRecordIdentity({
+        left: deviation,
+        right: {
+          ...deviation,
+          recipe: { ...deviation.recipe, ruleSet: { name: ruleSetNameOf("acme") } },
+        },
       }),
     ).toBe("different");
   });

@@ -1,13 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
-import type { RecordKind, SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
+import type {
+  RecordKind,
+  Symptom,
+  SymptomCatalogue,
+} from "../domain/language-layer/symptom-catalogue.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import { absoluteRootOf } from "../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../domain/repository/repo-path-of.ts";
+import { ruleSetNameOf } from "../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import {
   type RecordsSourceFor,
@@ -18,7 +23,7 @@ import {
 } from "./version-two-record-commands.ts";
 
 const AUTHORISING: AuthoriseRequest = {
-  answers: "CD#CD-1#any-cast",
+  answers: { ruleSet: "hone", name: "CD#CD-1#any-cast" },
   file: repoPathOf("src/a.ts"),
   case: "a cast at a boundary",
   owes: "the boundary type",
@@ -193,5 +198,50 @@ describe("versionTwoAuthoriseOf", () => {
       }),
     ).toEqual({ outcome: "failed", error: SETTINGS_ABSENT });
     expect(input.recordsSourceFor).not.toHaveBeenCalled();
+  });
+
+  it("reads the records against the catalogue with the team's symptoms, without reading the run's records", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamSymptom: Symptom = {
+      ruleSet: acme,
+      name: "team-cast",
+      title: "Team cast",
+      seen: "A cast.",
+      mayIndicate: [],
+      breachUsuallySits: "in the unit",
+      recipes: [],
+      correctUses: [],
+    };
+    const base = inputWithOutOfDateProjection();
+    const settings = base.stages.settings({ catalogue: CATALOGUE });
+    assert(settings.outcome === "ok");
+    const recordsSourceFor = vi.fn<RecordsSourceFor>().mockReturnValue({
+      read: vi.fn().mockReturnValue({
+        outcome: "failed",
+        error: { kind: "not-a-records-file", file: repoPathOf("hone-records/x") },
+      }),
+      readAt: vi.fn(),
+    });
+    versionTwoAuthoriseOf({
+      ...base,
+      stages: {
+        ...base.stages,
+        settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+          outcome: "ok",
+          value: {
+            ...settings.value,
+            externalCatalogues: [
+              { ruleSet: acme, catalogue: { ...CATALOGUE, symptoms: [teamSymptom] } },
+            ],
+          },
+        }),
+      },
+      recordsSourceFor,
+      authorising: { ...AUTHORISING, answers: { ruleSet: acme, name: "team-cast" } },
+    });
+    expect(recordsSourceFor).toHaveBeenCalledExactlyOnceWith({
+      catalogue: { ...CATALOGUE, symptoms: [teamSymptom] },
+    });
+    expect(base.stages.records).not.toHaveBeenCalled();
   });
 });

@@ -39,6 +39,7 @@ const LINE_COMMENT = "/" + "/";
 const BLOCK_OPEN = "/" + "*";
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-15",

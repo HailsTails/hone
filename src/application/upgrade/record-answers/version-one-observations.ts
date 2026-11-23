@@ -170,7 +170,14 @@ export const versionOneAnsweredFilesOf = (request: {
       const names = checkNamesOf({ text: address });
       return names === undefined
         ? []
-        : [{ symptom: names.symptom, check: names.check, file: record.file }];
+        : [
+            {
+              ruleSet: record.clause.ruleSet,
+              symptom: names.symptom,
+              check: names.check,
+              file: record.file,
+            },
+          ];
     });
   });
 

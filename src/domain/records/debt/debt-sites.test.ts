@@ -17,7 +17,8 @@ import { repoPathOf } from "../../repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
 import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
-import { debtSitesOf, unrecordableSitesOf } from "./debt-sites.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
+import { debtSitesOf, siteAddressText, unrecordableSitesOf } from "./debt-sites.ts";
 
 const AUDIT = "walker" as const;
 
@@ -104,6 +105,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: "hone",
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -111,6 +113,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
+  ruleSet: "hone",
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -118,6 +121,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const ITEACH_OVER_TYPED_ROWS: Recipe = {
+  ruleSet: "hone",
   name: "iteach-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
@@ -359,8 +363,45 @@ describe("the findings no debt can be written for", () => {
 describe("the debt a run's unanswered findings call for", () => {
   it("names a finding by its symptom and the check that found it", () => {
     expect(debtSitesOf({ catalogue: REPORT_CATALOGUE, findings: [CLOCK_FINDING] })).toEqual([
-      { address: "date-used-directly#clock-sources", file: ORDER_FILE, origin: "finding" },
+      {
+        ruleSet: "hone",
+        address: "date-used-directly#clock-sources",
+        file: ORDER_FILE,
+        origin: "finding",
+      },
     ]);
+  });
+
+  it("names a team check's finding with the team's rule set", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamSymptom: Symptom = { ...DATE_USED_DIRECTLY, ruleSet: acme };
+    expect(
+      debtSitesOf({
+        catalogue: {
+          ...REPORT_CATALOGUE,
+          symptoms: [teamSymptom],
+          checks: [{ ...CLOCK_CHECK, symptom: teamSymptom }],
+        },
+        findings: [CLOCK_FINDING],
+      }),
+    ).toEqual([
+      {
+        ruleSet: acme,
+        address: "date-used-directly#clock-sources",
+        file: ORDER_FILE,
+        origin: "finding",
+      },
+    ]);
+  });
+
+  it("writes a team site's address after its rule set, and Hone's as it is", () => {
+    expect([
+      siteAddressText({
+        site: { ruleSet: { name: ruleSetNameOf("acme") }, address: "a#b", file: ORDER_FILE },
+      }),
+      siteAddressText({ site: { ruleSet: "hone", address: "a#b", file: ORDER_FILE } }),
+      siteAddressText({ site: { address: "a#b", file: ORDER_FILE } }),
+    ]).toEqual(["acme/a#b", "a#b", "a#b"]);
   });
 
   it("names the reported check even when another check could explain the symptom", () => {
@@ -370,7 +411,12 @@ describe("the debt a run's unanswered findings call for", () => {
         findings: [{ ...CLOCK_FINDING, check: "date-used-directly#clock-sources" }],
       }),
     ).toEqual([
-      { address: "date-used-directly#clock-sources", file: ORDER_FILE, origin: "finding" },
+      {
+        ruleSet: "hone",
+        address: "date-used-directly#clock-sources",
+        file: ORDER_FILE,
+        origin: "finding",
+      },
     ]);
   });
 
@@ -391,8 +437,18 @@ describe("the debt a run's unanswered findings call for", () => {
         ],
       }),
     ).toEqual([
-      { address: "claimed-type#cast-expressions", file: WEBHOOK_FILE, origin: "finding" },
-      { address: "date-used-directly#clock-sources", file: ORDER_FILE, origin: "finding" },
+      {
+        ruleSet: "hone",
+        address: "claimed-type#cast-expressions",
+        file: WEBHOOK_FILE,
+        origin: "finding",
+      },
+      {
+        ruleSet: "hone",
+        address: "date-used-directly#clock-sources",
+        file: ORDER_FILE,
+        origin: "finding",
+      },
     ]);
   });
 

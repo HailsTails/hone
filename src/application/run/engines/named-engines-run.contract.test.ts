@@ -105,6 +105,7 @@ const README = repoPathOf("README.md");
 const bindingOn = (request: { readonly mechanism: EngineId }): CheckBinding => ({
   engine: request.mechanism,
   address: "claimed-type#cast-expressions",
+  ruleSet: "hone",
   anchor: { kind: "file" },
   pieceRoot: "/install/pieces",
   checkSettings: {},
@@ -232,7 +233,7 @@ const ESLINT_RUN_REQUEST: NamedEngineRunRequest = {
   trackedPaths: [A, README],
   checks: [CAST_CHECK],
   bindings: [bindingOn({ mechanism: ESLINT })],
-  answered: [{ symptom: "claimed-type", file: A }],
+  answered: [{ ruleSet: "hone", symptom: "claimed-type", file: A }],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
 };

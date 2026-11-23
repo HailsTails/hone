@@ -357,6 +357,7 @@ const rowsFor = (mechanism: EngineId) =>
       return editions.declared.map((edition) => {
         const binding: CheckBinding = {
           address,
+          ruleSet: "hone",
           engine: mechanism,
           edition,
           settings,

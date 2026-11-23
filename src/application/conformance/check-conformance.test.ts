@@ -3,9 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { absoluteRootOf } from "../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../domain/rule-set/edition-of.ts";
+import type { NamedConformancePort } from "../ports/engine/engine-port.ts";
 import type { LoadFailureDetail } from "../ports/report/load-failure-detail.ts";
-import type { NamedCheckExamplesRepository } from "../ports/rule-set/named-check-examples.ts";
-import { checkUnderTestOf } from "./check-conformance.ts";
+import type {
+  NamedCheckExamples,
+  NamedCheckExamplesRepository,
+} from "../ports/rule-set/named-check-examples.ts";
+import { checkConformanceOf, checkUnderTestOf } from "./check-conformance.ts";
 
 describe("checkUnderTestOf", () => {
   it("rejects an invalid address before opening a declaration", () => {
@@ -110,6 +114,72 @@ describe("checkUnderTestOf", () => {
           },
         ],
       },
+    });
+  });
+});
+
+const EDITION_ONE_PIECE: NamedCheckExamples["piece"] = {
+  anchor: { kind: "file" },
+  pieceRoot: "/install/piece",
+  exceptions: "allowed",
+  settings: {},
+  forms: {},
+  declarations: {},
+  editions: { declared: [editionOf("1")], default: editionOf("1"), latest: editionOf("1") },
+};
+
+const FIRST_EXAMPLE = {
+  name: "first edition",
+  fileName: repoPathOf("src/first.ts"),
+  source: "const first = 1;",
+  expectedLines: [],
+};
+
+describe("checkConformanceOf", () => {
+  it("runs an installed check's examples as a binding of Hone's own rule set", async () => {
+    const runner = { conform: vi.fn() };
+    const enginePort: NamedConformancePort = {
+      load: vi
+        .fn<NamedConformancePort["load"]>()
+        .mockResolvedValue({ outcome: "ok", value: runner }),
+      conform: vi
+        .fn<NamedConformancePort["conform"]>()
+        .mockResolvedValue({ outcome: "ok", value: [] }),
+    };
+    const examples: NamedCheckExamplesRepository = {
+      read: vi.fn<NamedCheckExamplesRepository["read"]>().mockReturnValueOnce({
+        outcome: "ok",
+        value: {
+          piece: EDITION_ONE_PIECE,
+          examples: [FIRST_EXAMPLE],
+        },
+      }),
+    };
+    await checkConformanceOf({
+      check: "example#sample",
+      engine: "walker",
+      installRoot: absoluteRootOf("/install"),
+      moduleExtension: ".ts",
+      modules: { load: vi.fn() },
+      path: { join: vi.fn() },
+      examples,
+      enginePort,
+      loadFailureDetail: vi.fn<LoadFailureDetail>(),
+    });
+    expect(enginePort.conform).toHaveBeenCalledExactlyOnceWith({
+      binding: {
+        address: "example#sample",
+        ruleSet: "hone",
+        engine: "walker",
+        anchor: { kind: "file" },
+        pieceRoot: "/install/piece",
+        settings: {},
+        forms: {},
+        checkSettings: {},
+        edition: "1",
+      },
+      cases: [FIRST_EXAMPLE],
+      runner,
     });
   });
 });

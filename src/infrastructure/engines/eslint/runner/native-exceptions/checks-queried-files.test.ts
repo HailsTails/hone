@@ -4,11 +4,12 @@ import { answeredByPlaceOf } from "../../../../../domain/records/answering/recor
 import { absoluteRootOf } from "../../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../../../domain/result.ts";
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
+import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import { createPathPort } from "../../../../node/path-port.ts";
 import type { SelectedNamedCheck } from "../checks-runner/checks-run-types.ts";
 import type { GoverningIgnores } from "../config-roots/governing-config.ts";
-import type { AnsweredFile } from "../projection/checks-projection.ts";
 import type { RuleState } from "../toolchain/eslint-config-schema.ts";
 import type {
   ConfigFileSearch,
@@ -23,6 +24,7 @@ import {
 import type { CheckedFile } from "./checks-rule-effects.ts";
 
 const EXPLICIT_ANY: SelectedNamedCheck = {
+  ruleSet: "hone",
   address: "untyped-value#explicit-any",
   symptom: "untyped-value",
   ruleId: "hone/untyped-value#explicit-any",
@@ -47,7 +49,9 @@ const checkedWith = (request: {
   states: [{ ruleId: EXPLICIT_ANY.ruleId, state: request.state }],
 });
 
-const ANSWERED_B: readonly AnsweredFile[] = [{ symptom: "untyped-value", file: B }];
+const ANSWERED_B: readonly AnsweredFile[] = [
+  { ruleSet: "hone", symptom: "untyped-value", file: B },
+];
 
 type Outcome<Value> = Result<Value, RunnerFailure>;
 
@@ -216,6 +220,16 @@ describe("namedQueryExceptionsOf", () => {
         },
       }),
     ).toEqual([{ kind: "config-override", file: A, check: "untyped-value#explicit-any" }]);
+  });
+
+  it("reports the off state of a team's rule at a file only Hone's records answer under the same symptom name", () => {
+    expect(
+      namedQueryExceptionsOf({
+        selected: [{ ...EXPLICIT_ANY, ruleSet: { name: ruleSetNameOf("team") } }],
+        answeredByPlace: answeredByPlaceOf({ answered: ANSWERED_B }),
+        queried: { ignored: [], checked: [checkedWith({ file: B, state: OFF })] },
+      }),
+    ).toEqual([{ kind: "config-override", file: B, check: "untyped-value#explicit-any" }]);
   });
 
   it("reports nothing for a rule enforced at severity 2", () => {

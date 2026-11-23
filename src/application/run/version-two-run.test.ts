@@ -17,11 +17,13 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { CheckHit } from "../../domain/runner/check-observations.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
+  settledCatalogueOf,
   type VersionTwoRequest,
   type VersionTwoStages,
   versionTwoRunOver,
@@ -110,6 +112,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: "hone",
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -117,6 +120,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
+  ruleSet: "hone",
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -124,6 +128,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const ITEACH_OVER_TYPED_ROWS: Recipe = {
+  ruleSet: "hone",
   name: "iteach-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
@@ -485,5 +490,28 @@ describe("versionTwoRunOver", () => {
       outcome: "failed",
       error: notReady,
     });
+  });
+});
+
+describe("settledCatalogueOf", () => {
+  it("holds a team's symptoms and checks beside Hone's, and reads no records", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamSymptom: Symptom = { ...CLAIMED_TYPE, ruleSet: acme, name: "team-cast" };
+    const teamCatalogue: SymptomCatalogue = {
+      ...REPORT_CATALOGUE,
+      symptoms: [teamSymptom],
+      checks: [],
+    };
+    const stages = stagesGiving({
+      settings: vi.fn<VersionTwoStages["settings"]>().mockReturnValue({
+        outcome: "ok",
+        value: { ...SETTINGS, externalCatalogues: [{ ruleSet: acme, catalogue: teamCatalogue }] },
+      }),
+    });
+    expect(settledCatalogueOf({ stages })).toMatchObject({
+      outcome: "ok",
+      value: { catalogue: { symptoms: [...REPORT_CATALOGUE.symptoms, teamSymptom] } },
+    });
+    expect(vi.mocked(stages.records).mock.calls).toEqual([]);
   });
 });

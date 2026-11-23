@@ -29,6 +29,7 @@ export const selectedNamedChecksOf = (request: {
               outcome: "ok",
               value: [
                 {
+                  ruleSet: projected.ruleSet,
                   address,
                   symptom: projected.symptom,
                   ruleId: projected.ruleId,

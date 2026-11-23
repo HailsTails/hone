@@ -35,6 +35,7 @@ const ADDRESS: CheckAddressText = "module-or-global-patched#module-mock-call";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const BINDING: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-26",

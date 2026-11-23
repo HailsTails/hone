@@ -9,6 +9,7 @@ import { checkedObservations } from "./checked-observations.ts";
 const FILE = repoPathOf("src/sample.ts");
 const BINDING: CheckBinding = {
   address: "rebinding#test-body",
+  ruleSet: "hone",
   anchor: { kind: "file" },
   checkSettings: {},
   engine: "walker",

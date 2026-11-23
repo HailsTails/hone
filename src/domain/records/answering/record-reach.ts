@@ -114,7 +114,9 @@ const recipeOfSymptom = (request: {
   readonly record: Deviation;
   readonly symptom: Symptom;
 }): Holding =>
-  request.symptom.recipes.some((recipe) => recipe.name === request.record.recipe.name)
+  request.symptom.recipes.some(
+    (recipe) => sameOwnedName({ left: recipe, right: request.record.recipe }) === "same",
+  )
     ? "holds"
     : "does-not-hold";
 

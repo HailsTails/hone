@@ -1,9 +1,17 @@
 import { checkAddressOf } from "../../language-layer/check-address.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
+import { ownedNameText } from "../../rule-set/rule-set-identity.ts";
 import type { Debt, PlacedRecord } from "../hone-records/hone-record.ts";
 import { debtForfeitureAt } from "./debt-forfeiture.ts";
-import { type DebtOrigin, type DebtSite, inSiteOrder, type SitePlace } from "./debt-sites.ts";
+import {
+  type DebtOrigin,
+  type DebtSite,
+  inSiteOrder,
+  type OwnedSitePlace,
+  type SitePlace,
+  siteAddressText,
+} from "./debt-sites.ts";
 import type { UnrecordableBecause, UnrecordableSite } from "./unrecordable-site.ts";
 
 export type DebtEffect =
@@ -13,7 +21,11 @@ export type DebtEffect =
   | { readonly effect: "touched"; readonly of: DebtOrigin }
   | { readonly effect: "unrecordable"; readonly because: UnrecordableBecause };
 
-export type DebtOutcome = SitePlace & DebtEffect;
+export type DecidedDebtEffect = Exclude<DebtEffect, { readonly effect: "unrecordable" }>;
+
+export type DebtOutcome =
+  | (OwnedSitePlace & DecidedDebtEffect)
+  | (SitePlace & Extract<DebtEffect, { readonly effect: "unrecordable" }>);
 
 export type DebtEffectsRequest = {
   readonly sites: readonly DebtSite[];
@@ -28,9 +40,13 @@ type HeldDebt = { readonly place: PlacedRecord["place"]; readonly debt: Debt };
 type HeldByFile = ReadonlyMap<RepoPath, ReadonlyMap<string, HeldDebt>>;
 
 export const debtAddressOf = (request: { readonly debt: Debt }): string =>
-  request.debt.reach.reaches === "one-check"
-    ? checkAddressOf({ check: request.debt.reach.check })
-    : request.debt.symptom.name;
+  ownedNameText({
+    ruleSet: request.debt.symptom.ruleSet,
+    name:
+      request.debt.reach.reaches === "one-check"
+        ? checkAddressOf({ check: request.debt.reach.check })
+        : request.debt.symptom.name,
+  });
 
 const heldDebtsIn = (request: { readonly records: readonly PlacedRecord[] }): readonly HeldDebt[] =>
   request.records.flatMap((placed) =>
@@ -64,9 +80,9 @@ const effectOf = (request: {
   readonly site: DebtSite;
   readonly held: HeldByFile;
   readonly rest: Omit<DebtEffectsRequest, "sites" | "unrecordable" | "records">;
-}): DebtEffect => {
+}): DecidedDebtEffect => {
   const { site, held, rest } = request;
-  const heldHere = held.get(site.file)?.get(site.address);
+  const heldHere = held.get(site.file)?.get(siteAddressText({ site }));
   if (heldHere !== undefined) {
     return { effect: "already-recorded", heldIn: heldHere.place.file };
   }
@@ -82,6 +98,7 @@ const effectOf = (request: {
 export const debtOutcomesOf = (request: DebtEffectsRequest): readonly DebtOutcome[] => {
   const held = heldByFileOf({ held: heldDebtsIn(request) });
   const decided = request.sites.map((site): DebtOutcome => ({
+    ruleSet: site.ruleSet,
     address: site.address,
     file: site.file,
     ...effectOf({ site, held, rest: request }),

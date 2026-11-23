@@ -164,7 +164,7 @@ const versionOneRuleIdsOf = (
     request.bindings.flatMap(({ address, settings, ruleSet }) => {
       const parsed = eslintPieceSettingsSchema.safeParse(settings);
       const names = checkNamesOf({ text: address });
-      if (!parsed.success || names === undefined || ruleSet !== undefined) return [];
+      if (!parsed.success || names === undefined || ruleSet !== TOOL_RULE_SET) return [];
       const { pluginNamespace, rule } = parsed.data;
       return [
         {

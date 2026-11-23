@@ -94,6 +94,7 @@ describe("loadedNamedRunnerOf", () => {
 describe("namedEngineRunOf", () => {
   const BINDING: CheckBinding = {
     address: "leftover-debugging#debug-call",
+    ruleSet: "hone",
     engine: "walker",
     anchor: { kind: "file" },
     pieceRoot: "/install/pieces/debug-call",

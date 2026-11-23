@@ -1,4 +1,5 @@
 import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
+import type { RuleSetIdentity } from "../../../../../domain/rule-set/clause-address-types.ts";
 import type { MisnamedRuleId } from "../../../../../domain/runner/checks-run-report.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
@@ -17,6 +18,7 @@ export type NotReadyYetFailure = {
 export type ChecksRunFailure = RunnerFailure | NotReadyYetFailure;
 
 export type SelectedNamedCheck = {
+  readonly ruleSet: RuleSetIdentity;
   readonly address: CheckAddressText;
   readonly symptom: string;
   readonly ruleId: string;

@@ -38,6 +38,7 @@ const ADDRESS: CheckAddressText = "claimed-type#cast-to-any";
 const SYNTAX_API = loadedParsePort.value.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-1",

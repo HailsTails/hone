@@ -6,7 +6,8 @@ import type { ClauseAddress } from "../../../domain/rule-set/clause-address-type
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import type { EngineId } from "../../../domain/rule-set/identifier-types.ts";
-import { versionOneObservationsOf } from "./version-one-observations.ts";
+import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { versionOneAnsweredFilesOf, versionOneObservationsOf } from "./version-one-observations.ts";
 
 const PATH = repoPathOf("src/sample.test.ts");
 const CLAUSE: ClauseAddress = {
@@ -107,5 +108,19 @@ describe("versionOneObservationsOf", () => {
         detail: "eslint reported rebinding#test-body without a selected version one clause",
       },
     });
+  });
+});
+
+describe("versionOneAnsweredFilesOf", () => {
+  it("answers a carve-out's file with each check of its clause, owned by the clause's rule set", () => {
+    const teamClause: ClauseAddress = { ...CLAUSE, ruleSet: { name: ruleSetNameOf("acme") } };
+    expect(
+      versionOneAnsweredFilesOf({
+        names: new Map([[WALKER, new Map([[CHECK, teamClause]])]]),
+        records: [{ kind: "file-carve-out", clause: teamClause, mechanism: WALKER, file: PATH }],
+      }),
+    ).toEqual([
+      { ruleSet: { name: "acme" }, symptom: "rebinding", check: "test-body", file: PATH },
+    ]);
   });
 });

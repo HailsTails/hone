@@ -23,6 +23,7 @@ const SOURCE_FILE = repoPathSchema.parse("src/choose-entry.ts");
 const ADAPTER_FILE = repoPathSchema.parse("src/adapters/randomness.ts");
 const BINDING: CheckBinding = {
   address: "ambient-randomness#random-call",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/ambient-randomness/random-call",

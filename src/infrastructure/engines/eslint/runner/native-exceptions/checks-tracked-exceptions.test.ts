@@ -9,6 +9,7 @@ import type { ScriptOptionJudge } from "./script-option-effect.ts";
 import type { SuppressionsReader } from "./suppressions-scanner.ts";
 
 const EXPLICIT_ANY: SelectedNamedCheck = {
+  ruleSet: "hone",
   address: "untyped-value#explicit-any",
   symptom: "untyped-value",
   ruleId: "hone/untyped-value#explicit-any",

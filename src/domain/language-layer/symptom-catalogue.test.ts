@@ -49,6 +49,7 @@ const SENDS_DATA_OUT: Case = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
+  ruleSet: "hone",
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -56,6 +57,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const RESULT_UNION: Recipe = {
+  ruleSet: "hone",
   name: "result-union",
   title: "Result union",
   standing: "accepted",

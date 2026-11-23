@@ -2,6 +2,7 @@ import { gatheredOutcomes } from "../../domain/gathered-outcomes.ts";
 import { checkNamesOf } from "../../domain/language-layer/check-address-text.ts";
 import { isRepoPath } from "../../domain/repository/repo-path.ts";
 import type { Result } from "../../domain/result.ts";
+import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import type { CheckBinding } from "../../domain/runner/check-binding.ts";
 import { casesByEdition } from "../../domain/runner/edition-runs.ts";
 import { defaultClauseSettings } from "../../domain/settings/clause-settings/default-clause-settings.ts";
@@ -88,6 +89,7 @@ export const checkConformanceOf = async (
   const { piece, examples } = read.value;
   const binding: CheckBinding = {
     address: request.check,
+    ruleSet: TOOL_RULE_SET,
     engine: mechanism,
     anchor: piece.anchor,
     pieceRoot: piece.pieceRoot,

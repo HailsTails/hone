@@ -134,6 +134,7 @@ const PROJECTION = checksProjectionText({
   pluginImport: "../../src/eslint-plugin.ts",
   checks: [
     {
+      ruleSet: "hone",
       symptom: "authored-class-or-this",
       check: "class-keyword",
       ruleId: "hone/authored-class-or-this#class-keyword",

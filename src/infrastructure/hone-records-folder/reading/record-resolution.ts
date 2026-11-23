@@ -111,9 +111,12 @@ const symptomNamed = (request: {
 
 const recipeNamed = (request: {
   readonly catalogue: SymptomCatalogue;
+  readonly ruleSet: RuleSetIdentity;
   readonly name: string;
 }): Resolution<Recipe> => {
-  const recipe = request.catalogue.recipes.find((candidate) => candidate.name === request.name);
+  const recipe = request.catalogue.recipes.find(
+    (candidate) => sameOwnedName({ left: candidate, right: request }) === "same",
+  );
   return recipe === undefined
     ? refusedWith({ kind: "unknown-recipe", recipe: request.name })
     : resolved(recipe);
@@ -443,7 +446,7 @@ const deviationOf = (
     return form;
   }
   const { recipe: name, file, recipeReason, reasonFails, evidence, ruleHolds } = form.value;
-  const found = recipeNamed({ catalogue: request.catalogue, name });
+  const found = recipeNamed({ catalogue: request.catalogue, ruleSet: request.ruleSet, name });
   const recipe =
     found.outcome === "failed" ? found : recipeReasonHeld({ recipe: found.value, recipeReason });
   const placed = placedIn({

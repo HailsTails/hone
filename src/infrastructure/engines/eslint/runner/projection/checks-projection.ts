@@ -1,6 +1,9 @@
 import { CHECK_ADDRESS_SEPARATOR } from "../../../../../domain/language-layer/check-address-text.ts";
 import { projectionOutputsOf } from "../../../../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
+import type { RuleSetIdentity } from "../../../../../domain/rule-set/clause-address-types.ts";
+import { ownedNameText } from "../../../../../domain/rule-set/rule-set-identity.ts";
+import type { AnsweredFile } from "../../../../../domain/runner/checks-run-report.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { CHECKS_PLUGIN_NAMESPACE } from "../hone-plugin/check-rule-id.ts";
 import type { RuleOptions } from "../pieces/eslint-piece-settings-schema.ts";
@@ -8,6 +11,7 @@ import { enabledRuleEntry } from "../toolchain/eslint-instance.ts";
 import { escapedGlobPath } from "./projection.ts";
 
 export type ProjectedCheck = {
+  readonly ruleSet: RuleSetIdentity;
   readonly symptom: string;
   readonly check: string;
   readonly ruleId: string;
@@ -20,12 +24,6 @@ export type ProjectedCheck = {
 };
 
 export type ProjectedPlugin = { readonly namespace: string; readonly specifier: string };
-
-export type AnsweredFile = {
-  readonly symptom: string;
-  readonly check?: string;
-  readonly file: RepoPath;
-};
 
 type AnsweredGroup = { readonly reaches: readonly string[]; readonly files: readonly RepoPath[] };
 
@@ -80,14 +78,19 @@ const checksBlock = (request: {
 };
 
 const reachOfAnswer = (request: { readonly answer: AnsweredFile }): string =>
-  request.answer.check === undefined
-    ? request.answer.symptom
-    : `${request.answer.symptom}${CHECK_ADDRESS_SEPARATOR}${request.answer.check}`;
+  ownedNameText({
+    ruleSet: request.answer.ruleSet,
+    name:
+      request.answer.check === undefined
+        ? request.answer.symptom
+        : `${request.answer.symptom}${CHECK_ADDRESS_SEPARATOR}${request.answer.check}`,
+  });
 
-const reachesOfCheck = (request: { readonly check: ProjectedCheck }): readonly string[] => [
-  request.check.symptom,
-  `${request.check.symptom}${CHECK_ADDRESS_SEPARATOR}${request.check.check}`,
-];
+const reachesOfCheck = (request: { readonly check: ProjectedCheck }): readonly string[] =>
+  [
+    request.check.symptom,
+    `${request.check.symptom}${CHECK_ADDRESS_SEPARATOR}${request.check.check}`,
+  ].map((name) => ownedNameText({ ruleSet: request.check.ruleSet, name }));
 
 const answeredGroupsOf = (request: {
   readonly checks: readonly ProjectedCheck[];

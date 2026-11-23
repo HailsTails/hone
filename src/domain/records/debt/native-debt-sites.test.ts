@@ -104,6 +104,7 @@ const GIVES_A_VALUE_ITS_TYPE: Case = {
 };
 
 const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
+  ruleSet: "hone",
   name: "world-values-through-a-port",
   title: "World values through a port",
   standing: "accepted",
@@ -111,6 +112,7 @@ const WORLD_VALUES_THROUGH_A_PORT: Recipe = {
 };
 
 const ASSERT_TO_NARROW: Recipe = {
+  ruleSet: "hone",
   name: "assert-to-narrow",
   title: "Assert to narrow",
   standing: "accepted",
@@ -118,6 +120,7 @@ const ASSERT_TO_NARROW: Recipe = {
 };
 
 const ITEACH_OVER_TYPED_ROWS: Recipe = {
+  ruleSet: "hone",
   name: "iteach-over-typed-rows",
   title: "it.each over typed rows",
   standing: "accepted",
@@ -338,7 +341,12 @@ describe("nativeDebtSitesOf", () => {
       }),
     ).toEqual({
       recordable: [
-        { address: "claimed-type#cast-expressions", file: FILE, origin: "native-exception" },
+        {
+          ruleSet: "hone",
+          address: "claimed-type#cast-expressions",
+          file: FILE,
+          origin: "native-exception",
+        },
       ],
       unrecordable: [],
     });

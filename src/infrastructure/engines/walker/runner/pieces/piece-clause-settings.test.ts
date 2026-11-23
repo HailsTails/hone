@@ -9,6 +9,7 @@ import { stringListCheckSettings } from "./piece-check-settings.ts";
 
 const CLAUSE_WITH_NO_SETTINGS: CheckBinding = {
   address: "example#import-boundaries",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-19",

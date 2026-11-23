@@ -23,6 +23,7 @@ const SOURCE_FILE = repoPathSchema.parse("src/read-order.ts");
 const ADAPTER_FILE = repoPathSchema.parse("src/adapters/legacy-api.ts");
 const BINDING: CheckBinding = {
   address: "throw-between-our-units#throw-statement",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/throw-between-our-units/throw-statement",

@@ -48,6 +48,7 @@ type CommentCase = { readonly name: string; readonly comment: string; readonly k
 
 const CLAUSE_WITH_NO_SETTINGS: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-5",

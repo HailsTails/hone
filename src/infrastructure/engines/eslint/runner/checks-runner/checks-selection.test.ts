@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { ruleSetNameOf } from "../../../../../domain/rule-set/rule-set-name-of.ts";
 import type { PluginCheck } from "../hone-plugin/check-rule-id.ts";
 import { selectedNamedChecksOf } from "./checks-selection.ts";
+
+const TEAM = { name: ruleSetNameOf("team") };
 
 const EXPLICIT_ANY: PluginCheck = {
   name: "explicit-any",
@@ -16,6 +19,7 @@ describe("selectedNamedChecksOf", () => {
         checks: [EXPLICIT_ANY],
         projected: [
           {
+            ruleSet: "hone",
             symptom: "untyped-value",
             check: "explicit-any",
             ruleId: "hone/untyped-value#explicit-any",
@@ -27,6 +31,7 @@ describe("selectedNamedChecksOf", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: "hone",
           address: "untyped-value#explicit-any",
           symptom: "untyped-value",
           ruleId: "hone/untyped-value#explicit-any",
@@ -42,6 +47,7 @@ describe("selectedNamedChecksOf", () => {
         checks: [EXPLICIT_ANY],
         projected: [
           {
+            ruleSet: "hone",
             symptom: "untyped-value",
             check: "gone",
             ruleId: "hone/untyped-value#gone",
@@ -59,12 +65,13 @@ describe("selectedNamedChecksOf", () => {
     });
   });
 
-  it("retains the team's projected rule id and resolves it to the named check", () => {
+  it("retains the team's projected rule id and rule set and resolves it to the named check", () => {
     expect(
       selectedNamedChecksOf({
         checks: [EXPLICIT_ANY],
         projected: [
           {
+            ruleSet: TEAM,
             symptom: "untyped-value",
             check: "explicit-any",
             ruleId: "team/no-any",
@@ -77,6 +84,7 @@ describe("selectedNamedChecksOf", () => {
       outcome: "ok",
       value: [
         {
+          ruleSet: TEAM,
           address: "untyped-value#explicit-any",
           symptom: "untyped-value",
           ruleId: "team/no-any",

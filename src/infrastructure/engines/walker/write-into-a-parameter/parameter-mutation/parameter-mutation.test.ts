@@ -39,6 +39,7 @@ const ADDRESS: CheckAddressText = "write-into-a-parameter#parameter-mutation";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-44",

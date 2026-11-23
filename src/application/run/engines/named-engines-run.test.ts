@@ -35,6 +35,7 @@ const CHECK: Check = {
 };
 const BINDING: CheckBinding = {
   address: "held-value#named-check",
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/held-value/named-check",

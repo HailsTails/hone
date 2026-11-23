@@ -33,6 +33,7 @@ const ADDRESS: CheckAddressText = "throw-or-catch-in-a-test#throw-statement";
 const SYNTAX_API = defaultParsePort.syntaxApi;
 const CLAUSE: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/mechanisms/audit/CD-10",

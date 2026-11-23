@@ -7,6 +7,7 @@ const answeredBy = (request: { readonly record: HoneRecord }): readonly Answered
     case "debt":
     case "authorised-location":
       return reachedFilesOf({
+        ruleSet: record.symptom.ruleSet,
         symptom: record.symptom.name,
         reach: record.reach,
         file: record.file,
@@ -19,16 +20,17 @@ const answeredBy = (request: { readonly record: HoneRecord }): readonly Answered
 };
 
 const reachedFilesOf = (request: {
+  readonly ruleSet: AnsweredFile["ruleSet"];
   readonly symptom: string;
   readonly reach: Extract<HoneRecord, { readonly kind: "debt" | "authorised-location" }>["reach"];
   readonly file: AnsweredFile["file"];
 }): readonly AnsweredFile[] => {
-  const { reach, symptom, file } = request;
+  const { ruleSet, reach, symptom, file } = request;
   switch (reach.reaches) {
     case "whole-symptom":
-      return [{ symptom, file }];
+      return [{ ruleSet, symptom, file }];
     case "one-check":
-      return [{ symptom, check: reach.check.name, file }];
+      return [{ ruleSet, symptom, check: reach.check.name, file }];
     case "unknown-check":
       return [];
   }

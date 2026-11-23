@@ -247,6 +247,7 @@ describe("createNamedVersionOneEnginePass", () => {
           bindings: [
             {
               address: "loop-keyword#loops",
+              ruleSet: "hone",
               engine: "walker",
               anchor: { kind: "file" },
               pieceRoot: "/install/walker/loop-keyword/loops",

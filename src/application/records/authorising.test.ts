@@ -19,6 +19,7 @@ import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import type { AuthoriseRequest } from "../ports/authorising.ts";
 import type { RecordsEditFailure, RecordsEditor } from "../ports/records/records-editor.ts";
 import type { RecordsReader } from "../ports/records/records-reader.ts";
@@ -147,7 +148,7 @@ const RECORDS_FILE = repoPathOf("hone-records/authorised-locations/claimed-type.
 const UNRELATED_RECORDS_FILE = repoPathOf("hone-records/debt/claimed-type.json");
 
 const REQUEST: AuthoriseRequest = {
-  answers: "claimed-type",
+  answers: { ruleSet: "hone", name: "claimed-type" },
   file: WEBHOOK_FILE,
   case: "gives-a-value-its-type",
   owes: "declared-not-asserted",
@@ -275,7 +276,7 @@ describe("the authorised location a person's arguments write", () => {
       place: ADDED_PLACE,
     });
     authorisingOf({
-      request: { ...REQUEST, answers: "claimed-type#cast-expressions" },
+      request: { ...REQUEST, answers: { ruleSet: "hone", name: "claimed-type#cast-expressions" } },
       documents: [],
       catalogue: REPORT_CATALOGUE,
       recordsReader: READER_REFUSING_NOTHING,
@@ -288,6 +289,29 @@ describe("the authorised location a person's arguments write", () => {
           file: RECORDS_FILE,
           entry: { ...WEBHOOK_ENTRY, answers: "claimed-type#cast-expressions" },
         },
+      ],
+    });
+  });
+
+  it("files a team's record in its rule set's authorised-locations folder, its address kept bare in the entry", () => {
+    const recordsEditor = editorAdding({
+      added: { outcome: "ok", value: [WEBHOOK_DOCUMENT] },
+      place: ADDED_PLACE,
+    });
+    authorisingOf({
+      request: {
+        ...REQUEST,
+        answers: { ruleSet: { name: ruleSetNameOf("acme") }, name: "claimed-type" },
+      },
+      documents: [],
+      catalogue: REPORT_CATALOGUE,
+      recordsReader: READER_REFUSING_NOTHING,
+      recordsEditor,
+    });
+    expect(recordsEditor.documentsWithAdded).toHaveBeenCalledWith({
+      documents: [],
+      additions: [
+        { file: "hone-records/acme/authorised-locations/claimed-type.json", entry: WEBHOOK_ENTRY },
       ],
     });
   });
@@ -411,7 +435,7 @@ describe("the authorised location a person's arguments write", () => {
   it("refuses a symptom the reading does not find in the catalogue", () => {
     expect(
       authorisingOf({
-        request: { ...REQUEST, answers: "no-such-symptom" },
+        request: { ...REQUEST, answers: { ruleSet: "hone", name: "no-such-symptom" } },
         documents: [],
         catalogue: REPORT_CATALOGUE,
         recordsReader: readerRefusing([
@@ -438,7 +462,7 @@ describe("the authorised location a person's arguments write", () => {
     });
     expect(
       authorisingOf({
-        request: { ...REQUEST, answers: "Not A Name" },
+        request: { ...REQUEST, answers: { ruleSet: "hone", name: "Not A Name" } },
         documents: [],
         catalogue: REPORT_CATALOGUE,
         recordsReader: READER_REFUSING_NOTHING,

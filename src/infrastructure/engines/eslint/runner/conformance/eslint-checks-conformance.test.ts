@@ -151,6 +151,7 @@ const CONFORMANCE_ROWS: readonly ConformanceRow[] = catalogue.value.catalogue.ch
       name: `${address} edition ${edition}`,
       binding: {
         address,
+        ruleSet: "hone",
         engine: "eslint",
         edition,
         anchor: piece.anchor,

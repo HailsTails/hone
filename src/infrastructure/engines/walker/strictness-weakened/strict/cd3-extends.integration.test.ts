@@ -99,6 +99,7 @@ const CATCH: CheckAddressText = "strictness-weakened#use-unknown-in-catch-variab
 
 const secondEditionClause = (request: { readonly address: CheckAddressText }): CheckBinding => ({
   address: request.address,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: `${INSTALL_ROOT}/src/infrastructure/engines/walker/strictness-weakened/strict`,

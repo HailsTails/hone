@@ -2,11 +2,22 @@ import { describe, expect, it } from "vitest";
 
 import { checkBindingSchema, checkHitSchema, checkNativeExceptionSchema } from "./check-wire.ts";
 
+const TEAM_BINDING = {
+  address: "rebinding#test-body",
+  engine: "walker",
+  anchor: { kind: "file" },
+  pieceRoot: "/install/piece",
+  settings: {},
+  checkSettings: {},
+  edition: "1",
+};
+
 describe("named runner messages", () => {
   it("holds an edition and effective settings on the named binding", () => {
     expect(
       checkBindingSchema.safeParse({
         address: "rebinding#test-body",
+        ruleSet: "hone",
         engine: "walker",
         anchor: { kind: "file" },
         pieceRoot: "/install/piece",
@@ -18,6 +29,19 @@ describe("named runner messages", () => {
       success: true,
       data: { address: "rebinding#test-body", edition: "2", checkSettings: { limit: 3 } },
     });
+  });
+
+  it("reads a named binding owned by a team's rule set", () => {
+    expect(
+      checkBindingSchema.safeParse({ ...TEAM_BINDING, ruleSet: { name: "acme" } }),
+    ).toMatchObject({
+      success: true,
+      data: { ruleSet: { name: "acme" } },
+    });
+  });
+
+  it.each<unknown>([undefined, "acme"])("refuses a named binding owned by %j", (ruleSet) => {
+    expect(checkBindingSchema.safeParse({ ...TEAM_BINDING, ruleSet }).success).toBe(false);
   });
 
   it("holds a finding by check and file", () => {

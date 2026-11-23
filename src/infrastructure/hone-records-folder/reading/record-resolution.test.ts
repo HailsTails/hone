@@ -70,6 +70,7 @@ const STATES_WHAT_THE_UNIT_GIVES_BACK: Case = {
 };
 
 const STUB_WITH_VIFN: Recipe = {
+  ruleSet: "hone",
   name: "stub-with-vifn",
   title: "Stub with vi.fn",
   standing: "accepted",
@@ -182,6 +183,8 @@ const TEST_BODY_CHECK: Check = {
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
+const ACME = { name: ruleSetNameOf("acme") };
+
 const CATALOGUE: SymptomCatalogue = {
   principles: [THE_TYPE_CHECKER_PROVES_IT, TESTS_ARE_OURS],
   rules: [DECLARED_NOT_ASSERTED, STRAIGHT_THROUGH_TESTS, WRITTEN_OUT_ANSWERS],
@@ -280,8 +283,6 @@ const DEVIATION = {
 };
 
 describe("recordOf, a team's records in its rule set's folder", () => {
-  const ACME = { name: ruleSetNameOf("acme") };
-
   const TEAM_TEXT_PAST_ITS_READER: Symptom = { ...TEXT_PAST_ITS_READER, ruleSet: ACME };
 
   const TEAM_CATALOGUE: SymptomCatalogue = {
@@ -1348,6 +1349,31 @@ describe("recordOf, deviations", () => {
         ruleHolds: "Each answer is still written out in the fake's table.",
       },
     });
+  });
+
+  it("reads a team's deviation as from the team's recipe, not Hone's of the same name", () => {
+    const teamRecipe: Recipe = { ...STUB_WITH_VIFN, ruleSet: ACME };
+    expect(
+      recordOf({
+        catalogue: { ...CATALOGUE, recipes: [...CATALOGUE.recipes, teamRecipe] },
+        base: UNMEASURED,
+        file: repoPathOf("hone-records/acme/deviations/stub-with-vifn.json"),
+        filedUnder: { kind: "deviations", ruleSet: ACME },
+        entry: DEVIATION,
+      }),
+    ).toMatchObject({ outcome: "ok", value: { kind: "deviation", recipe: teamRecipe } });
+  });
+
+  it("refuses a team's deviation from a recipe only Hone has", () => {
+    expect(
+      recordOf({
+        catalogue: CATALOGUE,
+        base: UNMEASURED,
+        file: repoPathOf("hone-records/acme/deviations/stub-with-vifn.json"),
+        filedUnder: { kind: "deviations", ruleSet: ACME },
+        entry: DEVIATION,
+      }),
+    ).toEqual({ outcome: "failed", error: [{ kind: "unknown-recipe", recipe: "stub-with-vifn" }] });
   });
 
   it("refuses a deviation whose recipe reason is not the catalogue's sentence", () => {

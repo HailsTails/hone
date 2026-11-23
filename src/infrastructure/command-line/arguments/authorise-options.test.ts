@@ -28,7 +28,7 @@ describe("the arguments of hone authorise, read as the record they write", () =>
     expect(authoriseRequestOf({ values: new Map(FULL_VALUES) })).toEqual({
       outcome: "ok",
       value: {
-        answers: "claimed-type#cast-expressions",
+        answers: { ruleSet: "hone", name: "claimed-type#cast-expressions" },
         file: repoPathOf("src/adapters/stripe-webhook.ts"),
         case: "gives-a-value-its-type",
         owes: "declared-not-asserted",
@@ -125,6 +125,32 @@ describe("the arguments of hone authorise, read as the record they write", () =>
         kind: "arguments-invalid",
         detail:
           'hone authorise takes one file inside the repository, written relative to it, for --file, not "../outside.ts"',
+      },
+    });
+  });
+
+  it("reads a team's address as the team's rule set and the address within it", () => {
+    expect(
+      authoriseRequestOf({
+        values: new Map([...FULL_VALUES, [AUTHORISE_OPTIONS.answers, ["acme/loop-keyword#loops"]]]),
+      }),
+    ).toMatchObject({
+      outcome: "ok",
+      value: { answers: { ruleSet: { name: "acme" }, name: "loop-keyword#loops" } },
+    });
+  });
+
+  it("refuses an address whose rule set is not a rule set name", () => {
+    expect(
+      authoriseRequestOf({
+        values: new Map([...FULL_VALUES, [AUTHORISE_OPTIONS.answers, ["Acme/loop-keyword"]]]),
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "arguments-invalid",
+        detail:
+          'hone authorise takes a symptom or check address for --answers, after its rule set and a slash when a team\'s rule set holds it, not "Acme/loop-keyword"',
       },
     });
   });

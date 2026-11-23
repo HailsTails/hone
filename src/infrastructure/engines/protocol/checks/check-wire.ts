@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isCheckAddressText } from "../../../../domain/language-layer/check-address-text.ts";
 import { editionSchema } from "../../../content-files/edition.ts";
 import { anchorKindSchema } from "../../../content-files/rule-sets/rule-set-reader.ts";
-import { engineIdSchema, ruleSetNameSchema } from "../../../hone-config-file/identifiers.ts";
+import { engineIdSchema, ruleSetIdentitySchema } from "../../../hone-config-file/identifiers.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
 import { anchorSchema } from "../runner-module/anchor-schema.ts";
 import { remedySchema } from "../runner-module/runner-result-schema.ts";
@@ -16,7 +16,7 @@ export const checkAddressSchema = z
 export const checkBindingSchema = z
   .strictObject({
     address: checkAddressSchema,
-    ruleSet: ruleSetNameSchema.optional(),
+    ruleSet: ruleSetIdentitySchema,
     engine: engineIdSchema,
     anchor: anchorKindSchema,
     pieceRoot: z.string().min(1),

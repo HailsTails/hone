@@ -17,6 +17,7 @@ const MANIFEST = repoPathSchema.parse("packages/orders/package.json");
 const ADDRESS = "no-lock-file#committed-lock-file";
 const BINDING: CheckBinding = {
   address: ADDRESS,
+  ruleSet: "hone",
   engine: "walker",
   anchor: { kind: "file" },
   pieceRoot: "/install/walker/no-lock-file/committed-lock-file",

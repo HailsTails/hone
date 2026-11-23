@@ -88,6 +88,7 @@ const RESULT_FAILURES_CLAUSE: ClauseAddress = {
 };
 
 const FAILURES_AS_VALUES: Recipe = {
+  ruleSet: "hone",
   name: "failures-as-values",
   title: "Failures as values",
   standing: "accepted",

@@ -1,4 +1,5 @@
 import { isCatalogueName } from "../../language-layer/catalogue-name.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
 import { isRepoPath } from "../../repository/repo-path.ts";
 import type { Result } from "../../result.ts";
@@ -12,6 +13,8 @@ export const RECORDS_VERSION = 2;
 export const RECORDS_FOLDER = "hone-records";
 
 export const RECORDS_FILE_EXTENSION = ".json";
+
+const RECORDS_ROOT = repoPathOf(RECORDS_FOLDER);
 
 export type NamedFolderKind = Extract<
   RecordsFolderKind,
@@ -108,6 +111,14 @@ export const recordsFileStandingOf = (request: {
 
 const ruleSetFoldersOf = (request: { readonly ruleSet: RuleSetIdentity }): readonly string[] =>
   request.ruleSet === TOOL_RULE_SET ? [RECORDS_FOLDER] : [RECORDS_FOLDER, request.ruleSet.name];
+
+export const namedRecordsFolderOf = (request: {
+  readonly ruleSet: RuleSetIdentity;
+  readonly kind: NamedFolderKind;
+}): RepoPath => {
+  const folder = [...ruleSetFoldersOf(request), request.kind].join("/");
+  return isRepoPath(folder) ? folder : RECORDS_ROOT;
+};
 
 export const namedRecordsFileOf = (request: {
   readonly ruleSet: RuleSetIdentity;

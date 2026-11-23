@@ -92,6 +92,7 @@ const DEBT_KIND: RecordKind = {
 };
 
 const ADAPTER_PER_OUTSIDE_PARTY: Recipe = {
+  ruleSet: "hone",
   name: "adapter-per-outside-party",
   title: "Adapter per outside party",
   standing: "accepted",
