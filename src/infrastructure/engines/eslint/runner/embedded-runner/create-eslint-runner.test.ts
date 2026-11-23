@@ -3375,6 +3375,71 @@ describe("package projection slices, a folder holding its own disciplines.json",
     });
   });
 
+  it("names nothing when ESLint finds no config for the folder's files", async () => {
+    await expect(
+      runnerOver({
+        eslint: eslintOver({ query: nestedQuery({ old: OFF, config: { kind: "none" } }) }),
+      }).run(NESTED_RUN),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { slices: [], unprojectedFolders: [] },
+    });
+  });
+
+  it("names nothing when the config the folder's files load lies outside the repository", async () => {
+    await expect(
+      runnerOver({
+        eslint: eslintOver({
+          query: nestedQuery({
+            old: OFF,
+            config: { kind: "found", path: "/outside/eslint.config.mjs" },
+          }),
+        }),
+      }).run(NESTED_RUN),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { slices: [], unprojectedFolders: [] },
+    });
+  });
+
+  it("names nothing when the config the folder's files load lies on another drive from the repository", async () => {
+    await expect(
+      runnerOver({
+        path: WINDOWS_PATH,
+        repository: PROJECTION_HOLDING_SOURCE_A,
+        modules: modulesOver({ [WINDOWS_PLUGIN_MODULE_PATH]: CLASS_PLUGIN_MODULE }),
+        eslint: eslintOver({
+          query: nestedQuery({
+            old: OFF,
+            config: { kind: "found", path: "D:\\elsewhere\\eslint.config.mjs" },
+          }),
+        }),
+      }).run({
+        ...NESTED_RUN,
+        repoRoot: WINDOWS_REPO_ROOT,
+        installRoot: WINDOWS_INSTALL_ROOT,
+        clauses: [{ ...CLASS_CLAUSE, pieceRoot: WINDOWS_PIECE_ROOT }],
+      }),
+    ).resolves.toMatchObject({
+      outcome: "ok",
+      value: { slices: [], unprojectedFolders: [] },
+    });
+  });
+
+  it("is team-config-unloadable, naming the file, when ESLint cannot name the config the folder's file loads", async () => {
+    await expect(
+      runnerOver({
+        eslint: eslintOver({ query: nestedQuery({ old: OFF, config: { kind: "unknown" } }) }),
+      }).run(NESTED_RUN),
+    ).resolves.toEqual({
+      outcome: "failed",
+      error: {
+        kind: "team-config-unloadable",
+        detail: "ESLint could not name the config packages/b/src/old.ts loads. Fix that config.",
+      },
+    });
+  });
+
   it("names nothing for a folder with no file under check", async () => {
     await expect(runnerOver({}).run({ ...NESTED_RUN, files: FILES })).resolves.toMatchObject({
       outcome: "ok",

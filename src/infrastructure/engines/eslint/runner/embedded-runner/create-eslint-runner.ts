@@ -736,19 +736,29 @@ const queriedReport = (request: {
 };
 
 const loadedConfigOf = (request: {
+  readonly file: RepoPath;
   readonly search: ConfigFileSearch;
   readonly path: PathPort;
   readonly repoRoot: AbsolutePath;
-}): readonly RepoPath[] => {
-  if (request.search.kind !== "found") {
-    return [];
+}): Outcome<readonly RepoPath[]> => {
+  if (request.search.kind === "unknown") {
+    return {
+      outcome: "failed",
+      error: {
+        kind: "team-config-unloadable",
+        detail: `ESLint could not name the config ${request.file} loads. Fix that config.`,
+      },
+    };
+  }
+  if (request.search.kind === "none") {
+    return { outcome: "ok", value: [] };
   }
   const placed = request.path.relative({ from: request.repoRoot, to: request.search.path });
   if (placed.relation === "different-root") {
-    return [];
+    return { outcome: "ok", value: [] };
   }
   const config = repoPathSchema.safeParse(placed.path);
-  return config.success ? [config.data] : [];
+  return { outcome: "ok", value: config.success ? [config.data] : [] };
 };
 
 const unprojectedFoldersAsked = (request: {
@@ -756,20 +766,24 @@ const unprojectedFoldersAsked = (request: {
   readonly lookup: ConfigLookup;
   readonly query: QueryInstance;
   readonly path: PathPort;
-}): Promise<readonly UnprojectedFolderReport[]> => {
+}): Promise<Outcome<readonly UnprojectedFolderReport[]>> => {
   if (request.lookup.kind === "repository-root") {
-    return Promise.resolve([]);
+    return Promise.resolve({ outcome: "ok", value: [] });
   }
   return Promise.all(
     nestedFilesOf({ trackedPaths: request.run.trackedPaths, files: request.run.files }).map(
-      (file) => request.query.configFileOf({ file }),
+      (file) =>
+        request.query
+          .configFileOf({ file })
+          .then((search) =>
+            loadedConfigOf({ file, search, path: request.path, repoRoot: request.run.repoRoot }),
+          ),
     ),
-  ).then((searches) =>
-    unprojectedFoldersOf({
-      trackedPaths: request.run.trackedPaths,
-      loadedConfigs: searches.flatMap((search) =>
-        loadedConfigOf({ search, path: request.path, repoRoot: request.run.repoRoot }),
-      ),
+  ).then((outcomes) =>
+    mappedOutcome({
+      outcome: gatheredOutcomes({ outcomes }),
+      map: (loadedConfigs) =>
+        unprojectedFoldersOf({ trackedPaths: request.run.trackedPaths, loadedConfigs }),
     }),
   );
 };
@@ -823,10 +837,12 @@ const governedRun = (request: {
             lookup,
             query,
             path: request.ports.path,
-          }).then((unprojectedFolders): Outcome<EslintRunReport> => ({
-            outcome: "ok",
-            value: { ...report.value, unprojectedFolders },
-          })),
+          }).then((unprojectedFolders): Outcome<EslintRunReport> =>
+            mappedOutcome({
+              outcome: unprojectedFolders,
+              map: (folders) => ({ ...report.value, unprojectedFolders: folders }),
+            }),
+          ),
     );
 };
 
