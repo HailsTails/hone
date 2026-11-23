@@ -4,6 +4,7 @@ import type { Anchor } from "../../../../../domain/finding/anchor.ts";
 import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
+import type { Edition } from "../../../../../domain/rule-set/edition-types.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
@@ -32,7 +33,7 @@ const defaultParsePort = loadedParsePort.value;
 const FILE = repoPathOf("src/modules.test.ts");
 const ADDRESS: CheckAddressText = "module-or-global-patched#module-mock-call";
 const SYNTAX_API = defaultParsePort.syntaxApi;
-const CLAUSE: CheckBinding = {
+const BINDING: CheckBinding = {
   address: ADDRESS,
   engine: "walker",
   anchor: { kind: "file" },
@@ -44,6 +45,7 @@ const CLAUSE: CheckBinding = {
 
 const sourceObservations = (request: {
   readonly source: string;
+  readonly edition?: Edition;
 }): {
   readonly tree: SyntaxTree;
   readonly observers: SourceObservers;
@@ -51,7 +53,7 @@ const sourceObservations = (request: {
   readonly finish: PreparedWalkerCheck["finish"];
 } => {
   const prepared = check.prepare({
-    bindings: [CLAUSE],
+    bindings: [{ ...BINDING, edition: request.edition ?? BINDING.edition }],
     repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
     syntaxApi: SYNTAX_API,
   });
@@ -79,7 +81,7 @@ const sourceObservations = (request: {
   };
 };
 
-describe("CD-26 existing literal module-mock observations", () => {
+describe("Existing literal module-mock observations", () => {
   it.each([
     {
       name: "all-depth excluded directory",
@@ -97,7 +99,7 @@ describe("CD-26 existing literal module-mock observations", () => {
   ])("preserves test-family eligibility without a read for $name", ({ fileName, kind }) => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
-      bindings: [CLAUSE],
+      bindings: [BINDING],
       repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
       syntaxApi: SYNTAX_API,
     });
@@ -194,5 +196,71 @@ describe("CD-26 existing literal module-mock observations", () => {
 
     expect(observed.observers.finish()).toEqual([]);
     expect(observed.anchorAt).not.toHaveBeenCalled();
+  });
+});
+
+describe("Global patches in edition 2", () => {
+  it.each([editionOf("2"), editionOf("3")])(
+    "reports direct global stubs in edition %s",
+    (edition) => {
+      const observed = sourceObservations({
+        source: "vi.stubGlobal('focus', value);",
+        edition,
+      });
+      observed.observers.enter?.({
+        node: observed.tree
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree)
+          .getChildAt(0, observed.tree),
+      });
+      expect(observed.observers.finish()).toEqual([
+        {
+          check: ADDRESS,
+          anchor: { line: 5, column: 2 },
+          snippet: "vi.stubGlobal('focus', value);",
+        },
+      ]);
+    },
+  );
+
+  it("reports assignments to process environment keys", () => {
+    const observed = sourceObservations({
+      source: "process.env['MODE'] = 'test';",
+      edition: editionOf("2"),
+    });
+    observed.observers.enter?.({
+      node: observed.tree
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree),
+    });
+    expect(observed.observers.finish()).toEqual([
+      { check: ADDRESS, anchor: { line: 5, column: 2 }, snippet: "process.env['MODE'] = 'test';" },
+    ]);
+  });
+
+  it("keeps global patches out of edition 1", () => {
+    const observed = sourceObservations({ source: "vi.stubGlobal('focus', value);" });
+    observed.observers.enter?.({
+      node: observed.tree
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree),
+    });
+    expect(observed.observers.finish()).toEqual([]);
+  });
+
+  it("does not follow a local environment alias", () => {
+    const observed = sourceObservations({
+      source: "environment.MODE = 'test';",
+      edition: editionOf("2"),
+    });
+    observed.observers.enter?.({
+      node: observed.tree
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree)
+        .getChildAt(0, observed.tree),
+    });
+    expect(observed.observers.finish()).toEqual([]);
   });
 });

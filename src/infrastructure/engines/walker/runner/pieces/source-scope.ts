@@ -14,3 +14,10 @@ export const folderScope = (request: { readonly file: string }): "generated" | "
     ? "generated"
     : "authored";
 };
+
+export const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
+  if (folderScope({ file: request.file }) === "generated") return "skipped";
+  return request.file.endsWith(".test.ts") || request.file.endsWith(".test.tsx")
+    ? "eligible"
+    : "skipped";
+};

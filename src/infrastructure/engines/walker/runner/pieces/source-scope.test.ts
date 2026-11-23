@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { folderScope } from "./source-scope.ts";
+import { folderScope, testFileEligibility } from "./source-scope.ts";
 
 describe("folderScope", () => {
   it.each([
@@ -22,5 +22,17 @@ describe("folderScope", () => {
     { name: "file named like a generated folder", file: "src/dist.ts", expected: "authored" },
   ])("scopes $name as $expected", ({ file, expected }) => {
     expect(folderScope({ file })).toBe(expected);
+  });
+});
+
+describe("testFileEligibility", () => {
+  it.each([
+    { file: "src/order.test.ts", expected: "eligible" },
+    { file: "src/order.test.tsx", expected: "eligible" },
+    { file: "src/order.spec.ts", expected: "skipped" },
+    { file: "src/order.test.mts", expected: "skipped" },
+    { file: "node_modules/order.test.ts", expected: "skipped" },
+  ])("scopes $file as $expected", ({ file, expected }) => {
+    expect(testFileEligibility({ file })).toBe(expected);
   });
 });

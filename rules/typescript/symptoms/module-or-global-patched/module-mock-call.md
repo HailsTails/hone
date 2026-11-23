@@ -2,12 +2,12 @@
 
 ```json
 {
-  "misses": "`vi.stubGlobal`, `process.env` set in a test.",
+  "misses": "Aliased receivers and indirect writes.",
   "settingsTracedTo": "test file is `.test.ts(x)`: Companion test file recipe."
 }
 ```
 
-Calls to `vi.mock`.
+Calls to `vi.mock`. Edition 2 also flags `vi.stubGlobal` and direct writes to `process.env` in test files.
 
 ## Flags
 

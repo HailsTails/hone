@@ -5,5 +5,6 @@
   },
   "settings": {
     "module": "module-mocking.ts"
-  }
+  },
+  "editions": ["1", "2"]
 }
