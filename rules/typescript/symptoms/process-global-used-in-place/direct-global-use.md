@@ -9,4 +9,4 @@
 
 Direct reads of process globals and direct console use.
 
-A local value with the same name passes. Reads of globals still report after a TypeScript ambient declaration.
+A locally supplied value with the same name passes. Reads of globals still report after an ambient declaration or a canonical Node import or require.
