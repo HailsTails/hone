@@ -114,8 +114,12 @@ describe("sourceBindingsOf", () => {
     assert(syntaxApi.isVariableStatement(local));
     assert.isDefined(ambient);
     assert(syntaxApi.isVariableStatement(ambient));
-    const first = local.declarationList.declarations[0]?.initializer;
-    const second = ambient.declarationList.declarations[0]?.initializer;
+    const [localDeclaration] = local.declarationList.declarations;
+    const [ambientDeclaration] = ambient.declarationList.declarations;
+    assert.isDefined(localDeclaration);
+    assert.isDefined(ambientDeclaration);
+    const first = localDeclaration.initializer;
+    const second = ambientDeclaration.initializer;
     assert.isDefined(first);
     assert(syntaxApi.isObjectLiteralExpression(first));
     assert.isDefined(second);
