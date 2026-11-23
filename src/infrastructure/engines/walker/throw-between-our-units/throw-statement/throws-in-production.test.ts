@@ -121,19 +121,56 @@ describe("throws in production", () => {
     ]);
   });
 
-  it("passes returned failures and throws in test files", () => {
+  it("passes returned failures", () => {
     expect(
       findingsIn({
         file: SOURCE_FILE,
         source: "function readOrder() { return { outcome: 'failed' }; }",
       }),
     ).toEqual([]);
+  });
+
+  it("flattens and bounds a multiline production throw", () => {
     expect(
       findingsIn({
-        file: repoPathSchema.parse("src/read-order.test.ts"),
-        source: "throw new Error('test setup');",
+        file: SOURCE_FILE,
+        source:
+          'function readOrder() {\n  throw new Error(\n    "1234567890123456789012345678901234567890123456789012345678901234567890",\n  );\n}',
       }),
-    ).toEqual([]);
+    ).toEqual([
+      {
+        file: SOURCE_FILE,
+        check: BINDING.address,
+        anchor: { line: 2, column: 2 },
+        snippet:
+          'throw new Error( "12345678901234567890123456789012345678901234567890123456789012…',
+      },
+    ]);
+  });
+
+  it.each(["src/read-order.test.ts", "src/read-order.test.tsx"])(
+    "leaves throws in %s to the test detector",
+    (file) => {
+      expect(
+        findingsIn({
+          file: repoPathSchema.parse(file),
+          source: "throw new Error('test setup');",
+        }),
+      ).toEqual([]);
+    },
+  );
+
+  it.each([
+    "src/read-order.spec.ts",
+    "src/read-order.spec.tsx",
+    "src/read-order.spec.mts",
+    "src/read-order.spec.cts",
+    "src/read-order.test.mts",
+    "src/read-order.test.cts",
+    "src/read-order.d.tsx",
+  ])("preserves the production detector's existing exclusion for %s", (name) => {
+    const file = repoPathSchema.parse(name);
+    expect(findingsIn({ file, source: "throw failure;" })).toEqual([]);
   });
 
   it("does not follow calls into another unit that might throw", () => {

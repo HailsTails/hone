@@ -15,9 +15,22 @@ export const folderScope = (request: { readonly file: string }): "generated" | "
     : "authored";
 };
 
-export const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
-  if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return request.file.endsWith(".test.ts") || request.file.endsWith(".test.tsx")
-    ? "eligible"
-    : "skipped";
+export const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" =>
+  typeScriptSourceKindOf(request) === "test" ? "eligible" : "skipped";
+
+const TYPESCRIPT_FILE = /\.(?:ts|tsx|mts|cts)$/;
+const DECLARATION_FILE = /\.d\.(?:ts|mts|cts)$/;
+const TEST_FILE = /\.test\.tsx?$/;
+
+export const typeScriptSourceKindOf = (request: {
+  readonly file: string;
+}): "production" | "test" | "skipped" => {
+  const { file } = request;
+  if (
+    !TYPESCRIPT_FILE.test(file) ||
+    DECLARATION_FILE.test(file) ||
+    folderScope(request) === "generated"
+  )
+    return "skipped";
+  return TEST_FILE.test(file) ? "test" : "production";
 };
