@@ -12,7 +12,9 @@ import {
 } from "../../../domain/language-layer/check-address-text.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { AuthoredExamples } from "../../../domain/rule-set/authored-rule-set-types.ts";
 import { checkPieceOf, readNamedPiece, type NamedPiece } from "../../engines/named-piece.ts";
+import type { DeepReadonly, Equal } from "../../engines/protocol/runner-module/type-equality.ts";
 import { parsedJson } from "../parsed-json.ts";
 import { clauseCasesSchema, sourceCaseSchema } from "./rule-set-reader.ts";
 
@@ -31,6 +33,11 @@ const examplesSchema = z.strictObject({
   flag: z.array(taggedExampleSchema),
   allow: z.array(taggedExampleSchema),
 });
+
+export const isAuthoredExamplesSchemaEqual: Equal<
+  DeepReadonly<z.input<typeof examplesSchema>>,
+  AuthoredExamples
+> = true;
 
 type ExamplesDocument = z.output<typeof examplesSchema>;
 
@@ -138,12 +145,7 @@ const readExamples = (
   if (names === undefined) {
     return { outcome: "failed", error: { kind: "unknown-clause", address: request.check } };
   }
-  const piece = readNamedPiece({
-    ...request,
-    ...names,
-    ruleSetRoot: request.installRoot,
-    mechanism: request.engine,
-  });
+  const piece = readNamedPiece({ ...request, ...names, mechanism: request.engine });
   if (piece.outcome === "failed") {
     return piece;
   }

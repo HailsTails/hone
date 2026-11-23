@@ -5,11 +5,6 @@ import type { PathPort } from "../../../application/ports/host/path-port.ts";
 import type { VersionTwoLoadFailure } from "../../../domain/report/load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { Result } from "../../../domain/result.ts";
-import type {
-  AuthoredDisciplineFile,
-  AuthoredPieceFile,
-  AuthoredSourceCase,
-} from "../../../domain/rule-set/authored-rule-set-types.ts";
 import type { DisciplineId, EngineId } from "../../../domain/rule-set/identifier-types.ts";
 import { pieceFolderSegmentsOf } from "../../../domain/rule-set/piece-folder.ts";
 import type {
@@ -228,21 +223,6 @@ export const isDisciplineFileSchemaEqual: Equal<
 export const isPieceFileSchemaEqual: Equal<
   DeepReadonly<z.output<typeof pieceFileSchema>>,
   PieceFile
-> = true;
-
-export const isAuthoredSourceCaseSchemaEqual: Equal<
-  DeepReadonly<z.input<typeof sourceCaseSchema>>,
-  AuthoredSourceCase
-> = true;
-
-export const isAuthoredDisciplineFileSchemaEqual: Equal<
-  DeepReadonly<z.input<typeof disciplineFileSchema>>,
-  AuthoredDisciplineFile
-> = true;
-
-export const isAuthoredPieceFileSchemaEqual: Equal<
-  DeepReadonly<z.input<typeof pieceFileSchema>>,
-  AuthoredPieceFile
 > = true;
 
 const isContentRefusal = (issue: z.core.$ZodIssue): issue is z.core.$ZodIssueCustom =>

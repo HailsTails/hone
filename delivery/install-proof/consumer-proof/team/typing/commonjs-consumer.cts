@@ -1,6 +1,6 @@
-import type { WalkerPiece } from "@hailstails/hone/audit";
-import type { DisciplineFile } from "@hailstails/hone/rule-set";
+import type { WalkerPiece } from "@hailstails/hone/walker";
+import type { PieceDeclaration } from "@hailstails/hone/rule-set";
 
 export type CommonJsPiece = WalkerPiece;
 
-export const discipline: DisciplineFile = { version: 1, id: "TEAM-2", clauses: [] };
+export const declaration: PieceDeclaration = { version: 2, anchor: { kind: "file" }, settings: { module: "scratch-files.ts" } };

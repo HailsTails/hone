@@ -1,4 +1,4 @@
-import type { PieceHit, WalkerPiece } from "@hailstails/hone/audit";
+import type { PieceHit, WalkerPiece } from "@hailstails/hone/walker";
 
 export const check: WalkerPiece = {
   prepare: ({ bindings }) => ({

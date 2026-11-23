@@ -21,7 +21,7 @@ Two engines ship: `walker`, a standalone TypeScript syntax walker, and `eslint`,
 
 To adopt Hone in another repository, follow [ADOPTING.md](ADOPTING.md) step by step. A repository already using the older standalone route, or a copy of Hone's source, follows [MIGRATING.md](MIGRATING.md) instead.
 
-A team adds its own disciplines as a rule set in its own repository, with ESLint and audit pieces, following [docs/extending.md](docs/extending.md). Adding a discipline or a mechanism to Hone itself, and the full list of ESLint native channels, are covered in [docs/adding-a-discipline-or-mechanism.md](docs/adding-a-discipline-or-mechanism.md).
+A team adds its own symptoms and checks as a rule set in its own repository, with ESLint and walker pieces, following [docs/extending.md](docs/extending.md). Adding a discipline or a mechanism to Hone itself, and the full list of ESLint native channels, are covered in [docs/adding-a-discipline-or-mechanism.md](docs/adding-a-discipline-or-mechanism.md).
 
 ## Commands
 
@@ -155,15 +155,15 @@ With the ESLint mechanism selected, a packaged install's projection imports one 
 
 ## Public type entries
 
-The package has three public entries for TypeScript. `@hailstails/hone/rule-set` holds types only, so importing it adds no code to a build; import it with `import type`. `@hailstails/hone/audit` adds three values to its types, and `@hailstails/hone/testing` is for a team's own tests.
+The package has three public entries for TypeScript. No other path in the package is a public TypeScript entry.
 
 | Entry | Status | What it is for |
 | --- | --- | --- |
-| `@hailstails/hone/rule-set` | Stable | The shapes of `discipline.json`, `piece.json` and an ESLint piece's `settings`, for a team writing its own rule set. Identifiers and paths are plain strings: Hone checks them when it reads the files. |
-| `@hailstails/hone/audit` | Experimental | The types for writing an audit walker piece, `WalkerPiece` and what it needs, including `PieceFailure`, the failures a piece may return. Clause addresses and file paths reach a piece from Hone, already checked, and a piece passes them back unchanged. Its three values are `folderScope`, which tells a piece whether a file sits in a generated folder; `isEdition`, which narrows a text such as `"2"` to an `Edition`; and `editionReaches`, which tells a piece whether the edition that runs covers something introduced in a given edition. It may change in a minor release. |
-| `@hailstails/hone/testing` | Experimental | Runs a team audit clause's `cases` through its piece with the installed audit runner (`clauseConformanceOf`), and hands a test the clause bound as `hone check` binds it (`clauseUnderTestOf`) and a checked file path (`repoPathOf`). Hone does not run these tests itself. It may change in a minor release. |
+| `@hailstails/hone/rule-set` | Stable | Types only, for the files a team writes in its own rule set. |
+| `@hailstails/hone/walker` | Experimental, may change in a minor release | Writing a walker piece. It names TypeScript's syntax types, so it needs the repository's `typescript` peer. |
+| `@hailstails/hone/testing` | Experimental, may change in a minor release | Running a team's checks against their own examples in the team's tests. |
 
-Each resolves with `moduleResolution` `"nodenext"` or `"bundler"`. `install-proof` type-checks a team piece and rule set against them, and checks that a wrongly typed field fails: on TypeScript 4.8.4 from an ES module with `"nodenext"` (4.8 has no `"bundler"`), and on 6.0.3 from an ES module with both and from a CommonJS file. A CommonJS file (`.cts`, or `.ts` in a package that is not `"type": "module"`) can import these types on TypeScript 5.8 or later with `module` `"nodenext"`. With `module` `"node16"`, and on TypeScript 5.3 to 5.7, the import needs `with { "resolution-mode": "import" }`, and older versions reject it. These CommonJS figures were checked once by hand, on 5.8.2, 5.3.3 and 6.0.3 with `"node16"`; `install-proof` checks only the 6.0.3 CommonJS case with `"nodenext"`. `@hailstails/hone/audit` names TypeScript's own syntax types, so it needs the `typescript` the repository already installs as a peer. No other path in the package is a public TypeScript entry.
+`install-proof` type-checks the `acme` team rule set against these entries, and checks that a wrongly typed field fails, on TypeScript 4.8.4 from an ES module with `moduleResolution` `"nodenext"`, and on 6.0.3 from an ES module with `"nodenext"` and `"bundler"` and from a CommonJS file with `"nodenext"`. It also runs acme's examples through `@hailstails/hone/testing`.
 
 ## Runtime
 
@@ -187,7 +187,7 @@ Hone's version numbers follow semantic versioning under these rules:
 - A change to the ESLint config that `hone project` generates, which an adopter must regenerate, is a minor release, with a clear message telling the adopter to regenerate: its changelog entry says to run `hone project` and commit the result, and until then the check reports the projection `out-of-date`.
 - Renaming or removing a check address, a config key in `hone.config.json`, a records file or a key of a record, or a CLI flag, or changing what one means, is a major release. Adding one with a safe default is not.
 - A change that breaks a tool parsing hone's output is a major release: the command and option names, the exit codes, the report's section names and its verdict lines. A change to the help text or to the wording of a message is a minor release.
-- A breaking change to a type in `@hailstails/hone/rule-set` is a major release. `@hailstails/hone/audit` is experimental: its types may change in a minor release until it is marked stable.
+- A breaking change to a type in `@hailstails/hone/rule-set` is a major release. `@hailstails/hone/walker` and `@hailstails/hone/testing` are experimental: they may change in a minor release until they are marked stable.
 - A pre-release previews the release it is numbered towards and is published under the `next` dist-tag. A change no larger than the one a pre-release is numbered towards lands in that release's next pre-release; a larger one starts the line of the larger version it calls for. The changelog lists each change either way.
 
 `hone.config.json` and the records in `hone-records` follow the same rules. A new key with a safe default, where nothing changes for an adopter who does not set it, is not breaking and can arrive in a minor release. A new required key with no safe default is breaking, and so is a change that makes a file that loads today stop loading or mean something else; both wait for a major release.

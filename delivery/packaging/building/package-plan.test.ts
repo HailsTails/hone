@@ -116,10 +116,10 @@ describe("packagePlanOf", () => {
       value: {
         entryPoints: [
           "src/hone.ts",
-          "src/audit.ts",
           "src/eslint-plugin.ts",
           "src/rule-set.ts",
           "src/testing.ts",
+          "src/walker.ts",
           "src/infrastructure/engines/typescript-compiler/runner/runner.ts",
           "src/infrastructure/engines/eslint/runner/runner.ts",
           "src/infrastructure/engines/typescript-compiler/CD-23/export-test-sibling.ts",

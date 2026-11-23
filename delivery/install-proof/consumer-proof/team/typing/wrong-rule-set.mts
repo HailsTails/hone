@@ -1,3 +1,3 @@
-import type { DisciplineFile } from "@hailstails/hone/rule-set";
+import type { SymptomItem } from "@hailstails/hone/rule-set";
 
-export const discipline: DisciplineFile = { version: 1, id: "TEAM-1", clauses: [{ kind: "judgement", id: "named-intent", summary: "Names say what they hold.", enforcedBy: "lint" }] };
+export const symptom: SymptomItem = { group: "Repository health", seen: "A source file calls console directly.", mayIndicate: [{ case: "changes-a-repository", points: [{ principle: "repository-ready" }] }], breachUsuallySits: "in the source change", seenBy: ["lint"], recipes: [], correctUses: [] };

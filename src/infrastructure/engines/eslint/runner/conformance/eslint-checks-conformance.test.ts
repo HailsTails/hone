@@ -141,7 +141,12 @@ const CONFORMANCE_ROWS: readonly ConformanceRow[] = catalogue.value.catalogue.ch
   .filter(({ engines }) => engines.some(({ name }) => name === "eslint"))
   .flatMap((check) => {
     const address = checkAddressTextOf({ check });
-    const held = examples.read({ check: address, engine: "eslint", installRoot: RULE_SET_ROOT });
+    const held = examples.read({
+      check: address,
+      engine: "eslint",
+      installRoot: RULE_SET_ROOT,
+      ruleSetRoot: RULE_SET_ROOT,
+    });
     assert(held.outcome === "ok");
     const { piece } = held.value;
     return casesByEdition({

@@ -246,14 +246,14 @@ describe("publishedDeclarationText, for an entry declaration", () => {
 
 describe("the TypeScript declaration port, emitting a public entry that exports values", () => {
   it("keeps the entry's values and leaves out the values of what it imports", async () => {
-    const emit = await emitted({ entryPoints: ["src/audit.ts"] });
+    const emit = await emitted({ entryPoints: ["src/walker.ts"] });
     expect(emit).toMatchObject({
       outcome: "ok",
       value: {
         diagnostics: [],
         declarations: expect.arrayContaining([
           expect.objectContaining({
-            path: "src/audit.d.ts",
+            path: "src/walker.d.ts",
             text: expect.stringContaining("export declare const folderScope: (request: {"),
             refusals: [],
           }),

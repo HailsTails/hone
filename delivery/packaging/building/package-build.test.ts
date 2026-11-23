@@ -26,12 +26,6 @@ const posixPath = createPathPort({ flavour: "posix", workingDirectory: () => "/"
 
 const ENTRY_DECLARATIONS: readonly EmittedDeclaration[] = [
   {
-    path: "src/audit.d.ts",
-    text: 'export type { Result } from "./domain/result.js";\n',
-    specifiers: ["./domain/result.js"],
-    refusals: [],
-  },
-  {
     path: "src/eslint-plugin.d.ts",
     text: "export type ChecksPlugin = 1;\n",
     specifiers: [],
@@ -42,6 +36,12 @@ const ENTRY_DECLARATIONS: readonly EmittedDeclaration[] = [
     path: "src/testing.d.ts",
     text: "export declare const repoPathOf: 1;\n",
     specifiers: [],
+    refusals: [],
+  },
+  {
+    path: "src/walker.d.ts",
+    text: 'export type { Result } from "./domain/result.js";\n',
+    specifiers: ["./domain/result.js"],
     refusals: [],
   },
   {
@@ -242,10 +242,10 @@ const SOURCE: Readonly<Record<string, string>> = {
   "/package/README.md": "# Hone\n\n[Rules](rules/CD-15/README.md)\n",
   "/package/LICENSE": "MIT No Attribution\n",
   "/package/pnpm-lock.yaml": LOCK,
-  "/package/src/audit.ts": "export const folderScope = 1;\n",
   "/package/src/eslint-plugin.ts": "export default {};\n",
   "/package/src/rule-set.ts": "export {};\n",
   "/package/src/testing.ts": "export const repoPathOf = 1;\n",
+  "/package/src/walker.ts": "export const folderScope = 1;\n",
   "/package/src/hone.ts": "await run();\n",
   "/package/src/application/run/check/run-check.test.ts": "test\n",
   "/package/src/tests/helper.ts": "export const helper = 1;\n",
@@ -288,9 +288,9 @@ const TOOL_COMMAND = entryOutput({
   text: "#!/usr/bin/env node\nawait run();\n",
 });
 
-const API_AUDIT = entryOutput({
-  source: "src/audit.ts",
-  path: "src/audit.js",
+const API_WALKER = entryOutput({
+  source: "src/walker.ts",
+  path: "src/walker.js",
   text: "export const folderScope = 1;\n",
 });
 
@@ -327,7 +327,7 @@ const LOOPS = entryOutput({
 const BUNDLE: Bundle = {
   outputs: [
     TOOL_COMMAND,
-    API_AUDIT,
+    API_WALKER,
     API_ESLINT_PLUGIN,
     API_RULE_SET,
     API_TESTING,
@@ -380,8 +380,6 @@ const SHIPPED_FILES = [
   "rules/typescript/checks.md",
   "rules/typescript/recipes.md",
   "rules/typescript/symptoms.md",
-  "src/audit.d.ts",
-  "src/audit.js",
   "src/domain/result.d.ts",
   "src/eslint-plugin.d.ts",
   "src/eslint-plugin.js",
@@ -394,6 +392,8 @@ const SHIPPED_FILES = [
   "src/rule-set.js",
   "src/testing.d.ts",
   "src/testing.js",
+  "src/walker.d.ts",
+  "src/walker.js",
 ];
 
 const NOTHING_WRITTEN = { "/out/stale.js": "stale\n" };
@@ -429,10 +429,10 @@ describe("buildPackage", () => {
           sourceRoot: STAGE_SOURCE,
           entryPoints: [
             "src/hone.ts",
-            "src/audit.ts",
             "src/eslint-plugin.ts",
             "src/rule-set.ts",
             "src/testing.ts",
+            "src/walker.ts",
             "src/infrastructure/engines/typescript-compiler/runner/runner.ts",
             "src/infrastructure/engines/typescript-compiler/CD-15/loops.ts",
           ],
@@ -444,7 +444,6 @@ describe("buildPackage", () => {
         "package.json",
         "rules/CD-15/README.md",
         "rules/CD-15/discipline.json",
-        "src/audit.ts",
         "src/eslint-plugin.ts",
         "src/hone.ts",
         "src/infrastructure/disciplines-file/version-one-names.json",
@@ -453,6 +452,7 @@ describe("buildPackage", () => {
         "src/infrastructure/engines/typescript-compiler/runner/runner.ts",
         "src/rule-set.ts",
         "src/testing.ts",
+        "src/walker.ts",
         "tsconfig.base.json",
         "tsconfig.json",
       ],
@@ -503,12 +503,12 @@ describe("buildPackage", () => {
     await built;
 
     expect(files.texts()).toMatchObject({
-      "/out/src/audit.d.ts": 'export type { Result } from "./domain/result.js";\n',
-      "/out/src/audit.js": "export const folderScope = 1;\n",
+      "/out/src/walker.d.ts": 'export type { Result } from "./domain/result.js";\n',
+      "/out/src/walker.js": "export const folderScope = 1;\n",
       "/out/src/testing.d.ts": "export declare const repoPathOf: 1;\n",
       "/out/src/domain/result.d.ts": "export type Result = 1;\n",
       "/out/package.json": expect.stringContaining(
-        '"./audit": {\n      "types": "./src/audit.d.ts",\n      "default": "./src/audit.js"\n    },\n    "./eslint-plugin": {\n      "types": "./src/eslint-plugin.d.ts",\n      "default": "./src/eslint-plugin.js"\n    },\n    "./rule-set": {\n      "types": "./src/rule-set.d.ts",\n      "default": "./src/rule-set.js"\n    },\n    "./testing": {\n      "types": "./src/testing.d.ts",\n      "default": "./src/testing.js"\n    }',
+        '"./eslint-plugin": {\n      "types": "./src/eslint-plugin.d.ts",\n      "default": "./src/eslint-plugin.js"\n    },\n    "./rule-set": {\n      "types": "./src/rule-set.d.ts",\n      "default": "./src/rule-set.js"\n    },\n    "./testing": {\n      "types": "./src/testing.d.ts",\n      "default": "./src/testing.js"\n    },\n    "./walker": {\n      "types": "./src/walker.d.ts",\n      "default": "./src/walker.js"\n    }',
       ),
     });
   });
@@ -518,7 +518,7 @@ describe("buildPackage", () => {
       source: SOURCE,
       bundler: withOutputs([
         TOOL_COMMAND,
-        API_AUDIT,
+        API_WALKER,
         API_ESLINT_PLUGIN,
         API_RULE_SET,
         API_TESTING,
@@ -543,7 +543,7 @@ describe("buildPackage", () => {
       source: SOURCE,
       bundler: withOutputs([
         TOOL_COMMAND,
-        API_AUDIT,
+        API_WALKER,
         API_ESLINT_PLUGIN,
         API_RULE_SET,
         API_TESTING,

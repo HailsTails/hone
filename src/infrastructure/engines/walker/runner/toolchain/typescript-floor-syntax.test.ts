@@ -51,7 +51,7 @@ const shippedSources = import.meta.glob(
   [
     "./src/**/*.ts",
     "!./src/**/*.test.ts",
-    "!./src/audit.ts",
+    "!./src/walker.ts",
     "!./src/eslint-plugin.ts",
     "!./src/rule-set.ts",
     "!./src/testing.ts",

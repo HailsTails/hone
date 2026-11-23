@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { type OwnedName, ownedNameOf, ownedNameText, sameOwnedName } from "./rule-set-identity.ts";
+import {
+  type OwnedName,
+  ownedNameOf,
+  ownedNameText,
+  sameOwnedName,
+  teamRuleSetOf,
+} from "./rule-set-identity.ts";
 import { ruleSetNameOf } from "./rule-set-name-of.ts";
 
 const ACME = { name: ruleSetNameOf("acme") };
@@ -47,5 +53,16 @@ describe("ownedNameOf", () => {
     ["/x", "not-an-owned-name"],
   ])("reads %s", (text, owned) => {
     expect(ownedNameOf({ text })).toEqual(owned);
+  });
+});
+
+describe("teamRuleSetOf", () => {
+  it.each<readonly [string, { readonly name: string } | undefined]>([
+    ["acme", { name: "acme" }],
+    ["hone", undefined],
+    ["Acme", undefined],
+    ["acme/ui", undefined],
+  ])("reads %s", (name, ruleSet) => {
+    expect(teamRuleSetOf({ name })).toEqual(ruleSet);
   });
 });

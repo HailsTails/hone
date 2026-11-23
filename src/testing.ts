@@ -24,6 +24,8 @@ export type {
   CheckUnderTest,
   ConformanceSetupFailure,
   ConformanceSetupFailureKind,
+  RuleSetUnderTest,
+  TeamRuleSetUnderTest,
 } from "./application/conformance/conformance-testing-types.ts";
 
 const path = createDefaultPathPort({});
@@ -49,6 +51,7 @@ export const checkUnderTestOf: CheckUnderTestOf = (request) =>
     : namedCheckUnderTest({
         ...request,
         installRoot: installRoot.value,
+        path,
         examples,
         loadFailureDetail,
       });
