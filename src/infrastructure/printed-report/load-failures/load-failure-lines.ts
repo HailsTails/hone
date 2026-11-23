@@ -29,6 +29,7 @@ import {
 import { NOT_INSTALLED } from "../../engines/protocol/toolchain/toolchain-requirement.ts";
 import { onOneLine, quoted } from "../printed-text.ts";
 import { recordsFileText } from "../records/record-lines.ts";
+import { projectionProblemLine } from "../run-state-lines.ts";
 
 const LOAD_FAILURE_LEAD = "load failure:";
 
@@ -177,7 +178,8 @@ type ToolFailure = Extract<
       | "config-root-untracked"
       | "config-absent"
       | "settings-in-both-versions"
-      | "not-ready-yet";
+      | "not-ready-yet"
+      | "projection-stale";
   }
 >;
 
@@ -251,6 +253,8 @@ const toolFields = (request: { readonly failure: ToolFailure }): readonly string
       ];
     case "not-ready-yet":
       return notReadyFields({ what: failure.what });
+    case "projection-stale":
+      return [projectionProblemLine(failure)];
   }
 };
 
@@ -353,6 +357,7 @@ const failureFields = (request: {
     case "config-absent":
     case "settings-in-both-versions":
     case "not-ready-yet":
+    case "projection-stale":
       return toolFields({ failure });
     case "unknown-check":
     case "review-only-listed":

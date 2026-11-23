@@ -9,6 +9,7 @@ import {
   type RecordCommandFailure,
   recordDebtOf,
 } from "../application/records/record-commands.ts";
+import { refreshableProjectionProblemOf } from "../application/run/engines/engine-states.ts";
 import { type VersionTwoStages, versionTwoRunOver } from "../application/run/version-two-run.ts";
 import type { SymptomCatalogue } from "../domain/language-layer/symptom-catalogue.ts";
 import type { DebtOutcome } from "../domain/records/debt/debt-effects.ts";
@@ -41,7 +42,10 @@ const recordFailureOf = <Value>(request: {
     : request.recorded;
 
 export const versionTwoRecordDebtOf = async (
-  request: VersionTwoRecordInput & { readonly leave: readonly RepoPath[] },
+  request: VersionTwoRecordInput & {
+    readonly leave: readonly RepoPath[];
+    readonly projectCommand: string;
+  },
 ): Promise<Result<readonly DebtOutcome[], RunLoadFailure>> => {
   const run = await versionTwoRunOver({
     stages: request.stages,
@@ -51,6 +55,13 @@ export const versionTwoRecordDebtOf = async (
     return run;
   }
   const { catalogue, report, runs, touched } = run.value;
+  const stale = refreshableProjectionProblemOf({ problems: report["projection-problems"] });
+  if (stale !== undefined) {
+    return {
+      outcome: "failed",
+      error: { kind: "projection-stale", problem: stale, projectCommand: request.projectCommand },
+    };
+  }
   return recordFailureOf({
     recorded: recordDebtOf({
       ports: {

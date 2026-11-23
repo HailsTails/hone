@@ -26,6 +26,8 @@ const AUTHORISING: AuthoriseRequest = {
   owner: "platform",
 };
 
+const PROJECT_COMMAND = "node /tool/hone.js project --repo /repo";
+
 const SETTINGS_ABSENT: RunLoadFailure = { kind: "config-absent", repo: "/repo" };
 
 const inputFailingCatalogue = (): VersionTwoRecordInput => ({
@@ -55,7 +57,9 @@ describe("versionTwoRecordDebtOf", () => {
   it("gives the run's load failure and opens no records store", async () => {
     const input = inputFailingCatalogue();
 
-    expect(await versionTwoRecordDebtOf({ ...input, leave: [] })).toEqual({
+    expect(
+      await versionTwoRecordDebtOf({ ...input, leave: [], projectCommand: PROJECT_COMMAND }),
+    ).toEqual({
       outcome: "failed",
       error: SETTINGS_ABSENT,
     });

@@ -293,6 +293,14 @@ export const VERSION_TWO_RECORD_DEBT: ToolCommand<
       return loadFailed({ failure: located.error });
     }
     const { repoRoot } = located.value;
+    const projectCommand = projectCommandOf({
+      path: ports.path,
+      moduleUrl: command.moduleUrl,
+      repoRoot,
+    });
+    if (projectCommand.outcome === "failed") {
+      return loadFailed({ failure: projectCommand.error });
+    }
     const recorded = await versionTwoRecordDebtOf({
       ...recordInputOf({
         ports,
@@ -301,24 +309,20 @@ export const VERSION_TWO_RECORD_DEBT: ToolCommand<
         baseRevision: parsed.baseRevision,
       }),
       leave: parsed.leave,
+      projectCommand: projectCommand.value,
     });
     if (recorded.outcome === "failed") {
       return runFailed({ failure: recorded.error, repoRoot });
     }
-    if (!recorded.value.some((outcome) => outcome.effect === "recorded")) {
-      return { outcome: "ok", value: { outcomes: recorded.value, projectCommand: undefined } };
-    }
-    const projectCommand = projectCommandOf({
-      path: ports.path,
-      moduleUrl: command.moduleUrl,
-      repoRoot,
-    });
-    return projectCommand.outcome === "failed"
-      ? loadFailed({ failure: projectCommand.error })
-      : {
-          outcome: "ok",
-          value: { outcomes: recorded.value, projectCommand: projectCommand.value },
-        };
+    return {
+      outcome: "ok",
+      value: {
+        outcomes: recorded.value,
+        projectCommand: recorded.value.some((outcome) => outcome.effect === "recorded")
+          ? projectCommand.value
+          : undefined,
+      },
+    };
   },
   print: ({ produced }) => {
     const outcomeLines = produced.outcomes.map((outcome) => debtOutcomeLine({ outcome }));

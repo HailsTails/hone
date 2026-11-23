@@ -11,7 +11,12 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import type { EngineRun } from "../../ports/engine/engine-run.ts";
-import { engineMeasurementOf, engineProblemsOf, engineUnmeasuredOf } from "./engine-states.ts";
+import {
+  engineMeasurementOf,
+  engineProblemsOf,
+  engineUnmeasuredOf,
+  refreshableProjectionProblemOf,
+} from "./engine-states.ts";
 
 const AUDIT = "walker" as const;
 
@@ -321,5 +326,45 @@ describe("engineProblemsOf", () => {
         ],
       }),
     ).toEqual([]);
+  });
+});
+
+describe("refreshableProjectionProblemOf", () => {
+  const SLICE = repoPathOf("packages/a/hone.eslint.mjs");
+
+  it("is nothing when there are no problems", () => {
+    expect(refreshableProjectionProblemOf({ problems: [] })).toBeUndefined();
+  });
+
+  it("is nothing when the only problem is a slice no configuration loads, which project does not repair", () => {
+    expect(
+      refreshableProjectionProblemOf({
+        problems: [{ scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE }],
+      }),
+    ).toBeUndefined();
+  });
+
+  it("is the out-of-date root projection", () => {
+    const problem = { scope: "projection", engine: ESLINT_ENGINE, state: "out-of-date" } as const;
+
+    expect(refreshableProjectionProblemOf({ problems: [problem] })).toBe(problem);
+  });
+
+  it("is the first slice project would write, past one it cannot repair", () => {
+    const missing = {
+      scope: "slice",
+      engine: ESLINT_ENGINE,
+      state: "missing",
+      slice: SLICE,
+    } as const;
+
+    expect(
+      refreshableProjectionProblemOf({
+        problems: [
+          { scope: "slice", engine: ESLINT_ENGINE, state: "unconfigured", slice: SLICE },
+          missing,
+        ],
+      }),
+    ).toBe(missing);
   });
 });

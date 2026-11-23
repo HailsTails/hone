@@ -143,3 +143,10 @@ export const engineProblemsOf = (request: {
   readonly runs: readonly EngineRun[];
 }): readonly RunProjectionProblem[] =>
   request.runs.flatMap((run) => problemOf({ catalogue: request.catalogue, run }));
+
+export const refreshableProjectionProblemOf = (request: {
+  readonly problems: readonly RunProjectionProblem[];
+}): RunProjectionProblem | undefined =>
+  request.problems.find(
+    (problem) => problem.scope === "projection" || problem.state !== "unconfigured",
+  );
