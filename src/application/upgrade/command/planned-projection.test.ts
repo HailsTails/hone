@@ -17,7 +17,14 @@ const SETTINGS: SettingsFile = {
   checkEditions: "pinned",
   eslintConfigLookup: { lookup: "detected" },
   eslintConfigRoots: [],
-  conventions: { conventions: { generated: [], layers: [] }, declared: [] },
+  conventions: {
+    conventions: {
+      generated: [],
+      layers: [],
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    },
+    declared: [],
+  },
 };
 
 const notUsed = (): never => {

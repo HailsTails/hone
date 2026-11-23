@@ -77,6 +77,7 @@ const castFreeRun = () =>
     answered: [],
     declaredConfigRoots: [],
     declaredConfigLookup: undefined,
+    testFiles: { suffixes: ["test", "spec"], folders: [] },
   });
 
 const expectationOn = (request: { readonly line: number; readonly text: string }) => ({

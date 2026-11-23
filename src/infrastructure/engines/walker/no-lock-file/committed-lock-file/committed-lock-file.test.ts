@@ -44,7 +44,12 @@ const findingsIn = (request: {
     request.trackedLock === undefined ? [request.file] : [request.file, request.trackedLock];
   const prepared = check.prepare({
     bindings: [BINDING],
-    repository: { files, exists: () => "present", disk: textsDisk({ root: "/repo", texts: {} }) },
+    repository: {
+      files,
+      exists: () => "present",
+      disk: textsDisk({ root: "/repo", texts: {} }),
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    },
     syntaxApi: parse.syntaxApi,
   });
   assert(prepared.outcome === "ok");

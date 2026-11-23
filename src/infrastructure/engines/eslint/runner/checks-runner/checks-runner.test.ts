@@ -104,6 +104,7 @@ const REQUEST: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: undefined,
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
 const NESTED_FOLDER = repoPathOf("vendor/lib");
@@ -194,6 +195,7 @@ const SELECTING_THE_CLASS_CHECK: NamedEngineRunRequest = {
   answered: [],
   declaredConfigRoots: [],
   declaredConfigLookup: "nearest-to-file",
+  testFiles: { suffixes: ["test", "spec"], folders: [] },
 };
 
 const CONFIGURED_ON: RuleState = { state: "configured", severity: 2, options: [] };
@@ -997,10 +999,12 @@ describe("checksRunnerOver, over a repository holding a package eslint.config.*"
     await runnerOverProjectionReading({ ...stubs, fileText: declaring.fileText }).run({
       ...WITH_A_PACKAGE_CONFIG,
       declaredConfigLookup: "nearest-to-file",
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     await runnerOverProjectionReading({ ...stubs, fileText: detecting.fileText }).run({
       ...WITH_A_PACKAGE_CONFIG,
       declaredConfigLookup: undefined,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
     });
     expect({
       declared: declaring.readsOf({ path: INSTALLED_ESLINT_PACKAGE_JSON }),
@@ -1197,6 +1201,7 @@ describe("checksRunnerOver, giving the projection as project", () => {
       await projectingRunner().runnerOver.project({
         ...WITH_A_PACKAGE_CONFIG,
         declaredConfigLookup: "repository-root",
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       }),
     ).toEqual({
       outcome: "ok",

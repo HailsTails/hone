@@ -1,3 +1,8 @@
 import type { ConventionKey } from "./conventions.ts";
 
-export type SettingsNote = { readonly kind: "declared-not-read"; readonly key: ConventionKey };
+export type UnreadConventionKey = Exclude<ConventionKey, "testFiles">;
+
+export type SettingsNote = {
+  readonly kind: "declared-not-read";
+  readonly key: UnreadConventionKey;
+};

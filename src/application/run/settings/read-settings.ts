@@ -303,7 +303,9 @@ export const readNamedSettingsFile = (
       runSettings: { reportOutput: file.reportOutput, assessment: { forfeiture: file.forfeiture } },
       eslintConfigLookup: file.eslintConfigLookup,
       conventions: file.conventions.conventions,
-      notes: file.conventions.declared.map((key) => ({ kind: "declared-not-read", key })),
+      notes: file.conventions.declared.flatMap((key): readonly SettingsNote[] =>
+        key === "testFiles" ? [] : [{ kind: "declared-not-read", key }],
+      ),
       available: choices.value.available,
       ...(externalCatalogues.length === 0 ? {} : { externalCatalogues }),
     },

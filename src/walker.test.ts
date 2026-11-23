@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { folderScope, isRuleSetName } from "./walker.ts";
+import { DEFAULT_TEST_FILES, folderScope, isRuleSetName } from "./walker.ts";
 
 describe("the walker entry's folderScope", () => {
   it("calls a file under a generated folder generated", () => {
@@ -23,5 +23,11 @@ describe("the walker entry's isRuleSetName", () => {
 
   it("refuses a name that does not start with a lowercase letter", () => {
     expect(isRuleSetName("Acme")).toBe(false);
+  });
+});
+
+describe("the walker entry's DEFAULT_TEST_FILES", () => {
+  it("counts .test and .spec files as tests, under no folder", () => {
+    expect(DEFAULT_TEST_FILES).toEqual({ suffixes: ["test", "spec"], folders: [] });
   });
 });

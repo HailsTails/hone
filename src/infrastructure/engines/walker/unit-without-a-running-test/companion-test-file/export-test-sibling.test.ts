@@ -73,7 +73,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
   it("reports an exported runtime source without its co-located test sibling at the file anchor", () => {
     const observers = sourceObservations({
       source: "export const value = 1;\n",
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
     });
 
     expect(observers.finish()).toEqual([
@@ -92,6 +97,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
         files: [FILE, SIBLING],
         exists: vi.fn().mockReturnValue("present"),
         disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       },
     });
 
@@ -101,7 +107,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
   it("reports a default-export assignment without its co-located test sibling", () => {
     const observers = sourceObservations({
       source: "export default value;\n",
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
     });
 
     expect(observers.finish()).toEqual([
@@ -116,7 +127,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
   it("reports a runtime named export without its co-located test sibling", () => {
     const observers = sourceObservations({
       source: "const value = 1;\nexport { value };\n",
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
     });
 
     expect(observers.finish()).toEqual([
@@ -132,7 +148,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     const observers = sourceObservations({
       source:
         "export type { First } from './first.ts';\nexport { type Second } from './second.ts';\n",
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
     });
 
     expect(observers.finish()).toEqual([]);
@@ -148,6 +169,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
         files: [file, sibling],
         exists: vi.fn().mockReturnValue("present"),
         disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       },
       syntaxApi: SYNTAX_API,
     });
@@ -170,7 +192,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     const observers = sourceObservations({
       source:
         "export type Value = { readonly name: string };\nexport declare const value: Value;\n",
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
     });
 
     expect(observers.finish()).toEqual([]);
@@ -179,7 +206,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
   it("preserves the existing export-star and unexported-runtime classification gaps", () => {
     const observers = sourceObservations({
       source: "export * from './module.ts';\nconst hidden = 1;\n",
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
     });
 
     expect(observers.finish()).toEqual([]);
@@ -187,6 +219,7 @@ describe("CD-23 existing exported-source sibling obligation", () => {
 
   it.each([
     "src/view.test.ts",
+    "src/view.spec.ts",
     "src/view.js",
     "src/view.d.ts",
     "src/__tests__/fixture.ts",
@@ -196,7 +229,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [CLAUSE],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("absent"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");
@@ -214,7 +252,12 @@ describe("CD-23 existing exported-source sibling obligation", () => {
       const file = repoPathSchema.parse(fileName);
       const prepared = check.prepare({
         bindings: [CLAUSE],
-        repository: { files: [file], exists: vi.fn().mockReturnValue("absent"), disk: EMPTY_DISK },
+        repository: {
+          files: [file],
+          exists: vi.fn().mockReturnValue("absent"),
+          disk: EMPTY_DISK,
+          testFiles: { suffixes: ["test", "spec"], folders: [] },
+        },
         syntaxApi: SYNTAX_API,
       });
       assert(prepared.outcome === "ok");
@@ -232,4 +275,158 @@ describe("CD-23 existing exported-source sibling obligation", () => {
       expect(readText).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("the repository's declared test files", () => {
+  it.each([
+    { fileName: "src/view.check.ts", kind: "skipped" },
+    { fileName: "src/__tests__/view.ts", kind: "skipped" },
+    { fileName: "src/view.test.ts", kind: "syntax" },
+  ])("prepares $fileName as $kind where tests are named .check", ({ fileName, kind }) => {
+    const file = repoPathSchema.parse(fileName);
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["check"], folders: [] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({
+        file,
+        readText: vi.fn().mockReturnValue({ outcome: "ok", value: "" }),
+      }),
+    ).toMatchObject({ outcome: "ok", value: { kind } });
+  });
+
+  it.each([
+    { files: [repoPathOf("src/value.ts"), repoPathOf("src/value.check.ts")], hits: [] },
+    {
+      files: [repoPathOf("src/value.ts"), repoPathOf("src/value.test.ts")],
+      hits: [
+        {
+          check: ADDRESS,
+          anchor: { line: 1, column: 0 },
+          snippet: "missing co-located *.check.ts(x) sibling",
+        },
+      ],
+    },
+  ])("judges src/value.ts beside its siblings by the declared suffix", ({ files, hits }) => {
+    const file = repoPathOf("src/value.ts");
+    const source = "export const value = 1;\n";
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files,
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["check"], folders: [] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+    const selected = prepared.value.prepareFile({
+      file,
+      readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selected.outcome === "ok");
+    assert(selected.value.kind === "syntax");
+    const observers = selected.value.begin({
+      sourceFile: SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true),
+      anchorAt: vi.fn().mockReturnValue({ line: 1, column: 0 }),
+    });
+
+    expect(observers.finish()).toEqual(hits);
+  });
+  it.each([
+    { file: repoPathOf("src/value.ts"), sibling: repoPathOf("src/value.spec.ts") },
+    { file: repoPathOf("src/view.tsx"), sibling: repoPathOf("src/view.spec.tsx") },
+    { file: repoPathOf("src/view.tsx"), sibling: repoPathOf("src/view.test.tsx") },
+  ])("accepts $sibling beside $file where tests are named .test or .spec", ({ file, sibling }) => {
+    const source = "export const value = 1;\n";
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file, sibling],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+    const selected = prepared.value.prepareFile({
+      file,
+      readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selected.outcome === "ok");
+    assert(selected.value.kind === "syntax");
+    const observers = selected.value.begin({
+      sourceFile: SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true),
+      anchorAt: vi.fn().mockReturnValue({ line: 1, column: 0 }),
+    });
+
+    expect(observers.finish()).toEqual([]);
+  });
+
+  it("reports src/order.ts beside only an order.spec.ts when only .test is declared", () => {
+    const file = repoPathOf("src/order.ts");
+    const source = "export const order = 1;\n";
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file, repoPathOf("src/order.spec.ts")],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test"], folders: [] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+    const selected = prepared.value.prepareFile({
+      file,
+      readText: vi.fn().mockReturnValue({ outcome: "ok", value: source }),
+    });
+    assert(selected.outcome === "ok");
+    assert(selected.value.kind === "syntax");
+    const observers = selected.value.begin({
+      sourceFile: SYNTAX_API.createSourceFile(file, source, SYNTAX_API.ScriptTarget.Latest, true),
+      anchorAt: vi.fn().mockReturnValue({ line: 1, column: 0 }),
+    });
+
+    expect(observers.finish()).toEqual([
+      {
+        check: ADDRESS,
+        anchor: { line: 1, column: 0 },
+        snippet: "missing co-located *.test.ts(x) sibling",
+      },
+    ]);
+  });
+
+  it("reads an order.spec.ts as production when only .test is declared", () => {
+    const file = repoPathOf("src/order.spec.ts");
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test"], folders: [] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({
+        file,
+        readText: vi.fn().mockReturnValue({ outcome: "ok", value: "" }),
+      }),
+    ).toMatchObject({ outcome: "ok", value: { kind: "syntax" } });
+  });
 });

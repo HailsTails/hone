@@ -73,7 +73,12 @@ const sourceObservations = (request: {
 } => {
   const prepared = check.prepare({
     bindings: [request.clause ?? CLAUSE],
-    repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+    repository: {
+      files: [FILE],
+      exists: vi.fn().mockReturnValue("present"),
+      disk: EMPTY_DISK,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    },
     syntaxApi: SYNTAX_API,
   });
   assert(prepared.outcome === "ok");
@@ -134,7 +139,12 @@ describe("CD-5 existing annotation capability", () => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [CLAUSE],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");
@@ -403,7 +413,12 @@ describe("CD-5 configured tracker patterns", () => {
   ])("refuses to prepare with $name, naming the clause", ({ clause, detail }) => {
     const prepared = check.prepare({
       bindings: [clause],
-      repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [FILE],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
 

@@ -1,20 +1,13 @@
-import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { testFileEligibility } from "../../runner/pieces/source-scope.ts";
 import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
-const testFileEligibility = (request: { readonly file: string }): "eligible" | "skipped" => {
-  if (folderScope({ file: request.file }) === "generated") return "skipped";
-  return request.file.endsWith(".test.ts") || request.file.endsWith(".test.tsx")
-    ? "eligible"
-    : "skipped";
-};
-
 export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => ({
+  prepare: ({ bindings, repository, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) => {
-        if (testFileEligibility({ file }) === "skipped") {
+        if (testFileEligibility({ file, testFiles: repository.testFiles }) === "skipped") {
           return { outcome: "ok", value: { kind: "skipped" } };
         }
         return {

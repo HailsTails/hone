@@ -5,6 +5,7 @@ import type { CheckAddressText } from "../../../../../domain/language-layer/chec
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
+import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { SourceObservers, WalkerRepository } from "../../runner/pieces/walker-piece.ts";
@@ -57,6 +58,7 @@ const sourceObservations = (request: {
     files: [file],
     exists: vi.fn().mockReturnValue("present"),
     disk: EMPTY_DISK,
+    testFiles: DEFAULT_TEST_FILES,
   };
   const prepared = check.prepare({ bindings: [CLAUSE], repository, syntaxApi: SYNTAX_API });
   assert(prepared.outcome === "ok");
@@ -127,8 +129,7 @@ describe("CD-10 existing test throw observation", () => {
   it.each([
     "src/example.ts",
     "src/example.test.js",
-    "src/example.spec.ts",
-    "src/example.spec.tsx",
+    "src/example.check.ts",
     "src/example.test.mts",
     "src/example.test.cts",
     "src/node_modules/example.test.ts",
@@ -137,7 +138,12 @@ describe("CD-10 existing test throw observation", () => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [CLAUSE],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: DEFAULT_TEST_FILES,
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");
@@ -153,7 +159,12 @@ describe("CD-10 existing test throw observation", () => {
     const file = repoPathOf("src/vendor/example.test.ts");
     const prepared = check.prepare({
       bindings: [CLAUSE],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: DEFAULT_TEST_FILES,
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");
@@ -169,5 +180,30 @@ describe("CD-10 existing test throw observation", () => {
       value: { kind: "syntax", begin: expect.any(Function) },
     });
     expect(readText).not.toHaveBeenCalled();
+  });
+});
+
+describe("the repository's declared test files", () => {
+  it.each([
+    { fileName: "src/order.spec.ts", kind: "syntax" },
+    { fileName: "src/__tests__/order.ts", kind: "syntax" },
+    { fileName: "src/order.test.ts", kind: "skipped" },
+  ])("prepares $fileName as $kind under spec and __tests__", ({ fileName, kind }) => {
+    const file = repoPathSchema.parse(fileName);
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({ file, readText: () => ({ outcome: "ok", value: "" }) }),
+    ).toMatchObject({ outcome: "ok", value: { kind } });
   });
 });

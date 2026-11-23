@@ -1,4 +1,5 @@
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
+import type { TestFiles } from "../../../../../domain/settings/test-files.ts";
 import type { SyntaxApi, SyntaxNode, SyntaxTree } from "../toolchain/typescript-parse.ts";
 import { sourceSnippetOf } from "./source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "./walker-piece.ts";
@@ -10,16 +11,20 @@ export type SyntaxVisit = {
 };
 
 export const syntaxNodeCheck = (request: {
-  readonly eligibility: (request: { readonly file: RepoPath }) => "eligible" | "skipped";
+  readonly eligibility: (request: {
+    readonly file: RepoPath;
+    readonly testFiles: TestFiles;
+  }) => "eligible" | "skipped";
   readonly found: (
     visit: SyntaxVisit,
   ) => { readonly at: SyntaxNode; readonly snippet: string } | undefined;
 }): WalkerPiece => ({
-  prepare: ({ bindings, syntaxApi }) => ({
+  prepare: ({ bindings, repository, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) =>
-        request.eligibility({ file }) === "skipped" || bindings.length === 0
+        request.eligibility({ file, testFiles: repository.testFiles }) === "skipped" ||
+        bindings.length === 0
           ? { outcome: "ok", value: { kind: "skipped" } }
           : {
               outcome: "ok",

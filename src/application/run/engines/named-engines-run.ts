@@ -38,6 +38,7 @@ const engineRequestOf = (request: NamedEnginesRequest): NamedEngineRunRequest =>
     request.settings.eslintConfigLookup.lookup === "declared"
       ? request.settings.eslintConfigLookup.value
       : undefined,
+  testFiles: request.settings.conventions.testFiles,
 });
 
 export const namedEngineCallsOf = async <Value>(

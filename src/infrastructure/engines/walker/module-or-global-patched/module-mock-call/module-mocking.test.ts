@@ -55,7 +55,12 @@ const sourceObservations = (request: {
 } => {
   const prepared = check.prepare({
     bindings: [{ ...BINDING, edition: request.edition ?? BINDING.edition }],
-    repository: { files: [FILE], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+    repository: {
+      files: [FILE],
+      exists: vi.fn().mockReturnValue("present"),
+      disk: EMPTY_DISK,
+      testFiles: { suffixes: ["test", "spec"], folders: [] },
+    },
     syntaxApi: SYNTAX_API,
   });
   assert(prepared.outcome === "ok");
@@ -101,7 +106,12 @@ describe("Existing literal module-mock observations", () => {
     const file = repoPathSchema.parse(fileName);
     const prepared = check.prepare({
       bindings: [BINDING],
-      repository: { files: [file], exists: vi.fn().mockReturnValue("present"), disk: EMPTY_DISK },
+      repository: {
+        files: [file],
+        exists: vi.fn().mockReturnValue("present"),
+        disk: EMPTY_DISK,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
+      },
       syntaxApi: SYNTAX_API,
     });
     assert(prepared.outcome === "ok");
@@ -298,5 +308,30 @@ describe("Global patches in edition 2", () => {
         .getChildAt(0, observed.tree),
     });
     expect(observed.observers.finish()).toEqual([]);
+  });
+});
+
+describe("the repository's declared test files", () => {
+  it.each([
+    { fileName: "src/order.spec.ts", kind: "syntax" },
+    { fileName: "src/__tests__/order.ts", kind: "syntax" },
+    { fileName: "src/order.test.ts", kind: "skipped" },
+  ])("prepares $fileName as $kind under spec and __tests__", ({ fileName, kind }) => {
+    const file = repoPathSchema.parse(fileName);
+    const prepared = check.prepare({
+      bindings: [BINDING],
+      repository: {
+        files: [file],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({ file, readText: () => ({ outcome: "ok", value: "" }) }),
+    ).toMatchObject({ outcome: "ok", value: { kind } });
   });
 });

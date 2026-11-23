@@ -4,6 +4,7 @@ import type { Result } from "../../../../../domain/result.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { CheckHit } from "../../../../../domain/runner/check-observations.ts";
 import type { PieceFailure } from "../../../../../domain/runner/piece-failure-types.ts";
+import type { TestFiles } from "../../../../../domain/settings/test-files.ts";
 import type {
   CommentRange,
   SyntaxApi,
@@ -53,6 +54,7 @@ export type WalkerRepository = {
   readonly files: readonly RepoPath[];
   readonly exists: (request: { readonly file: RepoPath }) => "present" | "absent";
   readonly disk: WalkerDisk;
+  readonly testFiles: TestFiles;
 };
 
 export type WalkerPiece = {

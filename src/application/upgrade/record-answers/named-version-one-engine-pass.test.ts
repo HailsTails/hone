@@ -12,6 +12,7 @@ import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import { DEFAULT_TEST_FILES } from "../../../domain/settings/test-files.ts";
 import type { ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
 import {
   createNamedVersionOneEnginePass,
@@ -262,6 +263,7 @@ describe("createNamedVersionOneEnginePass", () => {
           checks: [LOOP, teamLoop],
           answered: [],
           declaredConfigRoots: [],
+          testFiles: DEFAULT_TEST_FILES,
         },
       },
       projection: PROJECTION,

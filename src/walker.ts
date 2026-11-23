@@ -1,5 +1,7 @@
 import * as editionReach from "./domain/rule-set/edition-reach.ts";
 import * as ruleSetIdentifiers from "./domain/rule-set/identifiers.ts";
+import * as testFiles from "./domain/settings/test-files.ts";
+import type { TestFiles } from "./domain/settings/test-files.ts";
 import * as sourceScope from "./infrastructure/engines/walker/runner/pieces/source-scope.ts";
 
 export type { CheckBinding, CheckSettingValues } from "./domain/runner/check-binding.ts";
@@ -12,6 +14,7 @@ export type { Anchor, AnchorKind } from "./domain/finding/anchor.ts";
 export type { RuleSetIdentity } from "./domain/rule-set/clause-address-types.ts";
 export type { RuleSetName } from "./domain/rule-set/identifier-types.ts";
 export type { RepoPath } from "./domain/repository/repo-path-types.ts";
+export type { TestFiles } from "./domain/settings/test-files.ts";
 export type { Result } from "./domain/result.ts";
 export type {
   CommentRange,
@@ -37,3 +40,5 @@ export const editionReaches = editionReach.editionReaches;
 export const isEdition = editionReach.isEdition;
 
 export const isRuleSetName = ruleSetIdentifiers.isRuleSetName;
+
+export const DEFAULT_TEST_FILES: TestFiles = testFiles.DEFAULT_TEST_FILES;

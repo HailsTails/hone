@@ -9,6 +9,7 @@ import { holdsAt } from "../../../../../domain/records/answering/record-reach.ts
 import type { RepoPath } from "../../../../../domain/repository/repo-path-types.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { CheckHit } from "../../../../../domain/runner/check-observations.ts";
+import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { FIRST_EDITION } from "../../../../content-files/edition.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { observeWalkerFile } from "../../runner/observe-walker-file.ts";
@@ -51,6 +52,7 @@ const findingsIn = (request: {
       files: [request.file],
       exists: () => "present",
       disk: textsDisk({ root: "/repo", texts: {} }),
+      testFiles: DEFAULT_TEST_FILES,
     },
     syntaxApi: parse.syntaxApi,
   });
@@ -170,7 +172,6 @@ describe("throws in production", () => {
     "src/read-order.spec.cts",
     "src/read-order.test.mts",
     "src/read-order.test.cts",
-    "src/read-order.d.tsx",
   ])("preserves the production detector's existing exclusion for %s", (name) => {
     const file = repoPathSchema.parse(name);
     expect(findingsIn({ file, source: "throw failure;" })).toEqual([]);

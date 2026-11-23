@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
+import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import { moduleOriginOf, ownPackageNamesOf } from "./own-modules.ts";
 
@@ -27,6 +28,7 @@ describe("own package names", () => {
               "src/a.test.ts": "",
             },
           }),
+          testFiles: DEFAULT_TEST_FILES,
         },
       }),
     ).toEqual(["app", "@app/paths"]);
@@ -45,6 +47,7 @@ describe("own package names", () => {
               "packages/paths/package.json": "{ name",
             },
           }),
+          testFiles: DEFAULT_TEST_FILES,
         },
       }),
     ).toEqual([]);

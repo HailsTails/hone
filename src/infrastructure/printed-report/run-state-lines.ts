@@ -10,9 +10,8 @@ import type {
 } from "../../domain/report/run-report.ts";
 import { projectionOutputsOf } from "../../domain/repository/projection-outputs.ts";
 import type { RepoPath } from "../../domain/repository/repo-path-types.ts";
-import type { ConventionKey } from "../../domain/settings/conventions.ts";
 import { SETTINGS_FILE_NAME } from "../../domain/settings/settings-file.ts";
-import type { SettingsNote } from "../../domain/settings/settings-note.ts";
+import type { SettingsNote, UnreadConventionKey } from "../../domain/settings/settings-note.ts";
 import { NESTED_CONFIGURATION_ISSUE } from "../command-line/nested-configuration-issue.ts";
 import { counted, quoted } from "./printed-text.ts";
 
@@ -163,7 +162,7 @@ export const assessmentLine = (request: { readonly partial: RunAssessment }): st
   }
 };
 
-const NOTE_KEY_TEXTS: Readonly<Record<ConventionKey, string>> = {
+const NOTE_KEY_TEXTS: Readonly<Record<UnreadConventionKey, string>> = {
   generated: "generated",
   layers: "layers",
 };

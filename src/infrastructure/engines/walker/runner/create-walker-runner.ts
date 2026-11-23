@@ -13,6 +13,7 @@ import type { CheckBinding } from "../../../../domain/runner/check-binding.ts";
 import type { CheckHit, CheckMeasurement } from "../../../../domain/runner/check-observations.ts";
 import type { RunnerFailure } from "../../../../domain/runner/runner-failure.ts";
 import type { CaseVerdict } from "../../../../domain/runner/runner-result-types.ts";
+import { DEFAULT_TEST_FILES } from "../../../../domain/settings/test-files.ts";
 import { checkHitSchema } from "../../protocol/checks/check-wire.ts";
 import type {
   NamedChecksRunner,
@@ -252,6 +253,7 @@ const runOverRepository = (request: {
       entryKind: request.ports.entryKind,
       fileText: request.ports.fileText,
     }),
+    testFiles: request.run.testFiles,
   };
   return preparedPieces({ ports: request.ports, bindings: request.run.bindings, repository }).then(
     (prepared) => {
@@ -285,6 +287,7 @@ const caseVerdict = (request: {
       root: CASE_ROOT,
       texts: { [request.sourceCase.fileName]: request.sourceCase.source },
     }),
+    testFiles: DEFAULT_TEST_FILES,
   };
   return preparedPieces({ ports: request.ports, bindings: [request.binding], repository }).then(
     (prepared) => {

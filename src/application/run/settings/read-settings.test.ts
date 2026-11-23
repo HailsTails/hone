@@ -293,7 +293,7 @@ describe("readNamedSettings and the settings document", () => {
     });
   });
 
-  it("notes each declared convention no check reads yet", () => {
+  it("notes each declared convention no check reads yet, and not the test files the walker reads", () => {
     expect(
       readSelectedSettings({
         settingsFormat: formatGiving({
@@ -304,8 +304,9 @@ describe("readNamedSettings and the settings document", () => {
               conventions: {
                 generated: [{ files: ["src/generated/**"], outsideParty: "@graphql-codegen/cli" }],
                 layers: [{ layer: "domain", folders: [repoPathOf("src/domain")] }],
+                testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
               },
-              declared: ["generated", "layers"],
+              declared: ["generated", "layers", "testFiles"],
             },
           },
         }),
@@ -316,6 +317,7 @@ describe("readNamedSettings and the settings document", () => {
     ).toMatchObject({
       outcome: "ok",
       value: {
+        conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
         notes: [
           { kind: "declared-not-read", key: "generated" },
           { kind: "declared-not-read", key: "layers" },

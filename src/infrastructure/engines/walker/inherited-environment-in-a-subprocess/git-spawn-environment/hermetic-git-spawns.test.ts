@@ -5,6 +5,7 @@ import { repoPathOf } from "../../../../../domain/repository/repo-path-of.ts";
 import { editionOf } from "../../../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../../../domain/runner/check-binding.ts";
 import type { RunnerFailure } from "../../../../../domain/runner/runner-failure.ts";
+import { DEFAULT_TEST_FILES } from "../../../../../domain/settings/test-files.ts";
 import { repoPathSchema } from "../../../../hone-records-folder/repo-path.ts";
 import { textsDisk } from "../../runner/pieces/walker-disk.ts";
 import type { PreparedWalkerCheck, WalkerFile } from "../../runner/pieces/walker-piece.ts";
@@ -52,6 +53,7 @@ const preparedFor = (request: { readonly file: WalkerFile["file"] }): PreparedWa
       files: [request.file],
       exists: vi.fn().mockReturnValue("present"),
       disk: EMPTY_DISK,
+      testFiles: DEFAULT_TEST_FILES,
     },
     syntaxApi: SYNTAX_API,
   });
@@ -212,8 +214,14 @@ describe("CD-47 existing raw Git spawn guard", () => {
       readCount: 0,
     },
     {
-      name: "unsupported JavaScript spec",
+      name: "JavaScript spec",
       fileName: "src/git.spec.js",
+      expected: { outcome: "ok", value: { kind: "complete", hits: [] } },
+      readCount: 1,
+    },
+    {
+      name: "undeclared suffix",
+      fileName: "src/git.check.ts",
       expected: { outcome: "ok", value: { kind: "skipped" } },
       readCount: 0,
     },
@@ -225,5 +233,30 @@ describe("CD-47 existing raw Git spawn guard", () => {
 
     expect(preparedFor({ file }).prepareFile({ file, readText })).toEqual(expected);
     expect(readText).toHaveBeenCalledTimes(readCount);
+  });
+});
+
+describe("the repository's declared test files", () => {
+  it.each([
+    { fileName: "src/order.spec.ts", kind: "complete" },
+    { fileName: "src/__tests__/order.ts", kind: "complete" },
+    { fileName: "src/order.test.ts", kind: "skipped" },
+  ])("prepares $fileName as $kind under spec and __tests__", ({ fileName, kind }) => {
+    const file = repoPathSchema.parse(fileName);
+    const prepared = check.prepare({
+      bindings: [CLAUSE],
+      repository: {
+        files: [file],
+        exists: () => "present",
+        disk: textsDisk({ root: "/repo", texts: {} }),
+        testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
+      },
+      syntaxApi: SYNTAX_API,
+    });
+    assert(prepared.outcome === "ok");
+
+    expect(
+      prepared.value.prepareFile({ file, readText: () => ({ outcome: "ok", value: "" }) }),
+    ).toMatchObject({ outcome: "ok", value: { kind } });
   });
 });

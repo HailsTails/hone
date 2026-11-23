@@ -30,11 +30,11 @@ const testAliasSites = (request: {
 };
 
 export const check: WalkerPiece = {
-  prepare: ({ bindings, syntaxApi }) => ({
+  prepare: ({ bindings, repository, syntaxApi }) => ({
     outcome: "ok",
     value: {
       prepareFile: ({ file }) =>
-        testFileEligibility({ file }) === "skipped"
+        testFileEligibility({ file, testFiles: repository.testFiles }) === "skipped"
           ? { outcome: "ok", value: { kind: "skipped" } }
           : {
               outcome: "ok",

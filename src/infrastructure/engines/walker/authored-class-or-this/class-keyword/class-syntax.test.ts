@@ -93,6 +93,7 @@ describe("CD-14 class-syntax audit check over TypeScript's own parse", () => {
         answered: [],
         declaredConfigRoots: [],
         declaredConfigLookup: undefined,
+        testFiles: { suffixes: ["test", "spec"], folders: [] },
       }),
     ).toEqual({
       outcome: "ok",
