@@ -1,4 +1,5 @@
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { compactSourceSnippetOf } from "../../runner/pieces/source-snippet.ts";
 import type { WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 
 const sourceEligibility = (request: { readonly file: string }): "eligible" | "excluded" => {
@@ -28,8 +29,7 @@ export const check: WalkerPiece = {
             !RETURN_TYPE_TYPEOF.test(line)
           )
             return [];
-          const collapsed = trimmed.replace(/\s+/g, " ");
-          const snippet = collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed;
+          const snippet = compactSourceSnippetOf(trimmed);
           return bindings.map((binding) => ({
             check: binding.address,
             anchor: { line: index + 1, column: 0 },

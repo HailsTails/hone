@@ -1,4 +1,5 @@
 import { folderScope } from "../../runner/pieces/source-scope.ts";
+import { sourceSnippetAt } from "../../runner/pieces/source-snippet.ts";
 import type { PieceHit, WalkerPiece } from "../../runner/pieces/walker-piece.ts";
 import type { SyntaxApi, SyntaxNode } from "../../runner/toolchain/typescript-parse.ts";
 
@@ -118,10 +119,7 @@ export const check: WalkerPiece = {
                   if (root === undefined || !scopes.some((scope) => scope.has(root))) return;
                   const position = node.getStart(sourceFile);
                   const anchor = anchorAt({ position });
-                  const rawSnippet = sourceFile.text
-                    .slice(position, position + 80)
-                    .replace(/\n/g, " ");
-                  const snippet = rawSnippet.length === 80 ? `${rawSnippet}…` : rawSnippet;
+                  const snippet = sourceSnippetAt({ source: sourceFile.text, position });
                   hits.push(
                     ...bindings.map((binding) => ({ check: binding.address, anchor, snippet })),
                   );

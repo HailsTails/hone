@@ -8,3 +8,11 @@ export const sourceSnippetOf = (text: string): string =>
 
 export const compactSourceSnippetOf = (text: string): string =>
   trimSnippet(text.replace(/\s+/g, " "));
+
+export const sourceSnippetAt = ({
+  source,
+  position,
+}: {
+  readonly source: string;
+  readonly position: number;
+}): string => trimSnippet(source.slice(position, position + MAX_LENGTH + 1).replace(/\n/g, " "));
