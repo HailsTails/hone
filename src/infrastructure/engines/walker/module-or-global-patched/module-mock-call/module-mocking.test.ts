@@ -91,8 +91,6 @@ describe("Existing literal module-mock observations", () => {
     { name: "root-only excluded directory", fileName: "vendor/example.test.ts", kind: "skipped" },
     { name: "nested root-only directory", fileName: "src/vendor/example.test.ts", kind: "syntax" },
     { name: "TSX test", fileName: "src/example.test.tsx", kind: "syntax" },
-    { name: "TypeScript commonjs spec", fileName: "src/example.spec.cts", kind: "syntax" },
-    { name: "TypeScript esm test", fileName: "src/example.test.mts", kind: "syntax" },
     { name: "integration test", fileName: "src/example.integration.test.ts", kind: "syntax" },
     { name: "physical scripts test", fileName: "scripts/example.test.ts", kind: "syntax" },
     { name: "ordinary source", fileName: "src/example.ts", kind: "skipped" },

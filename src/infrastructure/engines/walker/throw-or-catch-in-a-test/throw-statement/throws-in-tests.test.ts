@@ -112,12 +112,7 @@ describe("CD-10 existing test throw observation", () => {
     expect(observed.anchorAt).not.toHaveBeenCalled();
   });
 
-  it.each([
-    "src/example.spec.ts",
-    "src/example.spec.tsx",
-    "src/example.test.mts",
-    "src/example.test.cts",
-  ])("observes a throw in %s", (file) => {
+  it.each(["src/example.test.ts", "src/example.test.tsx"])("observes a throw in %s", (file) => {
     const observed = sourceObservations({ file, source: "throw failure;\n" });
     const statement = observed.tree.getChildAt(0, observed.tree).getChildAt(0, observed.tree);
 
@@ -131,6 +126,10 @@ describe("CD-10 existing test throw observation", () => {
   it.each([
     "src/example.ts",
     "src/example.test.js",
+    "src/example.spec.ts",
+    "src/example.spec.tsx",
+    "src/example.test.mts",
+    "src/example.test.cts",
     "src/node_modules/example.test.ts",
     "vendor/example.test.ts",
   ])("preserves the existing test-family exclusion for %s", (fileName) => {

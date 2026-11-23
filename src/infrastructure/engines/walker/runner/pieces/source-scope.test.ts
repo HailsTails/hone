@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  folderScope,
-  javaScriptTestEligibility,
-  testFileEligibility,
-  typeScriptSourceKindOf,
-} from "./source-scope.ts";
+import { folderScope, testFileEligibility, typeScriptSourceKindOf } from "./source-scope.ts";
 
 describe("folderScope", () => {
   it.each([
@@ -34,12 +29,12 @@ describe("testFileEligibility", () => {
   it.each([
     { file: "src/order.test.ts", expected: "eligible" },
     { file: "src/order.test.tsx", expected: "eligible" },
-    { file: "src/order.spec.ts", expected: "eligible" },
-    { file: "src/order.spec.tsx", expected: "eligible" },
-    { file: "src/order.spec.mts", expected: "eligible" },
-    { file: "src/order.spec.cts", expected: "eligible" },
-    { file: "src/order.test.mts", expected: "eligible" },
-    { file: "src/order.test.cts", expected: "eligible" },
+    { file: "src/order.spec.ts", expected: "skipped" },
+    { file: "src/order.spec.tsx", expected: "skipped" },
+    { file: "src/order.spec.mts", expected: "skipped" },
+    { file: "src/order.spec.cts", expected: "skipped" },
+    { file: "src/order.test.mts", expected: "skipped" },
+    { file: "src/order.test.cts", expected: "skipped" },
     { file: "src/order.d.ts", expected: "skipped" },
     { file: "node_modules/order.test.ts", expected: "skipped" },
   ])("scopes $file as $expected", ({ file, expected }) => {
@@ -47,24 +42,12 @@ describe("testFileEligibility", () => {
   });
 });
 
-describe("javaScriptTestEligibility", () => {
-  it.each([
-    { file: "src/order.test.js", expected: "eligible" },
-    { file: "src/order.test.mjs", expected: "eligible" },
-    { file: "src/order.spec.mjs", expected: "eligible" },
-    { file: "src/order.spec.js", expected: "skipped" },
-    { file: "build/order.test.js", expected: "skipped" },
-  ])("classifies $file as $expected", ({ file, expected }) => {
-    expect(javaScriptTestEligibility({ file })).toBe(expected);
-  });
-});
-
 describe("TypeScript source eligibility", () => {
   it.each([
     { file: "src/route.ts", kind: "production" },
-    { file: "src/route.spec.tsx", kind: "test" },
-    { file: "src/route.test.mts", kind: "test" },
-    { file: "src/route.test.cts", kind: "test" },
+    { file: "src/route.spec.tsx", kind: "production" },
+    { file: "src/route.test.mts", kind: "production" },
+    { file: "src/route.test.cts", kind: "production" },
     { file: "src/route.cts", kind: "production" },
     { file: "src/route.d.mts", kind: "skipped" },
     { file: "src/route.d.tsx", kind: "production" },

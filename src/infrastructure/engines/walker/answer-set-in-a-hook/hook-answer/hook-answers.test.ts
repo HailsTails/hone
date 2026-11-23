@@ -140,21 +140,13 @@ describe("answers set in a hook", () => {
     ]);
   });
 
-  it("checks an answer in a TypeScript spec", () => {
-    const file = repoPathSchema.parse("src/order.spec.ts");
+  it("skips a spec suffix outside the test-file scope", () => {
     expect(
       findingsIn({
-        file,
+        file: repoPathSchema.parse("src/order.spec.ts"),
         source: "beforeEach(() => stub.mockReturnValue('order'));",
       }),
-    ).toEqual([
-      {
-        file,
-        check: BINDING.address,
-        anchor: { line: 1, column: 17 },
-        snippet: "stub.mockReturnValue('order')",
-      },
-    ]);
+    ).toEqual([]);
   });
 
   it("leaves named callbacks outside the inline hook check", () => {

@@ -10,10 +10,10 @@
 A `throw` statement in a test file.
 
 ## Flags
-- TypeScript files named `*.test.*` or `*.spec.*` with a `.ts`, `.tsx`, `.mts` or `.cts` extension. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
+- Test files only: `*.test.ts` and `*.test.tsx`. `*.spec.ts` and `.js` tests are not read. Generated folders such as `node_modules`, `dist`, `build` and `coverage` are skipped.
 - Every `throw` statement, wherever it sits in the file.
 - Allowed: assertion calls such as `expect(...)`.
-- The [production throw check](../throw-between-our-units/throw-statement.md) covers other TypeScript source.
+- The source rule also confines throwing in production code to a closed list of contexts. The check does not look at production files; that part is left to review.
 
 ## Example
 ```ts

@@ -11,24 +11,6 @@
       "fileName": "src/view.test.tsx",
       "source": "const a = 1;\nthrow new Error(\"bad\");\n",
       "expectedLines": [2]
-    },
-    {
-      "name": "throw in a spec",
-      "fileName": "src/load.spec.ts",
-      "source": "throw new Error(\"bad\");\n",
-      "expectedLines": [1]
-    },
-    {
-      "name": "throw in a commonjs TypeScript test",
-      "fileName": "src/load.test.cts",
-      "source": "throw new Error(\"bad\");\n",
-      "expectedLines": [1]
-    },
-    {
-      "name": "throw in an esm TypeScript test",
-      "fileName": "src/load.test.mts",
-      "source": "throw new Error(\"bad\");\n",
-      "expectedLines": [1]
     }
   ],
   "allow": [
@@ -42,6 +24,12 @@
       "name": "throw in production code is left to review",
       "fileName": "src/load.ts",
       "source": "export const load = (): never => {\n  throw new Error(\"failed\");\n};\n",
+      "expectedLines": []
+    },
+    {
+      "name": "spec files are not read",
+      "fileName": "src/load.spec.ts",
+      "source": "throw new Error(\"bad\");\n",
       "expectedLines": []
     }
   ]

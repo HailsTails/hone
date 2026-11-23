@@ -20,7 +20,7 @@ export const testFileEligibility = (request: { readonly file: string }): "eligib
 
 const TYPESCRIPT_FILE = /\.(?:ts|tsx|mts|cts)$/;
 const DECLARATION_FILE = /\.d\.(?:ts|mts|cts)$/;
-const TEST_FILE = /\.(?:test|spec)\.(?:ts|tsx|mts|cts)$/;
+const TEST_FILE = /\.test\.tsx?$/;
 
 export const typeScriptSourceKindOf = (request: {
   readonly file: string;
@@ -34,12 +34,3 @@ export const typeScriptSourceKindOf = (request: {
     return "skipped";
   return TEST_FILE.test(file) ? "test" : "production";
 };
-
-const JAVASCRIPT_TEST = /(?:\.test\.(?:js|mjs)|\.spec\.mjs)$/;
-
-export const javaScriptTestEligibility = (request: {
-  readonly file: string;
-}): "eligible" | "skipped" =>
-  JAVASCRIPT_TEST.test(request.file) && folderScope(request) === "authored"
-    ? "eligible"
-    : "skipped";
