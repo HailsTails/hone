@@ -19,7 +19,7 @@ export const testFileEligibility = (request: { readonly file: string }): "eligib
   typeScriptSourceKindOf(request) === "test" ? "eligible" : "skipped";
 
 const TYPESCRIPT_FILE = /\.(?:ts|tsx|mts|cts)$/;
-const DECLARATION_FILE = /\.d\.(?:ts|tsx|mts|cts)$/;
+const DECLARATION_FILE = /\.d\.(?:ts|mts|cts)$/;
 const TEST_FILE = /\.(?:test|spec)\.(?:ts|tsx|mts|cts)$/;
 
 export const typeScriptSourceKindOf = (request: {
@@ -34,11 +34,6 @@ export const typeScriptSourceKindOf = (request: {
     return "skipped";
   return TEST_FILE.test(file) ? "test" : "production";
 };
-
-export const typeScriptSourceEligibility = (request: {
-  readonly file: string;
-}): "eligible" | "skipped" =>
-  typeScriptSourceKindOf(request) === "skipped" ? "skipped" : "eligible";
 
 const JAVASCRIPT_TEST = /(?:\.test\.(?:js|mjs)|\.spec\.mjs)$/;
 

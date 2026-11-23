@@ -4,7 +4,6 @@ import {
   folderScope,
   javaScriptTestEligibility,
   testFileEligibility,
-  typeScriptSourceEligibility,
   typeScriptSourceKindOf,
 } from "./source-scope.ts";
 
@@ -62,16 +61,16 @@ describe("javaScriptTestEligibility", () => {
 
 describe("TypeScript source eligibility", () => {
   it.each([
-    { file: "src/route.ts", kind: "production", eligibility: "eligible" },
-    { file: "src/route.spec.tsx", kind: "test", eligibility: "eligible" },
-    { file: "src/route.test.mts", kind: "test", eligibility: "eligible" },
-    { file: "src/route.test.cts", kind: "test", eligibility: "eligible" },
-    { file: "src/route.cts", kind: "production", eligibility: "eligible" },
-    { file: "src/route.d.mts", kind: "skipped", eligibility: "skipped" },
-    { file: "dist/route.spec.ts", kind: "skipped", eligibility: "skipped" },
-    { file: "src/route.js", kind: "skipped", eligibility: "skipped" },
-  ])("classifies $file as $kind", ({ file, kind, eligibility }) => {
+    { file: "src/route.ts", kind: "production" },
+    { file: "src/route.spec.tsx", kind: "test" },
+    { file: "src/route.test.mts", kind: "test" },
+    { file: "src/route.test.cts", kind: "test" },
+    { file: "src/route.cts", kind: "production" },
+    { file: "src/route.d.mts", kind: "skipped" },
+    { file: "src/route.d.tsx", kind: "production" },
+    { file: "dist/route.spec.ts", kind: "skipped" },
+    { file: "src/route.js", kind: "skipped" },
+  ])("classifies $file as $kind", ({ file, kind }) => {
     expect(typeScriptSourceKindOf({ file })).toBe(kind);
-    expect(typeScriptSourceEligibility({ file })).toBe(eligibility);
   });
 });
