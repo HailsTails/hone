@@ -20,15 +20,19 @@ type ChildEnginesLocations = MeasurementArguments & {
   readonly moduleExtension: ModuleExtension;
 };
 
-type ChildEnginesRequest = ChildEnginesLocations & { readonly execution: ExecutionPort };
+type ChildEnginesRequest = ChildEnginesLocations & {
+  readonly execution: ExecutionPort<"passed-through", "opened">;
+};
 
 const LARGEST_MEASUREMENT_REPLY_BYTES = 256 * 1024 * 1024;
 
-const CHILD_MEASUREMENT_POLICY: ExecutionPolicy = {
+const CHILD_MEASUREMENT_POLICY: ExecutionPolicy<"passed-through", "opened"> = {
   executable: process.execPath,
   environment: ({ ambient }) => ambient,
   timeoutMilliseconds: undefined,
   maximumOutputBytes: LARGEST_MEASUREMENT_REPLY_BYTES,
+  stdout: "passed-through",
+  replyPipe: "opened",
 };
 
 const measureInChild = (

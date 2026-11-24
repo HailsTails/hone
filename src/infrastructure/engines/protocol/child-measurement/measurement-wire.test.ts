@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ProcessPort } from "../../../../application/ports/host/process-port.ts";
+import type { NamedEngineRun } from "../../../../application/ports/engine/engine-run.ts";
+import type { ReplyPort } from "../../../../application/ports/host/reply-port.ts";
 import { absoluteRootOf } from "../../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import {
@@ -33,7 +34,7 @@ describe("createMeasurementArguments", () => {
 });
 
 describe("runEnginesMeasurement", () => {
-  it("measures over the roots and base revision it was given, writing each engine's kinds and report", async () => {
+  it("measures over the roots and base revision it was given, replying with each engine's run", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({
       outcome: "ok",
       value: [
@@ -57,20 +58,17 @@ describe("runEnginesMeasurement", () => {
         },
       ],
     });
-    const process: ProcessPort = {
-      arguments: ["/install", "/repo", "origin/main"],
-      writeOut: vi.fn<ProcessPort["writeOut"]>(),
-      writeError: vi.fn<ProcessPort["writeError"]>(),
-      exitWith: vi.fn<ProcessPort["exitWith"]>(),
-    };
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process, measure });
+    await runEnginesMeasurement({
+      process: { arguments: ["/install", "/repo", "origin/main"] },
+      reply,
+      measure,
+    });
 
     expect({
       measuring: measure.mock.calls,
-      written: vi.mocked(process.writeOut).mock.calls,
-      errors: vi.mocked(process.writeError).mock.calls,
-      exits: vi.mocked(process.exitWith).mock.calls,
+      replied: vi.mocked(reply.write).mock.calls,
     }).toEqual({
       measuring: [
         [
@@ -81,32 +79,25 @@ describe("runEnginesMeasurement", () => {
           },
         ],
       ],
-      written: [
+      replied: [
         [
           {
-            text: '{"outcome":"measured","engines":{"eslint":{"coverableKinds":["inline-disable"],"result":{"outcome":"ok","value":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"current"}}}}}',
+            text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"current"}}]}',
           },
         ],
       ],
-      errors: [],
-      exits: [],
     });
   });
 
   it("measures over the roots alone when no base revision was given", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({ outcome: "ok", value: [] });
-    const process: ProcessPort = {
-      arguments: ["/install", "/repo"],
-      writeOut: vi.fn<ProcessPort["writeOut"]>(),
-      writeError: vi.fn<ProcessPort["writeError"]>(),
-      exitWith: vi.fn<ProcessPort["exitWith"]>(),
-    };
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process, measure });
+    await runEnginesMeasurement({ process: { arguments: ["/install", "/repo"] }, reply, measure });
 
     expect({
       measuring: measure.mock.calls,
-      written: vi.mocked(process.writeOut).mock.calls,
+      replied: vi.mocked(reply.write).mock.calls,
     }).toEqual({
       measuring: [
         [
@@ -117,11 +108,11 @@ describe("runEnginesMeasurement", () => {
           },
         ],
       ],
-      written: [[{ text: '{"outcome":"measured","engines":{}}' }]],
+      replied: [[{ text: '{"outcome":"measured","runs":[]}' }]],
     });
   });
 
-  it("writes the run's load failure with its kind", async () => {
+  it("replies with the run's load failure and its kind", async () => {
     const measure = vi.fn<MeasureEngines>().mockResolvedValue({
       outcome: "failed",
       error: {
@@ -130,49 +121,31 @@ describe("runEnginesMeasurement", () => {
         failure: { kind: "team-config-unloadable", detail: "eslint.config.mjs threw" },
       },
     });
-    const process: ProcessPort = {
-      arguments: ["/install", "/repo"],
-      writeOut: vi.fn<ProcessPort["writeOut"]>(),
-      writeError: vi.fn<ProcessPort["writeError"]>(),
-      exitWith: vi.fn<ProcessPort["exitWith"]>(),
-    };
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process, measure });
+    await runEnginesMeasurement({ process: { arguments: ["/install", "/repo"] }, reply, measure });
 
-    expect({
-      written: vi.mocked(process.writeOut).mock.calls,
-      errors: vi.mocked(process.writeError).mock.calls,
-      exits: vi.mocked(process.exitWith).mock.calls,
-    }).toEqual({
-      written: [
-        [
-          {
-            text: '{"outcome":"not-loaded","failure":{"kind":"engine-failed","engine":{"named":"engine","engine":{"name":"eslint"}},"failure":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}}}',
-          },
-        ],
+    expect(vi.mocked(reply.write).mock.calls).toEqual([
+      [
+        {
+          text: '{"outcome":"not-loaded","failure":{"kind":"engine-failed","engine":{"named":"engine","engine":{"name":"eslint"}},"failure":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}}}',
+        },
       ],
-      errors: [],
-      exits: [],
-    });
+    ]);
   });
 
-  it("writes invalid arguments as the run's load failure, and measures nothing", async () => {
+  it("replies with invalid arguments as the run's load failure, and measures nothing", async () => {
     const measure = vi.fn<MeasureEngines>();
-    const process: ProcessPort = {
-      arguments: ["/install", "repo"],
-      writeOut: vi.fn<ProcessPort["writeOut"]>(),
-      writeError: vi.fn<ProcessPort["writeError"]>(),
-      exitWith: vi.fn<ProcessPort["exitWith"]>(),
-    };
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await runEnginesMeasurement({ process, measure });
+    await runEnginesMeasurement({ process: { arguments: ["/install", "repo"] }, reply, measure });
 
     expect({
       measuring: measure.mock.calls,
-      written: vi.mocked(process.writeOut).mock.calls,
+      replied: vi.mocked(reply.write).mock.calls,
     }).toEqual({
       measuring: [],
-      written: [
+      replied: [
         [
           {
             text: expect.stringMatching(
@@ -190,8 +163,8 @@ describe("decodeMeasuredRuns", () => {
     const runs = decodeMeasuredRuns({
       status: 0,
       stderr: "",
-      stdout:
-        '{"outcome":"measured","engines":{"eslint":{"coverableKinds":["config-override","inline-disable"],"result":{"outcome":"ok","value":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"out-of-date"}}}}}',
+      reply:
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["config-override","inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[{"kind":"config-override","check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"out-of-date"}}]}',
     });
 
     expect(runs).toEqual({
@@ -219,11 +192,91 @@ describe("decodeMeasuredRuns", () => {
     });
   });
 
+  it("replies with the runs measured, eslint before walker", async () => {
+    const eslintRun: NamedEngineRun = {
+      mechanism: "eslint",
+      coverableKinds: ["inline-disable"],
+      projection: "current",
+      slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+      hits: [],
+      nativeExceptions: [],
+      measured: [],
+    };
+    const walkerRun: NamedEngineRun = {
+      mechanism: "walker",
+      coverableKinds: [],
+      projection: "none",
+      slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+      hits: [],
+      nativeExceptions: [],
+      measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
+    };
+    const measure = vi
+      .fn<MeasureEngines>()
+      .mockResolvedValue({ outcome: "ok", value: [eslintRun, walkerRun] });
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
+
+    await runEnginesMeasurement({ process: { arguments: ["/install", "/repo"] }, reply, measure });
+
+    expect(vi.mocked(reply.write).mock.calls).toEqual([
+      [
+        {
+          text: '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[],"projection":"current"}},{"mechanism":"walker","coverableKinds":[],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"none"}}]}',
+        },
+      ],
+    ]);
+  });
+
+  it("decodes the runs of a reply in the order written, eslint before walker", () => {
+    const runs = decodeMeasuredRuns({
+      status: 0,
+      stderr: "",
+      reply:
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":["inline-disable"],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[],"projection":"current"}},{"mechanism":"walker","coverableKinds":[],"report":{"slices":[],"nestedConfigurations":[],"unprojectedFolders":[],"misnamedRuleIds":[],"hits":[],"nativeExceptions":[],"measured":[{"check":"claimed-type#non-null-assertions","file":"src/a.ts"}],"projection":"none"}}]}',
+    });
+
+    expect(runs).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          mechanism: "eslint",
+          coverableKinds: ["inline-disable"],
+          projection: "current",
+          slices: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          hits: [],
+          nativeExceptions: [],
+          measured: [],
+        },
+        {
+          mechanism: "walker",
+          coverableKinds: [],
+          projection: "none",
+          slices: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          hits: [],
+          nativeExceptions: [],
+          measured: [{ check: "claimed-type#non-null-assertions", file: repoPathOf("src/a.ts") }],
+        },
+      ],
+    });
+  });
+
   it("keeps the kind of a load failure that decodes, whatever the exit status", () => {
     const runs = decodeMeasuredRuns({
       status: 2,
       stderr: "warning: slow disk",
-      stdout:
+      reply:
         '{"outcome":"not-loaded","failure":{"kind":"listed-under-both-names","path":"hone.config.json","under":"checks","from":"a#b","to":"a#c"}}',
     });
 
@@ -239,43 +292,27 @@ describe("decodeMeasuredRuns", () => {
     });
   });
 
-  it("fails the engine whose entry does not decode as its runner giving invalid output", () => {
+  it("fails as an unexpected error when a run carries a failed result in place of its report", () => {
     const runs = decodeMeasuredRuns({
       status: 0,
       stderr: "",
-      stdout: '{"outcome":"measured","engines":{"eslint":{"coverableKinds":[]}}}',
+      reply:
+        '{"outcome":"measured","runs":[{"mechanism":"eslint","coverableKinds":[],"report":{"outcome":"failed","error":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}}}]}',
     });
 
     expect(runs).toEqual({
       outcome: "failed",
       error: {
-        kind: "engine-failed",
-        engine: { named: "mechanism", mechanism: "eslint" },
-        failure: { kind: "runner-invalid-output", detail: expect.any(String) },
-      },
-    });
-  });
-
-  it("fails the engine with the runner failure its entry carries", () => {
-    const runs = decodeMeasuredRuns({
-      status: 0,
-      stderr: "",
-      stdout:
-        '{"outcome":"measured","engines":{"eslint":{"coverableKinds":[],"result":{"outcome":"failed","error":{"kind":"team-config-unloadable","detail":"eslint.config.mjs threw"}}}}}',
-    });
-
-    expect(runs).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "engine-failed",
-        engine: { named: "mechanism", mechanism: "eslint" },
-        failure: { kind: "team-config-unloadable", detail: "eslint.config.mjs threw" },
+        kind: "unexpected-error",
+        detail: expect.stringMatching(
+          /^the measurement reply could not be decoded \(exit status 0\): .+; error output: $/s,
+        ),
       },
     });
   });
 
   it("fails as an unexpected error naming the exit status and error output when the reply is not JSON", () => {
-    const runs = decodeMeasuredRuns({ status: 1, stderr: "TypeError: boom", stdout: "" });
+    const runs = decodeMeasuredRuns({ status: 1, stderr: "TypeError: boom", reply: "" });
 
     expect(runs).toEqual({
       outcome: "failed",
@@ -289,7 +326,7 @@ describe("decodeMeasuredRuns", () => {
   });
 
   it("fails as an unexpected error when the reply is JSON but no measurement reply", () => {
-    const runs = decodeMeasuredRuns({ status: 0, stderr: "", stdout: '{"outcome":"finished"}' });
+    const runs = decodeMeasuredRuns({ status: 0, stderr: "", reply: '{"outcome":"finished"}' });
 
     expect(runs).toEqual({
       outcome: "failed",

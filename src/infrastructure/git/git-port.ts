@@ -65,12 +65,14 @@ const environmentWithoutRepositoryLocation = (request: {
     ),
   );
 
-const GIT_EXECUTION_POLICY: ExecutionPolicy = {
+const GIT_EXECUTION_POLICY: ExecutionPolicy<"captured", "none"> = {
   executable: "git",
   environment: ({ ambient }) =>
     environmentWithoutRepositoryLocation({ ambientEnvironment: ambient }),
   timeoutMilliseconds: undefined,
   maximumOutputBytes: LARGEST_GIT_OUTPUT_BYTES,
+  stdout: "captured",
+  replyPipe: "none",
 };
 
 const parsedRepoPaths = (request: {
@@ -520,7 +522,8 @@ const defaultGitSpawn = (): GitSpawn => {
             : executed.error.detail,
       };
     }
-    return { outcome: "exited", ...executed.value };
+    const { status, stdout, stderr } = executed.value;
+    return { outcome: "exited", status, stdout, stderr };
   };
 };
 
