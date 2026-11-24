@@ -1,33 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ProcessPort } from "../application/ports/host/process-port.ts";
-import { measureEnginesFromArguments } from "./engines-measurement.ts";
+import type { ReplyPort } from "../application/ports/host/reply-port.ts";
+import { runMeasurementProcess } from "./engines-measurement.ts";
 
-describe("measureEnginesFromArguments", () => {
-  it("measures the repository in this process, writing why an absent one could not load", async () => {
-    const process: ProcessPort = {
-      arguments: [`${import.meta.dirname}/../..`, "/absent-repository"],
-      writeOut: vi.fn<ProcessPort["writeOut"]>(),
-      writeError: vi.fn<ProcessPort["writeError"]>(),
-      exitWith: vi.fn<ProcessPort["exitWith"]>(),
-    };
+describe("runMeasurementProcess", () => {
+  it("measures the repository in this process, replying why an absent one could not load", async () => {
+    const reply: ReplyPort = { write: vi.fn<ReplyPort["write"]>() };
 
-    await measureEnginesFromArguments({ process, moduleUrl: import.meta.resolve("../hone.ts") });
-
-    expect({
-      written: vi.mocked(process.writeOut).mock.calls,
-      errors: vi.mocked(process.writeError).mock.calls,
-      exits: vi.mocked(process.exitWith).mock.calls,
-    }).toEqual({
-      written: [
-        [
-          {
-            text: '{"outcome":"not-loaded","failure":{"kind":"config-absent","repo":"/absent-repository"}}',
-          },
-        ],
-      ],
-      errors: [],
-      exits: [],
+    await runMeasurementProcess({
+      process: { arguments: [`${import.meta.dirname}/../..`, "/absent-repository"] },
+      reply,
+      moduleUrl: import.meta.resolve("../hone.ts"),
     });
+
+    expect(vi.mocked(reply.write).mock.calls).toEqual([
+      [
+        {
+          text: '{"outcome":"not-loaded","failure":{"kind":"config-absent","repo":"/absent-repository"}}',
+        },
+      ],
+    ]);
   });
 });

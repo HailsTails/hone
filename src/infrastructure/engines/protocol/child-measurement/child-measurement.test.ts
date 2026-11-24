@@ -6,14 +6,14 @@ import type { ExecutionPort } from "../../../node/process/execution-port.ts";
 import { createChildEnginesStage } from "./child-measurement.ts";
 
 describe("createChildEnginesStage", () => {
-  it("runs the measurement entry over the roots and hands back the reply it decodes", async () => {
-    const execution: ExecutionPort = {
-      run: vi.fn<ExecutionPort["run"]>().mockReturnValue({
+  it("runs the measurement entry over the roots and decodes the reply pipe", async () => {
+    const execution: ExecutionPort<"passed-through", "opened"> = {
+      run: vi.fn<ExecutionPort<"passed-through", "opened">["run"]>().mockReturnValue({
         outcome: "ok",
         value: {
           status: 0,
           stderr: "",
-          stdout: '{"outcome":"not-loaded","failure":{"kind":"config-absent","repo":"/repo"}}',
+          reply: '{"outcome":"not-loaded","failure":{"kind":"config-absent","repo":"/repo"}}',
         },
       }),
     };
@@ -35,8 +35,8 @@ describe("createChildEnginesStage", () => {
   });
 
   it("fails as an unexpected error when the child does not finish", async () => {
-    const execution: ExecutionPort = {
-      run: vi.fn<ExecutionPort["run"]>().mockReturnValue({
+    const execution: ExecutionPort<"passed-through", "opened"> = {
+      run: vi.fn<ExecutionPort<"passed-through", "opened">["run"]>().mockReturnValue({
         outcome: "failed",
         error: {
           kind: "launch-failed",

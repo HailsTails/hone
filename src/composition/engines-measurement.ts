@@ -1,6 +1,7 @@
 import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
 import { moduleExtensionOf } from "../application/ports/host/module-extension.ts";
 import type { ProcessPort } from "../application/ports/host/process-port.ts";
+import type { ReplyPort } from "../application/ports/host/reply-port.ts";
 import { measureEngines } from "../application/run/version-two-run.ts";
 import type { RunLoadFailure } from "../domain/report/run-load-failure.ts";
 import type { Result } from "../domain/result.ts";
@@ -27,11 +28,13 @@ const measureInProcess = async (request: {
   return measured.outcome === "failed" ? measured : { outcome: "ok", value: measured.value.runs };
 };
 
-export const measureEnginesFromArguments = (request: {
-  readonly process: ProcessPort;
+export const runMeasurementProcess = (request: {
+  readonly process: Pick<ProcessPort, "arguments">;
+  readonly reply: ReplyPort;
   readonly moduleUrl: string;
 }): Promise<void> =>
   runEnginesMeasurement({
     process: request.process,
+    reply: request.reply,
     measure: (measuring) => measureInProcess({ moduleUrl: request.moduleUrl, measuring }),
   });

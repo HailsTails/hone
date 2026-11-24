@@ -58,4 +58,68 @@ describe("an engines stage measured in a child process", () => {
       ],
     });
   });
+
+  it("decodes the measurement while the adopter's config prints to standard output", async () => {
+    const check = "claimed-type#non-null-assertions";
+    const fileText = createDefaultFileTextPort({});
+    const commands = createDefaultCommandRunPort({});
+    const installRoot = absolutePathSchema.parse(`${import.meta.dirname}/../..`);
+    const repo = absolutePathSchema.parse(
+      `${installRoot}/artefacts/child-measured-engines-printing`,
+    );
+    const cli: ProcessPort = {
+      arguments: ["project", "--repo", repo],
+      writeOut: vi.fn<ProcessPort["writeOut"]>(),
+      writeError: vi.fn<ProcessPort["writeError"]>(),
+      exitWith: vi.fn<ProcessPort["exitWith"]>(),
+    };
+    onTestFinished(() => {
+      createDefaultDirectoryTreePort({}).remove({ path: repo });
+    });
+    commands.run({ command: "git", arguments: ["init", "--quiet", repo], directory: installRoot });
+    fileText.write({
+      path: `${repo}/hone.config.json`,
+      text: `{"version":2,"ruleSets":{},"checks":{"${check}":"eslint"}}`,
+    });
+    fileText.write({
+      path: `${repo}/eslint.config.mjs`,
+      text: 'console.log("adopter config loaded");\nexport { default } from "./hone.eslint.mjs";',
+    });
+    fileText.write({ path: `${repo}/a.ts`, text: "export const a = (b: string[]) => b[0]!;\n" });
+    await runToolCommand({ process: cli, moduleUrl: import.meta.resolve("../../src/hone.ts") });
+    commands.run({ command: "git", arguments: ["add", "--all"], directory: repo });
+    const { path } = INSTALLED_PORTS;
+    const located = { installRoot, repoRoot: repo, baseRevision: undefined };
+    const engines = createDefaultChildEnginesStage({ ...located, path, moduleExtension: ".ts" });
+
+    const measured = await engines();
+
+    expect(measured).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          mechanism: "eslint",
+          coverableKinds: ["config-override", "inline-disable"],
+          projection: "current",
+          slices: [],
+          nestedConfigurations: [],
+          unprojectedFolders: [],
+          misnamedRuleIds: [],
+          hits: [
+            {
+              check: "claimed-type#non-null-assertions",
+              file: "a.ts",
+              anchor: { line: 1, column: 34 },
+              snippet: "export const a = (b: string[]) => b[0]!;",
+            },
+          ],
+          nativeExceptions: [],
+          measured: [
+            { check: "claimed-type#non-null-assertions", file: "a.ts" },
+            { check: "claimed-type#non-null-assertions", file: "hone.eslint.d.mts" },
+          ],
+        },
+      ],
+    });
+  });
 });
