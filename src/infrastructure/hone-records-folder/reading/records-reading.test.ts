@@ -824,7 +824,7 @@ describe("recordsReadingOf", () => {
         {
           kind: "document-refused",
           file: DEBT_FILE,
-          issues: [expect.objectContaining({ code: "invalid_value", path: ["version"] })],
+          issues: [{ path: ["version"], message: expect.any(String) }],
         },
       ],
     });

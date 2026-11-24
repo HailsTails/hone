@@ -40,14 +40,7 @@ describe("readEntries", () => {
       error: {
         kind: "document-refused",
         file: repoPathOf("hone-records/debt/claimed-type.json"),
-        issues: [
-          {
-            code: "invalid_value",
-            message: "Invalid input: expected 2",
-            path: ["version"],
-            values: [2],
-          },
-        ],
+        issues: [{ path: ["version"], message: expect.any(String) }],
       },
     });
   });

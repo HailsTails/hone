@@ -23,6 +23,7 @@ import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
 import type { NamedEngineRun } from "../ports/engine/engine-run.ts";
 import type { NamedSettingsReading } from "./settings/read-settings.ts";
 import {
+  measureEngines,
   settledCatalogueOf,
   type VersionTwoRequest,
   type VersionTwoStages,
@@ -585,6 +586,43 @@ describe("versionTwoRunOver", () => {
       outcome: "failed",
       error: failure,
     });
+  });
+});
+
+describe("measureEngines", () => {
+  it("hands back the engines' runs with everything it read to run them, and asks no touched set", async () => {
+    const stages = stagesGiving({});
+
+    const measured = await measureEngines({ stages });
+
+    expect(measured).toEqual({
+      outcome: "ok",
+      value: {
+        catalogue: REPORT_CATALOGUE,
+        settings: SETTINGS,
+        records: RECORDS,
+        tree: { tracked: [FILE_A], declaredConfigRoots: [] },
+        runs: [RUN],
+      },
+    });
+    expect(vi.mocked(stages.touched).mock.calls).toEqual([]);
+  });
+
+  it("fails with the engines' failure", async () => {
+    const failure: RunLoadFailure = {
+      kind: "engine-failed",
+      engine: { named: "mechanism", mechanism: "eslint" },
+      failure: { kind: "team-config-unloadable", detail: "eslint.config.mjs threw" },
+    };
+    const stages = stagesGiving({
+      engines: vi
+        .fn<VersionTwoStages["engines"]>()
+        .mockResolvedValue({ outcome: "failed", error: failure }),
+    });
+
+    const measured = await measureEngines({ stages });
+
+    expect(measured).toEqual({ outcome: "failed", error: failure });
   });
 });
 

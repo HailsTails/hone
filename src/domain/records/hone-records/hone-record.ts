@@ -12,7 +12,7 @@ import type { ReadonlyJsonValue } from "../../settings/json-values/json-value.ts
 import type { WhyChain } from "../why-chain.ts";
 import type { NamedFolderKind } from "./named-folder-kind.ts";
 
-export type RecordIssue = { readonly path: readonly PropertyKey[]; readonly message: string };
+export type RecordIssue = { readonly path: readonly (string | number)[]; readonly message: string };
 
 export type RuntimeFacility = "clock" | "random" | "process" | "json";
 

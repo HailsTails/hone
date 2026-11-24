@@ -24,6 +24,7 @@ import type { Result } from "../../../domain/result.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetName } from "../../../domain/rule-set/identifier-types.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
+import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
 import { type FiledUnder, recordOf } from "./record-resolution.ts";
 import { readEntries } from "./records-entries.ts";
 
@@ -69,7 +70,11 @@ const entriesOf = (request: {
   if (!parsed.success) {
     return {
       outcome: "failed",
-      error: { kind: "document-refused", file, issues: parsed.error.issues },
+      error: {
+        kind: "document-refused",
+        file,
+        issues: mapZodIssuesToRecordIssues({ issues: parsed.error.issues }),
+      },
     };
   }
   return {
