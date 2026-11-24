@@ -1,14 +1,13 @@
 import { assert, describe, expect, it, vi } from "vitest";
 
-import { catalogueConformanceOf } from "../../../../../application/conformance/catalogue-conformance.ts";
+import { checkConformanceOf } from "../../../../../application/conformance/check-conformance.ts";
 import type { NamedConformancePort } from "../../../../../application/ports/engine/engine-port.ts";
 import type { ModuleLoaderPort } from "../../../../../application/ports/host/module-loader-port.ts";
+import type { CheckAddressText } from "../../../../../domain/language-layer/check-address-text.ts";
 import { TOOL_RULE_SET } from "../../../../../domain/rule-set/clause-address.ts";
 import { absolutePathSchema } from "../../../../content-files/absolute-path.ts";
 import { createNamedCheckExamplesRepository } from "../../../../content-files/rule-sets/named-check-examples.ts";
-import { readBoundCatalogue } from "../../../../content-files/symptom-catalogues/bound-catalogue.ts";
 import { createDefaultFileRemovalPort } from "../../../../node/file-system/file-removal-port.ts";
-import { createDefaultDirectoryPort } from "../../../../node/file-system/file-system-port.ts";
 import { createDefaultFileTextPort } from "../../../../node/file-system/file-text-port.ts";
 import { createDefaultModuleLoaderPort } from "../../../../node/modules/module-loader-port.ts";
 import { createDefaultPathPort } from "../../../../node/path-port.ts";
@@ -25,21 +24,11 @@ import {
   eslint9ToolchainModules,
 } from "../toolchain/eslint-9/eslint-9-engine.ts";
 import { createEslintPort } from "../toolchain/eslint-instance.ts";
-import { defaultEslintToolchainPeers, loadEslintToolchain } from "../toolchain/eslint-toolchain.ts";
-
-declare global {
-  interface ImportMeta {
-    readonly glob: (
-      patterns: readonly string[],
-      options: {
-        readonly base: string;
-        readonly query: "?raw";
-        readonly import: "default";
-        readonly eager: true;
-      },
-    ) => Readonly<Record<string, string>>;
-  }
-}
+import {
+  defaultEslintToolchainPeers,
+  type EslintToolchainModules,
+  loadEslintToolchain,
+} from "../toolchain/eslint-toolchain.ts";
 
 const INSTALL_ROOT = absolutePathSchema.parse(`${import.meta.dirname}/../../../../../..`);
 
@@ -48,141 +37,80 @@ const DEVELOPMENT_PEERS = defaultEslintToolchainPeers({
   installForm: "source",
 });
 
-const ESLINT_LINES = [
+const ESLINT_CHECKS: readonly CheckAddressText[] = [
+  "authored-class-or-this#class-keyword",
+  "authored-class-or-this#static-members-only",
+  "claimed-type#non-null-assertions",
+  "long-function#function-length",
+  "name-off-its-casing#filename-case",
+  "name-off-its-casing#naming-convention",
+  "positional-parameters#parameter-count",
+  "rebinding#parameter-reassignment",
+  "tangled-function#cognitive-complexity",
+  "test-switched-off#focused-tests",
+  "test-switched-off#skipped-tests",
+  "thrown-non-error#throw-only-error",
+  "untyped-value#explicit-any",
+  "untyped-value#implicit-any-let",
+  "wide-input#unread-parameter",
+  "work-inside-a-condition#else-after-an-exit",
+];
+
+const ESLINT_MAJORS: readonly {
+  readonly line: string;
+  readonly eslintVersion: string;
+  readonly modules: EslintToolchainModules;
+  readonly pieceModules: (request: { readonly base: ModuleLoaderPort }) => ModuleLoaderPort;
+}[] = [
   {
     line: "eslint-10",
-    eslintVersion: /^10\./,
+    eslintVersion: "10.15.0",
     modules: DEVELOPMENT_PEERS.modules,
-    pieceModules: (request: { readonly base: ModuleLoaderPort }): ModuleLoaderPort => request.base,
+    pieceModules: (request) => request.base,
   },
   {
     line: "eslint-9",
-    eslintVersion: /^9\./,
+    eslintVersion: "9.39.5",
     modules: eslint9ToolchainModules,
     pieceModules: eslint9PieceModules,
   },
-] as const;
+];
 
-describe("the ESLint toolchain lines Hone supports", () => {
-  it.each(ESLINT_LINES)(
-    "the $line toolchain loads its ESLint major from the development install",
+describe("the ESLint majors Hone supports", () => {
+  it.each(ESLINT_MAJORS)(
+    "the $line toolchain loads ESLint $eslintVersion from the development install",
     async ({ modules, eslintVersion }) => {
       const loaded = await loadEslintToolchain({
         peers: { location: DEVELOPMENT_PEERS.location, modules },
       });
 
       assert(loaded.outcome === "ok");
-      expect(loaded.value.eslintVersion).toMatch(eslintVersion);
+      expect(loaded.value.eslintVersion).toBe(eslintVersion);
     },
   );
 });
 
-describe("the shipped catalogue", () => {
-  it("binds checks to the ESLint engine", () => {
-    const catalogue = readBoundCatalogue({
-      ruleSet: TOOL_RULE_SET,
-      inheritedRecordKinds: [],
-      fileText: createDefaultFileTextPort({}),
-      path: createDefaultPathPort({}),
-      directory: createDefaultDirectoryPort({}),
-      ruleSetRoot: INSTALL_ROOT,
-      installRoot: INSTALL_ROOT,
-    });
-
-    assert(catalogue.outcome === "ok");
-    assert(catalogue.value.held === "catalogue");
-    expect(catalogue.value.catalogue.checks).toContainEqual(
-      expect.objectContaining({ name: "function-length", engines: [{ name: "eslint" }] }),
-    );
-  });
-});
-
-describe("the ESLint checks runner, loaded as core loads it, conforms to every ESLint check the shipped catalogue binds, on real ESLint", () => {
-  it("has no conformance failure over any check's flag and allow cases", async () => {
-    const path = createDefaultPathPort({});
-    const fileText = createDefaultFileTextPort({});
-    const catalogue = readBoundCatalogue({
-      ruleSet: TOOL_RULE_SET,
-      inheritedRecordKinds: [],
-      fileText,
-      path,
-      directory: createDefaultDirectoryPort({}),
-      ruleSetRoot: INSTALL_ROOT,
-      installRoot: INSTALL_ROOT,
-    });
-    assert(catalogue.outcome === "ok");
-    assert(catalogue.value.held === "catalogue");
-
-    const conformance = await catalogueConformanceOf({
-      checks: catalogue.value.catalogue.checks,
-      ruleSet: TOOL_RULE_SET,
-      engine: "eslint",
-      installRoot: INSTALL_ROOT,
-      moduleExtension: ".ts",
-      path,
-      modules: createDefaultModuleLoaderPort({}),
-      examples: createNamedCheckExamplesRepository({ fileText, path }),
-      loadFailureDetail,
-      enginePort: {
-        load: loadedNamedRunnerOver({ runnerModuleOf: runnerModuleAt }),
-        conform: namedCheckConformance,
-      },
-    });
-
-    expect(conformance).toEqual({ outcome: "ok", value: [] });
-  });
-});
-
-describe("the ESLint checks runner, built as the shipped one is, conforms to every ESLint check the shipped catalogue binds", () => {
-  it.each(ESLINT_LINES)(
-    "has no conformance failure on $line",
-    async ({ modules, pieceModules }) => {
+describe("the ESLint checks runner, loaded as core loads it, conforms to each ESLint check's shared cases on real ESLint", () => {
+  it.each(ESLINT_CHECKS)(
+    "%s has no conformance failure over its flag and allow cases",
+    async (check) => {
       const path = createDefaultPathPort({});
-      const fileText = createDefaultFileTextPort({});
-      const catalogue = readBoundCatalogue({
-        ruleSet: TOOL_RULE_SET,
-        inheritedRecordKinds: [],
-        fileText,
-        path,
-        directory: createDefaultDirectoryPort({}),
-        ruleSetRoot: INSTALL_ROOT,
-        installRoot: INSTALL_ROOT,
-      });
-      assert(catalogue.outcome === "ok");
-      assert(catalogue.value.held === "catalogue");
-      const lineRunner = namedChecksRunnerModuleSchema.parse(
-        toolchainBoundNamedChecksRunner({
-          fileScope: "typescript",
-          toolchain: loadEslintToolchain({
-            peers: { location: DEVELOPMENT_PEERS.location, modules },
-          }),
-          projectedKinds: ESLINT_PROJECTED_KINDS,
-          runnerOf: (toolchain) =>
-            createChecksRunner({
-              fileText,
-              fileRemoval: createDefaultFileRemovalPort({}),
-              modules: pieceModules({ base: createDefaultModuleLoaderPort({}) }),
-              path,
-              eslint: createEslintPort({ toolchain }),
-              moduleExtension: ".ts",
-            }),
-        }),
-      );
 
-      const conformance = await catalogueConformanceOf({
-        checks: catalogue.value.catalogue.checks,
+      const conformance = await checkConformanceOf({
         ruleSet: TOOL_RULE_SET,
+        check,
         engine: "eslint",
         installRoot: INSTALL_ROOT,
         moduleExtension: ".ts",
         path,
         modules: createDefaultModuleLoaderPort({}),
-        examples: createNamedCheckExamplesRepository({ fileText, path }),
+        examples: createNamedCheckExamplesRepository({
+          fileText: createDefaultFileTextPort({}),
+          path,
+        }),
         loadFailureDetail,
         enginePort: {
-          load: vi
-            .fn<NamedConformancePort["load"]>()
-            .mockResolvedValue({ outcome: "ok", value: lineRunner }),
+          load: loadedNamedRunnerOver({ runnerModuleOf: runnerModuleAt }),
           conform: namedCheckConformance,
         },
       });
@@ -191,3 +119,56 @@ describe("the ESLint checks runner, built as the shipped one is, conforms to eve
     },
   );
 });
+
+describe.each(ESLINT_MAJORS)(
+  "the ESLint checks runner on $line, built as the shipped one is, conforms to each ESLint check's shared cases",
+  ({ modules, pieceModules }) => {
+    it.each(ESLINT_CHECKS)(
+      "%s has no conformance failure over its flag and allow cases",
+      async (check) => {
+        const path = createDefaultPathPort({});
+        const lineRunner = namedChecksRunnerModuleSchema.parse(
+          toolchainBoundNamedChecksRunner({
+            fileScope: "typescript",
+            toolchain: loadEslintToolchain({
+              peers: { location: DEVELOPMENT_PEERS.location, modules },
+            }),
+            projectedKinds: ESLINT_PROJECTED_KINDS,
+            runnerOf: (toolchain) =>
+              createChecksRunner({
+                fileText: createDefaultFileTextPort({}),
+                fileRemoval: createDefaultFileRemovalPort({}),
+                modules: pieceModules({ base: createDefaultModuleLoaderPort({}) }),
+                path,
+                eslint: createEslintPort({ toolchain }),
+                moduleExtension: ".ts",
+              }),
+          }),
+        );
+
+        const conformance = await checkConformanceOf({
+          ruleSet: TOOL_RULE_SET,
+          check,
+          engine: "eslint",
+          installRoot: INSTALL_ROOT,
+          moduleExtension: ".ts",
+          path,
+          modules: createDefaultModuleLoaderPort({}),
+          examples: createNamedCheckExamplesRepository({
+            fileText: createDefaultFileTextPort({}),
+            path,
+          }),
+          loadFailureDetail,
+          enginePort: {
+            load: vi
+              .fn<NamedConformancePort["load"]>()
+              .mockResolvedValue({ outcome: "ok", value: lineRunner }),
+            conform: namedCheckConformance,
+          },
+        });
+
+        expect(conformance).toEqual({ outcome: "ok", value: [] });
+      },
+    );
+  },
+);

@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, assert, describe, expect, it } from "vitest";
 
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
 import { createDefaultFileTextPort } from "../../src/infrastructure/node/file-system/file-text-port.ts";
@@ -56,7 +56,7 @@ const PROJECT = [TOOL_COMMAND_FILE, "project", "--repo", "."];
 
 const RECORD_DEBT = [TOOL_COMMAND_FILE, "record-debt", "--repo", ".", "--base-revision", "HEAD"];
 
-const CHECK_WITHOUT_A_BASE = [TOOL_COMMAND_FILE, "check", "--repo", "."];
+const CHECK_NO_BASE = [TOOL_COMMAND_FILE, "check", "--repo", "."];
 
 const CHECK = [TOOL_COMMAND_FILE, "check", "--repo", ".", "--base-revision", "HEAD"];
 
@@ -79,73 +79,35 @@ const GIT_COMMIT = [
 
 const GIT_MOVE = ["mv", "src/cast.ts", "src/moved.ts"];
 
+const PRUNE_DEBT = [TOOL_COMMAND_FILE, "prune-debt", "--repo", ".", "--base-revision", "HEAD"];
+
 const DONE = { outcome: "ok", value: null };
 
 const WRITTEN = { outcome: "ok", value: undefined };
 
-const SUCCEEDED = expect.objectContaining({ outcome: "exited", exitCode: 0 });
+const GIT_DONE = { outcome: "exited", exitCode: 0, output: "" };
 
-const FORFEITURE_UNMEASURED = {
-  outcome: "exited",
-  exitCode: 1,
-  output: expect.stringContaining("forfeiture-unmeasured no-base-revision"),
-};
+const DEBT_ON_CAST = `{
+  "version": 2,
+  "records": [
+    {
+      "answers": "claimed-type#cast-to-any",
+      "file": "src/cast.ts"
+    }
+  ]
+}
+`;
 
-const ANSWERED_BY_DEBT = {
-  outcome: "exited",
-  exitCode: 0,
-  output: expect.stringContaining(
-    "claimed-type#cast-to-any walker src/cast.ts:1:22 JSON.parse(text) as any;  answered by debt",
-  ),
-};
-
-const NEW_FINDING = {
-  outcome: "exited",
-  exitCode: 1,
-  output: expect.stringContaining(
-    "claimed-type#cast-to-any walker src/added.ts:1:21 JSON.parse(text) as any;",
-  ),
-};
-
-const FORFEITED = {
-  outcome: "exited",
-  exitCode: 1,
-  output: expect.stringContaining(
-    "claimed-type#cast-to-any debt src/cast.ts; this change touched its file, so it no longer answers",
-  ),
-};
-
-const HELD_AT_THE_MOVED_PATH = {
-  outcome: "exited",
-  exitCode: 1,
-  output: expect.stringContaining(
-    "hone-records/debt/claimed-type.json records[0] held-at-moved-path src/moved.ts: git moved its file there; run record-debt to repoint it",
-  ),
-};
-
-const REPOINTED = {
-  outcome: "exited",
-  exitCode: 0,
-  output: expect.stringContaining(
-    "hone-records/debt/claimed-type.json records[0] repointed to src/moved.ts",
-  ),
-};
-
-const ANSWERED_BY_DEBT_AT_THE_MOVED_PATH = {
-  outcome: "exited",
-  exitCode: 0,
-  output: expect.stringContaining(
-    "claimed-type#cast-to-any walker src/moved.ts:1:22 JSON.parse(text) as any;  answered by debt",
-  ),
-};
-
-const FORFEITED_AT_THE_MOVED_PATH = {
-  outcome: "exited",
-  exitCode: 1,
-  output: expect.stringContaining(
-    "claimed-type#cast-to-any debt src/moved.ts; this change touched its file, so it no longer answers",
-  ),
-};
+const DEBT_ON_MOVED = `{
+  "version": 2,
+  "records": [
+    {
+      "answers": "claimed-type#cast-to-any",
+      "file": "src/moved.ts"
+    }
+  ]
+}
+`;
 
 afterAll(() => {
   scratch.removeTree({ path: JUDGED_AGAINST_A_BASE });
@@ -154,9 +116,10 @@ afterAll(() => {
 
 describe("a version 2 adopter's repository judged against a real git base, run as the real tool command", () => {
   it(
-    "cannot judge debt with no base, passes with the base when nothing changed, reports a new violation, and forfeits debt on a file the change touched",
+    "cannot judge debt with no base, passes when nothing changed, fails on a new violation, and forfeits debt on a file the change touched",
     () => {
       const repo = JUDGED_AGAINST_A_BASE;
+      const debtFile = `${repo}/hone-records/debt/claimed-type.json`;
       expect([
         scratch.removeTree({ path: repo }),
         scratch.makeDirectory({ path: `${repo}/src` }),
@@ -164,46 +127,47 @@ describe("a version 2 adopter's repository judged against a real git base, run a
         fileText.write({ path: `${repo}/eslint.config.mjs`, text: ESLINT_CONFIG }),
         fileText.write({ path: `${repo}/src/cast.ts`, text: CAST_SOURCE }),
         commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
-        commands.run({ command: "node", arguments: PROJECT, directory: repo }),
+      ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, GIT_DONE]);
+      const projected = commands.run({ command: "node", arguments: PROJECT, directory: repo });
+      expect([
         commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
         commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
-        commands.run({ command: "node", arguments: RECORD_DEBT, directory: repo }),
+      ]).toEqual([GIT_DONE, GIT_DONE]);
+      const recorded = commands.run({ command: "node", arguments: RECORD_DEBT, directory: repo });
+      const debtRecorded = fileText.read({ path: debtFile });
+      expect([
         commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
         commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
-      ]).toEqual([
-        DONE,
-        DONE,
-        WRITTEN,
-        WRITTEN,
-        WRITTEN,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-      ]);
-      const withoutBase = commands.run({
-        command: "node",
-        arguments: CHECK_WITHOUT_A_BASE,
-        directory: repo,
-      });
+      ]).toEqual([GIT_DONE, GIT_DONE]);
+      const noBase = commands.run({ command: "node", arguments: CHECK_NO_BASE, directory: repo });
       const unchanged = commands.run({ command: "node", arguments: CHECK, directory: repo });
       expect([
         fileText.write({ path: `${repo}/src/added.ts`, text: SECOND_CAST_SOURCE }),
         commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
-      ]).toEqual([WRITTEN, SUCCEEDED]);
+      ]).toEqual([WRITTEN, GIT_DONE]);
       const added = commands.run({ command: "node", arguments: CHECK, directory: repo });
       expect(fileText.write({ path: `${repo}/src/cast.ts`, text: TOUCHED_CAST_SOURCE })).toEqual(
         WRITTEN,
       );
       const touched = commands.run({ command: "node", arguments: CHECK, directory: repo });
-      expect({ withoutBase, unchanged, added, touched }).toEqual({
-        withoutBase: FORFEITURE_UNMEASURED,
-        unchanged: ANSWERED_BY_DEBT,
-        added: NEW_FINDING,
-        touched: FORFEITED,
+      const pruned = commands.run({ command: "node", arguments: PRUNE_DEBT, directory: repo });
+      assert(projected.outcome === "exited", "projected ran");
+      assert(recorded.outcome === "exited", "recorded ran");
+      assert(noBase.outcome === "exited", "noBase ran");
+      assert(unchanged.outcome === "exited", "unchanged ran");
+      assert(added.outcome === "exited", "added ran");
+      assert(touched.outcome === "exited", "touched ran");
+      assert(pruned.outcome === "exited", "pruned ran");
+      expect({
+        exits: [projected.exitCode, recorded.exitCode, noBase.exitCode, unchanged.exitCode],
+        judged: [added.exitCode, touched.exitCode, pruned.exitCode],
+        debtRecorded,
+        debtAfterPruning: fileText.exists({ path: debtFile }),
+      }).toEqual({
+        exits: [0, 0, 1, 0],
+        judged: [1, 1, 0],
+        debtRecorded: { outcome: "ok", value: DEBT_ON_CAST },
+        debtAfterPruning: "absent",
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,
@@ -213,6 +177,7 @@ describe("a version 2 adopter's repository judged against a real git base, run a
     "refuses debt held at a path git moved until record-debt repoints it, keeps it across the pure move, and forfeits it once the moved file is edited",
     () => {
       const repo = MOVED_SINCE_THE_BASE;
+      const debtFile = `${repo}/hone-records/debt/claimed-type.json`;
       expect([
         scratch.removeTree({ path: repo }),
         scratch.makeDirectory({ path: `${repo}/src` }),
@@ -220,40 +185,47 @@ describe("a version 2 adopter's repository judged against a real git base, run a
         fileText.write({ path: `${repo}/eslint.config.mjs`, text: ESLINT_CONFIG }),
         fileText.write({ path: `${repo}/src/cast.ts`, text: CAST_SOURCE }),
         commands.run({ command: "git", arguments: GIT_INIT, directory: repo }),
-        commands.run({ command: "node", arguments: PROJECT, directory: repo }),
+      ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, GIT_DONE]);
+      const projected = commands.run({ command: "node", arguments: PROJECT, directory: repo });
+      expect([
         commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
         commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
-        commands.run({ command: "node", arguments: RECORD_DEBT, directory: repo }),
+      ]).toEqual([GIT_DONE, GIT_DONE]);
+      const recorded = commands.run({ command: "node", arguments: RECORD_DEBT, directory: repo });
+      expect([
         commands.run({ command: "git", arguments: GIT_ADD, directory: repo }),
         commands.run({ command: "git", arguments: GIT_COMMIT, directory: repo }),
         commands.run({ command: "git", arguments: GIT_MOVE, directory: repo }),
-      ]).toEqual([
-        DONE,
-        DONE,
-        WRITTEN,
-        WRITTEN,
-        WRITTEN,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-        SUCCEEDED,
-      ]);
+      ]).toEqual([GIT_DONE, GIT_DONE, GIT_DONE]);
       const moved = commands.run({ command: "node", arguments: CHECK, directory: repo });
+      const debtMoved = fileText.read({ path: debtFile });
       const repointed = commands.run({ command: "node", arguments: RECORD_DEBT, directory: repo });
+      const debtRepointed = fileText.read({ path: debtFile });
       const kept = commands.run({ command: "node", arguments: CHECK, directory: repo });
       expect(fileText.write({ path: `${repo}/src/moved.ts`, text: TOUCHED_CAST_SOURCE })).toEqual(
         WRITTEN,
       );
       const edited = commands.run({ command: "node", arguments: CHECK, directory: repo });
-      expect({ moved, repointed, kept, edited }).toEqual({
-        moved: HELD_AT_THE_MOVED_PATH,
-        repointed: REPOINTED,
-        kept: ANSWERED_BY_DEBT_AT_THE_MOVED_PATH,
-        edited: FORFEITED_AT_THE_MOVED_PATH,
+      const pruned = commands.run({ command: "node", arguments: PRUNE_DEBT, directory: repo });
+      assert(projected.outcome === "exited", "projected ran");
+      assert(recorded.outcome === "exited", "recorded ran");
+      assert(moved.outcome === "exited", "moved ran");
+      assert(repointed.outcome === "exited", "repointed ran");
+      assert(kept.outcome === "exited", "kept ran");
+      assert(edited.outcome === "exited", "edited ran");
+      assert(pruned.outcome === "exited", "pruned ran");
+      expect({
+        exits: [projected.exitCode, recorded.exitCode, moved.exitCode, repointed.exitCode],
+        judged: [kept.exitCode, edited.exitCode, pruned.exitCode],
+        debtMoved,
+        debtRepointed,
+        debtAfterPruning: fileText.exists({ path: debtFile }),
+      }).toEqual({
+        exits: [0, 0, 1, 0],
+        judged: [0, 1, 0],
+        debtMoved: { outcome: "ok", value: DEBT_ON_CAST },
+        debtRepointed: { outcome: "ok", value: DEBT_ON_MOVED },
+        debtAfterPruning: "absent",
       });
     },
     EACH_STEP_IS_A_PROCESS_MILLISECONDS,

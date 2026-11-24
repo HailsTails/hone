@@ -449,44 +449,54 @@ const SKIPPING_VERSION_TWO_RULES = {
   "hone/rebinding#parameter-reassignment": PARAMETER_REASSIGNMENT_ON,
 };
 
+const DONE = { outcome: "ok", value: undefined };
+
 const PROBED_FILES = [
   {
     file: "src/kept.ts",
+    scratch: "kept",
     versionOneRules: UNANSWERED_VERSION_ONE_RULES,
     versionTwoRules: UNANSWERED_VERSION_TWO_RULES,
   },
   {
     file: "src/legacy.ts",
+    scratch: "legacy",
     versionOneRules: LEGACY_VERSION_ONE_RULES,
     versionTwoRules: LEGACY_VERSION_TWO_RULES,
   },
   {
     file: "src/wide.ts",
+    scratch: "wide",
     versionOneRules: WIDE_VERSION_ONE_RULES,
     versionTwoRules: WIDE_VERSION_TWO_RULES,
   },
   {
     file: "src/view.tsx",
+    scratch: "view",
     versionOneRules: UNANSWERED_VERSION_ONE_RULES,
     versionTwoRules: UNANSWERED_VERSION_TWO_RULES,
   },
   {
     file: "tools/build.mts",
+    scratch: "build",
     versionOneRules: UNANSWERED_VERSION_ONE_RULES,
     versionTwoRules: UNANSWERED_VERSION_TWO_RULES,
   },
   {
     file: "index.cts",
+    scratch: "index",
     versionOneRules: UNANSWERED_VERSION_ONE_RULES,
     versionTwoRules: UNANSWERED_VERSION_TWO_RULES,
   },
   {
     file: "packages/web/src/deep/kept.ts",
+    scratch: "deep-kept",
     versionOneRules: UNANSWERED_VERSION_ONE_RULES,
     versionTwoRules: UNANSWERED_VERSION_TWO_RULES,
   },
   {
     file: "src/skipping.test.ts",
+    scratch: "skipping",
     versionOneRules: SKIPPING_VERSION_ONE_RULES,
     versionTwoRules: SKIPPING_VERSION_TWO_RULES,
   },
@@ -505,7 +515,11 @@ describe.each(ESLINT_LINES)(
     it.each(PROBED_FILES)(
       "version 1 enables the pair's rules and options on $file",
       async (expected) => {
-        expect(directory.create({ path: versionOne })).toEqual({ outcome: "ok", value: undefined });
+        const scratch = absolutePathSchema.parse(`${versionOne}/${expected.scratch}`);
+        expect([
+          directoryTree.remove({ path: scratch }),
+          directory.create({ path: scratch }),
+        ]).toEqual([DONE, DONE]);
         const selection = createSelectionRepository({
           repoRoot: BEFORE_ROOT,
           installRoot: INSTALL_ROOT,
@@ -515,7 +529,7 @@ describe.each(ESLINT_LINES)(
         }).read({});
         assert(selection.outcome === "ok", "the pair's version 1 selection file loads");
         const projection = await VERSION_ONE_PROJECTION.prepare({
-          repoRoot: versionOne,
+          repoRoot: scratch,
           installRoot: INSTALL_ROOT,
           declaredConfigRoots: [],
           trackedPaths: [],
@@ -531,23 +545,25 @@ describe.each(ESLINT_LINES)(
           ],
           records: VERSION_ONE_RECORDS,
         });
-        expect(projection.outcome).toBe("ok");
+        assert(projection.outcome === "ok", "the pair's version 1 projection is written");
         const { ESLint } = await modules.eslint();
-        const resolved = await new ESLint({
-          cwd: versionOne,
-          overrideConfigFile: path.join({ segments: [versionOne, "disciplines.eslint.mjs"] }),
-        }).calculateConfigForFile(path.join({ segments: [versionOne, expected.file] }));
-        expect(resolvedConfigSchema.parse(resolved)).toHaveProperty(
-          "rules",
-          expected.versionOneRules,
+        const eslint = new ESLint({ cwd: scratch, overrideConfigFile: "disciplines.eslint.mjs" });
+        const config = resolvedConfigSchema.parse(
+          await eslint.calculateConfigForFile(expected.file),
         );
+        assert.isDefined(config);
+        expect(config.rules).toEqual(expected.versionOneRules);
       },
     );
 
     it.each(PROBED_FILES)(
       "version 2 enables the same rules and options on $file",
       async (expected) => {
-        expect(directory.create({ path: versionTwo })).toEqual({ outcome: "ok", value: undefined });
+        const scratch = absolutePathSchema.parse(`${versionTwo}/${expected.scratch}`);
+        expect([
+          directoryTree.remove({ path: scratch }),
+          directory.create({ path: scratch }),
+        ]).toEqual([DONE, DONE]);
         const stages = versionTwoStagesOver({
           ports: {
             ...VERSION_TWO_HOST,
@@ -582,22 +598,19 @@ describe.each(ESLINT_LINES)(
           ],
         });
         assert(checks.outcome === "ok", "the pair's version 2 checks project");
-        const config = path.join({ segments: [versionTwo, "hone.eslint.mjs"] });
         const text = checksProjectionText({
           pluginImport: PLUGIN_IMPORT,
           checks: checks.value,
           answered: VERSION_TWO_ANSWERED,
         });
-        expect(fileText.write({ path: config, text })).toEqual({ outcome: "ok", value: undefined });
+        expect(fileText.write({ path: `${scratch}/hone.eslint.mjs`, text })).toEqual(DONE);
         const { ESLint } = await modules.eslint();
-        const resolved = await new ESLint({
-          cwd: versionTwo,
-          overrideConfigFile: config,
-        }).calculateConfigForFile(path.join({ segments: [versionTwo, expected.file] }));
-        expect(resolvedConfigSchema.parse(resolved)).toHaveProperty(
-          "rules",
-          expected.versionTwoRules,
+        const eslint = new ESLint({ cwd: scratch, overrideConfigFile: "hone.eslint.mjs" });
+        const config = resolvedConfigSchema.parse(
+          await eslint.calculateConfigForFile(expected.file),
         );
+        assert.isDefined(config);
+        expect(config.rules).toEqual(expected.versionTwoRules);
       },
     );
   },

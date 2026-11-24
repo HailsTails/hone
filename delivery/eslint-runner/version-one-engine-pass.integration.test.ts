@@ -8,14 +8,15 @@ import { createUpgradeBefore } from "../../src/application/upgrade/record-answer
 import type { VersionOneCheckInput } from "../../src/application/upgrade/record-answers/version-one-check-input.ts";
 import { runnerEnginesOver } from "../../src/composition/runner-engines.ts";
 import type { Finding } from "../../src/domain/finding/governance.ts";
+import type { Check, Symptom } from "../../src/domain/language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../src/domain/repository/repo-path-of.ts";
 import type { RepoPath } from "../../src/domain/repository/repo-path-types.ts";
 import { TOOL_RULE_SET } from "../../src/domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../src/domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../src/domain/rule-set/discipline-id-of.ts";
+import type { RuleSetCatalogue } from "../../src/domain/settings/check-choices.ts";
 import type { ConsumerSelectionFile } from "../../src/domain/settings/selection/selection-file.ts";
 import { absolutePathSchema } from "../../src/infrastructure/content-files/absolute-path.ts";
-import { readBoundCatalogue } from "../../src/infrastructure/content-files/symptom-catalogues/bound-catalogue.ts";
 import { exceptionEntryParser } from "../../src/infrastructure/discipline-exceptions-folder/exception-records.ts";
 import { createSelectionRepository } from "../../src/infrastructure/disciplines-file/consumer-selection.ts";
 import {
@@ -50,23 +51,21 @@ const INSTALL_ROOT = absolutePathSchema.parse(
   path.join({ segments: [import.meta.dirname, "..", ".."] }),
 );
 
-const CARVED_REPO = absolutePathSchema.parse(
-  `${INSTALL_ROOT}/artefacts/version-one-engine-pass-carved`,
+const RAW_FINDING_REPO = absolutePathSchema.parse(
+  `${INSTALL_ROOT}/artefacts/version-one-engine-pass-raw-finding`,
+);
+
+const NO_RECORDS_REPO = absolutePathSchema.parse(
+  `${INSTALL_ROOT}/artefacts/version-one-engine-pass-no-records`,
+);
+
+const ORACLE_REPO = absolutePathSchema.parse(
+  `${INSTALL_ROOT}/artefacts/version-one-engine-pass-oracle`,
 );
 
 const UNPROJECTED_REPO = absolutePathSchema.parse(
   `${INSTALL_ROOT}/artefacts/version-one-engine-pass-unprojected`,
 );
-
-const CATALOGUE_HOLDING = readBoundCatalogue({
-  ruleSet: "hone",
-  inheritedRecordKinds: [],
-  directory: createDefaultDirectoryPort({}),
-  fileText,
-  path,
-  ruleSetRoot: INSTALL_ROOT,
-  installRoot: INSTALL_ROOT,
-});
 
 const CLASS_SYNTAX = {
   ruleSet: TOOL_RULE_SET,
@@ -74,19 +73,66 @@ const CLASS_SYNTAX = {
   clause: clauseIdOf("class-syntax"),
 };
 
+const STATIC_ONLY_CLASS = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-14"),
+  clause: clauseIdOf("static-only-class"),
+};
+
+const AUTHORED_CLASS: Symptom = {
+  ruleSet: TOOL_RULE_SET,
+  name: "authored-class-or-this",
+  title: "Authored class or this",
+  seen: "The class keyword in our code.",
+  mayIndicate: [],
+  breachUsuallySits: "in the unit",
+  recipes: [],
+  correctUses: [],
+};
+
+const CLASS_KEYWORD_CHECK: Check = {
+  name: "class-keyword",
+  symptom: AUTHORED_CLASS,
+  clause: CLASS_SYNTAX,
+  forms: [],
+  engines: [{ name: "walker" }, { name: "eslint" }],
+};
+
+const STATIC_MEMBERS_CHECK: Check = {
+  name: "static-members-only",
+  symptom: AUTHORED_CLASS,
+  clause: STATIC_ONLY_CLASS,
+  forms: [],
+  engines: [{ name: "walker" }, { name: "eslint" }],
+};
+
+const CATALOGUES: readonly RuleSetCatalogue[] = [
+  {
+    ruleSet: TOOL_RULE_SET,
+    catalogue: {
+      principles: [],
+      rules: [],
+      cases: [],
+      recipes: [],
+      recordKinds: [],
+      engines: [{ name: "walker" }, { name: "eslint" }],
+      symptoms: [AUTHORED_CLASS],
+      clauses: [
+        { clause: CLASS_SYNTAX, sight: { kind: "one-symptom", symptom: AUTHORED_CLASS } },
+        { clause: STATIC_ONLY_CLASS, sight: { kind: "one-symptom", symptom: AUTHORED_CLASS } },
+      ],
+      namedBans: [],
+      checks: [CLASS_KEYWORD_CHECK, STATIC_MEMBERS_CHECK],
+    },
+  },
+];
+
 const SELECTION: ConsumerSelectionFile = {
   version: 1,
   ruleSets: [],
   clauses: [
     [CLASS_SYNTAX, { state: "run", mechanism: "eslint" }],
-    [
-      {
-        ruleSet: TOOL_RULE_SET,
-        discipline: disciplineIdOf("CD-14"),
-        clause: clauseIdOf("static-only-class"),
-      },
-      { state: "run", mechanism: "eslint" },
-    ],
+    [STATIC_ONLY_CLASS, { state: "run", mechanism: "eslint" }],
   ],
   exclude: [],
   eslintConfigRoots: [],
@@ -97,23 +143,25 @@ const SELECTION: ConsumerSelectionFile = {
   checkEditions: "pinned",
 };
 
+const REPO_PLATFORM: Omit<Parameters<typeof createSettingsSources>[0], "repoRoot"> = {
+  fileText,
+  path,
+  directory: createDefaultDirectoryPort({}),
+  installRoot: INSTALL_ROOT,
+  moduleExtension: ".ts",
+  toolRecordKinds: [],
+};
+
 const UPGRADE_INPUT = {
   engine: RUNNER_ENGINES.namedEngine,
-  readPiece: createCheckPieceSource({
-    fileText,
-    path,
-    installRoot: INSTALL_ROOT,
-    moduleExtension: ".ts",
-  }),
+  readPiece: createCheckPieceSource(REPO_PLATFORM),
   selection: SELECTION,
+  catalogues: CATALOGUES,
   loadFailureDetail,
   measureVersionOne: RUNNER_ENGINES.measureVersionOne,
   projection: RUNNER_ENGINES.versionOneProjectionOf({
-    fileText,
+    ...REPO_PLATFORM,
     fileRemoval: createDefaultFileRemovalPort({}),
-    path,
-    moduleExtension: ".ts",
-    installRoot: INSTALL_ROOT,
     modules,
   }),
 };
@@ -131,42 +179,6 @@ const CHECK_PLATFORM: Omit<
   assessment: DEFAULT_ASSESSMENT,
   exceptionEntryParser,
 };
-
-const CARVED_SOURCES = createSettingsSources({
-  fileText,
-  path,
-  directory: createDefaultDirectoryPort({}),
-  repoRoot: CARVED_REPO,
-  installRoot: INSTALL_ROOT,
-  moduleExtension: ".ts",
-  toolRecordKinds: [],
-});
-
-const CARVED_SELECTION = createSelectionRepository({
-  fileText,
-  path,
-  repoRoot: CARVED_REPO,
-  installRoot: INSTALL_ROOT,
-  moduleExtension: ".ts",
-});
-
-const UNPROJECTED_SOURCES = createSettingsSources({
-  fileText,
-  path,
-  directory: createDefaultDirectoryPort({}),
-  repoRoot: UNPROJECTED_REPO,
-  installRoot: INSTALL_ROOT,
-  moduleExtension: ".ts",
-  toolRecordKinds: [],
-});
-
-const UNPROJECTED_SELECTION = createSelectionRepository({
-  fileText,
-  path,
-  repoRoot: UNPROJECTED_REPO,
-  installRoot: INSTALL_ROOT,
-  moduleExtension: ".ts",
-});
 
 const SELECTION_FILE =
   '{ "version": 1, "ruleSets": {}, "clauses": { "CD-14#class-syntax": "eslint", "CD-14#static-only-class": "eslint" } }\n';
@@ -189,11 +201,6 @@ const PROJECTED = {
   outcome: "ok",
   value: [{ effect: "written", path: "disciplines.eslint.mjs" }],
 };
-
-const CLASS_KEYWORD_CHECK = expect.objectContaining({
-  name: "class-keyword",
-  clause: expect.objectContaining({ discipline: "CD-14" }),
-});
 
 const KEPT = repoPathOf("src/kept.ts");
 
@@ -229,38 +236,32 @@ const UNPROJECTED_TRACKED: readonly RepoPath[] = [
 ];
 
 afterAll(() => {
-  scratch.removeTree({ path: CARVED_REPO });
+  scratch.removeTree({ path: RAW_FINDING_REPO });
+  scratch.removeTree({ path: NO_RECORDS_REPO });
+  scratch.removeTree({ path: ORACLE_REPO });
   scratch.removeTree({ path: UNPROJECTED_REPO });
 });
 
 describe("the toolchain the version 1 engine pass runs on", () => {
-  it("is ESLint 10 from the development install", async () => {
-    await expect(
-      loadEslintToolchain({
-        peers: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }),
-      }),
-    ).resolves.toEqual({
-      outcome: "ok",
-      value: expect.objectContaining({ eslintVersion: expect.stringMatching(/^10\./) }),
+  it("is ESLint 10.15.0 from the development install", async () => {
+    const loaded = await loadEslintToolchain({
+      peers: defaultEslintToolchainPeers({ installRoot: INSTALL_ROOT, installForm: "source" }),
     });
+    assert(loaded.outcome === "ok", "the eslint-10 toolchain loads from the development install");
+    expect(loaded.value.eslintVersion).toBe("10.15.0");
   });
 });
 
 describe("the version 1 engine pass over a real ESLint run of a repository that carves out src/kept.ts", () => {
   it("returns the class finding raw, though the projection it ran under carries the carve-out as a config override", async () => {
-    assert(CATALOGUE_HOLDING.outcome === "ok", "the shipped symptom catalogue reads");
-    assert(
-      CATALOGUE_HOLDING.value.held === "catalogue",
-      "the shipped symptom catalogue is present",
-    );
+    const repoRoot = RAW_FINDING_REPO;
     const before = createUpgradeBefore({
       ...UPGRADE_INPUT,
-      sources: CARVED_SOURCES,
-      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE_HOLDING.value.catalogue }],
+      sources: createSettingsSources({ ...REPO_PLATFORM, repoRoot }),
       check: {
         ...CHECK_PLATFORM,
-        repoRoot: CARVED_REPO,
-        selectionRepository: CARVED_SELECTION,
+        repoRoot,
+        selectionRepository: createSelectionRepository({ ...REPO_PLATFORM, repoRoot }),
         exceptionRepository: {
           read: vi.fn<ExceptionRepository["read"]>(),
           readAt: vi.fn<ExceptionRepository["readAt"]>(),
@@ -277,34 +278,38 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
       },
     });
     expect([
-      scratch.removeTree({ path: CARVED_REPO }),
-      scratch.makeDirectory({ path: `${CARVED_REPO}/src` }),
-      fileText.write({ path: `${CARVED_REPO}/disciplines.json`, text: SELECTION_FILE }),
-      fileText.write({ path: `${CARVED_REPO}/discipline-exceptions.json`, text: EXCEPTIONS }),
-      fileText.write({ path: `${CARVED_REPO}/eslint.config.mjs`, text: TEAM_CONFIG }),
-      fileText.write({ path: `${CARVED_REPO}/src/kept.ts`, text: KEPT_SOURCE }),
+      scratch.removeTree({ path: repoRoot }),
+      scratch.makeDirectory({ path: `${repoRoot}/src` }),
+      fileText.write({ path: `${repoRoot}/disciplines.json`, text: SELECTION_FILE }),
+      fileText.write({ path: `${repoRoot}/discipline-exceptions.json`, text: EXCEPTIONS }),
+      fileText.write({ path: `${repoRoot}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repoRoot}/src/kept.ts`, text: KEPT_SOURCE }),
       await before.prepareProjections([CARVE_OUT]),
     ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, PROJECTED]);
     await expect(before.enginePass.findingsFor({ records: [CARVE_OUT] })).resolves.toEqual({
       outcome: "ok",
-      value: expect.objectContaining({ findings: [CLASS_FINDING] }),
+      value: {
+        findings: [CLASS_FINDING],
+        runs: [
+          {
+            mechanism: "eslint",
+            coverableKinds: ["config-override", "inline-disable"],
+            nativeExceptions: [],
+          },
+        ],
+      },
     });
   });
 
   it("refuses the same projection when given no records, since the records are what its override was projected from", async () => {
-    assert(CATALOGUE_HOLDING.outcome === "ok", "the shipped symptom catalogue reads");
-    assert(
-      CATALOGUE_HOLDING.value.held === "catalogue",
-      "the shipped symptom catalogue is present",
-    );
+    const repoRoot = NO_RECORDS_REPO;
     const before = createUpgradeBefore({
       ...UPGRADE_INPUT,
-      sources: CARVED_SOURCES,
-      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE_HOLDING.value.catalogue }],
+      sources: createSettingsSources({ ...REPO_PLATFORM, repoRoot }),
       check: {
         ...CHECK_PLATFORM,
-        repoRoot: CARVED_REPO,
-        selectionRepository: CARVED_SELECTION,
+        repoRoot,
+        selectionRepository: createSelectionRepository({ ...REPO_PLATFORM, repoRoot }),
         exceptionRepository: {
           read: vi.fn<ExceptionRepository["read"]>(),
           readAt: vi.fn<ExceptionRepository["readAt"]>(),
@@ -321,12 +326,12 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
       },
     });
     expect([
-      scratch.removeTree({ path: CARVED_REPO }),
-      scratch.makeDirectory({ path: `${CARVED_REPO}/src` }),
-      fileText.write({ path: `${CARVED_REPO}/disciplines.json`, text: SELECTION_FILE }),
-      fileText.write({ path: `${CARVED_REPO}/discipline-exceptions.json`, text: EXCEPTIONS }),
-      fileText.write({ path: `${CARVED_REPO}/eslint.config.mjs`, text: TEAM_CONFIG }),
-      fileText.write({ path: `${CARVED_REPO}/src/kept.ts`, text: KEPT_SOURCE }),
+      scratch.removeTree({ path: repoRoot }),
+      scratch.makeDirectory({ path: `${repoRoot}/src` }),
+      fileText.write({ path: `${repoRoot}/disciplines.json`, text: SELECTION_FILE }),
+      fileText.write({ path: `${repoRoot}/discipline-exceptions.json`, text: EXCEPTIONS }),
+      fileText.write({ path: `${repoRoot}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repoRoot}/src/kept.ts`, text: KEPT_SOURCE }),
       await before.prepareProjections([CARVE_OUT]),
     ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, PROJECTED]);
     await expect(before.enginePass.findingsFor({ records: [] })).resolves.toEqual({
@@ -340,20 +345,14 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
   });
 
   it("lets the oracle credit the carve-out with the findings it holds", async () => {
-    assert(CATALOGUE_HOLDING.outcome === "ok", "the shipped symptom catalogue reads");
-    assert(
-      CATALOGUE_HOLDING.value.held === "catalogue",
-      "the shipped symptom catalogue is present",
-    );
-    const catalogues = [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE_HOLDING.value.catalogue }];
+    const repoRoot = ORACLE_REPO;
     const before = createUpgradeBefore({
       ...UPGRADE_INPUT,
-      sources: CARVED_SOURCES,
-      catalogues,
+      sources: createSettingsSources({ ...REPO_PLATFORM, repoRoot }),
       check: {
         ...CHECK_PLATFORM,
-        repoRoot: CARVED_REPO,
-        selectionRepository: CARVED_SELECTION,
+        repoRoot,
+        selectionRepository: createSelectionRepository({ ...REPO_PLATFORM, repoRoot }),
         exceptionRepository: {
           read: vi.fn<ExceptionRepository["read"]>(),
           readAt: vi.fn<ExceptionRepository["readAt"]>(),
@@ -370,15 +369,15 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
       },
     });
     expect([
-      scratch.removeTree({ path: CARVED_REPO }),
-      scratch.makeDirectory({ path: `${CARVED_REPO}/src` }),
-      fileText.write({ path: `${CARVED_REPO}/disciplines.json`, text: SELECTION_FILE }),
-      fileText.write({ path: `${CARVED_REPO}/discipline-exceptions.json`, text: EXCEPTIONS }),
-      fileText.write({ path: `${CARVED_REPO}/eslint.config.mjs`, text: TEAM_CONFIG }),
-      fileText.write({ path: `${CARVED_REPO}/src/kept.ts`, text: KEPT_SOURCE }),
+      scratch.removeTree({ path: repoRoot }),
+      scratch.makeDirectory({ path: `${repoRoot}/src` }),
+      fileText.write({ path: `${repoRoot}/disciplines.json`, text: SELECTION_FILE }),
+      fileText.write({ path: `${repoRoot}/discipline-exceptions.json`, text: EXCEPTIONS }),
+      fileText.write({ path: `${repoRoot}/eslint.config.mjs`, text: TEAM_CONFIG }),
+      fileText.write({ path: `${repoRoot}/src/kept.ts`, text: KEPT_SOURCE }),
       await before.prepareProjections([CARVE_OUT]),
     ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN, PROJECTED]);
-    const oracle = createAnsweringOracle({ enginePass: before.enginePass, catalogues });
+    const oracle = createAnsweringOracle({ enginePass: before.enginePass, catalogues: CATALOGUES });
     await expect(oracle.answer({ records: [CARVE_OUT] })).resolves.toEqual({
       outcome: "ok",
       value: [
@@ -394,19 +393,14 @@ describe("the version 1 engine pass over a real ESLint run of a repository that 
 
 describe("the version 1 engine pass over a real ESLint run of a repository whose config does not include the projection", () => {
   it("fails the pass, since the run was not made", async () => {
-    assert(CATALOGUE_HOLDING.outcome === "ok", "the shipped symptom catalogue reads");
-    assert(
-      CATALOGUE_HOLDING.value.held === "catalogue",
-      "the shipped symptom catalogue is present",
-    );
+    const repoRoot = UNPROJECTED_REPO;
     const before = createUpgradeBefore({
       ...UPGRADE_INPUT,
-      sources: UNPROJECTED_SOURCES,
-      catalogues: [{ ruleSet: TOOL_RULE_SET, catalogue: CATALOGUE_HOLDING.value.catalogue }],
+      sources: createSettingsSources({ ...REPO_PLATFORM, repoRoot }),
       check: {
         ...CHECK_PLATFORM,
-        repoRoot: UNPROJECTED_REPO,
-        selectionRepository: UNPROJECTED_SELECTION,
+        repoRoot,
+        selectionRepository: createSelectionRepository({ ...REPO_PLATFORM, repoRoot }),
         exceptionRepository: {
           read: vi.fn<ExceptionRepository["read"]>(),
           readAt: vi.fn<ExceptionRepository["readAt"]>(),
@@ -423,12 +417,12 @@ describe("the version 1 engine pass over a real ESLint run of a repository whose
       },
     });
     expect([
-      scratch.removeTree({ path: UNPROJECTED_REPO }),
-      scratch.makeDirectory({ path: `${UNPROJECTED_REPO}/src` }),
-      fileText.write({ path: `${UNPROJECTED_REPO}/disciplines.json`, text: SELECTION_FILE }),
-      fileText.write({ path: `${UNPROJECTED_REPO}/discipline-exceptions.json`, text: EXCEPTIONS }),
-      fileText.write({ path: `${UNPROJECTED_REPO}/eslint.config.mjs`, text: UNPROJECTING_CONFIG }),
-      fileText.write({ path: `${UNPROJECTED_REPO}/src/kept.ts`, text: KEPT_SOURCE }),
+      scratch.removeTree({ path: repoRoot }),
+      scratch.makeDirectory({ path: `${repoRoot}/src` }),
+      fileText.write({ path: `${repoRoot}/disciplines.json`, text: SELECTION_FILE }),
+      fileText.write({ path: `${repoRoot}/discipline-exceptions.json`, text: EXCEPTIONS }),
+      fileText.write({ path: `${repoRoot}/eslint.config.mjs`, text: UNPROJECTING_CONFIG }),
+      fileText.write({ path: `${repoRoot}/src/kept.ts`, text: KEPT_SOURCE }),
     ]).toEqual([DONE, DONE, WRITTEN, WRITTEN, WRITTEN, WRITTEN]);
     await expect(before.enginePass.findingsFor({ records: [CARVE_OUT] })).resolves.toEqual({
       outcome: "failed",
