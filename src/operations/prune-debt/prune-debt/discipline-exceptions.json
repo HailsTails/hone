@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "exceptions": [
-    { "kind": "file-carve-out", "clause": "CD-15#loops", "file": "src/gone.ts" },
-    { "kind": "file-carve-out", "clause": "CD-15#loops", "file": "src/kept.ts" },
-    { "kind": "file-carve-out", "clause": "CD-15#loops", "file": "src/legacy.js" }
-  ]
-}

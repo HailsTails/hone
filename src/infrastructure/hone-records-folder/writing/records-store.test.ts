@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { DirectoryPort } from "../../../application/ports/file-system/directory-port.ts";
 import type { FileRemovalPort } from "../../../application/ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../../application/ports/file-system/file-text-port.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
+import { parsedJson } from "../../content-files/parsed-json.ts";
 import { createPathPort } from "../../node/path-port.ts";
+import { debtWireSchema, recordsDocumentSchema } from "../records-wire.ts";
 import { createRecordsStore } from "./records-store.ts";
 
 const REPO_ROOT = absoluteRootOf("/work/shop");
@@ -46,6 +48,36 @@ describe("the store that writes and removes the files of hone-records", () => {
     expect(write).toHaveBeenCalledWith({
       path: "/work/shop/hone-records/debt/claimed-type.json",
       text: '{\n  "version": 2,\n  "records": []\n}\n',
+    });
+  });
+
+  it("writes a debt record as text that reads back through the wire as the same record", () => {
+    const { write, ports } = portsOf();
+    createRecordsStore(ports).apply({
+      edit: {
+        write: [
+          {
+            file: DEBT_FILE,
+            document: {
+              version: 2,
+              records: [
+                { answers: "claimed-type#non-null-assertion", file: "src/kept.ts", note: "legacy" },
+              ],
+            },
+          },
+        ],
+        remove: [],
+      },
+    });
+    const written = write.mock.lastCall;
+    assert(written !== undefined, "the store writes the document");
+    const read = parsedJson({ text: written[0].text });
+    assert(read.outcome === "ok", "the written text is JSON");
+    const [record] = recordsDocumentSchema.parse(read.value).records;
+    expect(debtWireSchema.parse(record)).toEqual({
+      answers: { reaches: "one-check", symptom: "claimed-type", check: "non-null-assertion" },
+      file: "src/kept.ts",
+      note: "legacy",
     });
   });
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { RunnerModuleOf } from "../../../../application/ports/engine/runner-location.ts";
 import type { ProjectionRequest } from "../../../../application/ports/engine/runner-module.ts";
 import type {
   VersionOneProjectionPlatform,
@@ -12,7 +13,7 @@ import {
   runnerInvalidOutput,
 } from "../../../../domain/runner/runner-failure.ts";
 import { repoPathSchema } from "../../../hone-records-folder/repo-path.ts";
-import { runnerModuleSegmentsOf } from "../../../node/modules/install-layout.ts";
+import { runnerModuleAt } from "../runner-module/runner-module-at.ts";
 import { runnerCallSchema } from "../runner-module/runner-module-schema.ts";
 import {
   projectionWriteSchema,
@@ -52,14 +53,19 @@ const preparationResult = runnerResultSchema({ value: z.array(projectionWriteSch
 
 type Methods = z.output<typeof projectionMethodsSchema>;
 
-const methodsOf = async (
-  options: Parameters<VersionOneProjectionPortOf>[0],
-): Promise<Result<Methods, RunnerFailure>> => {
-  const { modules, installRoot, moduleExtension, path, fileText, fileRemoval } = options;
-  const loaded = await modules.load({
-    path: path.join({
-      segments: runnerModuleSegmentsOf({ installRoot, moduleExtension, mechanism: "eslint" }),
-    }),
+type RunnerModulePorts = { readonly runnerModuleOf: RunnerModuleOf };
+
+const methodsOf = async (request: {
+  readonly ports: RunnerModulePorts;
+  readonly options: Parameters<VersionOneProjectionPortOf>[0];
+}): Promise<Result<Methods, RunnerFailure>> => {
+  const { modules, installRoot, moduleExtension, path, fileText, fileRemoval } = request.options;
+  const loaded = await request.ports.runnerModuleOf({
+    modules,
+    installRoot,
+    moduleExtension,
+    path,
+    mechanism: "eslint",
   });
   if (loaded.outcome === "failed") return runnerInvalidOutput({ detail: loaded.error.detail });
   const parsed = projectionModuleSchema.safeParse(loaded.value);
@@ -87,13 +93,19 @@ const projectionCall = async <Value>(request: {
   }
 };
 
-export const loadVersionOneProjectionOver: VersionOneProjectionPortOf = (options) => {
-  let loaded: ReturnType<typeof methodsOf> | undefined;
-  const methods = () => (loaded ??= methodsOf(options));
-  return {
-    inspect: (projection) =>
-      projectionCall({ methods, method: "inspect", projection, output: inspectionResult }),
-    prepare: (projection) =>
-      projectionCall({ methods, method: "prepare", projection, output: preparationResult }),
+export const versionOneProjectionPortOver =
+  (ports: RunnerModulePorts): VersionOneProjectionPortOf =>
+  (options) => {
+    let loaded: Promise<Result<Methods, RunnerFailure>> | undefined;
+    const methods = () => (loaded ??= methodsOf({ ports, options }));
+    return {
+      inspect: (projection) =>
+        projectionCall({ methods, method: "inspect", projection, output: inspectionResult }),
+      prepare: (projection) =>
+        projectionCall({ methods, method: "prepare", projection, output: preparationResult }),
+    };
   };
-};
+
+export const loadVersionOneProjectionOver = versionOneProjectionPortOver({
+  runnerModuleOf: runnerModuleAt,
+});
