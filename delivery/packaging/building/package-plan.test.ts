@@ -130,6 +130,64 @@ describe("packagePlanOf", () => {
     });
   });
 
+  it.each([
+    {
+      shape: "a top-level process entry",
+      sourcePath: "src/x.process.ts",
+      entryPoints: [
+        "src/hone.ts",
+        "src/eslint-plugin.ts",
+        "src/rule-set.ts",
+        "src/testing.ts",
+        "src/walker.ts",
+        "src/x.process.ts",
+      ],
+    },
+    {
+      shape: "an engine's runner entry",
+      sourcePath: "src/infrastructure/engines/walker/runner/runner.ts",
+      entryPoints: [
+        "src/hone.ts",
+        "src/eslint-plugin.ts",
+        "src/rule-set.ts",
+        "src/testing.ts",
+        "src/walker.ts",
+        "src/infrastructure/engines/walker/runner/runner.ts",
+      ],
+    },
+  ])("builds $shape as a process entry", ({ sourcePath, entryPoints }) => {
+    const planned = packagePlanOf({ sourcePaths: [sourcePath], pieces: [] });
+
+    expect(planned).toEqual({
+      outcome: "ok",
+      value: { entryPoints, command: "src/hone.js", copied: [], pieces: [], exported: [] },
+    });
+  });
+
+  it.each([
+    { shape: "a plain top-level module", sourcePath: "src/x.ts" },
+    { shape: "a process entry nested below the top of src", sourcePath: "src/a/b.process.ts" },
+  ])("leaves $shape out of the entry points", ({ sourcePath }) => {
+    const planned = packagePlanOf({ sourcePaths: [sourcePath], pieces: [] });
+
+    expect(planned).toEqual({
+      outcome: "ok",
+      value: {
+        entryPoints: [
+          "src/hone.ts",
+          "src/eslint-plugin.ts",
+          "src/rule-set.ts",
+          "src/testing.ts",
+          "src/walker.ts",
+        ],
+        command: "src/hone.js",
+        copied: [],
+        pieces: [],
+        exported: [],
+      },
+    });
+  });
+
   it("copies the documents, the changelog, mechanism and rule pages, rule data and review methods, and nothing the check never reads or a test owns", () => {
     expect(plan).toMatchObject({
       outcome: "ok",
