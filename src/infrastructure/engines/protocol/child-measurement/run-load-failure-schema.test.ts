@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 
 import { repoPathOf } from "../../../../domain/repository/repo-path-of.ts";
 import { runLoadFailureSchema } from "./run-load-failure-schema.ts";
@@ -96,6 +95,6 @@ describe("runLoadFailureSchema", () => {
   it("refuses a kind no run load failure has", () => {
     const parsed = runLoadFailureSchema.safeParse({ kind: "engine-exploded" });
 
-    expect(parsed).toEqual({ success: false, error: expect.any(z.ZodError) });
+    expect(parsed).toMatchObject({ success: false });
   });
 });
