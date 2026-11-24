@@ -27,10 +27,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/application/upgrade/proof-writes/proof-writes.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/composition/commands.split-records.test.ts"
     },
     {
@@ -96,26 +92,6 @@
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/application/run/engines/named-engines-run.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/application/upgrade/patching/projection-patching.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#stub-implementation",
-      "file": "src/application/upgrade/proof-writes/version-one-removal.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#stub-implementation",
-      "file": "src/application/upgrade/proof/upgrade-proof.test.ts"
     },
     {
       "answers": "double-with-a-body#stub-implementation",

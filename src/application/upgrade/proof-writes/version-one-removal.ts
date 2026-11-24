@@ -1,20 +1,17 @@
-import { failureDetailOf } from "../../../domain/failure-detail.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import { isAbsolutePath } from "../../../domain/repository/absolute-path.ts";
 import type { Result } from "../../../domain/result.ts";
-import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
-import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
-import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort } from "../../ports/host/path-port.ts";
+import type {
+  EffectsApplied,
+  ProofEffect,
+  ProofEffects,
+  SettledEffect,
+} from "../../ports/upgrade/proof-effect.ts";
 import type { OutsideRoot, RemovalFailure, Removed } from "../../ports/upgrade/proof-outcome.ts";
 
-export type VersionOneRemovalPorts = {
-  readonly fileRemoval: FileRemovalPort;
-  readonly directory: DirectoryPort;
-  readonly directoryRemoval: DirectoryRemovalPort;
-  readonly path: PathPort;
-};
+export type RemovalPath = Pick<PathPort, "relative" | "join">;
 
 export type RecordsRoot = { readonly kind: "repository" | "folder"; readonly path: AbsolutePath };
 
@@ -58,11 +55,11 @@ export const projectionDeclarationsOf = (request: {
 const PATH_SEPARATOR = /[\\/]/;
 
 const segmentsBelowRoot = (request: {
-  readonly ports: VersionOneRemovalPorts;
+  readonly path: RemovalPath;
   readonly root: AbsolutePath;
   readonly file: AbsolutePath;
 }): readonly string[] | undefined => {
-  const location = request.ports.path.relative({ from: request.root, to: request.file });
+  const location = request.path.relative({ from: request.root, to: request.file });
   if (location.relation !== "within-root") {
     return undefined;
   }
@@ -73,13 +70,12 @@ const segmentsBelowRoot = (request: {
 };
 
 export const recordsOutsideRoot = (request: {
-  readonly ports: VersionOneRemovalPorts;
+  readonly path: RemovalPath;
   readonly removal: VersionOneRemoval;
 }): OutsideRoot | undefined => {
   const { recordsRoot } = request.removal;
   const outside = request.removal.recordsFiles.find(
-    (file) =>
-      segmentsBelowRoot({ ports: request.ports, root: recordsRoot.path, file }) === undefined,
+    (file) => segmentsBelowRoot({ path: request.path, root: recordsRoot.path, file }) === undefined,
   );
   return outside === undefined
     ? undefined
@@ -90,18 +86,18 @@ const absolutePathsOf = (request: { readonly texts: readonly string[] }): readon
   request.texts.filter(isAbsolutePath);
 
 const foldersOfFile = (request: {
-  readonly ports: VersionOneRemovalPorts;
+  readonly path: RemovalPath;
   readonly root: RecordsRoot;
   readonly file: AbsolutePath;
 }): readonly AbsolutePath[] => {
   const segments =
-    segmentsBelowRoot({ ports: request.ports, root: request.root.path, file: request.file }) ?? [];
+    segmentsBelowRoot({ path: request.path, root: request.root.path, file: request.file }) ?? [];
   const folderSegments = segments.slice(0, -1);
   return absolutePathsOf({
     texts: [
       ...(request.root.kind === "folder" ? [request.root.path] : []),
       ...folderSegments.map((_, depth) =>
-        request.ports.path.join({
+        request.path.join({
           segments: [request.root.path, ...folderSegments.slice(0, depth + 1)],
         }),
       ),
@@ -110,127 +106,73 @@ const foldersOfFile = (request: {
 };
 
 const foldersToTryOf = (request: {
-  readonly ports: VersionOneRemovalPorts;
+  readonly path: RemovalPath;
   readonly removal: VersionOneRemoval;
 }): readonly AbsolutePath[] =>
   [
     ...new Set([
       ...request.removal.recordsFolders,
       ...request.removal.recordsFiles.flatMap((file) =>
-        foldersOfFile({ ports: request.ports, root: request.removal.recordsRoot, file }),
+        foldersOfFile({ path: request.path, root: request.removal.recordsRoot, file }),
       ),
     ]),
   ].toSorted((left, right) => right.length - left.length);
 
-const removedFile = (request: {
-  readonly ports: VersionOneRemovalPorts;
+const removalEffectOf = (request: {
+  readonly kind: "file" | "folder-if-empty";
   readonly path: AbsolutePath;
-  readonly removed: Removed;
-}): Result<Removed, RemovalFailure> => {
-  const fileRemoval = request.ports.fileRemoval.remove({ path: request.path });
-  return fileRemoval.outcome === "ok"
-    ? {
-        outcome: "ok",
-        value: { ...request.removed, files: [...request.removed.files, request.path] },
-      }
-    : {
-        outcome: "failed",
-        error: {
-          kind: "unremovable",
-          path: request.path,
-          detail: fileRemoval.error.detail,
-          removed: request.removed,
-        },
-      };
-};
+}): ProofEffect =>
+  request.kind === "file"
+    ? { kind: "remove-file", path: request.path }
+    : { kind: "remove-directory-if-empty", path: request.path };
 
-const removedFolderIfEmpty = (request: {
-  readonly ports: VersionOneRemovalPorts;
-  readonly path: AbsolutePath;
-  readonly removed: Removed;
-}): Result<Removed, RemovalFailure> => {
-  const listing = request.ports.directory.list({ path: request.path });
-  if (listing.outcome === "failed") {
-    return {
-      outcome: "failed",
-      error: {
-        kind: "unremovable",
-        path: request.path,
-        detail: listing.error.detail,
-        removed: request.removed,
-      },
-    };
-  }
-  if (listing.value.length > 0) {
-    return { outcome: "ok", value: request.removed };
-  }
-  const folderRemoval = request.ports.directoryRemoval.removeEmpty({ path: request.path });
-  return folderRemoval.outcome === "ok"
-    ? {
-        outcome: "ok",
-        value: { ...request.removed, folders: [...request.removed.folders, request.path] },
-      }
-    : {
-        outcome: "failed",
-        error: {
-          kind: "unremovable",
-          path: request.path,
-          detail: folderRemoval.error.detail,
-          removed: request.removed,
-        },
-      };
-};
-
-type RemovalStep = { readonly kind: "file" | "folder-if-empty"; readonly path: AbsolutePath };
-
-const fileStepsOf = (request: {
+const fileEffectsOf = (request: {
   readonly paths: readonly AbsolutePath[];
-}): readonly RemovalStep[] => request.paths.map((path): RemovalStep => ({ kind: "file", path }));
+}): readonly ProofEffect[] => request.paths.map((path) => removalEffectOf({ kind: "file", path }));
 
-const stepsOf = (request: {
-  readonly ports: VersionOneRemovalPorts;
+const folderEffectsOf = (request: {
+  readonly paths: readonly AbsolutePath[];
+}): readonly ProofEffect[] =>
+  request.paths.map((path) => removalEffectOf({ kind: "folder-if-empty", path }));
+
+export const removalEffectsOf = (request: {
+  readonly path: RemovalPath;
   readonly removal: VersionOneRemoval;
-}): readonly RemovalStep[] => [
-  ...fileStepsOf({ paths: request.removal.recordsFiles }),
-  ...foldersToTryOf(request).map((path): RemovalStep => ({ kind: "folder-if-empty", path })),
-  ...fileStepsOf({ paths: request.removal.projections }),
-  ...fileStepsOf({ paths: request.removal.declarations }),
-  ...fileStepsOf({ paths: [request.removal.settings] }),
-  ...fileStepsOf({ paths: request.removal.ruleSetFiles }),
-  ...request.removal.ruleSetFolders.map((path): RemovalStep => ({ kind: "folder-if-empty", path })),
+}): readonly ProofEffect[] => [
+  ...fileEffectsOf({ paths: request.removal.recordsFiles }),
+  ...folderEffectsOf({ paths: foldersToTryOf(request) }),
+  ...fileEffectsOf({ paths: request.removal.projections }),
+  ...fileEffectsOf({ paths: request.removal.declarations }),
+  ...fileEffectsOf({ paths: [request.removal.settings] }),
+  ...fileEffectsOf({ paths: request.removal.ruleSetFiles }),
+  ...folderEffectsOf({ paths: request.removal.ruleSetFolders }),
 ];
 
-const attemptedStep = (request: {
-  readonly ports: VersionOneRemovalPorts;
-  readonly step: RemovalStep;
-  readonly removed: Removed;
-}): Result<Removed, RemovalFailure> => {
-  const { ports, step, removed } = request;
-  try {
-    return step.kind === "file"
-      ? removedFile({ ports, path: step.path, removed })
-      : removedFolderIfEmpty({ ports, path: step.path, removed });
-  } catch (thrown: unknown) {
-    return {
-      outcome: "failed",
-      error: { kind: "unremovable", path: step.path, detail: failureDetailOf({ thrown }), removed },
-    };
-  }
-};
+const removedOf = (request: { readonly settled: readonly SettledEffect[] }): Removed => ({
+  files: request.settled.flatMap(({ effect, outcome }) =>
+    effect.kind === "remove-file" && outcome === "applied" ? [effect.path] : [],
+  ),
+  folders: request.settled.flatMap(({ effect, outcome }) =>
+    effect.kind === "remove-directory-if-empty" && outcome === "applied" ? [effect.path] : [],
+  ),
+});
 
-const removedFrom = (request: {
-  readonly ports: VersionOneRemovalPorts;
-  readonly steps: readonly RemovalStep[];
-  readonly removed: Removed;
+export const removalOutcomeOf = (request: {
+  readonly applied: EffectsApplied;
 }): Result<Removed, RemovalFailure> => {
-  const [step, ...rest] = request.steps;
-  if (step === undefined) {
-    return { outcome: "ok", value: request.removed };
-  }
-  const stepOutcome = attemptedStep({ ports: request.ports, step, removed: request.removed });
-  return stepOutcome.outcome === "failed"
-    ? stepOutcome
-    : removedFrom({ ports: request.ports, steps: rest, removed: stepOutcome.value });
+  const { applied } = request;
+  const removed = removedOf(applied);
+  return applied.outcome === "all-applied"
+    ? { outcome: "ok", value: removed }
+    : {
+        outcome: "failed",
+        error: {
+          kind: "unremovable",
+          path: applied.stopped.effect.path,
+          detail: applied.stopped.detail,
+          removed,
+        },
+      };
 };
 
 export const filesStillPresentOf = (request: {
@@ -252,15 +194,12 @@ export const filesStillPresentOf = (request: {
 };
 
 export const removedVersionOneFiles = (request: {
-  readonly ports: VersionOneRemovalPorts;
+  readonly path: RemovalPath;
+  readonly effects: Pick<ProofEffects, "apply">;
   readonly removal: VersionOneRemoval;
 }): Result<Removed, RemovalFailure> => {
   const outside = recordsOutsideRoot(request);
   return outside === undefined
-    ? removedFrom({
-        ports: request.ports,
-        steps: stepsOf(request),
-        removed: { files: [], folders: [] },
-      })
+    ? removalOutcomeOf({ applied: request.effects.apply({ effects: removalEffectsOf(request) }) })
     : { outcome: "failed", error: outside };
 };

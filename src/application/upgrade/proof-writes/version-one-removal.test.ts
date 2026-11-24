@@ -1,49 +1,19 @@
-import { describe, expect, it, type Mock, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { absoluteWithin } from "../../../domain/repository/absolute-within.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import type { DirectoryPort } from "../../ports/file-system/directory-port.ts";
-import type { DirectoryRemovalPort } from "../../ports/file-system/directory-removal-port.ts";
-import type { FileRemovalPort } from "../../ports/file-system/file-removal-port.ts";
 import type { FileTextPort } from "../../ports/file-system/file-text-port.ts";
 import type { PathPort, RelativeLocation } from "../../ports/host/path-port.ts";
+import type { ProofEffects } from "../../ports/upgrade/proof-effect.ts";
 import {
   filesStillPresentOf,
   projectionDeclarationsOf,
+  removalEffectsOf,
+  removalOutcomeOf,
   removedVersionOneFiles,
   type VersionOneRemoval,
-  type VersionOneRemovalPorts,
 } from "./version-one-removal.ts";
-
-type RecordedMock = {
-  readonly mock: {
-    readonly calls: readonly (readonly unknown[])[];
-    readonly invocationCallOrder: readonly number[];
-  };
-};
-
-type RecordedCall = { readonly port: string; readonly arguments: readonly unknown[] };
-
-type OrderedCall = RecordedCall & { readonly order: number };
-
-const orderedCallsOf = (request: {
-  readonly port: string;
-  readonly mock: RecordedMock;
-}): readonly OrderedCall[] =>
-  request.mock.mock.calls.map((callArguments, index) => ({
-    port: request.port,
-    arguments: callArguments,
-    order: request.mock.mock.invocationCallOrder[index],
-  }));
-
-const callSequenceOf = (request: {
-  readonly mocks: Readonly<Record<string, RecordedMock>>;
-}): readonly RecordedCall[] =>
-  Object.entries(request.mocks)
-    .flatMap(([port, mock]) => orderedCallsOf({ port, mock }))
-    .toSorted((left, right) => left.order - right.order)
-    .map(({ port, arguments: callArguments }) => ({ port, arguments: callArguments }));
 
 const ROOT = absoluteRootOf("/repo/discipline-exceptions");
 
@@ -96,8 +66,6 @@ const OUTSIDE = absoluteRootOf("/repo/tools/x.json");
 
 const OTHER_CASE = absoluteRootOf("/repo/Discipline-Exceptions/file-carve-outs/cd-15.json");
 
-const ok = { outcome: "ok", value: undefined } as const;
-
 const IN_CARVE_OUT_FOLDER: RelativeLocation = {
   relation: "within-root",
   path: "file-carve-outs/cd-15.json",
@@ -108,250 +76,105 @@ const IN_AUTHORISED_FOLDER: RelativeLocation = {
   path: "authorised-locations/cd-15.json",
 };
 
-const pathOver = (request: { readonly relative: PathPort["relative"] }): PathPort => ({
-  join: vi
-    .fn<PathPort["join"]>()
-    .mockReturnValueOnce(CARVE_OUT_FOLDER)
-    .mockReturnValueOnce(AUTHORISED_FOLDER),
-  joinRepository: vi.fn<PathPort["joinRepository"]>(),
-  relative: request.relative,
-  directoryOf: vi.fn<PathPort["directoryOf"]>(),
-  repositoryDirectoryOf: vi.fn<PathPort["repositoryDirectoryOf"]>(),
-  resolve: vi.fn<PathPort["resolve"]>(),
-  fromFileUrl: vi.fn<PathPort["fromFileUrl"]>(),
-});
+describe("removalEffectsOf", () => {
+  it("removes the records files, then tries the folders deepest first, the records folder last of them, then the projection, and the settings file last", () => {
+    const path = {
+      join: vi
+        .fn<PathPort["join"]>()
+        .mockReturnValueOnce(CARVE_OUT_FOLDER)
+        .mockReturnValueOnce(AUTHORISED_FOLDER),
+      relative: vi
+        .fn<PathPort["relative"]>()
+        .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
+        .mockReturnValueOnce(IN_AUTHORISED_FOLDER),
+    };
 
-const relativeToRecordsFolderFiles = () =>
-  vi
-    .fn<PathPort["relative"]>()
-    .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
-    .mockReturnValueOnce(IN_AUTHORISED_FOLDER)
-    .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
-    .mockReturnValueOnce(IN_AUTHORISED_FOLDER);
-
-type MockedPorts = {
-  readonly fileRemoval: { readonly remove: Mock<FileRemovalPort["remove"]> };
-  readonly directory: {
-    readonly list: Mock<DirectoryPort["list"]>;
-    readonly create: Mock<DirectoryPort["create"]>;
-  };
-  readonly directoryRemoval: { readonly removeEmpty: Mock<DirectoryRemovalPort["removeEmpty"]> };
-  readonly path: VersionOneRemovalPorts["path"];
-};
-
-const portsOver = (
-  request: { readonly relative: PathPort["relative"] } = {
-    relative: relativeToRecordsFolderFiles(),
-  },
-): MockedPorts => ({
-  fileRemoval: { remove: vi.fn<FileRemovalPort["remove"]>().mockReturnValue(ok) },
-  directory: {
-    list: vi.fn<DirectoryPort["list"]>().mockReturnValue({ outcome: "ok", value: [] }),
-    create: vi.fn<DirectoryPort["create"]>(),
-  },
-  directoryRemoval: {
-    removeEmpty: vi.fn<DirectoryRemovalPort["removeEmpty"]>().mockReturnValue(ok),
-  },
-  path: pathOver(request),
-});
-
-const sequenceOf = (request: { readonly ports: MockedPorts }) =>
-  callSequenceOf({
-    mocks: {
-      remove: request.ports.fileRemoval.remove,
-      list: request.ports.directory.list,
-      removeEmpty: request.ports.directoryRemoval.removeEmpty,
-    },
-  });
-
-const REMOVING_RECORDS = [
-  { port: "remove", arguments: [{ path: CARVE_OUT_FILE }] },
-  { port: "remove", arguments: [{ path: AUTHORISED_FILE }] },
-];
-
-const REMOVING_AUTHORISED_FOLDER = [
-  { port: "list", arguments: [{ path: AUTHORISED_FOLDER }] },
-  { port: "removeEmpty", arguments: [{ path: AUTHORISED_FOLDER }] },
-];
-
-const REMOVING_CARVE_OUT_FOLDER = [
-  { port: "list", arguments: [{ path: CARVE_OUT_FOLDER }] },
-  { port: "removeEmpty", arguments: [{ path: CARVE_OUT_FOLDER }] },
-];
-
-const REMOVING_ROOT = [
-  { port: "list", arguments: [{ path: ROOT }] },
-  { port: "removeEmpty", arguments: [{ path: ROOT }] },
-];
-
-const REMOVING_PROJECTION = { port: "remove", arguments: [{ path: PROJECTION }] };
-
-const REMOVING_SETTINGS = { port: "remove", arguments: [{ path: SETTINGS }] };
-
-describe("removedVersionOneFiles", () => {
-  it("removes the records files, then the emptied folders deepest first, the records folder last of them, then the projection, and the settings file last", () => {
-    const ports = portsOver();
-    expect(removedVersionOneFiles({ ports, removal: REMOVAL })).toEqual({
-      outcome: "ok",
-      value: {
-        files: [CARVE_OUT_FILE, AUTHORISED_FILE, PROJECTION, SETTINGS],
-        folders: [AUTHORISED_FOLDER, CARVE_OUT_FOLDER, ROOT],
-      },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      ...REMOVING_RECORDS,
-      ...REMOVING_AUTHORISED_FOLDER,
-      ...REMOVING_CARVE_OUT_FOLDER,
-      ...REMOVING_ROOT,
-      REMOVING_PROJECTION,
-      REMOVING_SETTINGS,
+    expect(removalEffectsOf({ path, removal: REMOVAL })).toEqual([
+      { kind: "remove-file", path: CARVE_OUT_FILE },
+      { kind: "remove-file", path: AUTHORISED_FILE },
+      { kind: "remove-directory-if-empty", path: AUTHORISED_FOLDER },
+      { kind: "remove-directory-if-empty", path: CARVE_OUT_FOLDER },
+      { kind: "remove-directory-if-empty", path: ROOT },
+      { kind: "remove-file", path: PROJECTION },
+      { kind: "remove-file", path: SETTINGS },
     ]);
   });
 
-  it("removes the empty folders listed with no records file, deepest first, the records folder last", () => {
-    const ports = portsOver();
+  it("tries the folders listed with no records file, deepest first, the records folder last", () => {
     expect(
-      removedVersionOneFiles({
-        ports,
+      removalEffectsOf({
+        path: { join: vi.fn<PathPort["join"]>(), relative: vi.fn<PathPort["relative"]>() },
         removal: { ...REMOVAL, recordsFiles: [], recordsFolders: [ROOT, CARVE_OUT_FOLDER] },
       }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [PROJECTION, SETTINGS], folders: [CARVE_OUT_FOLDER, ROOT] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      ...REMOVING_CARVE_OUT_FOLDER,
-      ...REMOVING_ROOT,
-      REMOVING_PROJECTION,
-      REMOVING_SETTINGS,
-    ]);
-  });
-
-  it("leaves a folder that still holds something", () => {
-    const ports = portsOver();
-    ports.directory.list
-      .mockReturnValueOnce({ outcome: "ok", value: [] })
-      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "notes.md", kind: "file" }] });
-    expect(removedVersionOneFiles({ ports, removal: REMOVAL })).toEqual({
-      outcome: "ok",
-      value: {
-        files: [CARVE_OUT_FILE, AUTHORISED_FILE, PROJECTION, SETTINGS],
-        folders: [AUTHORISED_FOLDER, ROOT],
-      },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      ...REMOVING_RECORDS,
-      ...REMOVING_AUTHORISED_FOLDER,
-      { port: "list", arguments: [{ path: CARVE_OUT_FOLDER }] },
-      ...REMOVING_ROOT,
-      REMOVING_PROJECTION,
-      REMOVING_SETTINGS,
+    ).toEqual([
+      { kind: "remove-directory-if-empty", path: CARVE_OUT_FOLDER },
+      { kind: "remove-directory-if-empty", path: ROOT },
+      { kind: "remove-file", path: PROJECTION },
+      { kind: "remove-file", path: SETTINGS },
     ]);
   });
 
   it("tries only the records folder for a records file directly under it", () => {
-    const ports = portsOver({
+    const path = {
+      join: vi.fn<PathPort["join"]>(),
       relative: vi
         .fn<PathPort["relative"]>()
         .mockReturnValue({ relation: "within-root", path: "records.json" }),
-    });
+    };
+
     expect(
-      removedVersionOneFiles({
-        ports,
-        removal: { ...REMOVAL, recordsFiles: [DIRECT], projections: [] },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [DIRECT, SETTINGS], folders: [ROOT] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      { port: "remove", arguments: [{ path: DIRECT }] },
-      ...REMOVING_ROOT,
-      REMOVING_SETTINGS,
+      removalEffectsOf({ path, removal: { ...REMOVAL, recordsFiles: [DIRECT], projections: [] } }),
+    ).toEqual([
+      { kind: "remove-file", path: DIRECT },
+      { kind: "remove-directory-if-empty", path: ROOT },
+      { kind: "remove-file", path: SETTINGS },
     ]);
   });
 
-  it("removes a records file at the repository root and no folder, since the root is not a records folder", () => {
-    const ports = portsOver({
+  it("tries no folder for a records file at the repository root, since the root is not a records folder", () => {
+    const path = {
+      join: vi.fn<PathPort["join"]>(),
       relative: vi
         .fn<PathPort["relative"]>()
         .mockReturnValue({ relation: "within-root", path: "discipline-exceptions.json" }),
-    });
+    };
+
     expect(
-      removedVersionOneFiles({
-        ports,
+      removalEffectsOf({
+        path,
         removal: {
           ...REMOVAL,
           recordsFiles: [SINGLE],
           recordsRoot: { kind: "repository", path: REPOSITORY },
         },
       }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [SINGLE, PROJECTION, SETTINGS], folders: [] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      { port: "remove", arguments: [{ path: SINGLE }] },
-      REMOVING_PROJECTION,
-      REMOVING_SETTINGS,
+    ).toEqual([
+      { kind: "remove-file", path: SINGLE },
+      { kind: "remove-file", path: PROJECTION },
+      { kind: "remove-file", path: SETTINGS },
     ]);
   });
 
-  it("removes every projection, the root one and a slice, after the records and before the settings file", () => {
-    const ports = portsOver();
+  it("removes every projection, then each declaration file, after the records and before the settings file", () => {
     expect(
-      removedVersionOneFiles({
-        ports,
-        removal: { ...REMOVAL, recordsFiles: [], projections: [PROJECTION, SLICE] },
+      removalEffectsOf({
+        path: { join: vi.fn<PathPort["join"]>(), relative: vi.fn<PathPort["relative"]>() },
+        removal: {
+          ...REMOVAL,
+          recordsFiles: [],
+          projections: [PROJECTION, SLICE],
+          declarations: [DECLARATION],
+        },
       }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [PROJECTION, SLICE, SETTINGS], folders: [] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      REMOVING_PROJECTION,
-      { port: "remove", arguments: [{ path: SLICE }] },
-      REMOVING_SETTINGS,
+    ).toEqual([
+      { kind: "remove-file", path: PROJECTION },
+      { kind: "remove-file", path: SLICE },
+      { kind: "remove-file", path: DECLARATION },
+      { kind: "remove-file", path: SETTINGS },
     ]);
   });
 
-  it("removes each projection's declaration file after the projections and before the settings file", () => {
-    const ports = portsOver();
-    expect(
-      removedVersionOneFiles({
-        ports,
-        removal: { ...REMOVAL, recordsFiles: [], declarations: [DECLARATION] },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [PROJECTION, DECLARATION, SETTINGS], folders: [] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      REMOVING_PROJECTION,
-      { port: "remove", arguments: [{ path: DECLARATION }] },
-      REMOVING_SETTINGS,
-    ]);
-  });
-
-  it("removes no projection when none is given", () => {
-    const ports = portsOver();
-    expect(removedVersionOneFiles({ ports, removal: { ...REMOVAL, projections: [] } })).toEqual({
-      outcome: "ok",
-      value: {
-        files: [CARVE_OUT_FILE, AUTHORISED_FILE, SETTINGS],
-        folders: [AUTHORISED_FOLDER, CARVE_OUT_FOLDER, ROOT],
-      },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      ...REMOVING_RECORDS,
-      ...REMOVING_AUTHORISED_FOLDER,
-      ...REMOVING_CARVE_OUT_FOLDER,
-      ...REMOVING_ROOT,
-      REMOVING_SETTINGS,
-    ]);
-  });
-
-  it("removes a records file given with backslashes under a Windows records folder, and its emptied folder", () => {
+  it("removes a records file given with backslashes under a Windows records folder, and tries its folder", () => {
     const windowsRoot = absoluteRootOf("C:\\repo\\discipline-exceptions");
     const windowsFolder = absoluteWithin({
       root: windowsRoot,
@@ -361,26 +184,16 @@ describe("removedVersionOneFiles", () => {
       root: windowsRoot,
       file: repoPathOf("file-carve-outs/cd-15.json"),
     });
-    const IN_WINDOWS_FOLDER: RelativeLocation = {
-      relation: "within-root",
-      path: "file-carve-outs\\cd-15.json",
-    };
-    const windowsBase = portsOver({
+    const path = {
+      join: vi.fn<PathPort["join"]>().mockReturnValueOnce(windowsFolder),
       relative: vi
         .fn<PathPort["relative"]>()
-        .mockReturnValueOnce(IN_WINDOWS_FOLDER)
-        .mockReturnValueOnce(IN_WINDOWS_FOLDER),
-    });
-    const ports = {
-      ...windowsBase,
-      path: {
-        ...windowsBase.path,
-        join: vi.fn<PathPort["join"]>().mockReturnValueOnce(windowsFolder),
-      },
+        .mockReturnValueOnce({ relation: "within-root", path: "file-carve-outs\\cd-15.json" }),
     };
+
     expect(
-      removedVersionOneFiles({
-        ports,
+      removalEffectsOf({
+        path,
         removal: {
           ...REMOVAL,
           recordsFiles: [windowsFile],
@@ -388,137 +201,18 @@ describe("removedVersionOneFiles", () => {
           projections: [],
         },
       }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [windowsFile, SETTINGS], folders: [windowsFolder, windowsRoot] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      { port: "remove", arguments: [{ path: windowsFile }] },
-      { port: "list", arguments: [{ path: windowsFolder }] },
-      { port: "removeEmpty", arguments: [{ path: windowsFolder }] },
-      { port: "list", arguments: [{ path: windowsRoot }] },
-      { port: "removeEmpty", arguments: [{ path: windowsRoot }] },
-      REMOVING_SETTINGS,
+    ).toEqual([
+      { kind: "remove-file", path: windowsFile },
+      { kind: "remove-directory-if-empty", path: windowsFolder },
+      { kind: "remove-directory-if-empty", path: windowsRoot },
+      { kind: "remove-file", path: SETTINGS },
     ]);
   });
 
-  it("refuses, before removing anything, a records file that is not under the records folder", () => {
-    const ports = portsOver({
-      relative: vi
-        .fn<PathPort["relative"]>()
-        .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
-        .mockReturnValueOnce({ relation: "within-root", path: "../tools/x.json" }),
-    });
+  it("removes a team rule set's version 1 files after the settings file, then tries each listed folder in the order given", () => {
     expect(
-      removedVersionOneFiles({
-        ports,
-        removal: { ...REMOVAL, recordsFiles: [CARVE_OUT_FILE, OUTSIDE] },
-      }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "records-file-outside-root", path: OUTSIDE, root: ROOT },
-    });
-    expect(sequenceOf({ ports })).toEqual([]);
-  });
-
-  it("refuses a records file whose path differs from the records folder's only in case", () => {
-    const ports = portsOver({
-      relative: vi.fn<PathPort["relative"]>().mockReturnValue({
-        relation: "within-root",
-        path: "../Discipline-Exceptions/file-carve-outs/cd-15.json",
-      }),
-    });
-    expect(
-      removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [OTHER_CASE] } }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "records-file-outside-root", path: OTHER_CASE, root: ROOT },
-    });
-    expect(sequenceOf({ ports })).toEqual([]);
-  });
-
-  it("refuses the records folder itself listed as a records file", () => {
-    const ports = portsOver({
-      relative: vi
-        .fn<PathPort["relative"]>()
-        .mockReturnValue({ relation: "within-root", path: "" }),
-    });
-    expect(
-      removedVersionOneFiles({ ports, removal: { ...REMOVAL, recordsFiles: [ROOT] } }),
-    ).toEqual({
-      outcome: "failed",
-      error: { kind: "records-file-outside-root", path: ROOT, root: ROOT },
-    });
-    expect(sequenceOf({ ports })).toEqual([]);
-  });
-
-  it("stops at the first file it cannot remove and says what it had removed, so the settings file stays", () => {
-    const ports = portsOver();
-    ports.fileRemoval.remove.mockReturnValueOnce(ok).mockReturnValueOnce({
-      outcome: "failed",
-      error: { kind: "unremovable", path: AUTHORISED_FILE, detail: "EBUSY" },
-    });
-    expect(removedVersionOneFiles({ ports, removal: REMOVAL })).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "unremovable",
-        path: AUTHORISED_FILE,
-        detail: "EBUSY",
-        removed: { files: [CARVE_OUT_FILE], folders: [] },
-      },
-    });
-    expect(sequenceOf({ ports })).toEqual(REMOVING_RECORDS);
-  });
-
-  it("stops when a folder cannot be listed", () => {
-    const ports = portsOver();
-    ports.directory.list.mockReturnValueOnce({
-      outcome: "failed",
-      error: { kind: "directory-unreadable", path: AUTHORISED_FOLDER, detail: "EACCES" },
-    });
-    expect(removedVersionOneFiles({ ports, removal: REMOVAL })).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "unremovable",
-        path: AUTHORISED_FOLDER,
-        detail: "EACCES",
-        removed: { files: [CARVE_OUT_FILE, AUTHORISED_FILE], folders: [] },
-      },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      ...REMOVING_RECORDS,
-      { port: "list", arguments: [{ path: AUTHORISED_FOLDER }] },
-    ]);
-  });
-
-  it("stops when a listed empty folder cannot be removed", () => {
-    const ports = portsOver();
-    ports.directoryRemoval.removeEmpty.mockReturnValueOnce({
-      outcome: "failed",
-      error: { kind: "directory-unremovable", path: AUTHORISED_FOLDER, detail: "EBUSY" },
-    });
-    expect(removedVersionOneFiles({ ports, removal: REMOVAL })).toEqual({
-      outcome: "failed",
-      error: {
-        kind: "unremovable",
-        path: AUTHORISED_FOLDER,
-        detail: "EBUSY",
-        removed: { files: [CARVE_OUT_FILE, AUTHORISED_FILE], folders: [] },
-      },
-    });
-    expect(sequenceOf({ ports })).toEqual([...REMOVING_RECORDS, ...REMOVING_AUTHORISED_FOLDER]);
-  });
-});
-
-describe("removedVersionOneFiles over a team rule set's version 1 files", () => {
-  it("removes the team's version 1 files after the settings file, then each listed folder it emptied, in the order given", () => {
-    const ports = portsOver();
-    ports.directory.list
-      .mockReturnValueOnce({ outcome: "ok", value: [] })
-      .mockReturnValueOnce({ outcome: "ok", value: [{ name: "audit", kind: "directory" }] });
-    expect(
-      removedVersionOneFiles({
-        ports,
+      removalEffectsOf({
+        path: { join: vi.fn<PathPort["join"]>(), relative: vi.fn<PathPort["relative"]>() },
         removal: {
           ...REMOVAL,
           recordsFiles: [],
@@ -526,19 +220,164 @@ describe("removedVersionOneFiles over a team rule set's version 1 files", () => 
           ruleSetFolders: [TEAM_RULE_FOLDER, TEAM_MECHANISMS_FOLDER],
         },
       }),
-    ).toEqual({
-      outcome: "ok",
-      value: { files: [PROJECTION, SETTINGS, TEAM_RULE, TEAM_MODULE], folders: [TEAM_RULE_FOLDER] },
-    });
-    expect(sequenceOf({ ports })).toEqual([
-      REMOVING_PROJECTION,
-      REMOVING_SETTINGS,
-      { port: "remove", arguments: [{ path: TEAM_RULE }] },
-      { port: "remove", arguments: [{ path: TEAM_MODULE }] },
-      { port: "list", arguments: [{ path: TEAM_RULE_FOLDER }] },
-      { port: "removeEmpty", arguments: [{ path: TEAM_RULE_FOLDER }] },
-      { port: "list", arguments: [{ path: TEAM_MECHANISMS_FOLDER }] },
+    ).toEqual([
+      { kind: "remove-file", path: PROJECTION },
+      { kind: "remove-file", path: SETTINGS },
+      { kind: "remove-file", path: TEAM_RULE },
+      { kind: "remove-file", path: TEAM_MODULE },
+      { kind: "remove-directory-if-empty", path: TEAM_RULE_FOLDER },
+      { kind: "remove-directory-if-empty", path: TEAM_MECHANISMS_FOLDER },
     ]);
+  });
+});
+
+describe("removalOutcomeOf", () => {
+  it("names each file and folder it removed, leaving out a folder it kept", () => {
+    expect(
+      removalOutcomeOf({
+        applied: {
+          outcome: "all-applied",
+          settled: [
+            { effect: { kind: "remove-file", path: CARVE_OUT_FILE }, outcome: "applied" },
+            {
+              effect: { kind: "remove-directory-if-empty", path: CARVE_OUT_FOLDER },
+              outcome: "kept",
+            },
+            { effect: { kind: "remove-directory-if-empty", path: ROOT }, outcome: "applied" },
+          ],
+        },
+      }),
+    ).toEqual({ outcome: "ok", value: { files: [CARVE_OUT_FILE], folders: [ROOT] } });
+  });
+
+  it("names the effect it stopped at, with its own detail, and what it had removed before it", () => {
+    expect(
+      removalOutcomeOf({
+        applied: {
+          outcome: "stopped",
+          settled: [{ effect: { kind: "remove-file", path: CARVE_OUT_FILE }, outcome: "applied" }],
+          stopped: {
+            effect: { kind: "remove-directory-if-empty", path: AUTHORISED_FOLDER },
+            outcome: "failed",
+            detail: "EACCES",
+          },
+        },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: {
+        kind: "unremovable",
+        path: AUTHORISED_FOLDER,
+        detail: "EACCES",
+        removed: { files: [CARVE_OUT_FILE], folders: [] },
+      },
+    });
+  });
+});
+
+describe("removedVersionOneFiles", () => {
+  it("applies the removal and names what it removed", () => {
+    const apply = vi.fn<ProofEffects["apply"]>().mockReturnValueOnce({
+      outcome: "all-applied",
+      settled: [
+        { effect: { kind: "remove-file", path: DIRECT }, outcome: "applied" },
+        { effect: { kind: "remove-directory-if-empty", path: ROOT }, outcome: "applied" },
+        { effect: { kind: "remove-file", path: SETTINGS }, outcome: "applied" },
+      ],
+    });
+    const path = {
+      join: vi.fn<PathPort["join"]>(),
+      relative: vi
+        .fn<PathPort["relative"]>()
+        .mockReturnValue({ relation: "within-root", path: "records.json" }),
+    };
+
+    expect(
+      removedVersionOneFiles({
+        path,
+        effects: { apply },
+        removal: { ...REMOVAL, recordsFiles: [DIRECT], projections: [] },
+      }),
+    ).toEqual({ outcome: "ok", value: { files: [DIRECT, SETTINGS], folders: [ROOT] } });
+    expect(apply.mock.calls).toEqual([
+      [
+        {
+          effects: [
+            { kind: "remove-file", path: DIRECT },
+            { kind: "remove-directory-if-empty", path: ROOT },
+            { kind: "remove-file", path: SETTINGS },
+          ],
+        },
+      ],
+    ]);
+  });
+
+  it("refuses, before removing anything, a records file that is not under the records folder", () => {
+    const apply = vi.fn<ProofEffects["apply"]>();
+    const path = {
+      join: vi.fn<PathPort["join"]>(),
+      relative: vi
+        .fn<PathPort["relative"]>()
+        .mockReturnValueOnce(IN_CARVE_OUT_FOLDER)
+        .mockReturnValueOnce({ relation: "within-root", path: "../tools/x.json" }),
+    };
+
+    expect(
+      removedVersionOneFiles({
+        path,
+        effects: { apply },
+        removal: { ...REMOVAL, recordsFiles: [CARVE_OUT_FILE, OUTSIDE] },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "records-file-outside-root", path: OUTSIDE, root: ROOT },
+    });
+    expect(apply).not.toHaveBeenCalled();
+  });
+
+  it("refuses a records file whose path differs from the records folder's only in case", () => {
+    const apply = vi.fn<ProofEffects["apply"]>();
+    const path = {
+      join: vi.fn<PathPort["join"]>(),
+      relative: vi.fn<PathPort["relative"]>().mockReturnValue({
+        relation: "within-root",
+        path: "../Discipline-Exceptions/file-carve-outs/cd-15.json",
+      }),
+    };
+
+    expect(
+      removedVersionOneFiles({
+        path,
+        effects: { apply },
+        removal: { ...REMOVAL, recordsFiles: [OTHER_CASE] },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "records-file-outside-root", path: OTHER_CASE, root: ROOT },
+    });
+    expect(apply).not.toHaveBeenCalled();
+  });
+
+  it("refuses the records folder itself listed as a records file", () => {
+    const apply = vi.fn<ProofEffects["apply"]>();
+    const path = {
+      join: vi.fn<PathPort["join"]>(),
+      relative: vi
+        .fn<PathPort["relative"]>()
+        .mockReturnValue({ relation: "within-root", path: "" }),
+    };
+
+    expect(
+      removedVersionOneFiles({
+        path,
+        effects: { apply },
+        removal: { ...REMOVAL, recordsFiles: [ROOT] },
+      }),
+    ).toEqual({
+      outcome: "failed",
+      error: { kind: "records-file-outside-root", path: ROOT, root: ROOT },
+    });
+    expect(apply).not.toHaveBeenCalled();
   });
 });
 
@@ -546,21 +385,18 @@ describe("projectionDeclarationsOf", () => {
   it("names the declaration file beside each projection that has one, and skips those that do not", () => {
     const exists = vi
       .fn<FileTextPort["exists"]>()
-      .mockImplementation(({ path }) => (path === DECLARATION ? "present" : "absent"));
-    expect({
-      declarations: projectionDeclarationsOf({
-        projections: [PROJECTION, SLICE],
-        fileText: { exists },
-      }),
-      asked: exists.mock.calls,
-    }).toEqual({
-      declarations: [DECLARATION],
-      asked: [[{ path: DECLARATION }], [{ path: SLICE_DECLARATION }]],
-    });
+      .mockReturnValueOnce("present")
+      .mockReturnValueOnce("absent");
+
+    expect(
+      projectionDeclarationsOf({ projections: [PROJECTION, SLICE], fileText: { exists } }),
+    ).toEqual([DECLARATION]);
+    expect(exists.mock.calls).toEqual([[{ path: DECLARATION }], [{ path: SLICE_DECLARATION }]]);
   });
 
   it("looks for no declaration beside a projection that is not an .mjs module", () => {
     const exists = vi.fn<FileTextPort["exists"]>().mockReturnValue("present");
+
     expect(
       projectionDeclarationsOf({
         projections: [absoluteRootOf("/repo/disciplines.eslint.js")],
