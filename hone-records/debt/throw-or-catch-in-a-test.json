@@ -11,10 +11,6 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
     },
     {

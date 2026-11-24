@@ -51,10 +51,6 @@
     },
     {
       "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
       "file": "src/composition/single-mechanism.integration.test.ts"
     },
     {

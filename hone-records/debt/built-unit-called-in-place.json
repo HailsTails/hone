@@ -19,10 +19,6 @@
     },
     {
       "answers": "built-unit-called-in-place#call-of-a-call",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "built-unit-called-in-place#call-of-a-call",
       "file": "src/composition/version-chosen-command.test.ts"
     },
     {

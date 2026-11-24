@@ -39,10 +39,6 @@
     },
     {
       "answers": "double-with-a-body#logic-in-a-passed-function",
-      "file": "src/composition/run-tool-command.test.ts"
-    },
-    {
-      "answers": "double-with-a-body#logic-in-a-passed-function",
       "file": "src/infrastructure/discipline-exceptions-folder/exception-layout.test.ts"
     },
     {
