@@ -7,7 +7,7 @@
 }
 ```
 
-A git spawn in a test without a hermetic `env`.
+A git spawn in a test whose `env` is inherited.
 
 ## Flags
 

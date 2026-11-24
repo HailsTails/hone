@@ -33,6 +33,7 @@ import { type ConventionsWire, conventionsOf, conventionsWireOf } from "./conven
 import { ruleSetNameSchema } from "./identifiers.ts";
 import { listedAddressSchema } from "./listed-address.ts";
 import { versionTwoReportOutputSchema } from "./report-output.ts";
+import { renameKeys } from "./settings-renames.ts";
 
 const RULE_SET_SUFFIX_SEPARATOR = "-";
 
@@ -324,4 +325,5 @@ export const SETTINGS_FILE_FORMAT: SettingsFileFormat = {
   fileOf: settingsFileOf,
   documentOf: settingsWireOf,
   textOf: settingsTextOf,
+  renameKeys,
 };

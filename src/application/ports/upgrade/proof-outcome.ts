@@ -39,7 +39,8 @@ export type ProofDifference = {
 export type ProofWrite =
   | { readonly kind: "directory-created"; readonly path: AbsolutePath }
   | { readonly kind: "file-created"; readonly path: AbsolutePath }
-  | { readonly kind: "file-replaced"; readonly path: AbsolutePath; readonly original: string };
+  | { readonly kind: "file-replaced"; readonly path: AbsolutePath; readonly original: string }
+  | { readonly kind: "file-removed"; readonly path: AbsolutePath; readonly original: string };
 
 export type ProofWriteFailure =
   | { readonly kind: "path-already-exists"; readonly path: AbsolutePath }
@@ -49,7 +50,8 @@ export type ProofWriteFailure =
       readonly detail: string;
     }
   | { readonly kind: "directory-uncreatable"; readonly path: AbsolutePath; readonly detail: string }
-  | { readonly kind: "unwritable"; readonly path: AbsolutePath; readonly detail: string };
+  | { readonly kind: "unwritable"; readonly path: AbsolutePath; readonly detail: string }
+  | { readonly kind: "unremovable"; readonly path: AbsolutePath; readonly detail: string };
 
 export type Unrestored = {
   readonly written: ProofWrite["kind"];

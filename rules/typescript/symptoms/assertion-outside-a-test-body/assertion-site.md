@@ -7,4 +7,4 @@
 }
 ```
 
-An assertion in a hook, suite body or helper is detached from the test whose result it should determine. Put it in the case that exercises the behavior.
+An assertion in a hook, suite body or helper is detached from the test whose result it should determine. Put it in the test body that exercises the behaviour.

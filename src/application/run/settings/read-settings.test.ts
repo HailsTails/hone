@@ -88,6 +88,7 @@ const LAYERING_CLAUSE: ClauseAddress = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
@@ -96,6 +97,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
@@ -104,6 +106,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
@@ -124,8 +127,8 @@ const SETTINGS_CATALOGUE: SymptomCatalogue = {
       sight: {
         kind: "symptom-by-form",
         forms: [
-          { section: "a-for-loop", symptom: LOOP_KEYWORD },
-          { section: "a-let", symptom: REBINDING },
+          { form: "a-for-loop", symptom: LOOP_KEYWORD },
+          { form: "a-let", symptom: REBINDING },
         ],
       },
     },
@@ -196,28 +199,17 @@ const sourcesHolding = (request: { readonly document: unknown }): SettingsSource
   }),
 });
 
-const readSelectedSettings = (request: {
-  readonly sources: SettingsSources;
-  readonly settingsFormat: Pick<SettingsFileFormat, "fileOf">;
-  readonly readPiece?: CheckPieceSource;
-}) =>
-  readNamedSettings({
-    ...request,
-    readPiece:
-      request.readPiece ??
-      vi.fn<CheckPieceSource>().mockReturnValue({
-        outcome: "ok",
-        value: { ...LOOPS_PIECE, forms: {} },
-      }),
-  });
-
 describe("readNamedSettings and the settings document", () => {
   it("gives the check choices, binding, edition, and reporting settings from the document", () => {
     expect(
-      readSelectedSettings({
+      readNamedSettings({
         settingsFormat: SETTINGS_FORMAT,
         sources: sourcesHolding({
           document: DOCUMENT,
+        }),
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
         }),
       }),
     ).toEqual<{ readonly outcome: "ok"; readonly value: NamedSettingsReading }>({
@@ -270,9 +262,13 @@ describe("readNamedSettings and the settings document", () => {
 
   it("reads the settings file's document through the settings format", () => {
     const settingsFormat = formatGiving({ outcome: "ok", value: SETTINGS_FILE });
-    readSelectedSettings({
+    readNamedSettings({
       settingsFormat,
       sources: sourcesHolding({ document: DOCUMENT }),
+      readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+        outcome: "ok",
+        value: { ...LOOPS_PIECE, forms: {} },
+      }),
     });
     expect(vi.mocked(settingsFormat.fileOf).mock.calls).toEqual([[{ document: DOCUMENT }]]);
   });
@@ -285,7 +281,7 @@ describe("readNamedSettings and the settings document", () => {
       outcome: "ok",
       value: { ...LOOPS_PIECE, forms: {} },
     });
-    readSelectedSettings({ settingsFormat: SETTINGS_FORMAT, sources, readPiece });
+    readNamedSettings({ settingsFormat: SETTINGS_FORMAT, sources, readPiece });
     expect(readPiece).toHaveBeenCalledExactlyOnceWith({
       ruleSetRoot: INSTALL_ROOT,
       names: { symptom: "loop-keyword", check: "loops" },
@@ -295,7 +291,7 @@ describe("readNamedSettings and the settings document", () => {
 
   it("notes each declared convention no check reads yet, and not the test files the walker reads", () => {
     expect(
-      readSelectedSettings({
+      readNamedSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
           value: {
@@ -313,6 +309,10 @@ describe("readNamedSettings and the settings document", () => {
         sources: sourcesHolding({
           document: DOCUMENT,
         }),
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
+        }),
       }),
     ).toMatchObject({
       outcome: "ok",
@@ -328,7 +328,7 @@ describe("readNamedSettings and the settings document", () => {
 
   it("refuses a file its wire refuses, naming the file", () => {
     expect(
-      readSelectedSettings({
+      readNamedSettings({
         settingsFormat: formatGiving({
           outcome: "failed",
           error: {
@@ -339,6 +339,10 @@ describe("readNamedSettings and the settings document", () => {
         }),
         sources: sourcesHolding({
           document: DOCUMENT,
+        }),
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
         }),
       }),
     ).toEqual({
@@ -354,7 +358,7 @@ describe("readNamedSettings and the settings document", () => {
 
   it("refuses a check the catalogue does not hold, in the new words", () => {
     expect(
-      readSelectedSettings({
+      readNamedSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
           value: {
@@ -371,6 +375,10 @@ describe("readNamedSettings and the settings document", () => {
         sources: sourcesHolding({
           document: DOCUMENT,
         }),
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
+        }),
       }),
     ).toEqual({
       outcome: "failed",
@@ -380,7 +388,7 @@ describe("readNamedSettings and the settings document", () => {
 
   it("refuses an edition the piece does not declare, naming the check it was given on", () => {
     expect(
-      readSelectedSettings({
+      readNamedSettings({
         settingsFormat: formatGiving({
           outcome: "ok",
           value: {
@@ -390,6 +398,10 @@ describe("readNamedSettings and the settings document", () => {
         }),
         sources: sourcesHolding({
           document: DOCUMENT,
+        }),
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
         }),
       }),
     ).toEqual({
@@ -404,7 +416,7 @@ describe("readNamedSettings and the settings document", () => {
 
   it("passes on the failure of a piece it cannot read", () => {
     expect(
-      readSelectedSettings({
+      readNamedSettings({
         settingsFormat: SETTINGS_FORMAT,
         sources: sourcesHolding({
           document: DOCUMENT,
@@ -426,7 +438,14 @@ describe("readNamedSettings", () => {
     const sources = sourcesHolding({
       document: DOCUMENT,
     });
-    readSelectedSettings({ settingsFormat: SETTINGS_FORMAT, sources });
+    readNamedSettings({
+      settingsFormat: SETTINGS_FORMAT,
+      sources,
+      readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+        outcome: "ok",
+        value: { ...LOOPS_PIECE, forms: {} },
+      }),
+    });
     expect(sources.catalogue).toHaveBeenCalledExactlyOnceWith({
       ruleSetRoot: INSTALL_ROOT,
       ruleSet: TOOL_RULE_SET,
@@ -447,7 +466,15 @@ describe("readNamedSettings", () => {
             ...SETTINGS_CATALOGUE,
             symptoms: [teamLoop],
             clauses: [],
-            checks: [{ name: "loops", symptom: teamLoop, engines: [WALKER], forms: [] }],
+            checks: [
+              {
+                name: "loops",
+                symptom: teamLoop,
+                page: "team-loop/loops.md",
+                engines: [WALKER],
+                forms: [],
+              },
+            ],
           },
         },
       }),
@@ -461,12 +488,91 @@ describe("readNamedSettings", () => {
         checkSettings: [],
       },
     });
-    expect(readSelectedSettings({ sources, settingsFormat })).toMatchObject({
+    expect(
+      readNamedSettings({
+        sources,
+        settingsFormat,
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
+        }),
+      }),
+    ).toMatchObject({
       outcome: "ok",
       value: {
         selection: {
           selected: [{ address, binding: { address: "team-loop#loops", ruleSet: acme } }],
         },
+      },
+    });
+  });
+
+  it("places a folder team's symptom and check files under the team's folder", () => {
+    const acme = { name: ruleSetNameOf("acme") };
+    const teamLoop: Symptom = {
+      ...LOOP_KEYWORD,
+      ruleSet: acme,
+      name: "team-loop",
+      sourceFile: "rules/typescript/symptoms/team-loop.md",
+    };
+    const sources = {
+      ...sourcesHolding({ document: DOCUMENT }),
+      catalogue: vi.fn<SettingsSources["catalogue"]>().mockReturnValue({
+        outcome: "ok",
+        value: {
+          held: "catalogue",
+          catalogue: {
+            ...SETTINGS_CATALOGUE,
+            symptoms: [teamLoop],
+            clauses: [],
+            checks: [
+              {
+                name: "loops",
+                symptom: teamLoop,
+                page: "rules/typescript/symptoms/team-loop/loops.md",
+                engines: [WALKER],
+                forms: [],
+              },
+            ],
+          },
+        },
+      }),
+    };
+    const settingsFormat = formatGiving({
+      outcome: "ok",
+      value: {
+        ...SETTINGS_FILE,
+        ruleSets: [
+          { name: acme.name, location: { location: "folder", path: repoPathOf("team-rules") } },
+        ],
+        checks: [
+          {
+            address: { ruleSet: acme, check: "team-loop#loops" },
+            state: { state: "run", engine: "walker" },
+          },
+        ],
+        checkSettings: [],
+      },
+    });
+    const readPiece = vi.fn<CheckPieceSource>().mockReturnValue({
+      outcome: "ok",
+      value: { ...LOOPS_PIECE, forms: {} },
+    });
+
+    const read = readNamedSettings({ sources, settingsFormat, readPiece });
+
+    expect(read).toMatchObject({
+      outcome: "ok",
+      value: {
+        externalCatalogues: [
+          {
+            ruleSet: acme,
+            catalogue: {
+              symptoms: [{ sourceFile: "team-rules/rules/typescript/symptoms/team-loop.md" }],
+              checks: [{ page: "team-rules/rules/typescript/symptoms/team-loop/loops.md" }],
+            },
+          },
+        ],
       },
     });
   });
@@ -492,7 +598,13 @@ describe("readNamedSettings", () => {
               symptoms: [teamLoopKeyword],
               clauses: [],
               checks: [
-                { name: "team-loops", symptom: teamLoopKeyword, engines: [WALKER], forms: [] },
+                {
+                  name: "team-loops",
+                  symptom: teamLoopKeyword,
+                  page: "loop-keyword/team-loops.md",
+                  engines: [WALKER],
+                  forms: [],
+                },
               ],
             },
           },
@@ -510,7 +622,16 @@ describe("readNamedSettings", () => {
         checkSettings: [],
       },
     });
-    expect(readSelectedSettings({ sources, settingsFormat })).toMatchObject({
+    expect(
+      readNamedSettings({
+        sources,
+        settingsFormat,
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
+        }),
+      }),
+    ).toMatchObject({
       outcome: "ok",
       value: {
         selection: {
@@ -545,7 +666,15 @@ describe("readNamedSettings", () => {
               ...SETTINGS_CATALOGUE,
               symptoms: [teamLoopKeyword],
               clauses: [],
-              checks: [{ name: "loops", symptom: teamLoopKeyword, engines: [WALKER], forms: [] }],
+              checks: [
+                {
+                  name: "loops",
+                  symptom: teamLoopKeyword,
+                  page: "loop-keyword/loops.md",
+                  engines: [WALKER],
+                  forms: [],
+                },
+              ],
             },
           },
         }),
@@ -565,7 +694,16 @@ describe("readNamedSettings", () => {
         checkSettings: [],
       },
     });
-    expect(readSelectedSettings({ sources, settingsFormat })).toEqual({
+    expect(
+      readNamedSettings({
+        sources,
+        settingsFormat,
+        readPiece: vi.fn<CheckPieceSource>().mockReturnValue({
+          outcome: "ok",
+          value: { ...LOOPS_PIECE, forms: {} },
+        }),
+      }),
+    ).toEqual({
       outcome: "failed",
       error: {
         kind: "rule-sets-share-a-check",
@@ -580,7 +718,13 @@ describe("readNamedSettings", () => {
     const catalogue: SymptomCatalogue = {
       ...SETTINGS_CATALOGUE,
       checks: [
-        { name: "new-loop-check", symptom: LOOP_KEYWORD, engines: [{ name: "walker" }], forms: [] },
+        {
+          name: "new-loop-check",
+          symptom: LOOP_KEYWORD,
+          page: "loop-keyword/new-loop-check.md",
+          engines: [{ name: "walker" }],
+          forms: [],
+        },
       ],
     };
     const sources = {

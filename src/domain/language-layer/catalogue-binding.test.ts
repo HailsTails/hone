@@ -56,6 +56,7 @@ const LOOPS = {
 const CLOCK_SOURCES_CHECK: CheckContent = {
   name: "clock-sources",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/clock-sources.md",
   clause: CLOCK_SOURCES,
   forms: [],
 };
@@ -63,6 +64,7 @@ const CLOCK_SOURCES_CHECK: CheckContent = {
 const LOOPS_CHECK: CheckContent = {
   name: "loops",
   symptom: DATE_USED_DIRECTLY,
+  page: "date-used-directly/loops.md",
   clause: LOOPS,
   forms: [],
 };
@@ -95,6 +97,7 @@ describe("catalogueBoundTo", () => {
           {
             name: "clock-sources",
             symptom: DATE_USED_DIRECTLY,
+            page: "date-used-directly/clock-sources.md",
             clause: CLOCK_SOURCES,
             forms: [],
             engines: [WALKER],
@@ -102,6 +105,7 @@ describe("catalogueBoundTo", () => {
           {
             name: "loops",
             symptom: DATE_USED_DIRECTLY,
+            page: "date-used-directly/loops.md",
             clause: LOOPS,
             forms: [],
             engines: [WALKER, ESLINT],

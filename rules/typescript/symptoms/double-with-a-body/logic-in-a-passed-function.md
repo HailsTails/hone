@@ -29,4 +29,4 @@ expect(isInstalled({ kindOf })).toBe("installed");
 expect(kindOf).toHaveBeenCalledExactlyOnceWith("bin/hone.js");
 ```
 
-The recipe is [Stub with vi.fn](../../recipes/stub-with-vifn.md).
+The recipe is [Stub with vi.fn](../../recipes/stub-with-vi-fn.md).

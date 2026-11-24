@@ -15,14 +15,6 @@
     },
     {
       "answers": "wide-input#unread-parameter",
-      "file": "src/infrastructure/content-files/item-folders/read-item-folder-catalogue.ts"
-    },
-    {
-      "answers": "wide-input#unread-parameter",
-      "file": "src/infrastructure/content-files/symptom-catalogues/read-symptom-catalogue.ts"
-    },
-    {
-      "answers": "wide-input#unread-parameter",
       "file": "src/infrastructure/disciplines-file/consumer-selection.ts"
     },
     {

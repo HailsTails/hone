@@ -7,6 +7,6 @@ The `acme` rule set Hone's install proof runs is a working example: [delivery/in
 ## Start one
 
 1. Pick a folder, name it under `ruleSets` in `hone.config.json`, and select its checks as `<rule set>/<symptom>#<check>`.
-2. Write each symptom and check as an item under the folder's `rules/`, laid out as Hone's own [rules](../rules/README.md). `@hailstails/hone/rule-set` types each item's facts.
+2. Write each symptom and check as an item under the folder's `rules/`, laid out as Hone's own [rules](../rules/README.md). `@hailstails/hone/rule-set` types each item's facts. A case's name must be its title in lower case with hyphens, leaving out any part in brackets. A symptom's indication may point only at a principle or rule its case owes.
 3. Write each check's piece under `engines/<engine>/<symptom>/<check>/`, with its examples beside it. Use ESLint for what a lint rule can see, and the walker (`@hailstails/hone/walker`) for files and names ESLint never reads.
 4. Test each piece against its examples with `checkConformanceOf` from `@hailstails/hone/testing`, naming the rule set and its root. An empty list means the piece meets every example.

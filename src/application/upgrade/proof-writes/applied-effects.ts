@@ -76,6 +76,7 @@ const outcomeOf = (request: {
         answer: ports.fileText.write({ path: effect.path, text: effect.text }),
       });
     case "remove-file":
+    case "remove-restorable-file":
       return settledOf({ effect, answer: ports.fileRemoval.remove({ path: effect.path }) });
     case "remove-directory-if-empty":
       return removedIfEmpty({ ports, effect });
@@ -113,6 +114,20 @@ export const appliedEffects = (request: {
   readonly effects: readonly ProofEffect[];
 }): EffectsApplied => appliedAfter({ ...request, settled: [] });
 
+const restoreRemovedFile = (request: {
+  readonly ports: EffectPorts;
+  readonly write: Extract<ProofWrite, { readonly kind: "file-removed" }>;
+}): PortAnswer => {
+  const { ports, write } = request;
+  const created = ports.fileCreation.createNew({ path: write.path, text: write.original });
+  if (created.outcome === "ok") {
+    return created;
+  }
+  const detail =
+    created.error.kind === "uncreatable" ? created.error.detail : `${write.path} already exists`;
+  return { outcome: "failed", error: { detail } };
+};
+
 const undoAnswerOf = (request: {
   readonly ports: EffectPorts;
   readonly write: ProofWrite;
@@ -125,6 +140,8 @@ const undoAnswerOf = (request: {
       return ports.fileRemoval.remove({ path: write.path });
     case "file-replaced":
       return ports.fileText.write({ path: write.path, text: write.original });
+    case "file-removed":
+      return restoreRemovedFile({ ports, write });
   }
 };
 

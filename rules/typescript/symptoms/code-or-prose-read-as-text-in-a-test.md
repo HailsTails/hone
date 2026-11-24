@@ -1,4 +1,4 @@
-# Code or prose read as text
+# Code or prose read as text in a test
 
 ```json
 {
@@ -14,7 +14,7 @@
       ]
     }
   ],
-  "breachUsuallySits": "in a test that checks the words in a file instead of the code behavior",
+  "breachUsuallySits": "in a test that checks the words in a file instead of the code behaviour",
   "seenBy": [
     "syntax"
   ],

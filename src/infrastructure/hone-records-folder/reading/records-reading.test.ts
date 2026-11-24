@@ -47,6 +47,7 @@ const CLAIMED_TYPE: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -59,6 +60,7 @@ const CAST_CHECK: Check = {
 const NON_NULL_CHECK: Check = {
   name: "non-null-assertions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/non-null-assertions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),

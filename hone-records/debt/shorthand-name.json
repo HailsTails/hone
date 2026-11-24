@@ -19,10 +19,6 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/piece-engines.test.ts"
-    },
-    {
-      "answers": "shorthand-name#identifier-names",
       "file": "src/infrastructure/engines/protocol/checks/checks-runner-module-schema.test.ts"
     },
     {
@@ -35,7 +31,7 @@
     },
     {
       "answers": "shorthand-name#identifier-names",
-      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
+      "file": "src/infrastructure/engines/walker/assertion-outside-a-test-body/assertion-site/assertion-site.ts"
     },
     {
       "answers": "shorthand-name#identifier-names",

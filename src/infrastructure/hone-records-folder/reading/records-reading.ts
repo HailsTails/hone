@@ -25,6 +25,7 @@ import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import type { RuleSetName } from "../../../domain/rule-set/identifier-types.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
 import { type FiledUnder, recordOf } from "./record-resolution.ts";
+import { readEntries } from "./records-entries.ts";
 
 type PlacedEntry = {
   readonly place: RecordPlace;
@@ -240,4 +241,4 @@ export const recordsReadingOf = (request: {
   };
 };
 
-export const recordsReader: RecordsReader = { recordsReadingOf };
+export const recordsReader: RecordsReader = { recordsReadingOf, readEntries };

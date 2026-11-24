@@ -66,6 +66,7 @@ const REBINDING: Symptom = {
 const SKIPPED_TESTS_CHECK: Check = {
   name: "skipped-tests",
   symptom: TEST_SWITCHED_OFF,
+  page: "test-switched-off/skipped-tests.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),
@@ -78,6 +79,7 @@ const SKIPPED_TESTS_CHECK: Check = {
 const NON_NULL_ASSERTIONS_CHECK: Check = {
   name: "non-null-assertions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/non-null-assertions.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-2"),
@@ -90,6 +92,7 @@ const NON_NULL_ASSERTIONS_CHECK: Check = {
 const PARAMETER_COUNT_CHECK: Check = {
   name: "parameter-count",
   symptom: POSITIONAL_PARAMETERS,
+  page: "positional-parameters/parameter-count.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-40"),
@@ -102,6 +105,7 @@ const PARAMETER_COUNT_CHECK: Check = {
 const REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: REBINDING,
+  page: "rebinding/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),

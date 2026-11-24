@@ -2,9 +2,13 @@ import { assert, describe, expect, it, vi } from "vitest";
 
 import type { AuthoriseRequest } from "../application/ports/authorising.ts";
 import type { NamedEngineRun } from "../application/ports/engine/engine-run.ts";
+import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { RecordsEditor } from "../application/ports/records/records-editor.ts";
 import type { RecordsReader } from "../application/ports/records/records-reader.ts";
+import type { RecordsSource } from "../application/ports/records/records-source.ts";
 import type { RecordsStoreOf } from "../application/ports/records/records-store.ts";
+import type { SettingsFileFormat } from "../application/ports/settings/settings-file-format.ts";
+import type { ProofEffects } from "../application/ports/upgrade/proof-effect.ts";
 import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Check,
@@ -23,6 +27,7 @@ import {
   type RecordsSourceFor,
   type VersionTwoRecordInput,
   versionTwoAuthoriseOf,
+  writeCurrentNames,
   versionTwoPruneDebtOf,
   versionTwoRecordDebtOf,
 } from "./version-two-record-commands.ts";
@@ -61,7 +66,7 @@ const inputFailingCatalogue = (): VersionTwoRecordInput => ({
   repoRoot: absoluteRootOf("/repo"),
   recordsSourceFor: vi.fn<RecordsSourceFor>(),
   recordsStoreOf: vi.fn<RecordsStoreOf>(),
-  recordsReader: { recordsReadingOf: vi.fn() },
+  recordsReader: { recordsReadingOf: vi.fn(), readEntries: vi.fn() },
   recordsEditor: {
     documentsWithAdded: vi.fn(),
     documentsWithRepointed: vi.fn(),
@@ -69,6 +74,8 @@ const inputFailingCatalogue = (): VersionTwoRecordInput => ({
     documentsWithRemoved: vi.fn(),
   },
 });
+
+const SETTINGS_PATH = absoluteRootOf("/repo/hone.config.json");
 
 describe("versionTwoRecordDebtOf", () => {
   it("gives the run's load failure and opens no records store", async () => {
@@ -189,6 +196,7 @@ const CLAIMED_TYPE: Symptom = {
 const CAST_CHECK: Check = {
   name: "cast-expressions",
   symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
   engines: [{ name: "walker" }],
   forms: [],
 };
@@ -276,6 +284,7 @@ const inputAnsweringAcrossARename = (): VersionTwoRecordInput => {
           base: { measured: "yes", held: [DEBT_ON_BASKET.record] },
         },
       }),
+      readEntries: vi.fn<RecordsReader["readEntries"]>(),
     },
     recordsEditor: {
       ...input.recordsEditor,
@@ -405,5 +414,78 @@ describe("versionTwoAuthoriseOf", () => {
       catalogue: { ...CATALOGUE, symptoms: [teamSymptom] },
     });
     expect(base.stages.records).not.toHaveBeenCalled();
+  });
+});
+
+describe("writeCurrentNames", () => {
+  it("gives the catalogue's load failure and reads no records", () => {
+    const input = inputFailingCatalogue();
+
+    const upgrade = writeCurrentNames({
+      ...input,
+      fileText: { read: vi.fn<FileTextPort["read"]>() },
+      settingsPath: SETTINGS_PATH,
+      settingsFormat: { renameKeys: vi.fn<SettingsFileFormat["renameKeys"]>() },
+      effects: { apply: vi.fn<ProofEffects["apply"]>(), undo: vi.fn<ProofEffects["undo"]>() },
+    });
+
+    expect(upgrade).toEqual({ outcome: "failed", error: SETTINGS_ABSENT });
+    expect(input.recordsSourceFor).not.toHaveBeenCalled();
+  });
+
+  it("reads the records against Hone's own catalogue, without the settings stage that would refuse former check names, and applies the renamed files", () => {
+    const base = inputWithOutOfDateProjection();
+    const from = repoPathOf("hone-records/debt/export-from-a-test-file.json");
+    const to = repoPathOf("hone-records/debt/export-from-a-test.json");
+    const document = { file: from, document: { version: 2, records: [] } };
+    const recordsSourceFor = vi.fn<RecordsSourceFor>().mockReturnValue({
+      read: vi.fn<RecordsSource["read"]>().mockReturnValue({ outcome: "ok", value: [document] }),
+      readAt: vi.fn<RecordsSource["readAt"]>(),
+    });
+    const apply = vi
+      .fn<ProofEffects["apply"]>()
+      .mockReturnValue({ outcome: "all-applied", settled: [] });
+
+    const upgrade = writeCurrentNames({
+      ...base,
+      recordsSourceFor,
+      recordsReader: {
+        ...base.recordsReader,
+        readEntries: vi
+          .fn<RecordsReader["readEntries"]>()
+          .mockReturnValue({ outcome: "ok", value: [] }),
+      },
+      fileText: {
+        read: vi.fn<FileTextPort["read"]>().mockReturnValue({ outcome: "ok", value: "{}" }),
+      },
+      settingsPath: SETTINGS_PATH,
+      settingsFormat: {
+        renameKeys: vi
+          .fn<SettingsFileFormat["renameKeys"]>()
+          .mockReturnValue({ outcome: "ok", value: { text: "{}", renamed: [], listed: [] } }),
+      },
+      effects: { apply, undo: vi.fn<ProofEffects["undo"]>() },
+    });
+
+    expect(upgrade).toEqual({
+      outcome: "ok",
+      value: { outcome: "renamed", records: [{ from, to, records: 0 }], checks: [] },
+    });
+    expect(recordsSourceFor).toHaveBeenCalledExactlyOnceWith({ catalogue: CATALOGUE });
+    expect(apply).toHaveBeenCalledExactlyOnceWith({
+      effects: [
+        {
+          kind: "create-file",
+          path: absoluteRootOf("/repo/hone-records/debt/export-from-a-test.json"),
+          text: '{\n  "version": 2,\n  "records": []\n}\n',
+        },
+        {
+          kind: "remove-restorable-file",
+          path: absoluteRootOf("/repo/hone-records/debt/export-from-a-test-file.json"),
+          original: "{}",
+        },
+      ],
+    });
+    expect(base.stages.settings).not.toHaveBeenCalled();
   });
 });

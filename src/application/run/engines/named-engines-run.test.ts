@@ -8,6 +8,7 @@ import { editionOf } from "../../../domain/rule-set/edition-of.ts";
 import type { CheckBinding } from "../../../domain/runner/check-binding.ts";
 import type { NamedEnginePort } from "../../ports/engine/engine-port.ts";
 import type { NamedEngineRun, ParsedNamedRunner } from "../../ports/engine/engine-run.ts";
+import type { PathPort } from "../../ports/host/path-port.ts";
 import { namedEngineRunsOf } from "./named-engines-run.ts";
 
 const REPO = absoluteRootOf("/repo");
@@ -29,6 +30,7 @@ const SYMPTOM: Symptom = {
 const CHECK: Check = {
   name: "named-check",
   symptom: SYMPTOM,
+  page: "held-value/named-check.md",
   engines: [{ name: "walker" }],
   forms: [],
 };
@@ -44,7 +46,7 @@ const BINDING: CheckBinding = {
 };
 
 describe("namedEngineRunsOf", () => {
-  it("dispatches a selected check without a version one address and passes non-TypeScript files as tracked context and the declared test files", async () => {
+  it("sends each engine the selected bindings, the declared test files and every tracked file as context", async () => {
     const runner: ParsedNamedRunner = {
       fileScope: "tracked",
       run: vi.fn(),
@@ -52,58 +54,29 @@ describe("namedEngineRunsOf", () => {
       project: vi.fn(),
       projectedKinds: [],
     };
-    const measured: NamedEngineRun = {
-      mechanism: "walker",
-      coverableKinds: [],
-      projection: "none",
-      slices: [],
-      nestedConfigurations: [],
-      unprojectedFolders: [],
-      misnamedRuleIds: [],
-      hits: [],
-      nativeExceptions: [],
-      measured: [{ check: "held-value#named-check", file: TYPESCRIPT }],
-    };
     const engine: NamedEnginePort = {
       load: vi.fn<NamedEnginePort["load"]>().mockResolvedValue({ outcome: "ok", value: runner }),
-      run: vi.fn<NamedEnginePort["run"]>().mockResolvedValue({ outcome: "ok", value: measured }),
+      run: vi.fn<NamedEnginePort["run"]>().mockResolvedValue({
+        outcome: "failed",
+        error: {
+          kind: "runner-failed",
+          mechanism: "walker",
+          failure: { kind: "tool-failed", detail: "stopped" },
+        },
+      }),
       project: vi.fn<NamedEnginePort["project"]>(),
     };
-    const report = await namedEngineRunsOf({
+
+    await namedEngineRunsOf({
       settings: {
-        selection: {
-          selected: [
-            {
-              address: { ruleSet: TOOL_RULE_SET, check: "held-value#named-check" },
-              check: CHECK,
-              binding: BINDING,
-              exceptions: "allowed",
-              editions: {
-                declared: [FIRST_EDITION],
-                default: FIRST_EDITION,
-                latest: FIRST_EDITION,
-              },
-            },
-          ],
-          notRun: [],
-          notAdopted: [],
-          excluded: [],
-          eslintConfigRoots: [],
-        },
-        runSettings: { reportOutput: "full", assessment: { forfeiture: "elsewhere" } },
+        selection: { selected: [{ binding: BINDING }] },
         eslintConfigLookup: { lookup: "detected" },
-        conventions: {
-          generated: [],
-          layers: [],
-          testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
-        },
-        available: [],
-        notes: [],
+        conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
       },
       repoRoot: REPO,
       installRoot: INSTALL,
       moduleExtension: ".ts",
-      path: { join: ({ segments }) => segments.join("/") },
+      path: { join: vi.fn<PathPort["join"]>() },
       modules: { load: vi.fn() },
       engine,
       checks: [CHECK],
@@ -130,6 +103,53 @@ describe("namedEngineRunsOf", () => {
         testFiles: { suffixes: ["spec"], folders: ["__tests__"] },
       },
     });
+  });
+
+  it("gives back each engine's run", async () => {
+    const measured: NamedEngineRun = {
+      mechanism: "walker",
+      coverableKinds: [],
+      projection: "none",
+      slices: [],
+      nestedConfigurations: [],
+      unprojectedFolders: [],
+      misnamedRuleIds: [],
+      hits: [],
+      nativeExceptions: [],
+      measured: [{ check: "held-value#named-check", file: TYPESCRIPT }],
+    };
+    const engine: NamedEnginePort = {
+      load: vi.fn<NamedEnginePort["load"]>().mockResolvedValue({
+        outcome: "ok",
+        value: {
+          fileScope: "tracked",
+          run: vi.fn(),
+          conform: vi.fn(),
+          project: vi.fn(),
+          projectedKinds: [],
+        },
+      }),
+      run: vi.fn<NamedEnginePort["run"]>().mockResolvedValue({ outcome: "ok", value: measured }),
+      project: vi.fn<NamedEnginePort["project"]>(),
+    };
+
+    const report = await namedEngineRunsOf({
+      settings: {
+        selection: { selected: [{ binding: BINDING }] },
+        eslintConfigLookup: { lookup: "detected" },
+        conventions: { testFiles: { suffixes: ["spec"], folders: ["__tests__"] } },
+      },
+      repoRoot: REPO,
+      installRoot: INSTALL,
+      moduleExtension: ".ts",
+      path: { join: vi.fn<PathPort["join"]>() },
+      modules: { load: vi.fn() },
+      engine,
+      checks: [CHECK],
+      answered: [],
+      tree: { tracked: [TYPESCRIPT], declaredConfigRoots: [] },
+    });
+
     expect(report).toEqual({ outcome: "ok", value: [measured] });
   });
 });

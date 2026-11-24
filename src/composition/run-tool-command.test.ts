@@ -184,13 +184,6 @@ const subcommandsSpied = (): Subcommands => ({
   upgrade: vi.fn<CommandHandler>().mockResolvedValue(undefined),
 });
 
-const callsOf = (request: { readonly subcommands: Subcommands }) => ({
-  check: vi.mocked(request.subcommands.check).mock.calls,
-  project: vi.mocked(request.subcommands.project).mock.calls,
-  recordDebt: vi.mocked(request.subcommands["record-debt"]).mock.calls,
-  pruneDebt: vi.mocked(request.subcommands["prune-debt"]).mock.calls,
-});
-
 const outputOf = (request: { readonly process: ProcessPort }) => ({
   writes: vi.mocked(request.process.writeOut).mock.calls,
   exits: vi.mocked(request.process.exitWith).mock.calls,
@@ -205,12 +198,12 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [[{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }]],
-      project: [],
-      recordDebt: [],
-      pruneDebt: [],
-    });
+    expect(vi.mocked(subcommands.check).mock.calls).toEqual([
+      [{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }],
+    ]);
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("runs the project subcommand with the same ports and the arguments after it", async () => {
@@ -221,12 +214,12 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [],
-      project: [[{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }]],
-      recordDebt: [],
-      pruneDebt: [],
-    });
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(vi.mocked(subcommands.project).mock.calls).toEqual([
+      [{ ...request, process: { ...request.process, arguments: ["--repo", "/repo"] } }],
+    ]);
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("runs the record-debt subcommand with the same ports and the arguments after it", async () => {
@@ -239,22 +232,20 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [],
-      project: [],
-      recordDebt: [
-        [
-          {
-            ...request,
-            process: {
-              ...request.process,
-              arguments: ["--repo", "/repo", "--base-revision", "HEAD"],
-            },
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(vi.mocked(subcommands["record-debt"]).mock.calls).toEqual([
+      [
+        {
+          ...request,
+          process: {
+            ...request.process,
+            arguments: ["--repo", "/repo", "--base-revision", "HEAD"],
           },
-        ],
+        },
       ],
-      pruneDebt: [],
-    });
+    ]);
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("runs the prune-debt subcommand with the same ports and the arguments after it", async () => {
@@ -267,26 +258,22 @@ describe("toolCommandOf", () => {
 
     await dispatchedOver({ subcommands, command: request });
 
-    expect(callsOf({ subcommands })).toEqual({
-      check: [],
-      project: [],
-      recordDebt: [],
-      pruneDebt: [
-        [
-          {
-            ...request,
-            process: {
-              ...request.process,
-              arguments: ["--repo", "/repo", "--base-revision", "origin/main"],
-            },
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(vi.mocked(subcommands["prune-debt"]).mock.calls).toEqual([
+      [
+        {
+          ...request,
+          process: {
+            ...request.process,
+            arguments: ["--repo", "/repo", "--base-revision", "origin/main"],
           },
-        ],
+        },
       ],
-    });
+    ]);
   });
 });
-
-const ranNothing = { check: [], project: [], recordDebt: [], pruneDebt: [] };
 
 describe("toolCommandOf refusing an invocation it cannot read", () => {
   it.each([
@@ -306,12 +293,14 @@ describe("toolCommandOf refusing an invocation it cannot read", () => {
 
       await dispatchedOver({ subcommands, command: commandRequest({ process: processPort }) });
 
-      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
-        {
-          output: { writes: [[{ text: line }]], exits: [[{ code: 2 }]] },
-          ran: ranNothing,
-        },
-      );
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [[{ text: line }]],
+        exits: [[{ code: 2 }]],
+      });
+      expect(subcommands.check).not.toHaveBeenCalled();
+      expect(subcommands.project).not.toHaveBeenCalled();
+      expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+      expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
     },
   );
 });
@@ -348,12 +337,14 @@ describe("toolCommandOf printing help", () => {
         }),
       });
 
-      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
-        {
-          output: { writes: [[{ text: runHelpText({ topic }) }]], exits: [[{ code: 0 }]] },
-          ran: ranNothing,
-        },
-      );
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [[{ text: runHelpText({ topic }) }]],
+        exits: [[{ code: 0 }]],
+      });
+      expect(subcommands.check).not.toHaveBeenCalled();
+      expect(subcommands.project).not.toHaveBeenCalled();
+      expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+      expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
     },
   );
 
@@ -380,12 +371,14 @@ describe("toolCommandOf printing help", () => {
         }),
       });
 
-      expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual(
-        {
-          output: { writes: [[{ text: runHelpText({ topic }) }]], exits: [[{ code: 0 }]] },
-          ran: ranNothing,
-        },
-      );
+      expect(outputOf({ process: processPort })).toEqual({
+        writes: [[{ text: runHelpText({ topic }) }]],
+        exits: [[{ code: 0 }]],
+      });
+      expect(subcommands.check).not.toHaveBeenCalled();
+      expect(subcommands.project).not.toHaveBeenCalled();
+      expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+      expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
     },
   );
 
@@ -454,10 +447,14 @@ describe("toolCommandOf printing the version", () => {
       }),
     });
 
-    expect({ output: outputOf({ process: processPort }), ran: callsOf({ subcommands }) }).toEqual({
-      output: { writes: [[{ text: "1.2.3\n" }]], exits: [[{ code: 0 }]] },
-      ran: ranNothing,
+    expect(outputOf({ process: processPort })).toEqual({
+      writes: [[{ text: "1.2.3\n" }]],
+      exits: [[{ code: 0 }]],
     });
+    expect(subcommands.check).not.toHaveBeenCalled();
+    expect(subcommands.project).not.toHaveBeenCalled();
+    expect(subcommands["record-debt"]).not.toHaveBeenCalled();
+    expect(subcommands["prune-debt"]).not.toHaveBeenCalled();
   });
 
   it("exits 2 with the load failure line when the install's package.json cannot be read", async () => {
@@ -670,7 +667,76 @@ describe("TOOL_SUBCOMMANDS on a folder holding neither settings file", () => {
   );
 });
 
+const FORMER_SETTINGS =
+  '{"version": 2, "checks": {"export-from-a-test-file#test-file-export": "walker"}}\n';
+
 describe("TOOL_SUBCOMMANDS on a repository holding hone.config.json", () => {
+  it("moves the settings to the current names when asked to upgrade", async () => {
+    const processPort = processWith({ arguments: ["--repo", "/repo"] });
+    const write = vi
+      .fn<FileTextPort["write"]>()
+      .mockReturnValue({ outcome: "ok", value: undefined });
+
+    await subcommandRanOverDirectory({
+      subcommand: "upgrade",
+      command: commandOver({
+        process: processPort,
+        fileText: {
+          exists: vi
+            .fn<FileTextPort["exists"]>()
+            .mockReturnValueOnce("absent")
+            .mockReturnValueOnce("present")
+            .mockReturnValueOnce("present")
+            .mockReturnValue("absent"),
+          read: vi
+            .fn<FileTextPort["read"]>()
+            .mockReturnValueOnce(VERSION_ONE_NAMES_READ)
+            .mockReturnValueOnce(AUTHORISED_LOCATION_KIND_READ)
+            .mockReturnValueOnce(DEBT_KIND_READ)
+            .mockReturnValueOnce({ outcome: "ok", value: FORMER_SETTINGS }),
+          write,
+        },
+      }),
+      directory: {
+        list: vi
+          .fn<DirectoryPort["list"]>()
+          .mockReturnValueOnce({
+            outcome: "ok",
+            value: [{ name: "record-kinds", kind: "directory" }],
+          })
+          .mockReturnValueOnce({
+            outcome: "ok",
+            value: [
+              { name: "authorised-location.md", kind: "file" },
+              { name: "debt.md", kind: "file" },
+            ],
+          }),
+        create: vi.fn<DirectoryPort["create"]>(),
+      },
+    });
+
+    expect([outputOf({ process: processPort }), write.mock.calls]).toEqual([
+      {
+        writes: [
+          [
+            {
+              text: "renamed hone.config.json checks export-from-a-test-file#test-file-export -> export-from-a-test#test-file-export\n",
+            },
+          ],
+        ],
+        exits: [[{ code: 0 }]],
+      },
+      [
+        [
+          {
+            path: "/repo/hone.config.json",
+            text: '{"version": 2, "checks": {"export-from-a-test#test-file-export": "walker"}}\n',
+          },
+        ],
+      ],
+    ]);
+  });
+
   it.each(["split-records"] as const)(
     "prints one not-ready-yet line naming %s and exits 2",
     async (subcommand) => {

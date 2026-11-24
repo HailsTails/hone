@@ -36,7 +36,7 @@ Two tests for a rule:
 
 ## Names, not numbers
 
-Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Selections, records and findings still use the numbered clause addresses; each check's mechanics are on its own page under its symptom.
+Rules, principles, cases, recipes and symptoms are named, not numbered. A name's id is the name, hyphenated. [Every CD](numbers.md) maps each old number to its new names. Each check's mechanics are on its own page under its symptom.
 
 [Every CD](numbers.md#every-numbered-discipline) lists each numbered discipline with its title, clauses, files checked and review lens.
 

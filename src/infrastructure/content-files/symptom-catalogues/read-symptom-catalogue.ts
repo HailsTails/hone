@@ -133,7 +133,7 @@ const readSymptomCatalogue = (
     ruleSet: request.ruleSet,
     beside,
     inheritedRecordKinds: request.inheritedRecordKinds,
-    symptomSourcePrefix:
+    sourcePrefix:
       request.ruleSetRoot === request.installRoot
         ? undefined
         : SYMPTOM_CATALOGUE_SEGMENTS.join("/"),
@@ -146,5 +146,5 @@ const readSymptomCatalogue = (
 export const createSymptomCatalogueRepository = (
   options: CatalogueSource,
 ): SymptomCatalogueRepository => ({
-  read: (_request) => readSymptomCatalogue(options),
+  read: () => readSymptomCatalogue(options),
 });

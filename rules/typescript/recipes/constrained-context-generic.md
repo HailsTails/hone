@@ -1,4 +1,4 @@
-# Bounded context generic
+# Constrained context generic
 
 ```json
 {

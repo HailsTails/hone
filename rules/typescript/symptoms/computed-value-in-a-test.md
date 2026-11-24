@@ -29,7 +29,7 @@
   "reports": "seen",
   "recipes": [
     "whole-written-out-expectation",
-    "iteach-over-typed-rows"
+    "it-each-over-typed-rows"
   ],
   "correctUses": []
 }

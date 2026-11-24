@@ -51,6 +51,7 @@ const unrestoredLineOf = (request: { readonly unrestored: Unrestored }): string 
     case "directory-created":
       return `  delete the empty folder ${path} (${detail})`;
     case "file-replaced":
+    case "file-removed":
       return `  restore ${path} from version control (${detail})`;
   }
 };
@@ -261,6 +262,8 @@ const writeLineOf = (request: { readonly failure: ProofWriteFailure }): string =
       return `${failure.path} could not be created (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
     case "unwritable":
       return `${failure.path} could not be written (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
+    case "unremovable":
+      return `${failure.path} could not be removed (${failure.detail}). Fix what the detail names, then run the upgrade again.`;
   }
 };
 
@@ -364,10 +367,35 @@ const directiveLinesOf = (request: {
 const uncoveredLineOf = (request: { readonly clauses: readonly ClauseAddress[] }): string =>
   `version 1 already reports ${request.clauses.map((address) => clauseAddressText({ address })).join(", ")} as uncovered. Select or mark each of them in disciplines.json, then run the upgrade again.`;
 
-const proofLinesOf = (request: {
-  readonly failure: ProofRefusal;
+type VersionTwoRefusal = Extract<
+  ProofRefusal,
+  {
+    readonly kind:
+      | "team-layout-unreadable"
+      | "version-two-run-failed"
+      | "directives-name-no-check"
+      | "differences"
+      | "removal-failed";
+  }
+>;
+
+type ProofLines = { readonly code: UpgradeFailureCode; readonly lines: readonly string[] };
+
+type VersionOneRunRefusal = Extract<
+  ProofRefusal,
+  {
+    readonly kind:
+      | "oracle-failed"
+      | "plan-refused"
+      | "version-one-run-failed"
+      | "version-one-uncovered";
+  }
+>;
+
+const mapVersionOneRunRefusalToLines = (request: {
+  readonly failure: VersionOneRunRefusal;
   readonly placement: RepositoryPlacement;
-}): { readonly code: UpgradeFailureCode; readonly lines: readonly string[] } => {
+}): ProofLines => {
   const { failure, placement } = request;
   switch (failure.kind) {
     case "oracle-failed":
@@ -396,6 +424,15 @@ const proofLinesOf = (request: {
           ...unrestoredLinesOf({ ...failure, placement, unrestored: [] }),
         ],
       };
+  }
+};
+
+const mapVersionOneWriteRefusalToLines = (request: {
+  readonly failure: Exclude<ProofRefusal, VersionTwoRefusal | VersionOneRunRefusal>;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure, placement } = request;
+  switch (failure.kind) {
     case "version-one-project-failed":
       return {
         code: 1,
@@ -436,6 +473,15 @@ const proofLinesOf = (request: {
           ...unrestoredLinesOf({ ...failure, placement, unrestored: failure.refusal.unrestored }),
         ],
       };
+  }
+};
+
+const mapVersionTwoRefusalToLines = (request: {
+  readonly failure: VersionTwoRefusal;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure, placement } = request;
+  switch (failure.kind) {
     case "team-layout-unreadable":
       return {
         code: 1,
@@ -479,6 +525,28 @@ const proofLinesOf = (request: {
           ...failure.remaining.map((remaining) => `  ${remaining}`),
         ],
       };
+  }
+};
+
+const proofLinesOf = (request: {
+  readonly failure: ProofRefusal;
+  readonly placement: RepositoryPlacement;
+}): ProofLines => {
+  const { failure, placement } = request;
+  switch (failure.kind) {
+    case "team-layout-unreadable":
+    case "version-two-run-failed":
+    case "directives-name-no-check":
+    case "differences":
+    case "removal-failed":
+      return mapVersionTwoRefusalToLines({ failure, placement });
+    case "oracle-failed":
+    case "plan-refused":
+    case "version-one-run-failed":
+    case "version-one-uncovered":
+      return mapVersionOneRunRefusalToLines({ failure, placement });
+    default:
+      return mapVersionOneWriteRefusalToLines({ failure, placement });
   }
 };
 

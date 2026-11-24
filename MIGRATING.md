@@ -445,3 +445,11 @@ A team rule set still in version 1's layout, `rules/<ID>/discipline.json` beside
 2. **Update the pieces to version 2's piece API,** which [docs/extending.md](docs/extending.md) describes: a walker piece reads `bindings` and reports at `binding.address` where it read clauses, it imports from `@hailstails/hone/walker`, and its tests use `@hailstails/hone/testing`. The upgrade runs the pieces to prove the two runs agree, so they must run under version 2 first.
 
 The upgrade writes the definitions, symptoms and checks under the rule set's `rules/` folder and each clause's cases as its check's examples, moves each piece's folder to `engines/<engine>/<symptom>/<check>/`, and removes the version 1 files and the names file. A folder that several clauses share is split: each clause's module and its test go to that clause's check, and the other files go once to the check of the clause first by name. Each moved file's relative imports, `require` calls and test-double module paths are rewritten for where it now sits. The upgrade refuses a folder whose one module serves several clauses, and an import or module path written as an expression rather than a string; give each clause a module of its own, or write the path as a string, first. The rule set takes Hone's record kinds, and its records land under `hone-records/<rule set>/`. An upgrade that stopped part way leaves version 1 discipline files beside version 2 items, and a second `hone upgrade` refuses that rule set until they are removed or it is restored.
+
+## 21. Moving a 2.0 pre-release to the current names
+
+Run `hone upgrade --repo .`. It renames the symptom and recipe names that changed before 2.0 in `hone-records/` and in the `checks` and `checkSettings` keys of `hone.config.json`, and prints each change. Then run `hone project --repo .` and commit what both write.
+
+A team rule set changes by hand: a remedy its engine reports names the `form`, not a `section`, and no `page`, because the finding links the check's own page.
+
+Hone now refuses to read a team rule set with a case whose name is not its title in lower case with hyphens, leaving out any part in brackets. It also refuses a symptom whose indication points at a principle or rule its case does not owe.

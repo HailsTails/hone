@@ -32,7 +32,7 @@
   "reports": "seen",
   "recipes": [
     "adapter-per-outside-party",
-    "port-in-the-domain"
+    "port-in-a-module-of-its-own"
   ],
   "correctUses": [
     {

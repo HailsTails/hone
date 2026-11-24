@@ -9,15 +9,41 @@ import type {
   Rule,
   Symptom,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
+import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
+import type { ReadonlyJsonValue } from "../../../domain/settings/json-values/json-value.ts";
 import {
   catalogueFileSchema,
   catalogueContentFromFile,
   catalogueContentOf,
 } from "./symptom-catalogue-wire.ts";
+
+const LOOPS_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-15"),
+  clause: clauseIdOf("loops"),
+};
+
+const TEST_BODY_LOGIC_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-27"),
+  clause: clauseIdOf("test-body-logic"),
+};
+
+const RESULT_FAILURES_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-9"),
+  clause: clauseIdOf("result-failures"),
+};
+
+const PII_REDACTION_CLAUSE: ClauseAddress = {
+  ruleSet: TOOL_RULE_SET,
+  discipline: disciplineIdOf("CD-32"),
+  clause: clauseIdOf("pii-redaction"),
+};
 
 const RECORD_KINDS_DOCUMENT = [
   {
@@ -100,7 +126,7 @@ const DOCUMENT = {
     { clause: "CD-15#loops", sight: { kind: "one-symptom", symptom: "loop-keyword" } },
     {
       clause: "CD-27#test-body-logic",
-      sight: { kind: "symptom-by-form", forms: [{ section: "a-let", symptom: "loop-keyword" }] },
+      sight: { kind: "symptom-by-form", forms: [{ form: "a-let", symptom: "loop-keyword" }] },
     },
     {
       clause: "CD-9#result-failures",
@@ -207,7 +233,7 @@ const CASE_DOCUMENT = {
   name: "checks-conditions-before-its-work",
   title: "Checks conditions before its work",
   standing: "accepted",
-  owes: [{ principle: "no-hidden-effects" }],
+  owes: [{ principle: "one-place-decides" }],
 };
 
 const SYMPTOM_DOCUMENT = {
@@ -238,6 +264,12 @@ const SYMPTOM_HOLDING_DOCUMENT = {
   ],
 };
 
+type RefusalRow = {
+  readonly name: string;
+  readonly document: ReadonlyJsonValue;
+  readonly refusal: string;
+};
+
 describe("catalogueContentOf", () => {
   it("gives each symptom and recipe the rule set it was read for", () => {
     const acme = { name: ruleSetNameOf("acme") };
@@ -266,38 +298,22 @@ describe("catalogueContentOf", () => {
         symptoms: [LOOP_KEYWORD],
         clauses: [
           {
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-15"),
-              clause: clauseIdOf("loops"),
-            },
+            clause: LOOPS_CLAUSE,
             sight: { kind: "one-symptom", symptom: LOOP_KEYWORD },
           },
           {
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-27"),
-              clause: clauseIdOf("test-body-logic"),
-            },
+            clause: TEST_BODY_LOGIC_CLAUSE,
             sight: {
               kind: "symptom-by-form",
-              forms: [{ section: "a-let", symptom: LOOP_KEYWORD }],
+              forms: [{ form: "a-let", symptom: LOOP_KEYWORD }],
             },
           },
           {
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-9"),
-              clause: clauseIdOf("result-failures"),
-            },
+            clause: RESULT_FAILURES_CLAUSE,
             sight: { kind: "method", recipe: FUNCTIONAL_ITERATION, outcomeSeenBy: [LOOP_KEYWORD] },
           },
           {
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-32"),
-              clause: clauseIdOf("pii-redaction"),
-            },
+            clause: PII_REDACTION_CLAUSE,
             sight: { kind: "outside-the-cases" },
           },
         ],
@@ -305,21 +321,15 @@ describe("catalogueContentOf", () => {
           {
             name: "loops",
             symptom: LOOP_KEYWORD,
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-15"),
-              clause: clauseIdOf("loops"),
-            },
+            page: "loop-keyword/loops.md",
+            clause: LOOPS_CLAUSE,
             forms: [],
           },
           {
             name: "test-body",
             symptom: LOOP_KEYWORD,
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-27"),
-              clause: clauseIdOf("test-body-logic"),
-            },
+            page: "loop-keyword/test-body.md",
+            clause: TEST_BODY_LOGIC_CLAUSE,
             forms: ["a-let"],
           },
         ],
@@ -364,21 +374,15 @@ describe("catalogueContentOf", () => {
           {
             name: "loops",
             symptom: LOOP_KEYWORD,
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-15"),
-              clause: clauseIdOf("loops"),
-            },
+            page: "loop-keyword/loops.md",
+            clause: LOOPS_CLAUSE,
             forms: [],
           },
           {
             name: "test-body",
             symptom: LOOP_KEYWORD,
-            clause: {
-              ruleSet: TOOL_RULE_SET,
-              discipline: disciplineIdOf("CD-27"),
-              clause: clauseIdOf("test-body-logic"),
-            },
+            page: "loop-keyword/test-body.md",
+            clause: TEST_BODY_LOGIC_CLAUSE,
             forms: ["a-let"],
           },
         ],
@@ -402,9 +406,9 @@ describe("catalogueContentOf", () => {
               sight: {
                 kind: "symptom-by-form",
                 forms: [
-                  { section: "branching-with-if", symptom: "work-inside-a-condition" },
-                  { section: "a-let", symptom: "rebinding" },
-                  { section: "a-ternary", symptom: "work-inside-a-condition" },
+                  { form: "branching-with-if", symptom: "work-inside-a-condition" },
+                  { form: "a-let", symptom: "rebinding" },
+                  { form: "a-ternary", symptom: "work-inside-a-condition" },
                 ],
               },
             },
@@ -436,6 +440,12 @@ describe("catalogueContentOf", () => {
         ruleSet: TOOL_RULE_SET,
         document: {
           ...SYMPTOM_HOLDING_DOCUMENT,
+          cases: [
+            {
+              ...CASE_DOCUMENT,
+              owes: [{ principle: "one-place-decides" }, { principle: "no-hidden-effects" }],
+            },
+          ],
           symptoms: [
             {
               ...SYMPTOM_DOCUMENT,
@@ -494,8 +504,6 @@ describe("catalogueContentOf", () => {
     });
   });
 
-  type RefusalRow = { readonly name: string; readonly document: unknown; readonly refusal: string };
-
   it.each<RefusalRow>([
     {
       name: "a name that is not lower-case and hyphenated",
@@ -541,7 +549,7 @@ describe("catalogueContentOf", () => {
       refusal: "✖ clauses holds CD-32#pii-redaction more than once",
     },
     {
-      name: "a form section listed twice for one clause",
+      name: "a form listed twice for one clause",
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         clauses: [
@@ -550,8 +558,8 @@ describe("catalogueContentOf", () => {
             sight: {
               kind: "symptom-by-form",
               forms: [
-                { section: "a-let", symptom: "work-inside-a-condition" },
-                { section: "a-let", symptom: "work-inside-a-condition" },
+                { form: "a-let", symptom: "work-inside-a-condition" },
+                { form: "a-let", symptom: "work-inside-a-condition" },
               ],
             },
           },
@@ -664,7 +672,7 @@ describe("catalogueContentOf", () => {
     {
       name: "a case owing a principle the catalogue does not hold",
       document: { ...EMPTY_DOCUMENT, cases: [CASE_DOCUMENT] },
-      refusal: "✖ cases names no-hidden-effects, which the catalogue does not hold",
+      refusal: "✖ cases names one-place-decides, which the catalogue does not hold",
     },
     {
       name: "a case owing a rule the catalogue does not hold",
@@ -689,7 +697,7 @@ describe("catalogueContentOf", () => {
         "✖ symptoms names checks-conditions-before-its-work, which the catalogue does not hold",
     },
     {
-      name: "a symptom pointing at a rule the catalogue does not hold",
+      name: "a symptom pointing its case at a rule the case does not owe",
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
         symptoms: [
@@ -701,15 +709,53 @@ describe("catalogueContentOf", () => {
           },
         ],
       },
-      refusal: "✖ symptoms names guard-first, which the catalogue does not hold",
+      refusal:
+        "✖ work-inside-a-condition points checks-conditions-before-its-work at guard-first, which checks-conditions-before-its-work does not owe",
     },
     {
-      name: "a symptom pointing at a principle the catalogue does not hold",
+      name: "a symptom pointing its case at a principle the catalogue holds and the case does not owe",
       document: {
         ...SYMPTOM_HOLDING_DOCUMENT,
-        principles: [{ name: "no-hidden-effects", title: "No hidden effects" }],
+        symptoms: [
+          {
+            ...SYMPTOM_DOCUMENT,
+            mayIndicate: [
+              {
+                case: "checks-conditions-before-its-work",
+                points: [{ principle: "no-hidden-effects" }],
+              },
+            ],
+          },
+        ],
       },
-      refusal: "✖ symptoms names one-place-decides, which the catalogue does not hold",
+      refusal:
+        "✖ work-inside-a-condition points checks-conditions-before-its-work at no-hidden-effects, which checks-conditions-before-its-work does not owe",
+    },
+    {
+      name: "a case whose name is cut shorter than its title",
+      document: {
+        ...EMPTY_DOCUMENT,
+        principles: PRINCIPLES_DOCUMENT,
+        cases: [{ ...CASE_DOCUMENT, name: "checks-conditions" }],
+      },
+      refusal:
+        "✖ cases names checks-conditions, which its title Checks conditions before its work names checks-conditions-before-its-work",
+    },
+    {
+      name: "a case whose name keeps its title's parenthetical",
+      document: {
+        ...EMPTY_DOCUMENT,
+        principles: PRINCIPLES_DOCUMENT,
+        cases: [
+          {
+            ...CASE_DOCUMENT,
+            name: "causes-an-effect-writes-logs",
+            title: "Causes an effect (writes, logs)",
+          },
+        ],
+      },
+      refusal:
+        "✖ cases names causes-an-effect-writes-logs, which its title Causes an effect (writes, logs) names causes-an-effect",
     },
     {
       name: "a symptom with a recipe the catalogue does not hold",
@@ -929,8 +975,8 @@ describe("catalogueContentOf", () => {
             sight: {
               kind: "symptom-by-form",
               forms: [
-                { section: "branching-with-if", symptom: "work-inside-a-condition" },
-                { section: "a-let", symptom: "rebinding" },
+                { form: "branching-with-if", symptom: "work-inside-a-condition" },
+                { form: "a-let", symptom: "rebinding" },
               ],
             },
           },

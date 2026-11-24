@@ -93,6 +93,7 @@ const AUTHORED_CLASS: Symptom = {
 const CLASS_KEYWORD_CHECK: Check = {
   name: "class-keyword",
   symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/class-keyword.md",
   clause: CLASS_SYNTAX,
   forms: [],
   engines: [{ name: "walker" }, { name: "eslint" }],
@@ -101,6 +102,7 @@ const CLASS_KEYWORD_CHECK: Check = {
 const STATIC_MEMBERS_CHECK: Check = {
   name: "static-members-only",
   symptom: AUTHORED_CLASS,
+  page: "authored-class-or-this/static-members-only.md",
   clause: STATIC_ONLY_CLASS,
   forms: [],
   engines: [{ name: "walker" }, { name: "eslint" }],

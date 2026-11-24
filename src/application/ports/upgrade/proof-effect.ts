@@ -11,6 +11,11 @@ export type ProofEffect =
       readonly original: string;
     }
   | { readonly kind: "remove-file"; readonly path: AbsolutePath }
+  | {
+      readonly kind: "remove-restorable-file";
+      readonly path: AbsolutePath;
+      readonly original: string;
+    }
   | { readonly kind: "remove-directory-if-empty"; readonly path: AbsolutePath };
 
 export type SettledEffect =

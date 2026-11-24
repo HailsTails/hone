@@ -38,7 +38,7 @@
   ],
   "reports": "seen-to-breach",
   "recipes": [
-    "stub-with-vifn"
+    "stub-with-vi-fn"
   ],
   "correctUses": [
     {

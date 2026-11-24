@@ -1,6 +1,6 @@
 # Every CD
 
-Rules, principles, cases, recipes and symptoms are named, not numbered. This is the one page that gives the old numbers: each CD, its verdict, and where it went. Selections, records and findings still use the numbered clause addresses.
+Rules, principles, cases, recipes and symptoms are named, not numbered. This is the one page that gives the old numbers: each CD, its verdict, and where it went.
 
 | Verdict | Meaning |
 |---|---|
@@ -26,7 +26,7 @@ Rules, principles, cases, recipes and symptoms are named, not numbered. This is 
 | CD-9 | Keeps | [Failures are values](rules/failures-are-values.md) |
 | CD-10 | Splits | [Failures are values](rules/failures-are-values.md); [Straight-through tests](rules/straight-through-tests.md); throw-only-error a [check](typescript/symptoms/thrown-non-error/throw-only-error.md) |
 | CD-11 | Recipe | [Result union](typescript/recipes/result-union.md), for [Failures are values](rules/failures-are-values.md) |
-| CD-12 | Recipe | [Port in the domain](typescript/recipes/port-in-the-domain.md), for [Ports declared inside](rules/ports-declared-inside.md) |
+| CD-12 | Recipe | [Port in a module of its own](typescript/recipes/port-in-a-module-of-its-own.md), for [Ports declared inside](rules/ports-declared-inside.md) |
 | CD-13 | Keeps | [Ports declared inside](rules/ports-declared-inside.md) |
 | CD-14 | Splits | no-class recipe [Closure factory](typescript/recipes/closure-factory.md); [Outside dependencies stay at boundaries](rules/outside-dependencies-stay-at-boundaries.md); state a [case](cases/keeps-state-or-settings-across-calls.md) |
 | CD-15 | Cases | of [No hidden effects](principles/no-hidden-effects.md) |
@@ -36,7 +36,7 @@ Rules, principles, cases, recipes and symptoms are named, not numbered. This is 
 | CD-19 | Splits | [Outside dependencies stay at boundaries](rules/outside-dependencies-stay-at-boundaries.md); [Ports declared inside](rules/ports-declared-inside.md); [construction](cases/builds-the-real-implementations.md) and [ids](cases/needs-the-current-time-a-random-value-a-new-id-or-an-outside-ordering.md) cases |
 | CD-20 | Merges | with CD-19 |
 | CD-21 | Cases | [built at the entry point](cases/builds-the-real-implementations.md) |
-| CD-22 | Recipe | [Bounded context generic](typescript/recipes/bounded-context-generic.md), for [Declared, not asserted](rules/declared-not-asserted.md) |
+| CD-22 | Recipe | [Constrained context generic](typescript/recipes/constrained-context-generic.md), for [Declared, not asserted](rules/declared-not-asserted.md) |
 | CD-23 | Keeps | [Tested where it's owned](rules/tested-where-its-owned.md) |
 | CD-24 | Merges | with CD-23 |
 | CD-25 | Keeps | [Written-out answers](rules/written-out-answers.md) |
@@ -97,7 +97,7 @@ Each mechanical clause and the [symptom](typescript/symptoms.md) it sees.
 
 The test-logic check, CD-27#test-body-logic, also sees the `let` form of [Answer set in a hook](typescript/symptoms/answer-set-in-a-hook.md), and `try`, a form of [Throw or catch in a test](typescript/symptoms/throw-or-catch-in-a-test.md).
 
-Review clauses that demand a method (CD-4, CD-9, CD-11, CD-12, CD-21 and CD-22) map to their [recipes](typescript/recipes.md). The outcome each protects is seen by Schema past its adapter, Throw between our units, Failure shaped as success, Port outside the domain, Adapter built outside the root and Default for a required value.
+Review clauses that demand a method (CD-4, CD-9, CD-11, CD-12, CD-21 and CD-22) map to their [recipes](typescript/recipes.md). The outcome each protects is seen by Schema past its adapter, Throw between our units, Failure shaped as success, Port beside its adapter, Adapter built outside the root and Default for a required value.
 
 Sensitive data and citation clauses (CD-32, CD-33, CD-34 and CD-39) are outside the 2.0 model, as safety (CD-32, CD-33 and CD-34) and process (CD-39): they are outside Hone's catalogue, with no item, symptom or check, and no Hone lens applies them.
 

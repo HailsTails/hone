@@ -179,6 +179,7 @@ describe("createSymptomCatalogueRepository", () => {
             {
               name: "parameter-reassignment",
               symptom: REBINDING,
+              page: "rebinding/parameter-reassignment.md",
               clause: PARAMETER_REASSIGNMENT,
               forms: [],
             },

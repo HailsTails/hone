@@ -47,6 +47,7 @@ const SETTINGS_REBINDING: Symptom = {
 const LOOP_KEYWORD_LOOPS: Check = {
   name: "loops",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/loops.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-15"),
@@ -59,6 +60,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
 const LOOP_KEYWORD_TEST_BODY: Check = {
   name: "test-body",
   symptom: LOOP_KEYWORD,
+  page: "loop-keyword/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),
@@ -71,6 +73,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
 const SETTINGS_REBINDING_TEST_BODY: Check = {
   name: "test-body",
   symptom: SETTINGS_REBINDING,
+  page: "rebinding/test-body.md",
   clause: {
     ruleSet: TOOL_RULE_SET,
     discipline: disciplineIdOf("CD-27"),
@@ -134,6 +137,7 @@ const PLUGIN_CHECKS: readonly Check[] = [
   {
     name: "skipped-tests",
     symptom: TEST_SWITCHED_OFF,
+    page: "test-switched-off/skipped-tests.md",
     clause: {
       ruleSet: TOOL_RULE_SET,
       discipline: disciplineIdOf("CD-27"),
@@ -145,6 +149,7 @@ const PLUGIN_CHECKS: readonly Check[] = [
   {
     name: "non-null-assertions",
     symptom: CLAIMED_TYPE,
+    page: "claimed-type/non-null-assertions.md",
     clause: {
       ruleSet: TOOL_RULE_SET,
       discipline: disciplineIdOf("CD-2"),
@@ -156,6 +161,7 @@ const PLUGIN_CHECKS: readonly Check[] = [
   {
     name: "parameter-count",
     symptom: POSITIONAL_PARAMETERS,
+    page: "positional-parameters/parameter-count.md",
     clause: {
       ruleSet: TOOL_RULE_SET,
       discipline: disciplineIdOf("CD-40"),
@@ -167,6 +173,7 @@ const PLUGIN_CHECKS: readonly Check[] = [
   {
     name: "test-body",
     symptom: PLUGIN_REBINDING,
+    page: "rebinding/test-body.md",
     clause: {
       ruleSet: TOOL_RULE_SET,
       discipline: disciplineIdOf("CD-27"),

@@ -2,391 +2,367 @@
   "version": 2,
   "records": [
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/adopter-repositories/version-two-record-debt-natives.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/install-proof/run-install-proof.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/packaging/type-declarations/projection-type.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/packaging/type-declarations/public-type-declarations.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/packaging/type-declarations/typescript-declaration-port.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/shipped-content/cd14-class-syntax-cases.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/shipped-content/eslint-conformance.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/shipped-content/hone-plugin.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/application/upgrade/patching/version-one-plugin-specifiers.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/composition/prune-debt-answered.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/composition/single-mechanism.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/command-line/installation/install-root.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/content-files/import-boundaries/piece-import-rules.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/content-files/rule-sets/probe-check.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/content-files/rule-sets/probe-rule-set/mechanisms/audit/PD-1/no-tmp-files.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/content-files/rule-sets/probe-rule-set/probe-piece-imports.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/content-files/rule-sets/rule-set-files.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/disciplines-file/consumer-selection.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/disciplines-file/selection-file.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/disciplines-file/selection-reader.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/anchor-parity.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/authored-class-or-this/class-keyword/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/claimed-type/non-null-assertions/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/name-off-its-casing/filename-case/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/name-off-its-casing/naming-convention/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/positional-parameters/parameter-count/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/rebinding/parameter-reassignment/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/runner/pieces/rule-sites.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/runner/projection/projection-pair.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-9-compatibility.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-instance.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/runner/toolchain/eslint-major-imports.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/tangled-function/cognitive-complexity/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/test-switched-off/focused-tests/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/thrown-non-error/throw-only-error/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/untyped-value/explicit-any/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/wide-input/unread-parameter/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/eslint/work-inside-a-condition/else-after-an-exit/eslint-plugin.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/protocol/confinement/vendor-imports.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/ambient-randomness/random-call/ambient-randomness.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/answer-set-in-a-hook/hook-answer/hook-answers.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/authored-class-or-this/class-keyword/class-syntax.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/boolean-in-a-signature/boolean-annotation/boolean-signatures.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/cd27-allowed-forms.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-forms.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/branch-in-a-test/test-body/test-body-logic.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/built-unit-called-in-place/call-of-a-call/call-of-a-call.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/claimed-type/cast-to-any/any-cast.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/cast-expressions.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/claimed-type/unlisted-cast-site/piece.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/code-or-prose-read-as-text/raw-read/raw-read.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/date-used-directly/clock-sources/clock-sources.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/default-on-a-closed-union/default-arm/switch-defaults.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/double-with-a-body/stub-implementation/dependency-isolation.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/drawer-path/drawer-names/categorical-paths.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
-      "file": "src/infrastructure/engines/walker/export-from-a-test-file/test-file-export/test-file-export.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/failure-shaped-as-success/empty-catch/empty-catch.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/floating-version/version-selector/version-selector.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/inherited-environment-in-a-subprocess/git-spawn-environment/hermetic-git-spawns.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/loop-keyword/loop-statement/loops.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/many-spellings-of-one-concept/test-call-aliases/test-call-aliases.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/module-or-global-patched/module-mock-call/module-mocking.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/no-lock-file/committed-lock-file/committed-lock-file.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/outside-import-past-a-boundary/import-or-require/import-boundaries.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/process-global-used-in-place/debugger-statement/debugger-statement.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/process-global-used-in-place/direct-global-use/process-global-used-in-place.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/prose-in-code/comment-prose/prose-in-code.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/create-walker-runner.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/moved-imports.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/observe-walker-file.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/cast-shape.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/node-built-in-import.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/source-bindings.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/syntax-callee-root.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/syntax-node-check.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/syntax-parentheses.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/throw-statement-check.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/type-directives.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/pieces/vitest-import.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/prepare-walker-pieces.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/toolchain/typescript-floor-syntax.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/toolchain/typescript-parse.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/runner/walker-conformance.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/shorthand-name/identifier-names/identifier-names.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/cd3-extends.integration.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/compiler-overrides.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/strictness-weakened/strict/typescript-compiler-options.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/throw-between-our-units/throw-statement/throws-in-production.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/throw-or-catch-in-a-test/throw-statement/throws-in-tests.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/tool-fetched-at-run-time/fetch-command/fetch-command.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/type-derived-from-code/factory-return-types/factory-return-types.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/unit-without-a-running-test/companion-test-file/export-test-sibling.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/untracked-escape/directive-pointers/comments-directives.test.ts"
     },
     {
-      "answers": "assertion-outside-a-test#assertion-site",
+      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "src/infrastructure/engines/walker/write-into-a-parameter/parameter-mutation/parameter-mutation.test.ts"
     }
   ]

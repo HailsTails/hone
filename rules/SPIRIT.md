@@ -43,7 +43,7 @@ Tests are not exempt. A test that needs a cast, a test double with logic, a modu
 
 ## Older than these rules
 
-Each rule encodes lessons programmers learned before us and wrote down under names you can look up: the SOLID principles, ports and adapters, "parse, don't validate", making illegal states unrepresentable, the test pyramid, the kinds of test double, and others. [The sources page](sources.md) names the source behind each principle, rule and recipe, and how the item relates to it. Read them to learn the pattern and the reasoning, not only the rule.
+Each rule encodes lessons programmers learned before us and wrote down under names you can look up: the SOLID principles, ports and adapters, "parse, don't validate", making illegal states unrepresentable, narrow integration tests, the kinds of test double, and others. [The sources page](sources.md) names the source behind each principle, rule and recipe, and how the item relates to it. Read them to learn the pattern and the reasoning, not only the rule.
 
 ## Who does what
 

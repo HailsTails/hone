@@ -7,7 +7,7 @@
     },
     {
       "answers": "tangled-function#cognitive-complexity",
-      "file": "src/infrastructure/engines/walker/assertion-outside-a-test/assertion-site/assertion-site.ts"
+      "file": "src/infrastructure/engines/walker/assertion-outside-a-test-body/assertion-site/assertion-site.ts"
     }
   ]
 }

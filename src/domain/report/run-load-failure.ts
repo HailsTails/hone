@@ -8,6 +8,7 @@ import type { RunnerFailure } from "../runner/runner-failure.ts";
 import type { CheckChoiceRefusal, CheckSettingsListing } from "../settings/check-choices.ts";
 import type { LoadFailure, VersionTwoLoadFailure } from "./load-failure.ts";
 import type { MissingProjection, RunProjectionProblem } from "./run-report.ts";
+import { mapVersionOneSourceToFailure } from "./version-one-load-failure.ts";
 
 type KeptKind =
   | "arguments-invalid"
@@ -41,12 +42,27 @@ export type CatalogueNotRead = {
 
 export type UpgradeNeeded = { readonly kind: "upgrade-needed"; readonly path: string };
 
+export type SettingsRenameRefusal =
+  | {
+      readonly kind: "listed-under-both-names";
+      readonly path: string;
+      readonly under: string;
+      readonly from: string;
+      readonly to: string;
+    }
+  | {
+      readonly kind: "renamed-address-outside-listings";
+      readonly path: string;
+      readonly listings: readonly string[];
+    };
+
 export type RunLoadFailureSource =
   | VersionTwoLoadFailure
   | CheckChoiceRefusal
   | HoneRecordsFailure
   | CatalogueNotRead
-  | UpgradeNeeded;
+  | UpgradeNeeded
+  | SettingsRenameRefusal;
 
 export type EngineNaming =
   | { readonly named: "engine"; readonly engine: Engine }
@@ -110,23 +126,10 @@ export type RunLoadFailure =
   | { readonly kind: "not-a-records-name"; readonly folder: RepoPath; readonly name: string }
   | { readonly kind: "records-refused"; readonly refusals: readonly RecordsDocumentRefusal[] }
   | CatalogueNotRead
-  | UpgradeNeeded;
+  | UpgradeNeeded
+  | SettingsRenameRefusal;
 
 type EnginesRequest = { readonly engines: readonly Engine[] };
-
-const engineNamingOf = (
-  request: EnginesRequest & { readonly mechanism: EngineId },
-): EngineNaming => {
-  const engine = request.engines.find((candidate) => candidate.name === request.mechanism);
-  return engine === undefined
-    ? { named: "mechanism", mechanism: request.mechanism }
-    : { named: "engine", engine };
-};
-
-const engineNameOf = (request: EnginesRequest & { readonly mechanism: EngineId }): string => {
-  const naming = engineNamingOf(request);
-  return naming.named === "engine" ? naming.engine.name : naming.mechanism;
-};
 
 const recordsFolderFailureOf = (request: {
   readonly failure: RecordsFolderFailure;
@@ -196,52 +199,21 @@ export const runLoadFailureOf = (
     case "unexpected-error":
     case "catalogue-not-read":
     case "upgrade-needed":
+    case "listed-under-both-names":
+    case "renamed-address-outside-listings":
       return source;
     case "selection-absent":
-      return { kind: "config-absent", repo: source.repo };
     case "unknown-discipline":
     case "unknown-clause":
-      return { kind: "unknown-check", check: source.address };
     case "judgement-clause-selected":
     case "judgement-clause-listed":
-      return { kind: "review-only-listed", check: source.address };
     case "duplicate-clause":
-      return {
-        kind: "duplicate-check",
-        key: "checks",
-        check: source.address,
-        prefixedCheck: source.prefixedAddress,
-      };
     case "mechanism-not-allowed":
-      return {
-        kind: "engine-not-allowed",
-        check: source.address,
-        engine: engineNameOf({ engines, mechanism: source.mechanism }),
-        allowed: { stated: "by-rule-set" },
-      };
     case "runner-missing":
-      return {
-        kind: "engine-missing",
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-      };
     case "runner-invalid":
-      return {
-        kind: "engine-invalid",
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-        detail: source.detail,
-      };
     case "runner-failed":
-      return {
-        kind: "engine-failed",
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-        failure: source.failure,
-      };
     case "piece-missing":
-      return {
-        kind: "check-missing",
-        check: source.address,
-        engine: engineNamingOf({ engines, mechanism: source.mechanism }),
-      };
+      return mapVersionOneSourceToFailure({ engines, source });
     case "unknown-check":
     case "review-only-listed":
     case "engine-not-allowed":

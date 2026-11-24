@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { jsonKindOf, sameJsonValue } from "./json-kind.ts";
+import { isJsonObject, jsonKindOf, sameJsonValue } from "./json-kind.ts";
 import type { ReadonlyJsonValue } from "./json-value.ts";
 
 type SamenessCase = {
@@ -47,5 +47,18 @@ describe("sameJsonValue", () => {
 
   it("is different for an absent value", () => {
     expect(sameJsonValue({ left: null, right: undefined })).toBe("different");
+  });
+});
+
+describe("isJsonObject", () => {
+  it.each([
+    { name: "an object", candidate: { a: 1 }, holds: true },
+    { name: "an array", candidate: [1], holds: false },
+    { name: "null", candidate: null, holds: false },
+    { name: "a string", candidate: "a", holds: false },
+  ])("tells whether $name is a JSON object", ({ candidate, holds }) => {
+    const answer = isJsonObject(candidate);
+
+    expect(answer).toBe(holds);
   });
 });

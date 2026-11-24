@@ -1,10 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { repoPathOf } from "../../domain/repository/repo-path-of.ts";
 import { ruleSetNameOf } from "../../domain/rule-set/rule-set-name-of.ts";
 import { DEFAULT_CONVENTIONS } from "../../domain/settings/conventions.ts";
+import type { ReadonlyJsonValue } from "../../domain/settings/json-values/json-value.ts";
 import type { SettingsFile, SettingsFileFault } from "../../domain/settings/settings-file.ts";
-import { settingsFileOf, settingsTextOf, settingsWireOf } from "./settings-file.ts";
+import {
+  SETTINGS_FILE_FORMAT,
+  settingsFileOf,
+  settingsTextOf,
+  settingsWireOf,
+} from "./settings-file.ts";
 
 const SMALLEST_DOCUMENT = { version: 2, ruleSets: {}, checks: {} };
 
@@ -21,6 +27,18 @@ const SMALLEST_FILE: SettingsFile = {
   conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
 };
 
+type KeyRow = {
+  readonly name: string;
+  readonly document: ReadonlyJsonValue;
+  readonly file: SettingsFile;
+};
+
+type RefusalRow = {
+  readonly name: string;
+  readonly document: ReadonlyJsonValue;
+  readonly fault: SettingsFileFault;
+};
+
 describe("settingsFileOf", () => {
   it("reads the smallest file with every default today's version 1 file gives", () => {
     expect(settingsFileOf({ document: SMALLEST_DOCUMENT })).toEqual({
@@ -29,38 +47,28 @@ describe("settingsFileOf", () => {
     });
   });
 
-  it("reads every key of the plan's version 2 file, field by field", () => {
-    expect(
-      settingsFileOf({
-        document: {
-          version: 2,
-          exclude: ["vendor"],
-          ruleSets: { team: "tools/hone-rules", local: "." },
-          checks: {
-            "date-used-directly#clock-sources": "walker",
-            "claimed-type#non-null-assertions": "eslint",
-            "team/no-tmp-file#tmp-paths": "not-run",
-            "loop-keyword#loop-statement": "not-adopted",
-          },
-          checkSettings: {
-            "outside-import-past-a-boundary#import-or-require": {
-              confinedOutsideDependencies: ["uuid"],
-            },
-            "branch-in-a-test#test-body": { edition: "2" },
-          },
-          forfeiture: "elsewhere",
-          reportOutput: "counts",
-          checkEditions: "latest",
-          eslintConfigLookup: "nearest-to-file",
-          eslintConfigRoots: ["web"],
-          generated: [],
-          layers: {},
-        },
-      }),
-    ).toEqual<{ readonly outcome: "ok"; readonly value: SettingsFile }>({
-      outcome: "ok",
-      value: {
+  it.each<KeyRow>([
+    {
+      name: "an excluded path",
+      document: { version: 2, ruleSets: {}, checks: {}, exclude: ["vendor"] },
+      file: {
         exclude: [repoPathOf("vendor")],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "a rule set in a folder and one at the repository root",
+      document: { version: 2, ruleSets: { team: "tools/hone-rules", local: "." }, checks: {} },
+      file: {
+        exclude: [],
         ruleSets: [
           {
             name: ruleSetNameOf("team"),
@@ -68,14 +76,39 @@ describe("settingsFileOf", () => {
           },
           { name: ruleSetNameOf("local"), location: { location: "repo-root" } },
         ],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "a check run by an engine, one not run and one not adopted",
+      document: {
+        version: 2,
+        ruleSets: { team: "tools/hone-rules" },
+        checks: {
+          "date-used-directly#clock-sources": "walker",
+          "team/no-tmp-file#tmp-paths": "not-run",
+          "loop-keyword#loop-statement": "not-adopted",
+        },
+      },
+      file: {
+        exclude: [],
+        ruleSets: [
+          {
+            name: ruleSetNameOf("team"),
+            location: { location: "folder", path: repoPathOf("tools/hone-rules") },
+          },
+        ],
         checks: [
           {
             address: { ruleSet: "hone", check: "date-used-directly#clock-sources" },
             state: { state: "run", engine: "walker" },
-          },
-          {
-            address: { ruleSet: "hone", check: "claimed-type#non-null-assertions" },
-            state: { state: "run", engine: "eslint" },
           },
           {
             address: { ruleSet: { name: ruleSetNameOf("team") }, check: "no-tmp-file#tmp-paths" },
@@ -86,24 +119,99 @@ describe("settingsFileOf", () => {
             state: { state: "not-adopted" },
           },
         ],
-        checkSettings: [
-          {
-            address: { ruleSet: "hone", check: "outside-import-past-a-boundary#import-or-require" },
-            values: { confinedOutsideDependencies: ["uuid"] },
-          },
-          {
-            address: { ruleSet: "hone", check: "branch-in-a-test#test-body" },
-            values: { edition: "2" },
-          },
-        ],
-        forfeiture: "elsewhere",
-        reportOutput: "counts",
-        checkEditions: "latest",
-        eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
-        eslintConfigRoots: [repoPathOf("web")],
-        conventions: { conventions: DEFAULT_CONVENTIONS, declared: ["generated"] },
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
       },
-    });
+    },
+    {
+      name: "the forfeiture",
+      document: { version: 2, ruleSets: {}, checks: {}, forfeiture: "elsewhere" },
+      file: {
+        exclude: [],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "elsewhere",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "the report output",
+      document: { version: 2, ruleSets: {}, checks: {}, reportOutput: "counts" },
+      file: {
+        exclude: [],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "counts",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "the check editions",
+      document: { version: 2, ruleSets: {}, checks: {}, checkEditions: "latest" },
+      file: {
+        exclude: [],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "latest",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "a declared ESLint config lookup",
+      document: { version: 2, ruleSets: {}, checks: {}, eslintConfigLookup: "nearest-to-file" },
+      file: {
+        exclude: [],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "declared", value: "nearest-to-file" },
+        eslintConfigRoots: [],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+    {
+      name: "an ESLint config root",
+      document: { version: 2, ruleSets: {}, checks: {}, eslintConfigRoots: ["web"] },
+      file: {
+        exclude: [],
+        ruleSets: [],
+        checks: [],
+        checkSettings: [],
+        forfeiture: "this-run",
+        reportOutput: "full",
+        checkEditions: "pinned",
+        eslintConfigLookup: { lookup: "detected" },
+        eslintConfigRoots: [repoPathOf("web")],
+        conventions: { conventions: DEFAULT_CONVENTIONS, declared: [] },
+      },
+    },
+  ])("reads $name", ({ document, file }) => {
+    const read = settingsFileOf({ document });
+
+    expect(read).toEqual({ outcome: "ok", value: file });
   });
 
   it("reads a top-level generated key into the conventions it declares", () => {
@@ -180,12 +288,6 @@ describe("settingsFileOf", () => {
       },
     });
   });
-
-  type RefusalRow = {
-    readonly name: string;
-    readonly document: unknown;
-    readonly fault: SettingsFileFault;
-  };
 
   it.each<RefusalRow>([
     {
@@ -473,5 +575,25 @@ describe("settingsWireOf", () => {
 describe("settingsTextOf", () => {
   it("writes rule sets and checks in key order, indented by two spaces, with a closing newline", () => {
     expect(settingsTextOf({ settings: UNSORTED_FILE })).toBe(UNSORTED_TEXT);
+  });
+});
+
+describe("SETTINGS_FILE_FORMAT", () => {
+  it("renames a listed key in the settings text, keeping the rest of the text as written", () => {
+    const text = '{ "checks": { "old#check": "walker" } }';
+    const rename = vi
+      .fn<(request: { readonly text: string }) => string>()
+      .mockReturnValue("new#check");
+
+    const renamed = SETTINGS_FILE_FORMAT.renameKeys({ text, under: ["checks"], rename });
+
+    expect(renamed).toEqual({
+      outcome: "ok",
+      value: {
+        text: '{ "checks": { "new#check": "walker" } }',
+        renamed: [{ under: "checks", from: "old#check", to: "new#check" }],
+        listed: [{ under: "checks", checks: ["old#check"] }],
+      },
+    });
   });
 });

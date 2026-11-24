@@ -109,8 +109,44 @@ const FULL_LISTING = vi
   })
   .mockReturnValueOnce({ outcome: "ok", value: [{ name: "clock-sources.md", kind: "file" }] });
 
+const ASSEMBLED_CONTENT = {
+  principles: [{ name: "tests-are-ours", title: "Tests are ours" }],
+  rules: [
+    {
+      name: "written-out-answers",
+      title: "Written-out answers",
+      principle: { name: "tests-are-ours" },
+      standing: "accepted",
+    },
+  ],
+  cases: [{ name: "does-one-job", title: "Does one job" }],
+  recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
+  recordKinds: [
+    { name: "authorised-location", todaysFormat: "authorised-location" },
+    { name: "debt", todaysFormat: "none-yet" },
+  ],
+  engines: [{ name: "walker" }],
+  symptoms: [
+    {
+      ruleSet: { name: "acme" },
+      name: "date-used-directly",
+      sourceFile: "rules/typescript/symptoms/date-used-directly.md",
+      title: "Date used directly",
+      recipes: [{ name: "world-values-through-a-port" }],
+    },
+  ],
+  checks: [
+    {
+      name: "clock-sources",
+      symptom: { name: "date-used-directly" },
+      page: "rules/typescript/symptoms/date-used-directly/clock-sources.md",
+      clause: CLOCK_SOURCES,
+    },
+  ],
+};
+
 describe("createItemFolderCatalogueRepository", () => {
-  it("assembles a catalogue from the item files under its kind folders, each named by its file, titled by its heading and owned by the rule set it reads for, reading no other file", () => {
+  it("assembles a catalogue from the item files under its kind folders, each named by its file, titled by its heading and owned by the rule set it reads for, with each symptom and check placed by its file under the source prefix, reading no other file", () => {
     const fileText = fileTextReading(
       vi
         .fn<FileTextPort["read"]>()
@@ -136,44 +172,13 @@ describe("createItemFolderCatalogueRepository", () => {
         path: PATH,
         root: ROOT,
         beside: BESIDE,
+        sourcePrefix: "rules",
       }).read({}),
     ).toMatchObject({
       outcome: "ok",
       value: {
         held: "catalogue",
-        content: {
-          principles: [{ name: "tests-are-ours", title: "Tests are ours" }],
-          rules: [
-            {
-              name: "written-out-answers",
-              title: "Written-out answers",
-              principle: { name: "tests-are-ours" },
-              standing: "accepted",
-            },
-          ],
-          cases: [{ name: "does-one-job", title: "Does one job" }],
-          recipes: [{ name: "world-values-through-a-port", title: "World values through a port" }],
-          recordKinds: [
-            { name: "authorised-location", todaysFormat: "authorised-location" },
-            { name: "debt", todaysFormat: "none-yet" },
-          ],
-          engines: [{ name: "walker" }],
-          symptoms: [
-            {
-              ruleSet: { name: "acme" },
-              name: "date-used-directly",
-              title: "Date used directly",
-              recipes: [{ name: "world-values-through-a-port" }],
-            },
-          ],
-          checks: [
-            {
-              name: "clock-sources",
-              symptom: { name: "date-used-directly" },
-              clause: CLOCK_SOURCES,
-            },
-          ],
-        },
+        content: ASSEMBLED_CONTENT,
       },
     });
     expect(fileText.read).toHaveBeenNthCalledWith(1, { path: "/content/cases/does-one-job.md" });

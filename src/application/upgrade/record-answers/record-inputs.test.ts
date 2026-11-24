@@ -31,6 +31,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
     recipes: [],
     correctUses: [],
   },
+  page: "loop-keyword/loops.md",
   clause: LOOPS_CLAUSE,
   engines: [{ name: "walker" }, { name: "eslint" }],
   forms: [],

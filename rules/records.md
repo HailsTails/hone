@@ -14,7 +14,7 @@ Five kinds cover everything. They are the model Hone's records take on with 2.0,
 - **States:** The symptom; the site; the case that makes it correct here and the rule or principle that case owes; a why-chain whose root, if it changed, would remove the need; an owner. In the model it is never refused for what it claims: what it lacks is [noted](#what-is-noted-never-refused), and a note changes no verdict. A why that only restates the symptom is [refused](#what-is-refused).
 - **Scope:** One symptom at one site: a file, or a span within it.
 - **Stale or paid when:** Stale when the symptom is no longer at the site. A vendored edit is also re-tested when the vendored version moves. A person removes it.
-- **Industry name:** suppression with justification; a MISRA deviation permit. A suppression with a stated justification, as .NET and MISRA permits do.
+- **Industry name:** suppression with justification, as .NET's `SuppressMessage` justification does.
 
 ### Deviation
 
@@ -22,7 +22,7 @@ Five kinds cover everything. They are the model Hone's records take on with 2.0,
 - **Must state:** The recipe by name; the reason it was chosen, as its recipe states it; why that reason does not hold at this site, with evidence; how the rule still holds.
 - **Scope:** One recipe at one site.
 - **Stale or paid when:** Stale when the symptom is gone. Review owes "the reason holds again".
-- **Industry name:** a MISRA deviation record. Aviation's alternative means of compliance, held to a stricter proof.
+- **Industry name:** a deviation record: aviation's alternative means of compliance, held to a stricter proof.
 
 ### Debt
 
@@ -116,7 +116,7 @@ Which kind answers each symptom is on [the symptoms page](typescript/symptoms.md
 | Method | Kind |
 |---|---|
 | A fake | Deviation from Stub with vi.fn |
-| A hermetic setup in an integration test | Not a record: it is the recipe |
+| A fresh scratch in an integration test | Not a record: it is the recipe |
 | A real file, subprocess or temp directory in a unit test | Debt. It breaks Tested where it's owned, which is a rule, not a recipe. |
 | A stream drain | Authorised location |
 | A throw at the edge | Authorised location |
