@@ -40,11 +40,10 @@ const CHECK: Check = {
   page: "claimed-type/cast-expressions.md",
   engines: [{ name: "eslint" }],
   forms: [],
+  findingSpecifics: [],
 };
 
-const AT_FILE_A: ReachedPlace = { check: CHECK, place: { at: "file", file: FILE_A } };
-
-const AT_SRC: ReachedPlace = { check: CHECK, place: { at: "module", module: repoPathOf("src") } };
+const AT_FILE_A: ReachedPlace = { check: CHECK, file: FILE_A };
 
 const TRACKED = [FILE_A, FILE_B];
 
@@ -64,17 +63,6 @@ describe("measurementOf", () => {
           runs: [eslintRun({ selected: [CAST], measured: [{ check: CAST, file: FILE_A }] })],
         }),
         reached: AT_FILE_A,
-      }),
-    ).toBe("measured");
-  });
-
-  it("says measured for a module place when the run measured a file under the module", () => {
-    expect(
-      measurementOf({
-        measurements: measurementsOf({
-          runs: [eslintRun({ selected: [CAST], measured: [{ check: CAST, file: FILE_B }] })],
-        }),
-        reached: AT_SRC,
       }),
     ).toBe("measured");
   });
@@ -137,37 +125,22 @@ describe("measurementOf", () => {
     ).toBe("excluded");
   });
 
-  it("says excluded for a module place inside an excluded folder", () => {
+  it("says excluded for a file inside an excluded folder", () => {
     const measurements: RunMeasurements = {
       runs: [eslintRun({ selected: [CAST], measured: [] })],
-      tracked: [],
+      tracked: [FILE_A],
       excluded: [repoPathOf("src")],
     };
-    expect(
-      measurementOf({
-        measurements: measurementIndexOf({ measurements }),
-        reached: { check: CHECK, place: { at: "module", module: repoPathOf("src/adapters") } },
-      }),
-    ).toBe("excluded");
+
+    const measurement = measurementOf({
+      measurements: measurementIndexOf({ measurements }),
+      reached: AT_FILE_A,
+    });
+
+    expect(measurement).toBe("excluded");
   });
 
-  it("says measured for a module place when the run measured a file folders below it", () => {
-    const deep = repoPathOf("src/adapters/files/read.ts");
-    expect(
-      measurementOf({
-        measurements: measurementIndexOf({
-          measurements: {
-            runs: [eslintRun({ selected: [CAST], measured: [{ check: CAST, file: deep }] })],
-            tracked: [deep],
-            excluded: [],
-          },
-        }),
-        reached: AT_SRC,
-      }),
-    ).toBe("measured");
-  });
-
-  it("says gone for a file place when only files under a folder of its name are tracked", () => {
+  it("says gone for a file when only files under a folder of its name are tracked", () => {
     const beneath = repoPathOf("src/a.ts/inner.ts");
     expect(
       measurementOf({

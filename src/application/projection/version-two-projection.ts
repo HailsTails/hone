@@ -10,8 +10,9 @@ export const versionTwoProjectionOver = async (request: {
   if (inputs.outcome === "failed") {
     return inputs;
   }
-  const tree = request.stages.tree({ settings: inputs.value.settings });
+  const { catalogue, settings, records, checks } = inputs.value;
+  const tree = request.stages.tree({ settings });
   return tree.outcome === "failed"
     ? tree
-    : request.stages.projections({ ...inputs.value, tree: tree.value });
+    : request.stages.projections({ catalogue, settings, records, checks, tree: tree.value });
 };

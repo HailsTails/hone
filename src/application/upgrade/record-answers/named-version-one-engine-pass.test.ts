@@ -5,6 +5,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -78,16 +80,17 @@ const LOOP: Check = {
   clause: CLAUSE,
   engines: [{ name: "walker" }],
   forms: [],
+  findingSpecifics: [],
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED: RecordKind = {
+const AUTHORISED: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",

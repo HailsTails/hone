@@ -96,6 +96,7 @@ const CLASS_KEYWORD_CHECK: Check = {
   page: "authored-class-or-this/class-keyword.md",
   clause: CLASS_SYNTAX,
   forms: [],
+  findingSpecifics: [],
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 
@@ -105,6 +106,7 @@ const STATIC_MEMBERS_CHECK: Check = {
   page: "authored-class-or-this/static-members-only.md",
   clause: STATIC_ONLY_CLASS,
   forms: [],
+  findingSpecifics: [],
   engines: [{ name: "walker" }, { name: "eslint" }],
 };
 

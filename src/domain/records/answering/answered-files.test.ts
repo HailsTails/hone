@@ -31,6 +31,7 @@ const CAST_CHECK: Check = {
   },
   engines: [{ name: "eslint" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const FILE_A = repoPathOf("src/a.ts");
@@ -78,7 +79,7 @@ describe("answeredFilesOf", () => {
     ]);
   });
 
-  it("names the symptom for an authorised location whose reach is the whole symptom", () => {
+  it("names the check for an authorised location bound to its check and file", () => {
     expect(
       answeredFilesOf({
         records: [
@@ -87,14 +88,50 @@ describe("answeredFilesOf", () => {
             record: {
               kind: "authorised-location",
               symptom: CLAIMED_TYPE,
-              reach: { reaches: "whole-symptom" },
+              reach: { reaches: "one-check", check: CAST_CHECK },
               file: FILE_A,
-              holding: { held: "carried", entry: {}, lacks: [], standing: "unjudged" },
+              holding: {
+                binding: { binds: "check-and-file" },
+                held: "carried",
+                entry: {},
+                lacks: [],
+                standing: "unjudged",
+              },
             },
           }),
         ],
       }),
-    ).toEqual([{ ruleSet: TOOL_RULE_SET, symptom: "claimed-type", file: FILE_A }]);
+    ).toEqual([
+      { ruleSet: TOOL_RULE_SET, symptom: "claimed-type", check: "cast-expressions", file: FILE_A },
+    ]);
+  });
+
+  it("names nothing for an authorised location bound to an outside party, since the check must still run on the file's other imports", () => {
+    const answered = answeredFilesOf({
+      records: [
+        placed({
+          index: 0,
+          record: {
+            kind: "authorised-location",
+            symptom: CLAIMED_TYPE,
+            reach: { reaches: "one-check", check: CAST_CHECK },
+            file: FILE_A,
+            holding: {
+              binding: {
+                binds: "check-file-and-outside-party",
+                outsideParty: { kind: "package", dependency: "zod" },
+              },
+              held: "carried",
+              entry: {},
+              lacks: [],
+              standing: "unjudged",
+            },
+          },
+        }),
+      ],
+    });
+
+    expect(answered).toEqual([]);
   });
 
   it("names a team symptom's file with the team's rule set", () => {
@@ -128,7 +165,13 @@ describe("answeredFilesOf", () => {
               symptom: CLAIMED_TYPE,
               reach: { reaches: "unknown-check", check: "no-such-check" },
               file: FILE_A,
-              holding: { held: "carried", entry: {}, lacks: [], standing: "unjudged" },
+              holding: {
+                binding: { binds: "check-and-file" },
+                held: "carried",
+                entry: {},
+                lacks: [],
+                standing: "unjudged",
+              },
             },
           }),
         ],
@@ -136,7 +179,7 @@ describe("answeredFilesOf", () => {
     ).toEqual([]);
   });
 
-  it("names nothing for the records that answer by module, recipe or dependency rather than by file and symptom", () => {
+  it("names nothing for a record that answers by dependency rather than by file and symptom", () => {
     expect(
       answeredFilesOf({
         records: [

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Symptom } from "../../language-layer/symptom-catalogue.ts";
+import type { Check, Symptom } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { TouchedSet } from "../../repository/touched-set.ts";
 import type { PlacedRecord } from "../hone-records/hone-record.ts";
@@ -15,6 +15,15 @@ const CLAIMED_TYPE: Symptom = {
   breachUsuallySits: "in the unit",
   recipes: [],
   correctUses: [],
+};
+
+const CAST_CHECK: Check = {
+  name: "cast-expressions",
+  symptom: CLAIMED_TYPE,
+  page: "claimed-type/cast-expressions.md",
+  engines: [],
+  forms: [],
+  findingSpecifics: [],
 };
 
 const FILE_A = repoPathOf("src/a.ts");
@@ -35,9 +44,10 @@ const CARRIED_LOCATION: PlacedRecord = {
   record: {
     kind: "authorised-location",
     symptom: CLAIMED_TYPE,
-    reach: { reaches: "whole-symptom" },
+    reach: { reaches: "one-check", check: CAST_CHECK },
     file: FILE_A,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "carried",
       entry: { reason: "Kept." },
       lacks: ["case", "owes", "whyChain"],

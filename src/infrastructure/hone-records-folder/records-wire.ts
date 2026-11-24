@@ -10,21 +10,11 @@ import { whyChainSchema } from "./why-chain.ts";
 
 const PACKAGE_NAME = String.raw`(?:@[A-Za-z0-9][A-Za-z0-9._~-]*\/)?[A-Za-z0-9][A-Za-z0-9._~-]*`;
 
-const DOT_SEGMENT = String.raw`\.\.?(?:\/|$)`;
-
-const SUBPATH = String.raw`(?:\/(?!${DOT_SEGMENT})[A-Za-z0-9._~@-]+)*`;
-
-const VERSION = "(?:@[A-Za-z0-9.^~<>=*|+-]+)?";
-
-const RUNTIME = "runtime:[a-z]+";
-
-const NPM_SPECIFIER = `npm:${PACKAGE_NAME}${VERSION}${SUBPATH}`;
-
 const DRIVE_LETTER = "[A-Za-z]:";
 
-const FILE_SCHEME = "file:";
+const SCHEME = String.raw`(?!file:|${DRIVE_LETTER})[a-z][a-z0-9+.-]*:`;
 
-const SCHEME_MODULE = String.raw`(?!runtime:|npm:|${FILE_SCHEME}|${DRIVE_LETTER})[a-z][a-z0-9+.-]*:\S+`;
+const SCHEME_MODULE = String.raw`${SCHEME}\S+`;
 
 const textSchema = z.string().trim().min(1);
 
@@ -47,12 +37,9 @@ export const packageNameSchema = z.string().regex(new RegExp(`^${PACKAGE_NAME}$`
 
 export const outsidePartySchema = z
   .string()
-  .regex(
-    new RegExp(`^(?:${RUNTIME}|${NPM_SPECIFIER}|${SCHEME_MODULE}|${PACKAGE_NAME}${SUBPATH})$`),
-    {
-      error: "is not a runtime facility or an outside module's specifier",
-    },
-  );
+  .regex(new RegExp(`^(?:${SCHEME_MODULE}|${SCHEME}|${PACKAGE_NAME})$`), {
+    error: "is not a package's name, a module such as node:fs, or a scheme such as node:",
+  });
 
 const carriedEntrySchema = z.record(z.string(), z.json());
 
@@ -82,6 +69,7 @@ export const statedAuthorisedLocationWireSchema = z.strictObject(
   {
     answers: recordedReachSchema,
     file: repoPathSchema,
+    outsideParty: outsidePartySchema.optional(),
     case: textSchema,
     owes: textSchema,
     whyChain: whyChainSchema,
@@ -90,7 +78,12 @@ export const statedAuthorisedLocationWireSchema = z.strictObject(
 );
 
 export const carriedAuthorisedLocationWireSchema = z.strictObject(
-  { answers: recordedReachSchema, file: repoPathSchema, carried: carriedEntrySchema },
+  {
+    answers: recordedReachSchema,
+    file: repoPathSchema,
+    outsideParty: outsidePartySchema.optional(),
+    carried: carriedEntrySchema,
+  },
   { error: addressFieldRetirement },
 );
 
@@ -100,19 +93,6 @@ export const isWrittenRecordEqual: Equal<
   >,
   WrittenRecord
 > = true;
-
-export const statedBoundaryRecordWireSchema = z.strictObject({
-  module: repoPathSchema,
-  outsideParty: outsidePartySchema,
-  ports: z.array(textSchema).min(1),
-  conformist: z.strictObject({ model: textSchema, why: textSchema }).optional(),
-});
-
-export const carriedBoundaryRecordWireSchema = z.strictObject({
-  module: repoPathSchema,
-  outsideParty: outsidePartySchema,
-  carried: carriedEntrySchema,
-});
 
 export const deviationWireSchema = z.strictObject({
   recipe: catalogueNameSchema,

@@ -7,6 +7,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -36,14 +38,14 @@ const AUDIT = "walker" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -92,6 +94,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
@@ -101,6 +104,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
@@ -110,6 +114,7 @@ const REBINDING_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {
@@ -479,6 +484,7 @@ describe("readNamedSettings", () => {
                 page: "team-loop/loops.md",
                 engines: [WALKER],
                 forms: [],
+                findingSpecifics: [],
               },
             ],
           },
@@ -538,6 +544,7 @@ describe("readNamedSettings", () => {
                 page: "rules/typescript/symptoms/team-loop/loops.md",
                 engines: [WALKER],
                 forms: [],
+                findingSpecifics: [],
               },
             ],
           },
@@ -615,6 +622,7 @@ describe("readNamedSettings", () => {
                   page: "loop-keyword/team-loops.md",
                   engines: [WALKER],
                   forms: [],
+                  findingSpecifics: [],
                 },
               ],
             },
@@ -684,6 +692,7 @@ describe("readNamedSettings", () => {
                   page: "loop-keyword/loops.md",
                   engines: [WALKER],
                   forms: [],
+                  findingSpecifics: [],
                 },
               ],
             },
@@ -735,6 +744,7 @@ describe("readNamedSettings", () => {
           page: "loop-keyword/new-loop-check.md",
           engines: [{ name: "walker" }],
           forms: [],
+          findingSpecifics: [],
         },
       ],
     };

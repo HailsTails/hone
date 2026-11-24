@@ -12,6 +12,7 @@ describe("mapChecksToEngineChecks", () => {
         symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
         page: "loop-keyword/for-of.md",
         forms: [],
+        findingSpecifics: [],
         engines: [{ name: "walker" }],
       },
     ];
@@ -38,6 +39,7 @@ describe("mapChecksToEngineChecks", () => {
         symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
         page: "loop-keyword/for-of.md",
         forms: [],
+        findingSpecifics: [],
         engines: [{ name: "walker" }],
       },
     ];
@@ -76,6 +78,7 @@ describe("mapCataloguesToEngineChecks", () => {
           symptom: { ruleSet: TOOL_RULE_SET, name: "loop-keyword" },
           page: "loop-keyword/for-of.md",
           forms: [],
+          findingSpecifics: [],
           engines: [{ name: "walker" }],
         },
       ],
@@ -99,6 +102,7 @@ describe("mapCataloguesToEngineChecks", () => {
           symptom: { ruleSet: TOOL_RULE_SET, name: "class-keyword" },
           page: "class-keyword/class.md",
           forms: [],
+          findingSpecifics: [],
           engines: [{ name: "walker" }],
         },
       ],

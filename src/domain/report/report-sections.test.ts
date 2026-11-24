@@ -63,6 +63,7 @@ const CLAIMED_TYPE: Symptom = {
         phrase: "an authorised location",
         todaysFormat: "authorised-location",
       },
+      binding: "check-and-file",
     },
   ],
 };
@@ -168,6 +169,7 @@ describe("runVerdictOf", () => {
         reach: { reaches: "unknown-check", check: "cast-old" },
         file: repoPathOf("src/a.ts"),
         holding: {
+          binding: { binds: "check-and-file" },
           held: "carried",
           entry: {},
           lacks: ["case", "owes", "whyChain"],
@@ -203,6 +205,7 @@ describe("runVerdictOf", () => {
       },
       engines: [{ name: "eslint" }],
       forms: [],
+      findingSpecifics: [],
     };
     expect(runVerdictOf({ report: { ...EMPTY_REPORT, available: [castExpressions] } })).toBe(
       "pass",
@@ -216,7 +219,7 @@ describe("runVerdictOf", () => {
           ...EMPTY_REPORT,
           refused: [
             {
-              place: { file: repoPathOf("hone-records/boundary-records.json"), index: 0 },
+              place: { file: repoPathOf("hone-records/dependency-records.json"), index: 0 },
               refusals: [{ kind: "carried-changed-since-base" }],
             },
           ],

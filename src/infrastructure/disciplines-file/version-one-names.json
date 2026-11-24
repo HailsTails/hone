@@ -628,7 +628,6 @@
   ],
   "recordKinds": {
     "authorised-location": "authorised-location",
-    "boundary-record": "authorised-location",
     "debt": "file-carve-out"
   }
 }

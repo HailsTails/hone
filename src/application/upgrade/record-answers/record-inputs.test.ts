@@ -26,6 +26,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [{ name: "walker" }, { name: "eslint" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const VERSION_ONE_CAUSAL_WHY_CHAIN: VersionOneWhyChain = {

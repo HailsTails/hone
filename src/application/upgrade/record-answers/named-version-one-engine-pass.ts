@@ -1,5 +1,8 @@
+import { createClauseChecks } from "../../../domain/language-layer/clause-checks.ts";
+import { mappedSettings } from "../../../domain/records/upgrade/settings-mapping.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
 import type { Result } from "../../../domain/result.ts";
+import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
 import type { NamedEngineRun } from "../../ports/engine/engine-run.ts";
 import type { LoadFailureDetail } from "../../ports/report/load-failure-detail.ts";
 import type {
@@ -19,7 +22,6 @@ import {
   type NamedSettingsReading,
   readNamedSettingsFile,
 } from "../../run/settings/read-settings.ts";
-import { mappedSettings } from "../mapping/settings-mapping.ts";
 import {
   versionOneAnsweredFilesOf,
   versionOneNamesOf,
@@ -33,7 +35,7 @@ export type NamedVersionOnePassRequest = Omit<
   Pick<Parameters<typeof readNamedSettingsFile>[0], "sources" | "readPiece"> & {
     readonly selected: Parameters<typeof versionOneNamesOf>[0]["selected"];
     readonly selection: Parameters<typeof mappedSettings>[0]["selection"];
-    readonly catalogues: Parameters<typeof mappedSettings>[0]["catalogues"];
+    readonly catalogues: readonly RuleSetCatalogue[];
     readonly settingsPath: string;
     readonly loadFailureDetail: LoadFailureDetail;
     readonly measureVersionOne: MeasureVersionOneProjection;
@@ -50,7 +52,11 @@ const refused = (detail: string): Result<never, EnginePassFailure> => ({
 const settingsFor = (
   request: NamedVersionOnePassRequest,
 ): Result<NamedSettingsReading, EnginePassFailure> => {
-  const mapped = mappedSettings({ ...request, notAdoptedClauses: [] });
+  const mapped = mappedSettings({
+    selection: request.selection,
+    clauseChecks: createClauseChecks({ catalogues: request.catalogues }),
+    notAdoptedClauses: [],
+  });
   if (mapped.outcome === "failed") {
     return refused(
       `version one selection could not be bound to checks: ${mapped.error.map(({ kind }) => kind).join(", ")}`,

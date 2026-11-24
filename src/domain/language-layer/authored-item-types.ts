@@ -1,11 +1,8 @@
 export type Standing = "accepted" | "proposed";
 
-export type RecordKindName =
-  | "authorised-location"
-  | "deviation"
-  | "debt"
-  | "boundary-record"
-  | "dependency-record";
+export type RecordKindName = "authorised-location" | "deviation" | "debt" | "dependency-record";
+
+export type Specific = "outside-party";
 
 export type SeenBy = "syntax" | "types" | "graph" | "app" | "files" | "history" | "person";
 
@@ -34,17 +31,26 @@ export type SymptomItem = {
   readonly seenBy: readonly SeenBy[];
   readonly reports?: "seen" | "seen-to-breach" | undefined;
   readonly recipes: readonly string[];
-  readonly correctUses: readonly {
-    readonly situation: string;
-    readonly kind: RecordKindName;
-    readonly at?: string | undefined;
-  }[];
+  readonly correctUses: readonly (
+    | {
+        readonly situation: string;
+        readonly kind: "authorised-location";
+        readonly at?: string | undefined;
+        readonly binds?: readonly Specific[] | undefined;
+      }
+    | {
+        readonly situation: string;
+        readonly kind: Exclude<RecordKindName, "authorised-location">;
+        readonly at?: string | undefined;
+      }
+  )[];
   readonly howItIsSeen?: string | undefined;
   readonly breachACheckCouldName?: string | undefined;
   readonly toNameTheBreach?: string | undefined;
 };
 
 export type CheckItem = {
+  readonly findingSpecifics?: readonly Specific[] | undefined;
   readonly flagsBeyondTheSymptom?: string | undefined;
   readonly misses?: string | undefined;
   readonly settingsTracedTo?: string | undefined;

@@ -14,14 +14,10 @@ import type { NamedFolderKind } from "./named-folder-kind.ts";
 
 export type RecordIssue = { readonly path: readonly (string | number)[]; readonly message: string };
 
-export type RuntimeFacility = "clock" | "random" | "process" | "json";
-
 export type OutsideParty =
-  | { readonly kind: "package"; readonly specifier: string; readonly dependency: string }
+  | { readonly kind: "package"; readonly dependency: string }
   | { readonly kind: "scheme-module"; readonly specifier: string }
-  | { readonly kind: "runtime"; readonly facility: RuntimeFacility };
-
-export type Conformist = { readonly model: string; readonly why: string };
+  | { readonly kind: "scheme"; readonly scheme: string };
 
 export type CarriedStanding = "established" | "unjudged";
 
@@ -34,13 +30,17 @@ export type Carried<Lack extends string> = {
 
 export type Stated = { readonly held: "stated" };
 
+export type HeldAs = Stated["held"] | Carried<string>["held"];
+
 export type SymptomReach =
   | { readonly reaches: "whole-symptom" }
   | { readonly reaches: "one-check"; readonly check: CheckAddress };
 
 export type AuthorisedReach =
-  | SymptomReach
+  | Extract<SymptomReach, { readonly reaches: "one-check" }>
   | { readonly reaches: "unknown-check"; readonly check: string };
+
+export type RecordReach = SymptomReach | AuthorisedReach;
 
 export type Debt = {
   readonly kind: "debt";
@@ -62,14 +62,26 @@ export type Owing =
   | { readonly matches: "the-catalogue"; readonly case: Case; readonly owes: Pointed }
   | { readonly matches: "not-the-catalogue"; readonly note: CatalogueNote };
 
+export type StatedOutsideParty = Exclude<OutsideParty, { readonly kind: "scheme" }>;
+
+export type AuthorisedBinding<Party extends OutsideParty = OutsideParty> =
+  | { readonly binds: "check-and-file" }
+  | { readonly binds: "check-file-and-outside-party"; readonly outsideParty: Party };
+
+export type AuthorisedHolding =
+  | (Stated & {
+      readonly binding: AuthorisedBinding<StatedOutsideParty>;
+      readonly owing: Owing;
+      readonly whyChain: WhyChain;
+    })
+  | (Carried<AuthorisedLocationLack> & { readonly binding: AuthorisedBinding });
+
 export type AuthorisedLocation = {
   readonly kind: "authorised-location";
   readonly symptom: SymptomAddress;
   readonly reach: AuthorisedReach;
   readonly file: RepoPath;
-  readonly holding:
-    | (Stated & { readonly owing: Owing; readonly whyChain: WhyChain })
-    | Carried<AuthorisedLocationLack>;
+  readonly holding: AuthorisedHolding;
 };
 
 export type Deviation = {
@@ -81,17 +93,6 @@ export type Deviation = {
   readonly ruleHolds: string;
 };
 
-export type BoundaryRecordLack = "ports";
-
-export type BoundaryRecord = {
-  readonly kind: "boundary-record";
-  readonly module: RepoPath;
-  readonly outsideParty: OutsideParty;
-  readonly holding:
-    | (Stated & { readonly ports: readonly string[]; readonly conformist?: Conformist })
-    | Carried<BoundaryRecordLack>;
-};
-
 export type DependencyRecord = {
   readonly kind: "dependency-record";
   readonly dependency: string;
@@ -100,9 +101,9 @@ export type DependencyRecord = {
   readonly peerRisk?: string;
 };
 
-export type HoneRecord = Debt | AuthorisedLocation | Deviation | BoundaryRecord | DependencyRecord;
+export type HoneRecord = Debt | AuthorisedLocation | Deviation | DependencyRecord;
 
-export type RecordsFolderKind = NamedFolderKind | "boundary-records" | "dependency-records";
+export type RecordsFolderKind = NamedFolderKind | "dependency-records";
 
 export type RecordPlace = { readonly file: RepoPath; readonly index: number };
 
@@ -119,7 +120,11 @@ export type RecordRefusal =
       readonly recipeReason: string;
     }
   | { readonly kind: "named-ban"; readonly dependency: string }
-  | { readonly kind: "unknown-runtime-facility"; readonly outsideParty: string }
+  | { readonly kind: "no-check-named"; readonly symptom: string }
+  | { readonly kind: "no-authorised-correct-use"; readonly symptom: string }
+  | { readonly kind: "outside-party-missing"; readonly symptom: string }
+  | { readonly kind: "outside-party-not-bound"; readonly symptom: string }
+  | { readonly kind: "scheme-party-stated"; readonly outsideParty: string }
   | { readonly kind: "misplaced"; readonly belongsIn: RepoPath }
   | { readonly kind: "not-a-records-name"; readonly folder: RepoPath; readonly name: string }
   | { readonly kind: "carried-changed-since-base" }
@@ -139,7 +144,7 @@ export type RecordsAtBase =
 
 export type CarriedListing = {
   readonly place: RecordPlace;
-  readonly lacks: readonly (AuthorisedLocationLack | BoundaryRecordLack)[];
+  readonly lacks: readonly AuthorisedLocationLack[];
   readonly standing: CarriedStanding;
 };
 

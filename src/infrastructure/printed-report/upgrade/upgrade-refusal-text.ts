@@ -18,19 +18,20 @@ import type { UpgradeFailure } from "../../../application/ports/upgrade/upgrade-
 import type { TeamDefinitionKind } from "../../../application/ports/upgrade/version-one-team-layout.ts";
 import { checkAddressOfNames } from "../../../domain/language-layer/check-address-text.ts";
 import type { InvalidRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
-import type { UpgradeRefusal } from "../../../domain/records/upgrade/upgrade-refusal.ts";
 import type { RunLoadFailure } from "../../../domain/report/run-load-failure.ts";
 import type { AbsolutePath } from "../../../domain/repository/absolute-path-types.ts";
 import type { RepoPath } from "../../../domain/repository/repo-path-types.ts";
 import type { ClauseAddress } from "../../../domain/rule-set/clause-address-types.ts";
 import { clauseAddressText } from "../../../domain/rule-set/clause-address.ts";
-import { TOOL_IDENTITY } from "../../../domain/rule-set/tool-identity.ts";
 import type { MisnamedRuleId } from "../../../domain/runner/checks-run-report.ts";
 import { runLoadFailureLine } from "../load-failures/load-failure-lines.ts";
 import { loadFailureDetail } from "../load-failures/load-failure-text.ts";
 import { replacementText } from "../misnamed-lines.ts";
-
-export const UPGRADE_ISSUES_URL = `${TOOL_IDENTITY.repository}/issues`;
+import {
+  FAULT_IN_HONE,
+  mapMappingRefusalToLine,
+  UPGRADE_ISSUES_URL,
+} from "./mapping-refusal-text.ts";
 
 export type UpgradeFailureCode = 1 | 2 | 3;
 
@@ -40,8 +41,6 @@ const NOTHING_CHANGED = "Nothing was changed.";
 
 const VERSION_ONE_PROJECT_MAY_HAVE_CHANGED =
   "version 1's own project may have changed files before it failed; check version control for what it changed.";
-
-const FAULT_IN_HONE = `This is a fault in hone, not in your repository. Report it at ${UPGRADE_ISSUES_URL}, with this output.`;
 
 const unrestoredLineOf = (request: { readonly unrestored: Unrestored }): string => {
   const { written, path, detail } = request.unrestored;
@@ -127,22 +126,6 @@ const folderTextOf = (request: { readonly folder: string }): string =>
 
 const specifierOf = (request: { readonly projection: string }): string =>
   `./${request.projection.slice(request.projection.lastIndexOf("/") + 1)}`;
-
-const mappingLineOf = (request: { readonly refusal: UpgradeRefusal }): string => {
-  const { refusal } = request;
-  switch (refusal.kind) {
-    case "clause-without-check":
-      return `${refusal.clause} has no version 2 check to run it, and version 2 does not carry the clauses of a version 1 team rule set. Remove it from disciplines.json to upgrade without it, or stay on version 1.`;
-    case "no-engine-on-mechanism":
-      return `${refusal.check} has no engine on the ${refusal.mechanism} mechanism. ${FAULT_IN_HONE}`;
-    case "two-engines-on-mechanism":
-      return `${refusal.check} could run on ${refusal.engines.join(" or ")} through the ${refusal.mechanism} mechanism; the upgrade cannot choose. ${FAULT_IN_HONE}`;
-    case "record-answers-nothing":
-      return `the file carve-out for ${refusal.clause} in ${refusal.file} answers ${refusal.credited === "nothing" ? "no finding" : "only a suppression no version 2 record can hold"}. Remove it, or fix the file it names, then run the upgrade again.`;
-    case "records-name-refused":
-      return `${refusal.name} is not a name version 2 can file records under. ${FAULT_IN_HONE}`;
-  }
-};
 
 const configLineOf = (request: { readonly refusal: ConfigImportRefusal }): string => {
   const { refusal } = request;
@@ -240,7 +223,7 @@ const planLinesOf = (request: { readonly refusal: PlanRefusal }): readonly strin
         `the upgrade would write ${refusal.path}, which is not a path inside the repository. ${FAULT_IN_HONE}`,
       ];
     case "mapping-refused":
-      return refusal.refusals.map((each) => mappingLineOf({ refusal: each }));
+      return refusal.refusals.map((each) => mapMappingRefusalToLine({ refusal: each }));
     case "reach-beyond-entries":
       return [
         `the version 2 records would reach beyond the version 1 entries: ${refusal.records.map(({ symptom, file }) => `${symptom} in ${file}`).join(", ")}.`,

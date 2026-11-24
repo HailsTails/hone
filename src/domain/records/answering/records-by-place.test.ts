@@ -47,6 +47,7 @@ const CAST_CHECK: Check = {
   },
   engines: [{ name: "eslint" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const NON_NULL_CHECK: Check = { ...CAST_CHECK, name: "non-null-assertions" };
@@ -100,13 +101,32 @@ const castSiteAt = (request: { readonly file: RepoPath }): ResolvedSite =>
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
-const ADAPTERS_BOUNDARY = placedOf({
+const IMPORT_CHECK: Check = {
+  name: "import-or-require",
+  symptom: OUTSIDE_IMPORT,
+  page: "outside-import-past-a-boundary/import-or-require.md",
+  engines: [],
+  forms: [],
+  findingSpecifics: ["outside-party"],
+};
+
+const OTHER_ADAPTER_UUID_LOCATION = placedOf({
   index: 0,
   record: {
-    kind: "boundary-record",
-    module: repoPathOf("src/adapters"),
-    outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" },
-    holding: { held: "stated", ports: ["Port"] },
+    kind: "authorised-location",
+    symptom: OUTSIDE_IMPORT,
+    reach: { reaches: "one-check", check: IMPORT_CHECK },
+    file: OTHER_ADAPTER,
+    holding: {
+      binding: {
+        binds: "check-file-and-outside-party",
+        outsideParty: { kind: "package", dependency: "uuid" },
+      },
+      held: "carried",
+      entry: { reason: "uuid stays here." },
+      lacks: ["case", "owes", "whyChain"],
+      standing: "unjudged",
+    },
   },
 });
 
@@ -156,7 +176,7 @@ const RECORDS = [
   ADAPTER_DEBT,
   DEPENDENCY,
   DOMAIN_DEVIATION,
-  ADAPTERS_BOUNDARY,
+  OTHER_ADAPTER_UUID_LOCATION,
   ADAPTER_CAST_DEBT,
   OTHER_ADAPTER_DEBT,
 ];
@@ -181,7 +201,7 @@ describe("recordsReachingSites", () => {
     ).toEqual([ADAPTER_DEBT]);
   });
 
-  it("gives a module record for a site under the module whose symptom it reaches", () => {
+  it("gives an authorised location bound to an outside party for a site of its check at its file", () => {
     expect(
       recordsReachingSites({
         byPlace: BY_PLACE,
@@ -189,12 +209,12 @@ describe("recordsReachingSites", () => {
           siteAt({
             file: OTHER_ADAPTER,
             symptom: OUTSIDE_IMPORT,
-            check: { found: "none" },
+            check: { found: "check", check: IMPORT_CHECK },
             recipes: [],
           }),
         ],
       }),
-    ).toEqual([ADAPTERS_BOUNDARY]);
+    ).toEqual([OTHER_ADAPTER_UUID_LOCATION]);
   });
 
   it("gives a deviation for a site whose symptom lists its recipe", () => {
@@ -330,18 +350,19 @@ describe("recordsReachingSites, a team's symptom sharing a name with one of Hone
     expect(reaching).toEqual([]);
   });
 
-  it("gives no module record for a team's symptom named as one a boundary record reaches", () => {
+  it("gives no authorised location of Hone's symptom for a site of the team's symptom of the same name", () => {
+    const teamImport: SymptomAddress = {
+      ruleSet: { name: ruleSetNameOf("acme") },
+      name: "outside-import-past-a-boundary",
+    };
     expect(
       recordsReachingSites({
         byPlace: BY_PLACE,
         sites: [
           siteAt({
             file: OTHER_ADAPTER,
-            symptom: {
-              ruleSet: { name: ruleSetNameOf("acme") },
-              name: "outside-import-past-a-boundary",
-            },
-            check: { found: "none" },
+            symptom: teamImport,
+            check: { found: "check", check: { ...IMPORT_CHECK, symptom: teamImport } },
             recipes: [],
           }),
         ],

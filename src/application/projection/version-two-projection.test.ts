@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   RecordKind,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../domain/language-layer/symptom-catalogue.ts";
 import type { RecordsReading } from "../../domain/records/hone-records/hone-record.ts";
 import type { RunLoadFailure } from "../../domain/report/run-load-failure.ts";
@@ -16,14 +18,14 @@ import { versionTwoProjectionOver } from "./version-two-projection.ts";
 
 const FILE_A = repoPathOf("src/a.ts");
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -111,7 +113,6 @@ describe("versionTwoProjectionOver", () => {
           settings: SETTINGS,
           records: RECORDS,
           tree: TREE,
-          content: { symptoms: new Map() },
           checks: [],
         },
       ],

@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
 import type { FileTextPort } from "../../application/ports/file-system/file-text-port.ts";
 import { TOOL_RULE_SET } from "../../domain/rule-set/clause-address.ts";
 import { clauseIdOf } from "../../domain/rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../../domain/rule-set/discipline-id-of.ts";
+import SHIPPED_NAMES from "./version-one-names.json" with { type: "json" };
 import {
   readVersionOneNames,
   VERSION_ONE_NAMES_SEGMENTS,
@@ -39,6 +40,16 @@ describe("VERSION_ONE_NAMES_SEGMENTS", () => {
 });
 
 describe("versionOneNamesOf", () => {
+  it("reads the map Hone ships, giving each record kind it names its format of today", () => {
+    const names = versionOneNamesOf({ document: SHIPPED_NAMES });
+
+    assert(names.outcome === "ok", "the shipped map reads");
+    expect(names.value.formatsOfToday).toEqual({
+      "authorised-location": "authorised-location",
+      debt: "file-carve-out",
+    });
+  });
+
   it("gives each clause its sight, a mechanical clause the checks it names, each check named under a clause that clause, and each record kind its format of today", () => {
     expect(
       versionOneNamesOf({

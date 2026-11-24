@@ -52,6 +52,7 @@ const CLAIMED_TYPE: Symptom = {
         phrase: "an authorised location",
         todaysFormat: "authorised-location",
       },
+      binding: "check-and-file",
     },
   ],
 };

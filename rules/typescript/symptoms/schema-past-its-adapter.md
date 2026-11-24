@@ -33,8 +33,8 @@
   "correctUses": [
     {
       "situation": "an outside model adopted as ours",
-      "kind": "boundary-record",
-      "at": "with a Conformist statement"
+      "kind": "authorised-location",
+      "at": "with a why-chain naming the outside model adopted as ours"
     }
   ]
 }

@@ -28,8 +28,8 @@
   "correctUses": [
     {
       "situation": "correct use",
-      "kind": "boundary-record",
-      "at": "on the adapter, or beyond it with a Conformist statement for an outside model adopted as ours"
+      "kind": "authorised-location",
+      "at": "on the adapter, or beyond it with a why-chain naming the outside model adopted as ours"
     }
   ],
   "breachACheckCouldName": "the adapter that returns it, by types."

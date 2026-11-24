@@ -33,6 +33,7 @@ export type OptionName =
   | "--leave"
   | "--answers"
   | "--file"
+  | "--outside-party"
   | "--case"
   | "--owes"
   | "--why"
@@ -151,13 +152,21 @@ export const AUTHORISE_COMMAND_OPTIONS: readonly CommandOption[] = [
   onceRequired({
     name: "--answers",
     value: "<address>",
-    summary: "the symptom, or the symptom#check, the location answers, by the catalogue's names",
+    summary: "the symptom#check the location answers, by the catalogue's names",
   }),
   onceRequired({
     name: "--file",
     value: "<path>",
     summary: "the file the location is for, relative to --repo",
   }),
+  {
+    name: "--outside-party",
+    value: "<party>",
+    need: "optional",
+    occurrence: "once",
+    summary:
+      "the package, or the module such as node:fs, the location is for, when its symptom binds an outside party",
+  },
   onceRequired({
     name: "--case",
     value: "<case>",

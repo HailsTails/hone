@@ -9,6 +9,8 @@ import type {
   RecordKind,
   SymptomAddress,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../language-layer/symptom-catalogue.ts";
 import { repoPathOf } from "../../repository/repo-path-of.ts";
 import type { RepoPath } from "../../repository/repo-path-types.ts";
@@ -80,14 +82,14 @@ const AUDIT = "walker" as const;
 
 const ESLINT = "eslint" as const;
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
@@ -144,6 +146,7 @@ const checkOf = (request: {
   ...request,
   engines: [{ name: "walker" }],
   forms: [],
+  findingSpecifics: [],
 });
 
 const CLASS_SYNTAX = checkOf({
@@ -159,6 +162,16 @@ const THIS_KEYWORD = checkOf({
   page: "authored-class-or-this/this-keyword.md",
   clause: NO_THIS,
 });
+
+const IMPORT_OR_REQUIRE: Check = {
+  ...checkOf({
+    name: "import-or-require",
+    symptom: OUTSIDE_IMPORT,
+    page: "outside-import-past-a-boundary/import-or-require.md",
+    clause: IMPORT_BOUNDARIES,
+  }),
+  findingSpecifics: ["outside-party"],
+};
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -185,12 +198,7 @@ const CATALOGUE: SymptomCatalogue = {
       page: "loop-keyword/for-of.md",
       clause: NO_FOR_OF,
     }),
-    checkOf({
-      name: "import-or-require",
-      symptom: OUTSIDE_IMPORT,
-      page: "outside-import-past-a-boundary/import-or-require.md",
-      clause: IMPORT_BOUNDARIES,
-    }),
+    IMPORT_OR_REQUIRE,
   ],
   namedBans: [{ outsideDependency: "lodash" }],
 };
@@ -207,7 +215,9 @@ const DEBT_FILE = repoPathOf("hone-records/debt/authored-class-or-this.json");
 
 const AUTHORISED_FILE = repoPathOf("hone-records/authorised-locations/authored-class-or-this.json");
 
-const BOUNDARIES_FILE = repoPathOf("hone-records/boundary-records.json");
+const IMPORT_LOCATIONS_FILE = repoPathOf(
+  "hone-records/authorised-locations/outside-import-past-a-boundary.json",
+);
 
 const DEVIATIONS_FILE = repoPathOf("hone-records/deviations/adapter-per-outside-party.json");
 
@@ -310,9 +320,10 @@ const DEBT_ON_CLASS_SYNTAX_IN_A: PlacedRecord = {
 const CLASS_LOCATION_IN_A: AuthorisedLocation = {
   kind: "authorised-location",
   symptom: AUTHORED_CLASS,
-  reach: WHOLE_SYMPTOM,
+  reach: { reaches: "one-check", check: CLASS_SYNTAX },
   file: FILE_A,
   holding: {
+    binding: { binds: "check-and-file" },
     held: "stated",
     owing: {
       matches: "not-the-catalogue",
@@ -332,6 +343,7 @@ const CARRIED_CLASS_IN_A: PlacedRecord = {
   record: {
     ...CLASS_LOCATION_IN_A,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "carried",
       entry: { reason: "The parser's class is wrapped here." },
       lacks: ["case", "owes", "whyChain"],
@@ -345,6 +357,7 @@ const ESTABLISHED_CLASS_IN_A: PlacedRecord = {
   record: {
     ...CLASS_LOCATION_IN_A,
     holding: {
+      binding: { binds: "check-and-file" },
       held: "carried",
       entry: { reason: "The parser's class is wrapped here." },
       lacks: ["case", "owes", "whyChain"],
@@ -380,31 +393,22 @@ const DEBT_ON_IMPORTS_IN_IDS: PlacedRecord = {
 };
 
 const LOCATED_UUID_IN_IDS: PlacedRecord = {
-  place: {
-    file: repoPathOf("hone-records/authorised-locations/outside-import-past-a-boundary.json"),
-    index: 0,
-  },
+  place: { file: IMPORT_LOCATIONS_FILE, index: 0 },
   record: {
     kind: "authorised-location",
     symptom: OUTSIDE_IMPORT,
-    reach: WHOLE_SYMPTOM,
+    reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
     file: IDS_ADAPTER,
     holding: {
+      binding: {
+        binds: "check-file-and-outside-party",
+        outsideParty: { kind: "package", dependency: "uuid" },
+      },
       held: "carried",
       entry: { reason: "uuid stays here." },
       lacks: ["case", "owes", "whyChain"],
       standing: "established",
     },
-  },
-};
-
-const IDS_BOUNDARY: PlacedRecord = {
-  place: { file: BOUNDARIES_FILE, index: 0 },
-  record: {
-    kind: "boundary-record",
-    module: repoPathOf("src/adapters/ids"),
-    outsideParty: { kind: "package", specifier: "uuid", dependency: "uuid" },
-    holding: { held: "stated", ports: ["IdSource"] },
   },
 };
 
@@ -639,7 +643,28 @@ describe("answerFindings, answer", () => {
     });
   });
 
-  it("answers by a boundary record over an import of its outside party in a file inside its module", () => {
+  it("answers by an authorised location bound to an outside party an import of that party, by its subpath too", () => {
+    const uuidLocationInIds: PlacedRecord = {
+      place: { file: IMPORT_LOCATIONS_FILE, index: 1 },
+      record: {
+        kind: "authorised-location",
+        symptom: OUTSIDE_IMPORT,
+        reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+        file: IDS_ADAPTER,
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "uuid" },
+          },
+          held: "stated",
+          owing: {
+            matches: "not-the-catalogue",
+            note: { kind: "unknown-case", case: "meets-an-outside-party", owes: "no-leak" },
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+    };
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -649,7 +674,7 @@ describe("answerFindings, answer", () => {
             ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
           ]),
         },
-        records: [IDS_BOUNDARY],
+        records: [uuidLocationInIds],
         findings: [importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid/v4" })],
         touched: NOTHING_TOUCHED,
         runs: [],
@@ -659,12 +684,33 @@ describe("answerFindings, answer", () => {
       outcome: "ok",
       value: {
         ...NOTHING_ANSWERED,
-        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] }],
+        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [uuidLocationInIds] }],
       },
     });
   });
 
-  it("does not answer by a boundary record an import of another outside party in its module, and lists it stale", () => {
+  it("does not answer by an authorised location bound to an outside party an import of another party in its file, and lists it stale", () => {
+    const uuidLocationInIds: PlacedRecord = {
+      place: { file: IMPORT_LOCATIONS_FILE, index: 1 },
+      record: {
+        kind: "authorised-location",
+        symptom: OUTSIDE_IMPORT,
+        reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+        file: IDS_ADAPTER,
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "uuid" },
+          },
+          held: "stated",
+          owing: {
+            matches: "not-the-catalogue",
+            note: { kind: "unknown-case", case: "meets-an-outside-party", owes: "no-leak" },
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+    };
     const lodashInIds: CheckFinding = {
       ...UUID_IMPORT_IN_IDS,
       snippet: "banned third-party import: lodash — use its recorded wrapping boundary",
@@ -678,7 +724,7 @@ describe("answerFindings, answer", () => {
             ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
           ]),
         },
-        records: [IDS_BOUNDARY],
+        records: [uuidLocationInIds],
         findings: [importing({ finding: lodashInIds, specifier: "lodash" })],
         touched: NOTHING_TOUCHED,
         runs: [],
@@ -689,12 +735,33 @@ describe("answerFindings, answer", () => {
       value: {
         ...NOTHING_ANSWERED,
         findings: [lodashInIds],
-        stale: [creditedNothing(IDS_BOUNDARY)],
+        stale: [creditedNothing(uuidLocationInIds)],
       },
     });
   });
 
   it("credits every record that holds the finding, in the records' order", () => {
+    const uuidLocationInIds: PlacedRecord = {
+      place: { file: IMPORT_LOCATIONS_FILE, index: 1 },
+      record: {
+        kind: "authorised-location",
+        symptom: OUTSIDE_IMPORT,
+        reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+        file: IDS_ADAPTER,
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "uuid" },
+          },
+          held: "stated",
+          owing: {
+            matches: "not-the-catalogue",
+            note: { kind: "unknown-case", case: "meets-an-outside-party", owes: "no-leak" },
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+    };
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -704,7 +771,7 @@ describe("answerFindings, answer", () => {
             ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
           ]),
         },
-        records: [LOCATED_UUID_IN_IDS, IDS_BOUNDARY],
+        records: [LOCATED_UUID_IN_IDS, uuidLocationInIds],
         findings: [importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid" })],
         touched: NOTHING_TOUCHED,
         runs: [],
@@ -714,7 +781,7 @@ describe("answerFindings, answer", () => {
       outcome: "ok",
       value: {
         ...NOTHING_ANSWERED,
-        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [LOCATED_UUID_IN_IDS, IDS_BOUNDARY] }],
+        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [LOCATED_UUID_IN_IDS, uuidLocationInIds] }],
       },
     });
   });
@@ -916,29 +983,6 @@ describe("answerFindings, a record naming one check", () => {
         ...NOTHING_ANSWERED,
         findings: [NO_CLASS_IN_A_BY_ESLINT],
         stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A), creditedNothing(DEBT_ON_CLASS_IN_A)],
-      },
-    });
-  });
-
-  it("answers by both an authorised location on the whole symptom and one on a check of it, at one file, and lists neither stale", () => {
-    expect(
-      answerFindings({
-        catalogue: CATALOGUE,
-        content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
-        records: [LOCATED_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A],
-        findings: [unreported(NO_CLASS_IN_A), unreported(NO_THIS_IN_A)],
-        touched: NOTHING_TOUCHED,
-        runs: [],
-        measurements: { runs: [], tracked: [], excluded: [] },
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: {
-        ...NOTHING_ANSWERED,
-        answered: [
-          { finding: NO_CLASS_IN_A, by: [LOCATED_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A] },
-          { finding: NO_THIS_IN_A, by: [LOCATED_CLASS_IN_A] },
-        ],
       },
     });
   });
@@ -1161,7 +1205,28 @@ describe("answerFindings, paid debt", () => {
     });
   });
 
-  it("pays debt on imports when every import it held was of the outside party a boundary record holds", () => {
+  it("pays debt on imports when every import it held was of the outside party an authorised location is bound to", () => {
+    const uuidLocationInIds: PlacedRecord = {
+      place: { file: IMPORT_LOCATIONS_FILE, index: 1 },
+      record: {
+        kind: "authorised-location",
+        symptom: OUTSIDE_IMPORT,
+        reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+        file: IDS_ADAPTER,
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "uuid" },
+          },
+          held: "stated",
+          owing: {
+            matches: "not-the-catalogue",
+            note: { kind: "unknown-case", case: "meets-an-outside-party", owes: "no-leak" },
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+    };
     expect(
       answerFindings({
         catalogue: CATALOGUE,
@@ -1171,7 +1236,7 @@ describe("answerFindings, paid debt", () => {
             ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
           ]),
         },
-        records: [DEBT_ON_IMPORTS_IN_IDS, IDS_BOUNDARY],
+        records: [DEBT_ON_IMPORTS_IN_IDS, uuidLocationInIds],
         findings: [importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid" })],
         touched: NOTHING_TOUCHED,
         runs: [],
@@ -1181,8 +1246,8 @@ describe("answerFindings, paid debt", () => {
       outcome: "ok",
       value: {
         ...NOTHING_ANSWERED,
-        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] }],
-        paid: [{ debt: DEBT_ON_IMPORTS_IN_IDS, answeredBy: [IDS_BOUNDARY] }],
+        answered: [{ finding: UUID_IMPORT_IN_IDS, by: [uuidLocationInIds] }],
+        paid: [{ debt: DEBT_ON_IMPORTS_IN_IDS, answeredBy: [uuidLocationInIds] }],
       },
     });
   });
@@ -1221,7 +1286,7 @@ describe("answerFindings, paid debt", () => {
       answerFindings({
         catalogue: CATALOGUE,
         content: { symptoms: new Map([["authored-class-or-this", { recipes: [] }]]) },
-        records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A, LOCATED_CLASS_IN_A],
+        records: [DEBT_ON_CLASS_IN_A, LOCATED_CLASS_SYNTAX_IN_A, LOCATED_THIS_KEYWORD_IN_A],
         findings: [unreported(NO_THIS_IN_A)],
         touched: NOTHING_TOUCHED,
         runs: [],
@@ -1231,14 +1296,35 @@ describe("answerFindings, paid debt", () => {
       outcome: "ok",
       value: {
         ...NOTHING_ANSWERED,
-        answered: [{ finding: NO_THIS_IN_A, by: [LOCATED_CLASS_IN_A] }],
+        answered: [{ finding: NO_THIS_IN_A, by: [LOCATED_THIS_KEYWORD_IN_A] }],
         stale: [creditedNothing(LOCATED_CLASS_SYNTAX_IN_A)],
-        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_CLASS_IN_A] }],
+        paid: [{ debt: DEBT_ON_CLASS_IN_A, answeredBy: [LOCATED_THIS_KEYWORD_IN_A] }],
       },
     });
   });
 
-  it("answers by the boundary record its own outside party's imports and by the debt every other import", () => {
+  it("answers by the authorised location its own outside party's imports and by the debt every other import", () => {
+    const uuidLocationInIds: PlacedRecord = {
+      place: { file: IMPORT_LOCATIONS_FILE, index: 1 },
+      record: {
+        kind: "authorised-location",
+        symptom: OUTSIDE_IMPORT,
+        reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+        file: IDS_ADAPTER,
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "uuid" },
+          },
+          held: "stated",
+          owing: {
+            matches: "not-the-catalogue",
+            note: { kind: "unknown-case", case: "meets-an-outside-party", owes: "no-leak" },
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+    };
     const lodashInIds: CheckFinding = {
       ...UUID_IMPORT_IN_IDS,
       anchor: { line: 2, column: 0 },
@@ -1253,7 +1339,7 @@ describe("answerFindings, paid debt", () => {
             ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
           ]),
         },
-        records: [DEBT_ON_IMPORTS_IN_IDS, IDS_BOUNDARY],
+        records: [DEBT_ON_IMPORTS_IN_IDS, uuidLocationInIds],
         findings: [
           importing({ finding: UUID_IMPORT_IN_IDS, specifier: "uuid" }),
           importing({ finding: lodashInIds, specifier: "lodash" }),
@@ -1268,7 +1354,7 @@ describe("answerFindings, paid debt", () => {
       value: {
         ...NOTHING_ANSWERED,
         answered: [
-          { finding: UUID_IMPORT_IN_IDS, by: [IDS_BOUNDARY] },
+          { finding: UUID_IMPORT_IN_IDS, by: [uuidLocationInIds] },
           { finding: lodashInIds, by: [DEBT_ON_IMPORTS_IN_IDS] },
           { finding: lodashInIds, by: [DEBT_ON_IMPORTS_IN_IDS] },
         ],
@@ -1535,7 +1621,28 @@ describe("answerFindings, natives held", () => {
     });
   });
 
-  it("lists an inline disable on an import check in a boundary record's module, since a suppression does not report its outside party", () => {
+  it("lists an inline disable on an import check in a file whose authorised location is bound to an outside party, since a suppression does not report its outside party", () => {
+    const uuidLocationInIds: PlacedRecord = {
+      place: { file: IMPORT_LOCATIONS_FILE, index: 1 },
+      record: {
+        kind: "authorised-location",
+        symptom: OUTSIDE_IMPORT,
+        reach: { reaches: "one-check", check: IMPORT_OR_REQUIRE },
+        file: IDS_ADAPTER,
+        holding: {
+          binding: {
+            binds: "check-file-and-outside-party",
+            outsideParty: { kind: "package", dependency: "uuid" },
+          },
+          held: "stated",
+          owing: {
+            matches: "not-the-catalogue",
+            note: { kind: "unknown-case", case: "meets-an-outside-party", owes: "no-leak" },
+          },
+          whyChain: CAUSAL_WHY_CHAIN,
+        },
+      },
+    };
     const disableInIds: CheckNativeException = {
       kind: "inline-disable",
       check: "outside-import-past-a-boundary#import-or-require",
@@ -1553,7 +1660,7 @@ describe("answerFindings, natives held", () => {
             ["outside-import-past-a-boundary", { recipes: [ADAPTER_PER_OUTSIDE_PARTY] }],
           ]),
         },
-        records: [IDS_BOUNDARY],
+        records: [uuidLocationInIds],
         findings: [],
         touched: NOTHING_TOUCHED,
         runs: [inlineRun({ nativeExceptions: [disableInIds] })],
@@ -1563,7 +1670,7 @@ describe("answerFindings, natives held", () => {
       outcome: "ok",
       value: {
         ...NOTHING_ANSWERED,
-        stale: [creditedNothing(IDS_BOUNDARY)],
+        stale: [creditedNothing(uuidLocationInIds)],
         unrecorded: [{ ...disableInIds, mechanism: AUDIT }],
       },
     });
@@ -1877,6 +1984,7 @@ const MIXED_ENGINES: SymptomCatalogue = {
       clause: CLASS_IN_TYPES,
       engines: [ESLINT_ENGINE],
       forms: [],
+      findingSpecifics: [],
     },
     {
       name: "import-in-types",
@@ -1885,6 +1993,7 @@ const MIXED_ENGINES: SymptomCatalogue = {
       clause: IMPORT_IN_TYPES,
       engines: [ESLINT_ENGINE],
       forms: [],
+      findingSpecifics: [],
     },
   ],
 };
@@ -2065,41 +2174,6 @@ describe("answerFindings, what the runs measured", () => {
         measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
       }),
     ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
-  });
-
-  it("does not list a boundary record as stale when an engine of a check it reaches measured nothing in its module", () => {
-    expect(
-      staleAmong({
-        tracked: TRACKED,
-        excluded: [],
-        record: IDS_BOUNDARY,
-        measurements: [walkerMeasured({ file: FILE_A }), ESLINT_SELECTED_MEASURING_NOTHING],
-      }),
-    ).toEqual({ outcome: "ok", value: NOTHING_ANSWERED });
-  });
-
-  it("lists a boundary record as stale once its module's files were measured by every engine of a check it reaches", () => {
-    const eslintMeasured: RunMeasurement = {
-      mechanism: ESLINT,
-      selected: ["outside-import-past-a-boundary#import-in-types"],
-      measured: [{ check: "outside-import-past-a-boundary#import-in-types", file: IDS_ADAPTER }],
-    };
-    const walkerInModule: RunMeasurement = {
-      mechanism: AUDIT,
-      selected: ["outside-import-past-a-boundary#import-or-require"],
-      measured: [{ check: "outside-import-past-a-boundary#import-or-require", file: IDS_ADAPTER }],
-    };
-    expect(
-      staleAmong({
-        tracked: TRACKED,
-        excluded: [],
-        record: IDS_BOUNDARY,
-        measurements: [walkerInModule, eslintMeasured],
-      }),
-    ).toEqual({
-      outcome: "ok",
-      value: { ...NOTHING_ANSWERED, stale: [creditedNothing(IDS_BOUNDARY)] },
-    });
   });
 
   it("does not list a deviation on an imported-party symptom as stale when an engine of a check it reaches measured nothing", () => {

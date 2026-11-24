@@ -8,6 +8,8 @@ import type {
   RecordKind,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import type { ExceptionRecord } from "../../../domain/records/discipline-exceptions/exception-record.ts";
 import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
@@ -27,14 +29,14 @@ const AUDIT = "walker" as const;
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -92,6 +94,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const LOOP_KEYWORD_TEST_BODY: Check = {
@@ -101,6 +104,7 @@ const LOOP_KEYWORD_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const REBINDING_TEST_BODY: Check = {
@@ -110,6 +114,7 @@ const REBINDING_TEST_BODY: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
 const SETTINGS_CATALOGUE: SymptomCatalogue = {

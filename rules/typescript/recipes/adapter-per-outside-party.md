@@ -14,5 +14,5 @@
 ```
 
 - **Method:** An outside dependency or runtime module is imported only in the adapter file for the party it reaches. That adapter fulfils a port and returns our types. Nothing re-exports the outside dependency. `JSON.parse` is called inside the adapter for whoever produced the JSON.
-- **You can tell because:** Each package import sits in a file with a boundary record.
+- **You can tell because:** Each package import sits in a file with an authorised location bound to that party.
 - **Industry name:** Adapter; Gateway; anticorruption layer; Hexagonal Architecture (Cockburn).

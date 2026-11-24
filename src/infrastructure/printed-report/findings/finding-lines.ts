@@ -21,11 +21,10 @@ import type {
 } from "../../../domain/records/answering/answering.ts";
 import type { CheckEdition } from "../../../domain/report/run-report.ts";
 import type { Remedy, ScriptOptionCause } from "../../../domain/runner/runner-result-types.ts";
-import { symptomUnheldText } from "../load-failures/load-failure-lines.ts";
 import { onOneLine } from "../printed-text.ts";
 import { referencesText } from "../records/record-lines.ts";
 import { scriptOptionAdviceOf } from "../records/script-option-advice.ts";
-import { symptomSourceOf } from "../symptoms/symptom-lines.ts";
+import { symptomSourceOf, symptomUnheldText } from "../symptoms/symptom-lines.ts";
 
 type CatalogueRequest = { readonly catalogue: SymptomCatalogue };
 

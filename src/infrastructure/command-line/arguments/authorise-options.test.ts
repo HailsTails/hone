@@ -71,6 +71,45 @@ describe("the arguments of hone authorise, read as the record they write", () =>
     });
   });
 
+  it("reads the outside party a person names with --outside-party", () => {
+    const parsed = authoriseRequestOf({
+      values: new Map([...FULL_VALUES, [AUTHORISE_OPTIONS.outsideParty, ["zod"]]]),
+    });
+
+    expect(parsed).toEqual({
+      outcome: "ok",
+      value: {
+        answers: { ruleSet: "hone", name: "claimed-type#cast-expressions" },
+        file: repoPathOf("src/adapters/stripe-webhook.ts"),
+        case: "gives-a-value-its-type",
+        owes: "declared-not-asserted",
+        whys: [
+          { why: "why one", because: "because one", evidence: "evidence one" },
+          { why: "why two", because: "because two", evidence: "evidence two" },
+          { why: "why three", because: "because three", evidence: "evidence three" },
+          { why: "why four", because: "because four", evidence: "evidence four" },
+          { why: "why five", because: "because five", evidence: "evidence five" },
+        ],
+        rootCause: "a root cause",
+        rootEvidence: "a root evidence",
+        readback: "a readback",
+        owner: "capture 01a0b421",
+        outsideParty: "zod",
+      },
+    });
+  });
+
+  it("takes --outside-party once", () => {
+    const parsed = authoriseRequestOf({
+      values: new Map([...FULL_VALUES, [AUTHORISE_OPTIONS.outsideParty, ["zod", "uuid"]]]),
+    });
+
+    expect(parsed).toEqual({
+      outcome: "failed",
+      error: { kind: "arguments-invalid", detail: "hone authorise takes --outside-party once" },
+    });
+  });
+
   it("needs --why, --because and --evidence the same number of times, so each why is whole", () => {
     expect(
       authoriseRequestOf({
@@ -134,9 +173,25 @@ describe("the arguments of hone authorise, read as the record they write", () =>
       authoriseRequestOf({
         values: new Map([...FULL_VALUES, [AUTHORISE_OPTIONS.answers, ["acme/loop-keyword#loops"]]]),
       }),
-    ).toMatchObject({
+    ).toEqual({
       outcome: "ok",
-      value: { answers: { ruleSet: { name: "acme" }, name: "loop-keyword#loops" } },
+      value: {
+        answers: { ruleSet: { name: "acme" }, name: "loop-keyword#loops" },
+        file: repoPathOf("src/adapters/stripe-webhook.ts"),
+        case: "gives-a-value-its-type",
+        owes: "declared-not-asserted",
+        whys: [
+          { why: "why one", because: "because one", evidence: "evidence one" },
+          { why: "why two", because: "because two", evidence: "evidence two" },
+          { why: "why three", because: "because three", evidence: "evidence three" },
+          { why: "why four", because: "because four", evidence: "evidence four" },
+          { why: "why five", because: "because five", evidence: "evidence five" },
+        ],
+        rootCause: "a root cause",
+        rootEvidence: "a root evidence",
+        readback: "a readback",
+        owner: "capture 01a0b421",
+      },
     });
   });
 

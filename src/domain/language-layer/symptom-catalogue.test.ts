@@ -4,7 +4,9 @@ import { TOOL_RULE_SET } from "../rule-set/clause-address.ts";
 import { clauseIdOf } from "../rule-set/clause-id-of.ts";
 import { disciplineIdOf } from "../rule-set/discipline-id-of.ts";
 import { ruleSetNameOf } from "../rule-set/rule-set-name-of.ts";
+import type { Specific } from "./authored-item-types.ts";
 import {
+  type Binding,
   type Case,
   type ClauseAndRemedy,
   type Principle,
@@ -15,7 +17,12 @@ import {
   type SymptomCatalogue,
   type SymptomReading,
   indicatedNamesOf,
+  mapCheckToPartyNaming,
+  mapSpecificsToBinding,
+  mapSymptomToAuthorisation,
   symptomReadingOf,
+  type AuthorisedLocationKind,
+  type UnboundRecordKind,
 } from "./symptom-catalogue.ts";
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
@@ -64,14 +71,14 @@ const RESULT_UNION: Recipe = {
   reason: { text: '"it makes the output clear"', standing: "accepted" },
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -293,5 +300,101 @@ describe("indicatedNamesOf", () => {
         },
       }),
     ).toEqual(["no-hidden-effects", "straight-through-tests"]);
+  });
+});
+
+type BindingRow = {
+  readonly specifics: readonly Specific[];
+  readonly binding: Binding;
+};
+
+describe("mapSpecificsToBinding", () => {
+  it.each<BindingRow>([
+    { specifics: [], binding: "check-and-file" },
+    { specifics: ["outside-party"], binding: "check-file-and-outside-party" },
+  ])("binds $binding for the specifics $specifics", ({ specifics, binding }) => {
+    const bound = mapSpecificsToBinding({ specifics });
+
+    expect(bound).toBe(binding);
+  });
+});
+
+describe("mapSymptomToAuthorisation", () => {
+  it("gives no correct use for a symptom no authorised location answers", () => {
+    const authorisation = mapSymptomToAuthorisation({
+      symptom: { ...REBINDING, correctUses: [{ situation: "a migration", kind: DEBT }] },
+    });
+
+    expect(authorisation).toBe("no-correct-use");
+  });
+
+  it("binds the check and file for an authorised-location correct use that binds nothing more", () => {
+    const authorisation = mapSymptomToAuthorisation({
+      symptom: {
+        ...REBINDING,
+        correctUses: [
+          { situation: "a test", kind: AUTHORISED_LOCATION, binding: "check-and-file" },
+        ],
+      },
+    });
+
+    expect(authorisation).toBe("check-and-file");
+  });
+
+  it("binds the outside party too for an authorised-location correct use that binds it", () => {
+    const authorisation = mapSymptomToAuthorisation({
+      symptom: {
+        ...REBINDING,
+        correctUses: [
+          {
+            situation: "the adapter",
+            kind: AUTHORISED_LOCATION,
+            binding: "check-file-and-outside-party",
+          },
+        ],
+      },
+    });
+
+    expect(authorisation).toBe("check-file-and-outside-party");
+  });
+});
+
+describe("mapCheckToPartyNaming", () => {
+  it("reads a check whose findings name no specific as naming no party", () => {
+    const naming = mapCheckToPartyNaming({
+      check: {
+        name: "parameter-reassignment",
+        symptom: REBINDING,
+        page: "rebinding/parameter-reassignment.md",
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-44"),
+          clause: clauseIdOf("parameter-reassignment"),
+        },
+        forms: [],
+        findingSpecifics: [],
+      },
+    });
+
+    expect(naming).toBe("names-no-party");
+  });
+
+  it("reads a check whose findings name the outside party as naming it", () => {
+    const naming = mapCheckToPartyNaming({
+      check: {
+        name: "parameter-reassignment",
+        symptom: REBINDING,
+        page: "rebinding/parameter-reassignment.md",
+        clause: {
+          ruleSet: TOOL_RULE_SET,
+          discipline: disciplineIdOf("CD-44"),
+          clause: clauseIdOf("parameter-reassignment"),
+        },
+        forms: [],
+        findingSpecifics: ["outside-party"],
+      },
+    });
+
+    expect(naming).toBe("names-the-party");
   });
 });

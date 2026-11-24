@@ -8,6 +8,8 @@ import type {
   Principle,
   RecordKind,
   Symptom,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
 import { absoluteRootOf } from "../../../domain/repository/absolute-root-of.ts";
 import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
@@ -47,14 +49,14 @@ const PARAMETER_REASSIGNMENT_TEXT = "# parameter-reassignment\n\n```json\n{}\n``
 
 const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
 
-const AUTHORISED_LOCATION: RecordKind = {
+const AUTHORISED_LOCATION: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
   todaysFormat: "authorised-location",
 };
 
-const DEBT: RecordKind = {
+const DEBT: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
@@ -185,6 +187,7 @@ describe("createSymptomCatalogueRepository", () => {
               page: "rebinding/parameter-reassignment.md",
               clause: PARAMETER_REASSIGNMENT,
               forms: [],
+              findingSpecifics: [],
             },
           ],
           namedBans: [],

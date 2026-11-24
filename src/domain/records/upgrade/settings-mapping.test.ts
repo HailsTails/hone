@@ -1,21 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  Check,
-  Engine,
-  Principle,
-  RecordKind,
-  Symptom,
-  SymptomCatalogue,
-} from "../../../domain/language-layer/symptom-catalogue.ts";
-import { repoPathOf } from "../../../domain/repository/repo-path-of.ts";
-import { TOOL_RULE_SET } from "../../../domain/rule-set/clause-address.ts";
-import { clauseIdOf } from "../../../domain/rule-set/clause-id-of.ts";
-import { disciplineIdOf } from "../../../domain/rule-set/discipline-id-of.ts";
-import { ruleSetNameOf } from "../../../domain/rule-set/rule-set-name-of.ts";
-import type { RuleSetCatalogue } from "../../../domain/settings/check-choices.ts";
-import type { ConsumerSelectionFile } from "../../../domain/settings/selection/selection-file.ts";
-import type { SettingsFile } from "../../../domain/settings/settings-file.ts";
+import type { ClauseChecks } from "../../language-layer/clause-checks.ts";
+import type { Check, Engine, Symptom } from "../../language-layer/symptom-catalogue.ts";
+import { repoPathOf } from "../../repository/repo-path-of.ts";
+import { TOOL_RULE_SET } from "../../rule-set/clause-address.ts";
+import { clauseIdOf } from "../../rule-set/clause-id-of.ts";
+import { disciplineIdOf } from "../../rule-set/discipline-id-of.ts";
+import { ruleSetNameOf } from "../../rule-set/rule-set-name-of.ts";
+import type { ConsumerSelectionFile } from "../../settings/selection/selection-file.ts";
+import type { SettingsFile } from "../../settings/settings-file.ts";
 import { mappedSettings, type SettingsMappingRequest } from "./settings-mapping.ts";
 
 const AUDIT = "walker" as const;
@@ -81,22 +74,6 @@ const TEST_BODY_CLAUSE = {
   clause: clauseIdOf("test-body-logic"),
 };
 
-const NO_HIDDEN_EFFECTS: Principle = { name: "no-hidden-effects", title: "No hidden effects" };
-
-const DEBT_KIND: RecordKind = {
-  name: "debt",
-  title: "Debt",
-  phrase: "debt",
-  todaysFormat: "file-carve-out",
-};
-
-const AUTHORISED_LOCATION_KIND: RecordKind = {
-  name: "authorised-location",
-  title: "Authorised location",
-  phrase: "an authorised location",
-  todaysFormat: "authorised-location",
-};
-
 const WALKER: Engine = { name: "walker" };
 
 const ESLINT_ENGINE: Engine = { name: "eslint" };
@@ -130,6 +107,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [WALKER, ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_LOOP_KEYWORD_CHECK: Check = {
@@ -139,6 +117,7 @@ const TEST_BODY_LOOP_KEYWORD_CHECK: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-for-loop"],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_REBINDING_CHECK: Check = {
@@ -148,37 +127,13 @@ const TEST_BODY_REBINDING_CHECK: Check = {
   clause: TEST_BODY_CLAUSE,
   engines: [WALKER],
   forms: ["a-let"],
+  findingSpecifics: [],
 };
 
-const SETTINGS_CATALOGUE: SymptomCatalogue = {
-  principles: [NO_HIDDEN_EFFECTS],
-  rules: [],
-  cases: [],
-  recipes: [],
-  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
-  engines: [WALKER, ESLINT_ENGINE],
-  symptoms: [LOOP_KEYWORD, REBINDING],
-  clauses: [
-    { clause: LOOPS_CLAUSE, sight: { kind: "one-symptom", symptom: LOOP_KEYWORD } },
-    {
-      clause: TEST_BODY_CLAUSE,
-      sight: {
-        kind: "symptom-by-form",
-        forms: [
-          { form: "a-for-loop", symptom: LOOP_KEYWORD },
-          { form: "a-let", symptom: REBINDING },
-        ],
-      },
-    },
-    { clause: LAYERING_CLAUSE, sight: { kind: "one-symptom", symptom: REBINDING } },
-  ],
-  checks: [LOOP_KEYWORD_LOOPS, TEST_BODY_LOOP_KEYWORD_CHECK, TEST_BODY_REBINDING_CHECK],
-  namedBans: [],
-};
-
-const CROSS_DISCIPLINE_CATALOGUES: readonly RuleSetCatalogue[] = [
-  { ruleSet: "hone", catalogue: SETTINGS_CATALOGUE },
-];
+const CROSS_DISCIPLINE_CLAUSE_CHECKS: ClauseChecks = new Map([
+  ["CD-15#loops", [LOOP_KEYWORD_LOOPS]],
+  ["CD-27#test-body-logic", [TEST_BODY_LOOP_KEYWORD_CHECK, TEST_BODY_REBINDING_CHECK]],
+]);
 
 const OWN_SYMPTOM_LOOPS_CHECK: Check = {
   ...LOOP_KEYWORD_LOOPS,
@@ -188,22 +143,15 @@ const OWN_SYMPTOM_LOOPS_CHECK: Check = {
 const BASE_REQUEST: SettingsMappingRequest = {
   selection: BASE_SELECTION,
   notAdoptedClauses: [],
-  catalogues: [
-    {
-      ruleSet: "hone",
-      catalogue: {
-        ...SETTINGS_CATALOGUE,
-        checks: [OWN_SYMPTOM_LOOPS_CHECK, TEST_BODY_LOOP_KEYWORD_CHECK, TEST_BODY_REBINDING_CHECK],
-      },
-    },
-  ],
+  clauseChecks: new Map([
+    ["CD-15#loops", [OWN_SYMPTOM_LOOPS_CHECK]],
+    ["CD-27#test-body-logic", [TEST_BODY_LOOP_KEYWORD_CHECK, TEST_BODY_REBINDING_CHECK]],
+  ]),
 };
 
-const TWO_ENGINE_CHECK: Check = { ...SETTINGS_CATALOGUE.checks[0], engines: [WALKER, WALKER] };
+const TWO_ENGINE_CHECK: Check = { ...LOOP_KEYWORD_LOOPS, engines: [WALKER, WALKER] };
 
-const TWO_ENGINE_CATALOGUES: readonly RuleSetCatalogue[] = [
-  { ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: [TWO_ENGINE_CHECK] } },
-];
+const TWO_ENGINE_CLAUSE_CHECKS: ClauseChecks = new Map([["CD-15#loops", [TWO_ENGINE_CHECK]]]);
 
 const okWith = (request: { readonly settings: Partial<SettingsFile> }) => ({
   outcome: "ok",
@@ -299,7 +247,7 @@ describe("mappedSettings writing only the checks version 1 chose", () => {
     ({ choice, state }) => {
       expect(
         mappedSettings({
-          catalogues: CROSS_DISCIPLINE_CATALOGUES,
+          clauseChecks: CROSS_DISCIPLINE_CLAUSE_CHECKS,
           selection: { ...BASE_SELECTION, clauses: [[LOOPS_CLAUSE, choice]] },
           notAdoptedClauses: [],
         }),
@@ -415,7 +363,7 @@ describe("mappedSettings turning clauses into checks", () => {
     expect(
       mappedSettings({
         ...BASE_REQUEST,
-        catalogues: TWO_ENGINE_CATALOGUES,
+        clauseChecks: TWO_ENGINE_CLAUSE_CHECKS,
         selection: {
           ...BASE_SELECTION,
           clauses: [[LOOPS_CLAUSE, { state: "run", mechanism: AUDIT }]],
@@ -565,6 +513,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -573,6 +522,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -581,6 +531,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -589,6 +540,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -597,6 +549,7 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
   {
     name: "test-body",
@@ -605,12 +558,13 @@ const SIX_TEST_BODY_CHECKS: readonly Check[] = [
     clause: TEST_BODY_CLAUSE,
     engines: [WALKER],
     forms: [],
+    findingSpecifics: [],
   },
 ];
 
-const SIX_CHECK_CATALOGUES: readonly RuleSetCatalogue[] = [
-  { ruleSet: "hone", catalogue: { ...SETTINGS_CATALOGUE, checks: SIX_TEST_BODY_CHECKS } },
-];
+const SIX_CHECK_CLAUSE_CHECKS: ClauseChecks = new Map([
+  ["CD-27#test-body-logic", SIX_TEST_BODY_CHECKS],
+]);
 
 describe("mappedSettings carrying a clause-wide carve-out as each of its checks not adopted", () => {
   it("lists the one check of a clause as not adopted, whatever the clause ran on", () => {
@@ -658,7 +612,7 @@ describe("mappedSettings carrying a clause-wide carve-out as each of its checks 
     expect(
       mappedSettings({
         ...BASE_REQUEST,
-        catalogues: SIX_CHECK_CATALOGUES,
+        clauseChecks: SIX_CHECK_CLAUSE_CHECKS,
         selection: {
           ...BASE_SELECTION,
           clauses: [[TEST_BODY_CLAUSE, { state: "run", mechanism: AUDIT }]],
@@ -703,7 +657,7 @@ describe("mappedSettings carrying a clause-wide carve-out as each of its checks 
     expect(
       mappedSettings({
         ...BASE_REQUEST,
-        catalogues: TWO_ENGINE_CATALOGUES,
+        clauseChecks: TWO_ENGINE_CLAUSE_CHECKS,
         selection: {
           ...BASE_SELECTION,
           clauses: [[LOOPS_CLAUSE, { state: "run", mechanism: AUDIT }]],

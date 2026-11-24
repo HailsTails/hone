@@ -139,6 +139,7 @@ describe("plannedProjectionOf", () => {
                 page: "loop-keyword/loops.md",
                 engines: [{ name: "walker" }],
                 forms: [],
+                findingSpecifics: [],
               },
             ],
             namedBans: [],

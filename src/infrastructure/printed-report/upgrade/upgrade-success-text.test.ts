@@ -28,6 +28,7 @@ const LOOP_KEYWORD_LOOPS: Check = {
   clause: LOOPS_CLAUSE,
   engines: [{ name: "walker" }],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REBINDING_LOOPS: Check = {
@@ -87,6 +88,37 @@ describe("upgradeSuccessOutcomeOf", () => {
     ).toEqual({
       code: 0,
       text: "upgraded to version 2\nwrote hone.config.json\nwrote hone-records/debt/loop-keyword.json\nrewrote eslint.config.mjs\nrewrote packages/a/eslint.config.mjs\nremoved discipline-exceptions/cd-15.json\nremoved disciplines.json\nremoved discipline-exceptions\nfile-carve-out CD-15#loops src/a.ts -> debt loop-keyword#loops\nauthorised-location CD-15#loops src/b.ts -> authorised-location loop-keyword#loops\ncarried loop-keyword#loops src/b.ts\nmention .github/workflows/ci.yml:12\nmention package.json:4\nmention-unread vendor/lib EISDIR: illegal operation on a directory\nupgrade: same findings (3) and verdict as this Hone's version 1 check, not your installed 1.x\n",
+    });
+  });
+
+  it("names the outside party a carried authorised location binds", () => {
+    const outcome = upgradeSuccessOutcomeOf({
+      repoRoot: REPO,
+      path: PATH,
+      carried: {
+        written: [repoPathOf("hone.config.json")],
+        replaced: [],
+        removed: { files: [absoluteRootOf("/repo/disciplines.json")], folders: [] },
+        records: [
+          {
+            recordKind: "authorised-location",
+            clause: LOOPS_CLAUSE,
+            file: repoPathOf("src/adapters/ids.ts"),
+            newKind: "authorised-location",
+            check: LOOP_KEYWORD_LOOPS,
+            holding: "carried",
+            outsideParty: "uuid",
+          },
+        ],
+        findings: 0,
+        mentions: [],
+        unread: [],
+      },
+    });
+
+    expect(outcome).toEqual({
+      code: 0,
+      text: "upgraded to version 2\nwrote hone.config.json\nremoved disciplines.json\nauthorised-location CD-15#loops src/adapters/ids.ts -> authorised-location loop-keyword#loops for uuid\ncarried loop-keyword#loops src/adapters/ids.ts\nupgrade: same findings (0) and verdict as this Hone's version 1 check, not your installed 1.x\n",
     });
   });
 

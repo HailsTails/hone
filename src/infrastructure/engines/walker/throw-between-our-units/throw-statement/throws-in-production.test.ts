@@ -1,6 +1,7 @@
 import { assert, describe, expect, it } from "vitest";
 
 import type {
+  Check,
   RecordKind,
   Symptom,
   SymptomCatalogue,
@@ -324,25 +325,34 @@ describe("throws in production", () => {
         snippet: "throw new Error('legacy failure');",
       },
     ]);
+    const throwStatement: Check = {
+      name: "throw-statement",
+      symptom: { ruleSet: "hone", name: "throw-between-our-units" },
+      page: "throw-between-our-units/throw-statement.md",
+      engines: [{ name: "walker" }],
+      forms: [],
+      findingSpecifics: [],
+    };
     expect(
       holdsAt({
         record: {
           kind: "authorised-location",
           symptom: { ruleSet: "hone", name: "throw-between-our-units" },
           file: ADAPTER_FILE,
-          reach: { reaches: "whole-symptom" },
+          reach: { reaches: "one-check", check: throwStatement },
           holding: {
             held: "carried",
             entry: { reason: "The caller expects exceptions." },
             lacks: ["case", "owes", "whyChain"],
             standing: "established",
+            binding: { binds: "check-and-file" },
           },
         },
         site: {
           file: ADAPTER_FILE,
           symptom: { ruleSet: "hone", name: "throw-between-our-units" },
           recipes: [],
-          check: { found: "none" },
+          check: { found: "check", check: throwStatement },
           party: { reported: "not-reported" },
         },
         catalogue: CATALOGUE,

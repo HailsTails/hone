@@ -1,3 +1,4 @@
+import type { SymptomUnheld } from "../../../domain/language-layer/rule-content.ts";
 import type {
   Indication,
   Pointed,
@@ -5,6 +6,10 @@ import type {
   Symptom,
   SymptomCatalogue,
 } from "../../../domain/language-layer/symptom-catalogue.ts";
+import { ownedNameText } from "../../../domain/rule-set/rule-set-identity.ts";
+
+export const symptomUnheldText = (request: { readonly failure: SymptomUnheld }): string =>
+  `${ownedNameText(request.failure.symptom)}: the catalogue and the records disagree, since a check, sighting or record names this symptom and no catalogue holds it`;
 
 type CatalogueRequest = { readonly catalogue: SymptomCatalogue };
 

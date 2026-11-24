@@ -37,7 +37,7 @@
   "correctUses": [
     {
       "situation": "correct use",
-      "kind": "boundary-record",
+      "kind": "authorised-location",
       "at": "on the clock adapter"
     }
   ],

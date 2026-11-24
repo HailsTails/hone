@@ -32,6 +32,7 @@ const TEAM_CHECKS: readonly CheckContent[] = [
     symptom: DATE_USED_DIRECTLY,
     page: "date-used-directly/clock-sources.md",
     forms: [],
+    findingSpecifics: [],
     clause: {
       ruleSet: { name: ruleSetNameOf("team") },
       discipline: disciplineIdOf("CD-17"),
@@ -43,6 +44,7 @@ const TEAM_CHECKS: readonly CheckContent[] = [
     symptom: DATE_USED_DIRECTLY,
     page: "date-used-directly/timers.md",
     forms: [],
+    findingSpecifics: [],
     clause: {
       ruleSet: { name: ruleSetNameOf("team") },
       discipline: disciplineIdOf("CD-17"),

@@ -26,6 +26,8 @@ import type {
   Rule,
   Symptom,
   SymptomCatalogue,
+  AuthorisedLocationKind,
+  UnboundRecordKind,
 } from "../domain/language-layer/symptom-catalogue.ts";
 import type {
   PlacedRecord,
@@ -332,21 +334,14 @@ const IT_EACH_OVER_TYPED_ROWS: Recipe = {
   reason: { text: "each row is a case", standing: "accepted" },
 };
 
-const BOUNDARY_RECORD_KIND: RecordKind = {
-  name: "boundary-record",
-  title: "Boundary record",
-  phrase: "a boundary record",
-  todaysFormat: "authorised-location",
-};
-
-const DEBT_KIND: RecordKind = {
+const DEBT_KIND: UnboundRecordKind = {
   name: "debt",
   title: "Debt",
   phrase: "debt",
   todaysFormat: "file-carve-out",
 };
 
-const AUTHORISED_LOCATION_KIND: RecordKind = {
+const AUTHORISED_LOCATION_KIND: AuthorisedLocationKind = {
   name: "authorised-location",
   title: "Authorised location",
   phrase: "an authorised location",
@@ -371,7 +366,12 @@ const DATE_USED_DIRECTLY: Symptom = {
   breachUsuallySits: "in the unit that should be passed the time, often a doer doing two jobs",
   recipes: [WORLD_VALUES_THROUGH_A_PORT],
   correctUses: [
-    { situation: "correct use", kind: BOUNDARY_RECORD_KIND, at: "on the clock adapter" },
+    {
+      situation: "correct use",
+      kind: AUTHORISED_LOCATION_KIND,
+      at: "on the clock adapter",
+      binding: "check-and-file",
+    },
   ],
 };
 
@@ -409,7 +409,13 @@ const CLAIMED_TYPE: Symptom = {
   ],
   breachUsuallySits: "at the producer",
   recipes: [],
-  correctUses: [{ situation: "a schema proves the type", kind: AUTHORISED_LOCATION_KIND }],
+  correctUses: [
+    {
+      situation: "a schema proves the type",
+      kind: AUTHORISED_LOCATION_KIND,
+      binding: "check-and-file",
+    },
+  ],
 };
 
 const CLOCK_SOURCES = {
@@ -437,6 +443,7 @@ const CLOCK_CHECK: Check = {
   clause: CLOCK_SOURCES,
   engines: [WALKER],
   forms: [],
+  findingSpecifics: [],
 };
 
 const TEST_BODY_CHECK: Check = {
@@ -446,6 +453,7 @@ const TEST_BODY_CHECK: Check = {
   clause: TEST_BODY_LOGIC,
   engines: [WALKER],
   forms: ["branching-with-if"],
+  findingSpecifics: [],
 };
 
 const CAST_CHECK: Check = {
@@ -455,6 +463,7 @@ const CAST_CHECK: Check = {
   clause: CAST_EXPRESSIONS,
   engines: [ESLINT_ENGINE],
   forms: [],
+  findingSpecifics: [],
 };
 
 const REPORT_CATALOGUE: SymptomCatalogue = {
@@ -468,7 +477,7 @@ const REPORT_CATALOGUE: SymptomCatalogue = {
   ],
   cases: [NEEDS_THE_CURRENT_TIME, DOES_ONE_JOB, CHECKS_A_VALUE, GIVES_A_VALUE_ITS_TYPE],
   recipes: [WORLD_VALUES_THROUGH_A_PORT, ASSERT_TO_NARROW, IT_EACH_OVER_TYPED_ROWS],
-  recordKinds: [AUTHORISED_LOCATION_KIND, BOUNDARY_RECORD_KIND, DEBT_KIND],
+  recordKinds: [AUTHORISED_LOCATION_KIND, DEBT_KIND],
   engines: [WALKER, ESLINT_ENGINE],
   symptoms: [DATE_USED_DIRECTLY, BRANCH_IN_A_TEST, CLAIMED_TYPE],
   clauses: [
@@ -1298,13 +1307,13 @@ const ACCEPTED_ROOT_CAUSE =
 
 const ACCEPTED_ARGUMENTS = authoriseArgumentsFor({
   repo: "/repo",
-  answers: "claimed-type",
+  answers: "claimed-type#cast-expressions",
   rootCause: ACCEPTED_ROOT_CAUSE,
 });
 
 const REFUSED_ARGUMENTS = authoriseArgumentsFor({
   repo: "/repo",
-  answers: "claimed-type",
+  answers: "claimed-type#cast-expressions",
   rootCause: "no",
 });
 
@@ -1331,7 +1340,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
       handler: versionTwoAuthoriseCommandOf,
       arguments: authoriseArgumentsFor({
         repo: "/repo",
-        answers: "acme/team-cast",
+        answers: "acme/team-cast#casts",
         rootCause: ACCEPTED_ROOT_CAUSE,
       }),
       stages: stagesGiving({
@@ -1351,7 +1360,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
       held: nothingHeld(),
     });
     expect({ writes: ran.writes, exits: ran.exits }).toEqual({
-      writes: [[{ text: "acme/team-cast authorised src/a.ts\n" }]],
+      writes: [[{ text: "acme/team-cast#casts authorised src/a.ts\n" }]],
       exits: [[{ code: 0 }]],
     });
     expect(ran.written).toEqual([
@@ -1372,7 +1381,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
       held: nothingHeld(),
     });
     expect({ writes: ran.writes, exits: ran.exits }).toEqual({
-      writes: [[{ text: "claimed-type authorised src/a.ts\n" }]],
+      writes: [[{ text: "claimed-type#cast-expressions authorised src/a.ts\n" }]],
       exits: [[{ code: 0 }]],
     });
     expect(ran.written).toEqual([
@@ -1403,7 +1412,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
     expect(second.writes).toEqual([
       [
         {
-          text: `claimed-type already-authorised src/a.ts: ${AUTHORISED_FILE} already holds this record\n`,
+          text: `claimed-type#cast-expressions already-authorised src/a.ts: ${AUTHORISED_FILE} already holds this record\n`,
         },
       ],
     ]);
@@ -1419,7 +1428,7 @@ describe("versionTwoAuthoriseCommandOf", () => {
     });
     expect(ran.exits).toEqual([[{ code: 0 }]]);
     expect(ran.writes).toEqual([
-      [{ text: expect.stringMatching(/^claimed-type refused src\/a\.ts: /) }],
+      [{ text: expect.stringMatching(/^claimed-type#cast-expressions refused src\/a\.ts: /) }],
     ]);
     expect(ran.written).toEqual([]);
   });

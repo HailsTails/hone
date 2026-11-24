@@ -3,7 +3,7 @@
 ```json
 {
   "group": "The outside world reached directly",
-  "seen": "An import, `import()` or `require` of an outside dependency or runtime module (`node:*`) in a file with no boundary record.",
+  "seen": "An import, `import()` or `require` of an outside dependency or runtime module (`node:*`) in a file with no authorised location for that outside party.",
   "mayIndicate": [
     {
       "case": "uses-a-system-or-service-outside-the-program",
@@ -37,8 +37,9 @@
   "correctUses": [
     {
       "situation": "correct use",
-      "kind": "boundary-record",
-      "at": "on the adapter for that outside party"
+      "kind": "authorised-location",
+      "at": "on the adapter for that outside party",
+      "binds": ["outside-party"]
     }
   ]
 }
