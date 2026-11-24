@@ -7,10 +7,6 @@
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {
@@ -36,10 +32,6 @@
     {
       "answers": "assertion-outside-a-test-body#assertion-site",
       "file": "delivery/shipped-content/eslint-conformance.test.ts"
-    },
-    {
-      "answers": "assertion-outside-a-test-body#assertion-site",
-      "file": "delivery/shipped-content/hone-plugin.integration.test.ts"
     },
     {
       "answers": "assertion-outside-a-test-body#assertion-site",

@@ -11,10 +11,6 @@
     },
     {
       "answers": "type-declared-in-a-test#test-type-declaration",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "type-declared-in-a-test#test-type-declaration",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     },
     {

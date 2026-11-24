@@ -23,10 +23,6 @@
     },
     {
       "answers": "throw-or-catch-in-a-test#throw-statement",
-      "file": "delivery/eslint-runner/checks-runner.integration.test.ts"
-    },
-    {
-      "answers": "throw-or-catch-in-a-test#throw-statement",
       "file": "delivery/eslint-runner/projected-off-switch.integration.test.ts"
     }
   ]

@@ -81,6 +81,17 @@ describe("slicesOf", () => {
       packages: [PACKAGE_A_SLICE, PACKAGE_B_TOOLS_SLICE, PACKAGE_C_SLICE],
     });
   });
+
+  it("names a declared folder even when only the repository root's config is looked up", () => {
+    expect(
+      slicesOf({
+        trackedPaths: TRACKED,
+        declared: [repoPathOf("packages/c")],
+        lookup: "repository-root",
+        nestedRepositories: [],
+      }),
+    ).toEqual({ root: ROOT_SLICE, packages: [PACKAGE_C_SLICE] });
+  });
 });
 
 describe("slicesOf, declared folders and nested repositories", () => {
