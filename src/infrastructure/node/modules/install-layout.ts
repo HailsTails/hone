@@ -41,3 +41,12 @@ export const runnerModuleSegmentsOf = (request: {
   "runner",
   `runner${request.moduleExtension}`,
 ];
+
+export const createMeasurementEntrySegments = (request: {
+  readonly installRoot: string;
+  readonly moduleExtension: ModuleExtension;
+}): readonly string[] => [
+  request.installRoot,
+  "src",
+  `measure-engines.process${request.moduleExtension}`,
+];

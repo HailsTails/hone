@@ -110,23 +110,35 @@ export const versionTwoInputsOf = (request: {
     : { outcome: "ok", value: { ...settled.value, records: records.value } };
 };
 
-export const versionTwoRunOver = async (request: {
+export type MeasuredEngines = EngineStageRequest & { readonly runs: readonly NamedEngineRun[] };
+
+export const measureEngines = async (request: {
   readonly stages: VersionTwoStages;
-  readonly arguments: VersionTwoRequest;
-}): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+}): Promise<Result<MeasuredEngines, RunLoadFailure>> => {
   const inputs = versionTwoInputsOf(request);
   if (inputs.outcome === "failed") {
     return inputs;
   }
-  const { catalogue, settings, records } = inputs.value;
-  const tree = request.stages.tree({ settings });
+  const tree = request.stages.tree({ settings: inputs.value.settings });
   if (tree.outcome === "failed") {
     return tree;
   }
-  const runs = await request.stages.engines({ catalogue, settings, records, tree: tree.value });
-  if (runs.outcome === "failed") {
-    return runs;
+  const measuring = { ...inputs.value, tree: tree.value };
+  const runs = await request.stages.engines(measuring);
+  return runs.outcome === "failed"
+    ? runs
+    : { outcome: "ok", value: { ...measuring, runs: runs.value } };
+};
+
+export const versionTwoRunOver = async (request: {
+  readonly stages: VersionTwoStages;
+  readonly arguments: VersionTwoRequest;
+}): Promise<Result<VersionTwoRun, RunLoadFailure>> => {
+  const measured = await measureEngines(request);
+  if (measured.outcome === "failed") {
+    return measured;
   }
+  const { catalogue, settings, records, tree, runs } = measured.value;
   const assessment = assessmentInEffect({
     requested: { forfeiture: request.arguments.forfeiture },
     configured: settings.runSettings.assessment,
@@ -154,8 +166,8 @@ export const versionTwoRunOver = async (request: {
     notes: settings.notes,
     records: followed,
     touched,
-    runs: runs.value,
-    tracked: tree.value.tracked,
+    runs,
+    tracked: tree.tracked,
     available: settings.available,
   });
   return {
@@ -164,7 +176,7 @@ export const versionTwoRunOver = async (request: {
       report,
       catalogue,
       touched,
-      runs: runs.value,
+      runs,
       moved,
       output: reportOutputInEffect({
         requested: request.arguments.reportOutput,

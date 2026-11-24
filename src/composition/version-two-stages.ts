@@ -189,3 +189,20 @@ export const versionTwoStagesOver = (request: StagesRequest): VersionTwoStages =
       renamed: stage.renamed,
     }),
 });
+
+export const createChildMeasuredStagesOver =
+  (options: {
+    readonly createEngines: (
+      locations: VersionTwoLocations & { readonly path: PathPort },
+    ) => VersionTwoStages["engines"];
+  }): StagesOver =>
+  (request) => ({
+    ...versionTwoStagesOver(request),
+    engines: options.createEngines({
+      path: request.ports.path,
+      installRoot: request.locations.installRoot,
+      repoRoot: request.locations.repoRoot,
+      moduleExtension: request.locations.moduleExtension,
+      baseRevision: request.locations.baseRevision,
+    }),
+  });

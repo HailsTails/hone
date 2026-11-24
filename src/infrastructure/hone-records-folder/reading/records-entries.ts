@@ -1,5 +1,6 @@
 import type { RecordsReader } from "../../../application/ports/records/records-reader.ts";
 import { recordsDocumentSchema } from "../records-wire.ts";
+import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
 
 export const readEntries: RecordsReader["readEntries"] = (request) => {
   const parsed = recordsDocumentSchema.safeParse(request.document.document);
@@ -10,7 +11,7 @@ export const readEntries: RecordsReader["readEntries"] = (request) => {
         error: {
           kind: "document-refused",
           file: request.document.file,
-          issues: parsed.error.issues,
+          issues: mapZodIssuesToRecordIssues({ issues: parsed.error.issues }),
         },
       };
 };

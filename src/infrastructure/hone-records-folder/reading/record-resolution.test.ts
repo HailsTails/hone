@@ -453,7 +453,7 @@ describe("recordOf, debt", () => {
       error: [
         {
           kind: "form-refused",
-          issues: [expect.objectContaining({ code: "invalid_type", path: ["file"] })],
+          issues: [{ path: ["file"], message: expect.any(String) }],
         },
       ],
     });

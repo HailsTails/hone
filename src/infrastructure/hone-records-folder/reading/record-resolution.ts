@@ -47,6 +47,7 @@ import {
   statedBoundaryRecordWireSchema,
 } from "../records-wire.ts";
 import { carriedStandingOf } from "./carried-standing.ts";
+import { mapZodIssuesToRecordIssues } from "./record-issues.ts";
 
 type Resolution<Value> = Result<Value, readonly RecordRefusal[]>;
 
@@ -90,7 +91,10 @@ const formOf = <Output>(request: {
   const parsed = request.schema.safeParse(request.entry);
   return parsed.success
     ? resolved(parsed.data)
-    : refusedWith({ kind: "form-refused", issues: parsed.error.issues });
+    : refusedWith({
+        kind: "form-refused",
+        issues: mapZodIssuesToRecordIssues({ issues: parsed.error.issues }),
+      });
 };
 
 const carriedForm = (request: { readonly entry: z.core.util.JSONType }): "carried" | "stated" =>

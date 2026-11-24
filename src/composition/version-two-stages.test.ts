@@ -4,8 +4,10 @@ import type { DirectoryPort } from "../application/ports/file-system/directory-p
 import type { FileTextPort } from "../application/ports/file-system/file-text-port.ts";
 import type { GitPort, GitTreePort } from "../application/ports/git-port.ts";
 import type { ModuleLoaderPort } from "../application/ports/host/module-loader-port.ts";
+import type { PathPort } from "../application/ports/host/path-port.ts";
 import type { SettingsSources, SettingsSourcesOf } from "../application/ports/settings-sources.ts";
 import type { NamedSettingsReading } from "../application/run/settings/read-settings.ts";
+import type { VersionTwoStages } from "../application/run/version-two-run.ts";
 import type {
   Case,
   Check,
@@ -28,7 +30,12 @@ import { DEFAULT_CONVENTIONS } from "../domain/settings/conventions.ts";
 import { createSettingsSources } from "../infrastructure/hone-config-file/settings-sources.ts";
 import { createRecordsFolder } from "../infrastructure/hone-records-folder/folder-layout/records-folder.ts";
 import { createPathPort } from "../infrastructure/node/path-port.ts";
-import { type VersionTwoPorts, versionTwoStagesOver } from "./version-two-stages.ts";
+import {
+  createChildMeasuredStagesOver,
+  type VersionTwoLocations,
+  type VersionTwoPorts,
+  versionTwoStagesOver,
+} from "./version-two-stages.ts";
 
 const WHOLE_SYMPTOM: SymptomReach = { reaches: "whole-symptom" };
 
@@ -524,6 +531,49 @@ describe("versionTwoStagesOver", () => {
     ).toEqual({
       measured: "yes",
       paths: new Set([repoPathOf("src/a.ts")]),
+    });
+  });
+});
+
+describe("createChildMeasuredStagesOver", () => {
+  it("builds the engines stage over the run's locations", async () => {
+    const engines = vi.fn<VersionTwoStages["engines"]>().mockResolvedValue({
+      outcome: "failed",
+      error: { kind: "config-absent", repo: REPO },
+    });
+    const createEngines = vi
+      .fn<
+        (
+          locations: VersionTwoLocations & { readonly path: PathPort },
+        ) => VersionTwoStages["engines"]
+      >()
+      .mockReturnValue(engines);
+    const ports = portsOver({ git: GIT_LISTING_NOTHING });
+    const childMeasuredStagesOver = createChildMeasuredStagesOver({ createEngines });
+    const stages = childMeasuredStagesOver({
+      ports,
+      locations: {
+        repoRoot: REPO,
+        installRoot: INSTALL,
+        moduleExtension: ".ts",
+        baseRevision: "origin/main",
+      },
+    });
+
+    const runs = await stages.engines({
+      catalogue: REPORT_CATALOGUE,
+      settings: SETTINGS,
+      records: { records: [], refused: [], notes: [], base: { measured: "yes", held: [] } },
+      tree: { tracked: [], declaredConfigRoots: [] },
+    });
+
+    expect(runs).toEqual({ outcome: "failed", error: { kind: "config-absent", repo: REPO } });
+    expect(createEngines).toHaveBeenCalledExactlyOnceWith({
+      path: ports.path,
+      installRoot: INSTALL,
+      repoRoot: REPO,
+      moduleExtension: ".ts",
+      baseRevision: "origin/main",
     });
   });
 });
