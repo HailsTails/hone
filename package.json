@@ -21,6 +21,7 @@
     "check": "pnpm run typecheck && oxfmt --check && vitest run --config vitest.config.ts",
     "self-check": "node delivery/self-check/self-check.ts check --repo .",
     "install-proof": "node delivery/install-proof/install-proof.ts",
+    "speed-baseline": "node delivery/speed-baseline/speed-baseline.ts",
     "build-package": "node delivery/packaging/building/build-package.ts",
     "pack-package": "node delivery/packaging/packing/pack-package.ts",
     "package-determinism": "node delivery/packaging/packing/check-package-determinism.ts",
