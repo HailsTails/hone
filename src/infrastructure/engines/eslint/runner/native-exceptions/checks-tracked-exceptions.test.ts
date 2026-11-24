@@ -48,6 +48,35 @@ describe("trackedNamedExceptionsOf", () => {
     });
   });
 
+  it("reports a package.json script option that weakens the whole run as a command-line-option naming the check", async () => {
+    const outcome = await trackedNamedExceptionsOf({
+      packageScriptsAt: vi.fn<PackageScriptsReader>().mockReturnValue({
+        outcome: "ok",
+        value: { "lint:suppress": "eslint --suppress-all ." },
+      }),
+      suppressionsAt: vi.fn<SuppressionsReader>(),
+      trackedPaths: [repoPathOf("package.json")],
+      selected: [EXPLICIT_ANY],
+      judge: vi
+        .fn<ScriptOptionJudge>()
+        .mockResolvedValue({ outcome: "ok", value: { kind: "weakens" } }),
+    });
+
+    expect(outcome).toEqual({
+      outcome: "ok",
+      value: [
+        {
+          kind: "command-line-option",
+          location: "package.json",
+          script: "lint:suppress",
+          option: "--suppress-all",
+          cause: { kind: "weakens-run" },
+          check: "untyped-value#explicit-any",
+        },
+      ],
+    });
+  });
+
   it("reports nothing when no suppressions file or package.json is tracked", async () => {
     expect(await trackedOver({ trackedPaths: [repoPathOf("src/a.ts")] })).toEqual({
       outcome: "ok",
